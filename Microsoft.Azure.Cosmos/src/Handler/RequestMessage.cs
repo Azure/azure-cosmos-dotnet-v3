@@ -65,6 +65,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Create a <see cref="RequestMessage"/>, used for Clone() method. 
+        /// </summary>
+        /// <param name="method">The http method</param>
+        /// <param name="requestUriString">The requested URI</param>
+        /// <param name="trace">The trace node to append traces to.</param>
+        /// <param name="headers">The headers to use.</param>
+        /// <param name="properties">The properties to use.</param>
+        private RequestMessage(
+            HttpMethod method,
+            string requestUriString,
+            ITrace trace,
+            Headers headers,
+            Dictionary<string, object> properties)
+        {
+            this.Method = method;
+            this.RequestUriString = requestUriString;
+            this.Trace = trace ?? throw new ArgumentNullException(nameof(trace));
+            this.headers = new Lazy<Headers>(() => headers);
+            this.properties = new Lazy<Dictionary<string, object>>(() => properties);
+        }
+
+        /// <summary>
         /// Gets the <see cref="HttpMethod"/> for the current request.
         /// </summary>
         public virtual HttpMethod Method { get; private set; }
@@ -286,6 +308,47 @@ namespace Microsoft.Azure.Cosmos
             this.DocumentServiceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
+        }
+
+        /// <summary>
+        /// Clone the request message
+        /// </summary>
+        /// <returns>a cloned copy of the RequestMessage</returns>
+        internal RequestMessage Clone(ITrace newTrace, CloneableStream cloneContent)
+        {
+            RequestMessage clone = new RequestMessage(
+                this.Method,
+                this.RequestUriString,
+                newTrace,
+                this.Headers.Clone(),
+                new Dictionary<string, object>(this.Properties));
+
+            if (this.Content != null && cloneContent != null)
+            {
+                clone.Content = cloneContent.Clone();
+            }
+
+            if (this.RequestOptions != null)
+            {
+                clone.RequestOptions = this.RequestOptions.ShallowCopy();
+            }
+
+            clone.ResourceType = this.ResourceType;
+
+            clone.OperationType = this.OperationType;
+
+            if (this.PartitionKeyRangeId != null)
+            {
+                clone.PartitionKeyRangeId = string.IsNullOrEmpty(this.PartitionKeyRangeId.CollectionRid)
+                    ? new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.PartitionKeyRangeId)
+                    : new PartitionKeyRangeIdentity(this.PartitionKeyRangeId.CollectionRid, this.PartitionKeyRangeId.PartitionKeyRangeId);
+            }
+
+            clone.UseGatewayMode = this.UseGatewayMode;
+            clone.ContainerId = this.ContainerId;
+            clone.DatabaseId = this.DatabaseId;
+
+            return clone;
         }
 
         private static Dictionary<string, object> CreateDictionary()

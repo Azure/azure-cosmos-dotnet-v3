@@ -322,6 +322,17 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteFieldName("ResponseTimeUTC");
                 this.WriteDateTimeStringValue(storeResponseStatistics.RequestResponseTime);
 
+                this.jsonWriter.WriteFieldName("DurationInMs");
+                if (storeResponseStatistics.RequestStartTime.HasValue)
+                {
+                    TimeSpan latency = storeResponseStatistics.RequestResponseTime - storeResponseStatistics.RequestStartTime.Value;
+                    this.jsonWriter.WriteNumber64Value(latency.TotalMilliseconds);
+                }
+                else
+                {
+                    this.jsonWriter.WriteNullValue();
+                }
+
                 this.jsonWriter.WriteFieldName("ResourceType");
                 this.jsonWriter.WriteStringValue(storeResponseStatistics.RequestResourceType.ToString());
 

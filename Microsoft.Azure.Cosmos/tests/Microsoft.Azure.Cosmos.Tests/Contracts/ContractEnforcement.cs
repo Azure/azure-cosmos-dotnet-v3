@@ -200,7 +200,19 @@
             File.WriteAllText($"Contracts/{breakingChangesPath}", localJson);
 
             string baselineJson = GetBaselineContract(baselinePath);
-            ContractEnforcement.ValidateJsonAreSame(localJson, baselineJson);
+            ContractEnforcement.ValidateJsonAreSame(baselineJson, localJson);
+        }
+
+        public static void ValidateTelemetryContractContainBreakingChanges(
+          string dllName,
+          string baselinePath,
+          string breakingChangesPath)
+        {
+            string localTelemetryJson = GetCurrentTelemetryContract(dllName);
+            File.WriteAllText($"Contracts/{breakingChangesPath}", localTelemetryJson);
+
+            string telemetryBaselineJson = GetBaselineContract(baselinePath);
+            ContractEnforcement.ValidateJsonAreSame(localTelemetryJson, telemetryBaselineJson);
         }
 
         public static void ValidateTelemetryContractContainBreakingChanges(

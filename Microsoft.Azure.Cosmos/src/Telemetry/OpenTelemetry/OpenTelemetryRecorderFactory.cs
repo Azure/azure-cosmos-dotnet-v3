@@ -22,10 +22,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                            clientNamespace: $"{OpenTelemetryAttributeKeys.DiagnosticNamespace}",
                            resourceProviderNamespace: OpenTelemetryAttributeKeys.ResourceProviderNamespace,
                            isActivityEnabled: true,
-                           suppressNestedClientActivities: true),
+                           suppressNestedClientActivities: true, 
+                           isStable: false),
             isThreadSafe: true);
 
-        public static OpenTelemetryCoreRecorder CreateRecorder(string operationName,
+        public static OpenTelemetryCoreRecorder CreateRecorder(Func<string> getOperationName,
             string containerName,
             string databaseName,
             Documents.OperationType operationType,
@@ -36,9 +37,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryCoreRecorder openTelemetryRecorder = default;
             if (clientContext is { ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing: false })
             {
+                string operationName = getOperationName();
+
+                // Trace without operation name is not valid trace to create
+                if (string.IsNullOrEmpty(operationName))
+                {
+                    return openTelemetryRecorder;
+                }
+
                 // If there is no source then it will return default otherwise a valid diagnostic scope
                 DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(name: $"{OpenTelemetryAttributeKeys.OperationPrefix}.{operationName}",
-                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? DiagnosticScope.ActivityKind.Internal : DiagnosticScope.ActivityKind.Client);
+                                 kind: clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway ? ActivityKind.Internal : ActivityKind.Client);
 
                 // Need a parent activity id associated with the operation which is logged in diagnostics and used for tracing purpose.
                 // If there are listeners at operation level then scope is enabled and it tries to create activity.
@@ -47,6 +56,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 {
                     scope.SetDisplayName($"{operationName} {containerName}");
 
+                    QueryTextMode queryTextMode = GetQueryTextMode(requestOptions, clientContext);
+
                     openTelemetryRecorder = OpenTelemetryCoreRecorder.CreateOperationLevelParentActivity(
                         operationScope: scope,
                         operationName: operationName,
@@ -54,7 +65,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName: databaseName,
                         operationType: operationType,
                         clientContext: clientContext,
-                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions);
+                        config: requestOptions?.CosmosThresholdOptions ?? clientContext.ClientOptions?.CosmosClientTelemetryOptions.CosmosThresholdOptions,
+                        queryTextMode: queryTextMode);
                 }
 #if !INTERNAL
                 // If there are no listeners at operation level and no parent activity created.
@@ -73,6 +85,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
             }
             return openTelemetryRecorder;
+        }
+
+        private static QueryTextMode GetQueryTextMode(RequestOptions requestOptions, CosmosClientContext clientContext)
+        {
+            QueryTextMode? queryTextMode = null;
+            if (requestOptions is QueryRequestOptions queryRequestOptions)
+            {
+                queryTextMode = queryRequestOptions.QueryTextMode;
+            }
+            else if (requestOptions is ChangeFeedRequestOptions changeFeedRequestOptions)
+            {
+                queryTextMode = changeFeedRequestOptions.QueryTextMode;
+            }
+
+            queryTextMode ??= clientContext.ClientOptions?.CosmosClientTelemetryOptions?.QueryTextMode ?? QueryTextMode.None;
+            return queryTextMode.Value;
         }
     }
 }

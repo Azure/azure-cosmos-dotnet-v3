@@ -12,7 +12,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// This class is used to add information in an Activity tags ref. https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058
+    /// This class is used to add information in an Activity tags for OpenTelemetry.
+    /// Refer to <see href="https://github.com/Azure/azure-cosmos-dotnet-v3/issues/3058"/> for more details.
     /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
@@ -25,8 +26,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly OperationType operationType = OperationType.Invalid;
         private readonly string connectionModeCache = null;
 
+        private readonly QueryTextMode? queryTextMode = null;
         private OpenTelemetryAttributes response = null;
 
+        /// <summary>
+        /// Maps exception types to actions that record their OpenTelemetry attributes.
+        /// </summary>
         internal static IDictionary<Type, Action<Exception, DiagnosticScope>> OTelCompatibleExceptions = new Dictionary<Type, Action<Exception, DiagnosticScope>>()
         {
             { typeof(CosmosNullReferenceException), (exception, scope) => CosmosNullReferenceException.RecordOtelAttributes((CosmosNullReferenceException)exception, scope)},
@@ -55,13 +60,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             OperationType operationType, 
             CosmosClientContext clientContext, 
-            CosmosThresholdOptions config)
+            CosmosThresholdOptions config,
+            QueryTextMode queryTextMode)
         {
             this.scope = scope;
             this.config = config;
 
             this.operationType = operationType;
             this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
+            this.queryTextMode = queryTextMode;
 
             if (scope.IsEnabled)
             {
@@ -76,9 +83,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         /// <summary>
-        /// Used for creating parent activity in scenario where there are no listeners at operation level 
-        /// but they are present at network level
+        /// Creates a parent activity for scenarios where there are no listeners at the operation level but are present at the network level.
         /// </summary>
+        /// <param name="networkScope">The network-level diagnostic scope.</param>
+        /// <returns>An instance of <see cref="OpenTelemetryCoreRecorder"/>.</returns>
         public static OpenTelemetryCoreRecorder CreateNetworkLevelParentActivity(DiagnosticScope networkScope)
         {
             return new OpenTelemetryCoreRecorder(networkScope);
@@ -102,7 +110,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             Documents.OperationType operationType,
             CosmosClientContext clientContext,
-            CosmosThresholdOptions config)
+            CosmosThresholdOptions config, 
+            QueryTextMode queryTextMode)
         {
             return new OpenTelemetryCoreRecorder(
                         operationScope,
@@ -111,7 +120,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         databaseName,
                         operationType,
                         clientContext,
-                        config);
+                        config,
+                        queryTextMode);
         }
 
         public bool IsEnabled => this.scope.IsEnabled;
@@ -222,10 +232,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
 
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, Enum.GetName(typeof(OperationType), operationType));
+                string operationName = Enum.GetName(typeof(OperationType), operationType);
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
 
                 if (this.response != null)
                 {
+                    if (this.response.BatchSize is not null)
+                    {
+                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
+                    }
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
@@ -235,6 +250,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
 
+                    if (this.response.QuerySpec is not null)
+                    {
+                        if (this.queryTextMode == QueryTextMode.All || 
+                            (this.queryTextMode == QueryTextMode.ParameterizedOnly && this.response.QuerySpec.ShouldSerializeParameters()))
+                        {
+                            this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
+                        }
+                    }
+                    
                     if (this.response.Diagnostics != null)
                     {
                         this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
@@ -243,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                     if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
                     {
-                        this.scope.Failed(new Exception($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}"));
+                        this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
                     }
                 }
 

@@ -27,6 +27,16 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
 
+        /// <summary>
+        /// Environment variable name to disable sending non streaming order by query feature flag to the gateway.
+        /// </summary>
+        internal static readonly string NonStreamingOrderByQueryFeatureDisabled = "AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED";
+
+        /// <summary>
+        /// Environment variable name to enable distributed query gateway mode.
+        /// </summary>
+        internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -87,6 +97,32 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: OptimisticDirectExecutionEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether the non streaming order by query feature flag should be sent to the gateway
+        /// based on the environment variable override.
+        /// </summary>
+        public static bool IsNonStreamingOrderByQueryFeatureDisabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: NonStreamingOrderByQueryFeatureDisabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if distributed query gateway mode is enabled
+        /// based on the environment variable override.
+        /// </summary>
+        public static bool IsDistributedQueryGatewayModeEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: DistributedQueryGatewayModeEnabled,
                         defaultValue: defaultValue);
         }
     }

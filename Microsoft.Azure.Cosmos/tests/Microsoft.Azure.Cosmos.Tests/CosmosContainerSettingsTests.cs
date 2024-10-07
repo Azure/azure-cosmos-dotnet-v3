@@ -183,31 +183,31 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateVectorEmbeddingsAndIndexes()
         {
-            Embedding embedding1 = new ()
+            Cosmos.Embedding embedding1 = new ()
             {
                 Path = "/vector1",
-                DataType = VectorDataType.Int8,
-                DistanceFunction = DistanceFunction.DotProduct,
+                DataType = Cosmos.VectorDataType.Int8,
+                DistanceFunction = Cosmos.DistanceFunction.DotProduct,
                 Dimensions = 1200,
             };
 
-            Embedding embedding2 = new ()
+            Cosmos.Embedding embedding2 = new ()
             {
                 Path = "/vector2",
-                DataType = VectorDataType.Uint8,
-                DistanceFunction = DistanceFunction.Cosine,
+                DataType = Cosmos.VectorDataType.Uint8,
+                DistanceFunction = Cosmos.DistanceFunction.Cosine,
                 Dimensions = 3,
             };
 
-            Embedding embedding3 = new ()
+            Cosmos.Embedding embedding3 = new ()
             {
                 Path = "/vector3",
-                DataType = VectorDataType.Float32,
-                DistanceFunction = DistanceFunction.Euclidean,
+                DataType = Cosmos.VectorDataType.Float32,
+                DistanceFunction = Cosmos.DistanceFunction.Euclidean,
                 Dimensions = 400,
             };
 
-            Collection<Embedding> embeddings = new Collection<Embedding>()
+            Collection<Cosmos.Embedding> embeddings = new Collection<Cosmos.Embedding>()
             {
                 embedding1,
                 embedding2,
@@ -216,25 +216,25 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
             {
-                VectorEmbeddingPolicy = new(embeddings),
+                VectorEmbeddingPolicy = new (embeddings),
                 IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     VectorIndexes = new()
                     {
-                        new VectorIndexPath()
+                        new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector1",
-                            Type = VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.Flat,
                         },
-                        new VectorIndexPath()
+                        new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector2",
-                            Type = VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.Flat,
                         },
-                        new VectorIndexPath()
+                        new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector3",
-                            Type = VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.Flat,
                         }
                     },
 
@@ -245,18 +245,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(containerSettings.VectorEmbeddingPolicy);
             Assert.IsNotNull(containerSettings.IndexingPolicy.VectorIndexes);
 
-            VectorEmbeddingPolicy embeddingPolicy = containerSettings.VectorEmbeddingPolicy;
+            Cosmos.VectorEmbeddingPolicy embeddingPolicy = containerSettings.VectorEmbeddingPolicy;
             Assert.IsNotNull(embeddingPolicy.Embeddings);
             Assert.AreEqual(embeddings.Count, embeddingPolicy.Embeddings.Count());
             CollectionAssert.AreEquivalent(embeddings, embeddingPolicy.Embeddings.ToList());
 
-            Collection<VectorIndexPath> vectorIndexes = containerSettings.IndexingPolicy.VectorIndexes;
+            Collection<Cosmos.VectorIndexPath> vectorIndexes = containerSettings.IndexingPolicy.VectorIndexes;
             Assert.AreEqual("/vector1", vectorIndexes[0].Path);
-            Assert.AreEqual(VectorIndexType.Flat, vectorIndexes[0].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[0].Type);
             Assert.AreEqual("/vector2", vectorIndexes[1].Path);
-            Assert.AreEqual(VectorIndexType.Flat, vectorIndexes[1].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[1].Type);
             Assert.AreEqual("/vector3", vectorIndexes[2].Path);
-            Assert.AreEqual(VectorIndexType.Flat, vectorIndexes[2].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[2].Type);
         }
 
         private static string SerializeDocumentCollection(DocumentCollection collection)

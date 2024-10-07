@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static ArgumentException InvalidAlgorithmVersion(byte actual, byte expected)
         {
             return new ArgumentException(
-                $"Invalid encryption algorithm version; actual: {actual.ToString(@"X2")}, expected: {expected.ToString(@"X2")}.",
+                $"Invalid encryption algorithm version; actual: {actual:X2}, expected: {expected:X2}.",
                 "cipherText");
         }
 

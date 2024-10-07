@@ -22,6 +22,63 @@ namespace Microsoft.Azure.Cosmos.Linq
     public static class CosmosLinqExtensions
     {
         /// <summary>
+        /// Returns the integer identifier corresponding to a specific item within a physical partition.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj">The root object</param>
+        /// <returns>Returns the integer identifier corresponding to a specific item within a physical partition.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var documentIdQuery = documents.Where(root => root.DocumentId());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static int DocumentId(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is an array.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is an array; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isArrayQuery = documents.Where(document => document.Names.IsArray());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsArray(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a Boolean value indicating if the type of the specified expression is a boolean.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <returns>Returns true if the type of the specified expression is a boolean; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var isBoolQuery = documents.Where(document => document.IsRegistered.IsBool());
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool IsBool(this object obj)
+        {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
         /// Returns a Boolean value indicating if the type of the specified expression is an array.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.

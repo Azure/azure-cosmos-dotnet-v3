@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 AllowBulkExecution = true
             };
             this.client = TestCommon.CreateCosmosClient(clientOptions);
+            await Util.DeleteAllDatabasesAsync(this.client);
 
             DatabaseResponse response = await this.client.CreateDatabaseIfNotExistsAsync(Guid.NewGuid().ToString());
             this.database = response.Database;

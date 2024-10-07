@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -32,15 +33,16 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
         public ReadFeedIteratorCore(
             IDocumentContainer documentContainer,
             string continuationToken,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             QueryRequestOptions queryRequestOptions,
             ContainerInternal container,
             CancellationToken cancellationToken)
         {
             this.container = container;
+            this.operationName = OpenTelemetryConstants.Operations.ReadFeedRanges;
 
             this.queryRequestOptions = queryRequestOptions;
-            readFeedPaginationOptions ??= ReadFeedPaginationOptions.Default;
+            readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             if (!string.IsNullOrEmpty(continuationToken))
             {
@@ -349,11 +351,6 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             {
                 Content = page.Content,
             };
-        }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotSupportedException();
         }
     }
 }

@@ -10,13 +10,23 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Vector index fluent definition.
     /// </summary>
     /// <seealso cref="VectorIndexPath"/>
-    internal class VectorIndexDefinition<T>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class VectorIndexDefinition<T>
     {
-        private readonly VectorIndexPath vectorIndexPath = new VectorIndexPath();
+        private readonly VectorIndexPath vectorIndexPath = new ();
         private readonly T parent;
         private readonly Action<VectorIndexPath> attachCallback;
 
-        internal VectorIndexDefinition(
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VectorIndexDefinition{T}"/> class.
+        /// </summary>
+        /// <param name="parent">The original instance of <see cref="ContainerBuilder"/>.</param>
+        /// <param name="attachCallback">A callback delegate to be used at a later point of time.</param>
+        public VectorIndexDefinition(
             T parent,
             Action<VectorIndexPath> attachCallback)
         {
