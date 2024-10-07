@@ -212,11 +212,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// </returns>
         public JsonSerializationFormat GetJsonSerializationFormat()
         {
-            if (!this.hasReadFirstByte)
-            {
-                this.ReadFirstByte();
-            }
-
+            this.ReadFirstByte();
             if (this.firstByteBuffer[0] == (byte)JsonSerializationFormat.Binary)
             {
                 return JsonSerializationFormat.Binary;

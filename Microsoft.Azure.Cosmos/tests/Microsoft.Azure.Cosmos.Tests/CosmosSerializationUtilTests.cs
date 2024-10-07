@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 : CosmosSerializerUtils.ConvertInputToBinaryStream(json, Newtonsoft.Json.JsonSerializer.Create());
 
             // Act
-            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(expectedFormat, targetFormat, inputStream);
+            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, inputStream);
 
             // Assert
             Assert.IsNotNull(outputStream);
@@ -129,11 +129,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Arrange
             string json = "{\"name\":\"test\"}";
             Stream inputStream = CosmosSerializerUtils.ConvertInputToTextStream(json, Newtonsoft.Json.JsonSerializer.Create());
-            JsonSerializationFormat expectedFormat = JsonSerializationFormat.Text;
             JsonSerializationFormat targetFormat = JsonSerializationFormat.Text;
 
             // Act
-            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(expectedFormat, targetFormat, inputStream);
+            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, inputStream);
 
             // Assert
             Assert.IsNull(outputStream);

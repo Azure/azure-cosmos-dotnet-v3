@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
         public override Stream ToStream<T>(T input)
         {
-            MemoryStream streamPayload = new ();
+            MemoryStream streamPayload;
             JsonSerializer jsonSerializer = this.GetSerializer();
 
             if (this.BinaryEncodingEnabled)
@@ -139,14 +139,13 @@ namespace Microsoft.Azure.Cosmos
                 {
                     writer.Formatting = Formatting.None;
                     jsonSerializer.Serialize(writer, input);
-
-                    byte[] binBytes = writer.GetResult().ToArray();
-                    streamPayload.Write(binBytes, 0, binBytes.Length);
+                    streamPayload = new MemoryStream(writer.GetResult().ToArray());
                 }
             }
             else
             {
-                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                streamPayload = new ();
+                using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
                 {
                     using (JsonWriter writer = new JsonTextWriter(streamWriter))
                     {

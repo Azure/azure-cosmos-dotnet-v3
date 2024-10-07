@@ -41,18 +41,14 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Attempts to serialize the input stream to the specified target JSON serialization format.
         /// </summary>
-        /// <param name="expectedSerializationFormat">The expected JSON serialization format for the input stream.</param>
         /// <param name="targetSerializationFormat">The desired JSON serialization format for the output stream.</param>
         /// <param name="inputStream">The input stream containing the data to be serialized.</param>
         /// <returns>Returns true if the input stream is successfully serialized to the target format, otherwise false.</returns>
         internal static async Task<Stream> TrySerializeStreamToTargetFormatAsync(
-            JsonSerializationFormat? expectedSerializationFormat,
             JsonSerializationFormat? targetSerializationFormat,
             Stream inputStream)
         {
-            if (targetSerializationFormat == null ||
-                inputStream == null ||
-                targetSerializationFormat == expectedSerializationFormat)
+            if (targetSerializationFormat == null || inputStream == null)
             {
                 return null;
             }
@@ -63,7 +59,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (bufferedStream != null
                     && bufferedStream.CanRead
-                    && bufferedStream.GetJsonSerializationFormat() == expectedSerializationFormat)
+                    && bufferedStream.GetJsonSerializationFormat() != targetSerializationFormat)
                 {
                     byte[] targetContent = await bufferedStream.ReadAllAsync();
 
