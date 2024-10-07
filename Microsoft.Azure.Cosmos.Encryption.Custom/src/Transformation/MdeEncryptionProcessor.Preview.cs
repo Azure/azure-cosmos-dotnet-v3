@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager<char> charPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
@@ -113,7 +114,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     (TypeMarker)cipherTextWithTypeMarker[0],
                     plainText.AsSpan(0, decryptedCount),
                     document,
-                    propertyName);
+                    propertyName,
+                    charPoolManager);
 
                 pathsDecrypted.Add(path);
             }

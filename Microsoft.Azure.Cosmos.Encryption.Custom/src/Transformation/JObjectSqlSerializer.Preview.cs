@@ -72,13 +72,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return (buffer, length);
             }
         }
-#pragma warning restore SA1101 // Prefix local calls with this
 
         internal virtual void DeserializeAndAddProperty(
             TypeMarker typeMarker,
             ReadOnlySpan<byte> serializedBytes,
             JObject jObject,
-            string key)
+            string key,
+            ArrayPoolManager<char> arrayPoolManager)
         {
             switch (typeMarker)
             {
@@ -105,12 +105,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     break;
             }
 
-            static T Deserialize<T>(ReadOnlySpan<byte> serializedBytes)
+            T Deserialize<T>(ReadOnlySpan<byte> serializedBytes)
                 where T : JToken
             {
-                using ArrayPoolManager<char> manager = new ();
-
-                char[] buffer = manager.Rent(SqlVarCharSerializer.GetDeserializedMaxLength(serializedBytes.Length));
+                char[] buffer = arrayPoolManager.Rent(SqlVarCharSerializer.GetDeserializedMaxLength(serializedBytes.Length));
                 int length = SqlVarCharSerializer.Deserialize(serializedBytes, buffer.AsSpan());
 
                 JsonSerializer serializer = JsonSerializer.Create(JsonSerializerSettings);
@@ -121,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return serializer.Deserialize<T>(reader);
             }
         }
+#pragma warning restore SA1101 // Prefix local calls with this
     }
 }
 
