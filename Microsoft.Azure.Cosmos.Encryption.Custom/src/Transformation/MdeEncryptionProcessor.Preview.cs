@@ -128,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #else
                 string propertyName = path.Substring(1);
 #endif
+
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     // malformed document, such record shouldn't be there at all

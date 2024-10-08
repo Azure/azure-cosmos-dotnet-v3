@@ -78,10 +78,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new ArgumentNullException(nameof(id));
             }
 
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(newWrapMetadata);
+#else
             if (newWrapMetadata == null)
             {
                 throw new ArgumentNullException(nameof(newWrapMetadata));
             }
+#endif
 
             return TaskHelper.RunInlineIfNeededAsync(() =>
                 this.dataEncryptionKeyContainerCore.RewrapDataEncryptionKeyAsync(id, newWrapMetadata, encryptionAlgorithm, requestOptions, cancellationToken));

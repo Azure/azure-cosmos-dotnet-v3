@@ -36,7 +36,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
+#if NET8_0_OR_GREATER
+                string propertyName = pathToEncrypt[1..];
+#else
                 string propertyName = pathToEncrypt.Substring(1);
+#endif
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     continue;
@@ -69,7 +73,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsEncrypted);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
+#if NET8_0_OR_GREATER
+            await input.DisposeAsync();
+#else
             input.Dispose();
+#endif
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
@@ -94,7 +102,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
+#if NET8_0_OR_GREATER
+                string propertyName = path[1..];
+#else
                 string propertyName = path.Substring(1);
+#endif
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     // malformed document, such record shouldn't be there at all
