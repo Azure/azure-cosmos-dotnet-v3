@@ -34,11 +34,12 @@ namespace Microsoft.Azure.Cosmos
     ///             "path": "/vector2",
     ///             "type": "quantizedFlat",
     ///             "quantizationByteSize": 4,
+    ///             "vectorIndexShardKey": ["/Country/City", "ZipCode"]
     ///         },
     ///         {
     ///             "path": "/embeddings/vector",
     ///             "type": "DiskANN",
-    ///             "quantizationByteSize": 4,
+    ///             "quantizationByteSize": 8,
     ///             "indexingSearchListSize": 100,
     ///             "vectorIndexShardKey": ["/Country/City", "ZipCode"]
     ///         }
