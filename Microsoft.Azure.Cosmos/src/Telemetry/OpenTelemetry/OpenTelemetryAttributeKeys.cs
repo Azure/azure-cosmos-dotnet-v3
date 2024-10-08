@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the status code of the response.
         /// </summary>
-        public const string StatusCode = "db.cosmosdb.status_code";
+        public const string StatusCode = "db.response.status_code";
 
         /// <summary>
         /// Represents the sub-status code of the response.

@@ -42,14 +42,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "db.operation.name",
                      "server.address",
                      "db.cosmosdb.client.id",
-                     "db.cosmosdb.machine_id",
                      "user_agent.original",
                      "db.cosmosdb.connection_mode",
-                     "db.cosmosdb.operation_type",
                      "db.collection.name",
                      "db.cosmosdb.request.content_length",
                      "db.cosmosdb.response.content_length",
-                     "db.cosmosdb.status_code",
+                     "db.response.status_code",
                      "db.cosmosdb.sub_status_code",
                      "db.cosmosdb.request_charge",
                      "db.cosmosdb.regions_contacted",
@@ -77,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
                 }
 
-                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(activity.GetTagItem("db.cosmosdb.status_code"));
+                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(activity.GetTagItem("db.response.status_code"));
                 int subStatusCode = Convert.ToInt32(activity.GetTagItem("db.cosmosdb.sub_status_code"));
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(statusCode, subStatusCode))
                 {
