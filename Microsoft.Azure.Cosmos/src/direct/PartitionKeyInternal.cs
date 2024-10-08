@@ -392,6 +392,11 @@ namespace Microsoft.Azure.Documents.Routing
         {
             unchecked
             {
+                if (this.Components == null) 
+                {
+                    return base.GetHashCode();
+                }
+
                 return this.Components.Aggregate(0, (current, value) => (current * 397) ^ value.GetHashCode());
             }
         }

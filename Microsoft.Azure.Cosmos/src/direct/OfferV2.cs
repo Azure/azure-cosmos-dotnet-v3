@@ -126,90 +126,89 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Initializes a Resource offer with the given given autopilot settings, max allocation for background tasks for the Azue Cosmos DB service.
         /// </summary>
-        internal OfferV2(AutopilotSettings autopilotSettings, double? bgTaskMaxAllowedThroughputPercent)
+        internal OfferV2(AutopilotSettings autopilotSettings, double? bgTaskMaxAllowedThroughputPercent, ThroughputDistributionPolicyType? throughputDistributionPolicy)
             : this()
         {
             this.OfferType = string.Empty;
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
-            this.Content = new OfferContentV2(autopilotSettings, bgTaskMaxAllowedThroughputPercent);
-        }
-
-        /// <summary>
-        /// Internal constructor initializes offer with the given throughput and autopilot settings.
-        /// </summary>
-        internal OfferV2(int offerThroughput,
-                         bool? offerEnableRUPerMinuteThroughput,
-                         bool? offerIsAutoScaleV1Enabled,
-                         AutopilotSettings autopilotSettings)
-            : this()
-        {
-            this.Content = new OfferContentV2(offerThroughput,
-                                              offerEnableRUPerMinuteThroughput,
-                                              offerIsAutoScaleV1Enabled,
-                                              autopilotSettings,
-                                              null);
+            this.Content = new OfferContentV2(autopilotSettings, bgTaskMaxAllowedThroughputPercent, throughputDistributionPolicy);
         }
 
         /// <summary>
         /// Internal constructor initializes offer with the the given throughput, autopilot settings and max allocation for background task allocation.
+        /// Only called during collection or database create
         /// </summary>
-        internal OfferV2(int offerThroughput,
-                         bool? offerEnableRUPerMinuteThroughput,
-                         bool? offerIsAutoScaleV1Enabled,
-                         AutopilotSettings autopilotSettings,
-                         double? bgTaskMaxAllowedThroughputPercent)
+        internal OfferV2(
+            int offerThroughput,
+            bool? offerEnableRUPerMinuteThroughput,
+            bool? offerIsAutoScaleV1Enabled,
+            AutopilotSettings autopilotSettings,
+            double? bgTaskMaxAllowedThroughputPercent,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy)
             : this()
         {
-            this.Content = new OfferContentV2(offerThroughput,
-                                              offerEnableRUPerMinuteThroughput,
-                                              offerIsAutoScaleV1Enabled,
-                                              autopilotSettings,
-                                              null,
-                                              bgTaskMaxAllowedThroughputPercent);
+            this.Content = new OfferContentV2(
+                offerThroughput,
+                offerEnableRUPerMinuteThroughput,
+                offerIsAutoScaleV1Enabled,
+                autopilotSettings,
+                null,
+                bgTaskMaxAllowedThroughputPercent,
+                throughputDistributionPolicy);
         }
 
         /// <summary>
         /// Internal constructor that initializes offer with the given throughput, autoscale setting and from reference offer object
         /// </summary>
-        internal OfferV2(Offer offer,
-                         int offerThroughput,
-                         bool? offerEnableRUPerMinuteThroughput,
-                         bool? offerIsAutoScaleV1Enabled,
-                         AutopilotSettings autopilotSettings,
-                         OfferMinimumThroughputParameters minimumThoughputParameters)
+        internal OfferV2(
+            Offer offer,
+            int offerThroughput,
+            bool? offerEnableRUPerMinuteThroughput,
+            bool? offerIsAutoScaleV1Enabled,
+            AutopilotSettings autopilotSettings,
+            OfferMinimumThroughputParameters minimumThroughputParameters)
             : base(offer)
         {
             this.OfferType = string.Empty;
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
 
-            this.Content = new OfferContentV2(offerThroughput,
-                                              offerEnableRUPerMinuteThroughput,
-                                              offerIsAutoScaleV1Enabled,
-                                              autopilotSettings,
-                                              minimumThoughputParameters);
+            OfferV2 offerV2 = offer as OfferV2;
+            OfferContentV2 contentV2 = new OfferContentV2(offerV2.Content, offerThroughput, offerEnableRUPerMinuteThroughput);
+
+            this.Content = new OfferContentV2(
+                contentV2,
+                offerEnableRUPerMinuteThroughput,
+                offerIsAutoScaleV1Enabled,
+                autopilotSettings,
+                minimumThroughputParameters,
+                contentV2.ThroughputDistributionPolicy);
         }
 
         /// <summary>
         /// Internal constructor that initializes offer with the given throughput, max allowed background task throughput percentage, autoscale setting from reference offer object
         /// </summary>
-        internal OfferV2(Offer offer,
-                         int offerThroughput,
-                         bool? offerEnableRUPerMinuteThroughput,
-                         bool? offerIsAutoScaleV1Enabled,
-                         AutopilotSettings autopilotSettings,
-                         OfferMinimumThroughputParameters minimumThoughputParameters,
-                         double? bgTaskMaxAllowedThroughputPercent)
+        internal OfferV2(
+            Offer offer,
+            int offerThroughput,
+            bool? offerEnableRUPerMinuteThroughput,
+            bool? offerIsAutoScaleV1Enabled,
+            AutopilotSettings autopilotSettings,
+            OfferMinimumThroughputParameters minimumThroughputParameters,
+            double? bgTaskMaxAllowedThroughputPercent,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy)
             : base(offer)
         {
             this.OfferType = string.Empty;
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
 
-            this.Content = new OfferContentV2(offerThroughput,
-                                              offerEnableRUPerMinuteThroughput,
-                                              offerIsAutoScaleV1Enabled,
-                                              autopilotSettings,
-                                              minimumThoughputParameters,
-                                              bgTaskMaxAllowedThroughputPercent);
+            this.Content = new OfferContentV2(
+                offerThroughput,
+                offerEnableRUPerMinuteThroughput,
+                offerIsAutoScaleV1Enabled,
+                autopilotSettings,
+                minimumThroughputParameters,
+                bgTaskMaxAllowedThroughputPercent,
+                throughputDistributionPolicy);
         }
 #endif
 
@@ -270,6 +269,7 @@ namespace Microsoft.Azure.Documents
                        // Unset or false should be treated the same. In gateway, if offer replace request to store times out we wait a bit 
                        // and read again from master and compare it to see if it is what we expect. If they are equal we treat it as success.
                        (this.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false) == offer.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false)) &&
+                       (this.Content.ThroughputDistributionPolicy == offer.Content.ThroughputDistributionPolicy) &&
                        (this.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) == offer.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0));
 #endif
             }

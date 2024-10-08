@@ -717,6 +717,12 @@
   <data name="CannotOfflineWriteRegionWithNoReadRegions" xml:space="preserve">
     <value>Cannot offline a write region that has zero read regions configured. There needs to be atleast one read region to failover to.</value>
   </data>
+  <data name="CannotOfflineWhenPerPartitionFailoverIsEnabled" xml:space="preserve">
+    <value>Cannot offline when per partition failover is enabled.</value>
+  </data>
+  <data name="NotEligibleForOffline" xml:space="preserve">
+    <value>Cannot offline as the account status is {0}.</value>
+  </data>
   <data name="UnsupportedCrossPartitionQueryWithAggregate" xml:space="preserve">
     <value>Cross partition query with aggregate functions is not supported.</value>
   </data>
@@ -1023,6 +1029,9 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="ClientUnavailable" xml:space="preserve">
     <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. Please check for client resource starvation issues and verify connectivity between client and server. More info: https://aka.ms/cosmosdb-tsg-service-unavailable</value>
+  </data>
+  <data name="ClientCaeReauthRequiredException" xml:space="preserve">
+    <value>A claims challenge was detected in the HttpResponseMessage header. Reauthentication is required by re-acquiring the token using the provided claims challenge.</value>
   </data>
   <data name="ClientCpuOverload" xml:space="preserve">
     <value>The request failed because the client was unable to establish connections to {0} endpoints across {1} regions. The client CPU was overloaded during the attempted request. More info: https://aka.ms/CosmosDB/sql/errors/net/high-cpu</value>
@@ -1364,6 +1373,9 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="KeyVaultNotFoundRevokeMessage" xml:space="preserve">
     <value>Access to your account is currently revoked because the correspondent Azure Key Vault was not found; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#azure-key-vault-resource-not-found ({0}).</value>
   </data>
+  <data name="KeyDisabledOrExpiredRevokeMessage" xml:space="preserve">
+    <value>Access to your account is currently revoked because the correspondent key is either disabled or expired; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#azure-key-disabled-or-expired ({0}).</value>
+  </data>
   <data name="KeyVaultWrapUnwrapFailureRevokeMessage" xml:space="preserve">
     <value>Access to your account is currently revoked because the Azure Cosmos DB service is unable to wrap or unwrap the key; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#internal-unwrapping-procedure-error ({0}).</value>
   </data>
@@ -1411,12 +1423,21 @@ If you would like to serve this query through continuation tokens, then please r
     <value>Encountered an error in the partition migration operation</value>
   </data>
   <data name="PerRegionPerPartitionAutoscaleNotSupported" xml:space="preserve">
-    <value>PerRegionPerPartitionAutoscale is not supported on account {0}</value>
+    <value>Dynamic Scaling (Per region, Per partition Autoscale) is not supported on account {0}</value>
   </data>
   <data name="InvalidResultAtCmkFastScanner" xml:space="preserve">
-    <value>Found document with an ID greater than {0} bytes. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
+    <value>Found document with an ID greater than {0} bytes. This is incompatible for CMK encryption. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
   </data>
   <data name="UnexpectedResultAtCmkFastScanner" xml:space="preserve">
-    <value>Unexpected error on document scan for CMK Migration. Please retry the operation. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
+    <value>Hit an Unexpected error while trying to scan documents for CMK Migration. Please retry or contact support if this keeps happening. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
+  </data>
+  <data name="NotServerlessAccount" xml:space="preserve">
+    <value>Change of CapacityMode from Serverless to Provisioned is failed as account: {0} is not serverless account.</value>
+  </data>
+  <data name="TooManyRequestsErrorAtCmkFastScanner" xml:space="preserve">
+    <value>Hit a Too Many Requests error while trying to scan documents for CMK Migration. Please Retry. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
+  </data>
+  <data name="ServiceUnavailableErrorAtCmkFastScanner" xml:space="preserve">
+    <value>Hit a Service Unavailable error while trying to scan documents for CMK Migration. Please Retry. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
   </data>
 </root>

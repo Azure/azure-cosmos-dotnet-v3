@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
 
     internal sealed class PooledTimer
@@ -28,8 +29,7 @@ namespace Microsoft.Azure.Documents
         /// tcs is set to completed state if the timeout occurs else its set to cancelled state 
         /// </summary>
         private readonly TaskCompletionSource<object> tcs;
-        private readonly Object memberLock;
-        private bool timerStarted = false;
+        private int timerStarted = 0;
 
         public PooledTimer(int timeout, TimerPool timerPool)
             : this(TimeSpan.FromSeconds(timeout), timerPool)
@@ -41,7 +41,6 @@ namespace Microsoft.Azure.Documents
             this.timeoutPeriod = timeout;
             this.tcs = new TaskCompletionSource<object>();
             this.timerPool = timerPool;
-            this.memberLock = new Object();
         }
 
         /// <summary>
@@ -75,18 +74,16 @@ namespace Microsoft.Azure.Documents
         /// <returns>Returns the Task upon which you can await on until completion</returns>
         public Task StartTimerAsync()
         {
-            lock(this.memberLock)
-            {
-                if(this.timerStarted)
-                {
-                    // use only once enforcement
-                    throw new InvalidOperationException("Timer Already Started");
-                }
+            int oldTimerStarted = Interlocked.Exchange(ref this.timerStarted, 1);
 
-                this.beginTicks = this.timerPool.SubscribeForTimeouts(this);
-                this.timerStarted = true;
-                return this.tcs.Task;
+            if (oldTimerStarted != 0)
+            {
+                // use only once enforcement
+                throw new InvalidOperationException("Timer Already Started");
             }
+
+            this.beginTicks = this.timerPool.SubscribeForTimeouts(this);
+            return this.tcs.Task;
         }
 
         /// <summary>

@@ -185,93 +185,6 @@ namespace Microsoft.Azure.Documents
                     SubStatusCodes.Server_ReadQuorumNotMet);
         }
 
-        public async Task<StoreResponse> ReadBoundedStalenessAsync(
-            DocumentServiceRequest entity,
-            int readQuorumValue)
-        {
-            int readQuorumRetry = QuorumReader.maxNumberOfReadQuorumRetries;
-            bool shouldRetryOnSecondary = false;
-            bool hasPerformedReadFromPrimary = false;
-            do
-            {
-                entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-
-                shouldRetryOnSecondary = false;
-                using ReadQuorumResult secondaryQuorumReadResult = await this.ReadQuorumAsync(
-                    entity, readQuorumValue, false, ReadMode.BoundedStaleness);
-                switch (secondaryQuorumReadResult.QuorumResult)
-                {
-                    case ReadQuorumResultKind.QuorumMet:
-                        {
-                            return secondaryQuorumReadResult.GetResponseAndSkipStoreResultDispose();
-                        }
-
-                    // We do not perform the read barrier on Primary for BoundedStalenss as it has a 
-                    // potential to be always caught up in case of async replication
-                    case ReadQuorumResultKind.QuorumSelected:
-
-                        DefaultTrace.TraceWarning(
-                            "QuorumSelected: Could not converge on LSN {0} after barrier with QuorumValue {1} " +
-                            "Will not perform barrier call on Primary for BoundedStaleness, Responses: {2}",
-                            secondaryQuorumReadResult.SelectedLsn, readQuorumValue, secondaryQuorumReadResult);
-
-                        entity.RequestContext.UpdateQuorumSelectedStoreResponse(secondaryQuorumReadResult.GetSelectedResponseAndSkipStoreResultDispose());
-                        entity.RequestContext.QuorumSelectedLSN = secondaryQuorumReadResult.SelectedLsn;
-                        break;
-
-                    case ReadQuorumResultKind.QuorumNotSelected:
-                        {
-                            if (hasPerformedReadFromPrimary)
-                            {
-                                DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after " +
-                                    "retrying on secondaries.");
-                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
-                            }
-
-                            DefaultTrace.TraceWarning("QuorumNotSelected: Quorum could not be selected with read quorum of {0}", readQuorumValue);
-                            using ReadPrimaryResult response = await this.ReadPrimaryAsync(entity, readQuorumValue, false);
-
-                            if (response.IsSuccessful && response.ShouldRetryOnSecondary)
-                            {
-                                Debug.Assert(false, "QuorumNotSelected: PrimaryResult has both Successful and ShouldRetryOnSecondary flags set");
-                                DefaultTrace.TraceCritical("QuorumNotSelected: PrimaryResult has both Successful and ShouldRetryOnSecondary flags set");
-                            }
-                            else if (response.IsSuccessful)
-                            {
-                                DefaultTrace.TraceInformation("QuorumNotSelected: ReadPrimary successful");
-                                return response.GetResponseAndSkipStoreResultDispose();
-                            }
-                            else if (response.ShouldRetryOnSecondary)
-                            {
-                                shouldRetryOnSecondary = true;
-                                DefaultTrace.TraceWarning("QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary.");
-                                hasPerformedReadFromPrimary = true;
-                            }
-                            else
-                            {
-                                DefaultTrace.TraceWarning("QuorumNotSelected: Could not get successful response from ReadPrimary");
-                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
-                            }
-                        }
-                        break;
-
-                    default:
-                        DefaultTrace.TraceCritical("Unknown ReadQuorum result {0}", secondaryQuorumReadResult.QuorumResult.ToString());
-                        throw new InternalServerErrorException(RMResources.InternalServerError);
-                }
-            } while (--readQuorumRetry > 0 && shouldRetryOnSecondary);
-
-            DefaultTrace.TraceError("Could not complete read quorum with read quorum value of {0}, RetryCount: {1}",
-                readQuorumValue,
-                QuorumReader.maxNumberOfReadQuorumRetries);
-
-            throw new GoneException(
-                    string.Format(CultureInfo.CurrentUICulture,
-                    RMResources.ReadQuorumNotMet,
-                    readQuorumValue),
-                    SubStatusCodes.Server_ReadQuorumNotMet);
-        }
-
         internal static TimeSpan[] GetDefaultBarrierRequestDelays()
         {
             TimeSpan[] delays = new TimeSpan[maxNumberOfReadBarrierReadRetries + maxShortBarrierRetriesForMultiRegion + maxBarrierRetriesForMultiRegion];
@@ -430,6 +343,15 @@ namespace Microsoft.Azure.Documents
             if (!storeResult.IsValid)
             {
                 ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
+            }
+
+            if (entity.IsValidStatusCodeForExceptionlessRetry((int)storeResult.StatusCode, storeResult.SubStatusCode)
+                && storeResult.LSN < 0)
+            {
+                // Exceptionless failures should be treated similar to exceptions
+                // Validate LSN for cases where there is no exception because the ReadPrimary has requiresValidLsn: true
+                return new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker, isSuccessful: true, shouldRetryOnSecondary: false, response: disposableStoreResult.TryAddReference());
             }
 
             if (storeResult.CurrentReplicaSetSize <= 0 || storeResult.LSN < 0 || storeResult.QuorumAckedLSN < 0)

@@ -1451,10 +1451,16 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchGetOutput;
                 case OperationType.ControllerBatchReportCharges:
                     return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchReportCharges;
+                case OperationType.ControllerBatchGetOutputV2:
+                    return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchGetOutputV2;
+                case OperationType.ControllerBatchReportChargesV2:
+                    return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchReportChargesV2;
                 case OperationType.ControllerBatchAutoscaleRUsConsumption:
                     return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchAutoscaleRUsConsumption;
                 case OperationType.ControllerBatchGetAutoscaleAggregateOutput:
                     return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_BatchGetAutoscaleAggregateOutput;
+                case OperationType.ControllerBatchWatchdogHealthCheckPing:
+                    return Paths.OperationsPathSegment + "/" + Paths.ControllerOperations_HeartBeatPingWatchdog;
                 case OperationType.GetConfiguration:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetConfiguration;
                 case OperationType.GetFederationConfigurations:
@@ -1568,6 +1574,9 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportCharges, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchAutoscaleRUsConsumption, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchGetAutoscaleAggregateOutput, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_BatchGetOutputV2, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportChargesV2, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.ControllerOperations_HeartBeatPingWatchdog, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageServiceConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||

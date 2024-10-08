@@ -458,6 +458,20 @@ namespace Microsoft.Azure.Documents
                 StoreResult.SetRequestCharge(this.storeResponse, this.Exception, requestChargeTracker.TotalRequestCharge);
             }
 
+            if (!string.IsNullOrWhiteSpace(this.StorePhysicalAddress?.AbsoluteUri))
+            {
+                (string partitionId, string replicaId) = GetPartitionIdReplicaIdFromAddress(StorePhysicalAddress.AbsoluteUri);
+                System.Diagnostics.Debug.Assert(string.IsNullOrWhiteSpace(partitionId) || Guid.TryParse(partitionId, out _), $"partitionId is invalid. value:{partitionId}");
+                if (this.Exception != null)
+                {
+                    this.Exception.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
+                }
+                else 
+                {
+                    this.storeResponse.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
+                }  
+            }
+
             if (this.Exception != null)
             {
                 throw Exception;
@@ -559,6 +573,42 @@ namespace Microsoft.Azure.Documents
             {
                 ExceptionDispatchInfo.Capture(ex).Throw();
             }
+        }
+
+        public static (string PartitionId, string ReplicaId) GetPartitionIdReplicaIdFromAddress(string storePhysicalAddress)
+        {
+            const string PartitionsToken = "/partitions/";
+            const string ReplicasToken = "/replicas/";
+
+            string partitionId = string.Empty;
+            string replicaId = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(storePhysicalAddress))
+            {
+                int startIndex = storePhysicalAddress.IndexOf(PartitionsToken, StringComparison.OrdinalIgnoreCase);
+                if (startIndex != -1)
+                {
+                    startIndex += PartitionsToken.Length;
+                    int endIndex = storePhysicalAddress.IndexOf("/", startIndex, StringComparison.OrdinalIgnoreCase);
+                    if (endIndex != -1)
+                    {
+                        partitionId = storePhysicalAddress.Substring(startIndex, endIndex - startIndex);
+                    }
+                }
+
+                startIndex = storePhysicalAddress.IndexOf(ReplicasToken, StringComparison.OrdinalIgnoreCase);
+                if (startIndex != -1)
+                {
+                    startIndex += ReplicasToken.Length;
+                    int endIndex = storePhysicalAddress.IndexOf("/", startIndex, StringComparison.OrdinalIgnoreCase);
+                    if (endIndex != -1)
+                    {
+                        replicaId = storePhysicalAddress.Substring(startIndex, endIndex - startIndex);
+                    }
+                }
+            }
+
+            return (PartitionId: partitionId, ReplicaId: replicaId);
         }
 
         public void Dispose()

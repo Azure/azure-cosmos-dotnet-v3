@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
 #else
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
 #endif
@@ -250,6 +250,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Cannot offline when per partition failover is enabled..
+        /// </summary>
+        internal static string CannotOfflineWhenPerPartitionFailoverIsEnabled
+        {
+            get
+            {
+                return ResourceManager.GetString("CannotOfflineWhenPerPartitionFailoverIsEnabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot offline a write region that has zero read regions configured. There needs to be atleast one read region to failover to..
         /// </summary>
         internal static string CannotOfflineWriteRegionWithNoReadRegions
@@ -345,6 +356,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("Client_ThreadStarvation", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to A claims challenge was detected in the HttpResponseMessage header. Reauthentication is required by re-acquiring the token using the provided claims challenge.
+        /// </summary>
+        internal static string ClientCaeReauthRequiredException
+        {
+            get
+            {
+                return ResourceManager.GetString("ClientCaeReauthRequiredException", resourceCulture);
             }
         }
 
@@ -2540,6 +2562,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Not eligible for offline as the account status is &apos;{0}&apos;.
+        /// </summary>
+        internal static string NotEligibleForOffline
+        {
+            get
+            {
+                return ResourceManager.GetString("NotEligibleForOffline", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Entity with the specified id does not exist in the system..
         /// </summary>
         internal static string NotFound
@@ -2727,7 +2760,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to PerRegionPerPartitionAutoscale is not supported on account {0}.
+        ///   Looks up a localized string similar to Dynamic Scaling (Per region, Per partition Autoscale) is not supported on account {0}.
         /// </summary>
         internal static string PerRegionPerPartitionAutoscaleNotSupported
         {
@@ -4379,7 +4412,9 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
         ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
+        /// </summary>
         internal static string DataTransferStateStoreNotResolved
         {
             get
@@ -4719,6 +4754,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Access to your account is currently revoked because the correspondent key either disabled or expired.
+        /// </summary>
+        internal static string KeyDisabledOrExpiredRevokeMessage
+        {
+            get
+            {
+                return ResourceManager.GetString("KeyDisabledOrExpiredRevokeMessage", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Access to your account is currently revoked because the Azure Key Vault DNS name specified by the account's keyvaultkeyuri property could not be resolved; for more details about this error and how to restore access to your account please visit https://learn.microsoft.com/en-us/azure/cosmos-db/cmk-troubleshooting-guide#unable-to-resolve-the-key-vaults-dns ({0}).
         /// </summary>
         internal static string KeyVaultDNSNotResolvedRevokeMessage
@@ -4807,6 +4853,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Change of CapacityMode from Serverless to Provisioned is failed as account: {0} is not serverless account.
+        /// </summary>
+        internal static string NotServerlessAccount
+        {
+            get
+            {
+                return ResourceManager.GetString("NotServerlessAccount", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to DataMaskingPolicy is not supported on this account type.
         /// </summary>
         internal static string DataMaskingPolicyNotSupported
@@ -4818,7 +4875,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to UnexpectedResultAtCmkFastScanner for unexpected errors in cmk migation fast scanner.
+        ///   Looks up a localized string similar to UnexpectedResultAtCmkFastScanner for unexpected errors in cmk migration fast scanner.
         /// </summary>
         internal static string UnexpectedResultAtCmkFastScanner
         {
@@ -4829,13 +4886,35 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to InvalidResultAtCmkFastScanner if a document with big id is found in cmk migation fast scanner.
+        ///   Looks up a localized string similar to InvalidResultAtCmkFastScanner if a document with big id is found in cmk migration fast scanner.
         /// </summary>
         internal static string InvalidResultAtCmkFastScanner
         {
             get
             {
                 return ResourceManager.GetString("InvalidResultAtCmkFastScanner", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to TooManyRequestsErrorAtCmkFastScanner for those type of errors in cmk migration fast scanner.
+        /// </summary>
+        internal static string TooManyRequestsErrorAtCmkFastScanner
+        {
+            get
+            {
+                return ResourceManager.GetString("TooManyRequestsErrorAtCmkFastScanner", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to ServiceUnavailableErrorAtCmkFastScanner for those type of errors in cmk migration fast scanner.
+        /// </summary>
+        internal static string ServiceUnavailableErrorAtCmkFastScanner
+        {
+            get
+            {
+                return ResourceManager.GetString("ServiceUnavailableErrorAtCmkFastScanner", resourceCulture);
             }
         }
     }

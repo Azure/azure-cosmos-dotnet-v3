@@ -19,10 +19,11 @@ namespace Microsoft.Azure.Documents.Telemetry
         /// </summary>
         private static readonly Lazy<DiagnosticScopeFactory> LazyScopeFactory = new Lazy<DiagnosticScopeFactory>(
             valueFactory: () => new DiagnosticScopeFactory(
-                           clientNamespace: $"{DistributedTracingOptions.DiagnosticNamespace}.{DistributedTracingOptions.NetworkLevelPrefix}",
+                           clientNamespace: $"{DistributedTracingOptions.DiagnosticNamespace}",
                            resourceProviderNamespace: DistributedTracingOptions.ResourceProviderNamespace,
                            isActivityEnabled: true,
-                           suppressNestedClientActivities: false),
+                           suppressNestedClientActivities: false,
+                           isStable: false),
            isThreadSafe: true);
 
         public static OpenTelemetryRecorder CreateRecorder(DistributedTracingOptions options, 
@@ -30,15 +31,16 @@ namespace Microsoft.Azure.Documents.Telemetry
         {
             OpenTelemetryRecorder openTelemetryRecorder = default;
 
-            if (options?.IsDistributedTracingEnabled ?? false)
+            if ((options?.IsDistributedTracingEnabled ?? false) && 
+                (options?.RequestEnabledPredicate(request) ?? false))
             {
                 try
                 {
                     string operationType = request.OperationType.ToOperationTypeString();
 
                     DiagnosticScope scope = LazyScopeFactory.Value.CreateScope(
-                        name: "RequestAsync", 
-                        kind: DiagnosticScope.ActivityKind.Client);
+                        name: $"{DistributedTracingOptions.NetworkLevelPrefix}.RequestAsync", 
+                        kind: ActivityKind.Client);
 
                     scope.SetDisplayName(operationType + " " + request.ResourceType.ToResourceTypeString());
 

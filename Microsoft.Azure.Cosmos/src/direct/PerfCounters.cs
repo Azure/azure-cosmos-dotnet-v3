@@ -55,7 +55,14 @@ namespace Microsoft.Azure.Documents
             this.performanceCategoryHelp = categoryHelp;
         }
 
+        // Currently these counters objects instantiation is happening via static compile directive
+        // rework to find a suitable entry point for the same during runtime
         public static PerfCounters Counters { get; } = new PerfCounters("DocDB Gateway", "Counters for DocDB Gateway");
+
+        // Counter set for CosmosControllerService daemon
+        public static PerfCounters CountersCosmosControllerService { get; } = new PerfCounters(
+                                                                                     "Cosmos ControllerService",
+                                                                                     "Counters for Cosmos ControllerService");
 
         public PerformanceCounter FrontendRequestsPerSec
         {
