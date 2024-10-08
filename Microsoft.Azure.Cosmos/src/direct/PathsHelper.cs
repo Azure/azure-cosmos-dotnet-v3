@@ -340,6 +340,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="resourceUrl">Resource URL.</param>
         /// <param name="resourcePath">Indicates resource path. For collection level it will be <see cref="Paths.CollectionsPathSegment"/>.</param>
         /// <param name="resourceIdOrFullName">Resource name or resourceId. Always trimmed.</param>
+        /// <param name="isNameBased">Resource is name based.</param>
         /// <param name="databaseName">Database name extracted from the URL.</param>
         /// <param name="collectionName">Collection name extracted from the URL.</param>
         /// <param name="resourceType">Resource type mapped for the operation.</param>

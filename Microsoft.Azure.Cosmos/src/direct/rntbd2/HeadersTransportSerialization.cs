@@ -552,7 +552,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Reads PayloadPresent RNTBD header to tell if payload is present. Resets the Position back on <see cref="BytesDeserializer"/>
         /// if PayloadPresent was not the first header to make sure no other data is lost before the final headers processing
-        /// in <see cref="TransportSerialization.MakeStoreResponse(StatusCodes, Guid, Stream, string, BytesDeserializer, out uint?)"/>.
+        /// in TransportSerialization.MakeStoreResponse(StatusCodes, Guid, Stream, string, BytesDeserializer, out uint?)"/>.
         /// </summary>
         /// <remarks>
         /// TODO: https://msdata.visualstudio.com/CosmosDB/_workitems/edit/2105986 consider initializing 

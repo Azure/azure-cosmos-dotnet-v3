@@ -17,9 +17,6 @@ namespace Microsoft.Azure.Documents.Client
     /// ]]>
     /// </code>
     /// </example>
-    /// <seealso cref="ConnectionMode"/>
-    /// <seealso cref="ConnectionPolicy"/>
-    /// <seealso cref="DocumentClient"/>
 #if COSMOSCLIENT
     internal
 #else

@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// Bounded Staleness guarantees that reads are not too out-of-date. This can be configured based on number of operations (MaxStalenessPrefix) 
-        /// or time (MaxStalenessIntervalInSeconds).  For more information on MaxStalenessPrefix and MaxStalenessIntervalInSeconds, please see <see cref="ConsistencyPolicy"/>.
+        /// or time (MaxStalenessIntervalInSeconds).  For more information on MaxStalenessPrefix and MaxStalenessIntervalInSeconds, please see ConsistencyPolicy"/>.
         /// </summary>
         BoundedStaleness,
 

@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Net;
-    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal class OpenTelemetryAttributes
     {
@@ -19,10 +19,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
-            this.RequestContentLength = requestMessage?.Headers?.ContentLength ?? OpenTelemetryAttributes.NotAvailable;
-            this.OperationType = requestMessage?.OperationType.ToOperationTypeString() ?? OpenTelemetryAttributes.NotAvailable;
-            this.DatabaseName = requestMessage?.DatabaseId ?? databaseName ?? OpenTelemetryAttributes.NotAvailable;
-            this.ContainerName = requestMessage?.ContainerId ?? containerName ?? OpenTelemetryAttributes.NotAvailable;
+            this.RequestContentLength = requestMessage?.Headers?.ContentLength;
+            if (requestMessage != null)
+            {
+                this.OperationType = requestMessage.OperationType;
+                this.ResourceType = requestMessage.ResourceType;
+            }
+            else
+            {
+                this.OperationType = Documents.OperationType.Invalid;
+            }
         }
 
         /// <summary>
@@ -59,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// SubStatusCode
         /// </summary>
         internal int SubStatusCode { get; set; }
-        
+
         /// <summary>
         /// ActivityId
         /// </summary>
@@ -73,6 +79,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// OperationType
         /// </summary>
-        internal string OperationType { get; set; }
+        internal Documents.OperationType OperationType { get; set; }
+
+        /// <summary>
+        /// ResourceType
+        /// </summary>
+        internal Documents.ResourceType? ResourceType { get; set; }
+
+        /// <summary>
+        /// Batch Size
+        /// </summary>
+        internal int? BatchSize { get; set; }
+
+        /// <summary>
+        /// Query Spec with Query Text and Parameters
+        /// </summary>
+        internal SqlQuerySpec QuerySpec { get; set; }
     }
 }
