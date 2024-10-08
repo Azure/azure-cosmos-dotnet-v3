@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Threading;
@@ -19,6 +20,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         internal JObjectSqlSerializer Serializer { get; set; } = new JObjectSqlSerializer();
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
+
+#if NET8_0_OR_GREATER
+        internal BrotliCompressor BrotliCompressor { get; set; } = new BrotliCompressor();
+#endif
 
         public async Task<Stream> EncryptAsync(
             Stream input,
@@ -34,9 +39,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
 
+            EncryptionProperties encryptionProperties = new (
+                encryptionFormatVersion: 4,
+                encryptionOptions.EncryptionAlgorithm,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptedData: null,
+                pathsEncrypted,
+                new Dictionary<string, int>());
+
+#if NET8_0_OR_GREATER
+            bool compress = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli;
+            BrotliCompressor compressor = null;
+            int compressionLevel = BrotliCompressor.GetQualityFromCompressionLevel(encryptionOptions.CompressionOptions.CompressionLevel);
+#endif
+
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
+#if NET8_0_OR_GREATER
+                string propertyName = pathToEncrypt[1..];
+#else
                 string propertyName = pathToEncrypt.Substring(1);
+#endif
                 if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     continue;
@@ -47,29 +70,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                byte[] plainText = null;
-                (typeMarker, plainText, int plainTextLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
+                byte[] processedBytes = null;
+                (typeMarker, processedBytes, int processedBytesLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
 
-                if (plainText == null)
+                if (processedBytes == null)
                 {
                     continue;
                 }
 
-                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength);
+#if NET8_0_OR_GREATER
+                if (compress && (processedBytesLength >= encryptionOptions.CompressionOptions.MinimalCompressedLength))
+                {
+                    (processedBytes, processedBytesLength) = compressor.Compress(encryptionProperties, pathToEncrypt, processedBytes, processedBytesLength, arrayPoolManager, compressionLevel);
+                }
+#endif
+
+                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength);
 
                 itemJObj[propertyName] = encryptedBytes;
+
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
-            EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: 3,
-                encryptionOptions.EncryptionAlgorithm,
-                encryptionOptions.DataEncryptionKeyId,
-                encryptedData: null,
-                pathsEncrypted);
-
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
+#if NET8_0_OR_GREATER
+            await input.DisposeAsync();
+#else
             input.Dispose();
+#endif
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
 
@@ -82,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             _ = diagnosticsContext;
 
-            if (encryptionProperties.EncryptionFormatVersion != 3)
+            if (encryptionProperties.EncryptionFormatVersion != 3 && encryptionProperties.EncryptionFormatVersion != 4)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
@@ -95,7 +123,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
+#if NET8_0_OR_GREATER
+                string propertyName = path[1..];
+#else
                 string propertyName = path.Substring(1);
+#endif
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     // malformed document, such record shouldn't be there at all
@@ -108,11 +140,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
+                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
+
+#if NET8_0_OR_GREATER
+                if (encryptionProperties.EncryptionFormatVersion == 4)
+                {
+                    if (encryptionProperties.CompressedEncryptedPaths?.TryGetValue(path, out int decompressedSize) == true)
+                    {
+                        byte[] buffer = arrayPoolManager.Rent(decompressedSize);
+                        processedBytes = this.BrotliCompressor.Decompress(bytes, processedBytes, buffer);
+
+                        Debug.Assert(processedBytes == decompressedSize);
+
+                        bytes = buffer;
+                    }
+                }
+#endif
 
                 this.Serializer.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText.AsSpan(0, decryptedCount),
+                    bytes.AsSpan(0, processedBytes),
                     document,
                     propertyName,
                     charPoolManager);

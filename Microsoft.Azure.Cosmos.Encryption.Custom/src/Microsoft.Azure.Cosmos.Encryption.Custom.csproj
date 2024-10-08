@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Custom</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>

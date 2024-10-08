@@ -428,11 +428,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            if (partitionKey == null)
-            {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
-            }
-
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
@@ -570,11 +565,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     partitionKey,
                     requestOptions,
                     cancellationToken);
-            }
-
-            if (partitionKey == null)
-            {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
             streamPayload = await EncryptionProcessor.EncryptAsync(

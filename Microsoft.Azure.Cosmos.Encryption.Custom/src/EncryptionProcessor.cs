@@ -112,7 +112,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
+#if NET8_0_OR_GREATER
+            await input.DisposeAsync();
+#else
             input.Dispose();
+#endif
             return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
