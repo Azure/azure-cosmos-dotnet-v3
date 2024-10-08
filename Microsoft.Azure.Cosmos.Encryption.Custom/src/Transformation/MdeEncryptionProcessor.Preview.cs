@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
 #if NET8_0_OR_GREATER
             bool compress = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli;
-            BrotliCompressor compressor = null;
             int compressionLevel = BrotliCompressor.GetQualityFromCompressionLevel(encryptionOptions.CompressionOptions.CompressionLevel);
 #endif
 
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #if NET8_0_OR_GREATER
                 if (compress && (processedBytesLength >= encryptionOptions.CompressionOptions.MinimalCompressedLength))
                 {
-                    (processedBytes, processedBytesLength) = compressor.Compress(encryptionProperties, pathToEncrypt, processedBytes, processedBytesLength, arrayPoolManager, compressionLevel);
+                    (processedBytes, processedBytesLength) = this.BrotliCompressor.Compress(encryptionProperties, pathToEncrypt, processedBytes, processedBytesLength, arrayPoolManager, compressionLevel);
                 }
 #endif
 

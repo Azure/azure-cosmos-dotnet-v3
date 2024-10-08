@@ -22,7 +22,7 @@
         private byte[]? encryptedData;
         private byte[]? plaintext;
 
-        [Params(1/*, 10, 100*/)]
+        [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
@@ -55,7 +55,7 @@
             encryptedStream.CopyTo(memoryStream);
             this.encryptedData = memoryStream.ToArray();
         }
-
+        
         [Benchmark]
         public async Task Encrypt()
         {
