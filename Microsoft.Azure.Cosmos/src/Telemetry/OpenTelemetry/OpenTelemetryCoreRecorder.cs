@@ -173,7 +173,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
+<<<<<<< HEAD
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
+=======
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+>>>>>>> 898de663c (made sowm changes)
 
                 // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
@@ -248,10 +252,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
-
-                string operationName = Enum.GetName(typeof(OperationType), operationType);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
-
                 if (this.response != null)
                 {
                     if (this.response.BatchSize is not null)

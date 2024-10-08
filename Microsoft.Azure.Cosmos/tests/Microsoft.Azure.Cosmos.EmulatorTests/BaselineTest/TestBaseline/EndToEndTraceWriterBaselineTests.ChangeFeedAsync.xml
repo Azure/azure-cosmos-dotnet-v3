@@ -1032,10 +1032,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1051,10 +1056,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1070,10 +1080,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1089,10 +1104,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1108,10 +1128,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1778,10 +1803,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1797,10 +1827,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1816,10 +1851,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1835,10 +1875,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -1854,10 +1899,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2505,10 +2555,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2524,10 +2579,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2543,10 +2603,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2562,10 +2627,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -2581,10 +2651,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3252,10 +3327,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3271,10 +3351,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3290,10 +3375,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3309,10 +3399,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3328,10 +3423,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
@@ -3653,10 +3753,15 @@
     <ATTRIBUTE key="net.peer.name">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.user_agent">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.system">cosmosdb</ATTRIBUTE>
+<<<<<<< HEAD
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
+=======
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.client.id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
+>>>>>>> 898de663c (made sowm changes)
     <ATTRIBUTE key="db.cosmosdb.connection_mode">Direct</ATTRIBUTE>
-    <ATTRIBUTE key="db.cosmosdb.operation_type">ReadFeed</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
