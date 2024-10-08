@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal class BrotliCompressor
     {
+        private const int DefaultWindow = 22;
+
         internal static int GetQualityFromCompressionLevel(CompressionLevel compressionLevel)
         {
             return compressionLevel switch
@@ -27,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             byte[] compressedBytes = arrayPoolManager.Rent(BrotliEncoder.GetMaxCompressedLength(length));
 
-            if (!BrotliEncoder.TryCompress(bytes.AsSpan(0, length), compressedBytes, out int bytesWritten, compressionLevel, 22))
+            if (!BrotliEncoder.TryCompress(bytes.AsSpan(0, length), compressedBytes, out int bytesWritten, compressionLevel, BrotliCompressor.DefaultWindow))
             {
                 throw new InvalidOperationException();
             }

@@ -20,19 +20,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     public class MdeEncryptionProcessorTests
     {
         private static Mock<Encryptor> mockEncryptor;
-        private static EncryptionOptions encryptionOptions;
         private const string dekId = "dekId";
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
             _ = testContext;
-            encryptionOptions = new EncryptionOptions()
-            {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
-            };
 
             Mock<DataEncryptionKey> DekMock = new();
             DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
@@ -125,12 +118,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task EncryptDecryptPropertyWithNullValue()
+        [DynamicData(nameof(EncryptionOptionsCombinations))]
+        public async Task EncryptDecryptPropertyWithNullValue(EncryptionOptions encryptionOptions)
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
-            JObject encryptedDoc = await VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await VerifyEncryptionSucceeded(testDoc, encryptionOptions);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                encryptedDoc,
@@ -146,11 +140,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ValidateEncryptDecryptDocument()
+        [DynamicData(nameof(EncryptionOptionsCombinations))]
+        public async Task ValidateEncryptDecryptDocument(EncryptionOptions encryptionOptions)
         {
             TestDoc testDoc = TestDoc.Create();
 
-            JObject encryptedDoc = await VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await VerifyEncryptionSucceeded(testDoc, encryptionOptions);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -166,7 +161,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ValidateDecryptStream()
+        [DynamicData(nameof(EncryptionOptionsCombinations))]
+        public async Task ValidateDecryptStream(EncryptionOptions encryptionOptions)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -209,7 +205,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
-        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
+        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc, EncryptionOptions encryptionOptions)
         {
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                  testDoc.ToStream(),
@@ -287,5 +283,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 }
             }
         }
+
+        public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.None
+                    }
+                }
+            },
+#if NET8_0_OR_GREATER
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.Fastest
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression,
+                    }
+                }
+            }
+#endif
+        };
     }
 }
