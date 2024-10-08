@@ -1822,7 +1822,7 @@ cancellationToken) =>
             }
         }
 
-        private static TransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
+        private static EncryptionTransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
             string ifMatchEtag = null)
