@@ -44,8 +44,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 httpResponse = await base.SendAsync(request, cancellationToken);
-
-                Console.WriteLine(request.RequestUri.AbsoluteUri + (httpResponse == null));
             }
             catch (Exception ex) {
 
