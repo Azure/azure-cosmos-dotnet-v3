@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Documents
     
         private Collection<SpatialSpec> spatialIndexes;
 
+        private Collection<VectorIndexPath> vectorIndexPaths;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexingPolicy"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -303,6 +305,38 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets or sets the additonal vector indexes 
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.VectorIndexPaths, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal Collection<VectorIndexPath> VectorIndexPaths
+        {
+            get
+            {
+                if (this.vectorIndexPaths == null)
+                {
+                    this.vectorIndexPaths = this.GetValue<Collection<VectorIndexPath>>(Constants.Properties.VectorIndexPaths);
+                    if (this.vectorIndexPaths == null)
+                    {
+                        this.vectorIndexPaths = new Collection<VectorIndexPath>();
+                    }
+                }
+
+                return this.vectorIndexPaths;
+            }
+
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(this.vectorIndexPaths)));
+                }
+
+                this.vectorIndexPaths = value;
+                this.SetValue(Constants.Properties.VectorIndexPaths, this.vectorIndexPaths);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
@@ -331,6 +365,11 @@ namespace Microsoft.Azure.Documents
             foreach (SpatialSpec spatialSpec in this.SpatialIndexes)
             {
                 spatialSpec.Validate();
+            }
+
+            foreach (VectorIndexPath vectorIndexPath in this.VectorIndexPaths)
+            {
+                vectorIndexPath.Validate();
             }
         }
 
@@ -372,6 +411,13 @@ namespace Microsoft.Azure.Documents
             }
 
             this.SetValue(Constants.Properties.SpatialIndexes, this.spatialIndexes);
+
+            foreach (VectorIndexPath vectorIndexPath in this.VectorIndexPaths)
+            {
+                vectorIndexPath.OnSave();
+            }
+
+            this.SetValue(Constants.Properties.VectorIndexPaths, this.vectorIndexPaths);
         }
 
         /// <summary>
@@ -418,6 +464,15 @@ namespace Microsoft.Azure.Documents
             }
 
             cloned.SpatialIndexes = clonedSpatialIndexes;
+
+            Collection<VectorIndexPath> clonedvectorIndexes = new Collection<VectorIndexPath>();
+            foreach (VectorIndexPath vectorIndexPath in this.VectorIndexPaths)
+            {
+                VectorIndexPath clonedvectorIndex = (VectorIndexPath)vectorIndexPath.Clone();
+                clonedvectorIndexes.Add(clonedvectorIndex);
+            }
+
+            cloned.VectorIndexPaths = clonedvectorIndexes;
 
             return cloned;
         }

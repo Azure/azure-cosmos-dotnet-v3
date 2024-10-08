@@ -448,6 +448,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
 
+        public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
+        {
+            return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);
+        }
+
         public bool TryGetLocationForGatewayDiagnostics(Uri endpoint, out string regionName)
         {
             return this.locationCache.TryGetLocationForGatewayDiagnostics(endpoint, out regionName);
@@ -528,6 +533,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             await this.RefreshDatabaseAccountInternalAsync(forceRefresh: forceRefresh);
+        }
+
+        /// <summary>
+        /// Determines whether the current configuration and state of the service allow for supporting multiple write locations.
+        /// This method returns True is the AvailableWriteLocations in LocationCache is more than 1. Otherwise, it returns False.
+        /// </summary>
+        /// <param name="request">The document service request for which the write location support is being evaluated.</param>
+        /// <returns>A boolean flag indicating if the available write locations are more than one.</returns>
+        public bool CanSupportMultipleWriteLocations(DocumentServiceRequest request)
+        {
+            return this.locationCache.CanUseMultipleWriteLocations()
+                && this.locationCache.GetAvailableWriteLocations()?.Count > 1
+                && (request.ResourceType == ResourceType.Document ||
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods

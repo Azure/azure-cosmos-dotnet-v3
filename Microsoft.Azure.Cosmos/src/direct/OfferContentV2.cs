@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Documents
         private CollectionThroughputInfo throughputInfo;
         private OfferMinimumThroughputParameters minimumThroughputParameters;
         private Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo;
+        private ThroughputDistributionPolicyType? throughputDistributionPolicy;
 #endif
 
         /// <summary>
@@ -64,9 +65,10 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// internal constructor that takes offer throughput, RUPM is enabled/disabled and a reference offer content
         /// </summary>
-        internal OfferContentV2(OfferContentV2 content,
-                                int offerThroughput,
-                                bool? offerEnableRUPerMinuteThroughput)
+        internal OfferContentV2(
+            OfferContentV2 content,
+            int offerThroughput,
+            bool? offerEnableRUPerMinuteThroughput)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -81,6 +83,7 @@ namespace Microsoft.Azure.Documents
                 {
                     this.OfferAutopilotSettings = new AutopilotSettings(autopilotSettings);
                 }
+                this.ThroughputDistributionPolicy = content.ThroughputDistributionPolicy;
             }
 #endif
         }
@@ -88,19 +91,20 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// internal constructor that takes offer throughput, RUPM is enabled/disabled, BgTaskMaxAllowedThroughputPercent  and a reference offer content
         /// </summary>
-        internal OfferContentV2(OfferContentV2 content,
-                                int offerThroughput,
-                                bool? offerEnableRUPerMinuteThroughput,
-                                double? bgTaskMaxAllowedThroughputPercent)
+        internal OfferContentV2(
+            OfferContentV2 content,
+            int offerThroughput,
+            bool? offerEnableRUPerMinuteThroughput,
+            double? bgTaskMaxAllowedThroughputPercent)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
 
-            if(bgTaskMaxAllowedThroughputPercent != null)
+            if (bgTaskMaxAllowedThroughputPercent != null)
             {
                 this.BackgroundTaskMaxAllowedThroughputPercent = bgTaskMaxAllowedThroughputPercent;
             }
-            
+
 #if !DOCDBCLIENT
             // Copy autopilot GA settings.
             // Note that we don't copy auto scale V1 settings as it is not meant to be made public.
@@ -111,6 +115,7 @@ namespace Microsoft.Azure.Documents
                 {
                     this.OfferAutopilotSettings = new AutopilotSettings(autopilotSettings);
                 }
+                this.ThroughputDistributionPolicy = content.ThroughputDistributionPolicy;
             }
 #endif
         }
@@ -133,29 +138,36 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="offerAutopilotSettings">offer autopilot settings</param>
         /// <param name="bgTaskMaxAllowedThroughputPercent">offer bg-task percentage settings</param>
-        internal OfferContentV2(AutopilotSettings offerAutopilotSettings, double? bgTaskMaxAllowedThroughputPercent)
-        { 
+        internal OfferContentV2(AutopilotSettings offerAutopilotSettings, double? bgTaskMaxAllowedThroughputPercent, ThroughputDistributionPolicyType? throughputDistributionPolicy)
+        {
             if (offerAutopilotSettings != null)
             {
                 this.OfferAutopilotSettings = new AutopilotSettings(offerAutopilotSettings);
             }
 
-            if(bgTaskMaxAllowedThroughputPercent != null)
+            if (bgTaskMaxAllowedThroughputPercent != null)
             {
                 this.BackgroundTaskMaxAllowedThroughputPercent = bgTaskMaxAllowedThroughputPercent;
+            }
+
+            if (throughputDistributionPolicy != null)
+            {
+                this.ThroughputDistributionPolicy = throughputDistributionPolicy;
             }
         }
 
         /// <summary>
         /// Internal constructor accepting offer throughput, autopilot settings and minimum throughput parameters
         /// </summary>
-        internal OfferContentV2(int offerThroughput,
-                                bool? offerEnableRUPerMinuteThroughput,
-                                bool? offerIsAutoScaleV1Enabled,
-                                AutopilotSettings autopilotSettings,
-                                OfferMinimumThroughputParameters minThroughputParameters)
+        internal OfferContentV2(
+            OfferContentV2 contentV2,
+            bool? offerEnableRUPerMinuteThroughput,
+            bool? offerIsAutoScaleV1Enabled,
+            AutopilotSettings autopilotSettings,
+            OfferMinimumThroughputParameters minThroughputParameters,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy)
         {
-            this.OfferThroughput = offerThroughput;
+            this.OfferThroughput = contentV2.OfferThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
             this.OfferIsAutoScaleEnabled = offerIsAutoScaleV1Enabled;
 
@@ -167,18 +179,25 @@ namespace Microsoft.Azure.Documents
             if (minThroughputParameters != null)
             {
                 this.OfferMinimumThroughputParameters = new OfferMinimumThroughputParameters(minThroughputParameters);
+            }
+
+            if (throughputDistributionPolicy != null)
+            {
+                this.ThroughputDistributionPolicy = throughputDistributionPolicy;
             }
         }
 
         /// <summary>
         /// Internal constructor accepting offer throughput, autopilot settings, minimum throughput parameters, bg task throughput percent
         /// </summary>
-        internal OfferContentV2(int offerThroughput,
-                                bool? offerEnableRUPerMinuteThroughput,
-                                bool? offerIsAutoScaleV1Enabled,
-                                AutopilotSettings autopilotSettings,
-                                OfferMinimumThroughputParameters minThroughputParameters,
-                                double? bgTaskMaxAllowedThroughputPercent)
+        internal OfferContentV2(
+            int offerThroughput,
+            bool? offerEnableRUPerMinuteThroughput,
+            bool? offerIsAutoScaleV1Enabled,
+            AutopilotSettings autopilotSettings,
+            OfferMinimumThroughputParameters minThroughputParameters,
+            double? bgTaskMaxAllowedThroughputPercent,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -194,9 +213,32 @@ namespace Microsoft.Azure.Documents
                 this.OfferMinimumThroughputParameters = new OfferMinimumThroughputParameters(minThroughputParameters);
             }
 
-            if(bgTaskMaxAllowedThroughputPercent != null)
+            if (bgTaskMaxAllowedThroughputPercent != null)
             {
                 this.BackgroundTaskMaxAllowedThroughputPercent = bgTaskMaxAllowedThroughputPercent;
+            }
+
+            if (throughputDistributionPolicy != null)
+            {
+                this.ThroughputDistributionPolicy = throughputDistributionPolicy;
+            }
+        }
+
+        internal OfferContentV2(
+            OfferContentV2 content,
+            Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo)
+        {
+            this.PhysicalPartitionThroughputInfo = physicalPartitionThroughputInfo;
+
+            // Copy autopilot GA settings.
+            // Note that we don't copy auto scale V1 settings as it is not meant to be made public.
+            if (content != null)
+            {
+                AutopilotSettings autopilotSettings = content.OfferAutopilotSettings;
+                if (autopilotSettings != null)
+                {
+                    this.OfferAutopilotSettings = new AutopilotSettings(autopilotSettings);
+                }
             }
         }
 #endif
@@ -263,7 +305,7 @@ namespace Microsoft.Azure.Documents
             base.GetValue<int>(Constants.Properties.OfferThroughput);
             base.GetValue<bool?>(Constants.Properties.OfferIsRUPerMinuteThroughputEnabled);
 #if !DOCDBCLIENT
-            if(this.OfferAutopilotSettings != null)
+            if (this.OfferAutopilotSettings != null)
             {
                 this.OfferAutopilotSettings.Validate();
             }
@@ -328,6 +370,28 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Represents customizable throughput distribution policy
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.ThroughputDistributionPolicy, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal ThroughputDistributionPolicyType? ThroughputDistributionPolicy
+        {
+            get
+            {
+                if (this.throughputDistributionPolicy == null)
+                {
+                    this.throughputDistributionPolicy = base.GetValue<ThroughputDistributionPolicyType?>(Constants.Properties.ThroughputDistributionPolicy);
+                }
+
+                return this.throughputDistributionPolicy;
+            }
+            set
+            {
+                this.throughputDistributionPolicy = value;
+                base.SetValue(Constants.Properties.ThroughputDistributionPolicy, this.throughputDistributionPolicy);
+            }
+        }
+
+        /// <summary>
         /// Represents information relating to the collection/database that this offer is associated with.
         /// This is an internal attribute populated for min RU calculations.
         /// </summary>
@@ -387,6 +451,11 @@ namespace Microsoft.Azure.Documents
 
                 return this.physicalPartitionThroughputInfo;
             }
+            set
+            {
+                this.physicalPartitionThroughputInfo = value;
+                base.SetObjectCollection<PhysicalPartitionThroughputInfo>(Constants.Properties.PhysicalPartitionThroughputInfo, value);
+            }
         }
 
         internal override void OnSave()
@@ -411,5 +480,5 @@ namespace Microsoft.Azure.Documents
             }
         }
 #endif
-        }
+    }
 }

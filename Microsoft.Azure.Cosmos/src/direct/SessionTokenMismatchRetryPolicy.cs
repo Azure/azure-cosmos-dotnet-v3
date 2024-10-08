@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Documents
                 }
 
                 this.retryCount++;
-                DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}. Backoff time = {1} ms", this.retryCount, backoffTime.Milliseconds);
+                DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}. Backoff time = {1} ms", this.retryCount, backoffTime.TotalMilliseconds);
 
                 return ShouldRetryResult.RetryAfter(backoffTime);
             }

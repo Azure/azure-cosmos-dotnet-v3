@@ -27,7 +27,8 @@ namespace Microsoft.Azure.Documents
             ICommunicationEventSource eventSource,
             UserAgentContainer userAgent = null,
             int idleTimeoutInSeconds = -1,
-            HttpMessageHandler messageHandler = null)
+            HttpMessageHandler messageHandler = null,
+            TimeSpan dnsPooledCollectionLifeTime = default)
         {
 #if NETFX
             if (idleTimeoutInSeconds > 0)
@@ -41,9 +42,23 @@ namespace Microsoft.Azure.Documents
             {
                 this.httpClient = new HttpClient(messageHandler);
             }
-            else
+
+            if (this.httpClient == null)
             {
-                this.httpClient = new HttpClient();
+#if NET5_0_OR_GREATER
+                if (dnsPooledCollectionLifeTime != default)
+                {
+                    // Create a socket handler which expires connections after 5 minutes
+                    // DEVNOTE: https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/best-practice-dotnet#best-practices-for-http-connections
+                    SocketsHttpHandler socketHandler = new SocketsHttpHandler()
+                    {
+                        PooledConnectionLifetime = dnsPooledCollectionLifeTime,
+                    };
+
+                    this.httpClient = new HttpClient(socketHandler, disposeHandler: true);
+                }
+#endif
+                this.httpClient ??= new HttpClient();
             }
 
             this.httpClient.Timeout = TimeSpan.FromSeconds(requestTimeout);
@@ -385,9 +400,9 @@ namespace Microsoft.Azure.Documents
                 HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.ClientIpAddress, request.Headers[WFConstants.BackendHeaders.ClientIpAddress]);
             }
 
-            if (request.Headers[WFConstants.BackendHeaders.IsRequestNotAuthorized] != null)
+            if (request.Headers[WFConstants.BackendHeaders.IsRequestFromComputeNotAuthorized] != null)
             {
-                HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.IsRequestNotAuthorized, request.Headers[WFConstants.BackendHeaders.IsRequestNotAuthorized]);
+                HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.IsRequestFromComputeNotAuthorized, request.Headers[WFConstants.BackendHeaders.IsRequestFromComputeNotAuthorized]);
             }
 
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IsAutoScaleRequest, request);
@@ -419,6 +434,7 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetrics, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateIndexMetricsV2, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateQueryAdvice, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.CorrelatedActivityId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ForceQueryScan, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OptimisticDirectExecute, request);
@@ -475,7 +491,8 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateAnalyticalMigrationProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateByokEncryptionProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludePhysicalPartitionThroughputInfo, request);
-            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPending, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPendingForMerge, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToPendingForThroughputSplit, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.UpdateOfferStateToRestorePending, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateOldestActiveSchemaId, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.OfferReplaceRURedistribution, request);
@@ -491,6 +508,9 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.EnableConflictResolutionPolicyUpdate, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowDocumentReadsInOfflineRegion, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.PopulateUserStrings, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ThroughputBucket, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateBinaryEncodingMigratorProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowUpdatingIsPhysicalMigrationInProgress, request);
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path
@@ -664,13 +684,20 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ReportThroughputUtilization:
                 case OperationType.BatchReportThroughputUtilization:
                 case OperationType.ControllerBatchReportCharges:
+                case OperationType.ControllerBatchReportChargesV2:
                 case OperationType.ControllerBatchGetOutput:
+                case OperationType.ControllerBatchGetOutputV2:
                 case OperationType.ControllerBatchAutoscaleRUsConsumption:
                 case OperationType.ControllerBatchGetAutoscaleAggregateOutput:
                     httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
                     httpRequestMessage.Method = HttpMethod.Post;
                     Debug.Assert(clonedStream != null);
                     httpRequestMessage.Content = new StreamContent(clonedStream);
+                    break;
+
+                case OperationType.ControllerBatchWatchdogHealthCheckPing:
+                    httpRequestMessage.RequestUri = HttpTransportClient.GetRootOperationUri(physicalAddress, resourceOperation.operationType);
+                    httpRequestMessage.Method = HttpMethod.Get;
                     break;
 #endif
 
@@ -1266,6 +1293,16 @@ namespace Microsoft.Azure.Documents
                             else if ((SubStatusCodes)nSubStatus == SubStatusCodes.CompletingPartitionMigration)
                             {
                                 exception = new PartitionIsMigratingException(
+                                    string.Format(CultureInfo.CurrentUICulture,
+                                        RMResources.ExceptionMessage,
+                                        string.IsNullOrEmpty(errorMessage) ? RMResources.Gone : errorMessage),
+                                    response.Headers,
+                                    response.RequestMessage.RequestUri);
+                                break;
+                            }
+                            else if ((SubStatusCodes)nSubStatus == SubStatusCodes.LeaseNotFound)
+                            {
+                                exception = new LeaseNotFoundException(
                                     string.Format(CultureInfo.CurrentUICulture,
                                         RMResources.ExceptionMessage,
                                         string.IsNullOrEmpty(errorMessage) ? RMResources.Gone : errorMessage),

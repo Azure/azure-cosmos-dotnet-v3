@@ -78,12 +78,12 @@ namespace Microsoft.Azure.Documents.Client
         /// The condition (ETag) associated with the request.
         /// </value>
         /// <remarks>
-        /// Most commonly used with the Delete* and Replace* methods of <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> such as <see cref="Microsoft.Azure.Documents.Client.DocumentClient.ReplaceDocumentAsync(Document, RequestOptions, CancellationToken)"/>
-        /// or <see cref="Microsoft.Azure.Documents.Client.DocumentClient.ReplaceDocumentAsync(string, object, RequestOptions, CancellationToken)"/> methods,
-        /// but can be used with other methods like <see cref="Microsoft.Azure.Documents.Client.DocumentClient.ReadDocumentAsync(string, RequestOptions, CancellationToken)"/> for caching scenarios.
+        /// Most commonly used with the Delete* and Replace* methods of Microsoft.Azure.Documents.Client.DocumentClient"/> such as Microsoft.Azure.Documents.Client.DocumentClient.ReplaceDocumentAsync(Document, RequestOptions, CancellationToken)"/>
+        /// or Microsoft.Azure.Documents.Client.DocumentClient.ReplaceDocumentAsync(string, object, RequestOptions, CancellationToken)"/> methods,
+        /// but can be used with other methods like Microsoft.Azure.Documents.Client.DocumentClient.ReadDocumentAsync(string, RequestOptions, CancellationToken)"/> for caching scenarios.
         /// </remarks>
         /// <example>
-        /// The following example shows how to use RequestOptions with <see cref="Microsoft.Azure.Documents.Client.DocumentClient.ReplaceDocumentAsync(string, object, RequestOptions, CancellationToken)"/> to
+        /// The following example shows how to use RequestOptions with Microsoft.Azure.Documents.Client.DocumentClient.ReplaceDocumentAsync(string, object, RequestOptions, CancellationToken)"/> to
         /// specify the set of <see cref="AccessCondition"/> to be used when updating a document
         /// <code language="c#">
         /// <![CDATA[
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Documents.Client
         /// The consistency level required for the request.
         /// </value>
         /// <remarks>
-        /// Azure Cosmos DB offers 5 different consistency levels. Strong, Bounded Staleness, Session, Consistent Prefix and Eventual - in order of strongest to weakest consistency. <see cref="ConnectionPolicy"/>
+        /// Azure Cosmos DB offers 5 different consistency levels. Strong, Bounded Staleness, Session, Consistent Prefix and Eventual - in order of strongest to weakest consistency.ConnectionPolicy"/>
         /// <para>
         /// While this is set at a database account level, Azure Cosmos DB allows a developer to override the default consistency level
         /// for each individual request.
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Documents.Client
         ///
         /// <para>
         /// In some scenarios you need to manage this Session yourself;
-        /// Consider a web application with multiple nodes, each node will have its own instance of <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/>
+        /// Consider a web application with multiple nodes, each node will have its own instance of Microsoft.Azure.Documents.Client.DocumentClient"/>
         /// If you wanted these nodes to participate in the same session (to be able read your own writes consistently across web tiers)
         /// you would have to send the SessionToken from <see cref="ResourceResponse{T}"/> of the write action on one node
         /// to the client tier, using a cookie or some other mechanism, and have that token flow back to the web tier for subsequent reads.
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Documents.Client
         ///
         /// <example>
         /// This example shows how you can retrieve the SessionToken from a <see cref="ResourceResponse{T}"/>
-        /// and then use it on a different instance of <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> within <see cref="RequestOptions"/>
+        /// and then use it on a different instance of Microsoft.Azure.Documents.Client.DocumentClient"/> within <see cref="RequestOptions"/>
         /// This example assumes that the each instance of the client is running from code within a different AppDomain, such as on different nodes in the case of multiple node web application
         /// <code language="c#">
         /// <![CDATA[
@@ -214,18 +214,15 @@ namespace Microsoft.Azure.Documents.Client
         /// The expiry time in seconds for the resource token.
         /// </value>
         /// <remarks>
-        /// When working with Azure Cosmos DB Users and Permissions, the way to instantiate an instance of <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> is to
+        /// When working with Azure Cosmos DB Users and Permissions, the way to instantiate an instance of Microsoft.Azure.Documents.Client.DocumentClient"/> is to
         /// get the <see cref="Permission.Token"/> for the resource the <see cref="User"/> wants to access and pass this
-        /// to the authKeyOrResourceToken parameter of <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> constructor
+        /// to the authKeyOrResourceToken parameter of Microsoft.Azure.Documents.Client.DocumentClient"/> constructor
         /// <para>
         /// When requesting this Token, a RequestOption for ResourceTokenExpirySeconds can be used to set the length of time to elapse before the token expires.
         /// This value can range from 10 seconds, to 5 hours (or 18,000 seconds)
         /// The default value for this, should none be supplied is 1 hour (or 3,600 seconds).
         /// </para>
         /// </remarks>
-        /// <seealso cref="Microsoft.Azure.Documents.Client.DocumentClient"/>
-        /// <seealso cref="Microsoft.Azure.Documents.Permission"/>
-        /// <seealso cref="Microsoft.Azure.Documents.User"/>
         public int? ResourceTokenExpirySeconds { get; set; }
 
         /// <summary>
@@ -392,7 +389,6 @@ namespace Microsoft.Azure.Documents.Client
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso cref="StoredProcedureResponse&lt;TValue&gt;.ScriptLog"/>
         public bool EnableScriptLogging { get; set; }
 
         /// <summary>
@@ -416,6 +412,16 @@ namespace Microsoft.Azure.Documents.Client
         /// </para>
         /// </remarks>
         internal bool IncludeSnapshotDirectories { get; set; }
+
+        /// <summary>
+        /// Gets or sets <see cref="ForceRefresh"/> for snapshot read requests in Azure Cosmos DB.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// ForceRefresh is used to force refreshing the and fetching the storage account keys for the storage SAS uris. 
+        /// </para>
+        /// </remarks>
+        internal bool ForceRefresh { get; set; }
 
         /// <summary>
         ///  Gets or sets the <see cref="PopulateQuotaInfo"/> for document collection read requests in the Azure Cosmos DB service.
@@ -465,7 +471,7 @@ namespace Microsoft.Azure.Documents.Client
         /// </para>
         /// </remarks>
         /// <example>
-        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateUniqueIndexReIndexProgress"/>.
+        /// For usage, please refer to the example in Microsoft.Azure.Documents.DocumentCollection.PopulateUniqueIndexReIndexProgress"/>.
         /// </example>
         internal bool PopulateUniqueIndexReIndexProgress { get; set; }
 
@@ -478,9 +484,19 @@ namespace Microsoft.Azure.Documents.Client
         /// </para>
         /// </remarks>
         /// <example>
-        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateAnalyticalMigrationProgress"/>.
+        /// For usage, please refer to the example in Microsoft.Azure.Documents.DocumentCollection.PopulateAnalyticalMigrationProgress"/>.
         /// </example>
         internal bool PopulateAnalyticalMigrationProgress { get; set; }
+
+        /// <summary>
+        ///  Gets or sets the <see cref="PopulateBinaryEncodingMigratorProgress"/> for document collection read requests.
+        /// </summary>
+        internal bool PopulateBinaryEncodingMigratorProgress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="AllowUpdatingIsPhysicalMigrationInProgress"/> for a partition resource during physical copy migration
+        /// </summary>
+        internal bool AllowUpdatingIsPhysicalMigrationInProgress { get; set; }
 
         /// <summary>
         ///  Gets or sets the <see cref="PopulateBYOKEncryptionProgress"/> for document collection read requests.
@@ -491,7 +507,7 @@ namespace Microsoft.Azure.Documents.Client
         /// </para>
         /// </remarks>
         /// <example>
-        /// For usage, please refer to the example in <see cref="Microsoft.Azure.Documents.DocumentCollection.PopulateBYOKEncryptionProgress"/>.
+        /// For usage, please refer to the example in Microsoft.Azure.Documents.DocumentCollection.PopulateBYOKEncryptionProgress"/>.
         /// </example>
         internal bool PopulateBYOKEncryptionProgress { get; set; }
 
@@ -642,6 +658,14 @@ namespace Microsoft.Azure.Documents.Client
         /// <seealso cref="Microsoft.Azure.Documents.PriorityLevel"/>
         /// <seealso cref="PriorityLevel"/>
         internal PriorityLevel? PriorityLevel { get; set; }
+
+        /// <summary>
+        /// Gets or sets the throughput bucket for the request in the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The throughput bucket to use with a request.
+        /// </value>
+        internal int? ThroughputBucket { get; set; }
 
 #if !COSMOSCLIENT
         /// <summary>

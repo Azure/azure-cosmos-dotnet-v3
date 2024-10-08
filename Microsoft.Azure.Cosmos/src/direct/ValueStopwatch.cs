@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Documents
         /// <seealso cref="Stopwatch.IsHighResolution"/>
         public static readonly bool IsHighResolution = Stopwatch.IsHighResolution;
 
-        /// <remarks>
+        /// <summary>
         /// We pack everything into a single long, so using this doesn't inflate any objects with it as a field.
         /// 
         /// State is interpreted as follows
@@ -36,14 +36,14 @@ namespace Microsoft.Azure.Documents
         ///     * We have never started
         ///   - state > 0
         ///     * IsRunning == true
-        ///   - state less than 0
+        ///   - state &lt; 0
         ///     * IsRunning == false
         ///     * We have been started and stopped
         ///     * ElapsedTicks == Math.Abs(state)
         ///
         /// We handle restarting the timer by backdating our start
         /// to account for any existing duration.
-        /// </remarks>
+        /// </summary>
         private long state;
 
         /// <seealso cref="Stopwatch.IsRunning"/>

@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task TestInit()
         {
             this.cosmosClient = TestCommon.CreateCosmosClient();
+            await Util.DeleteAllDatabasesAsync(this.cosmosClient);
 
             string databaseName = Guid.NewGuid().ToString();
             DatabaseResponse cosmosDatabaseResponse = await this.cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);

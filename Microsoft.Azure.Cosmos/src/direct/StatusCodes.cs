@@ -72,6 +72,7 @@ namespace Microsoft.Azure.Documents
         ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
         AnotherOfferReplaceOperationIsInProgress = 3205,
         HttpListenerException = 1101,
+        NotImplementedPartitonKeyKindOrVersion = 1038, // Used for ThinClient Proxy
 
         // 410: StatusCodeType_Gone: substatus
         NameCacheIsStale = 1000,
@@ -156,7 +157,10 @@ namespace Microsoft.Azure.Documents
         CanNotAcquireInAccountRestoreInProgressLock = 2019,
         CollectionStateChanged = 2020,
         OfferScaledUpByUser = 2021,
+        TargetPkRangeExceededMaxAllowedSize = 2102,
+        DocumentCountMismatchBetweenSourceAndTarget = 2103,
         AccountAlreadyinTargetGateway = 2100,
+        CanNotAcquireLogStoreStorageAccountLoadBalanceLock = 2101,
 
         //412: PreConditionFailed migration substatus codes
         PartitionMigrationCancelledForPendingUserOperation = 2006,
@@ -195,6 +199,22 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationRequestValidationFailed = 2051,
         PartitionMigrationSourceFederationEntityIsNull = 2052,
         PartitionMigrationCanNotAcquireTargetFederationPartitionMigrationLock = 2053,
+        PartitionMigrationIsDisabledAtTheCurrentArmLocation = 2054,
+        PartitionMigrationFailedToAcquirePartitionMigrationLocks = 2055,
+        PartitionMigrationIsDisabledOnTheRegionalAccount = 2056,
+        PartitionMigrationWaitForCatchupTimedOut = 2057,
+        PartitionMigrationFailureMitigationWrongServiceType = 2058,
+        PartitionMigrationWaitForTargetReplicaResourceCreationTimedOut = 2059,
+        PartitionMigrationIsDisabledOnTheService = 2060,
+        PartitionMigrationIsDisabledInTheRegion = 2061,
+        PartitionMigrationSourcePartitionDeletedInWriteRegionService = 2062,
+        PartitionMigrationPartitionResourceUpdateFailedForPhysicalCopy = 2063,
+        PartitionMigrationTopologyWriteRegionChangedMidOperation = 2064,
+        PartitionMigrationTopologyETagChangedMidOperation = 2065,
+        PartitionMigrationAccountConsistencyLevelIsNotStrong = 2066,
+        PartitionMigrationSourceFedMaxOutgoingConcurrencyIsZero = 2067,
+        PartitionMigrationTargetFedMaxIncomingConcurrencyIsZero = 2068,
+        PartitionMigrationCanNotProceedDuringBlockedWindow = 2069,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -203,6 +223,7 @@ namespace Microsoft.Azure.Documents
         FederationDoesnotExistOrIsLocked = 3004,
         PartitionFailoverErrorCode = 3010,
         OperationManagerDequeuePumpStopped = 3021,
+        OperationCancelledWithNoRollback = 3042,
 
         // 429: Request Rate Too Large
         PrepareTimeLimitExceeded = 3207,
@@ -212,6 +233,8 @@ namespace Microsoft.Azure.Documents
         GatewayThrottled = 3201,
         StoredProcedureConcurrency = 3084,
         ThottleDueToSplit = 3088,
+        SystemResourceUnavailable = 3092,
+        ThrottleDueToTransportBufferUsage = 3103,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token
@@ -232,6 +255,8 @@ namespace Microsoft.Azure.Documents
         UndefinedDefaultIdentity = 4015, // Indicates that the account has an undefined default identity.
         NspOutboundDenied = 4016, // Indicates that the account's NSP is blocking outbound requests to Key Vault.
         KeyVaultNotFound = 4017, // Indicates that the Key Vault could not be found by the system.
+        KeyDisabledOrExpired = 4018, // Indicates that the Key Vault key has been disabled.
+        MasterServiceUnavailable = 4019, // Indicates that the master service is unavailable.
 
         // Keep in sync with Microsoft.Azure.Cosmos.ServiceFramework.Security.AadAuthentication.AadSubStatusCodes
         // 401 : Unauthorized Exception (User-side errors start with 50)
@@ -288,6 +313,15 @@ namespace Microsoft.Azure.Documents
         // 2001: PartitionMigrationOperationError
         PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringCompleteMigrationFromBackend = 6001,
         PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringAbortMigrationFromBackend = 6002,
+        PartitionMigrationFinalizeMigrationsDidNotCompleteInTenRetries = 6003,
+
+        // 412: PreConditionFailed AZ Migration substatus codes
+        AZMigrationCancelledForPendingUserOperation = 7001,
+
+        // 412: PreconditionFailed TopologyClient SubStatusCodes
+        RevokeGlobalWritesTopologyUpsertIntentNotApplied = 8001,
+        GrantGlobalWritesTopologyUpsertIntentNotApplied = 8002,
+        IncrementGlobalConfigurationNumberTopologyUpsertIntentNotApplied = 8003,
 
         // SDK Codes (Client)
         // IMPORTANT - keep these consistent with Java SDK as well

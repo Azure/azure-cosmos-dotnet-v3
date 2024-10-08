@@ -78,14 +78,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             else
             {
                 // left most and any non null continuations
-                IOrderedEnumerable<FeedRangeState<QueryState>> feedRangeStates = crossPartitionState
-                    .Value
-                    .ToArray()
-                    .OrderBy(tuple => ((FeedRangeEpk)tuple.FeedRange).Range.Min);
+                FeedRangeState<QueryState>[] feedRangeStates = crossPartitionState.Value.ToArray();
+                Array.Sort<FeedRangeState<QueryState>>(feedRangeStates, (x, y) => string.CompareOrdinal(((FeedRangeEpk)x.FeedRange).Range.Min, ((FeedRangeEpk)y.FeedRange).Range.Min));
 
                 List<ParallelContinuationToken> activeParallelContinuationTokens = new List<ParallelContinuationToken>();
                 {
-                    FeedRangeState<QueryState> firstState = feedRangeStates.First();
+                    FeedRangeState<QueryState> firstState = feedRangeStates[0];
                     ParallelContinuationToken firstParallelContinuationToken = new ParallelContinuationToken(
                         token: firstState.State != null ? ((CosmosString)firstState.State.Value).Value : null,
                         range: ((FeedRangeEpk)firstState.FeedRange).Range);
@@ -93,10 +91,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
                     activeParallelContinuationTokens.Add(firstParallelContinuationToken);
                 }
 
-                foreach (FeedRangeState<QueryState> feedRangeState in feedRangeStates.Skip(1))
+                for (int i = 1; i < feedRangeStates.Length; i++)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
+                    FeedRangeState<QueryState> feedRangeState = feedRangeStates[i];
                     if (feedRangeState.State != null)
                     {
                         ParallelContinuationToken parallelContinuationToken = new ParallelContinuationToken(
@@ -134,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             Cosmos.PartitionKey? partitionKey,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
             PrefetchPolicy prefetchPolicy,
@@ -244,7 +243,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel
         private static CreatePartitionRangePageAsyncEnumerator<QueryPage, QueryState> MakeCreateFunction(
             IQueryDataSource queryDataSource,
             SqlQuerySpec sqlQuerySpec,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             Cosmos.PartitionKey? partitionKey,
             ContainerQueryProperties containerQueryProperties) => (FeedRangeState<QueryState> feedRangeState) => new QueryPartitionRangePageAsyncEnumerator(
                 queryDataSource,

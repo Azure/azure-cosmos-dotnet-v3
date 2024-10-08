@@ -86,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 { "StoredProcedureExecuteResponse`1",new Mock<StoredProcedureExecuteResponse<object>>().Object },
                 { "StoredProcedureResponse", new Mock<StoredProcedureResponse>().Object },
                 { "TriggerResponse", new Mock<TriggerResponse>().Object },
-                { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object }
+                { "UserDefinedFunctionResponse", new Mock<UserDefinedFunctionResponse>().Object },
+                { "HedgingResponse", "HedgingResponse" },
             };
 
             Assembly asm = OpenTelemetryRecorderTests.GetAssemblyLocally(DllName);
@@ -164,6 +165,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 else if (instance is Response<StoredProcedureExecuteResponse<object>> storedProcedureExecuteResponse)
                 {
                     _ = new OpenTelemetryResponse<StoredProcedureExecuteResponse<object>>(storedProcedureExecuteResponse);
+                }
+                else if (instance is string hedgingResponse)
+                {
+                    Assert.AreEqual(
+                        "HedgingResponse",
+                        hedgingResponse,
+                        "HedgingResponse is only used internally in the CrossRegionHedgingAvailabilityStrategy and is never returned. No support Needed.");
                 }
                 else
                 {

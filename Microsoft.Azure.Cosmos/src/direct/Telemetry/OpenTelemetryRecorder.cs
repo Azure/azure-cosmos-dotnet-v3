@@ -29,41 +29,31 @@ namespace Microsoft.Azure.Documents.Telemetry
         }
 
         public void Record(Uri addressUri, 
-                           Exception exception = null, 
-                           DocumentClientException documentClientException = null, 
+                           Exception exception = null,
                            StoreResponse storeResponse = null)
         {
             try
             {
-                this.scope.AddAttribute("tcp.uri", addressUri);
-
-                if (exception == null && documentClientException == null)
+                this.scope.AddAttribute("rntbd.url", addressUri.OriginalString);
+                if (exception == null)
                 {
                     //record activity
-                    this.scope.AddAttribute("tcp.sub_status_code", (int)storeResponse.SubStatusCode);
-                    this.scope.AddAttribute("tcp.status_code", (int)storeResponse.StatusCode);
+                    this.scope.AddIntegerAttribute("rntbd.sub_status_code", 0);
+                    this.scope.AddIntegerAttribute("rntbd.status_code", (int)storeResponse.StatusCode);
                 }
                 else
                 {   
-                    //record exception
-                    if (exception != null)
+                    if(exception is DocumentClientException docException)
                     {
-                        this.scope.AddAttribute("exception.type", exception.GetType().FullName);
-                        this.scope.AddAttribute("exception.timestamp", DateTimeOffset.Now.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
-                        this.scope.AddAttribute("exception.message", exception.Message);
-
-                        this.scope.Failed(exception);
+                        this.scope.AddIntegerAttribute("rntbd.status_code", (int)docException.StatusCode);
+                        this.scope.AddIntegerAttribute("rntbd.sub_status_code", (int)docException.GetSubStatus());
                     }
-                    else if (documentClientException != null)
-                    {
-                        this.scope.AddAttribute("tcp.status_code", (int)documentClientException.StatusCode);
-                        this.scope.AddAttribute("tcp.sub_status_code", (int)documentClientException.GetSubStatus());
-                        this.scope.AddAttribute("exception.type", documentClientException.GetType().FullName);
-                        this.scope.AddAttribute("exception.timestamp", DateTimeOffset.Now.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
-                        this.scope.AddAttribute("exception.message", documentClientException.Message);
+                    this.scope.AddAttribute("exception.type", exception.GetType().FullName);
+                    this.scope.AddAttribute("exception.timestamp", DateTimeOffset.Now.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
+                    this.scope.AddAttribute("exception.message", exception.Message);
 
-                        this.scope.Failed(documentClientException);
-                    }
+                    this.scope.Failed(exception);
+
                 }
             }
             catch (Exception ex)

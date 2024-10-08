@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
                 containerProperties.ResourceId,
                 effectivePartitionKeyRange,
                 containerProperties.PartitionKey,
+                containerProperties.VectorEmbeddingPolicy,
                 containerProperties.GeospatialConfig.GeospatialType);
         }
 
@@ -93,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
             SqlQuerySpec sqlQuerySpec,
             ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
+            VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool requireFormattableOrderByQuery,
             bool isContinuationExpected,
             bool allowNonValueAggregateQuery,
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.Cosmos
             return (await this.documentClient.QueryPartitionProvider).TryGetPartitionedQueryExecutionInfo(
                 querySpecJsonString: queryString,
                 partitionKeyDefinition: partitionKeyDefinition,
+                vectorEmbeddingPolicy: vectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: requireFormattableOrderByQuery,
                 isContinuationExpected: isContinuationExpected,
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
@@ -324,76 +327,87 @@ namespace Microsoft.Azure.Cosmos
                         return TryCatch<QueryPage>.FromException(exception);
                     }
 
-                    if (!(cosmosResponseMessage.Content is MemoryStream memoryStream))
-                    {
-                        memoryStream = new MemoryStream();
-                        cosmosResponseMessage.Content.CopyTo(memoryStream);
-                    }
-
-                    CosmosQueryClientCore.ParseRestStream(
-                        memoryStream,
-                        resourceType,
-                        out CosmosArray documents,
-                        out CosmosObject distributionPlan,
-                        out bool? streaming);
-
-                    DistributionPlanSpec distributionPlanSpec = null;
-
-                    // ISSUE-TODO-adityasa-2024/1/31 - Uncomment this when distributionPlanSpec is hooked with rest of the code so that it can be tested.
-                    // if (distributionPlan != null)
-                    // {
-                    //     bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
-                    //     bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
-
-                    //     Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one  is present in the distribution plan.");
-
-                    //     if (backendPlan && clientPlan)
-                    //     {
-                    //         distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
-                    //     }
-                    // }
-
-                    QueryState queryState;
-                    if (cosmosResponseMessage.Headers.ContinuationToken != null)
-                    {
-                        queryState = new QueryState(CosmosString.Create(cosmosResponseMessage.Headers.ContinuationToken));
-                    }
-                    else
-                    {
-                        queryState = default;
-                    }
-
-                    Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
-                    foreach (string key in cosmosResponseMessage.Headers)
-                    {
-                        if (!QueryPage.BannedHeaders.Contains(key))
-                        {
-                            additionalHeaders[key] = cosmosResponseMessage.Headers[key];
-                        }
-                    }
-
-                    Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = default;
-                    if (cosmosResponseMessage.Headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
-                    {
-                        cosmosQueryExecutionInfo = 
-                            new Lazy<CosmosQueryExecutionInfo>(
-                                () => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
-                    }
-
-                    QueryPage response = new QueryPage(
-                        documents,
-                        cosmosResponseMessage.Headers.RequestCharge,
-                        cosmosResponseMessage.Headers.ActivityId,
-                        cosmosQueryExecutionInfo,
-                        distributionPlanSpec,
-                        disallowContinuationTokenMessage: null,
-                        additionalHeaders,
-                        queryState,
-                        streaming);
-
-                    return TryCatch<QueryPage>.FromResult(response);
+                    return CreateQueryPage(
+                        cosmosResponseMessage.Headers,
+                        cosmosResponseMessage.Content,
+                        resourceType);
                 }
             }
+        }
+
+        internal static TryCatch<QueryPage> CreateQueryPage(
+            Headers headers,
+            Stream content,
+            ResourceType resourceType)
+        {
+            if (!(content is MemoryStream memoryStream))
+            {
+                memoryStream = new MemoryStream();
+                content.CopyTo(memoryStream);
+            }
+
+            CosmosQueryClientCore.ParseRestStream(
+                memoryStream,
+                resourceType,
+                out CosmosArray documents,
+                out CosmosObject distributionPlan,
+                out bool? streaming);
+
+            DistributionPlanSpec distributionPlanSpec = null;
+
+            // ISSUE-TODO-adityasa-2024/1/31 - Uncomment this when distributionPlanSpec is hooked with rest of the code so that it can be tested.
+            // if (distributionPlan != null)
+            // {
+            //     bool backendPlan = distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan);
+            //     bool clientPlan = distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan);
+
+            //     Debug.Assert(clientPlan == backendPlan, "Response Body Contract was violated. Out of the backend and client plans, only one  is present in the distribution plan.");
+
+            //     if (backendPlan && clientPlan)
+            //     {
+            //         distributionPlanSpec = new DistributionPlanSpec(backendDistributionPlan.ToString(), clientDistributionPlan.ToString());
+            //     }
+            // }
+
+            QueryState queryState;
+            if (headers.ContinuationToken != null)
+            {
+                queryState = new QueryState(CosmosString.Create(headers.ContinuationToken));
+            }
+            else
+            {
+                queryState = default;
+            }
+
+            Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
+            foreach (string key in headers)
+            {
+                if (!QueryPage.BannedHeaders.Contains(key))
+                {
+                    additionalHeaders[key] = headers[key];
+                }
+            }
+
+            Lazy<CosmosQueryExecutionInfo> cosmosQueryExecutionInfo = default;
+            if (headers.TryGetValue(QueryExecutionInfoHeader, out string queryExecutionInfoString))
+            {
+                cosmosQueryExecutionInfo = 
+                    new Lazy<CosmosQueryExecutionInfo>(
+                        () => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
+            }
+
+            QueryPage response = new QueryPage(
+                documents,
+                headers.RequestCharge,
+                headers.ActivityId,
+                cosmosQueryExecutionInfo,
+                distributionPlanSpec,
+                disallowContinuationTokenMessage: null,
+                additionalHeaders,
+                queryState,
+                streaming);
+
+            return TryCatch<QueryPage>.FromResult(response);
         }
 
         private void PopulatePartitionKeyRangeInfo(

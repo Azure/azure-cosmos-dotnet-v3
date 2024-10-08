@@ -311,6 +311,9 @@ namespace Microsoft.Azure.Documents
         public const string ControllerOperations_BatchReportCharges = "controllerbatchreportcharges";
         public const string ControllerOperations_BatchAutoscaleRUsConsumption = "controllerbatchautoscalerusconsumption";
         public const string ControllerOperations_BatchGetAutoscaleAggregateOutput = "controllerbatchgetautoscaleaggregateoutput";
+        public const string ControllerOperations_BatchGetOutputV2 = "controllerbatchgetoutputv2";
+        public const string ControllerOperations_BatchReportChargesV2 = "controllerbatchreportchargesv2";
+        public const string ControllerOperations_HeartBeatPingWatchdog = "controllerwatchdoghealthcheckping";
 
         // vector clock
         public const string VectorClockPathSegment = "vectorclock";
@@ -454,5 +457,20 @@ namespace Microsoft.Azure.Documents
         // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbUserDefinitions/{mongodbUserDefinitionResource}/operationResults/{operationId}
         public const string MongoDbUserDefinitionOperationResultSegment_Root = MongoDbUserDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
 
+        // ----------------- Native Control Plane RBAC for Table -----------------
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/tableRoleDefinitions
+        public const string TableRoleDefinitionResourceType = "tableRoleDefinitions";
+        public const string TableRoleDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + TableRoleDefinitionResourceType;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/tableRoleDefinitions/{tableRoleDefinitionResource}
+        public const string TableRoleDefinitionResourceSegment = "tableRoleDefinitionResource";
+        public const string TableRoleDefinitionResourceSegment_Root = TableRoleDefinitionResourceType_Root + "/{" + TableRoleDefinitionResourceSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/tableRoleDefinitions/{tableRoleDefinitionResource}/operationResults
+        public const string TableRoleDefinitionOperationResultsSegment_Root = TableRoleDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/tableRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
+        public const string TableRoleDefinitionOperationResultSegment_Root = TableRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
     }
 }

@@ -16,18 +16,18 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
     internal sealed class ChangeFeedCrossFeedRangeAsyncEnumerable : IAsyncEnumerable<TryCatch<ChangeFeedPage>>
     {
         private readonly IDocumentContainer documentContainer;
-        private readonly ChangeFeedPaginationOptions changeFeedPaginationOptions;
+        private readonly ChangeFeedExecutionOptions changeFeedPaginationOptions;
         private readonly ChangeFeedCrossFeedRangeState state;
         private readonly JsonSerializationFormatOptions jsonSerializationFormatOptions;
 
         public ChangeFeedCrossFeedRangeAsyncEnumerable(
             IDocumentContainer documentContainer,
             ChangeFeedCrossFeedRangeState state,
-            ChangeFeedPaginationOptions changeFeedPaginationOptions,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             JsonSerializationFormatOptions jsonSerializationFormatOptions = null)
         {
             this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
-            this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? ChangeFeedPaginationOptions.Default;
+            this.changeFeedPaginationOptions = changeFeedPaginationOptions ?? ChangeFeedExecutionOptions.Default;
             this.state = state;
             this.jsonSerializationFormatOptions = jsonSerializationFormatOptions;
         }

@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Documents
             set
             {
                 TimeSpan retentionDuration = value;
-                int retentionDurationInMinutes = ((int)retentionDuration.TotalMinutes) + (retentionDuration.Seconds > 0 ? 1 : 0);
+
+                int retentionDurationInMinutes = (int)Math.Ceiling(retentionDuration.TotalMinutes);
                 base.SetValue(Constants.Properties.LogRetentionDuration, retentionDurationInMinutes);
             }
         }

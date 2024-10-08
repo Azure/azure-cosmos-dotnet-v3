@@ -82,6 +82,21 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+#if !DOCDBCLIENT
+        [JsonProperty(PropertyName = Constants.Properties.TargetThroughput)]
+        internal double? TargetThroughput
+        {
+            get
+            {
+                return base.GetValue<double?>(Constants.Properties.TargetThroughput);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.TargetThroughput, value);
+            }
+        }
+#endif
+
         [JsonProperty(PropertyName = Constants.Properties.PartitionKeyRangeStatus)]
         internal PartitionKeyRangeStatus Status
         {
@@ -125,6 +140,26 @@ namespace Microsoft.Azure.Documents
             set
             {
                 base.SetValue(Constants.Properties.Parents, value);
+            }
+        }
+
+        /// <summary>
+        /// Contains ids of owned archival pkranges in the Azure Cosmos DB service.
+        /// For example, consider a range '1' owns archival reference to ['0'], to begin.
+        /// If '1' splits into '2' (left) and '3' (right)
+        /// '2' owns archival reference to ['0']
+        /// '3' owns archival reference to ['1']
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OwnedArchivalPKRangeIds)]
+        internal Collection<string> OwnedArchivalPKRangeIds
+        {
+            get
+            {
+                return base.GetValue<Collection<string>>(Constants.Properties.OwnedArchivalPKRangeIds);
+            }
+            set
+            {
+                base.SetValue(Constants.Properties.OwnedArchivalPKRangeIds, value);
             }
         }
 
@@ -179,6 +214,9 @@ namespace Microsoft.Azure.Documents
                 && string.Equals(this.ResourceId, other.ResourceId, StringComparison.Ordinal)
                 && this.MinInclusive.Equals(other.MinInclusive)
                 && this.MaxExclusive.Equals(other.MaxExclusive)
+#if !DOCDBCLIENT
+                && (this.TargetThroughput == other.TargetThroughput)
+#endif
                 && (this.ThroughputFraction == other.ThroughputFraction);
         }
     }

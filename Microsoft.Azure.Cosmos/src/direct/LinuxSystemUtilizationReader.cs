@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             /// <summary>
             /// Allows customization of the proc stat file path to allow testing this on Non-Linux machines
             /// </summary>
-            /// <param name="procStatFilePath">
+            /// <param name="procMemInfoFilePath">
             /// </param>
             internal ProcMemInfoFileParser(string procMemInfoFilePath)
             {

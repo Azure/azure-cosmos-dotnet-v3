@@ -228,6 +228,28 @@ namespace Microsoft.Azure.Documents
         [DllImport("Microsoft.Azure.Documents.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #endif
         public static extern
+        uint GetPartitionKeyRangesFromQuery4(
+            [In] IntPtr serviceProvider,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string query,
+            [In] PartitionKeyRangesApiOptions partitionKeyRangesApiOptions,
+            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)][In] string[] partitionKeyDefinitionPathTokens,
+            [MarshalAs(UnmanagedType.LPArray)][In] uint[] partitionKeyDefinitionPathTokenLengths,
+            [In] uint partitionKeyDefinitionPathCount,
+            [MarshalAs(UnmanagedType.LPWStr)][In] string vectorEmbeddingPolicy,
+            [In] int vectorEmbeddingPolicyLength,
+            [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
+            [In] uint serializedQueryExecutionInfoBufferLength,
+            [Out] out uint serializedQueryExecutionInfoResultLength);
+
+#if !NETSTANDARD16
+        [System.Security.SuppressUnmanagedCodeSecurity]
+#endif
+#if COSMOSCLIENT
+        [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#else
+        [DllImport("Microsoft.Azure.Documents.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
+#endif
+        public static extern
         uint CreateServiceProvider(
                 [MarshalAs(UnmanagedType.LPStr)][In] string configJsonString,
                 [Out] out IntPtr serviceProvider);

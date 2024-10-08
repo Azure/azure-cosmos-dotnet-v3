@@ -101,15 +101,15 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public SubStatusCodes SubStatusCode => subStatusCode.Value;
+        private SubStatusCodes? subStatusCode;
+
+        public SubStatusCodes SubStatusCode
+        => this.subStatusCode ??= this.GetSubStatusCode();
 
         public HttpStatusCode StatusCode => (HttpStatusCode)this.Status;
 
-        private Lazy<SubStatusCodes> subStatusCode;
-
         public StoreResponse()
         {
-            this.subStatusCode = new Lazy<SubStatusCodes>(this.GetSubStatusCode);
         }
 
         public bool TryGetHeaderValue(

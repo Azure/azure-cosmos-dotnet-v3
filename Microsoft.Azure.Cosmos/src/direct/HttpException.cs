@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Documents
         private INameValueCollection responseHeaders;
         private string rawErrorMessage;
         private Boolean rawErrorMessageOnly;
+        private bool skippingStackTraceCapture = false;
 
         internal DocumentClientException(Error errorResource,
             HttpResponseHeaders responseHeaders,
@@ -94,6 +95,7 @@ namespace Microsoft.Azure.Documents
         {
             this.responseHeaders = new StoreResponseNameValueCollection();
             this.StatusCode = statusCode;
+            this.skippingStackTraceCapture = !traceCallStack;
 
             if (responseHeaders != null)
             {
@@ -318,6 +320,14 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return this.responseHeaders.ToNameValueCollection();
+            }
+        }
+
+        internal bool SkippingStackTraceCapture
+        {
+            get
+            {
+                return this.skippingStackTraceCapture;
             }
         }
 

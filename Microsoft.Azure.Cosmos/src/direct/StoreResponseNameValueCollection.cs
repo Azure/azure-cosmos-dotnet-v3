@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string AnalyticalMigrationProgress { get; set; }
         public string AppliedPolicyElementId { get; set; }
         public string BackendRequestDurationMilliseconds { get; set; }
+        public string BinaryEncodingMigratorProgress { get; set; }
         public string ByokEncryptionProgress { get; set; }
         public string CapacityType { get; set; }
         public string ChangeFeedInfo { get; set; }
@@ -89,6 +90,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string NumberOfReadRegions { get; set; }
         public string OfferReplacePending { get; set; }
         public string OfferReplacePendingForMerge { get; set; }
+        public string OfferScaleCorrelationId { get; set; }
         public string OldestActiveSchemaId { get; set; }
         public string OwnerFullName { get; set; }
         public string OwnerId { get; set; }
@@ -96,6 +98,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string PartitionThroughputInfo { get; set; }
         public string PendingPKDelete { get; set; }
         public string PhysicalPartitionId { get; set; }
+        public string QueryAdvice { get; set; }
         public string QueryExecutionInfo { get; set; }
         public string QueryMetrics { get; set; }
         public string QuorumAckedLocalLSN { get; set; }
@@ -172,6 +175,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.AnalyticalMigrationProgress = null;
             this.AppliedPolicyElementId = null;
             this.BackendRequestDurationMilliseconds = null;
+            this.BinaryEncodingMigratorProgress = null;
             this.ByokEncryptionProgress = null;
             this.CapacityType = null;
             this.ChangeFeedInfo = null;
@@ -217,6 +221,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.NumberOfReadRegions = null;
             this.OfferReplacePending = null;
             this.OfferReplacePendingForMerge = null;
+            this.OfferScaleCorrelationId = null;
             this.OldestActiveSchemaId = null;
             this.OwnerFullName = null;
             this.OwnerId = null;
@@ -224,6 +229,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.PartitionThroughputInfo = null;
             this.PendingPKDelete = null;
             this.PhysicalPartitionId = null;
+            this.QueryAdvice = null;
             this.QueryExecutionInfo = null;
             this.QueryMetrics = null;
             this.QuorumAckedLocalLSN = null;
@@ -272,6 +278,7 @@ namespace Microsoft.Azure.Documents.Collections
                 AnalyticalMigrationProgress = this.AnalyticalMigrationProgress,
                 AppliedPolicyElementId = this.AppliedPolicyElementId,
                 BackendRequestDurationMilliseconds = this.BackendRequestDurationMilliseconds,
+                BinaryEncodingMigratorProgress = this.BinaryEncodingMigratorProgress,
                 ByokEncryptionProgress = this.ByokEncryptionProgress,
                 CapacityType = this.CapacityType,
                 ChangeFeedInfo = this.ChangeFeedInfo,
@@ -317,6 +324,7 @@ namespace Microsoft.Azure.Documents.Collections
                 NumberOfReadRegions = this.NumberOfReadRegions,
                 OfferReplacePending = this.OfferReplacePending,
                 OfferReplacePendingForMerge = this.OfferReplacePendingForMerge,
+                OfferScaleCorrelationId = this.OfferScaleCorrelationId,
                 OldestActiveSchemaId = this.OldestActiveSchemaId,
                 OwnerFullName = this.OwnerFullName,
                 OwnerId = this.OwnerId,
@@ -324,6 +332,7 @@ namespace Microsoft.Azure.Documents.Collections
                 PartitionThroughputInfo = this.PartitionThroughputInfo,
                 PendingPKDelete = this.PendingPKDelete,
                 PhysicalPartitionId = this.PhysicalPartitionId,
+                QueryAdvice = this.QueryAdvice,
                 QueryExecutionInfo = this.QueryExecutionInfo,
                 QueryMetrics = this.QueryMetrics,
                 QuorumAckedLocalLSN = this.QuorumAckedLocalLSN,
@@ -495,6 +504,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.IndexUtilization, this.IndexUtilization);
             }
+            if (this.QueryAdvice != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.QueryAdvice, this.QueryAdvice);
+            }
             if (this.GlobalCommittedLSN != null)
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.GlobalCommittedLSN, this.GlobalCommittedLSN);
@@ -635,6 +648,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.AnalyticalMigrationProgress, this.AnalyticalMigrationProgress);
             }
+            if (this.BinaryEncodingMigratorProgress != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.BinaryEncodingMigratorProgress, this.BinaryEncodingMigratorProgress);
+            }
             if (this.TotalAccountThroughput != null)
             {
                 yield return new KeyValuePair<string, string>(HttpConstants.HttpHeaders.TotalAccountThroughput, this.TotalAccountThroughput);
@@ -718,6 +735,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.UserStrings != null)
             {
                 yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.UserStrings, this.UserStrings);
+            }
+            if (this.OfferScaleCorrelationId != null)
+            {
+                yield return new KeyValuePair<string, string>(WFConstants.BackendHeaders.OfferScaleCorrelationId, this.OfferScaleCorrelationId);
             }
 
             if (this.lazyNotCommonHeaders != null)
@@ -866,6 +887,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.IndexUtilization;
             }
+            if (this.QueryAdvice != null)
+            {
+                yield return WFConstants.BackendHeaders.QueryAdvice;
+            }
             if (this.GlobalCommittedLSN != null)
             {
                 yield return WFConstants.BackendHeaders.GlobalCommittedLSN;
@@ -1006,6 +1031,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return WFConstants.BackendHeaders.AnalyticalMigrationProgress;
             }
+            if (this.BinaryEncodingMigratorProgress != null)
+            {
+                yield return WFConstants.BackendHeaders.BinaryEncodingMigratorProgress;
+            }
             if (this.TotalAccountThroughput != null)
             {
                 yield return HttpConstants.HttpHeaders.TotalAccountThroughput;
@@ -1089,6 +1118,10 @@ namespace Microsoft.Azure.Documents.Collections
             if (this.UserStrings != null)
             {
                 yield return WFConstants.BackendHeaders.UserStrings;
+            }
+            if (this.OfferScaleCorrelationId != null)
+            {
+                yield return WFConstants.BackendHeaders.OfferScaleCorrelationId;
             }
 
             if (this.lazyNotCommonHeaders != null)
@@ -1236,6 +1269,10 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.IndexUtilization, this.IndexUtilization);
                         }
+                        if (this.QueryAdvice != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.QueryAdvice, this.QueryAdvice);
+                        }
                         if (this.GlobalCommittedLSN != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.GlobalCommittedLSN, this.GlobalCommittedLSN);
@@ -1376,6 +1413,10 @@ namespace Microsoft.Azure.Documents.Collections
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.AnalyticalMigrationProgress, this.AnalyticalMigrationProgress);
                         }
+                        if (this.BinaryEncodingMigratorProgress != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.BinaryEncodingMigratorProgress, this.BinaryEncodingMigratorProgress);
+                        }
                         if (this.TotalAccountThroughput != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.TotalAccountThroughput, this.TotalAccountThroughput);
@@ -1459,6 +1500,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.UserStrings != null)
                         {
                             this.nameValueCollection.Add(WFConstants.BackendHeaders.UserStrings, this.UserStrings);
+                        }
+                        if (this.OfferScaleCorrelationId != null)
+                        {
+                            this.nameValueCollection.Add(WFConstants.BackendHeaders.OfferScaleCorrelationId, this.OfferScaleCorrelationId);
                         }
                         if(this.lazyNotCommonHeaders != null)
                         {
@@ -1724,6 +1769,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.DatabaseAccountId;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QueryAdvice, key))
+                    {
+                        return this.QueryAdvice;
+                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key))
                     {
                         return this.BackendRequestDurationMilliseconds;
@@ -1740,6 +1789,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.DatabaseAccountId, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.DatabaseAccountId;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.QueryAdvice, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.QueryAdvice;
                     }
 
                     if (string.Equals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key, StringComparison.OrdinalIgnoreCase))
@@ -2184,6 +2238,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.RequiresDistribution;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OfferScaleCorrelationId, key))
+                    {
+                        return this.OfferScaleCorrelationId;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.VectorClockLocalProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.VectorClockLocalProgress;
@@ -2202,6 +2260,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.RequiresDistribution, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.RequiresDistribution;
+                    }
+
+                    if (string.Equals(WFConstants.BackendHeaders.OfferScaleCorrelationId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.OfferScaleCorrelationId;
                     }
 
                     break;
@@ -2243,6 +2306,13 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.PendingPKDelete, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.PendingPKDelete;
+                    }
+
+                    break;
+                case 45:
+                    if (string.Equals(WFConstants.BackendHeaders.BinaryEncodingMigratorProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.BinaryEncodingMigratorProgress;
                     }
 
                     break;
@@ -2814,6 +2884,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.DatabaseAccountId = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.QueryAdvice, key))
+                    {
+                        if (throwIfAlreadyExists && this.QueryAdvice != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.QueryAdvice = value;
+                        return;
+                    }
                     if (object.ReferenceEquals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key))
                     {
                         if (throwIfAlreadyExists && this.BackendRequestDurationMilliseconds != null)
@@ -2852,6 +2932,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.DatabaseAccountId = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.QueryAdvice, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.QueryAdvice != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.QueryAdvice = value;
                         return;
                     }
                     if (string.Equals(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds, key, StringComparison.OrdinalIgnoreCase))
@@ -3802,6 +3892,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.RequiresDistribution = value;
                         return;
                     }
+                    if (object.ReferenceEquals(WFConstants.BackendHeaders.OfferScaleCorrelationId, key))
+                    {
+                        if (throwIfAlreadyExists && this.OfferScaleCorrelationId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.OfferScaleCorrelationId = value;
+                        return;
+                    }
                     if (string.Equals(WFConstants.BackendHeaders.VectorClockLocalProgress, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.VectorClockLocalProgress != null)
@@ -3840,6 +3940,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.RequiresDistribution = value;
+                        return;
+                    }
+                    if (string.Equals(WFConstants.BackendHeaders.OfferScaleCorrelationId, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.OfferScaleCorrelationId != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.OfferScaleCorrelationId = value;
                         return;
                     }
                     break;
@@ -3918,6 +4028,18 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.PendingPKDelete = value;
+                        return;
+                    }
+                    break;
+                case 45:
+                    if (string.Equals(WFConstants.BackendHeaders.BinaryEncodingMigratorProgress, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.BinaryEncodingMigratorProgress != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.BinaryEncodingMigratorProgress = value;
                         return;
                     }
                     break;

@@ -68,4 +68,8 @@
   <PropertyGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
     <DefineConstants>$(DefineConstants);ENCRYPTIONTESTPREVIEW</DefineConstants>
   </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(SdkProjectRef)' == 'True'">
+    <DefineConstants>$(DefineConstants);SDKPROJECTREF</DefineConstants>
+  </PropertyGroup>
 </Project>

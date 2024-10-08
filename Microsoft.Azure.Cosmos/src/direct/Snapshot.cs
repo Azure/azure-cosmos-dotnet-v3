@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Globalization;
+    using System.IO;
+    using System.Text;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -282,7 +284,10 @@ namespace Microsoft.Azure.Documents
         /// <param name="existingSnapshot"></param>
         /// <param name="operationType"></param>
         /// <param name="inheritSnapshotTimestamp"></param>
-        internal static Snapshot CloneSystemSnapshot(Snapshot existingSnapshot, OperationType operationType, bool inheritSnapshotTimestamp)
+        internal static Snapshot CloneSystemSnapshot(
+            Snapshot existingSnapshot,
+            OperationType operationType,
+            bool inheritSnapshotTimestamp)
         {
             if (existingSnapshot.Kind != SnapshotKind.System)
             {
@@ -318,6 +323,31 @@ namespace Microsoft.Azure.Documents
             snapshot.State = SnapshotState.Completed;
 
             return snapshot;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Snapshot"/> class from existing snapshot object.
+        /// </summary>
+        /// <param name="existingSnapshot"></param>
+        /// <param name="updatedSnapshotContent"></param>
+        internal static Snapshot CloneSystemSnapshot(
+            Snapshot existingSnapshot,
+            SnapshotContent updatedSnapshotContent)
+        {
+            if (existingSnapshot.Kind != SnapshotKind.System)
+            {
+                throw new ArgumentException(string.Format(CultureInfo.InvariantCulture, "Invalid snapshot kind {0}", existingSnapshot.Kind));
+            }
+
+            Snapshot newSnapshot;
+            byte[] byteArray = existingSnapshot.ToByteArray();
+            using (MemoryStream stream = new MemoryStream(byteArray))
+            {
+                newSnapshot = JsonSerializable.LoadFrom<Snapshot>(stream);
+            }
+
+            newSnapshot.Content = updatedSnapshotContent;
+            return newSnapshot;
         }
     }
 }

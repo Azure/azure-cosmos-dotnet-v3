@@ -964,6 +964,16 @@ namespace Microsoft.Azure.Documents
                                 physicalAddress);
                             break;
                         }
+                        else if ((SubStatusCodes)nSubStatus == SubStatusCodes.LeaseNotFound)
+                        {
+                            exception = new LeaseNotFoundException(
+                                string.Format(CultureInfo.CurrentUICulture,
+                                    RMResources.ExceptionMessage,
+                                    errorMessage),
+                                responseHeaders,
+                                physicalAddress);
+                            break;
+                        }
                         else
                         {
                             // Have the request URL in the exception message for debugging purposes.
