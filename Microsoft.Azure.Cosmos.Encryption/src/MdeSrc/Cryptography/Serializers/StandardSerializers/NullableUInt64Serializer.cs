@@ -12,7 +12,6 @@ namespace Microsoft.Data.Encryption.Cryptography.Serializers
     /// <summary>
     /// Contains the methods for serializing and deserializing <see cref="ulong"/>? type data objects.
     /// </summary>
-    [CLSCompliant(false)]
     internal class NullableUInt64Serializer : Serializer<ulong?>
     {
         private static readonly UInt64Serializer serializer = new UInt64Serializer();
