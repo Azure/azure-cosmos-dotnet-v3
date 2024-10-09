@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Initializes a new instance of the <see cref="TransactionalBatchOperationResult{T}"/> class.
         /// </summary>
-        /// <param name="result">BatchOperationResult with stream resource.</param>
         /// <param name="resource">Deserialized resource.</param>
         internal EncryptionTransactionalBatchOperationResult(T resource)
         {
