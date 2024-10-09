@@ -6,11 +6,11 @@ When the cross region hedging strategy is enabled, the SDK will send the first r
 
 The `AvailabilityStrategy` operates on the `RequestInvokerHandler` level meaning that each hedged request will go through its own [handler pipeline](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/docs/SdkDesign.md#handler-pipeline), including the `ClientRetryPolicy`. This means that the hedged requests will be retried independently of each other. Note that the hedged requests are restricted to the region they are sent out in so no cross region retries will be made, only local retries. The primary request however, will behave as a normal request.
 
-The example below will create a `CosmosClient` instance with `AvailabilityStrategy` enabled with a 1500ms threshold. This means that if a request takes longer than 1500ms the SDK will send a new request to the backend in order of the Preferred Regions List. If the `ApplicationRegion` or `ApplicationPreferredRegions` list is not set, then an `AvailabilityStrategy` will not be able to applied. Parallel requests to the remaining regions will be sent at 1000ms intervals defined by the `thresholdStep` parameter until a final response is found or all regions are exhausted. The SDK will then return the first *final* response that comes back from the backend, if there are no final responses, the SDK will return the last result it received. The `threshold` parameter is a required parameter and can be set to any value greater than 0. There is also an option to add the `AvailabilityStrategy` at request level, overriding the client level `AvailabilityStrategy`, by setting an `AvailabilityStrategy` in the `RequestOptions` object.
-
 ## APIs
 
 ### Enable `AvailabilityStrategy` at client level
+
+The example below will create a `CosmosClient` instance with `AvailabilityStrategy` enabled with a 1.5 seconds threshold. This means that if a request takes longer than 1.5 seconds the SDK will send a new request to the backend in order of the Preferred Regions List. If the `ApplicationRegion` or `ApplicationPreferredRegions` list is not set, then an `AvailabilityStrategy` will not be able to applied. Parallel requests to the remaining regions will be sent at 1 second intervals defined by the `thresholdStep` parameter until a final response is found or all regions are exhausted. The SDK will then return the first *final* response that comes back from the backend, if there are no final responses, the SDK will return the last result it received. The `threshold` parameter is a required parameter and can be set to any value greater than 0. There is also an option to add the `AvailabilityStrategy` at request level, overriding the client level `AvailabilityStrategy`, by setting an `AvailabilityStrategy` in the `RequestOptions` object.
 
 When Building a new `CosmosClient` there will be an option to include a Cross Region Hedging Availability Strategy in that client.
 
@@ -20,8 +20,8 @@ CosmosClient client = new CosmosClientBuilder("connection string")
         new List<string> { "East US", "Central US", "West US" } )
     .WithAvailabilityStrategy(
         AvailabilityStrategy.CrossRegionHedgingStrategy(
-        threshold: TimeSpan.FromSeconds(1.5),
-        thresholdStep: TimeSpan.FromMilliseconds(1000)
+            threshold: TimeSpan.FromSeconds(1.5),
+            thresholdStep: TimeSpan.FromSeconds(1)
      ))
     .Build();
 ```
@@ -33,8 +33,8 @@ CosmosClientOptions options = new CosmosClientOptions()
 {
     AvailabilityStrategy
      = AvailabilityStrategy.CrossRegionHedgingStrategy(
-        threshold: TimeSpan.FromMilliseconds(1500),
-        thresholdStep: TimeSpan.FromMilliseconds(1000)
+        threshold: TimeSpan.FromSeconds(1.5),
+        thresholdStep: TimeSpan.FromSeconds(1)
      ),
       ApplicationPreferredRegions = new List<string>() { "East US", "West US", "Central US"},
 };
@@ -54,8 +54,8 @@ CosmosClient client = new CosmosClient(
 ItemRequestOptions requestOptions = new ItemRequestOptions()
 {
     AvailabilityStrategyOptions = AvailabilityStrategy.CrossRegionHedgingStrategy(
-        threshold: TimeSpan.FromMilliseconds(1000),
-        thresholdStep: TimeSpan.FromMilliseconds(500)
+        threshold: TimeSpan.FromSeconds(1),
+        thresholdStep: TimeSpan.FromSeconds(.5)
      ))
 };
 ```
