@@ -40,5 +40,54 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string UserAgent = "db.cosmosdb.user_agent";
 
+        /// <summary>
+        /// Represents the machine ID for Cosmos DB.
+        /// </summary>
+        public const string MachineId = "db.cosmosdb.machine_id";
+
+        /// <summary>
+        /// Represents the type of operation for Cosmos DB.
+        /// </summary>
+        public const string OperationType = "db.cosmosdb.operation_type";
+
+        /// <summary>
+        /// Represents the sub-status code of the response.
+        /// </summary>
+        public const string SubStatusCode = "db.cosmosdb.sub_status_code";
+
+        /// <summary>
+        /// Represents the content length of the response.
+        /// </summary>
+        public const string ResponseContentLength = "db.cosmosdb.response_content_length_bytes";
+
+        /// <summary>
+        /// Represents the client ID for Cosmos DB.
+        /// </summary>
+        public const string ClientId = "db.cosmosdb.client_id";
+
+        /// <summary>
+        /// Represents the request charge for the operation.
+        /// </summary>
+        public const string RequestCharge = "db.cosmosdb.request_charge";
+
+        /// <summary>
+        /// Represents the activity ID for the operation.
+        /// </summary>
+        public const string ActivityId = "db.cosmosdb.activity_id";
+
+        /// <summary>
+        /// Represents the connection mode for Cosmos DB.
+        /// </summary>
+        public const string ConnectionMode = "db.cosmosdb.connection_mode";
+
+        /// <summary>
+        /// Represents the regions contacted for the operation.
+        /// </summary>
+        public const string Region = "db.cosmosdb.regions_contacted";
+
+        /// <summary>
+        /// Represents the item count in the operation.
+        /// </summary>
+        public const string ItemCount = "db.cosmosdb.item_count";
     }
 }
