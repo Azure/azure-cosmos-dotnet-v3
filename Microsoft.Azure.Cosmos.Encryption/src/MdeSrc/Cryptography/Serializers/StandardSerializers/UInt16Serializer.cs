@@ -14,7 +14,6 @@ namespace Microsoft.Data.Encryption.Cryptography.Serializers
     /// <summary>
     /// Contains the methods for serializing and deserializing <see cref="ushort"/> type data objects.
     /// </summary>
-    [CLSCompliant(false)]
     internal class UInt16Serializer : Serializer<ushort>
     {
         /// <summary>

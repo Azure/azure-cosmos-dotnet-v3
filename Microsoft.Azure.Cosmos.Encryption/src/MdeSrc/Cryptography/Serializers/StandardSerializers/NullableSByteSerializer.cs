@@ -12,7 +12,6 @@ namespace Microsoft.Data.Encryption.Cryptography.Serializers
     /// <summary>
     /// Contains the methods for serializing and deserializing <see cref="sbyte"/>? type data objects.
     /// </summary>
-    [CLSCompliant(false)]
     internal class NullableSByteSerializer : Serializer<sbyte?>
     {
         private static readonly SByteSerializer serializer = new SByteSerializer();

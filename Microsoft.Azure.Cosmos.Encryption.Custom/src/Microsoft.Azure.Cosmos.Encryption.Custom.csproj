@@ -16,6 +16,8 @@
     <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
   </PropertyGroup>
   <ItemGroup>
@@ -38,6 +40,7 @@
      <PackageReference Include="Azure.Core" Version="1.38.0" />
      <PackageReference Include="Azure.Identity" Version="1.11.4" />
      <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="2.0.0-pre007" />
+     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
 
