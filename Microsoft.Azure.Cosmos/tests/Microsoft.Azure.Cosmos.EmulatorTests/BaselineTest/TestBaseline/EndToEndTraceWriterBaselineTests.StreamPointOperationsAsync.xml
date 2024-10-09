@@ -122,6 +122,7 @@
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.consistency_level">Session</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
@@ -244,6 +245,7 @@
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.consistency_level">Session</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
@@ -374,6 +376,7 @@
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.consistency_level">Session</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
@@ -498,6 +501,7 @@
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.consistency_level">Session</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />

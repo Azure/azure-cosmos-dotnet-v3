@@ -47,8 +47,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static readonly List<string> TagsToSkip = new List<string>
         {
-             "db.cosmosdb.request.content_length",
-             "db.cosmosdb.response.content_length"
+             "db.request.content_length",
+             "db.response.content_length"
         };
 
         private ConcurrentBag<IDisposable> subscriptions = new();
