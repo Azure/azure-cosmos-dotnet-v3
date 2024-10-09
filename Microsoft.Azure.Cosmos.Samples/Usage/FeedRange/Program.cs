@@ -62,17 +62,51 @@
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
 
             try 
-            {    
+            {
+                // Given a container with a partition key exists, when two feed ranges are 
+                // compared, where one covers the full range and the other covers a subset up to a 
+                // specific value, then the second range should be part of the first.
                 await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
                     database: database,
                     x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"FFFFFFFFFFFFFFFF\"}}"),
                     y: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"3FFFFFFFFFFFFFFF\"}}"),
                     expectedResult: true).ConfigureAwait(false);
 
+                // Given a container with a partition key exists, when two feed ranges are 
+                // compared, with one having a range from the minimum to a specific value and the other 
+                // having a range between two specific values, then the feed ranges should not overlap.
                 await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
                     database: database,
                     x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"3FFFFFFFFFFFFFFF\",\"max\":\"7FFFFFFFFFFFFFFF\"}}"),
                     y: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"3FFFFFFFFFFFFFFF\"}}"),
+                    expectedResult: false).ConfigureAwait(false);
+
+                // Given a container with a partition key exists, when a feed range and 
+                // a partition key-based feed range are compared, then the partition key feed range 
+                // should be part of the specified range.
+                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
+                    database: database,
+                    x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"FFFFFFFFFFFFFFFF\"}}"),
+                    y: FeedRange.FromPartitionKey(
+                        new PartitionKeyBuilder()
+                            .Add("WA")
+                            .Add(Guid.NewGuid().ToString())
+                            .Build()
+                    ),
+                    expectedResult: true).ConfigureAwait(false);
+
+                // Given a container with a partition key exists, when a partition key-based feed range 
+                // and a feed range are compared, then the partition key feed range 
+                // should not be part of the specified range.
+                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
+                    database: database,
+                    x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"3FFFFFFFFFFFFFFF\",\"max\":\"7FFFFFFFFFFFFFFF\"}}"),
+                    y: FeedRange.FromPartitionKey(
+                        new PartitionKeyBuilder()
+                            .Add("WA")
+                            .Add(Guid.NewGuid().ToString())
+                            .Build()
+                    ),
                     expectedResult: false).ConfigureAwait(false);
             }
             catch (Exception exception) 
