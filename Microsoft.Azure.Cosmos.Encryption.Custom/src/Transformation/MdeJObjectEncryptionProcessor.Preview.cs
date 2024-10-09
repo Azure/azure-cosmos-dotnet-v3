@@ -96,11 +96,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
-    JObject document,
-    Encryptor encryptor,
-    EncryptionProperties encryptionProperties,
-    CosmosDiagnosticsContext diagnosticsContext,
-    CancellationToken cancellationToken)
+            JObject document,
+            Encryptor encryptor,
+            EncryptionProperties encryptionProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
         {
             _ = diagnosticsContext;
 

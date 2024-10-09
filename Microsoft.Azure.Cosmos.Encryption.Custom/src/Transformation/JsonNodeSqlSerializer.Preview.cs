@@ -88,6 +88,40 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 return (buffer, length);
             }
         }
+
+        internal virtual void DeserializeAndAddProperty(
+            TypeMarker typeMarker,
+            ReadOnlySpan<byte> serializedBytes,
+            JsonNode jsonNode,
+            string key,
+            ArrayPoolManager<char> arrayPoolManager)
+        {
+            switch (typeMarker)
+            {
+                case TypeMarker.Boolean:
+                    jsonNode[key] = SqlBoolSerializer.Deserialize(serializedBytes);
+                    break;
+                case TypeMarker.Double:
+                    jsonNode[key] = SqlDoubleSerializer.Deserialize(serializedBytes);
+                    break;
+                case TypeMarker.Long:
+                    jsonNode[key] = SqlLongSerializer.Deserialize(serializedBytes);
+                    break;
+                case TypeMarker.String:
+                    jsonNode[key] = SqlVarCharSerializer.Deserialize(serializedBytes);
+                    break;
+                case TypeMarker.Array:
+                    jsonNode[key] = JsonNode.Parse(serializedBytes);
+                    break;
+                case TypeMarker.Object:
+                    jsonNode[key] = JsonNode.Parse(serializedBytes);
+                    break;
+                default:
+                    Debug.Fail($"Unexpected type marker {typeMarker}");
+                    break;
+            }
+        }
+
     }
 }
 #endif

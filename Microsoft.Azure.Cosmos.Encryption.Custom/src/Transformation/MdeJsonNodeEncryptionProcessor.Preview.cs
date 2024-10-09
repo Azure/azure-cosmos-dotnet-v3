@@ -6,13 +6,16 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text.Json;
     using System.Text.Json.Nodes;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation.SystemTextJson;
+    using Newtonsoft.Json.Linq;
 
     internal class MdeJsonNodeEncryptionProcessor
     {
@@ -108,6 +111,72 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             ms.Position = 0;
             return ms;
+        }
+
+        internal async Task<DecryptionContext> DecryptObjectAsync(
+            JsonNode document,
+            Encryptor encryptor,
+            EncryptionProperties encryptionProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            _ = diagnosticsContext;
+
+            if (encryptionProperties.EncryptionFormatVersion != 3)
+            {
+                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+            }
+
+            using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager<char> charPoolManager = new ();
+
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
+
+            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
+
+            JsonObject itemObj = document.AsObject();
+
+            foreach (string path in encryptionProperties.EncryptedPaths)
+            {
+#if NET8_0_OR_GREATER
+                string propertyName = path[1..];
+#else
+                string propertyName = path.Substring(1);
+#endif
+
+                if (!itemObj.TryGetPropertyValue(propertyName, out JsonNode propertyValue))
+                {
+                    // malformed document, such record shouldn't be there at all
+                    continue;
+                }
+
+                //TODO: figure out if we can get char span out from JsonNode
+                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(propertyValue.)
+
+                byte[] cipherTextWithTypeMarker = Convert.FromBase64String.TryFromBase64StringBase64Encoder propertyValue.propertyValue.ToObject<byte[]>();
+                if (cipherTextWithTypeMarker == null)
+                {
+                    continue;
+                }
+
+                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
+
+                this.Serializer.DeserializeAndAddProperty(
+                    (TypeMarker)cipherTextWithTypeMarker[0],
+                    plainText.AsSpan(0, decryptedCount),
+                    document,
+                    propertyName,
+                    charPoolManager);
+
+                pathsDecrypted.Add(path);
+            }
+
+            DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
+                pathsDecrypted,
+                encryptionProperties.DataEncryptionKeyId);
+
+            document.Remove(Constants.EncryptedInfo);
+            return decryptionContext;
         }
     }
 }
