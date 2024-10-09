@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             T item,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (!(requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 this.transactionalBatch = this.transactionalBatch.CreateItem(
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             T item,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (!(requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 this.transactionalBatch = this.transactionalBatch.ReplaceItem(
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             T item,
             TransactionalBatchItemRequestOptions requestOptions = null)
         {
-            if (!(requestOptions is EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions) ||
+            if (requestOptions is not EncryptionTransactionalBatchItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
             {
                 this.transactionalBatch = this.transactionalBatch.UpsertItem(
@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CosmosDiagnosticsContext diagnosticsContext,
             CancellationToken cancellationToken)
         {
-            List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new List<TransactionalBatchOperationResult>();
+            List<TransactionalBatchOperationResult> decryptedTransactionalBatchOperationResults = new ();
 
             foreach (TransactionalBatchOperationResult result in response)
             {
