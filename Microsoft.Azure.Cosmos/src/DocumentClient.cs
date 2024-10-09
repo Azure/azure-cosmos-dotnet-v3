@@ -1549,6 +1549,15 @@ namespace Microsoft.Azure.Cosmos
             return builder.ToString();
         }
 
+        internal async Task InitilizeFaultInjectionAsync()
+        {
+            if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
+            {
+                this.isChaosInterceptorInititalized = true;
+                await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
+            }
+        }
+
         internal RntbdConnectionConfig RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
             return new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
@@ -1594,11 +1603,11 @@ namespace Microsoft.Azure.Cosmos
                     throw;
                 }
 
-                if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
-                {
-                    this.isChaosInterceptorInititalized = true;
-                    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
-                }
+                //if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
+                //{
+                //    this.isChaosInterceptorInititalized = true;
+                //    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
+                //}
             }
         }
 

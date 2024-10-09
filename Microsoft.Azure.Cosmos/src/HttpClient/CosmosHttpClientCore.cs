@@ -355,17 +355,23 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
+                            CancellationToken fiToken = cancellationTokenSource.Token;
                             //Set a request fault injeciton id for rule limit tracking
-                            if (documentServiceRequest.Headers.Get(CosmosHttpClientCore.FautInjecitonId).IsNull())
+                            if (string.IsNullOrEmpty(documentServiceRequest.Headers.Get(CosmosHttpClientCore.FautInjecitonId)))
                             {
                                 documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
                             }
                             await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
 
-                            (bool hasFault, HttpResponseMessage fiResponseMessage) = 
-                                await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+                            fiToken.ThrowIfCancellationRequested();
+                            
+                            (bool hasFault,
+                                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+
+                            fiToken.ThrowIfCancellationRequested();
                             if (hasFault)
                             {
+                                fiResponseMessage.RequestMessage = requestMessage;
                                 return fiResponseMessage;
                             }
                         }
@@ -377,6 +383,8 @@ namespace Microsoft.Azure.Cosmos
 
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
+                            CancellationToken fiToken = cancellationTokenSource.Token;
+                            fiToken.ThrowIfCancellationRequested();
                             await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest);
                         }
 

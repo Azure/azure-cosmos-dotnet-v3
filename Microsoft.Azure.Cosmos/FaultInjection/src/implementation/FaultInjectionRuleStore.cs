@@ -50,14 +50,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             IRoutingMapProvider routingMapProvider,
             FaultInjectionApplicationContext applicationContext)
         {
-            this.ruleProcessor = new FaultInjectionRuleProcessor(
-                connectionMode: connectionMode,
-                collectionCache: collectionCache,
-                globalEndpointManager: globalEndpointManager,
-                addressResolver: addressResolver,
-                retryPolicy: retryPolicy,
-                routingMapProvider: routingMapProvider,
-                applicationContext: applicationContext);
+            this.ruleProcessor = connectionMode == ConnectionMode.Direct
+                ? new FaultInjectionRuleProcessor(
+                    connectionMode: connectionMode,
+                    collectionCache: collectionCache,
+                    globalEndpointManager: globalEndpointManager,
+                    addressResolver: addressResolver,
+                    retryPolicy: retryPolicy,
+                    routingMapProvider: routingMapProvider,
+                    applicationContext: applicationContext)
+                : new FaultInjectionRuleProcessor(
+                    connectionMode: connectionMode,
+                    collectionCache: collectionCache,
+                    globalEndpointManager: globalEndpointManager,
+                    retryPolicy: retryPolicy,
+                    routingMapProvider: routingMapProvider,
+                    applicationContext: applicationContext);
         }
 
         public async Task<IFaultInjectionRuleInternal> ConfigureFaultInjectionRuleAsync(FaultInjectionRule rule)

@@ -55,6 +55,20 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
+        public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds)
+        {
+            if (partitionKeyRangeIds != null && partitionKeyRangeIds.Count() > 0)
+            {
+                this.validators.Add(new PartitionKeyRangeIdValidator(partitionKeyRangeIds));
+            }
+        }
+
+
+        public void SetResourceType(ResourceType resourceType)
+        {
+            this.validators.Add(new ResourceTypeValidator(resourceType));
+        }
+
         public string GetContainerResourceId()
         {
             return this.containerResourceId;
@@ -266,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
                 //Address validator not relevant for gateway calls as gw routes to specific partitions
-                return false;
+                return true;
             }
 
             //Used for Connection Delay
@@ -275,6 +289,53 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 bool isApplicable = this.addresses.Exists(uri => callUri.AbsoluteUri.StartsWith(uri.AbsoluteUri));
 
                 return isApplicable;
+            }
+        }
+
+        private class PartitionKeyRangeIdValidator : IFaultInjectionConditionValidator
+        {
+            private readonly IEnumerable<string> pkRangeIds;
+
+            public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds)
+            {
+                this.pkRangeIds = pkRangeIds;
+            }
+
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
+            {
+                //not needed for direct calls 
+                throw new NotImplementedException();
+            }
+
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                PartitionKeyRange pkRange = request.RequestContext.ResolvedPartitionKeyRange;
+
+                return this.pkRangeIds.Contains(pkRange.Id);
+            }
+        }
+
+        private class ResourceTypeValidator : IFaultInjectionConditionValidator
+        {
+            private readonly ResourceType resourceType;
+
+            public ResourceTypeValidator(ResourceType resourceType)
+            {
+                this.resourceType = resourceType;
+            }
+
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
+            {
+                return this.resourceType == args.ResourceType;
+            }
+
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                return this.resourceType == request.ResourceType;
             }
         }
     }

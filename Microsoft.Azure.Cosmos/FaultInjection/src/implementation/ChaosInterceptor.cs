@@ -292,18 +292,18 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public async Task OnAfterHttpSendAsync(DocumentServiceRequest request)
         {
-            FaultInjectionServerErrorRule? serverSendDelayRule = this.ruleStore?.FindHttpServerResponseDelayRule(request);
+            FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore?.FindHttpServerResponseDelayRule(request);
 
-            if (serverSendDelayRule != null)
+            if (serverResponseDelayRule != null)
             {
                 this.applicationContext.AddRuleExecution(
-                    serverSendDelayRule.GetId(),
+                    serverResponseDelayRule.GetId(),
                     new Guid(request.Headers.Get(ChaosInterceptor.FautInjecitonId)));
-                TimeSpan delay = serverSendDelayRule.GetDelay();
+                TimeSpan delay = serverResponseDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation(
                     "FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request with fault injection id {2}",
-                    serverSendDelayRule.GetId(),
+                    serverResponseDelayRule.GetId(),
                     delay,
                     request.Headers.Get(ChaosInterceptor.FautInjecitonId));
 

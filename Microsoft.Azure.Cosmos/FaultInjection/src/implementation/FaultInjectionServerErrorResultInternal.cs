@@ -283,6 +283,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             HttpResponseMessage httpResponse;
             //Global or Local lsn?
             string lsn = dsr.RequestContext.QuorumSelectedLSN.ToString(CultureInfo.InvariantCulture);
+            INameValueCollection headers = dsr.Headers;
 
             switch (this.serverErrorType)
             {
@@ -296,9 +297,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                             Encoding.UTF8.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(
@@ -317,9 +318,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: TooManyRequests, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMilliseconds(500));
@@ -340,9 +342,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
@@ -359,9 +361,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
@@ -379,9 +381,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(
@@ -402,9 +404,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: PartitionIsMigrating, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(
@@ -424,9 +426,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: PartitionIsSplitting, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(
@@ -446,9 +448,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 Encoding.UTF8.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))),
                     };
 
-                    foreach (KeyValuePair<string, string> header in dsr.Headers)
+                    foreach (string header in headers.AllKeys())
                     {
-                        httpResponse.Headers.Add(header.Key, header.Value);
+                        httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
