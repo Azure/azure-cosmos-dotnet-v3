@@ -7089,20 +7089,10 @@
           "Attributes": [],
           "MethodInfo": "System.String FranceSouth;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String GermanyCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String GermanyCentral;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String GermanyNorth": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String GermanyNorth;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String GermanyNortheast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String GermanyNortheast;IsInitOnly:False;IsStatic:True;"
         },
         "System.String GermanyWestCentral": {
           "Type": "Field",
