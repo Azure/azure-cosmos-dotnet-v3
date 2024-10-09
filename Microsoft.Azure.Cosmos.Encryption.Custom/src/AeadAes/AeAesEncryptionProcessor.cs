@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
+#pragma warning disable IDE0057 // Use range operator
+#pragma warning disable VSTHRD103 // Call async methods when in an async method
     internal static class AeAesEncryptionProcessor
     {
         public static async Task<Stream> EncryptAsync(
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     encryptionOptions.PathsToEncrypt);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
+
             input.Dispose();
             return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
         }
@@ -113,4 +116,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return decryptionContext;
         }
     }
+
+#pragma warning restore IDE0057 // Use range operator
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
 }

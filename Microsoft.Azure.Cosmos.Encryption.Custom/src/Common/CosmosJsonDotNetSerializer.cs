@@ -40,10 +40,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(stream);
+#else
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+#endif
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
