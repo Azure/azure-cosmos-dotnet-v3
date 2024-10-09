@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Serializer
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -20,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// <summary>
         /// The inner stream being wrapped.
         /// </summary>
-        private readonly Stream innerStream;
+        private readonly CloneableStream innerStream;
 
         /// <summary>
         /// Indicates whether the inner stream should be disposed.
@@ -43,13 +42,9 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// <param name="inputStream">The input stream to wrap.</param>
         /// <param name="shouldDisposeInnerStream">Indicates whether the inner stream should be disposed.</param>
         public CosmosBufferedStreamWrapper(
-            Stream inputStream,
+            CloneableStream inputStream,
             bool shouldDisposeInnerStream)
         {
-            Debug.Assert(
-                inputStream is CloneableStream || inputStream is MemoryStream,
-                "The inner stream is neither a memory stream nor a cloneable stream.");
-
             this.innerStream = inputStream ?? throw new ArgumentNullException(nameof(inputStream));
             this.shouldDisposeInnerStream = shouldDisposeInnerStream;
         }
@@ -99,33 +94,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (offset < 0
-                || count < 0
-                || (buffer.Length - offset) < count
-                || this.innerStream.Position == this.innerStream.Length)
-            {
-                return 0;
-            }
-
-            int bytesRead = 0;
-            if (this.hasReadFirstByte
-                && this.innerStream.Position == 1
-                && offset == 0
-                && count > 0)
-            {
-                buffer[0] = this.firstByteBuffer[0];
-                bytesRead = 1;
-                offset++;
-                count--;
-            }
-
-            if (count > 0)
-            {
-                int innerBytesRead = this.innerStream.Read(buffer, offset, count);
-                bytesRead += innerBytesRead;
-            }
-
-            return bytesRead;
+            return this.innerStream.Read(buffer, offset, count);
         }
 
         /// <inheritdoc />
@@ -146,10 +115,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 }
                 else
                 {
-                    if (this.innerStream.CanSeek)
-                    {
-                        this.innerStream.Position = 0;
-                    }
+                    this.ResetStreamPosition();
                 }
             }
 
@@ -173,12 +139,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 totalBytes += count;
             }
 
-            if (this.hasReadFirstByte)
-            {
-                bytes[0] = this.firstByteBuffer[0];
-                totalBytes += 1;
-            }
-
             return totalBytes > 0 ? bytes : default;
         }
 
@@ -199,12 +159,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 totalBytes += count;
             }
 
-            if (this.hasReadFirstByte)
-            {
-                bytes[0] = this.firstByteBuffer[0];
-                totalBytes += 1;
-            }
-
             return totalBytes > 0 ? bytes : default;
         }
 
@@ -216,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// </returns>
         public JsonSerializationFormat GetJsonSerializationFormat()
         {
-            this.ReadFirstByte();
+            this.ReadFirstByteAndResetStream();
             if (this.firstByteBuffer[0] == (byte)JsonSerializationFormat.Binary)
             {
                 return JsonSerializationFormat.Binary;
@@ -230,17 +184,29 @@ namespace Microsoft.Azure.Cosmos.Serializer
         }
 
         /// <summary>
-        /// Reads the first byte from the inner stream and stores it in the buffer.
+        /// Reads the first byte from the inner stream and stores it in the buffer. It also resets the stream position to zero.
         /// </summary>
         /// <remarks>
         /// This method sets the <see cref="hasReadFirstByte"/> flag to true if the first byte is successfully read.
         /// </remarks>
-        private void ReadFirstByte()
+        private void ReadFirstByteAndResetStream()
         {
             if (!this.hasReadFirstByte
                 && this.innerStream.Read(this.firstByteBuffer, 0, 1) > 0)
             {
                 this.hasReadFirstByte = true;
+                this.ResetStreamPosition();
+            }
+        }
+
+        /// <summary>
+        /// Resets the inner stream position to zero.
+        /// </summary>
+        private void ResetStreamPosition()
+        {
+            if (this.innerStream.CanSeek)
+            {
+                this.innerStream.Position = 0;
             }
         }
     }

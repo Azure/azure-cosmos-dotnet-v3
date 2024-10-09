@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Serialization;
 
     internal static class CosmosSerializationUtil
@@ -45,10 +46,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="inputStream">The input stream containing the data to be serialized.</param>
         /// <returns>Returns true if the input stream is successfully serialized to the target format, otherwise false.</returns>
         internal static async Task<Stream> TrySerializeStreamToTargetFormatAsync(
-            JsonSerializationFormat? targetSerializationFormat,
-            Stream inputStream)
+            JsonSerializationFormat targetSerializationFormat,
+            CloneableStream inputStream)
         {
-            if (targetSerializationFormat == null || inputStream == null)
+            if (inputStream == null)
             {
                 return null;
             }
@@ -68,12 +69,12 @@ namespace Microsoft.Azure.Cosmos
                     {
                         return CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(
                             targetContent,
-                            targetSerializationFormat.Value);
+                            targetSerializationFormat);
                     }
                 }
             }
 
-            return null;
+            return inputStream;
         }
 
         /// <summary>

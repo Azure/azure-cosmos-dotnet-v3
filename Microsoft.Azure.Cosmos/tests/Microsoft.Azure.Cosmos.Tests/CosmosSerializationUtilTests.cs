@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -114,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 : CosmosSerializerUtils.ConvertInputToBinaryStream(json, Newtonsoft.Json.JsonSerializer.Create());
 
             // Act
-            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, inputStream);
+            CloneableStream cloneableStream = await StreamExtension.AsClonableStreamAsync(inputStream);
+            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, cloneableStream);
 
             // Assert
             Assert.IsNotNull(outputStream);
@@ -132,7 +134,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             JsonSerializationFormat targetFormat = JsonSerializationFormat.Text;
 
             // Act
-            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, inputStream);
+            CloneableStream cloneableStream = await StreamExtension.AsClonableStreamAsync(inputStream);
+            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, cloneableStream);
 
             // Assert
             Assert.IsNull(outputStream);

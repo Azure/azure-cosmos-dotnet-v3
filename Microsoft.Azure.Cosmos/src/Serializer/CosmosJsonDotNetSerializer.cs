@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Text;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Serialization;
 
@@ -88,7 +89,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The object representing the deserialized stream</returns>
         public override T FromStream<T>(Stream stream)
         {
-            using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: true))
+            using (stream)
             {
                 if (typeof(Stream).IsAssignableFrom(typeof(T)))
                 {
@@ -97,25 +98,29 @@ namespace Microsoft.Azure.Cosmos
 
                 JsonSerializer jsonSerializer = this.GetSerializer();
 
-                if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
+                if (stream is CloneableStream cloneableStream)
                 {
-                    byte[] content = bufferedStream.ReadAll();
-
-                    using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
-                        jsonReader: Json.JsonReader.Create(
-                            jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
-                            buffer: content));
-
-                    return jsonSerializer.Deserialize<T>(reader);
-                }
-                else
-                {
-                    using (StreamReader sr = new (bufferedStream))
+                    using (CosmosBufferedStreamWrapper bufferedStream = new (cloneableStream, shouldDisposeInnerStream: false))
                     {
-                        using (JsonTextReader jsonTextReader = new (sr))
+                        if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
                         {
-                            return jsonSerializer.Deserialize<T>(jsonTextReader);
+                            byte[] content = bufferedStream.ReadAll();
+
+                            using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
+                                jsonReader: Json.JsonReader.Create(
+                                    jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
+                                    buffer: content));
+
+                            return jsonSerializer.Deserialize<T>(reader);
                         }
+                    }
+                }
+
+                using (StreamReader sr = new (stream))
+                {
+                    using (JsonTextReader jsonTextReader = new (sr))
+                    {
+                        return jsonSerializer.Deserialize<T>(jsonTextReader);
                     }
                 }
             }

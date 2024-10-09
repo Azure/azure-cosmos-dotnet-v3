@@ -907,7 +907,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             ItemRequestOptions requestOptions,
             ITrace trace,
-            JsonSerializationFormat? targetResponseSerializationFormat,
+            JsonSerializationFormat targetResponseSerializationFormat,
             CancellationToken cancellationToken)
         {
             if (trace == null)
@@ -924,14 +924,9 @@ namespace Microsoft.Azure.Cosmos
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             // Convert Text to Binary Stream.
-            Stream convertedStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(
+            streamPayload = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(
                 targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
-                inputStream: streamPayload);
-
-            if (convertedStream != null)
-            {
-                streamPayload = convertedStream;
-            }
+                inputStream: streamPayload == null ? null : await StreamExtension.AsClonableStreamAsync(streamPayload));
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -947,16 +942,12 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Convert Binary Stream to Text.
-            if (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
+            if ((requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
+                && responseMessage?.Content is CloneableStream outputCloneableStream)
             {
-                Stream outputResponseStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(
+                responseMessage.Content = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(
                     targetSerializationFormat: targetResponseSerializationFormat,
-                    inputStream: responseMessage?.Content);
-
-                if (outputResponseStream != null)
-                {
-                    responseMessage.Content = outputResponseStream;
-                }
+                    inputStream: outputCloneableStream);
             }
 
             return responseMessage;
