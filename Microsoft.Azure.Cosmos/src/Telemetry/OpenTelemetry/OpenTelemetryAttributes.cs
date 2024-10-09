@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength;
-            this.ConsistencyLevel = requestMessage.Headers?.ConsistencyLevel;
+            this.ConsistencyLevel = requestMessage?.Headers?.ConsistencyLevel;
 
             if (requestMessage != null)
             {
