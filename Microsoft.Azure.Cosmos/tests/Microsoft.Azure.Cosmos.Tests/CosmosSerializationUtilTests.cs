@@ -138,7 +138,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, cloneableStream);
 
             // Assert
-            Assert.IsNull(outputStream);
+            Assert.IsNotNull(outputStream);
+            Assert.AreEqual(cloneableStream, outputStream);
         }
     }
 }
