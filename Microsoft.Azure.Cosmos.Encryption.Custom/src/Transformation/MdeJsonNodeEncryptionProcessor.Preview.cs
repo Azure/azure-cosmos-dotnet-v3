@@ -10,12 +10,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Nodes;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation.SystemTextJson;
-    using Newtonsoft.Json.Linq;
 
     internal class MdeJsonNodeEncryptionProcessor
     {
@@ -23,15 +22,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
-        internal JsonSerializerOptions JsonSerializerOptions { get; set; }
-
         private JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
-
-        public MdeJsonNodeEncryptionProcessor()
-        {
-            this.JsonSerializerOptions = new JsonSerializerOptions();
-            this.JsonSerializerOptions.Converters.Add(new JsonBytesConverter());
-        }
 
         public async Task<Stream> EncryptAsync(
             Stream input,
@@ -64,11 +55,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
-#if NET8_0_OR_GREATER
                 string propertyName = pathToEncrypt[1..];
-#else
-                string propertyName = pathToEncrypt.Substring(1);
-#endif
                 if (!itemObj.TryGetPropertyValue(propertyName, out JsonNode propertyValue))
                 {
                     continue;
@@ -89,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
 
-                itemObj[propertyName] = JsonValue.Create(new JsonBytes(encryptedBytes, 0, encryptedBytesCount));
+                itemObj[propertyName] = JsonValue.Create(new Memory<byte>(encryptedBytes, 0, encryptedBytesCount));
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
@@ -107,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             MemoryStream ms = new ();
             Utf8JsonWriter writer = new (ms, this.jsonWriterOptions);
 
-            JsonSerializer.Serialize(writer, document, this.JsonSerializerOptions);
+            JsonSerializer.Serialize(writer, document);
 
             ms.Position = 0;
             return ms;
@@ -138,11 +125,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
-#if NET8_0_OR_GREATER
                 string propertyName = path[1..];
-#else
-                string propertyName = path.Substring(1);
-#endif
 
                 if (!itemObj.TryGetPropertyValue(propertyName, out JsonNode propertyValue))
                 {
@@ -150,10 +133,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                //TODO: figure out if we can get char span out from JsonNode
-                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(propertyValue.)
-
-                byte[] cipherTextWithTypeMarker = Convert.FromBase64String.TryFromBase64StringBase64Encoder propertyValue.propertyValue.ToObject<byte[]>();
+                // can we get to internal JsonNode buffers to avoid string allocation here?
+                byte[] cipherTextWithTypeMarker = Convert.FromBase64String(propertyValue.GetValue<string>());
                 if (cipherTextWithTypeMarker == null)
                 {
                     continue;
@@ -175,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsDecrypted,
                 encryptionProperties.DataEncryptionKeyId);
 
-            document.Remove(Constants.EncryptedInfo);
+            itemObj.Remove(Constants.EncryptedInfo);
             return decryptionContext;
         }
     }

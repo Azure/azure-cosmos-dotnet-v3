@@ -74,6 +74,7 @@
                 new MemoryStream(this.encryptedData!),
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
+                this.JsonProcessor,
                 CancellationToken.None);
         }
 
