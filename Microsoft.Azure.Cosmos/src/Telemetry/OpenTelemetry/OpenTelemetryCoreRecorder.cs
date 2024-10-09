@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private const string CosmosDb = "cosmosdb";
 
+        private static readonly string otelStabilityMode = Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN");
+
         private readonly DiagnosticScope scope = default;
         private readonly CosmosThresholdOptions config = null;
         private readonly Activity activity = null;
@@ -150,7 +152,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                if (String.IsNullOrEmpty(Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN")))
+                if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
+                   
+                }
+                else
                 {
                     // Classic Appinsights Support
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
@@ -158,14 +169,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, clientContext.UserAgent);
-                }
-                else
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
                 }
 
                 // Other information
@@ -258,13 +261,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
 
-                    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN")))
+                    if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
                     {
-                        this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
                     }
                     else
                     {
-                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                        this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
                     }
 
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
