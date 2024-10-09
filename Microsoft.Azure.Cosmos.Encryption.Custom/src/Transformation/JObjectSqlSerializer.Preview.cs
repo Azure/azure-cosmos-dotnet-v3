@@ -49,10 +49,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     (buffer, length) = SerializeString(propertyValue.ToObject<string>());
                     return (TypeMarker.String, buffer, length);
                 case JTokenType.Array:
-                    (buffer, length) = SerializeString(propertyValue.ToString());
+                    (buffer, length) = SerializeString(propertyValue.ToString(Formatting.None));
                     return (TypeMarker.Array, buffer, length);
                 case JTokenType.Object:
-                    (buffer, length) = SerializeString(propertyValue.ToString());
+                    (buffer, length) = SerializeString(propertyValue.ToString(Formatting.None));
                     return (TypeMarker.Object, buffer, length);
                 default:
                     throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}");
