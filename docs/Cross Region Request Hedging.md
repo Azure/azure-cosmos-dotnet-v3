@@ -20,7 +20,7 @@ CosmosClient client = new CosmosClientBuilder("connection string")
         new List<string> { "East US", "Central US", "West US" } )
     .WithAvailabilityStrategy(
         AvailabilityStrategy.CrossRegionHedgingStrategy(
-        threshold: TimeSpan.FromMilliseconds(1500),
+        threshold: TimeSpan.FromSeconds(1.5),
         thresholdStep: TimeSpan.FromMilliseconds(1000)
      ))
     .Build();
