@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             CosmosObject item = CosmosObject.Parse("{\"pk\" : 42 }");
             Record record = await documentContainer.CreateItemAsync(item, cancellationToken: default);
             Assert.IsNotNull(record);
-            Assert.AreNotEqual(Guid.Empty.ToString(), record.Identifier);
+            Assert.AreNotEqual(Guid.Empty, record.Identifier);
 
             // Try to read it back
             Record readRecord = await documentContainer.ReadItemAsync(
