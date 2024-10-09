@@ -92,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             return this.coreDiagnostics.GetStartTimeUtc();
         }
+
         public override int GetFailedRequestCount()
         {
             return this.coreDiagnostics.GetFailedRequestCount();
