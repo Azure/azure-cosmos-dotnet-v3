@@ -152,11 +152,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-                
+
+                //TODO: Needs to rewrite
+                // Classic Appinsights Support
+                this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
+                this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbName, databaseName);
+                this.scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
+
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+
+                //TODO: Needs to rewrite
+                // Classic Appinsights Support
+                this.scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+                this.scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, clientContext.UserAgent);
 
                 // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
@@ -244,6 +255,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+
+                    //TODO: Needs to rewrite
+                    // Classic Appinsights Support
+                    this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
+
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)this.response.RequestCharge);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
