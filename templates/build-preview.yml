@@ -22,7 +22,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos PREVIEW
@@ -48,7 +48,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption Project Ref
@@ -76,7 +76,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
@@ -105,7 +105,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom Project Ref
@@ -131,7 +131,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests
@@ -158,7 +158,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests

@@ -21,7 +21,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.CosmosBenchmark 
@@ -46,7 +46,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.CosmosBenchmark 

@@ -31,7 +31,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -59,7 +59,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -88,7 +88,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -126,7 +126,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.PerformanceTests - Build
@@ -162,7 +162,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
@@ -196,7 +196,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
@@ -231,7 +231,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
@@ -265,7 +265,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
@@ -299,7 +299,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - template:  emulator-setup.yml
 
@@ -333,7 +333,7 @@ jobs:
     displayName: Use .NET 6.0
     inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
