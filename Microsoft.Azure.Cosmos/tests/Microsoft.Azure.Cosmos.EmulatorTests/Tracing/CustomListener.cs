@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             "db.collection.name",
             "db.cosmosdb.connection_mode",
             "db.cosmosdb.regions_contacted",
+            "db.cosmosdb.consistency_level",
             "db.operation.batch_size",
             "db.query.text",
             "error.type"

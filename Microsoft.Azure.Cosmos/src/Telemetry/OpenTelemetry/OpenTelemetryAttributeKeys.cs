@@ -85,12 +85,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the content length of the request.
         /// </summary>
-        public const string RequestContentLength = "db.cosmosdb.request.content_length";
+        public const string RequestContentLength = "db.request.content_length";
 
         /// <summary>
         /// Represents the content length of the response.
         /// </summary>
-        public const string ResponseContentLength = "db.cosmosdb.response.content_length";
+        public const string ResponseContentLength = "db.response.content_length";
 
         /// <summary>
         /// Represents the status code of the response.
@@ -136,6 +136,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the size of the batch operation.
         /// </summary>
         public const string BatchSize = "db.operation.batch_size";
+
+        /// <summary>
+        /// Consistency Level
+        /// </summary>
+        public const string ConsistencyLevel = "db.cosmosdb.consistency_level";
 
         // Exceptions
 

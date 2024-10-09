@@ -275,6 +275,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConsistencyLevel, this.response.ConsistencyLevel);
 
                     if (this.response.QuerySpec is not null)
                     {
