@@ -60,8 +60,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 trace: trace,
-                cancellationToken: cancellationToken,
-                targetResponseSerializationFormat: JsonSerializationFormat.Text);
+                targetResponseSerializationFormat: JsonSerializationFormat.Text,
+                cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> CreateItemAsync<T>(
@@ -102,8 +102,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
                 trace: trace,
-                cancellationToken: cancellationToken,
-                targetResponseSerializationFormat: JsonSerializationFormat.Text);
+                targetResponseSerializationFormat: JsonSerializationFormat.Text,
+                cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> ReadItemAsync<T>(
@@ -140,8 +140,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 trace: trace,
-                cancellationToken: cancellationToken,
-                targetResponseSerializationFormat: JsonSerializationFormat.Text);
+                targetResponseSerializationFormat: JsonSerializationFormat.Text,
+                cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> UpsertItemAsync<T>(
@@ -183,8 +183,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Replace,
                 requestOptions: requestOptions,
                 trace: trace,
-                cancellationToken: cancellationToken,
-                targetResponseSerializationFormat: JsonSerializationFormat.Text);
+                targetResponseSerializationFormat: JsonSerializationFormat.Text,
+                cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> ReplaceItemAsync<T>(
@@ -231,8 +231,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
                 trace: trace,
-                cancellationToken: cancellationToken,
-                targetResponseSerializationFormat: JsonSerializationFormat.Text);
+                targetResponseSerializationFormat: JsonSerializationFormat.Text,
+                cancellationToken: cancellationToken);
         }
 
         public async Task<ItemResponse<T>> DeleteItemAsync<T>(
@@ -1242,8 +1242,8 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Patch,
                 requestOptions: requestOptions,
                 trace: trace,
-                cancellationToken: cancellationToken,
-                targetResponseSerializationFormat: JsonSerializationFormat.Text);
+                targetResponseSerializationFormat: JsonSerializationFormat.Text,
+                cancellationToken: cancellationToken);
         }
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
@@ -1601,6 +1601,6 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager.IsBinaryEncodingEnabled()
                 ? JsonSerializationFormat.Binary
                 : JsonSerializationFormat.Text;
-        }        
+        }
     }
 }

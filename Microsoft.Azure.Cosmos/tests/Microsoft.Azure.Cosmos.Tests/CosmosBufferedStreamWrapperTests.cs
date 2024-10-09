@@ -11,16 +11,17 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Documents;
 
     [TestClass]
     public class CosmosBufferedStreamWrapperTests
     {
         [TestMethod]
-        public void TestReadFirstByte()
+        public async Task TestReadFirstByte()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
+            using (MemoryStream memoryStream = new(data))
+            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 byte[] buffer = new byte[1];
                 int bytesRead = bufferedStream.Read(buffer, 0, 1);
@@ -31,11 +32,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void TestReadAll()
+        public async Task TestReadAll()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 byte[] result = bufferedStream.ReadAll();
 
@@ -46,11 +47,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void TestReadAllAfterFirstByteRead()
+        public async Task TestReadAllAfterFirstByteRead()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new(data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new(memoryStream, true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 bufferedStream.GetJsonSerializationFormat(); // This will trigger the first byte read.
                 byte[] result = bufferedStream.ReadAll();
@@ -66,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 byte[] result = await bufferedStream.ReadAllAsync();
 
@@ -81,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new(data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new(memoryStream, true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 bufferedStream.GetJsonSerializationFormat(); // This will trigger the first byte read.
                 byte[] result = await bufferedStream.ReadAllAsync();
@@ -93,11 +94,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void TestGetJsonSerializationFormat()
+        public async Task TestGetJsonSerializationFormat()
         {
             byte[] data = new byte[] { (byte)JsonSerializationFormat.Binary };
             using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
@@ -111,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
 
             using NonSeekableMemoryStream memoryStream = new(data);
-            using Documents.CloneableStream clonableStream = await Documents.StreamExtension.AsClonableStreamAsync(memoryStream);
+            using CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(memoryStream);
             using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
             
             Assert.IsTrue(bufferedStream.CanSeek);
@@ -134,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] data = Encoding.UTF8.GetBytes("Hello, World! This is a sample test.");
 
             using NonSeekableMemoryStream memoryStream = new(data);
-            using Documents.CloneableStream clonableStream = await Documents.StreamExtension.AsClonableStreamAsync(memoryStream);
+            using CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(memoryStream);
             using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
 
             Assert.IsTrue(bufferedStream.CanSeek);
@@ -145,17 +146,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] result = new byte[bufferedStream.Length];
 
             int count = 0, chunk = 4, offset = 0, length = (int)bufferedStream.Length, totalBytes = 0;
-            while ((count = bufferedStream.Read(result, offset, chunk)) > 0)
+            while ((count = bufferedStream.Read(result, offset, Math.Min(chunk, (int)(length - bufferedStream.Position)))) > 0)
             {
                 offset += count;
                 totalBytes += count;
             }
 
-            int count2 = 0, chunk2 = 3, offset2 = 0, length2 = (int)bufferedStream.Length, totalBytes2 = 0;
+            int count2 = 0, chunk2 = 3, offset2 = 0, length2 = (int)bufferedStream.Length-1, totalBytes2 = 0;
             byte[] result2 = new byte[bufferedStream.Length];
             while ((count2 = bufferedStream.Read(result2, offset2, chunk2)) > 0)
             {
-                offset2 += count2;
+                offset2 += Math.Min(count2, length);
                 totalBytes2 += count2;
             }
 
@@ -173,7 +174,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
 
             using NonSeekableMemoryStream memoryStream = new(data);
-            using Documents.CloneableStream clonableStream = await Documents.StreamExtension.AsClonableStreamAsync(memoryStream);
+            using CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(memoryStream);
             using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
 
             Assert.IsTrue(bufferedStream.CanSeek);
@@ -189,11 +190,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public void TestWriteAndRead()
+        public async Task TestWriteAndRead()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new ())
-            using (CosmosBufferedStreamWrapper bufferedStream = new (memoryStream, true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 bufferedStream.Write(data, 0, data.Length);
                 bufferedStream.Position = 0;
