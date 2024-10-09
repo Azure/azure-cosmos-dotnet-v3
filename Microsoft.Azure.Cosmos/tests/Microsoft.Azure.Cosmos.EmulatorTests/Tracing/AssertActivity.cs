@@ -60,7 +60,14 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "exception.type",
                      "exception.message",
                      "exception.stacktrace",
-                     "error.type"
+                     "db.query.text",
+                     "error.type",
+                     AppInsightClassicAttributeKeys.DbName,
+                     AppInsightClassicAttributeKeys.ContainerName,
+                     AppInsightClassicAttributeKeys.DbOperation,
+                     AppInsightClassicAttributeKeys.ServerAddress,
+                     AppInsightClassicAttributeKeys.StatusCode,
+                     AppInsightClassicAttributeKeys.UserAgent
                 };
 
                 foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)

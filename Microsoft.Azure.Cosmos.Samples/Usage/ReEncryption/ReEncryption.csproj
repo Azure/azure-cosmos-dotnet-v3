@@ -6,14 +6,16 @@
     <AssemblyName>Cosmos.Samples.ReEncryption</AssemblyName>
     <RootNamespace>Cosmos.Samples.ReEncryption</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.2.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="1.0.0-previewV20" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.44.0-preview.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos.Encryption" Version="2.1.0-preview4" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <ItemGroup>
     <None Include="AppSettings.json">

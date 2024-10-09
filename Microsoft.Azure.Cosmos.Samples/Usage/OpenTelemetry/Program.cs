@@ -19,7 +19,7 @@
         private static readonly string containerName = "otel-sample";
         private static readonly string serviceName = "MySampleService";
 
-        private static TracerProvider? _traceProvider;
+        private static TracerProvider _traceProvider;
 
         static async Task Main()
         {

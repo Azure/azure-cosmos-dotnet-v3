@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using Cosmos.Util;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using System.Threading;
 
     public abstract class ClientTelemetryTestsBase : BaseCosmosClientHelper
     {
@@ -48,6 +49,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         protected HttpClientHandlerHelper httpHandler;
         protected HttpClientHandlerHelper httpHandlerForNonAzureInstance;
 
+        protected ManualResetEventSlim eventSlim;
+
         private bool isClientTelemetryAPICallFailed = false;
 
         public static void ClassInitialize(TestContext _)
@@ -63,6 +66,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public virtual void TestInitialize()
         {
+            this.eventSlim = new ManualResetEventSlim(false);
+
             this.actualInfo = new List<ClientTelemetryProperties>();
 
             this.httpHandler = new HttpClientHandlerHelper
@@ -80,11 +85,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     return this.HttpHandlerRequestCallbackChecks(request);
                 },
-                ResponseIntercepter = (response) =>
+                ResponseIntercepter = (response, request) =>
                 {
-                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+                        this.eventSlim.Set();
                     }
 
                     return Task.FromResult(response);
@@ -94,6 +101,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         this.isClientTelemetryAPICallFailed = true;
+
+                        this.eventSlim.Set();
                     }
                 }
             };
@@ -120,11 +129,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     return this.HttpHandlerRequestCallbackChecks(request);
                 },
-                ResponseIntercepter = (response) =>
+                ResponseIntercepter = (response, request) =>
                 {
-                    if (response.RequestMessage != null && response.RequestMessage.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                    if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+
+                        this.eventSlim.Set();
                     }
                     return Task.FromResult(response);
                 },
@@ -133,6 +144,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
                     {
                         this.isClientTelemetryAPICallFailed = true;
+
+                        this.eventSlim.Set();
                     }
                 }
             };
@@ -164,6 +177,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await base.TestCleanup();
 
             Assert.IsFalse(this.isClientTelemetryAPICallFailed, $"Call to client telemetry service endpoint (i.e. {telemetryServiceEndpoint}) failed");
+
+            this.eventSlim.Reset();
         }
 
         public virtual async Task PointSuccessOperationsTest(ConnectionMode mode, bool isAzureInstance)
@@ -209,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Delete.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 12,
+            this.WaitAndAssert(expectedOperationCount: 12,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 isAzureInstance: isAzureInstance);
         }
@@ -240,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Read.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 2,
+            this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation, 
                 expectedCacheSource: null,
@@ -273,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Read.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 2,
+            this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedCacheSource: null,
@@ -322,7 +337,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Delete.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 12,
+            this.WaitAndAssert(expectedOperationCount: 12,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedCacheSource: null);
         }
@@ -352,7 +367,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Batch.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 2,
+            this.WaitAndAssert(expectedOperationCount: 2,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.Eventual,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
@@ -378,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 1}
             };
 
-            await this.WaitAndAssert(
+            this.WaitAndAssert(
                 expectedOperationCount: 4,// 2 (read, requestLatency + requestCharge) + 2 (create, requestLatency + requestCharge)
                 expectedOperationRecordCountMap: expectedRecordCountInOperation); 
         }
@@ -433,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 4,
+            this.WaitAndAssert(expectedOperationCount: 4,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix);
         }
@@ -492,7 +507,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 2}
             };
 
-            await this.WaitAndAssert(
+            this.WaitAndAssert(
                 expectedOperationCount: 4,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedConsistencyLevel: Microsoft.Azure.Cosmos.ConsistencyLevel.ConsistentPrefix);
@@ -540,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 10}
             };
 
-            await this.WaitAndAssert(
+            this.WaitAndAssert(
                             expectedOperationCount: 4,
                             expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
@@ -591,7 +606,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 10}
             };
 
-            await this.WaitAndAssert(
+            this.WaitAndAssert(
                 expectedOperationCount: 4,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
@@ -629,7 +644,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 1}
             };
 
-            await this.WaitAndAssert(expectedOperationCount: 2,
+            this.WaitAndAssert(expectedOperationCount: 2,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation);
         }
 
@@ -665,6 +680,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 return this.HttpHandlerRequestCallbackChecks(request);
             };
 
+            httpHandler.ResponseIntercepter = (response, request) =>
+            {
+                if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
+                {
+                    this.eventSlim.Set();
+                }
+
+                return Task.FromResult(response);
+            };
+
             // Replacing originally initialized cosmos Builder with this one with new handler
             this.cosmosClientBuilder = this.cosmosClientBuilder
                                          .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
@@ -692,7 +717,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { Documents.OperationType.Create.ToString(), 1}
             };
             
-            await this.WaitAndAssert(expectedOperationCount: 2,
+            this.WaitAndAssert(expectedOperationCount: 2,
                 expectedOperationRecordCountMap: expectedRecordCountInOperation,
                 expectedSubstatuscode: 999999,
                 isExpectedNetworkTelemetry: false);
@@ -706,7 +731,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <param name="expectedConsistencyLevel"> Expected Consistency level of the operation recorded by telemetry</param>
         /// <param name="expectedOperationRecordCountMap"> Expected number of requests recorded for each operation </param>
         /// <returns></returns>
-        private async Task WaitAndAssert(
+        private void WaitAndAssert(
             int expectedOperationCount = 0,
             Microsoft.Azure.Cosmos.ConsistencyLevel? expectedConsistencyLevel = null,
             IDictionary<string, long> expectedOperationRecordCountMap = null,
@@ -724,7 +749,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             HashSet<CacheRefreshInfo> cacheRefreshInfoSet = new HashSet<CacheRefreshInfo>();
             do
             {
-                await Task.Delay(TimeSpan.FromMilliseconds(1500)); // wait at least for 1 round of telemetry
+                this.eventSlim.Wait();
 
                 HashSet<OperationInfo> actualOperationSet = new HashSet<OperationInfo>();
                 HashSet<RequestInfo> requestInfoSet = new HashSet<RequestInfo>();

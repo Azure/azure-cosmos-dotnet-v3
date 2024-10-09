@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task RetryTransientIssuesTestAsync()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
@@ -383,6 +384,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task RetryTransientIssuesForQueryPlanTestAsync()
         {
             DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
