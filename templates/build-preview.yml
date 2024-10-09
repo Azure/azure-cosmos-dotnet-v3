@@ -62,7 +62,7 @@ jobs:
 
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 90
+  timeoutInMinutes: 60
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
