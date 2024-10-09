@@ -31,7 +31,7 @@ CosmosClientOptions options = new CosmosClientOptions()
      = AvailabilityStrategy.CrossRegionHedgingStrategy(
         threshold: TimeSpan.FromMilliseconds(500),
         thresholdStep: TimeSpan.FromMilliseconds(100)
-     )
+     ),
       ApplicationPreferredRegions = new List<string>() { "East US", "West US", "Central US"},
 };
 
