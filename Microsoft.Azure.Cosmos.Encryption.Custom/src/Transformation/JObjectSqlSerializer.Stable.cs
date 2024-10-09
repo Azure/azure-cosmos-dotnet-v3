@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if !IS_PREVIEW
+#if !ENCRYPTION_CUSTOM_PREVIEW
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
