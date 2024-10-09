@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [JsonProperty(propertyName: "pk")]
         public string Pk { get; set; }
 
+        public Address1 Address { get; set; }
+
         public override bool Equals(object obj)
         {
             if (!(obj is ToDoActivity input))
@@ -28,5 +30,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             return base.GetHashCode();
         }
+    }
+
+    public class Address1
+    {
+        public string City { get; set; }
     }
 }

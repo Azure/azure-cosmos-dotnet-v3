@@ -605,10 +605,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         this.TestContext.LogTestExecutionForContainer(containerContext);
 
+                        FeedRange x = new FeedRangeEpk(new Documents.Routing.Range<string>(xMinimum, xMaximum, true, xIsMaxInclusive));
+                        Console.WriteLine($"x{nameof(x.ToJsonString)}: {x.ToJsonString()}");
+
+                        FeedRange y = new FeedRangeEpk(new Documents.Routing.Range<string>(yMinimum, yMaximum, true, yIsMaxInclusive));
+                        Console.WriteLine($"y{nameof(y.ToJsonString)}: {y.ToJsonString()}");
+
                         bool actualIsFeedRangePartOfAsync = await containerContext.Container.IsFeedRangePartOfAsync(
                             new FeedRangeEpk(new Documents.Routing.Range<string>(xMinimum, xMaximum, true, xIsMaxInclusive)),
                             new FeedRangeEpk(new Documents.Routing.Range<string>(yMinimum, yMaximum, true, yIsMaxInclusive)),
                             cancellationToken: CancellationToken.None);
+
+                        Console.WriteLine($"actualIsFeedRangePartOfAsync: {actualIsFeedRangePartOfAsync}");
 
                         if (expectedIsFeedRangePartOfAsync != actualIsFeedRangePartOfAsync)
                         {

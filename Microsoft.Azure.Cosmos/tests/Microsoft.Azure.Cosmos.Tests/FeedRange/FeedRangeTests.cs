@@ -172,6 +172,8 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             Documents.Routing.Range<string> range = new Documents.Routing.Range<string>("AA", "BB", true, false);
             FeedRangeEpk feedRangeEpk = new FeedRangeEpk(range);
             string representation = feedRangeEpk.ToJsonString();
+
+            Console.WriteLine(representation);
             FeedRangeEpk feedRangeEPKDeserialized = Cosmos.FeedRange.FromJsonString(representation) as FeedRangeEpk;
             Assert.IsNotNull(feedRangeEPKDeserialized);
             Assert.AreEqual(feedRangeEpk.Range.Min, feedRangeEPKDeserialized.Range.Min);
