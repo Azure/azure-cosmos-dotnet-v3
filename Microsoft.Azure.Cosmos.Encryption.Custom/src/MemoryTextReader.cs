@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
 
     /// <summary>
-    /// Adjusted implementation of .Net StringReader reading from a Memory<char> instead of a string.
+    /// Adjusted implementation of .Net StringReader reading from a Memory{char} instead of a string.
     /// </summary>
     internal class MemoryTextReader : TextReader
     {
