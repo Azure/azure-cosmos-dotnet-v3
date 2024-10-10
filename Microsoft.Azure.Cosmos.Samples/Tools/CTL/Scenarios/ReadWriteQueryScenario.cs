@@ -278,11 +278,6 @@ namespace CosmosCTL
             TimeSpan maxDurationTime = config.RunningTimeDurationAsTimespan;
             long maxNumberOfOperations = config.Operations;
 
-            if (maxDurationTime == null)
-            {
-                return iterationCount < maxNumberOfOperations;
-            }
-
             if (maxDurationTime.TotalMilliseconds < stopwatch.ElapsedMilliseconds)
             {
                 return false;

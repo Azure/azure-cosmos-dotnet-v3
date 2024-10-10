@@ -58,16 +58,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 .WrapKey(EncryptionKeyStoreProviderImpl.GetNameForKeyEncryptionKeyAlgorithm(algorithm), key);
         }
 
-        private static string GetNameForKeyEncryptionKeyAlgorithm(KeyEncryptionKeyAlgorithm algorithm)
-        {
-            if (algorithm == KeyEncryptionKeyAlgorithm.RSA_OAEP)
-            {
-                return EncryptionKeyStoreProviderImpl.RsaOaepWrapAlgorithm;
-            }
-
-            throw new InvalidOperationException(string.Format("Unexpected algorithm {0}", algorithm));
-        }
-
         /// <Remark>
         /// The public facing Cosmos Encryption library interface does not expose this method, hence not supported.
         /// </Remark>
@@ -82,6 +72,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override bool Verify(string encryptionKeyId, bool allowEnclaveComputations, byte[] signature)
         {
             throw new NotSupportedException("The Verify operation is not supported.");
+        }
+
+        private static string GetNameForKeyEncryptionKeyAlgorithm(KeyEncryptionKeyAlgorithm algorithm)
+        {
+            if (algorithm == KeyEncryptionKeyAlgorithm.RSA_OAEP)
+            {
+                return EncryptionKeyStoreProviderImpl.RsaOaepWrapAlgorithm;
+            }
+
+            throw new InvalidOperationException(string.Format("Unexpected algorithm {0}", algorithm));
         }
     }
 }

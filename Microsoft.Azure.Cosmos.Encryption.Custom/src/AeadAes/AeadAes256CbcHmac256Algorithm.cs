@@ -158,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
         /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
         /// </summary>
-        /// <param name="plainText">Plaintext data to be encrypted</param>
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
         {
