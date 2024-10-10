@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             string[] locationNames = typeof(LocationNames)
                             .GetMembers(BindingFlags.Static | BindingFlags.Public)
                             .Select(e => e.Name)
+                            .Where(e => e != "GermanyCentral" && e != "GermanyNortheast") // Decommissioned regions
                             .ToArray();
 
             if (locationNames.Length > cosmosRegions.Length)
