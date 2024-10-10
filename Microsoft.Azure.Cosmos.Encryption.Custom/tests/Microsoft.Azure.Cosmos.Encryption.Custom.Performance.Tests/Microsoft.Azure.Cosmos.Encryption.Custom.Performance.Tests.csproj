@@ -3,7 +3,7 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests</AssemblyName>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net6</TargetFrameworks>
+    <TargetFrameworks>net8.0</TargetFrameworks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>

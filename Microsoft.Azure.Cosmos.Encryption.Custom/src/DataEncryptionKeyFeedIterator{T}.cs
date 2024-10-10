@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal sealed class DataEncryptionKeyFeedIterator<T> : FeedIterator<T>
     {
-        private readonly FeedIterator feedIterator;
+        private readonly DataEncryptionKeyFeedIterator feedIterator;
         private readonly CosmosResponseFactory responseFactory;
 
         public DataEncryptionKeyFeedIterator(
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    dataEncryptionKeyPropertiesList = this.ConvertResponseToDataEncryptionKeyPropertiesList(
+                    dataEncryptionKeyPropertiesList = DataEncryptionKeyFeedIterator<T>.ConvertResponseToDataEncryptionKeyPropertiesList(
                         responseMessage.Content);
 
                     return (responseMessage, dataEncryptionKeyPropertiesList);
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
         }
 
-        private List<T> ConvertResponseToDataEncryptionKeyPropertiesList(
+        private static List<T> ConvertResponseToDataEncryptionKeyPropertiesList(
             Stream content)
         {
             JObject contentJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(content);

@@ -34,6 +34,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? cacheTimeToLive,
             bool withRawKey = false)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(dekProperties);
+            ArgumentNullException.ThrowIfNull(encryptionKeyStoreProvider);
+#else
             if (dekProperties == null)
             {
                 throw new ArgumentNullException(nameof(dekProperties));
@@ -43,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
+#endif
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 dekProperties.EncryptionKeyWrapMetadata.Name,
