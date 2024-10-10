@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
     <AssemblyName>Microsoft.Azure.Cosmos.Encryption.Custom</AssemblyName>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Custom</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
@@ -16,28 +16,39 @@
     <PackageLicenseUrl>https://aka.ms/netcoregaeula</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard;client;encryption;byok</PackageTags>
+    <DefineConstants Condition=" '$(IsPreview)' == 'True' ">$(DefineConstants);ENCRYPTION_CUSTOM_PREVIEW</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <AdditionalFiles Include="..\..\Microsoft.Azure.Cosmos\src\stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' != 'True' ">
-      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.40.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.40.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
-      <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.41.0-preview.0" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.41.0-preview.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
     <ProjectReference Include="..\..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
   </ItemGroup>
-	
+
+  <ItemGroup Condition=" '$(IsPreview)' != 'True' ">
+    <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="1.2.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(IsPreview)' == 'True' ">
+    <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="2.0.0-pre007" />
+  </ItemGroup>  
+    
   <ItemGroup>
      <PackageReference Include="Azure.Core" Version="1.38.0" />
      <PackageReference Include="Azure.Identity" Version="1.11.4" />
-     <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="0.2.0-pre" />
+     <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
      <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
   </ItemGroup>
 

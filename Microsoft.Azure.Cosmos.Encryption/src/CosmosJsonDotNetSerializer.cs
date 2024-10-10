@@ -21,11 +21,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
         private readonly JsonSerializerSettings serializerSettings;
 
         /// <summary>
-        /// Create a serializer that uses the JSON.net serializer
+        /// Initializes a new instance of the <see cref="CosmosJsonDotNetSerializer"/> class.
         /// </summary>
         /// <remarks>
         /// This is internal to reduce exposure of JSON.net types so
-        /// it is easier to convert to System.Text.Json
+        /// it is easier to convert to System.Text.Json.
         /// </remarks>
         internal CosmosJsonDotNetSerializer(JsonSerializerSettings jsonSerializerSettings = null)
         {
@@ -35,9 +35,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Convert a Stream to the passed in type.
         /// </summary>
-        /// <typeparam name="T">The type of object that should be deserialized</typeparam>
-        /// <param name="stream">An open stream that is readable that contains JSON</param>
-        /// <returns>The object representing the deserialized stream</returns>
+        /// <typeparam name="T">The type of object that should be deserialized.</typeparam>
+        /// <param name="stream">An open stream that is readable that contains JSON.</param>
+        /// <returns>The object representing the deserialized stream.</returns>
         public T FromStream<T>(Stream stream)
         {
             if (stream == null)
@@ -61,9 +61,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Converts an object to a open readable stream.
         /// </summary>
-        /// <typeparam name="T">The type of object being serialized</typeparam>
-        /// <param name="input">The object to be serialized</param>
-        /// <returns>An open readable stream containing the JSON of the serialized object</returns>
+        /// <typeparam name="T">The type of object being serialized.</typeparam>
+        /// <param name="input">The object to be serialized.</param>
+        /// <returns>An open readable stream containing the JSON of the serialized object.</returns>
         public MemoryStream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new MemoryStream();
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
         /// <summary>
         /// JsonSerializer has hit a race conditions with custom settings that cause null reference exception.
-        /// To avoid the race condition a new JsonSerializer is created for each call
+        /// To avoid the race condition a new JsonSerializer is created for each call.
         /// </summary>
         private JsonSerializer GetSerializer()
         {

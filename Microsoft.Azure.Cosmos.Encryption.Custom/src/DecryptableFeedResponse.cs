@@ -45,10 +45,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ResponseMessage responseMessage,
             IReadOnlyCollection<T> resource)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(responseMessage);
+#else
             if (responseMessage == null)
             {
                 throw new ArgumentNullException(nameof(responseMessage));
             }
+#endif
 
             using (responseMessage)
             {

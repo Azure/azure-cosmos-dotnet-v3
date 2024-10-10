@@ -11,20 +11,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal sealed class EncryptionFeedIterator<T> : FeedIterator<T>
     {
-        private readonly FeedIterator feedIterator;
+        private readonly EncryptionFeedIterator feedIterator;
         private readonly CosmosResponseFactory responseFactory;
 
         public EncryptionFeedIterator(
             EncryptionFeedIterator feedIterator,
             CosmosResponseFactory responseFactory)
         {
-            if (!(feedIterator is EncryptionFeedIterator))
-            {
-                throw new ArgumentOutOfRangeException($"{nameof(feedIterator)} must be of type {nameof(EncryptionFeedIterator)}.");
-            }
-
-            this.feedIterator = feedIterator;
-            this.responseFactory = responseFactory;
+            this.feedIterator = feedIterator ?? throw new ArgumentNullException(nameof(feedIterator));
+            this.responseFactory = responseFactory ?? throw new ArgumentNullException(nameof(responseFactory));
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
@@ -36,8 +31,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (typeof(T) == typeof(DecryptableItem))
             {
                 IReadOnlyCollection<T> resource;
-                EncryptionFeedIterator encryptionFeedIterator = this.feedIterator as EncryptionFeedIterator;
-                (responseMessage, resource) = await encryptionFeedIterator.ReadNextWithoutDecryptionAsync<T>(cancellationToken);
+                (responseMessage, resource) = await this.feedIterator.ReadNextWithoutDecryptionAsync<T>(cancellationToken);
 
                 return DecryptableFeedResponse<T>.CreateResponse(
                     responseMessage,

@@ -17,12 +17,18 @@ jobs:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
-  # Add this Command to Include the .NET 6 SDK
+  # Add this Command to Include the .NET SDK and runtimes
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos PREVIEW
@@ -47,8 +53,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption Project Ref
@@ -62,7 +74,7 @@ jobs:
 
 - job:
   displayName: Preview Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 90
+  timeoutInMinutes: 60
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -75,8 +87,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
@@ -104,8 +122,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom Project Ref
@@ -130,8 +154,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: PREVIEW Microsoft.Azure.Cosmos.Tests
@@ -140,6 +170,40 @@ jobs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
       arguments: ${{ parameters.Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Tests
+
+- job:
+  displayName: Preview Tests ${{ parameters.BuildConfiguration }} Flaky
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: PREVIEW Microsoft.Azure.Cosmos.Tests
+    retryCountOnTaskFailure: 4
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
+      arguments: --filter "TestCategory=Flaky" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:IsPreview=true /p:OS=${{ parameters.OS }}
       publishTestResults: true
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests

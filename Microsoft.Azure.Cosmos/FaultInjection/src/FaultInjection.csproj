@@ -14,6 +14,7 @@
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<SdkProjectRef>True</SdkProjectRef>
 	</PropertyGroup>
 

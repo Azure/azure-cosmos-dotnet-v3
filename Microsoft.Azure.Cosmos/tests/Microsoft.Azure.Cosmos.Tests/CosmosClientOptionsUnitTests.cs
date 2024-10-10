@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Net.Security;
+    using System.Reflection;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
@@ -699,6 +700,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettings()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = Regions.EastUS, LimitToEndpoint = true };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -707,6 +710,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, LimitToEndpoint = true };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -715,7 +720,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyApplicationRegionSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(GetPublicRegionNames), DynamicDataSourceType.Method)]
+        public void VerifyApplicationRegionSettingsForAllPublicRegions(string regionName)
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = regionName };
+
+            // For invalid regions GetConnectionPolicy will throw exception
+            cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+        }
+
+        private static IEnumerable<object[]> GetPublicRegionNames()
+        {
+            List<object[]> regionNames = new List<object[]>();
+
+            // BindingFlags.FlattenHierarchy MUST for const fields 
+            foreach (FieldInfo fieldInfo in typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+            {
+                string regionValue = fieldInfo.GetValue(null).ToString();
+                regionNames.Add(new object[] { regionValue });
+            }
+
+            return regionNames;
         }
 
         [TestMethod]
@@ -1074,8 +1105,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
             SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
 
+#nullable enable
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
+#nullable disable
         }
 
         private class TestWebProxy : IWebProxy

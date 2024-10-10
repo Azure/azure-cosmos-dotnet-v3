@@ -442,7 +442,7 @@ namespace Microsoft.Azure.Cosmos
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions: null,
+                requestOptions: readManyRequestOptions,
                 task: (trace) => base.ReadManyItemsStreamAsync(items, trace, readManyRequestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadManyItems, (response) => new OpenTelemetryResponse(responseMessage: response)));
         }
@@ -457,7 +457,7 @@ namespace Microsoft.Azure.Cosmos
                 containerName: this.Id,
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Read,
-                requestOptions: null,
+                requestOptions: readManyRequestOptions,
                 task: (trace) => base.ReadManyItemsAsync<T>(items, trace, readManyRequestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadManyItems, (response) => new OpenTelemetryResponse<T>(responseMessage: response)));
         }
@@ -577,6 +577,9 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
         {
+            // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
+            // A more suitable or generic Documents.OperationType should be created in the future to accurately represent this action.
+
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(GetFeedRangesAsync),
                 containerName: this.Id,
@@ -673,6 +676,26 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 task: (trace) => base.DeleteAllItemsByPartitionKeyStreamAsync(partitionKey, trace, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteAllItemsByPartitionKey, (response) => new OpenTelemetryResponse(response)));
+        }
+
+        public override Task<bool> IsFeedRangePartOfAsync(
+            FeedRange x,
+            FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            // TODO: The current use of Documents.OperationType.ReadFeed is not a precise fit for this operation.
+            // A more suitable or generic Documents.OperationType should be created in the future to accurately represent this action.
+
+            return this.ClientContext.OperationHelperAsync(
+                operationName: nameof(IsFeedRangePartOfAsync),
+                containerName: this.Id,
+                databaseName: this.Database.Id,
+                operationType: Documents.OperationType.ReadFeed,
+                requestOptions: null,
+                task: (trace) => base.IsFeedRangePartOfAsync(
+                    x,
+                    y,
+                    cancellationToken: cancellationToken));
         }
     }
 }

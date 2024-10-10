@@ -443,6 +443,19 @@ namespace Microsoft.Azure.Cosmos
         ///     public string status {get; set;}
         /// }
         /// 
+        /// Example 1: Reading Item with Full Response
+        ///
+        /// This example demonstrates how to read an item from the container and retrieve the full
+        /// response, including metadata such as request units (RU) consumed, along with the
+        /// `ToDoActivity` object.
+        ///
+        /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        ///
+        /// Example 2: Reading Item with Implicit Casting
+        ///
+        /// This example shows how to read an item from the container and implicitly cast the
+        /// response directly to a `ToDoActivity` object, omitting the metadata in the `ItemResponse`.
+        ///
         /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
         /// 
         /// ]]>
@@ -740,7 +753,21 @@ namespace Microsoft.Azure.Cosmos
         ///     public int frequency {get; set;}
         /// }
         /// 
+        /// Example 1: Reading Item with Full Response
+        ///
+        /// This example demonstrates how to read an item from the container and retrieve the full
+        /// response, including metadata such as request units (RU) consumed, along with the
+        /// `ToDoActivity` object.
+        ///
+        /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        ///
+        /// Example 2: Reading Item with Implicit Casting
+        ///
+        /// This example shows how to read an item from the container and implicitly cast the
+        /// response directly to a `ToDoActivity` object, omitting the metadata in the `ItemResponse`.
+        ///
         /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
+        ///
         /// /* toDoActivity = {
         ///     "id" : "someId",
         ///     "status" : "someStatusPK",
@@ -1755,6 +1782,39 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
+
+        /// <summary>
+        /// Determines whether the given y feed range is a part of the specified x feed range.
+        /// </summary>
+        /// <param name="x">The feed range representing the x range.</param>
+        /// <param name="y">The feed range representing the y range.</param>
+        /// <param name="cancellationToken">A token to cancel the operation if needed.</param>
+        /// <example>
+        /// <code language="csharp">
+        /// <![CDATA[
+        /// CancellationToken cancellationToken = ...;
+        /// CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("your-connection-string");
+        /// CosmosClient cosmosClient = cosmosClientBuilder.Build();
+        /// Database cosmosDatabase = cosmosClient.GetDatabase("your-database-id");
+        /// Container container = cosmosDatabase.GetContainer("your-container-id");
+        /// FeedRange x = ...; // Define the feed range for x
+        /// FeedRange y = ...;  // Define the feed range for y
+        ///
+        /// bool isFeedRangePartOfAsync = await container.IsFeedRangePartOfAsync(
+        ///    x,
+        ///    y,
+        ///    cancellationToken);
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <returns>Returns a boolean indicating whether the y feed range is fully contained within the x feed range.</returns>
+        public virtual Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 #endif
     }
 }

@@ -3237,6 +3237,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
@@ -3262,6 +3274,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -6649,6 +6668,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
           "Type": "Property",
           "Attributes": [],
@@ -6840,6 +6871,13 @@
           ],
           "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -6853,6 +6891,32 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.QueryTextMode;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode All": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode All;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode None": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode None;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode ParameterizedOnly": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode ParameterizedOnly;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -6925,6 +6989,21 @@
           "Attributes": [],
           "MethodInfo": "System.String AustraliaSoutheast;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String AustriaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String AustriaEast;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String BleuFranceCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BleuFranceCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String BleuFranceSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BleuFranceSouth;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String BrazilSouth": {
           "Type": "Field",
           "Attributes": [],
@@ -6960,6 +7039,11 @@
           "Attributes": [],
           "MethodInfo": "System.String CentralUSEUAP;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String ChileCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChileCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String ChinaEast": {
           "Type": "Field",
           "Attributes": [],
@@ -6989,6 +7073,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String ChinaNorth3;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String DelosCloudGermanyCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DelosCloudGermanyCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String DelosCloudGermanyNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DelosCloudGermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String EastAsia": {
           "Type": "Field",
@@ -7025,25 +7119,20 @@
           "Attributes": [],
           "MethodInfo": "System.String FranceSouth;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String GermanyCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String GermanyCentral;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String GermanyNorth": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String GermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String GermanyNortheast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String GermanyNortheast;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String GermanyWestCentral": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String IndonesiaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IndonesiaCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String IsraelCentral": {
           "Type": "Field",
@@ -7089,6 +7178,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String MalaysiaSouth;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String MalaysiaWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String MalaysiaWest;IsInitOnly:False;IsStatic:True;"
         },
         "System.String MexicoCentral": {
           "Type": "Field",
@@ -7145,15 +7239,30 @@
           "Attributes": [],
           "MethodInfo": "System.String SouthCentralUS;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SouthCentralUS2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SouthCentralUS2;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SoutheastAsia": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastAsia;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SoutheastUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SouthIndia": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SouthIndia;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SouthwestUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SouthwestUS;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SpainCentral": {
           "Type": "Field",
@@ -7725,6 +7834,18 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
+            "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
               "Type": "Property",
               "Attributes": [],
@@ -7915,6 +8036,13 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",

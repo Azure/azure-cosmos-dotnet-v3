@@ -4,6 +4,7 @@
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
     <AssemblyName>Cosmos.Samples.AzureFunctions</AssemblyName>
     <RootNamespace>Cosmos.Samples.AzureFunctions</RootNamespace>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <None Include="..\AppSettings.json" Link="AppSettings.json">
@@ -11,9 +12,11 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.0.1" />
+    <PackageReference Include="Microsoft.NET.Sdk.Functions" Version="4.4.1" />
     <PackageReference Include="Microsoft.Azure.Functions.Extensions" Version="1.1.0" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
   </ItemGroup>
   <ItemGroup>
     <None Update="host.json">
