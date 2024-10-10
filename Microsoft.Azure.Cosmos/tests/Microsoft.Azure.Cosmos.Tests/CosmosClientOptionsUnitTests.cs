@@ -743,12 +743,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             foreach (FieldInfo fieldInfo in typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
             {
                 string regionValue = fieldInfo.GetValue(null).ToString();
-
-                if (!regionValue.Equals(Regions.GermanyCentral, StringComparison.OrdinalIgnoreCase)
-                    && !regionValue.Equals(Regions.GermanyNortheast, StringComparison.OrdinalIgnoreCase))
-                {
-                    regionNames.Add(new object[] { regionValue });
-                }
+                regionNames.Add(new object[] { regionValue });
             }
 
             return regionNames;
