@@ -41,12 +41,12 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "db.namespace",
                      "db.operation.name",
                      "server.address",
-                     "db.cosmosdb.client.id",
+                     "db.cosmosdb.client_id",
                      "user_agent.original",
                      "db.cosmosdb.connection_mode",
                      "db.collection.name",
-                     "db.request.content_length",
-                     "db.response.content_length",
+                     "db.cosmosdb.request_content_length",
+                     "db.cosmosdb.response_content_length",
                      "db.response.status_code",
                      "db.cosmosdb.sub_status_code",
                      "db.cosmosdb.request_charge",
@@ -67,7 +67,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      AppInsightClassicAttributeKeys.ServerAddress,
                      AppInsightClassicAttributeKeys.StatusCode,
                      AppInsightClassicAttributeKeys.UserAgent,
-                     AppInsightClassicAttributeKeys.MachineId
+                     AppInsightClassicAttributeKeys.MachineId,
+                     AppInsightClassicAttributeKeys.ResponseContentLength
                 };
 
                 foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
@@ -77,7 +78,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
                 }
 
-                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(activity.GetTagItem("db.response.status_code"));
+                object statusCodeFromTraces = activity.GetTagItem("db.response.status_code") ?? 
+                                                activity.GetTagItem(AppInsightClassicAttributeKeys.StatusCode);
+                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(statusCodeFromTraces);
                 int subStatusCode = Convert.ToInt32(activity.GetTagItem("db.cosmosdb.sub_status_code"));
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(statusCode, subStatusCode))
                 {

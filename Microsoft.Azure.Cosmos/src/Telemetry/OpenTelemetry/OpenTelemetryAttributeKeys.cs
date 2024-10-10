@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the client ID for Cosmos DB.
         /// </summary>
-        public const string ClientId = "db.cosmosdb.client.id";
+        public const string ClientId = "db.cosmosdb.client_id";
 
         /// <summary>
         /// Represents the user agent, compliant with OpenTelemetry conventions.
@@ -85,12 +85,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the content length of the request.
         /// </summary>
-        public const string RequestContentLength = "db.request.content_length";
+        public const string RequestContentLength = "db.cosmosdb.request_content_length";
 
         /// <summary>
         /// Represents the content length of the response.
         /// </summary>
-        public const string ResponseContentLength = "db.response.content_length";
+        public const string ResponseContentLength = "db.cosmosdb.response_content_length";
 
         /// <summary>
         /// Represents the status code of the response.

@@ -248,15 +248,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
                     }
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
-
+                   
                     if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     }
                     else
                     {
+                        this.scope.AddAttribute(AppInsightClassicAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                        this.scope.AddAttribute(AppInsightClassicAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                         this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
                     }
 
