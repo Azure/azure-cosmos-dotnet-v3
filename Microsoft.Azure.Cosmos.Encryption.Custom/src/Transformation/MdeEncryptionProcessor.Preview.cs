@@ -91,13 +91,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
-            EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: 3,
-                encryptionOptions.EncryptionAlgorithm,
-                encryptionOptions.DataEncryptionKeyId,
-                encryptedData: null,
-                pathsEncrypted);
-
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 #if NET8_0_OR_GREATER
             await input.DisposeAsync();

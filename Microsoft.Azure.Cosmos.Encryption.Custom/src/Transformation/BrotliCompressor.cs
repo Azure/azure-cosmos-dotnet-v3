@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 
     using System;
     using System.IO.Compression;
