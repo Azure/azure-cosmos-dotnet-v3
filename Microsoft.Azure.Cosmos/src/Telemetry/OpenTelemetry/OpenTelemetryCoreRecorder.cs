@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Antlr4.Runtime.Misc;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Documents;
@@ -159,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
-                   
                 }
                 else
                 {
@@ -169,20 +167,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, clientContext.UserAgent);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
                 }
 
-                // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
-<<<<<<< HEAD
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-=======
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
->>>>>>> 898de663c (made sowm changes)
-
-                // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, this.connectionModeCache);
-
             }
         }
 
