@@ -83,6 +83,7 @@
                 }
             }
 
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
             return $"{type.FullName};{baseTypeString};{nameof(type.IsAbstract)}:{(type.IsAbstract ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsSealed)}:{(type.IsSealed ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsInterface)}:{(type.IsInterface ? bool.TrueString : bool.FalseString)};" +
