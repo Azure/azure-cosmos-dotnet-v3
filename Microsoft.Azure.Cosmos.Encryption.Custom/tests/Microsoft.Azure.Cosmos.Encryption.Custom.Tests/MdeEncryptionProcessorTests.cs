@@ -230,7 +230,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
+#if ENCRYPTION_CUSTOM_PREVIEW
             Assert.AreEqual(4, encryptionProperties.EncryptionFormatVersion);
+#else
+            Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
+#endif
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
 
