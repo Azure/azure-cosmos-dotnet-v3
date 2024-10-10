@@ -112,7 +112,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
+#if NET8_0_OR_GREATER
+            await input.DisposeAsync();
+#else
             input.Dispose();
+#endif
             return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
@@ -181,6 +185,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             EncryptionOptions encryptionOptions)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(encryptor);
+            ArgumentNullException.ThrowIfNull(encryptionOptions);
+#else
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
@@ -195,7 +204,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(encryptionOptions));
             }
+#endif
 
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
             if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
             {
                 throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
@@ -210,6 +221,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
             }
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
         }
 
         private static JObject RetrieveItem(
