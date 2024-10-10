@@ -25,7 +25,6 @@ jobs:
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
-    condition: eq(1,2) #disablng as nuget repo failing
     inputs:
         AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
         AnalyzeRecurse:     true
