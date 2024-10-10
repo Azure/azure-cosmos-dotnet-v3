@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly string id;
         private readonly IFaultInjectionResult result;
         private readonly FaultInjectionCondition condition;
-        private TimeSpan duration;
+        private TimeSpan duration = TimeSpan.MaxValue;
         private TimeSpan startDelay;
         private int hitLimit;
         private bool enabled = true;

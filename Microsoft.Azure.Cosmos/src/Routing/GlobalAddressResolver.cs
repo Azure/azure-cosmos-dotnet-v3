@@ -323,5 +323,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             public GatewayAddressCache AddressCache { get; set; }
             public AddressResolver AddressResolver { get; set; }
         }
+
+        internal static GlobalAddressResolver FINullAddressResolver;
     }
 }

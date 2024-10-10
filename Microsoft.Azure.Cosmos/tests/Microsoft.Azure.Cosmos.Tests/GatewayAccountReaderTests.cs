@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpMessageHandler: null,
                 sendingRequestEventArgs: null,
-                receivedResponseEventArgs: null);
+                receivedResponseEventArgs: null,
+                faultInjectionchaosInterceptor: null);
 
             Assert.IsNotNull(httpClient);
 
@@ -93,7 +94,8 @@ namespace Microsoft.Azure.Cosmos
                 connectionPolicy: connectionPolicy,
                 httpMessageHandler: null,
                 sendingRequestEventArgs: null,
-                receivedResponseEventArgs: null);
+                receivedResponseEventArgs: null,
+                faultInjectionchaosInterceptor: null);
 
             Assert.IsNotNull(httpClient);
 
