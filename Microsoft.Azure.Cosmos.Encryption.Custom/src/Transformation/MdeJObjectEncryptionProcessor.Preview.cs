@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if !ENCRYPTION_CUSTOM_PREVIEW
+#if ENCRYPTION_CUSTOM_PREVIEW
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
-    internal class MdeEncryptionProcessor
+    internal class MdeJObjectEncryptionProcessor
     {
         internal JObjectSqlSerializer Serializer { get; set; } = new JObjectSqlSerializer();
 
@@ -27,6 +27,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             CancellationToken token)
         {
             JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+
+            Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
+
+#if NET8_0_OR_GREATER
+            await input.DisposeAsync();
+#else
+            input.Dispose();
+#endif
+
+            return result;
+        }
+
+        public async Task<Stream> EncryptAsync(
+            JObject input,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CancellationToken token)
+        {
             List<string> pathsEncrypted = new ();
             TypeMarker typeMarker;
 
@@ -41,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #else
                 string propertyName = pathToEncrypt.Substring(1);
 #endif
-                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                if (!input.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     continue;
                 }
@@ -52,16 +70,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 byte[] plainText = null;
-                (typeMarker, plainText) = this.Serializer.Serialize(propertyValue);
+                (typeMarker, plainText, int plainTextLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
 
                 if (plainText == null)
                 {
                     continue;
                 }
 
-                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainText.Length);
+                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength);
 
-                itemJObj[propertyName] = encryptedBytes.ToArray();
+                input[propertyName] = encryptedBytes;
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
@@ -72,13 +90,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptedData: null,
                 pathsEncrypted);
 
-            itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
-#if NET8_0_OR_GREATER
-            await input.DisposeAsync();
-#else
-            input.Dispose();
-#endif
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            input.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
+
+            return EncryptionProcessor.BaseSerializer.ToStream(input);
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
@@ -96,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager<char> charPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
@@ -107,6 +122,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #else
                 string propertyName = path.Substring(1);
 #endif
+
                 if (!document.TryGetValue(propertyName, out JToken propertyValue))
                 {
                     // malformed document, such record shouldn't be there at all
@@ -123,9 +139,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 this.Serializer.DeserializeAndAddProperty(
                     (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText.AsSpan(0, decryptedCount).ToArray(),
+                    plainText.AsSpan(0, decryptedCount),
                     document,
-                    propertyName);
+                    propertyName,
+                    charPoolManager);
 
                 pathsDecrypted.Add(path);
             }
@@ -139,4 +156,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         }
     }
 }
+
 #endif

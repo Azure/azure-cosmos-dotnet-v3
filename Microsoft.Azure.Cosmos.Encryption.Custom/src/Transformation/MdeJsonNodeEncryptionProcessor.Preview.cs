@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-#if !ENCRYPTION_CUSTOM_PREVIEW
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
@@ -10,15 +10,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
-    internal class MdeEncryptionProcessor
+    internal class MdeJsonNodeEncryptionProcessor
     {
-        internal JObjectSqlSerializer Serializer { get; set; } = new JObjectSqlSerializer();
+        internal JsonNodeSqlSerializer Serializer { get; set; } = new JsonNodeSqlSerializer();
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
+
+        private JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
 
         public async Task<Stream> EncryptAsync(
             Stream input,
@@ -26,42 +30,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             CancellationToken token)
         {
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
+            JsonNode itemJObj = JsonNode.Parse(input);
+
+            Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
+
+            await input.DisposeAsync();
+            return result;
+        }
+
+        public async Task<Stream> EncryptAsync(
+            JsonNode document,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CancellationToken token)
+        {
             List<string> pathsEncrypted = new ();
             TypeMarker typeMarker;
 
             using ArrayPoolManager arrayPoolManager = new ();
 
+            JsonObject itemObj = document.AsObject();
+
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
-#if NET8_0_OR_GREATER
                 string propertyName = pathToEncrypt[1..];
-#else
-                string propertyName = pathToEncrypt.Substring(1);
-#endif
-                if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
+                if (!itemObj.TryGetPropertyValue(propertyName, out JsonNode propertyValue))
                 {
                     continue;
                 }
 
-                if (propertyValue.Type == JTokenType.Null)
+                if (propertyValue == null || propertyValue.GetValueKind() == JsonValueKind.Null)
                 {
                     continue;
                 }
 
                 byte[] plainText = null;
-                (typeMarker, plainText) = this.Serializer.Serialize(propertyValue);
+                (typeMarker, plainText, int plainTextLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
 
                 if (plainText == null)
                 {
                     continue;
                 }
 
-                byte[] encryptedBytes = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainText.Length);
+                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
 
-                itemJObj[propertyName] = encryptedBytes.ToArray();
+                itemObj[propertyName] = JsonValue.Create(new Memory<byte>(encryptedBytes, 0, encryptedBytesCount));
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
@@ -72,17 +87,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptedData: null,
                 pathsEncrypted);
 
-            itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
-#if NET8_0_OR_GREATER
-            await input.DisposeAsync();
-#else
-            input.Dispose();
-#endif
-            return EncryptionProcessor.BaseSerializer.ToStream(itemJObj);
+            JsonNode propertiesNode = JsonSerializer.SerializeToNode(encryptionProperties);
+
+            itemObj.Add(Constants.EncryptedInfo, propertiesNode);
+
+            MemoryStream ms = new ();
+            Utf8JsonWriter writer = new (ms, this.jsonWriterOptions);
+
+            JsonSerializer.Serialize(writer, document);
+
+            ms.Position = 0;
+            return ms;
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
-            JObject document,
+            JsonNode document,
             Encryptor encryptor,
             EncryptionProperties encryptionProperties,
             CosmosDiagnosticsContext diagnosticsContext,
@@ -96,36 +115,38 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             using ArrayPoolManager arrayPoolManager = new ();
+            using ArrayPoolManager<char> charPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
+
+            JsonObject itemObj = document.AsObject();
+
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
-#if NET8_0_OR_GREATER
                 string propertyName = path[1..];
-#else
-                string propertyName = path.Substring(1);
-#endif
-                if (!document.TryGetValue(propertyName, out JToken propertyValue))
+
+                if (!itemObj.TryGetPropertyValue(propertyName, out JsonNode propertyValue))
                 {
                     // malformed document, such record shouldn't be there at all
                     continue;
                 }
 
-                byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
-                if (cipherTextWithTypeMarker == null)
+                // can we get to internal JsonNode buffers to avoid string allocation here?
+                string base64String = propertyValue.GetValue<string>();
+                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent((base64String.Length * sizeof(char) * 3 / 4) + 4);
+                if (!Convert.TryFromBase64Chars(base64String, cipherTextWithTypeMarker, out int cipherTextLength))
                 {
                     continue;
                 }
 
-                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextWithTypeMarker.Length, arrayPoolManager);
+                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
-                this.Serializer.DeserializeAndAddProperty(
+                document[propertyName] = this.Serializer.Deserialize(
                     (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText.AsSpan(0, decryptedCount).ToArray(),
-                    document,
-                    propertyName);
+                    plainText.AsSpan(0, decryptedCount),
+                    charPoolManager);
 
                 pathsDecrypted.Add(path);
             }
@@ -134,9 +155,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 pathsDecrypted,
                 encryptionProperties.DataEncryptionKeyId);
 
-            document.Remove(Constants.EncryptedInfo);
+            itemObj.Remove(Constants.EncryptedInfo);
             return decryptionContext;
         }
     }
 }
+
 #endif
