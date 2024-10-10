@@ -919,7 +919,6 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
-            this.ValidateAvailabilityStrategy();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1095,15 +1094,6 @@ namespace Microsoft.Azure.Cosmos
                 && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
             {
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
-            }
-        }
-
-        private void ValidateAvailabilityStrategy()
-        {
-            if (this.AvailabilityStrategy != null
-                && this.ApplicationPreferredRegions == null && this.ApplicationRegion == null)
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
             }
         }
 
