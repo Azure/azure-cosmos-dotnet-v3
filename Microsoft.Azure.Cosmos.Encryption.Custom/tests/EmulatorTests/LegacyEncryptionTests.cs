@@ -1491,7 +1491,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             };
         }
 
-        private static TransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
+        private static EncryptionTransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
             string ifMatchEtag = null)
@@ -1812,13 +1812,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 MemoryStream streamPayload = new();
                 using (StreamWriter streamWriter = new(streamPayload, encoding: Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
                 {
-                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                    {
-                        writer.Formatting = Formatting.None;
-                        this.serializer.Serialize(writer, input);
-                        writer.Flush();
-                        streamWriter.Flush();
-                    }
+                    using JsonTextWriter writer = new (streamWriter);
+                    writer.Formatting = Formatting.None;
+                    this.serializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
                 }
 
                 streamPayload.Position = 0;
