@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -159,6 +160,104 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Assert.AreEqual(1, createdEnumerators[0].GetNextPageAsyncCounter, "First enumerator should have been called once");
             Assert.AreEqual(1, createdEnumerators[1].GetNextPageAsyncCounter, "Second enumerator should have been called once");
             Assert.AreEqual(1, createdEnumerators[2].GetNextPageAsyncCounter, "Second enumerator should not be used");
+        }
+
+        [TestMethod]
+        public async Task TestParallelPrefetch()
+        {
+            List<FeedRangeEpk> feedRanges = new List<FeedRangeEpk>()
+            {
+                new FeedRangeEpk(new Documents.Routing.Range<string>(  "", "AA", isMinInclusive: true, isMaxInclusive: false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", isMinInclusive: true, isMaxInclusive: false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "CC", isMinInclusive: true, isMaxInclusive: false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("CC", "DD", isMinInclusive: true, isMaxInclusive: false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("DD", "EE", isMinInclusive: true, isMaxInclusive: false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("EE", "FF", isMinInclusive: true, isMaxInclusive: false)),
+            };
+
+            Mock<IFeedRangeProvider> mockFeedRangeProvider = new Mock<IFeedRangeProvider>();
+            mockFeedRangeProvider.Setup(p => p.GetFeedRangesAsync(
+                It.IsAny<ITrace>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(feedRanges);
+
+            foreach (int maxConcurrency in new[] { 0, 1, 2, 10, 100 })
+            {
+                List<MockEnumerator> rangeEnumerators = feedRanges
+                    .Select(feedRange => new MockEnumerator(new FeedRangeState<ReadFeedState>(feedRange, null), 1))
+                    .ToList();
+
+                IEnumerator<MockEnumerator> enumerator = rangeEnumerators.GetEnumerator();
+
+                MockEnumerator CreateMockEnumerator(FeedRangeState<ReadFeedState> feedRangeState)
+                {
+                    Assert.IsTrue(enumerator.MoveNext());
+                    return enumerator.Current;
+                };
+
+                CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> crossPartitionEnumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
+                    feedRangeProvider: mockFeedRangeProvider.Object,
+                    createPartitionRangeEnumerator: CreateMockEnumerator,
+                    comparer: null,
+                    prefetchPolicy: PrefetchPolicy.PrefetchSinglePage,
+                    maxConcurrency: maxConcurrency,
+                    state: null);
+
+                await crossPartitionEnumerator.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default);
+
+                if (maxConcurrency <= 1)
+                {
+                    Assert.AreEqual(1, rangeEnumerators.First().InvocationCount);
+                    Assert.IsTrue(rangeEnumerators.Skip(1).All(x => x.InvocationCount == 0));
+                }
+                else
+                {
+                    Assert.IsTrue(rangeEnumerators.All(x => x.InvocationCount == 1));
+                }
+            }
+        }
+
+        private class MockEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
+        {
+            private static readonly IReadOnlyDictionary<string, string> EmptyHeaders = new Dictionary<string, string>();
+
+            private static readonly Stream EmptyStream = new MemoryStream(Encoding.UTF8.GetBytes("{\"Documents\": [], \"_count\": 0, \"_rid\": \"asdf\"}"));
+
+            private readonly int pageCount;
+
+            public int InvocationCount { get; private set; }
+
+            public MockEnumerator(FeedRangeState<ReadFeedState> feedRangeState, int pageCount)
+                : base(feedRangeState)
+            {
+                this.pageCount = pageCount;
+            }
+
+            public override ValueTask DisposeAsync()
+            {
+                return default;
+            }
+
+            protected override Task<TryCatch<ReadFeedPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                if (this.InvocationCount >= this.pageCount)
+                {
+                    return Task.FromResult(TryCatch<ReadFeedPage>.FromException(new InvalidOperationException(
+                        "Trying to move next on an enumerator that is finished")));
+                }
+
+                ++this.InvocationCount;
+
+                ReadFeedState state = null;
+                if (this.InvocationCount < this.pageCount)
+                {
+                    CosmosElement continuationToken = CosmosString.Create("asdf");
+                    state = new ReadFeedContinuationState(continuationToken);
+                }
+
+                return Task.FromResult(TryCatch<ReadFeedPage>.FromResult(
+                    new ReadFeedPage(EmptyStream, 2.8, 0, "activityId", EmptyHeaders, state)));
+            }
         }
 
         private class EnumeratorThatSplits : PartitionRangePageAsyncEnumerator<ReadFeedPage,ReadFeedState>
