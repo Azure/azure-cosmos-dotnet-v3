@@ -16,12 +16,6 @@ namespace Microsoft.Azure.Cosmos
     enum VectorDataType
     {
         /// <summary>
-        /// Represent a float16 data type.
-        /// </summary>
-        [EnumMember(Value = "float16")]
-        Float16,
-
-        /// <summary>
         /// Represent a float32 data type.
         /// </summary>
         [EnumMember(Value = "float32")]

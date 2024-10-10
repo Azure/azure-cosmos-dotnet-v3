@@ -56,6 +56,47 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Add a path to the current <see cref="VectorIndexPath"/> definition with a particular set of <see cref="VectorIndexType"/>s.
+        /// </summary>
+        /// <param name="quantizationByteSize">The number of bytes used in product quantization of the vectors. A larger value may result
+        /// in better recall for vector searches at the expense of latency. This applies to index types DiskANN and quantizedFlat</param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+        public VectorIndexDefinition<T> WithQuantizationByteSize(
+            int? quantizationByteSize)
+        {
+            this.vectorIndexPath.QuantizationByteSize = quantizationByteSize ?? throw new ArgumentNullException(nameof(quantizationByteSize));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add a path to the current <see cref="VectorIndexPath"/> definition with a particular set of <see cref="VectorIndexType"/>s.
+        /// </summary>
+        /// <param name="indexingSearchListSize">This represents the size of the candidate list of approximate neighbors stored while building the DiskANN index as part of the optimization processes.
+        /// Large values may improve recall at the expense of latency. This applies to index type DiskANN only.</param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+        public VectorIndexDefinition<T> WithIndexingSearchListSize(
+            int? indexingSearchListSize = 0)
+        {
+            this.vectorIndexPath.IndexingSearchListSize = indexingSearchListSize ?? throw new ArgumentNullException(nameof(indexingSearchListSize));
+
+            return this;
+        }
+
+        /// <summary>
+        /// Add a path to the current <see cref="VectorIndexPath"/> definition with a particular set of <see cref="VectorIndexType"/>s.
+        /// </summary>
+        /// <param name="vectorIndexShardKey">A string array containing the shard keys used for partitioning the vector indexes. This applies to index types DiskANN and quantizedFlat.</param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+        public VectorIndexDefinition<T> WithVectorIndexShardKey(
+            string[] vectorIndexShardKey = default)
+        {
+            this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));
+
+            return this;
+        }
+
+        /// <summary>
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>

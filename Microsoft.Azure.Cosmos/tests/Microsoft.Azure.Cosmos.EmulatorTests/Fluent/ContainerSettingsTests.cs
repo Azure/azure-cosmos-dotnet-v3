@@ -539,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore("This test will be enabled once the vector similarity changes are made available into the public emulator.")]
+        //[Ignore("This test will be enabled once the vector similarity changes are made available into the public emulator.")]
         public async Task TestVectorEmbeddingPolicy()
         {
             string vector1Path = "/vector1", vector2Path = "/vector2", vector3Path = "/vector3";
@@ -585,10 +585,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 .Path(vector1Path, VectorIndexType.Flat)
                              .Attach()
                             .WithVectorIndex()
-                                .Path(vector2Path, VectorIndexType.Flat)
+                                .Path(vector2Path, VectorIndexType.QuantizedFlat)
+                                .WithQuantizationByteSize(4)
+                                .WithVectorIndexShardKey(new string[] { "/Country/City" })
                              .Attach()
                             .WithVectorIndex()
-                                .Path(vector3Path, VectorIndexType.Flat)
+                                .Path(vector3Path, VectorIndexType.DiskANN)
+                                .WithQuantizationByteSize(8)
+                                .WithIndexingSearchListSize(5)
+                                .WithVectorIndexShardKey(new string[] { "/Country/City", "ZipCode" })
                              .Attach()
                         .Attach()
                         .CreateAsync();
@@ -610,9 +615,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(vector1Path, containerSettings.IndexingPolicy.VectorIndexes[0].Path);
                 Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[0].Type);
                 Assert.AreEqual(vector2Path, containerSettings.IndexingPolicy.VectorIndexes[1].Path);
-                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(VectorIndexType.QuantizedFlat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(4, containerSettings.IndexingPolicy.VectorIndexes[1].QuantizationByteSize);
+                CollectionAssert.AreEqual(new string[] { "/Country/City" }, containerSettings.IndexingPolicy.VectorIndexes[1].VectorIndexShardKey);
                 Assert.AreEqual(vector3Path, containerSettings.IndexingPolicy.VectorIndexes[2].Path);
-                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+                Assert.AreEqual(VectorIndexType.DiskANN, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+                Assert.AreEqual(8, containerSettings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize);
+                Assert.AreEqual(5, containerSettings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize);
+                CollectionAssert.AreEqual(new string[] { "/Country/City", "ZipCode" }, containerSettings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey);
             }
             finally
             {
