@@ -38,11 +38,11 @@
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsPreview)' != 'True' ">
-	<PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="1.2.0" />
+    <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="1.2.0" />
   </ItemGroup>
 
   <ItemGroup Condition=" '$(IsPreview)' == 'True' ">
-	<PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="2.0.0-pre007" />
+    <PackageReference Include="Microsoft.Data.Encryption.Cryptography" Version="2.0.0-pre007" />
   </ItemGroup>  
     
   <ItemGroup>
