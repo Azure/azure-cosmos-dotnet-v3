@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
             {
-                ResponseIntercepter = async (response) =>
+                ResponseIntercepter = async (response, _) =>
                 {
                     string responseString = await response.Content.ReadAsStringAsync();
 

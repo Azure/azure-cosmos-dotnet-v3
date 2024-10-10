@@ -1,4 +1,4 @@
-﻿#if NET8_0_OR_GREATER
+﻿#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 
 namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 {
