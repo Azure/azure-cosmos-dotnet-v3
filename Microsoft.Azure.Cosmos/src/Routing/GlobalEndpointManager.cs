@@ -549,6 +549,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
         }
 
+        public bool CanSupportMultipleWriteLocations(RequestMessage request)
+        {
+            return this.locationCache.CanUseMultipleWriteLocations()
+                && this.locationCache.GetAvailableWriteLocations()?.Count > 1
+                && (request.ResourceType == ResourceType.Document ||
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
+        }
+
 #pragma warning disable VSTHRD100 // Avoid async void methods
         private async void StartLocationBackgroundRefreshLoop()
 #pragma warning restore VSTHRD100 // Avoid async void methods
