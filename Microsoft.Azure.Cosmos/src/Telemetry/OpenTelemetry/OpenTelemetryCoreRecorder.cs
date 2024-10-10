@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Antlr4.Runtime.Misc;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Documents;
@@ -159,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
-                   
                 }
                 else
                 {
@@ -169,16 +167,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
                     this.scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, clientContext.UserAgent);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
                 }
 
-                // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-
-                // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, this.connectionModeCache);
-
             }
         }
 
@@ -248,9 +242,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
-
-                string operationName = Enum.GetName(typeof(OperationType), operationType);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.OperationType, operationName);
+                if (otelStabilityMode != OpenTelemetryStablityModes.DatabaseDupe)
+                {
+                    string operationName = Enum.GetName(typeof(OperationType), operationType);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.OperationType, operationName);
+                }
 
                 if (this.response != null)
                 {
@@ -258,15 +254,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
                     }
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
 
                     if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                     }
                     else
                     {
+                        this.scope.AddAttribute(AppInsightClassicAttributeKeys.RequestContentLength, this.response.RequestContentLength);
+                        this.scope.AddAttribute(AppInsightClassicAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
                         this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
                     }
 
@@ -275,6 +273,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConsistencyLevel, this.response.ConsistencyLevel);
 
                     if (this.response.QuerySpec is not null)
                     {
