@@ -915,6 +915,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 this.fiClient = new CosmosClient(
                     this.connectionString,
                     faultInjector.GetFaultInjectionClientOptions(cosmosClientOptions));
+                await this.fiClient.InitilizeFaultInjectionAsync();
                 this.fiDatabase = this.fiClient.GetDatabase(this.database?.Id);
                 this.fiContainer = this.fiDatabase.GetContainer(this.container?.Id);
 
