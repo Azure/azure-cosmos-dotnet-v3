@@ -178,6 +178,7 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
 </OTelActivities></Output>
@@ -454,6 +455,7 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
 </OTelActivities></Output>
@@ -708,6 +710,7 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
 </OTelActivities></Output>
@@ -994,6 +997,7 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
 </OTelActivities></Output>
@@ -1344,6 +1348,7 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
 </OTelActivities></Output>
@@ -1527,6 +1532,7 @@
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="exception.message">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">Microsoft.Azure.Cosmos.CosmosException</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="Exception" />
 </OTelActivities></Output>

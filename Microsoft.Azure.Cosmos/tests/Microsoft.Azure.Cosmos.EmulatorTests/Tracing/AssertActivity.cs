@@ -68,7 +68,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      AppInsightClassicAttributeKeys.StatusCode,
                      AppInsightClassicAttributeKeys.UserAgent,
                      AppInsightClassicAttributeKeys.MachineId,
-                     AppInsightClassicAttributeKeys.ResponseContentLength
+                     AppInsightClassicAttributeKeys.OperationType,
+                     AppInsightClassicAttributeKeys.ResponseContentLength,
+                     AppInsightClassicAttributeKeys.RequestContentLength
                 };
 
                 foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
