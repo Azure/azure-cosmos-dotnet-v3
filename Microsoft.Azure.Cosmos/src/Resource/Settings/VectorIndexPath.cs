@@ -71,13 +71,13 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
         [JsonProperty(PropertyName = "quantizationByteSize")]
-        public int QuantizationByteSize { get; set; }
+        public int? QuantizationByteSize { get; set; }
 
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
         [JsonProperty(PropertyName = "indexingSearchListSize")]
-        public int IndexingSearchListSize { get; set; }
+        public int? IndexingSearchListSize { get; set; }
 
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
