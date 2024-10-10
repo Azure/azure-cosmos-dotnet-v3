@@ -4,9 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
     using System.Net;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     internal class OpenTelemetryAttributes
@@ -32,7 +30,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 this.OperationType = Documents.OperationType.Invalid;
             }
-
         }
 
         /// <summary>

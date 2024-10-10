@@ -242,13 +242,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
+                if (otelStabilityMode != OpenTelemetryStablityModes.DatabaseDupe)
+                {
+                    string operationName = Enum.GetName(typeof(OperationType), operationType);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.OperationType, operationName);
+                }
+
                 if (this.response != null)
                 {
                     if (this.response.BatchSize is not null)
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
                     }
-                   
+
                     if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
                     {
                         this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
