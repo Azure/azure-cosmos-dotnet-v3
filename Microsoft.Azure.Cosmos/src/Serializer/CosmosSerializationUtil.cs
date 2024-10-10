@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="targetSerializationFormat">The desired JSON serialization format for the output stream.</param>
         /// <param name="inputStream">The input stream containing the data to be serialized.</param>
         /// <returns>Returns true if the input stream is successfully serialized to the target format, otherwise false.</returns>
-        internal static async Task<Stream> TrySerializeStreamToTargetFormatAsync(
+        internal static Stream TrySerializeStreamToTargetFormat(
             JsonSerializationFormat targetSerializationFormat,
             CloneableStream inputStream)
         {
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
                 if (sourceSerializationFormat != JsonSerializationFormat.HybridRow
                     && sourceSerializationFormat != targetSerializationFormat)
                 {
-                    byte[] targetContent = await bufferedStream.ReadAllAsync();
+                    byte[] targetContent = bufferedStream.ReadAll();
 
                     if (targetContent != null && targetContent.Length > 0)
                     {

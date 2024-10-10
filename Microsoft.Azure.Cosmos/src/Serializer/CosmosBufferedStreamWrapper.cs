@@ -6,8 +6,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
 {
     using System;
     using System.IO;
-    using System.Threading;
-    using System.Threading.Tasks;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
 
@@ -130,36 +129,11 @@ namespace Microsoft.Azure.Cosmos.Serializer
         /// </returns>
         public byte[] ReadAll()
         {
-            int count, totalBytes = 0, offset = (int)this.Position, length = (int)this.Length;
-            byte[] bytes = new byte[length];
+            ArraySegment<byte> byteSegment = this.innerStream.GetBuffer();
 
-            while ((count = this.innerStream.Read(bytes, offset, length - offset)) > 0)
-            {
-                offset += count;
-                totalBytes += count;
-            }
-
-            return totalBytes > 0 ? bytes : default;
-        }
-
-        /// <summary>
-        /// Asynchronously reads all bytes from the current position to the end of the stream.
-        /// </summary>
-        /// <returns>
-        /// A task that represents the asynchronous read operation. The value of the TResult parameter contains a byte array with all the bytes read from the stream, or <c>null</c> if no bytes were read.
-        /// </returns>
-        public async Task<byte[]> ReadAllAsync(CancellationToken cancellationToken = default)
-        {
-            int count, totalBytes = 0, offset = (int)this.Position, length = (int)this.Length;
-            byte[] bytes = new byte[length];
-
-            while ((count = await this.innerStream.ReadAsync(bytes, offset, length - offset, cancellationToken)) > 0)
-            {
-                offset += count;
-                totalBytes += count;
-            }
-
-            return totalBytes > 0 ? bytes : default;
+            return byteSegment.Array.Length == byteSegment.Count
+                ? byteSegment.Array
+                : byteSegment.ToArray();
         }
 
         /// <summary>

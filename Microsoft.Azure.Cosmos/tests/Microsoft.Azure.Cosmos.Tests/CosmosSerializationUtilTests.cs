@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Act
             CloneableStream cloneableStream = await StreamExtension.AsClonableStreamAsync(inputStream);
-            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, cloneableStream);
+            Stream outputStream = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(targetFormat, cloneableStream);
 
             // Assert
             Assert.IsNotNull(outputStream);
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Act
             CloneableStream cloneableStream = await StreamExtension.AsClonableStreamAsync(inputStream);
-            Stream outputStream = await CosmosSerializationUtil.TrySerializeStreamToTargetFormatAsync(targetFormat, cloneableStream);
+            Stream outputStream = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(targetFormat, cloneableStream);
 
             // Assert
             Assert.IsNotNull(outputStream);

@@ -63,37 +63,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestReadAllAsync()
-        {
-            byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
-            {
-                byte[] result = await bufferedStream.ReadAllAsync();
-
-                Assert.IsNotNull(result);
-                Assert.AreEqual(data.Length, result.Length);
-                CollectionAssert.AreEqual(data, result);
-            }
-        }
-
-        [TestMethod]
-        public async Task TestReadAllAsyncAfterFirstByteRead()
-        {
-            byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (MemoryStream memoryStream = new(data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
-            {
-                bufferedStream.GetJsonSerializationFormat(); // This will trigger the first byte read.
-                byte[] result = await bufferedStream.ReadAllAsync();
-
-                Assert.IsNotNull(result);
-                Assert.AreEqual(data.Length, result.Length);
-                CollectionAssert.AreEqual(data, result);
-            }
-        }
-
-        [TestMethod]
         public async Task TestGetJsonSerializationFormat()
         {
             byte[] data = new byte[] { (byte)JsonSerializationFormat.Binary };
@@ -169,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TestReadAllAsyncWithNonSeekableStream()
+        public async Task TestReadAllWithNonSeekableStream()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
 
@@ -182,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(JsonSerializationFormat.Text, format);
 
-            byte[] result = await bufferedStream.ReadAllAsync();
+            byte[] result = bufferedStream.ReadAll();
 
             Assert.IsNotNull(result);
             Assert.AreEqual(data.Length, result.Length);
