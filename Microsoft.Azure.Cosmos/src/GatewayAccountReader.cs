@@ -22,7 +22,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosHttpClient httpClient;
         private readonly Uri serviceEndpoint;
         private readonly CancellationToken cancellationToken;
-        private readonly ReaderWriterLockSlim readerWriterLock;
 
         // Backlog: Auth abstractions are spilling through. 4 arguments for this CTOR are result of it.
         public GatewayAccountReader(Uri serviceEndpoint,
@@ -36,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(AuthorizationTokenProvider));
             this.connectionPolicy = connectionPolicy;
             this.cancellationToken = cancellationToken;
-            this.readerWriterLock = new ReaderWriterLockSlim();
         }
 
         private async Task<AccountProperties> GetDatabaseAccountAsync(Uri serviceEndpoint)
@@ -92,8 +90,7 @@ namespace Microsoft.Azure.Cosmos
                 locations: this.connectionPolicy.PreferredLocations,
                 accountInitializationCustomEndpoints: this.connectionPolicy.AccountInitializationCustomEndpoints,
                 getDatabaseAccountFn: this.GetDatabaseAccountAsync,
-                cancellationToken: this.cancellationToken,
-                accountPropertiesReaderWriterLock: this.readerWriterLock);
+                cancellationToken: this.cancellationToken);
 
             return databaseAccount;
         }
