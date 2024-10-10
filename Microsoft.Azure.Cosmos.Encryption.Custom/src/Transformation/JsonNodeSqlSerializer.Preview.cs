@@ -89,39 +89,30 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
         }
 
-        internal virtual void DeserializeAndAddProperty(
+        internal virtual JsonNode Deserialize(
             TypeMarker typeMarker,
             ReadOnlySpan<byte> serializedBytes,
-            JsonNode jsonNode,
-            string key,
             ArrayPoolManager<char> arrayPoolManager)
         {
             switch (typeMarker)
             {
                 case TypeMarker.Boolean:
-                    jsonNode[key] = SqlBoolSerializer.Deserialize(serializedBytes);
-                    break;
+                    return JsonValue.Create(SqlBoolSerializer.Deserialize(serializedBytes));
                 case TypeMarker.Double:
-                    jsonNode[key] = SqlDoubleSerializer.Deserialize(serializedBytes);
-                    break;
+                    return JsonValue.Create(SqlDoubleSerializer.Deserialize(serializedBytes));
                 case TypeMarker.Long:
-                    jsonNode[key] = SqlLongSerializer.Deserialize(serializedBytes);
-                    break;
+                    return JsonValue.Create(SqlLongSerializer.Deserialize(serializedBytes));
                 case TypeMarker.String:
-                    jsonNode[key] = SqlVarCharSerializer.Deserialize(serializedBytes);
-                    break;
+                    return JsonValue.Create(SqlVarCharSerializer.Deserialize(serializedBytes));
                 case TypeMarker.Array:
-                    jsonNode[key] = JsonNode.Parse(serializedBytes);
-                    break;
+                    return JsonNode.Parse(serializedBytes);
                 case TypeMarker.Object:
-                    jsonNode[key] = JsonNode.Parse(serializedBytes);
-                    break;
+                    return JsonNode.Parse(serializedBytes);
                 default:
                     Debug.Fail($"Unexpected type marker {typeMarker}");
-                    break;
+                    return null;
             }
         }
-
     }
 }
 #endif

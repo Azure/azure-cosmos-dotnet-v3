@@ -134,19 +134,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
                 // can we get to internal JsonNode buffers to avoid string allocation here?
-                byte[] cipherTextWithTypeMarker = Convert.FromBase64String(propertyValue.GetValue<string>());
-                if (cipherTextWithTypeMarker == null)
+                string base64String = propertyValue.GetValue<string>();
+                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent((base64String.Length * sizeof(char) * 3 / 4) + 4);
+                if (!Convert.TryFromBase64Chars(base64String, cipherTextWithTypeMarker, out int cipherTextLength))
                 {
                     continue;
                 }
 
-                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
+                (byte[] plainText, int decryptedCount) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
-                this.Serializer.DeserializeAndAddProperty(
+                document[propertyName] = this.Serializer.Deserialize(
                     (TypeMarker)cipherTextWithTypeMarker[0],
                     plainText.AsSpan(0, decryptedCount),
-                    document,
-                    propertyName,
                     charPoolManager);
 
                 pathsDecrypted.Add(path);
