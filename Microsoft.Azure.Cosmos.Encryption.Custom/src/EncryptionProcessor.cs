@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Text.Json;
 #if NET8_0_OR_GREATER
+    using System.Text.Json;
     using System.Text.Json.Nodes;
 #endif
     using System.Threading;
@@ -31,7 +31,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         };
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
+
+#if NET8_0_OR_GREATER
         private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
+#endif
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
@@ -135,14 +138,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return jsonProcessor switch
             {
                 JsonProcessor.Newtonsoft => await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken),
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
                 JsonProcessor.SystemTextJson => await DecryptJsonNodeAsync(input, encryptor, diagnosticsContext, cancellationToken),
 #endif
                 _ => throw new InvalidOperationException("Unsupported Json Processor")
             };
         }
 
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         public static async Task<(Stream, DecryptionContext)> DecryptJsonNodeAsync(
             Stream input,
             Encryptor encryptor,
@@ -195,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return (document, decryptionContext);
         }
 
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         public static async Task<(JsonNode, DecryptionContext)> DecryptAsync(
             JsonNode document,
             Encryptor encryptor,
