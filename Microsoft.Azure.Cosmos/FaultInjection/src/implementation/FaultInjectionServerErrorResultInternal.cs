@@ -471,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.content = content;
             }
 
-            protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
             {
                 return this.content.CopyToAsync(stream);
             }

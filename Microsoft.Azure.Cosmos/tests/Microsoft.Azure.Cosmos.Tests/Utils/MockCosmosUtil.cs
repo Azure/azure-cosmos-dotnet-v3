@@ -93,7 +93,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 connectionPolicy: connectionPolicy,
                 httpMessageHandler: null,
                 sendingRequestEventArgs: null,
-                receivedResponseEventArgs: null);
+                receivedResponseEventArgs: null,
+                faultInjectionchaosInterceptor: null);
         }
 
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)

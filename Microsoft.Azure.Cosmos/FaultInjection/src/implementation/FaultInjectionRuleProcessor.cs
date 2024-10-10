@@ -448,10 +448,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             DocumentServiceRequest request,
             bool forceAddressRefresh)
         {
-            PartitionAddressInformation partitionAddressInformation =
+            if (this.addressResolver != null)
+            {
+                PartitionAddressInformation partitionAddressInformation =
                await this.addressResolver.ResolveAsync(request, forceAddressRefresh, CancellationToken.None);
 
-            return partitionAddressInformation.Get(Documents.Client.Protocol.Tcp);
+                return partitionAddressInformation.Get(Documents.Client.Protocol.Tcp);
+            }
+            
+            throw new ArgumentException("AddressResolver is Null");
         }
 
         internal GlobalEndpointManager GetGlobalEndpointManager()

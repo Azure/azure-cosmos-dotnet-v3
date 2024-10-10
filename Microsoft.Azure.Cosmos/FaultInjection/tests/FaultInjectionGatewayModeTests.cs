@@ -485,8 +485,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 {
                     ItemResponse<FaultInjectionTestObject> ir = await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(
                     createdItem,
-                    new PartitionKey(pk),
-                    cancellationToken: token);
+                    new PartitionKey(pk));
                 }
                 catch (CosmosException ex)
                 {
