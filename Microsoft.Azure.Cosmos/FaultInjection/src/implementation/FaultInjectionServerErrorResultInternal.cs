@@ -347,6 +347,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
@@ -366,6 +369,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
@@ -453,6 +459,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         httpResponse.Headers.Add(header, headers.Get(header));
                     }
 
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
