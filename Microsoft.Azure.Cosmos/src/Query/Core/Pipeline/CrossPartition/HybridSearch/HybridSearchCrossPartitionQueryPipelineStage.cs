@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
 
     internal class HybridSearchCrossPartitionQueryPipelineStage : IQueryPipelineStage
     {
@@ -26,15 +27,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private const string DisallowContinuationTokenMessage = "Hybrid search does not support continuation tokens";
 
+        private const int RRFConstant = 60;
+
         private readonly static IReadOnlyList<CosmosElement> EmptyPage = new List<CosmosElement>();
 
         private readonly static QueryState Continuation = new QueryState(CosmosString.Create("HybridSearchInProgress"));
 
+        private readonly HybridSearchComponentPipelineFactory pipelineFactory;
+
+        private readonly IQueryPipelineStage globalStatisticsPipeline;
+
         private State state;
-
-        private HybridSearchComponentPipelineFactory pipelineFactory;
-
-        private IQueryPipelineStage globalStatisticsPipeline;
 
         private IReadOnlyList<IQueryPipelineStage> queryPipelineStages;
 
@@ -90,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     rewrittenQueryExecutionOptions,
                     containerQueryProperties,
                     maxConcurrency,
+                    emitRawOrderByPayload: true,
                     requestContinuationToken: null);
             }
 
@@ -196,6 +200,188 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<List<IQueryPipelineStage>>.FromResult(queryPipelineStages);
         }
 
+        private static async ValueTask<TryCatch<(IReadOnlyList<HybridSearchQueryResult>, double)>> CollateSortedPipelineStageResultsAsync(
+            IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
+            int maxConcurrency,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            // Collate results should return an IEnumerable<HybridSearchQueryResult>
+            // Sort and coalesce the results on _rid
+            // After sorting, each HybridSearchQueryResult has a fixed index in the list
+            // This index can be used as the key for the ranking array
+            // Now create an array (per dimension) of tuples (score, index) and sort it by score
+            // The index of the tuple in the sorted array is the rank of the document
+            // Create an array of tuples of ranks for each dimension
+            // Create an array of tuples of (RRF scores, index) for each document using the ranks
+            // Sort the array by RRF scores
+            // Emit the documents in the sorted order by using the index in the tuple
+
+            TryCatch<(List<HybridSearchQueryResult> queryResults, double requestCharge)> tryGetResults = await PrefetchInParallelAsync(
+                queryPipelineStages,
+                maxConcurrency,
+                trace,
+                cancellationToken);
+
+            if (tryGetResults.Failed)
+            {
+                return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, double)>.FromException(tryGetResults.Exception);
+            }
+
+            (List<HybridSearchQueryResult> queryResults, double requestCharge) = tryGetResults.Result;
+
+            queryResults.Sort((x, y) => string.CompareOrdinal(x.Rid.Value, y.Rid.Value));
+
+            UniqueRids(queryResults);
+
+            IReadOnlyList<List<ScoreTuple>> componentScores = RetrieveComponentScores(queryResults, queryPipelineStages.Count);
+
+            foreach (List<ScoreTuple> scoreTuples in componentScores)
+            {
+                scoreTuples.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // sort descending
+            }
+
+            int[,] ranks = ComputeRanks(componentScores);
+
+            ComputeRRFScores(ranks, queryResults);
+
+            queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
+
+            return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, double)>.FromResult((queryResults, requestCharge));
+        }
+
+        private static async ValueTask<TryCatch<(List<HybridSearchQueryResult> queryResults, double requestCharge)>> PrefetchInParallelAsync(
+            IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
+            int maxConcurrency,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            List<QueryPipelineStagePrefetcher> prefetchers = new List<QueryPipelineStagePrefetcher>(queryPipelineStages.Count);
+            foreach (IQueryPipelineStage queryPipelineStage in queryPipelineStages)
+            {
+                prefetchers.Add(new QueryPipelineStagePrefetcher(queryPipelineStage));
+            }
+
+            await ParallelPrefetch.PrefetchInParallelAsync(prefetchers, maxConcurrency, trace, cancellationToken);
+
+            double requestCharge = 0;
+            List<HybridSearchQueryResult> queryResults = new List<HybridSearchQueryResult>();
+            foreach (QueryPipelineStagePrefetcher prefetcher in prefetchers)
+            {
+                TryCatch<IReadOnlyList<QueryPage>> tryGetResults = prefetcher.Result;
+                if (tryGetResults.Failed)
+                {
+                    return TryCatch<(List<HybridSearchQueryResult> queryResults, double requestCharge)>.FromException(tryGetResults.Exception);
+                }
+
+                foreach (QueryPage queryPage in tryGetResults.Result)
+                {
+                    requestCharge += queryPage.RequestCharge;
+                    foreach (CosmosElement document in queryPage.Documents)
+                    {
+                        HybridSearchQueryResult hybridSearchQueryResult = HybridSearchQueryResult.Create(document);
+                        queryResults.Add(hybridSearchQueryResult);
+                    }
+                }
+            }
+
+            return TryCatch<(List<HybridSearchQueryResult> queryResults, double requestCharge)>.FromResult((queryResults, requestCharge));
+        }
+
+        private static async ValueTask<TryCatch<IReadOnlyList<QueryPage>>> RunQueryPipelineStageAsync(
+            IQueryPipelineStage pipelineStage,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            List<QueryPage> result = new List<QueryPage>();
+            while (await pipelineStage.MoveNextAsync(trace, cancellationToken))
+            {
+                TryCatch<QueryPage> tryCatchQueryPage = pipelineStage.Current;
+                if (tryCatchQueryPage.Failed)
+                {
+                    return TryCatch<IReadOnlyList<QueryPage>>.FromException(tryCatchQueryPage.Exception);
+                }
+
+                result.Add(tryCatchQueryPage.Result);
+            }
+
+            return TryCatch<IReadOnlyList<QueryPage>>.FromResult(result);
+        }
+
+        private static void UniqueRids(List<HybridSearchQueryResult> queryResults)
+        {
+            int writeIndex = 0;
+            for (int readIndex = 1; readIndex < queryResults.Count; ++readIndex)
+            {
+                if (queryResults[readIndex].Rid.Value != queryResults[readIndex - 1].Rid.Value)
+                {
+                    ++writeIndex;
+                    queryResults[writeIndex] = queryResults[readIndex];
+                }
+            }
+
+            queryResults.RemoveRange(writeIndex + 1, queryResults.Count - writeIndex);
+        }
+
+        private static IReadOnlyList<List<ScoreTuple>> RetrieveComponentScores(IReadOnlyList<HybridSearchQueryResult> queryResults, int componentCount)
+        {
+            List<List<ScoreTuple>> componentScores = new List<List<ScoreTuple>>(componentCount);
+            for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+            {
+                componentScores.Add(new List<ScoreTuple>(queryResults.Count));
+            }
+
+            for (int index = 0; index < queryResults.Count; ++index)
+            {
+                CosmosArray componentScoresArray = queryResults[index].ComponentScores;
+
+                for (int componentScoreindex = 0; componentScoreindex < componentScoresArray.Count; ++componentScoreindex)
+                {
+                    if (!(componentScoresArray[componentScoreindex] is CosmosNumber cosmosNumber))
+                    {
+                        throw new InternalServerErrorException($"componentScores must be an array of numbers.");
+                    }
+
+                    ScoreTuple scoreTuple = new ScoreTuple(Number64.ToDouble(cosmosNumber.Value), index);
+                    componentScores[componentScoreindex].Add(scoreTuple);
+                }
+            }
+
+            return componentScores;
+        }
+
+        private static int[,] ComputeRanks(IReadOnlyList<List<ScoreTuple>> componentScores)
+        {
+            int[,] ranks = new int[componentScores.Count, componentScores[0].Count];
+            for (int componentIndex = 0; componentIndex < componentScores.Count; ++componentIndex)
+            {
+                for (int rank = 0; rank < componentScores[componentIndex].Count; ++rank)
+                {
+                    ranks[componentIndex, componentScores[componentIndex][rank].Index] = rank;
+                }
+            }
+
+            return ranks;
+        }
+
+        private static void ComputeRRFScores(
+            int[,] ranks,
+            List<HybridSearchQueryResult> queryResults)
+        {
+            int componentCount = ranks.GetLength(0);
+
+            for (int index = 0; index < queryResults.Count; ++index)
+            {
+                double rrfScore = 0;
+                for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                {
+                    rrfScore += 1.0 / (RRFConstant + ranks[componentIndex, index]);
+                }
+
+                queryResults[index] = queryResults[index].WithScore(rrfScore);
+            }
+        }
+
         private static QueryInfo RewriteQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics)
         {
             QueryInfo result = new QueryInfo();
@@ -299,6 +485,36 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 streaming: false);
 
             return TryCatch<(GlobalFullTextSearchStatistics, QueryPage)>.FromResult((globalStatisticsAggregator.GetResult(), queryPage));
+        }
+
+        private readonly struct ScoreTuple
+        {
+            public double Score { get; }
+
+            public int Index { get; }
+
+            public ScoreTuple(double score, int index)
+            {
+                this.Score = score;
+                this.Index = index;
+            }
+        }
+
+        private sealed class QueryPipelineStagePrefetcher : IPrefetcher
+        {
+            private readonly IQueryPipelineStage queryPipelineStage;
+
+            public TryCatch<IReadOnlyList<QueryPage>> Result { get; private set; }
+
+            public QueryPipelineStagePrefetcher(IQueryPipelineStage queryPipelineStage)
+            {
+                this.queryPipelineStage = queryPipelineStage ?? throw new ArgumentNullException(nameof(queryPipelineStage));
+            }
+
+            public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                this.Result = await RunQueryPipelineStageAsync(this.queryPipelineStage, trace, cancellationToken);
+            }
         }
 
         private sealed class FullTextStatisticsAggregator

@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount;
@@ -79,13 +80,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryInfo: queryInfo,
                     prefetchPolicy: DeterminePrefetchPolicy(queryInfo),
                     queryPaginationOptions: queryPaginationOptions,
+                    emitRawOrderByPayload: false,
                     containerQueryProperties: containerQueryProperties,
                     maxConcurrency: maxConcurrency,
                     requestContinuationToken: requestContinuationToken);
             }
             else
             {
-                return default;
+                return HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: sqlQuerySpec,
+                    targetRanges: targetRanges,
+                    partitionKey: partitionKey,
+                    queryInfo: hybridSearchQueryInfo,
+                    queryExecutionOptions: queryPaginationOptions,
+                    containerQueryProperties: containerQueryProperties,
+                    allRanges: allRanges,
+                    maxConcurrency: maxConcurrency);
             }
         }
 
@@ -99,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             QueryExecutionOptions queryPaginationOptions,
             ContainerQueryProperties containerQueryProperties,
             int maxConcurrency,
+            bool emitRawOrderByPayload,
             CosmosElement requestContinuationToken)
         {
             MonadicCreatePipelineStage monadicCreatePipelineStage;
@@ -115,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
                     nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
+                    emitRawOrderByPayload: emitRawOrderByPayload,
                     continuationToken: continuationToken,
                     containerQueryProperties: containerQueryProperties);
             }
