@@ -33,11 +33,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Gets or sets compression algorithm.
         /// </summary>
-#if NET8_0_OR_GREATER
-        public CompressionAlgorithm Algorithm { get; set; } = CompressionAlgorithm.Brotli;
-#else
         public CompressionAlgorithm Algorithm { get; set; } = CompressionAlgorithm.None;
-#endif
 
         /// <summary>
         /// Gets or sets compression level.

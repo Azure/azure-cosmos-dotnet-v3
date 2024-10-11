@@ -1,6 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
     using System;
     using System.Collections.Generic;
     using System.IO.Compression;
@@ -44,7 +44,7 @@
         public void CompressAndDecompress_HasSameResult(CompressionLevel compressionLevel, int payloadSize)
         {
             BrotliCompressor compressor = new (compressionLevel);
-            EncryptionProperties properties = new (0, "", "", null, null, CompressionOptions.CompressionAlgorithm.Brotli, new Dictionary<string, int>());
+            Dictionary<string, int> properties = new ();
             string path = "somePath";
 
             byte[] bytes = new byte[payloadSize];
@@ -59,9 +59,9 @@
 
             Console.WriteLine($"Original: {bytes.Length} Compressed: {compressedBytesSize}");
             
-            Assert.IsTrue(properties.CompressedEncryptedPaths.ContainsKey(path));
+            Assert.IsTrue(properties.ContainsKey(path));
 
-            int recordedSize = properties.CompressedEncryptedPaths["somePath"];
+            int recordedSize = properties["somePath"];
             Assert.AreEqual(bytes.Length, recordedSize);
 
             byte[] decompressedBytes = new byte[recordedSize];

@@ -12,7 +12,7 @@
         [TestMethod]
         public void Ctor_AssignsAllMandatoryProperties()
         {
-            EncryptionProperties properties = new EncryptionProperties(
+            EncryptionProperties properties = new (
                 11,
                 "algorithm",
                 "dek-id",
@@ -32,7 +32,7 @@
         [TestMethod]
         public void Ctor_AssignsAllProperties()
         {
-            EncryptionProperties properties = new EncryptionProperties(
+            EncryptionProperties properties = new (
                 11,
                 "algorithm",
                 "dek-id",

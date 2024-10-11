@@ -35,19 +35,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
 
-            EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: 4,
-                encryptionOptions.EncryptionAlgorithm,
-                encryptionOptions.DataEncryptionKeyId,
-                encryptedData: null,
-                pathsEncrypted,
-                encryptionOptions.CompressionOptions.Algorithm,
-                new Dictionary<string, int>());
+            bool compressionEnabled = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None;
 
 #if NET8_0_OR_GREATER
             BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
                 ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 #endif
+            Dictionary<string, int> compressedPaths = new ();
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
@@ -78,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 if (compressor != null && (processedBytesLength >= encryptionOptions.CompressionOptions.MinimalCompressedLength))
                 {
                     byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(processedBytesLength));
-                    processedBytesLength = compressor.Compress(encryptionProperties, pathToEncrypt, processedBytes, processedBytesLength, compressedBytes);
+                    processedBytesLength = compressor.Compress(compressedPaths, pathToEncrypt, processedBytes, processedBytesLength, compressedBytes);
                     processedBytes = compressedBytes;
                 }
 #endif
@@ -93,6 +87,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #if NET8_0_OR_GREATER
             compressor?.Dispose();
 #endif
+            EncryptionProperties encryptionProperties = new (
+                encryptionFormatVersion: compressionEnabled ? 4 : 3,
+                encryptionOptions.EncryptionAlgorithm,
+                encryptionOptions.DataEncryptionKeyId,
+                encryptedData: null,
+                pathsEncrypted,
+                encryptionOptions.CompressionOptions.Algorithm,
+                compressedPaths);
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 #if NET8_0_OR_GREATER

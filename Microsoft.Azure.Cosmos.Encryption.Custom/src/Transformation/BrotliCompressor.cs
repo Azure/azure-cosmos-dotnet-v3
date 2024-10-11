@@ -4,10 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if NET8_0_OR_GREATER
 
     using System;
     using System.Buffers;
+    using System.Collections.Generic;
     using System.IO.Compression;
 
     internal class BrotliCompressor : IDisposable
@@ -44,13 +45,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             this.encoder = new BrotliEncoder(BrotliCompressor.GetQualityFromCompressionLevel(compressionLevel), DefaultWindow);
         }
 
-        public virtual int Compress(EncryptionProperties properties, string path, byte[] bytes, int length, byte[] outputBytes)
+        public virtual int Compress(Dictionary<string, int> compressedPaths, string path, byte[] bytes, int length, byte[] outputBytes)
         {
             OperationStatus status = this.encoder.Compress(bytes.AsSpan(0, length), outputBytes, out int bytesConsumed, out int bytesWritten, true);
 
             ThrowIfFailure(status, length, bytesConsumed);
 
-            properties.CompressedEncryptedPaths[path] = length;
+            compressedPaths[path] = length;
 
             return bytesWritten;
         }
