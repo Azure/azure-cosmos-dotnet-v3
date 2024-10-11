@@ -9,10 +9,15 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ItemGroup>
-    <!-- Add the Newtonsoft.Json dependency as a private asset -->
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" PrivateAssets="all">
-      <NoWarn>NU1903</NoWarn>
-    </PackageReference>
-  </ItemGroup>
+	<!-- Include Newtonsoft.Json for internal project references -->
+	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
+		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
+	</ItemGroup>
+	
+	<!-- Use PrivateAssets for external consumers via NuGet -->
+	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
+		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" PrivateAssets="all">
+			<NoWarn>NU1903</NoWarn>
+		</PackageReference>
+	</ItemGroup>
 </Project>

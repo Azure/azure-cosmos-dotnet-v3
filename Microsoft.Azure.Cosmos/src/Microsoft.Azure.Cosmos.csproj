@@ -44,6 +44,10 @@
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
+	
+	<PropertyGroup Condition=" '$(ProjectReference)' == 'true' ">
+		<SdkProjectRef>True</SdkProjectRef>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
