@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string dataEncryptionKeyId,
             byte[] encryptedData,
             IEnumerable<string> encryptedPaths,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm = CompressionOptions.CompressionAlgorithm.None,
             IDictionary<string, int> compressedEncryptedPaths = null)
         {
             this.EncryptionFormatVersion = encryptionFormatVersion;
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.DataEncryptionKeyId = dataEncryptionKeyId;
             this.EncryptedData = encryptedData;
             this.EncryptedPaths = encryptedPaths;
+            this.CompressionAlgorithm = compressionAlgorithm;
             this.CompressedEncryptedPaths = compressedEncryptedPaths;
         }
     }

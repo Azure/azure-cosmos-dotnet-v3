@@ -21,10 +21,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
-#if NET8_0_OR_GREATER
-        internal BrotliCompressor BrotliCompressor { get; set; } = new BrotliCompressor();
-#endif
-
         public async Task<Stream> EncryptAsync(
             Stream input,
             Encryptor encryptor,
@@ -45,11 +41,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,
                 pathsEncrypted,
+                encryptionOptions.CompressionOptions.Algorithm,
                 new Dictionary<string, int>());
 
 #if NET8_0_OR_GREATER
-            bool compress = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli;
-            int compressionLevel = BrotliCompressor.GetQualityFromCompressionLevel(encryptionOptions.CompressionOptions.CompressionLevel);
+            BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
+                ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
 #endif
 
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
@@ -78,9 +75,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
 
 #if NET8_0_OR_GREATER
-                if (compress && (processedBytesLength >= encryptionOptions.CompressionOptions.MinimalCompressedLength))
+                if (compressor != null && (processedBytesLength >= encryptionOptions.CompressionOptions.MinimalCompressedLength))
                 {
-                    (processedBytes, processedBytesLength) = this.BrotliCompressor.Compress(encryptionProperties, pathToEncrypt, processedBytes, processedBytesLength, arrayPoolManager, compressionLevel);
+                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(processedBytesLength));
+                    processedBytesLength = compressor.Compress(encryptionProperties, pathToEncrypt, processedBytes, processedBytesLength, compressedBytes);
+                    processedBytes = compressedBytes;
                 }
 #endif
 
@@ -90,6 +89,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 pathsEncrypted.Add(pathToEncrypt);
             }
+
+#if NET8_0_OR_GREATER
+            compressor?.Dispose();
+#endif
 
             itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 #if NET8_0_OR_GREATER
@@ -120,6 +123,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
             List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
+
+#if NET8_0_OR_GREATER
+            BrotliCompressor decompressor = null;
+            if (encryptionProperties.EncryptionFormatVersion == 4)
+            {
+                bool containsCompressed = encryptionProperties.CompressedEncryptedPaths?.Any() == true;
+                if (encryptionProperties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
+                {
+                    throw new NotSupportedException($"Unknown compression algorithm {encryptionProperties.CompressionAlgorithm}");
+                }
+
+                if (containsCompressed)
+                {
+                    decompressor = new ();
+                }
+            }
+#endif
+
             foreach (string path in encryptionProperties.EncryptedPaths)
             {
 #if NET8_0_OR_GREATER
@@ -143,14 +164,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, arrayPoolManager);
 
 #if NET8_0_OR_GREATER
-                if (encryptionProperties.EncryptionFormatVersion == 4)
+                if (decompressor != null)
                 {
                     if (encryptionProperties.CompressedEncryptedPaths?.TryGetValue(path, out int decompressedSize) == true)
                     {
                         byte[] buffer = arrayPoolManager.Rent(decompressedSize);
-                        processedBytes = this.BrotliCompressor.Decompress(bytes, processedBytes, buffer);
-
-                        Debug.Assert(processedBytes == decompressedSize);
+                        processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);
 
                         bytes = buffer;
                     }

@@ -43,15 +43,15 @@
         [DataRow(CompressionLevel.SmallestSize, 4096)]
         public void CompressAndDecompress_HasSameResult(CompressionLevel compressionLevel, int payloadSize)
         {
-            BrotliCompressor compressor = new ();
-            EncryptionProperties properties = new (0, "", "", null, null, new Dictionary<string, int>());
+            BrotliCompressor compressor = new (compressionLevel);
+            EncryptionProperties properties = new (0, "", "", null, null, CompressionOptions.CompressionAlgorithm.Brotli, new Dictionary<string, int>());
             string path = "somePath";
 
             byte[] bytes = new byte[payloadSize];
             bytes.AsSpan().Fill(127);
-            ArrayPoolManager manager = new ();
 
-            (byte[] compressedBytes, int compressedBytesSize) = compressor.Compress(properties, path, bytes, bytes.Length, manager, BrotliCompressor.GetQualityFromCompressionLevel(compressionLevel));
+            byte[] compressedBytes = new byte[BrotliCompressor.GetMaxCompressedSize(payloadSize)];
+            int compressedBytesSize = compressor.Compress(properties, path, bytes, bytes.Length, compressedBytes);
 
             Assert.AreNotSame(bytes, compressedBytes);
             Assert.IsTrue(compressedBytesSize > 0);
