@@ -38,6 +38,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
             : this(longitude, latitude, null)
         {
         }
+        
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Position"/> class in the Azure Cosmos DB service.
+        /// </summary>
+        public Position() 
+            : this(0.0d, 0.0d)
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Position"/> class in the Azure Cosmos DB service.
@@ -55,11 +63,11 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
             if (altitude != null)
             {
-                this.Coordinates = new ReadOnlyCollection<double>(new[] { longitude, latitude, altitude.Value });
+                this.Coordinates = new List<double>(new[] { longitude, latitude, altitude.Value });
             }
             else
             {
-                this.Coordinates = new ReadOnlyCollection<double>(new[] { longitude, latitude });
+                this.Coordinates = new List<double>(new[] { longitude, latitude });
             }
         }
 
@@ -76,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
                 throw new ArgumentException("coordinates");
             }
 
-            this.Coordinates = new ReadOnlyCollection<double>(coordinates);
+            this.Coordinates = new List<double>(coordinates);
         }
 
         /// <summary>
@@ -86,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Coordinate values.
         /// </value>
         [DataMember(Name = "Coordinates")]
-        public ReadOnlyCollection<double> Coordinates { get; private set; }
+        public List<double> Coordinates { get; set; }
 
         /// <summary>
         /// Gets longitude in the Azure Cosmos DB service.
