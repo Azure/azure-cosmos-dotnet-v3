@@ -91,8 +91,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal virtual JsonNode Deserialize(
             TypeMarker typeMarker,
-            ReadOnlySpan<byte> serializedBytes,
-            ArrayPoolManager<char> arrayPoolManager)
+            ReadOnlySpan<byte> serializedBytes)
         {
             switch (typeMarker)
             {

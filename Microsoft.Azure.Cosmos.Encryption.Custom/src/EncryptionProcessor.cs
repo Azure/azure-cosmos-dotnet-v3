@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
     using System.Linq;
     using System.Text;
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
     using System.Text.Json;
     using System.Text.Json.Nodes;
 #endif
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
 
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
 #endif
 
@@ -164,6 +164,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             JsonNode document = await JsonNode.ParseAsync(input, cancellationToken: cancellationToken);
 
             (JsonNode decryptedDocument, DecryptionContext context) = await DecryptAsync(document, encryptor, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                input.Position = 0;
+                return (input, null);
+            }
+
             await input.DisposeAsync();
 
             MemoryStream ms = new ();
@@ -211,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (!document.AsObject().TryGetPropertyValue(Constants.EncryptedInfo, out JsonNode encryptionPropertiesNode))
             {
-                throw new InvalidOperationException("Encryption properties deserialization failed.");
+                return (document, null);
             }
 
             EncryptionProperties encryptionProperties;

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Nodes;
     using System.Threading;
@@ -18,11 +17,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal class MdeJsonNodeEncryptionProcessor
     {
+        private readonly JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
+
         internal JsonNodeSqlSerializer Serializer { get; set; } = new JsonNodeSqlSerializer();
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
-
-        private JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
 
         public async Task<Stream> EncryptAsync(
             Stream input,
@@ -115,7 +114,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             using ArrayPoolManager arrayPoolManager = new ();
-            using ArrayPoolManager<char> charPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
 
@@ -145,8 +143,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 document[propertyName] = this.Serializer.Deserialize(
                     (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText.AsSpan(0, decryptedCount),
-                    charPoolManager);
+                    plainText.AsSpan(0, decryptedCount));
 
                 pathsDecrypted.Add(path);
             }
