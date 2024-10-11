@@ -2,9 +2,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
@@ -135,6 +138,31 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             Assert.IsNull(Environment.GetEnvironmentVariable(ConfigurationManager.DistributedQueryGatewayModeEnabled));
         }
 
+        [TestMethod]
+        public async Task StreamIteratorTestsAsync()
+        {
+            static Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
+            {
+                int[] pageSizes = new[] { DocumentCount };
+
+                TestCase[] testCases = new[]
+                {
+                    MakeTest(
+                        "SELECT VALUE c.x FROM c WHERE c.x < 200",
+                        pageSizes,
+                        Expectations.AllDocumentsLessThan200ArePresent),
+                };
+
+                return RunStreamIteratorTestsAsync(container, testCases);
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Gateway,
+                CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                CreateDocuments(DocumentCount),
+                ImplementationAsync);
+        }
+
         private static async Task RunPartitionedParityTestsAsync(Container container, IEnumerable<string> testCases)
         {
             IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
@@ -201,7 +229,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 foreach (int pageSize in testCase.PageSizes)
                 {
                     List<int> results = await RunContinuationBasedQueryTestAsync(container, testCase.Query, pageSize);
-                    testCase.ValidateResult(results);
+                    Assert.IsTrue(testCase.ValidateResult(results));
                 }
             }
         }
@@ -260,7 +288,55 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         options,
                         QueryDrainingMode.HoldState | QueryDrainingMode.ContinuationToken);
 
-                    testCase.ValidateResult(results);
+                    Assert.IsTrue(testCase.ValidateResult(results));
+                }
+            }
+        }
+
+        private static async Task RunStreamIteratorTestsAsync(Container container, IEnumerable<TestCase> testCases)
+        {
+            foreach (TestCase testCase in testCases)
+            {
+                foreach (int pageSize in testCase.PageSizes)
+                {
+                    QueryRequestOptions options = new QueryRequestOptions()
+                    {
+                        MaxItemCount = pageSize,
+                        EnableDistributedQueryGatewayMode = true,
+                    };
+
+                    List<int> extractedResults = new List<int>();
+                    await foreach (ResponseMessage response in RunSimpleQueryAsync(
+                        container,
+                        testCase.Query,
+                        options))
+                    {
+                        Assert.IsTrue(response.StatusCode == System.Net.HttpStatusCode.OK);
+
+                        using (MemoryStream memstr = new MemoryStream())
+                        {
+                            response.Content.CopyTo(memstr);
+                            byte[] content = memstr.ToArray();
+
+                            IJsonNavigator navigator = JsonNavigator.Create(content);
+                            IJsonNavigatorNode rootNode = navigator.GetRootNode();
+
+                            Assert.IsTrue(navigator.TryGetObjectProperty(rootNode, "_rid", out ObjectProperty ridProperty));
+                            string rid = navigator.GetStringValue(ridProperty.ValueNode);
+                            Assert.IsTrue(rid.Length > 0);
+
+                            Assert.IsTrue(navigator.TryGetObjectProperty(rootNode, "Documents", out ObjectProperty documentsProperty));
+                            IEnumerable<IJsonNavigatorNode> arrayItems = navigator.GetArrayItems(documentsProperty.ValueNode);
+                            foreach (IJsonNavigatorNode node in arrayItems)
+                            {
+                                Assert.IsTrue(navigator.GetNodeType(node) == JsonNodeType.Number64);
+
+                                extractedResults.Add((int)Number64.ToLong(navigator.GetNumber64Value(node)));
+                            }
+                        }
+                    }
+
+                    Assert.IsTrue(testCase.ValidateResult(extractedResults));
                 }
             }
         }
