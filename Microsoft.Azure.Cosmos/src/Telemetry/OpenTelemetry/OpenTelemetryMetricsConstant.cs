@@ -80,6 +80,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             public const string RegionContactedDesc = "Number of regions contacted when executing an operation";
 
             /// <summary>
+            /// InstanceMetricName
+            /// </summary>
+            public const string InstanceMetricName = "db.cosmosdb.client.active_instances";
+
+            /// <summary>
+            /// InstanceMetricDesc
+            /// </summary>
+            public const string InstanceMetricDesc = "Number of active SDK client instances.";
+
+            /// <summary>
             /// Count
             /// </summary>
             public const string Count = "#";

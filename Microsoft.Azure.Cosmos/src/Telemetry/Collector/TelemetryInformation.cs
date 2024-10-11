@@ -27,9 +27,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
         internal string CollectionLink { get; set; } = null; // Required only for collection cache telemetry
         internal ITrace Trace { get; set; } // Required to fetch network level telemetry out of the trace object
 
-        internal string MaxItemCount { get; set; }
         internal string ActualItemCount { get; set; }
-        internal string PartitionKeyRangeId { get; set; }
-        internal string ClientId { get; set; }
     }
 }
