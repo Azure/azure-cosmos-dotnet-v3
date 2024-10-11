@@ -539,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        //[Ignore("This test will be enabled once the vector similarity changes are made available into the public emulator.")]
+        [Ignore("This test will be enabled once the vector similarity changes are made available into the public emulator.")]
         public async Task TestVectorEmbeddingPolicy()
         {
             string vector1Path = "/vector1", vector2Path = "/vector2", vector3Path = "/vector3";
