@@ -55,7 +55,7 @@
             encryptedStream.CopyTo(memoryStream);
             this.encryptedData = memoryStream.ToArray();
         }
-        
+
         [Benchmark]
         public async Task Encrypt()
         {

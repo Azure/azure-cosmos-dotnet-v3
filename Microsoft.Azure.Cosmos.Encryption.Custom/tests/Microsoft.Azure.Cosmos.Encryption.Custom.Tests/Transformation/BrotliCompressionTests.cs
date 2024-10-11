@@ -2,6 +2,7 @@
 {
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
     using System;
+    using System.Collections.Generic;
     using System.IO.Compression;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
@@ -43,7 +44,7 @@
         public void CompressAndDecompress_HasSameResult(CompressionLevel compressionLevel, int payloadSize)
         {
             BrotliCompressor compressor = new ();
-            EncryptionProperties properties = new (0, "", "", null, null, new());
+            EncryptionProperties properties = new (0, "", "", null, null, new Dictionary<string, int>());
             string path = "somePath";
 
             byte[] bytes = new byte[payloadSize];
