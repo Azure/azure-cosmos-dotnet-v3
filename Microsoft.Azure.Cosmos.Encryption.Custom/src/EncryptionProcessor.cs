@@ -206,22 +206,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 #endif
 
-#pragma warning disable CA2208 // Instantiate argument exceptions correctly
-            if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
-            }
-
-            if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
-            }
-
-            if (encryptionOptions.PathsToEncrypt == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
-            }
-#pragma warning restore CA2208 // Instantiate argument exceptions correctly
+            encryptionOptions.Validate();
         }
 
         private static JObject RetrieveItem(
