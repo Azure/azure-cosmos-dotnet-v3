@@ -59,6 +59,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, token);
 
+            bool compressionEnabled = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None;
+
+#if NET8_0_OR_GREATER
+            BrotliCompressor compressor = encryptionOptions.CompressionOptions.Algorithm == CompressionOptions.CompressionAlgorithm.Brotli
+                ? new BrotliCompressor(encryptionOptions.CompressionOptions.CompressionLevel) : null;
+#endif
+            Dictionary<string, int> compressedPaths = new ();
+
             foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
             {
 #if NET8_0_OR_GREATER
@@ -76,26 +84,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     continue;
                 }
 
-                byte[] plainText = null;
-                (typeMarker, plainText, int plainTextLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
+                byte[] processedBytes = null;
+                (typeMarker, processedBytes, int processedBytesLength) = this.Serializer.Serialize(propertyValue, arrayPoolManager);
 
-                if (plainText == null)
+                if (processedBytes == null)
                 {
                     continue;
                 }
 
-                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, plainText, plainTextLength, arrayPoolManager);
+#if NET8_0_OR_GREATER
+                if (compressor != null && (processedBytesLength >= encryptionOptions.CompressionOptions.MinimalCompressedLength))
+                {
+                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(processedBytesLength));
+                    processedBytesLength = compressor.Compress(compressedPaths, pathToEncrypt, processedBytes, processedBytesLength, compressedBytes);
+                    processedBytes = compressedBytes;
+                }
+#endif
+                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
                 itemObj[propertyName] = JsonValue.Create(new JsonBytes(encryptedBytes, 0, encryptedBytesCount));
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
+#if NET8_0_OR_GREATER
+            compressor?.Dispose();
+#endif
             EncryptionProperties encryptionProperties = new (
-                encryptionFormatVersion: 3,
+                encryptionFormatVersion: compressionEnabled ? 4 : 3,
                 encryptionOptions.EncryptionAlgorithm,
                 encryptionOptions.DataEncryptionKeyId,
                 encryptedData: null,
-                pathsEncrypted);
+                pathsEncrypted,
+                encryptionOptions.CompressionOptions.Algorithm,
+                compressedPaths);
 
             JsonNode propertiesNode = JsonSerializer.SerializeToNode(encryptionProperties);
 
