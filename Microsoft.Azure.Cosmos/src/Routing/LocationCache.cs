@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets available (account-level) read locations.
         /// </summary>
-        public ReadOnlyCollection<string> GetAvailableReadLocations()
+        public ReadOnlyCollection<string> GetAvailableAccountLevelReadLocations()
         {
             return this.locationInfo.AvailableReadLocations;
         }
@@ -272,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets available (account-level) write locations.
         /// </summary>
-        public ReadOnlyCollection<string> GetAvailableWriteLocations()
+        public ReadOnlyCollection<string> GetAvailableAccountLevelWriteLocations()
         {
             return this.locationInfo.AvailableWriteLocations;
         }

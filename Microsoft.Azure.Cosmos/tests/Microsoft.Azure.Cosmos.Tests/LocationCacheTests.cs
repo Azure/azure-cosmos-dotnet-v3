@@ -795,7 +795,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                 if (isDefaultEndpointARegionalEndpoint)
                                 {
                                     ReadOnlyCollection<string> availableWriteLocations =
-                                        this.cache.GetAvailableWriteLocations();
+                                        this.cache.GetAvailableAccountLevelWriteLocations();
                                         
                                     Assert.IsNotNull(availableWriteLocations);
                                     Assert.AreEqual(3, availableWriteLocations.Count);
@@ -917,7 +917,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                     if (isDefaultEndpointARegionalEndpoint)
                                     {
                                         ReadOnlyCollection<string> availableWriteLocations =
-                                            this.cache.GetAvailableWriteLocations();
+                                            this.cache.GetAvailableAccountLevelWriteLocations();
                                         
                                         Assert.IsNotNull(availableWriteLocations);
                                         Assert.AreEqual(3, availableWriteLocations.Count);
