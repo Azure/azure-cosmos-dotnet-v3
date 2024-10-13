@@ -25,6 +25,9 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
+        [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
+        public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
+
         [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson)]
         public JsonProcessor JsonProcessor { get; set; }
 
@@ -85,6 +88,10 @@
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                 PathsToEncrypt = TestDoc.PathsToEncrypt,
+                CompressionOptions = new()
+                {
+                    Algorithm = this.CompressionAlgorithm
+                },
                 JsonProcessor = this.JsonProcessor,
             };
 

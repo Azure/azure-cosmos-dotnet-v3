@@ -354,7 +354,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
-            Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
+            
+            int expectedVersion = 
+                (encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None)
+                ? 4 : 3;
+            Assert.AreEqual(expectedVersion, encryptionProperties.EncryptionFormatVersion);
+
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
 
@@ -398,7 +403,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
-            Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
+
+            int expectedVersion = encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None ? 4 : 3;
+            Assert.AreEqual(expectedVersion, encryptionProperties.EncryptionFormatVersion);
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
 
@@ -509,7 +516,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.Newtonsoft
+                    JsonProcessor = JsonProcessor.Newtonsoft,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.None
+                    }
                 }
             },
 #if NET8_0_OR_GREATER
@@ -518,9 +529,65 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.SystemTextJson
+                    JsonProcessor = JsonProcessor.SystemTextJson,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.None
+                    }
                 }
             },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.Newtonsoft,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.Fastest
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.Newtonsoft,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression,
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.SystemTextJson,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.Fastest
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.SystemTextJson,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression,
+                    }
+                }
+            }
 #endif
         };
 
