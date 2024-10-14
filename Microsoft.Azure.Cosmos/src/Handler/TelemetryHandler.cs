@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Handlers
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
@@ -27,34 +26,38 @@ namespace Microsoft.Azure.Cosmos.Handlers
             CancellationToken cancellationToken)
         {
             ResponseMessage response = await base.SendAsync(request, cancellationToken);
-            try
+            if (this.IsAllowed(request))
             {
-                this.telemetryToServiceHelper
-                    .GetCollectors(request)
-                    .ForEach((collector) => collector.CollectOperationAndNetworkInfo(
-                    () => new TelemetryInformation
-                    {
-                        RegionsContactedList = response.Diagnostics.GetContactedRegions(),
-                        RequestLatency = response.Diagnostics.GetClientElapsedTime(),
-                        StatusCode = response.StatusCode,
-                        ResponseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
-                        ContainerId = request.ContainerId,
-                        DatabaseId = request.DatabaseId,
-                        OperationType = request.OperationType,
-                        ResourceType = request.ResourceType,
-                        ConsistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
-                        RequestCharge = response.Headers.RequestCharge,
-                        SubStatusCode = response.Headers.SubStatusCode,
-                        Trace = response.Trace,
-                        ActualItemCount = response.Headers.ItemCount
-                    }));
+                try
+                {
+                    this.telemetryToServiceHelper.GetCollector().CollectOperationAndNetworkInfo(
+                        () => new TelemetryInformation
+                        {
+                            RegionsContactedList = response.Diagnostics.GetContactedRegions(),
+                            RequestLatency = response.Diagnostics.GetClientElapsedTime(),
+                            StatusCode = response.StatusCode,
+                            ResponseSizeInBytes = TelemetryHandler.GetPayloadSize(response),
+                            ContainerId = request.ContainerId,
+                            DatabaseId = request.DatabaseId,
+                            OperationType = request.OperationType,
+                            ResourceType = request.ResourceType,
+                            ConsistencyLevel = request.Headers?[Documents.HttpConstants.HttpHeaders.ConsistencyLevel],
+                            RequestCharge = response.Headers.RequestCharge,
+                            SubStatusCode = response.Headers.SubStatusCode,
+                            Trace = response.Trace
+                        });
+                }
+                catch (Exception ex)
+                {
+                    DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
+                }
             }
-            catch (Exception ex)
-            {
-                DefaultTrace.TraceError("Error while collecting telemetry information : {0}", ex);
-            }
-
             return response;
+        }
+
+        private bool IsAllowed(RequestMessage request)
+        { 
+            return ClientTelemetryOptions.AllowedResourceTypes.Equals(request.ResourceType);
         }
 
         /// <summary>

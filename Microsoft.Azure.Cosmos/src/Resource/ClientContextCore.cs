@@ -530,6 +530,12 @@ namespace Microsoft.Azure.Cosmos
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry?.Item2(result);
                         recorder.Record(response);
+
+                        CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1, 
+                            accountName: this.client.Endpoint.Host,
+                            containerName: containerName, 
+                            databaseName: databaseName, 
+                            attributes: response);
                     }
 
                     return result;
