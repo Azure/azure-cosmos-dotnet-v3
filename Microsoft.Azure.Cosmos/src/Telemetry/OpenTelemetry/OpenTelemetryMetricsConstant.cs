@@ -2,10 +2,12 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Telemetry
+namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// OpenTelemetryMetricsConstant
+    /// The OpenTelemetryMetricsConstant class provides constants related to OpenTelemetry metrics for Azure Cosmos DB. 
+    /// These metrics are useful for tracking various aspects of Cosmos DB client operations and compliant with Open Telemetry Semantic Conventions 
+    /// It defines standardized names, units, descriptions, and histogram buckets for measuring and monitoring performance through OpenTelemetry.
     /// </summary>
     public sealed class OpenTelemetryMetricsConstant
     {
@@ -15,12 +17,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public static class OperationMetrics
         {
             /// <summary>
-            /// OperationMetricName
+            /// the name of the operation meter
             /// </summary>
             public const string MeterName = "Azure.Cosmos.Client.Operation";
 
             /// <summary>
-            /// MetricVersion100
+            /// Version of the operation meter
             /// </summary>
             public const string Version = "1.0.0";
 
@@ -57,44 +59,44 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             public static class Unit
             {
                 /// <summary>
-                /// Count
+                /// Unit representing a simple count
                 /// </summary>
                 public const string Count = "#";
 
                 /// <summary>
-                /// Milliseconds
+                /// Unit representing time in seconds
                 /// </summary>
                 public const string Sec = "s";
 
                 /// <summary>
-                /// RUUnit
+                /// Unit representing request units
                 /// </summary>
                 public const string RequestUnit = "# RU";
 
             }
 
             /// <summary>
-            /// Metric Descriptions
+            /// Provides descriptions for metrics.
             /// </summary>
             public static class Description
             {
                 /// <summary>
-                /// LatencyDesc
+                /// Description for operation duration
                 /// </summary>
                 public const string Latency = "Total end-to-end duration of the operation";
 
                 /// <summary>
-                /// RUDesc
+                /// Description for total request units per operation
                 /// </summary>
                 public const string RequestCharge = "Total request units per operation (sum of RUs for all requested needed when processing an operation)";
 
                 /// <summary>
-                /// ActualItemDesc
+                /// Description for the item count metric in responses
                 /// </summary>
                 public const string RowCount = "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service";
 
                 /// <summary>
-                /// InstanceMetricDesc
+                /// Description for the active SDK client instances metric
                 /// </summary>
                 public const string ActiveInstances = "Number of active SDK client instances.";
             }
