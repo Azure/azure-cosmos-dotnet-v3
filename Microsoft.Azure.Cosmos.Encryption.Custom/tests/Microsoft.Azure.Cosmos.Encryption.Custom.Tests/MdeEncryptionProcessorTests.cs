@@ -61,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow(JsonProcessor.Newtonsoft)]
 #if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.SystemTextJson)]
+        [DataRow(JsonProcessor.Stream)]
 #endif
         public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
         {
@@ -101,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow(JsonProcessor.Newtonsoft)]
 #if NET8_0_OR_GREATER
         [DataRow(JsonProcessor.SystemTextJson)]
+        [DataRow(JsonProcessor.Stream)]
 #endif
         public async Task DuplicatePathToEncrypt(JsonProcessor jsonProcessor)
         {
@@ -310,6 +312,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         [DataRow(JsonProcessor.Newtonsoft)]
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [DataRow(JsonProcessor.SystemTextJson)]
+        [DataRow(JsonProcessor.Stream)]
 #endif
         public async Task DecryptStreamWithoutEncryptedProperty(JsonProcessor processor)
         {
@@ -600,6 +603,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     yield return new object[] { encryptionOptions[0], JsonProcessor.Newtonsoft };
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
                     yield return new object[] { encryptionOptions[0], JsonProcessor.SystemTextJson };
+                    yield return new object[] { encryptionOptions[0], JsonProcessor.Stream };
 #endif
                 }
             }

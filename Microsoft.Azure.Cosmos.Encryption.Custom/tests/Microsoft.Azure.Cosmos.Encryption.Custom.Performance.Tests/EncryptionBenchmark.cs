@@ -22,13 +22,15 @@
         private byte[]? encryptedData;
         private byte[]? plaintext;
 
+        private static readonly MemoryStream recycledStream = new ();
+
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
-        [Params(/*JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson,*/ JsonProcessor.Stream)]
+        [Params(/*JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson, */JsonProcessor.Stream)]
         public JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
@@ -80,6 +82,19 @@
                 new CosmosDiagnosticsContext(),
                 this.JsonProcessor,
                 CancellationToken.None);
+        }
+
+        [Benchmark]
+        public async Task DecryptToProvidedStream()
+        {
+            await EncryptionProcessor.DecryptAsync(
+                new MemoryStream(this.encryptedData!),
+                EncryptionBenchmark.recycledStream,
+                this.encryptor,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            EncryptionBenchmark.recycledStream.Position = 0;
         }
 
         private EncryptionOptions CreateEncryptionOptions()

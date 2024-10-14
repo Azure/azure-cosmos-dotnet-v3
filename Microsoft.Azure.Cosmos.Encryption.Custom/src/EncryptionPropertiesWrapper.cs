@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         [JsonPropertyName(Constants.EncryptedInfo)]
         public EncryptionProperties EncryptionProperties { get; }
 
-        public EncryptionPropertiesWrapper(EncryptionProperties properties)
+        public EncryptionPropertiesWrapper(EncryptionProperties encryptionProperties)
         {
-            this.EncryptionProperties = properties;
+            this.EncryptionProperties = encryptionProperties;
         }
     }
 }

@@ -148,6 +148,45 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public static async Task<DecryptionContext> DecryptAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return null;
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(output.CanWrite);
+            Debug.Assert(output.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+            input.Position = 0;
+
+            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
+            input.Position = 0;
+            if (properties?.EncryptionProperties == null)
+            {
+                return null;
+            }
+
+            DecryptionContext context = await StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                input.Position = 0;
+                return null;
+            }
+
+            await input.DisposeAsync();
+            return context;
+        }
+#endif
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         public static async Task<(Stream, DecryptionContext)> DecryptJsonNodeAsync(
             Stream input,
             Encryptor encryptor,
@@ -201,14 +240,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(diagnosticsContext != null);
             input.Position = 0;
 
-            EncryptionPropertiesWrapper properties = System.Text.Json.JsonSerializer.Deserialize<EncryptionPropertiesWrapper>(input);
+            EncryptionPropertiesWrapper properties = await System.Text.Json.JsonSerializer.DeserializeAsync<EncryptionPropertiesWrapper>(input, cancellationToken: cancellationToken);
             input.Position = 0;
             if (properties?.EncryptionProperties == null)
             {
                 return (input, null);
             }
 
-            (Stream decryptedDocument, DecryptionContext context) = await StreamProcessor.DecryptStreamAsync(input, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+            MemoryStream ms = new MemoryStream();
+
+            DecryptionContext context = await StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)
             {
                 input.Position = 0;
@@ -216,8 +257,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             }
 
             await input.DisposeAsync();
-            return (decryptedDocument, context);
+            return (ms, context);
         }
+
 #endif
 
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
