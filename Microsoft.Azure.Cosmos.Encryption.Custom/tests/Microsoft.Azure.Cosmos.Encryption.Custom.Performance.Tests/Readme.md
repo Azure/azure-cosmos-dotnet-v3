@@ -9,17 +9,17 @@ Job=MediumRun  Toolchain=InProcessEmitToolchain  IterationCount=15
 LaunchCount=2  WarmupCount=10  
 
 ```
-|                  Method | DocumentSizeInKb | CompressionAlgorithm | JsonProcessor |      Mean |    Error |   StdDev |   Gen0 |   Gen1 |   Gen2 | Allocated |
-|------------------------ |----------------- |--------------------- |-------------- |----------:|---------:|---------:|-------:|-------:|-------:|----------:|
-|                 **Decrypt** |                **1** |                 **None** |        **Stream** |  **12.63 μs** | **0.146 μs** | **0.213 μs** | **0.0458** | **0.0153** |      **-** |  **12.31 KB** |
-| DecryptToProvidedStream |                1 |                 None |        Stream |  12.58 μs | 0.082 μs | 0.115 μs | 0.0458 | 0.0153 |      - |   10.9 KB |
-|                 **Decrypt** |                **1** |               **Brotli** |        **Stream** |  **19.30 μs** | **0.744 μs** | **1.066 μs** | **0.0305** |      **-** |      **-** |  **12.99 KB** |
-| DecryptToProvidedStream |                1 |               Brotli |        Stream |  18.39 μs | 0.320 μs | 0.449 μs | 0.0305 |      - |      - |  11.58 KB |
-|                 **Decrypt** |               **10** |                 **None** |        **Stream** |  **26.64 μs** | **0.150 μs** | **0.220 μs** | **0.1221** | **0.0305** |      **-** |  **28.77 KB** |
-| DecryptToProvidedStream |               10 |                 None |        Stream |  25.71 μs | 0.138 μs | 0.203 μs | 0.0610 | 0.0305 |      - |  17.65 KB |
-|                 **Decrypt** |               **10** |               **Brotli** |        **Stream** |  **53.89 μs** | **0.631 μs** | **0.945 μs** | **0.1221** | **0.0610** |      **-** |  **29.45 KB** |
-| DecryptToProvidedStream |               10 |               Brotli |        Stream |  54.60 μs | 0.605 μs | 0.887 μs | 0.0610 |      - |      - |  18.33 KB |
-|                 **Decrypt** |              **100** |                 **None** |        **Stream** | **450.58 μs** | **6.572 μs** | **9.837 μs** | **8.3008** | **8.3008** | **8.3008** | **320.02 KB** |
-| DecryptToProvidedStream |              100 |                 None |        Stream | 379.11 μs | 4.473 μs | 6.415 μs | 4.3945 | 4.3945 | 4.3945 |    163 KB |
-|                 **Decrypt** |              **100** |               **Brotli** |        **Stream** | **303.48 μs** | **5.305 μs** | **7.940 μs** | **5.8594** | **5.8594** | **5.8594** | **215.95 KB** |
-| DecryptToProvidedStream |              100 |               Brotli |        Stream | 253.71 μs | 3.448 μs | 5.054 μs | 2.9297 | 2.9297 | 2.9297 | 111.63 KB |
+|                  Method | DocumentSizeInKb | CompressionAlgorithm | JsonProcessor |      Mean |     Error |    StdDev |   Gen0 |   Gen1 |   Gen2 | Allocated |
+|------------------------ |----------------- |--------------------- |-------------- |----------:|----------:|----------:|-------:|-------:|-------:|----------:|
+|                 **Decrypt** |                **1** |                 **None** |        **Stream** |  **12.80 μs** |  **0.161 μs** |  **0.237 μs** | **0.0458** | **0.0153** |      **-** |  **12.31 KB** |
+| DecryptToProvidedStream |                1 |                 None |        Stream |  12.82 μs |  0.075 μs |  0.108 μs | 0.0458 | 0.0153 |      - |   10.9 KB |
+|                 **Decrypt** |                **1** |               **Brotli** |        **Stream** |  **19.41 μs** |  **0.613 μs** |  **0.899 μs** | **0.0305** |      **-** |      **-** |  **12.99 KB** |
+| DecryptToProvidedStream |                1 |               Brotli |        Stream |  18.52 μs |  0.206 μs |  0.288 μs | 0.0305 |      - |      - |  11.58 KB |
+|                 **Decrypt** |               **10** |                 **None** |        **Stream** |  **26.96 μs** |  **0.103 μs** |  **0.148 μs** | **0.1221** | **0.0305** |      **-** |  **28.77 KB** |
+| DecryptToProvidedStream |               10 |                 None |        Stream |  25.94 μs |  0.104 μs |  0.149 μs | 0.0610 | 0.0305 |      - |  17.65 KB |
+|                 **Decrypt** |               **10** |               **Brotli** |        **Stream** |  **53.24 μs** |  **0.602 μs** |  **0.882 μs** | **0.1221** | **0.0610** |      **-** |  **29.45 KB** |
+| DecryptToProvidedStream |               10 |               Brotli |        Stream |  54.38 μs |  0.471 μs |  0.691 μs | 0.0610 |      - |      - |  18.33 KB |
+|                 **Decrypt** |              **100** |                 **None** |        **Stream** | **336.31 μs** |  **7.637 μs** | **11.194 μs** | **5.8594** | **5.8594** | **5.8594** | **225.27 KB** |
+| DecryptToProvidedStream |              100 |                 None |        Stream | 283.21 μs |  2.668 μs |  3.993 μs | 2.9297 | 2.9297 | 2.9297 | 115.98 KB |
+|                 **Decrypt** |              **100** |               **Brotli** |        **Stream** | **487.48 μs** |  **7.638 μs** | **11.433 μs** | **6.8359** | **6.8359** | **6.8359** | **225.84 KB** |
+| DecryptToProvidedStream |              100 |               Brotli |        Stream | 457.04 μs | 10.030 μs | 14.384 μs | 3.4180 | 3.4180 | 3.4180 | 116.52 KB |
