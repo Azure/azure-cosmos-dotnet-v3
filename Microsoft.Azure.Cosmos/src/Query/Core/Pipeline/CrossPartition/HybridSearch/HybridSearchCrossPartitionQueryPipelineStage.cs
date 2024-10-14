@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -256,6 +257,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private async ValueTask<bool> MoveNextAsync_RunComponentQueriesAsync(ITrace trace, CancellationToken cancellationToken)
         {
+            // TODO: Add optimization to skip the sorting and ranking if there is only one component query
+            if (this.queryPipelineStages.Count == 1)
+            {
+            }
+
             TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)> tryCollateSortedPipelineStageResults = await CollateSortedPipelineStageResultsAsync(
                 this.queryPipelineStages,
                 this.maxConcurrency,
@@ -419,6 +425,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage emptyPage)>.FromResult((queryResults, emptyPage));
             }
 
+            HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
+
             queryResults.Sort((x, y) => string.CompareOrdinal(x.Rid.Value, y.Rid.Value));
 
             UniqueRids(queryResults);
@@ -440,7 +448,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             ComputeRRFScores(ranks, queryResults);
 
+            HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
+
             queryResults.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // higher scores are better
+
+            HybridSearchDebugTraceHelpers.TraceQueryResults(queryResults, queryPipelineStages.Count);
 
             return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>.FromResult((queryResults, emptyPage));
         }
@@ -549,9 +561,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int[,] ranks = new int[componentScores.Count, componentScores[0].Count];
             for (int componentIndex = 0; componentIndex < componentScores.Count; ++componentIndex)
             {
-                for (int rank = 0; rank < componentScores[componentIndex].Count; ++rank)
+                int rank = 1; // ranks are 1 based
+                for (int index = 0; index < componentScores[componentIndex].Count; ++index)
                 {
-                    ranks[componentIndex, componentScores[componentIndex][rank].Index] = rank;
+                    // Identical scores should have the same rank
+                    if ((index > 0) && (componentScores[componentIndex][index].Score < componentScores[componentIndex][index - 1].Score))
+                    {
+                        ++rank;
+                    }
+
+                    ranks[componentIndex, componentScores[componentIndex][index].Index] = rank;
                 }
             }
 
@@ -850,6 +869,129 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             public const string FormattableTotalWordCount = "{{documentdb-formattablehybridsearchquery-totalwordcount-{0}}}";
 
             public const string FormattableHitCountsArray = "{{documentdb-formattablehybridsearchquery-hitcountsarray-{0}}}";
+        }
+
+        private static class HybridSearchDebugTraceHelpers
+        {
+            private const bool Enabled = true;
+#pragma warning disable CS0162 // Unreachable code detected
+
+            [Conditional("DEBUG")]
+            public static void TraceQueryResults(IReadOnlyList<HybridSearchQueryResult> queryResults, int componentCount)
+            {
+                if (Enabled)
+                {
+                    TraceQueryResultTSVHeader(componentCount);
+
+                    foreach (HybridSearchQueryResult queryResult in queryResults)
+                    {
+                        StringBuilder builder = new StringBuilder();
+                        AppendQueryResult(queryResult, builder);
+                        string row = builder.ToString();
+                        System.Diagnostics.Trace.WriteLine(row);
+                    }
+                }
+            }
+
+            [Conditional("DEBUG")]
+            public static void TraceQueryResultsWithRanks(IReadOnlyList<HybridSearchQueryResult> queryResults, int[,] ranks)
+            {
+                if (Enabled)
+                {
+                    int componentCount = ranks.GetLength(0);
+                    TraceFullDebugTSVHeader(componentCount);
+
+                    for (int index = 0; index < queryResults.Count; ++index)
+                    {
+                        StringBuilder builder = new StringBuilder();
+
+                        AppendQueryResult(queryResults[index], builder);
+                        builder.Append("\t");
+
+                        for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                        {
+                            builder.Append(ranks[componentIndex, index]);
+                            builder.Append("\t");
+                        }
+
+                        builder.Remove(builder.Length - 1, 1); // remove extra tab
+
+                        string row = builder.ToString();
+                        System.Diagnostics.Trace.WriteLine(row);
+                    }
+                }
+            }
+
+            private static StringBuilder AppendQueryResult(HybridSearchQueryResult queryResult, StringBuilder builder)
+            {
+                builder.Append(queryResult.Rid.Value.ToString());
+                builder.Append("\t");
+                builder.Append(queryResult.Payload.ToString());
+                builder.Append("\t");
+
+                CosmosArray componentScores = queryResult.ComponentScores;
+                for (int componentScoreIndex = 0; componentScoreIndex < componentScores.Count; ++componentScoreIndex)
+                {
+                    builder.Append(componentScores[componentScoreIndex].ToString());
+                    builder.Append("\t");
+                }
+
+                builder.Append(queryResult.Score);
+                return builder;
+            }
+
+            private static void TraceQueryResultTSVHeader(int componentCount)
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.Append("_rid");
+                builder.Append("\t");
+                builder.Append("Payload");
+                builder.Append("\t");
+
+                for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                {
+                    builder.Append($"Score{componentIndex}");
+                    builder.Append("\t");
+                }
+
+                builder.Append("RRFScore");
+                builder.Append("\t");
+
+                builder.Remove(builder.Length - 1, 1); // remove extra tab
+
+                string header = builder.ToString();
+                System.Diagnostics.Trace.WriteLine(header);
+            }
+
+            private static void TraceFullDebugTSVHeader(int componentCount)
+            {
+                StringBuilder builder = new StringBuilder();
+                builder.Append("_rid");
+                builder.Append("\t");
+                builder.Append("Payload");
+                builder.Append("\t");
+
+                for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                {
+                    builder.Append($"Score{componentIndex}");
+                    builder.Append("\t");
+                }
+
+                builder.Append("RRFScore");
+                builder.Append("\t");
+
+                for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+                {
+                    builder.Append($"Rank{componentIndex}");
+                    builder.Append("\t");
+                }
+
+                builder.Remove(builder.Length - 1, 1); // remove extra tab
+
+                string header = builder.ToString();
+                System.Diagnostics.Trace.WriteLine(header);
+            }
+#pragma warning restore CS0162 // Unreachable code detected
         }
     }
 }

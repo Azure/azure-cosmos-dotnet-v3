@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -341,6 +341,10 @@
     </None>
     <None Include="Documents\MillionSong1KDocuments.txt">
       <Link>Documents\MillionSong1KDocuments.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Documents\text-3properties-1536dimensions-100documents.json">
+      <Link>Documents\text-3properties-1536dimensions-100documents.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

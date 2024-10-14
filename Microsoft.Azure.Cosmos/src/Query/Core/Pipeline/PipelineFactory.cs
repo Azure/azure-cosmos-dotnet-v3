@@ -161,16 +161,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 (optimalPageSize > 0) && (optimalPageSize <= int.MaxValue),
                 $"Invalid MaxItemCount {optimalPageSize}");
 
-            SqlQuerySpec rewrittenSqlQuerySpec = queryInfo.RewrittenQuery != null ?
-                new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) :
-                sqlQuerySpec;
-
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {
                 monadicCreatePipelineStage = (continuationToken) => OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
-                    sqlQuerySpec: rewrittenSqlQuerySpec,
+                    sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
                     partitionKey: partitionKey,
                     orderByColumns: queryInfo
@@ -187,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 monadicCreatePipelineStage = (continuationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
-                    sqlQuerySpec: rewrittenSqlQuerySpec,
+                    sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
                     queryPaginationOptions: queryPaginationOptions,
                     partitionKey: partitionKey,
