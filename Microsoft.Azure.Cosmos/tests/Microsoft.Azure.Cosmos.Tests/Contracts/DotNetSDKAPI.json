@@ -3287,8 +3287,18 @@
           ],
           "MethodInfo": "Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_IsClientMetricsEnabled(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_IsClientMetricsEnabled(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-        
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
           "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
@@ -11103,28 +11113,18 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant+HistogramBuckets": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+HistogramBuckets": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant+OperationMetrics": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
-        },
-        "System.String MetricVersion100": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String MetricVersion100;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String OperationMetricName": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String OperationMetricName;IsInitOnly:False;IsStatic:True;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
@@ -11133,9 +11133,14 @@
         }
       },
       "NestedTypes": {
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
+            "Double[] ActiveInstancesBuckets": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "Double[] ActiveInstancesBuckets;IsInitOnly:True;IsStatic:True;"
+            },
             "Double[] RequestLatencyBuckets": {
               "Type": "Field",
               "Attributes": [],
@@ -11145,96 +11150,130 @@
               "Type": "Field",
               "Attributes": [],
               "MethodInfo": "Double[] RequestUnitBuckets;IsInitOnly:True;IsStatic:True;"
+            },
+            "Double[] RowCountBuckets": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "Double[] RowCountBuckets;IsInitOnly:True;IsStatic:True;"
             }
           },
           "NestedTypes": {}
         },
-        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "System.String ActualItemDesc": {
-              "Type": "Field",
+            "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Description": {
+              "Type": "NestedType",
               "Attributes": [],
-              "MethodInfo": "System.String ActualItemDesc;IsInitOnly:False;IsStatic:True;"
+              "MethodInfo": null
             },
-            "System.String ActualItemName": {
-              "Type": "Field",
+            "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Name": {
+              "Type": "NestedType",
               "Attributes": [],
-              "MethodInfo": "System.String ActualItemName;IsInitOnly:False;IsStatic:True;"
+              "MethodInfo": null
             },
-            "System.String Count": {
-              "Type": "Field",
+            "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Unit": {
+              "Type": "NestedType",
               "Attributes": [],
-              "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
+              "MethodInfo": null
             },
-            "System.String LatencyDesc": {
+            "System.String MeterName": {
               "Type": "Field",
               "Attributes": [],
-              "MethodInfo": "System.String LatencyDesc;IsInitOnly:False;IsStatic:True;"
+              "MethodInfo": "System.String MeterName;IsInitOnly:False;IsStatic:True;"
             },
-            "System.String LatencyName": {
+            "System.String Version": {
               "Type": "Field",
               "Attributes": [],
-              "MethodInfo": "System.String LatencyName;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String MaxItemDesc": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String MaxItemDesc;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String MaxItemName": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String MaxItemName;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String Ms": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String Ms;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String NumberOfCallsDesc": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String NumberOfCallsDesc;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String NumberOfCallsName": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String NumberOfCallsName;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String RegionContactedDesc": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String RegionContactedDesc;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String RegionContactedName": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String RegionContactedName;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String RUDesc": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String RUDesc;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String RUName": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String RUName;IsInitOnly:False;IsStatic:True;"
-            },
-            "System.String RUUnit": {
-              "Type": "Field",
-              "Attributes": [],
-              "MethodInfo": "System.String RUUnit;IsInitOnly:False;IsStatic:True;"
+              "MethodInfo": "System.String Version;IsInitOnly:False;IsStatic:True;"
             }
           },
-          "NestedTypes": {}
+          "NestedTypes": {
+            "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String ActiveInstances": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ActiveInstances;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Latency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RequestCharge": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RequestCharge;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RowCount": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RowCount;IsInitOnly:False;IsStatic:True;"
+                }
+              },
+              "NestedTypes": {}
+            },
+            "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String ActiveInstances": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ActiveInstances;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Latency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RequestCharge": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RequestCharge;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RowCount": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RowCount;IsInitOnly:False;IsStatic:True;"
+                }
+              },
+              "NestedTypes": {}
+            },
+            "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String Count": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RequestUnit": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RequestUnit;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Sec": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Sec;IsInitOnly:False;IsStatic:True;"
+                }
+              },
+              "NestedTypes": {}
+            }
+          }
         }
       }
     },
-    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
+        "Double[] ActiveInstancesBuckets": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Double[] ActiveInstancesBuckets;IsInitOnly:True;IsStatic:True;"
+        },
         "Double[] RequestLatencyBuckets": {
           "Type": "Field",
           "Attributes": [],
@@ -11244,87 +11283,189 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Double[] RequestUnitBuckets;IsInitOnly:True;IsStatic:True;"
+        },
+        "Double[] RowCountBuckets": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Double[] RowCountBuckets;IsInitOnly:True;IsStatic:True;"
         }
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry.OpenTelemetryMetricsConstant+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.String ActualItemDesc": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Description": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Name": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Unit": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String MeterName": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "System.String ActualItemDesc;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "System.String MeterName;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String ActualItemName": {
+        "System.String Version": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "System.String ActualItemName;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "System.String Version;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String ActiveInstances": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ActiveInstances;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Latency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RequestCharge": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RequestCharge;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RowCount": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RowCount;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {}
         },
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String ActiveInstances": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ActiveInstances;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Latency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RequestCharge": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RequestCharge;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RowCount": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RowCount;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String Count": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RequestUnit": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RequestUnit;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Sec": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Sec;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      }
+    },
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String ActiveInstances": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ActiveInstances;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Latency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String RequestCharge": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RequestCharge;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String RowCount": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RowCount;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String ActiveInstances": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ActiveInstances;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Latency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String RequestCharge": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RequestCharge;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String RowCount": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RowCount;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Telemetry.OpenTelemetryMetricsConstant+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
         "System.String Count": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String LatencyDesc": {
+        "System.String RequestUnit": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "System.String LatencyDesc;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "System.String RequestUnit;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String LatencyName": {
+        "System.String Sec": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "System.String LatencyName;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String MaxItemDesc": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String MaxItemDesc;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String MaxItemName": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String MaxItemName;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String Ms": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String Ms;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String NumberOfCallsDesc": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String NumberOfCallsDesc;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String NumberOfCallsName": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String NumberOfCallsName;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String RegionContactedDesc": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String RegionContactedDesc;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String RegionContactedName": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String RegionContactedName;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String RUDesc": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String RUDesc;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String RUName": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String RUName;IsInitOnly:False;IsStatic:True;"
-        },
-        "System.String RUUnit": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String RUUnit;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "System.String Sec;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
