@@ -50,9 +50,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Utf8JsonWriter writer = new (outputStream);
 
-            // we determine initial buffer size based on max uncompressed path length, it still might need scale out in case there is large non-encrypted object, but likehood is rather low
-            int bufferSize = 16384; // Math.Max(16384, properties.CompressedEncryptedPaths.Values.Max());
+            int bufferSize = 16384;
             byte[] buffer = arrayPoolManager.Rent(bufferSize);
+            bufferSize = buffer.Length;
 
             JsonReaderState state = new (this.jsonReaderOptions);
 
@@ -60,6 +60,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             bool isFinalBlock = false;
             bool isIgnoredBlock = false;
+
+            string decryptPropertyName = null;
 
             while (!isFinalBlock)
             {
@@ -75,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     writer,
                     ref state,
                     ref isIgnoredBlock,
+                    ref decryptPropertyName,
                     pathsDecrypted,
                     properties,
                     arrayPoolManager,
@@ -87,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 {
                     bufferSize *= 2;
                     byte[] newBuffer = arrayPoolManager.Rent(bufferSize);
-                    buffer.AsSpan(0, leftOver).CopyTo(newBuffer);
+                    buffer.AsSpan().CopyTo(newBuffer);
                     buffer = newBuffer;
                 }
                 else if (leftOver != 0)
@@ -122,11 +125,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return output;
         }*/
 
-        private long TransformReadBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, List<string> pathsDecrypted, EncryptionProperties properties, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
+        private long TransformReadBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, List<string> pathsDecrypted, EncryptionProperties properties, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
-
-            string decryptPropertyName = null;
 
             while (reader.Read())
             {

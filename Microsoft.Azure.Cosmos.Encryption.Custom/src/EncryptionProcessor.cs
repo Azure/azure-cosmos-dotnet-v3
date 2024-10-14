@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return (input, null);
             }
 
-            MemoryStream ms = new MemoryStream();
+            MemoryStream ms = new ();
 
             DecryptionContext context = await StreamProcessor.DecryptStreamAsync(input, ms, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)
