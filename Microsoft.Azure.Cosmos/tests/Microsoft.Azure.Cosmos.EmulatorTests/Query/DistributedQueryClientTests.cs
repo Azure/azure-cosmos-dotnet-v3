@@ -311,12 +311,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         testCase.Query,
                         options))
                     {
-                        Assert.IsTrue(response.StatusCode == System.Net.HttpStatusCode.OK);
+                        Assert.AreEqual(System.Net.HttpStatusCode.OK, response.StatusCode);
 
-                        using (MemoryStream memstr = new MemoryStream())
+                        using (MemoryStream memoryStream = new MemoryStream())
                         {
-                            response.Content.CopyTo(memstr);
-                            byte[] content = memstr.ToArray();
+                            response.Content.CopyTo(memoryStream);
+                            byte[] content = memoryStream.ToArray();
 
                             IJsonNavigator navigator = JsonNavigator.Create(content);
                             IJsonNavigatorNode rootNode = navigator.GetRootNode();
@@ -329,7 +329,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             IEnumerable<IJsonNavigatorNode> arrayItems = navigator.GetArrayItems(documentsProperty.ValueNode);
                             foreach (IJsonNavigatorNode node in arrayItems)
                             {
-                                Assert.IsTrue(navigator.GetNodeType(node) == JsonNodeType.Number64);
+                                Assert.AreEqual(JsonNodeType.Number64, navigator.GetNodeType(node));
 
                                 extractedResults.Add((int)Number64.ToLong(navigator.GetNumber64Value(node)));
                             }
