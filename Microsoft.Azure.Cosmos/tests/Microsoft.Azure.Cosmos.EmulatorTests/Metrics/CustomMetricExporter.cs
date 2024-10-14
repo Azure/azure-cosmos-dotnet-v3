@@ -15,12 +15,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     {
         private static readonly Dictionary<string, MetricType> expectedMetrics = new Dictionary<string, MetricType>()
         {
-            { "cosmos.client.op.calls", MetricType.LongSum },
-            { "cosmos.client.op.latency", MetricType.Histogram },
-            { "cosmos.client.op.RUs", MetricType.Histogram },
-            { "cosmos.client.op.maxItemCount", MetricType.LongGauge},
-            { "cosmos.client.op.actualItemCount", MetricType.LongGauge },
-            { "cosmos.client.op.regionsContacted", MetricType.LongGauge }
+            { "db.client.operation.duration", MetricType.Histogram },
+            { "db.client.response.row_count", MetricType.Histogram},
+            { "db.cosmosdb.operation.request_charge", MetricType.Histogram },
+            { "db.cosmosdb.client.active_instances", MetricType.Histogram },
         };
 
         // This method will be called periodically by OpenTelemetry SDK
