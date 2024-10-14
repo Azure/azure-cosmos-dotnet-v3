@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Tracing
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Microsoft.Azure.Cosmos.Telemetry;
     using OpenTelemetry;
     using OpenTelemetry.Trace;
 

@@ -158,16 +158,5 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the stack trace of the exception.
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
-
-        /// <summary>
-        /// Consistency
-        /// </summary>
-        public const string Consistency = "db.cosmosdb.consistency";
-
-        /// <summary>
-        /// PartitionKeyRangeId
-        /// </summary>
-        public const string PartitionKeyRangeId = "db.cosmosdb.partition_key_range_id";
-        
     }
 }

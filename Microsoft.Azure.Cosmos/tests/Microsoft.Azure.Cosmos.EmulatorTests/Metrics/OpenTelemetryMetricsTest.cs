@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using OpenTelemetry;
     using System.Diagnostics;
     using OpenTelemetry.Resources;
-    using OpenTelemetry.Exporter;
     using Microsoft.Azure.Cosmos.Telemetry;
 
     [TestClass]
@@ -31,13 +30,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 .CreateMeterProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("OperationLevelMetrics"))
                 .AddMeter("Azure.Cosmos.Client.Operation")
-                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.RUName, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.RequestCharge, new ExplicitBucketHistogramConfiguration // Define histogram buckets
                 {
                     Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestUnitBuckets
                 })
-                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.LatencyName, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.Latency, new ExplicitBucketHistogramConfiguration // Define histogram buckets
                 {
                     Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RequestLatencyBuckets
+                })
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.RowCount, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.RowCountBuckets
+                })
+                .AddView(instrumentName: OpenTelemetryMetricsConstant.OperationMetrics.Name.ActiveInstances, new ExplicitBucketHistogramConfiguration // Define histogram buckets
+                {
+                    Boundaries = OpenTelemetryMetricsConstant.HistogramBuckets.ActiveInstancesBuckets
                 })
                 /*.AddOtlpExporter((exporterOptions, metricReaderOptions) =>
                  {

@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
-    using Microsoft.Azure.Cosmos.Telemetry.Collector;
 
     internal static class CosmosOperationMeter
     {
@@ -20,23 +19,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public static void Initialize()
         {
-            cosmosMeter ??= new Meter(OpenTelemetryMetricsConstant.OperationMetricName, OpenTelemetryMetricsConstant.MetricVersion100);
+            cosmosMeter ??= new Meter(OpenTelemetryMetricsConstant.OperationMetrics.MeterName, OpenTelemetryMetricsConstant.OperationMetrics.Version);
             
-            CosmosOperationMeter.RequestLatencyHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.LatencyName,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Sec,
-                description: OpenTelemetryMetricsConstant.OperationMetrics.LatencyDesc);
+            CosmosOperationMeter.RequestLatencyHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.Latency,
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Sec,
+                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.Latency);
 
-            CosmosOperationMeter.RequestUnitsHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.RUName,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.RUUnit,
-                description: OpenTelemetryMetricsConstant.OperationMetrics.RUDesc);
+            CosmosOperationMeter.RequestUnitsHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.RequestCharge,
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.RequestUnit,
+                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.RequestCharge);
 
-            CosmosOperationMeter.ActualItemHistogram = cosmosMeter.CreateHistogram<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.ActualItemName,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count, 
-                description: OpenTelemetryMetricsConstant.OperationMetrics.ActualItemDesc);
+            CosmosOperationMeter.ActualItemHistogram = cosmosMeter.CreateHistogram<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.RowCount,
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Count, 
+                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.RowCount);
 
-            CosmosOperationMeter.InstanceCountHistogram = cosmosMeter.CreateHistogram<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.InstanceMetricName,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Count,
-                description: OpenTelemetryMetricsConstant.OperationMetrics.InstanceMetricDesc);
+            CosmosOperationMeter.InstanceCountHistogram = cosmosMeter.CreateHistogram<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.ActiveInstances,
+                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Count,
+                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.ActiveInstances);
         }
 
         public static void RecordTelemetry(string operationName, string accountName, string containerName, string databaseName, OpenTelemetryAttributes attributes)
@@ -49,7 +48,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName),
 
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Consistency, "consistency"),
+                //new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Consistency, "consistency"),
 
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)attributes.StatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)attributes.SubStatusCode)
