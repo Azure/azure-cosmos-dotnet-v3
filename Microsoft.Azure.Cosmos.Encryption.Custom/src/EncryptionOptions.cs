@@ -22,6 +22,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <remarks>Available with .NET8.0 package only.</remarks>
         SystemTextJson,
+
+        /// <summary>
+        /// Ut8JsonReader/Writer
+        /// </summary>
+        /// <remarks>Available with .NET8.0 package only.</remarks>
+        Stream,
 #endif
     }
 

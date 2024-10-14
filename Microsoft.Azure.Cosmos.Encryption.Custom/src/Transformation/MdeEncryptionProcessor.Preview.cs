@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 JsonProcessor.Newtonsoft => await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
 #if NET8_0_OR_GREATER
                 JsonProcessor.SystemTextJson => await this.JsonNodeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
+                JsonProcessor.Stream => await this.JsonNodeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
 #endif
                 _ => throw new InvalidOperationException("Unsupported JsonProcessor")
             };

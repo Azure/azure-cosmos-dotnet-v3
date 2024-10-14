@@ -34,6 +34,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
+        private static readonly StreamProcessor StreamProcessor = new ();
 #endif
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
@@ -140,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 JsonProcessor.Newtonsoft => await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken),
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
                 JsonProcessor.SystemTextJson => await DecryptJsonNodeAsync(input, encryptor, diagnosticsContext, cancellationToken),
+                JsonProcessor.Stream => await DecryptStreamAsync(input, encryptor, diagnosticsContext, cancellationToken),
 #endif
                 _ => throw new InvalidOperationException("Unsupported Json Processor")
             };
@@ -179,6 +181,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             ms.Position = 0;
             return (ms, context);
+        }
+#endif
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public static async Task<(Stream, DecryptionContext)> DecryptStreamAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+            input.Position = 0;
+
+            EncryptionPropertiesWrapper properties = System.Text.Json.JsonSerializer.Deserialize<EncryptionPropertiesWrapper>(input);
+            input.Position = 0;
+            if (properties?.EncryptionProperties == null)
+            {
+                return (input, null);
+            }
+
+            (Stream decryptedDocument, DecryptionContext context) = await StreamProcessor.DecryptStreamAsync(input, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                input.Position = 0;
+                return (input, null);
+            }
+
+            await input.DisposeAsync();
+            return (decryptedDocument, context);
         }
 #endif
 

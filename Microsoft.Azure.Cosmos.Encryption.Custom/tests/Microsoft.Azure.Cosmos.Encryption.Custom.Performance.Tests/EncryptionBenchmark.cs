@@ -28,7 +28,7 @@
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson)]
+        [Params(/*JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson,*/ JsonProcessor.Stream)]
         public JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
@@ -59,6 +59,7 @@
             this.encryptedData = memoryStream.ToArray();
         }
 
+        /*
         [Benchmark]
         public async Task Encrypt()
         {
@@ -68,7 +69,7 @@
                  this.encryptionOptions,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
-        }
+        }*/
 
         [Benchmark]
         public async Task Decrypt()
