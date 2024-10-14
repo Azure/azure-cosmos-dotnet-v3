@@ -21,15 +21,14 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 			<NoWarn>NU1903</NoWarn>
 		</PackageReference>
 	</ItemGroup>
-
-	<Target Name="CopyNewtonsoftJsonToOutput" AfterTargets="Build">
+	
+	<Target Name="CopyNewtonsoftJson" AfterTargets="Build">
 		<PropertyGroup>
 			<NewtonsoftJsonDll>$(NuGetPackageRoot)newtonsoft.json\10.0.2\lib\netstandard2.0\Newtonsoft.Json.dll</NewtonsoftJsonDll>
-			<ConsumerOutputPath>$(TargetDir)</ConsumerOutputPath>
 		</PropertyGroup>
 
 		<Copy SourceFiles="$(NewtonsoftJsonDll)"
-			  DestinationFolder="$(ConsumerOutputPath)"
-			  Condition="Exists('$(NewtonsoftJsonDll)') AND '$(ConsumerOutputPath)' != ''" />
+			  DestinationFolder="$(TargetDir)"
+			  Condition="Exists('$(NewtonsoftJsonDll)')" />
 	</Target>
 </Project>
