@@ -95,40 +95,41 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             Cosmos.PartitionKey? partitionKey,
             HybridSearchQueryInfo queryInfo,
             IReadOnlyList<FeedRangeEpk> allRanges,
-            QueryExecutionOptions queryExecutionOptions,
+            int maxItemCount,
+            bool isContinuationExpected,
             int maxConcurrency)
         {
-            QueryExecutionOptions rewrittenQueryExecutionOptions = null;
-
             TryCatch<IQueryPipelineStage> ComponentPipelineFactory(QueryInfo rewrittenQueryInfo)
             {
-                SqlQuerySpec rewrittenQuerySpec = new SqlQuerySpec(
-                    rewrittenQueryInfo.RewrittenQuery,
-                    sqlQuerySpec.Parameters);
-
                 return PipelineFactory.MonadicCreate(
                     documentContainer,
-                    rewrittenQuerySpec,
+                    sqlQuerySpec,
                     targetRanges,
                     partitionKey,
                     rewrittenQueryInfo,
                     PrefetchPolicy.PrefetchAll,
-                    rewrittenQueryExecutionOptions,
                     containerQueryProperties,
-                    maxConcurrency,
+                    maxItemCount: maxItemCount,
                     emitRawOrderByPayload: true,
+                    isContinuationExpected: isContinuationExpected,
+                    maxConcurrency: maxConcurrency,
                     requestContinuationToken: null);
             }
-
-            SqlQuerySpec globalStatisticsQuerySpec = new SqlQuerySpec(
-                queryInfo.GlobalStatisticsQuery,
-                sqlQuerySpec.Parameters);
 
             State state;
             IQueryPipelineStage globalStatisticsPipeline;
             List<IQueryPipelineStage> queryPipelineStages;
             if (queryInfo.RequiresGlobalStatistics)
             {
+                QueryExecutionOptions queryExecutionOptions = new QueryExecutionOptions(pageSizeHint: maxItemCount);
+
+                // TODO: Remove this once the FullTextWordCount is fixed in the backend
+                queryInfo.GlobalStatisticsQuery = queryInfo.GlobalStatisticsQuery.Replace("_FullTextWordCount", "_FullText_WordCount");
+
+                SqlQuerySpec globalStatisticsQuerySpec = new SqlQuerySpec(
+                    queryInfo.GlobalStatisticsQuery,
+                    sqlQuerySpec.Parameters);
+
                 TryCatch<IQueryPipelineStage> tryCatchGlobalStatisticsPipeline = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: globalStatisticsQuerySpec,
@@ -165,8 +166,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 queryPipelineStages = tryCreatePipelineStages.Result;
             }
 
-            int pageSize = queryExecutionOptions.PageSizeLimit.GetValueOrDefault(MaximumPageSize) > 0 ?
-                    Math.Min(MaximumPageSize, queryExecutionOptions.PageSizeLimit.Value) :
+            int pageSize = maxItemCount > 0 ?
+                    Math.Min(MaximumPageSize, maxItemCount) :
                     MaximumPageSize;
 
             SkipTakeCounter skipTakeCounter = null;
@@ -325,20 +326,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 done = this.skipTakeCounter.Take == 0;
             }
 
-            QueryPage queryPage = new QueryPage(
-                documents,
-                requestCharge: 0,
-                this.queryPageParameters.ActivityId,
-                this.queryPageParameters.CosmosQueryExecutionInfo,
-                this.queryPageParameters.DistributionPlanSpec,
-                DisallowContinuationTokenMessage,
-                this.queryPageParameters.AdditionalHeaders,
-                state: done ? null : Continuation,
-                streaming: false);
+            if (documents.Count > 0)
+            {
+                QueryPage queryPage = new QueryPage(
+                    documents,
+                    requestCharge: 0,
+                    this.queryPageParameters.ActivityId,
+                    this.queryPageParameters.CosmosQueryExecutionInfo,
+                    this.queryPageParameters.DistributionPlanSpec,
+                    DisallowContinuationTokenMessage,
+                    this.queryPageParameters.AdditionalHeaders,
+                    state: done ? null : Continuation,
+                    streaming: false);
 
-            this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-            this.state = done ? State.Done : State.Draining;
-            return true;
+                this.Current = TryCatch<QueryPage>.FromResult(queryPage);
+                this.state = done ? State.Done : State.Draining;
+                return true;
+            }
+            else
+            {
+                this.state = State.Done;
+                return false;
+            }
         }
 
         private static TryCatch<List<IQueryPipelineStage>> CreateQueryPipelineStages(
@@ -349,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             List<QueryInfo> rewrittenQueryInfos = new List<QueryInfo>(queryInfos.Count);
             foreach (QueryInfo queryInfo in queryInfos)
             {
-                QueryInfo rewrittenQueryInfo = RewriteQueryInfo(queryInfo, statistics);
+                QueryInfo rewrittenQueryInfo = RewriteOrderByQueryInfo(queryInfo, statistics);
                 rewrittenQueryInfos.Add(rewrittenQueryInfo);
             }
 
@@ -405,7 +414,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
 
             (List<HybridSearchQueryResult> queryResults, QueryPage emptyPage) = tryGetResults.Result;
-            if (queryResults.Count == 0)
+            if (queryResults.Count == 0 || queryResults.Count == 1)
             {
                 return TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage emptyPage)>.FromResult((queryResults, emptyPage));
             }
@@ -455,7 +464,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             List<HybridSearchQueryResult> queryResults = new List<HybridSearchQueryResult>();
             foreach (QueryPipelineStagePrefetcher prefetcher in prefetchers)
             {
-                TryCatch<IReadOnlyList<QueryPage>> tryGetResults = prefetcher.Result;
+                TryCatch<IReadOnlyList<QueryPage>> tryGetResults = await prefetcher.GetResultAsync(trace, cancellationToken);
                 if (tryGetResults.Failed)
                 {
                     return TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)>.FromException(tryGetResults.Exception);
@@ -504,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 }
             }
 
-            queryResults.RemoveRange(writeIndex + 1, queryResults.Count - writeIndex);
+            queryResults.RemoveRange(writeIndex + 1, queryResults.Count - writeIndex - 1);
         }
 
         private static TryCatch<IReadOnlyList<List<ScoreTuple>>> RetrieveComponentScores(IReadOnlyList<HybridSearchQueryResult> queryResults, int componentCount)
@@ -567,34 +576,42 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
         }
 
-        private static QueryInfo RewriteQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics)
+        private static QueryInfo RewriteOrderByQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics)
         {
-            QueryInfo result = new QueryInfo();
-            result.DistinctType = queryInfo.DistinctType;
-            result.Top = queryInfo.Top;
-            result.Offset = queryInfo.Offset;
-            result.Limit = queryInfo.Limit;
-            result.OrderBy = queryInfo.OrderBy;
+            Debug.Assert(queryInfo.HasOrderBy, "The component query should have an order by");
+            Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
 
-            List<string> orderByExpressions = new List<string>(queryInfo.OrderByExpressions.Count);
+            List<string> rewrittenOrderByExpressions = new List<string>(queryInfo.OrderByExpressions.Count);
             foreach (string orderByExpression in queryInfo.OrderByExpressions)
             {
                 string rewrittenOrderByExpression = FormatComponentQueryText(orderByExpression, statistics);
-                orderByExpressions.Add(rewrittenOrderByExpression);
+                rewrittenOrderByExpressions.Add(rewrittenOrderByExpression);
             }
-            result.OrderByExpressions = orderByExpressions;
-
-            result.GroupByExpressions = queryInfo.GroupByExpressions;
-            result.GroupByAliases = queryInfo.GroupByAliases;
-            result.Aggregates = queryInfo.Aggregates;
-            result.GroupByAliasToAggregateType = queryInfo.GroupByAliasToAggregateType;
 
             string rewrittenQuery = FormatComponentQueryText(queryInfo.RewrittenQuery, statistics);
-            queryInfo.RewrittenQuery = rewrittenQuery;
 
-            result.HasSelectValue = queryInfo.HasSelectValue;
-            result.DCountInfo = queryInfo.DCountInfo;
-            result.HasNonStreamingOrderBy = queryInfo.HasNonStreamingOrderBy;
+            QueryInfo result = new QueryInfo()
+            {
+                DistinctType = queryInfo.DistinctType,
+                Top = queryInfo.Top,
+                Offset = queryInfo.Offset,
+                Limit = queryInfo.Limit,
+
+                OrderBy = queryInfo.OrderBy,
+                OrderByExpressions = rewrittenOrderByExpressions,
+
+                GroupByExpressions = queryInfo.GroupByExpressions,
+                GroupByAliases = queryInfo.GroupByAliases,
+                Aggregates = queryInfo.Aggregates,
+                GroupByAliasToAggregateType = queryInfo.GroupByAliasToAggregateType,
+
+                RewrittenQuery = rewrittenQuery,
+
+                HasSelectValue = queryInfo.HasSelectValue,
+                DCountInfo = queryInfo.DCountInfo,
+
+                HasNonStreamingOrderBy = queryInfo.HasNonStreamingOrderBy,
+            };
 
             return result;
         }
@@ -609,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 FullTextStatistics fullTextStatistics = statistics.FullTextStatistics[index];
                 query = query.Replace(string.Format(Placeholders.FormattableTotalWordCount, index), fullTextStatistics.TotalWordCount.ToString());
 
-                string hitCountsArray = string.Format("[{0}]", string.Join(",", fullTextStatistics.HitCounts));
+                string hitCountsArray = string.Format("[{0}]", string.Join(",", fullTextStatistics.HitCounts.ToArray())); // ReadOnlyMemory<long> does not implement IEnumerable<long>
                 query = query.Replace(string.Format(Placeholders.FormattableHitCountsArray, index), hitCountsArray);
             }
 
@@ -702,7 +719,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             private readonly IQueryPipelineStage queryPipelineStage;
 
-            public TryCatch<IReadOnlyList<QueryPage>> Result { get; private set; }
+            private TryCatch<IReadOnlyList<QueryPage>> result;
+
+            private bool prefetched;
 
             public QueryPipelineStagePrefetcher(IQueryPipelineStage queryPipelineStage)
             {
@@ -717,13 +736,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     TryCatch<QueryPage> tryCatchQueryPage = this.queryPipelineStage.Current;
                     if (tryCatchQueryPage.Failed)
                     {
-                        this.Result = TryCatch<IReadOnlyList<QueryPage>>.FromException(tryCatchQueryPage.Exception);
+                        this.result = TryCatch<IReadOnlyList<QueryPage>>.FromException(tryCatchQueryPage.Exception);
+                        this.prefetched = true;
+                        return;
                     }
 
                     result.Add(tryCatchQueryPage.Result);
                 }
 
-                this.Result = TryCatch<IReadOnlyList<QueryPage>>.FromResult(result);
+                this.result = TryCatch<IReadOnlyList<QueryPage>>.FromResult(result);
+                this.prefetched = true;
+            }
+
+            public async ValueTask<TryCatch<IReadOnlyList<QueryPage>>> GetResultAsync(ITrace trace, CancellationToken cancellationToken)
+            {
+                if (!this.prefetched)
+                {
+                    await this.PrefetchAsync(trace, cancellationToken);
+                }
+
+                return this.result;
             }
         }
 

@@ -824,6 +824,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency)
             {
                 return new StreamingOrderByCrossPartitionQueryPipelineStage(
@@ -833,6 +834,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     enumerators,
                     uninitializedEnumeratorsAndTokens,
                     queryPaginationOptions,
+                    emitRawOrderByPayload,
                     maxConcurrency);
             }
 
@@ -1062,6 +1064,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     containerQueryProperties,
                     orderByColumns.Select(column => column.SortOrder).ToList(),
                     queryPaginationOptions,
+                    emitRawOrderByPayload,
                     maxConcurrency,
                     enumeratorsAndTokens,
                     continuationToken == null ? null : new QueryState(continuationToken));
@@ -1739,7 +1742,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ValueTask DisposeAsync()
             {
-                this.bufferedResults.Enumerator.Dispose();
+                this.bufferedResults?.Enumerator?.Dispose();
                 return default;
             }
 

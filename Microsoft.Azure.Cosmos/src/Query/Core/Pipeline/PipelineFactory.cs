@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
@@ -25,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
     internal static class PipelineFactory
     {
+        private const int PageSizeFactorForTop = 5;
+
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
@@ -32,9 +35,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
             HybridSearchQueryInfo hybridSearchQueryInfo,
-            QueryExecutionOptions queryPaginationOptions,
+            int maxItemCount,
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyList<FeedRangeEpk> allRanges,
+            bool isContinuationExpected,
             int maxConcurrency,
             CosmosElement requestContinuationToken)
         {
@@ -79,9 +83,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     partitionKey: partitionKey,
                     queryInfo: queryInfo,
                     prefetchPolicy: DeterminePrefetchPolicy(queryInfo),
-                    queryPaginationOptions: queryPaginationOptions,
-                    emitRawOrderByPayload: false,
                     containerQueryProperties: containerQueryProperties,
+                    maxItemCount: maxItemCount,
+                    isContinuationExpected: true,
+                    emitRawOrderByPayload: false,
                     maxConcurrency: maxConcurrency,
                     requestContinuationToken: requestContinuationToken);
             }
@@ -89,13 +94,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 return HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
+                    containerQueryProperties: containerQueryProperties,
                     sqlQuerySpec: sqlQuerySpec,
                     targetRanges: targetRanges,
                     partitionKey: partitionKey,
                     queryInfo: hybridSearchQueryInfo,
-                    queryExecutionOptions: queryPaginationOptions,
-                    containerQueryProperties: containerQueryProperties,
                     allRanges: allRanges,
+                    maxItemCount: maxItemCount,
+                    isContinuationExpected: isContinuationExpected,
                     maxConcurrency: maxConcurrency);
             }
         }
@@ -107,18 +113,64 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
             PrefetchPolicy prefetchPolicy,
-            QueryExecutionOptions queryPaginationOptions,
             ContainerQueryProperties containerQueryProperties,
-            int maxConcurrency,
+            int maxItemCount,
             bool emitRawOrderByPayload,
+            bool isContinuationExpected,
+            int maxConcurrency,
             CosmosElement requestContinuationToken)
         {
+            // We need to compute the optimal initial page size for order-by queries
+            long optimalPageSize = maxItemCount;
+            if (queryInfo.HasOrderBy)
+            {
+                int top;
+                if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
+                {
+                    top = queryInfo.Top.Value;
+                }
+                else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
+                {
+                    top = (queryInfo.Offset ?? 0) + queryInfo.Limit.Value;
+                }
+                else
+                {
+                    top = 0;
+                }
+
+                if (top > 0)
+                {
+                    // All partitions should initially fetch about 1/nth of the top value.
+                    long pageSizeWithTop = (long)Math.Min(
+                        Math.Ceiling(top / (double)targetRanges.Count) * PageSizeFactorForTop,
+                        top);
+
+                    optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
+                }
+                else if (isContinuationExpected)
+                {
+                    optimalPageSize = (long)Math.Min(
+                        Math.Ceiling(optimalPageSize / (double)targetRanges.Count) * PageSizeFactorForTop,
+                        optimalPageSize);
+                }
+            }
+
+            QueryExecutionOptions queryPaginationOptions = new QueryExecutionOptions(pageSizeHint: (int)optimalPageSize);
+
+            Debug.Assert(
+                (optimalPageSize > 0) && (optimalPageSize <= int.MaxValue),
+                $"Invalid MaxItemCount {optimalPageSize}");
+
+            SqlQuerySpec rewrittenSqlQuerySpec = queryInfo.RewrittenQuery != null ?
+                new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) :
+                sqlQuerySpec;
+
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
             {
                 monadicCreatePipelineStage = (continuationToken) => OrderByCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
-                    sqlQuerySpec: sqlQuerySpec,
+                    sqlQuerySpec: rewrittenSqlQuerySpec,
                     targetRanges: targetRanges,
                     partitionKey: partitionKey,
                     orderByColumns: queryInfo
@@ -135,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 monadicCreatePipelineStage = (continuationToken) => ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
-                    sqlQuerySpec: sqlQuerySpec,
+                    sqlQuerySpec: rewrittenSqlQuerySpec,
                     targetRanges: targetRanges,
                     queryPaginationOptions: queryPaginationOptions,
                     partitionKey: partitionKey,

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static class FieldNames
         {
-            public const string Rid = "rid";
+            public const string Rid = "_rid";
 
             public const string Payload = "payload";
 
