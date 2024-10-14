@@ -33,15 +33,15 @@ namespace Microsoft.Azure.Cosmos
     ///         {
     ///             "path": "/vector2",
     ///             "type": "quantizedFlat",
-    ///             "quantizationByteSize": 4,
-    ///             "vectorIndexShardKey": ["/Country/City", "ZipCode"]
+    ///             "quantizationByteSize": 3,
+    ///             "vectorIndexShardKey": ["/ZipCode"]
     ///         },
     ///         {
     ///             "path": "/embeddings/vector",
     ///             "type": "DiskANN",
-    ///             "quantizationByteSize": 8,
+    ///             "quantizationByteSize": 2,
     ///             "indexingSearchListSize": 100,
-    ///             "vectorIndexShardKey": ["/Country/City", "ZipCode"]
+    ///             "vectorIndexShardKey": ["/Country"]
     ///         }
     ///     ]
     /// }
@@ -70,19 +70,19 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
-        [JsonProperty(PropertyName = "quantizationByteSize")]
+        [JsonProperty(PropertyName = "quantizationByteSize", NullValueHandling = NullValueHandling.Ignore)]
         public int? QuantizationByteSize { get; set; }
 
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
-        [JsonProperty(PropertyName = "indexingSearchListSize")]
+        [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
         public int? IndexingSearchListSize { get; set; }
 
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
-        [JsonProperty(PropertyName = "vectorIndexShardKey")]
+        [JsonProperty(PropertyName = "vectorIndexShardKey", NullValueHandling = NullValueHandling.Ignore)]
         public string[] VectorIndexShardKey { get; set; }
 
         /// <summary>
