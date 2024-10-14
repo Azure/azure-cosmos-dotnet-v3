@@ -9,15 +9,27 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-	<!-- Include Newtonsoft.Json for internal project references -->
+
+	<!-- Handle Newtonsoft.Json for internal project references -->
 	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" />
 	</ItemGroup>
-	
-	<!-- Use PrivateAssets for external consumers via NuGet -->
+
+	<!-- Prevent Newtonsoft.Json from propagating to external consumers -->
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" PrivateAssets="all">
 			<NoWarn>NU1903</NoWarn>
 		</PackageReference>
 	</ItemGroup>
+
+	<Target Name="CopyNewtonsoftJsonToOutput" AfterTargets="Build">
+		<PropertyGroup>
+			<NewtonsoftJsonDll>$(NuGetPackageRoot)newtonsoft.json\10.0.2\lib\netstandard2.0\Newtonsoft.Json.dll</NewtonsoftJsonDll>
+			<ConsumerOutputPath>$(TargetDir)</ConsumerOutputPath>
+		</PropertyGroup>
+
+		<Copy SourceFiles="$(NewtonsoftJsonDll)"
+			  DestinationFolder="$(ConsumerOutputPath)"
+			  Condition="Exists('$(NewtonsoftJsonDll)') AND '$(ConsumerOutputPath)' != ''" />
+	</Target>
 </Project>
