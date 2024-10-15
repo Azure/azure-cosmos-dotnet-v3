@@ -19,11 +19,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal class StreamProcessor
     {
+        private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
 
         private readonly JsonReaderOptions jsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+
+        internal static int InitialBufferSize { get; set; } = 16384;
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
@@ -48,11 +51,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             List<string> pathsDecrypted = new (properties.EncryptedPaths.Count());
 
-            Utf8JsonWriter writer = new (outputStream);
+            using Utf8JsonWriter writer = new (outputStream);
 
-            int bufferSize = 16384;
-            byte[] buffer = arrayPoolManager.Rent(bufferSize);
-            bufferSize = buffer.Length;
+            byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
 
             JsonReaderState state = new (this.jsonReaderOptions);
 
@@ -62,6 +63,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
+
+            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
 
             while (!isFinalBlock)
             {
@@ -80,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     ref decryptPropertyName,
                     pathsDecrypted,
                     properties,
+                    containsCompressed,
                     arrayPoolManager,
                     encryptionKey);
 
@@ -88,8 +92,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 // we need to scale out buffer
                 if (leftOver == dataSize)
                 {
-                    bufferSize *= 2;
-                    byte[] newBuffer = arrayPoolManager.Rent(bufferSize);
+                    byte[] newBuffer = arrayPoolManager.Rent(buffer.Length * 2);
                     buffer.AsSpan().CopyTo(newBuffer);
                     buffer = newBuffer;
                 }
@@ -100,32 +103,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             }
 
             writer.Flush();
-            inputStream.Position = 0;
             outputStream.Position = 0;
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
         }
 
-        /*
-        private static Dictionary<byte[], int> GetUtf8DecryptionList(EncryptionProperties properties)
-        {
-            Dictionary<byte[], int> output = new (properties.EncryptedPaths.Count());
-            foreach (KeyValuePair<string, int> compressedPath in properties.CompressedEncryptedPaths)
-            {
-                byte[] utf8String = Encoding.UTF8.GetBytes(compressedPath.Key, 1, compressedPath.Key.Length - 1);
-                output[utf8String] = compressedPath.Value;
-            }
-
-            foreach (string encryptedPath in properties.EncryptedPaths)
-            {
-                byte[] utf8String = Encoding.UTF8.GetBytes(encryptedPath, 1, encryptedPath.Length - 1);
-                output.TryAdd(utf8String, -1);
-            }
-
-            return output;
-        }*/
-
-        private long TransformReadBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, List<string> pathsDecrypted, EncryptionProperties properties, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
+        private long TransformReadBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, List<string> pathsDecrypted, EncryptionProperties properties, bool containsCompressed, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
@@ -158,9 +141,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                                 decryptPropertyName,
                                 properties,
                                 encryptionKey,
+                                containsCompressed,
                                 arrayPoolManager);
 
-                            pathsDecrypted.Add("/" + decryptPropertyName);
+                            pathsDecrypted.Add(decryptPropertyName);
                         }
 
                         decryptPropertyName = null;
@@ -189,13 +173,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         writer.WriteEndArray();
                         break;
                     case JsonTokenType.PropertyName:
-                        string propertyName = reader.GetString();
-                        if (properties.EncryptedPaths.Contains("/" + propertyName))
+                        string propertyName = "/" + reader.GetString();
+                        if (properties.EncryptedPaths.Contains(propertyName))
                         {
                             decryptPropertyName = propertyName;
                         }
-
-                        if (propertyName == Constants.EncryptedInfo)
+                        else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
                         {
                             isIgnoredBlock = true;
                             break;
@@ -224,12 +207,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return reader.BytesConsumed;
         }
 
-        private void TransformDecryptProperty(ref Utf8JsonReader reader, Utf8JsonWriter writer, string decryptPropertyName, EncryptionProperties properties, DataEncryptionKey encryptionKey, ArrayPoolManager arrayPoolManager)
+        private void TransformDecryptProperty(ref Utf8JsonReader reader, Utf8JsonWriter writer, string decryptPropertyName, EncryptionProperties properties, DataEncryptionKey encryptionKey, bool containsCompressed, ArrayPoolManager arrayPoolManager)
         {
             BrotliCompressor decompressor = null;
             if (properties.EncryptionFormatVersion == 4)
             {
-                bool containsCompressed = properties.CompressedEncryptedPaths?.Any() == true;
                 if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
                 {
                     throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
@@ -254,9 +236,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
 
-            if (decompressor != null)
+            if (containsCompressed)
             {
-                if (properties.CompressedEncryptedPaths?.TryGetValue("/" + decryptPropertyName, out int decompressedSize) == true)
+                if (properties.CompressedEncryptedPaths?.TryGetValue(decryptPropertyName, out int decompressedSize) == true)
                 {
                     byte[] buffer = arrayPoolManager.Rent(decompressedSize);
                     processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);

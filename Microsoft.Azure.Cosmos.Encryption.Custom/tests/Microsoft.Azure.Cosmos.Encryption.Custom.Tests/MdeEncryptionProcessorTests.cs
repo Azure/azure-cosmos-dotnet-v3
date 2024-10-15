@@ -14,6 +14,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+#if NET8_0_OR_GREATER
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
+#endif
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -29,6 +32,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public static void ClassInitialize(TestContext testContext)
         {
             _ = testContext;
+
+#if NET8_0_OR_GREATER
+            StreamProcessor.InitialBufferSize = 16; //we force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
+#endif
 
             Mock<DataEncryptionKey> DekMock = new();
             DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
