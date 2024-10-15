@@ -26,8 +26,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         internal JsonSerializerOptions JsonSerializerOptions { get; set; }
 
-        private JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
-
         public MdeJsonNodeEncryptionProcessor()
         {
             this.JsonSerializerOptions = new JsonSerializerOptions();
