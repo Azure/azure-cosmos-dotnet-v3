@@ -31,6 +31,11 @@
 		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	  <PackageReference Include="System.Text.Json" Version="8.0.5" />
+	</ItemGroup>
 	
 	<PropertyGroup>
 		<SignAssembly>true</SignAssembly>
