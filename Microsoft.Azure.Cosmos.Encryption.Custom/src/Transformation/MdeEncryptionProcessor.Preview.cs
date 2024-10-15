@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
 #if NET8_0_OR_GREATER
         internal MdeJsonNodeEncryptionProcessor JsonNodeEncryptionProcessor { get; set; } = new MdeJsonNodeEncryptionProcessor();
+
+        internal StreamProcessor StreamProcessor { get; set; } = new StreamProcessor();
 #endif
 
         public async Task<Stream> EncryptAsync(
@@ -29,15 +31,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             CancellationToken token)
         {
+#if NET8_0_OR_GREATER
+            switch (encryptionOptions.JsonProcessor)
+            {
+                case JsonProcessor.Newtonsoft:
+                    return await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token);
+
+                case JsonProcessor.SystemTextJson:
+                    return await this.JsonNodeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token);
+                case JsonProcessor.Stream:
+                    MemoryStream ms = new ();
+                    await this.StreamProcessor.EncryptStreamAsync(input, ms, encryptor, encryptionOptions, token);
+                    return ms;
+
+                default:
+                    throw new InvalidOperationException("Unsupported JsonProcessor");
+            }
+#else
             return encryptionOptions.JsonProcessor switch
             {
                 JsonProcessor.Newtonsoft => await this.JObjectEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
-#if NET8_0_OR_GREATER
-                JsonProcessor.SystemTextJson => await this.JsonNodeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
-                JsonProcessor.Stream => await this.JsonNodeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, token),
-#endif
-                _ => throw new InvalidOperationException("Unsupported JsonProcessor")
+                _ => throw new InvalidOperationException("Unsupported JsonProcessor"),
             };
+#endif
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.IO.Compression;
     using System.Linq;
 #if NET8_0_OR_GREATER
     using System.Text.Json.Nodes;
@@ -520,84 +521,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 #endif
 
+        private static EncryptionOptions CreateEncryptionOptions(JsonProcessor processor, CompressionOptions.CompressionAlgorithm compressionAlgorithm, CompressionLevel compressionLevel)
+        {
+            return new EncryptionOptions()
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                JsonProcessor = processor,
+                CompressionOptions = new CompressionOptions()
+                {
+                    Algorithm = compressionAlgorithm,
+                    CompressionLevel = compressionLevel
+                }
+            };
+        }
+
         public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
-            new object[] { new EncryptionOptions()
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.Newtonsoft,
-                    CompressionOptions = new CompressionOptions()
-                    {
-                        Algorithm = CompressionOptions.CompressionAlgorithm.None
-                    }
-                }
-            },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
 #if NET8_0_OR_GREATER
-            new object[] { new EncryptionOptions()
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.SystemTextJson,
-                    CompressionOptions = new CompressionOptions()
-                    {
-                        Algorithm = CompressionOptions.CompressionAlgorithm.None
-                    }
-                }
-            },
-            new object[] { new EncryptionOptions()
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.Newtonsoft,
-                    CompressionOptions = new CompressionOptions()
-                    {
-                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
-                        CompressionLevel = System.IO.Compression.CompressionLevel.Fastest
-                    }
-                }
-            },
-            new object[] { new EncryptionOptions()
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.Newtonsoft,
-                    CompressionOptions = new CompressionOptions()
-                    {
-                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
-                        CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression,
-                    }
-                }
-            },
-            new object[] { new EncryptionOptions()
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.SystemTextJson,
-                    CompressionOptions = new CompressionOptions()
-                    {
-                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
-                        CompressionLevel = System.IO.Compression.CompressionLevel.Fastest
-                    }
-                }
-            },
-            new object[] { new EncryptionOptions()
-                {
-                    DataEncryptionKeyId = dekId,
-                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                    PathsToEncrypt = TestDoc.PathsToEncrypt,
-                    JsonProcessor = JsonProcessor.SystemTextJson,
-                    CompressionOptions = new CompressionOptions()
-                    {
-                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
-                        CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression,
-                    }
-                }
-            }
+            new object[] { CreateEncryptionOptions(JsonProcessor.SystemTextJson, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.SystemTextJson, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.SystemTextJson, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
 #endif
         };
 

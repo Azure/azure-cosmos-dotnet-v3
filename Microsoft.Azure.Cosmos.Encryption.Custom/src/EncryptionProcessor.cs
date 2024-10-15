@@ -91,6 +91,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public static async Task EncryptAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            _ = diagnosticsContext;
+
+            ValidateInputForEncrypt(
+                input,
+                encryptor,
+                encryptionOptions);
+
+            if (!encryptionOptions.PathsToEncrypt.Any())
+            {
+                await input.CopyToAsync(output, cancellationToken);
+                return;
+            }
+
+            if (encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
+            {
+                throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
+            }
+
+            foreach (string path in encryptionOptions.PathsToEncrypt)
+            {
+                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.IndexOf('/', 1) != -1)
+                {
+                    throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
+                }
+
+                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
+                }
+            }
+
+            if (encryptionOptions.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
+            }
+
+            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
+            }
+
+            await EncryptionProcessor.StreamProcessor.EncryptStreamAsync(input, output, encryptor, encryptionOptions, cancellationToken);
+        }
+#endif
+
         /// <remarks>
         /// If there isn't any data that needs to be decrypted, input stream will be returned without any modification.
         /// Else input stream will be disposed, and a new stream is returned.
@@ -153,11 +207,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Stream output,
             Encryptor encryptor,
             CosmosDiagnosticsContext diagnosticsContext,
+            JsonProcessor jsonProcessor,
             CancellationToken cancellationToken)
         {
             if (input == null)
             {
                 return null;
+            }
+
+            if (jsonProcessor != JsonProcessor.Stream)
+            {
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
             }
 
             Debug.Assert(input.CanSeek);
@@ -171,7 +231,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             input.Position = 0;
             if (properties?.EncryptionProperties == null)
             {
+                await input.CopyToAsync(output, cancellationToken: cancellationToken);
                 return null;
+            }
+
+            if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                input.Position = 0;
+                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
             }
 
             DecryptionContext context = await StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);

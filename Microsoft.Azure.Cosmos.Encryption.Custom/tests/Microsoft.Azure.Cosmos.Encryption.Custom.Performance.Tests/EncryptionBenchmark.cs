@@ -3,6 +3,7 @@
     using System.IO;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Data.Encryption.Cryptography;
+    using Microsoft.IO;
     using Moq;
 
     [RPlotExporter]
@@ -16,13 +17,13 @@
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
         private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
+        private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
+
         private CosmosEncryptor? encryptor;
 
         private EncryptionOptions? encryptionOptions;
         private byte[]? encryptedData;
         private byte[]? plaintext;
-
-        private static readonly MemoryStream recycledStream = new ();
 
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
@@ -30,7 +31,7 @@
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
-        [Params(/*JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson, */JsonProcessor.Stream)]
+        [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson, JsonProcessor.Stream)]
         public JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
@@ -61,7 +62,7 @@
             this.encryptedData = memoryStream.ToArray();
         }
 
-        /*
+        
         [Benchmark]
         public async Task Encrypt()
         {
@@ -71,7 +72,20 @@
                  this.encryptionOptions,
                  new CosmosDiagnosticsContext(),
                  CancellationToken.None);
-        }*/
+        }
+
+        [Benchmark]
+        public async Task EncryptToProvidedStream()
+        {
+            using RecyclableMemoryStream rms = new (this.recyclableMemoryStreamManager);
+            await EncryptionProcessor.EncryptAsync(
+                new MemoryStream(this.plaintext!),
+                rms,
+                this.encryptor,
+                this.encryptionOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+        }
 
         [Benchmark]
         public async Task Decrypt()
@@ -87,14 +101,14 @@
         [Benchmark]
         public async Task DecryptToProvidedStream()
         {
+            using RecyclableMemoryStream rms = new(this.recyclableMemoryStreamManager);
             await EncryptionProcessor.DecryptAsync(
                 new MemoryStream(this.encryptedData!),
-                EncryptionBenchmark.recycledStream,
+                rms,
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
+                this.JsonProcessor,
                 CancellationToken.None);
-
-            EncryptionBenchmark.recycledStream.Position = 0;
         }
 
         private EncryptionOptions CreateEncryptionOptions()

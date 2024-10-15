@@ -11,20 +11,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Data.Encryption.Cryptography.Serializers;
 
-    internal class StreamProcessor
+    internal partial class StreamProcessor
     {
         private const string EncryptionPropertiesPath = "/" + Constants.EncryptedInfo;
         private static readonly SqlBitSerializer SqlBoolSerializer = new ();
         private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
         private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
 
-        private readonly JsonReaderOptions jsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
+        private static readonly JsonReaderOptions JsonReaderOptions = new () { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
 
         internal static int InitialBufferSize { get; set; } = 16384;
 
@@ -55,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             byte[] buffer = arrayPoolManager.Rent(InitialBufferSize);
 
-            JsonReaderState state = new (this.jsonReaderOptions);
+            JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
             int leftOver = 0;
 
@@ -74,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 long bytesConsumed = 0;
 
                 // processing itself here
-                bytesConsumed = this.TransformReadBuffer(
+                bytesConsumed = this.TransformDecryptBuffer(
                     buffer.AsSpan(0, dataSize),
                     isFinalBlock,
                     writer,
@@ -108,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
         }
 
-        private long TransformReadBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, List<string> pathsDecrypted, EncryptionProperties properties, bool containsCompressed, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
+        private long TransformDecryptBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, List<string> pathsDecrypted, EncryptionProperties properties, bool containsCompressed, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
