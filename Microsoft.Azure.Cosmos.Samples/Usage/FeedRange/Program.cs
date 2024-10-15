@@ -37,17 +37,23 @@
     ///    <![CDATA[
     ///    Given FeedRange y: {y}, When compared to FeedRange x: {x}, Then y is part of x.
     ///
-    ///    Given FeedRange y: ["Raynor"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
-    ///    Given FeedRange y: ["Beer"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
-    ///    Given FeedRange y: ["Wiza"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
-    ///    Given FeedRange y: ["Franecki"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
-    ///    Given FeedRange y: ["Raynor"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
-    ///
-    ///    Given FeedRange y: ["Kassulke"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
-    ///    Given FeedRange y: ["Abshire"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
-    ///    Given FeedRange y: ["Ullrich"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
-    ///    Given FeedRange y: ["Walter"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
-    ///    Given FeedRange y: ["Hettinger"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
+    ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
+    ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
+    ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
+    ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
+    ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
     ///    ]]>
     ///
     /// 6. **Error Handling and Resource Cleanup**:
@@ -227,7 +233,12 @@
             // Build the Change Feed Processor
             ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<dynamic>(
                 Guid.NewGuid().ToString(),
-                (context, changes, token) => Program.HandleFeedRangeChangesAsync(context, changes, container, token))
+                (context, changes, token) => Program.HandleFeedRangeChangesAsync(
+                    context,
+                    changes,
+                    container,
+                    feedRanges,
+                    token))
                 .WithInstanceName(Guid.NewGuid().ToString())
                 .WithLeaseContainer(leaseContainer)
                 .WithErrorNotification((string leaseToken, Exception exception) =>
@@ -263,37 +274,45 @@
         }
 
         /// <summary>
-        /// Handles the changes from the Cosmos DB Change Feed Processor by extracting the feed range from the context
-        /// and comparing each change's partition key feed range with the provided feed range.
+        /// Processes changes from the Cosmos DB Change Feed Processor by extracting the feed range from the context
+        /// and comparing each change's partition key feed range with both the context feed range and the provided feed ranges.
         /// </summary>
-        /// <param name="context">The context containing details about the change feed processing, including the feed range.</param>
+        /// <param name="context">The context containing details about the change feed processing, including the current feed range.</param>
         /// <param name="changes">The collection of changes detected in the container.</param>
         /// <param name="token">A cancellation token to handle cancellation requests.</param>
-        /// <param name="container">The Cosmos DB container where the feed range comparison will take place.</param>
+        /// <param name="container">The Cosmos DB container where the feed range comparisons will occur.</param>
+        /// <param name="feedRanges">A collection of feed ranges available in the specified container.</param>
         /// <returns>A Task representing the asynchronous operation.</returns>
         private static async Task HandleFeedRangeChangesAsync(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<dynamic> changes,
             Container container,
+            IReadOnlyList<FeedRange> feedRanges,
             CancellationToken token)
         {
-            // Extract feed range from the context
-            FeedRange feedRange = context.FeedRange;
-
-            // Iterate over the changes and compare feed ranges
+            // Iterate over the detected changes and compare the associated partition feed ranges
             foreach (var change in changes)
             {
-                // Create a partition feed range from the partition key in the change
+                // Create a feed range based on the partition key from the change
                 FeedRange partitionFeedRange = FeedRange.FromPartitionKey(
                     new PartitionKeyBuilder()
                         .Add(change.pk.ToString())
                         .Build());
 
-                // Compare the feed ranges using the provided method
+                // Compare the partition feed range with the feed range from the context
                 await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangeWithInclusiveBoundsIsCompared_ThenItShouldBePartOfAnotherFeedRange(
                     container: container,
-                    x: feedRange,
+                    x: context.FeedRange,
                     y: partitionFeedRange).ConfigureAwait(false);
+
+                // Compare the partition feed range with each of the provided feed ranges
+                foreach (var feedRange in feedRanges)
+                {
+                    await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangeWithInclusiveBoundsIsCompared_ThenItShouldBePartOfAnotherFeedRange(
+                        container: container,
+                        x: feedRange,
+                        y: partitionFeedRange).ConfigureAwait(false);
+                }
             }
         }
 
