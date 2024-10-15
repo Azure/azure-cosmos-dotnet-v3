@@ -96,8 +96,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public VectorIndexDefinition<T> WithVectorIndexShardKey(
             string[] vectorIndexShardKey)
         {
-            this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));
-
+            this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey;
             return this;
         }
 
