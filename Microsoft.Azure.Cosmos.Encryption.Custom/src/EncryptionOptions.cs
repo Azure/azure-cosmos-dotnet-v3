@@ -7,6 +7,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Collections.Generic;
 
     /// <summary>
+    /// API for JSON processing
+    /// </summary>
+    public enum JsonProcessor
+    {
+        /// <summary>
+        /// Newtonsoft.Json
+        /// </summary>
+        Newtonsoft,
+
+#if NET8_0_OR_GREATER
+        /// <summary>
+        /// System.Text.Json
+        /// </summary>
+        /// <remarks>Available with .NET8.0 package only.</remarks>
+        SystemTextJson,
+#endif
+    }
+
+    /// <summary>
     /// Options for encryption of data.
     /// </summary>
     public sealed class EncryptionOptions
@@ -40,5 +59,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// Example of a path specification: /sensitive
         /// </summary>
         public IEnumerable<string> PathsToEncrypt { get; set; }
+
+        /// <summary>
+        /// Gets or sets API used for Json processing
+        /// </summary>
+        /// <remarks>Setting only applies with Mde encryption is used.</remarks>
+        public JsonProcessor JsonProcessor { get; set; } = JsonProcessor.Newtonsoft;
     }
 }

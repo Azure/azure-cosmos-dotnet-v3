@@ -66,11 +66,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ClientId = "db.cosmosdb.client_id";
 
         /// <summary>
-        /// Represents the machine ID for Cosmos DB.
-        /// </summary>
-        public const string MachineId = "db.cosmosdb.machine_id";
-
-        /// <summary>
         /// Represents the user agent, compliant with OpenTelemetry conventions.
         /// </summary>
         public const string UserAgent = "user_agent.original";
@@ -79,11 +74,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the connection mode for Cosmos DB.
         /// </summary>
         public const string ConnectionMode = "db.cosmosdb.connection_mode";
-
-        /// <summary>
-        /// Represents the type of operation for Cosmos DB.
-        /// </summary>
-        public const string OperationType = "db.cosmosdb.operation_type";
 
         // Request/Response specifics
 
@@ -105,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the status code of the response.
         /// </summary>
-        public const string StatusCode = "db.cosmosdb.status_code";
+        public const string StatusCode = "db.response.status_code";
 
         /// <summary>
         /// Represents the sub-status code of the response.
@@ -146,6 +136,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the size of the batch operation.
         /// </summary>
         public const string BatchSize = "db.operation.batch_size";
+
+        /// <summary>
+        /// Consistency Level
+        /// </summary>
+        public const string ConsistencyLevel = "db.cosmosdb.consistency_level";
 
         // Exceptions
 
