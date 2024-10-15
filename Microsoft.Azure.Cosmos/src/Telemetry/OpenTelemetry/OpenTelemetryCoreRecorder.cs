@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using Antlr4.Runtime.Misc;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Documents;
@@ -18,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
+
+        private static readonly string otelStabilityMode = Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN");
 
         private readonly DiagnosticScope scope = default;
         private readonly CosmosThresholdOptions config = null;
@@ -149,19 +152,33 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-                
+                if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
+                {
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
+                   
+                }
+                else
+                {
+                    // Classic Appinsights Support
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbName, databaseName);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, clientContext.UserAgent);
+                }
+
                 // Other information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
 
                 // Client Information
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
                 this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, this.connectionModeCache);
+
             }
         }
 
@@ -243,7 +260,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
-                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+
+                    if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
+                    {
+                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                    }
+                    else
+                    {
+                        this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
+                    }
+
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
                     this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)this.response.RequestCharge);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
