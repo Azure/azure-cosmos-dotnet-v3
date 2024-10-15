@@ -45,7 +45,8 @@
     ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
     ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
     ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
-    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["McGlynn"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
     ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is not part of x.
     ///    Given FeedRange y: ["Balistreri"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
     ///    Given FeedRange y: ["Gislason"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
