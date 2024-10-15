@@ -56,10 +56,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Add a path to the current <see cref="VectorIndexPath"/> definition with a particular set of <see cref="VectorIndexType"/>s.
+        /// Configures the quantization byte size for the current <see cref="VectorIndexPath"/> definition.
         /// </summary>
-        /// <param name="quantizationByteSize">The number of bytes used in product quantization of the vectors. A larger value may result
-        /// in better recall for vector searches at the expense of latency. This applies to index types DiskANN and quantizedFlat</param>
+        /// <param name="quantizationByteSize">
+        /// The number of bytes used in product quantization of the vectors. This is an optional parameter and applies to index
+        /// types DiskANN and quantizedFlat. Note that, the allowed range for this parameter is between 1 and 3.
+        /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
         public VectorIndexDefinition<T> WithQuantizationByteSize(
             int? quantizationByteSize)
@@ -70,13 +72,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Add a path to the current <see cref="VectorIndexPath"/> definition with a particular set of <see cref="VectorIndexType"/>s.
+        /// Configures the indexing search list size for the current <see cref="VectorIndexPath"/> definition.
         /// </summary>
-        /// <param name="indexingSearchListSize">This represents the size of the candidate list of approximate neighbors stored while building the DiskANN index as part of the optimization processes.
-        /// Large values may improve recall at the expense of latency. This applies to index type DiskANN only.</param>
+        /// <param name="indexingSearchListSize">
+        /// This represents the size of the candidate list of approximate neighbors stored while building the DiskANN index as part of the optimization processes.
+        /// Large values may improve recall at the expense of latency. This is an optional parameter and applies to index type DiskANN only.
+        /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
         public VectorIndexDefinition<T> WithIndexingSearchListSize(
-            int? indexingSearchListSize = 0)
+            int? indexingSearchListSize)
         {
             this.vectorIndexPath.IndexingSearchListSize = indexingSearchListSize ?? throw new ArgumentNullException(nameof(indexingSearchListSize));
 
@@ -84,12 +88,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Add a path to the current <see cref="VectorIndexPath"/> definition with a particular set of <see cref="VectorIndexType"/>s.
+        /// Configures the vector index shard key for the current <see cref="VectorIndexPath"/> definition.
         /// </summary>
-        /// <param name="vectorIndexShardKey">A string array containing the shard keys used for partitioning the vector indexes. This applies to index types DiskANN and quantizedFlat.</param>
+        /// <param name="vectorIndexShardKey">
+        /// A string array containing the shard keys used for partitioning the vector indexes. This is an optional parameter and
+        /// applies to index types DiskANN and quantizedFlat.
+        /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
         public VectorIndexDefinition<T> WithVectorIndexShardKey(
-            string[] vectorIndexShardKey = default)
+            string[] vectorIndexShardKey)
         {
             this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));
 

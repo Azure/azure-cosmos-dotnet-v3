@@ -68,19 +68,20 @@ namespace Microsoft.Azure.Cosmos
         public VectorIndexType Type { get; set; }
 
         /// <summary>
-        /// Gets or sets the full path in a document used for vector indexing.
+        /// Gets or sets the quantization byte size for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
+        /// The allowed range for this parameter is between 1 and 3.
         /// </summary>
         [JsonProperty(PropertyName = "quantizationByteSize", NullValueHandling = NullValueHandling.Ignore)]
         public int? QuantizationByteSize { get; set; }
 
         /// <summary>
-        /// Gets or sets the full path in a document used for vector indexing.
+        /// Gets or sets the indexing search list size for the vector index path. This is only applicable for the diskann vector index type.
         /// </summary>
         [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
         public int? IndexingSearchListSize { get; set; }
 
         /// <summary>
-        /// Gets or sets the full path in a document used for vector indexing.
+        /// Gets or sets the vector index shard key for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
         /// </summary>
         [JsonProperty(PropertyName = "vectorIndexShardKey", NullValueHandling = NullValueHandling.Ignore)]
         public string[] VectorIndexShardKey { get; set; }
