@@ -11,6 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<PackageReference Include="Bogus" Version="35.6.1" />
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.45.0-preview.0" />
   </ItemGroup>
 
