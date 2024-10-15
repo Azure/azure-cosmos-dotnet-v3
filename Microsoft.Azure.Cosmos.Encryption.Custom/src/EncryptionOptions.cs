@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         Newtonsoft,
 
-#if NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         /// <summary>
         /// System.Text.Json
         /// </summary>

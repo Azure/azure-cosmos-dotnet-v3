@@ -3,7 +3,9 @@
     using System.IO;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Data.Encryption.Cryptography;
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
     using Microsoft.IO;
+#endif
     using Moq;
 
     [RPlotExporter]
@@ -17,7 +19,9 @@
                 new EncryptionKeyWrapMetadata("name", "value"), DateTime.UtcNow);
         private static readonly Mock<EncryptionKeyStoreProvider> StoreProvider = new();
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         private readonly RecyclableMemoryStreamManager recyclableMemoryStreamManager = new ();
+#endif
 
         private CosmosEncryptor? encryptor;
 
@@ -31,7 +35,11 @@
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson, JsonProcessor.Stream)]
+#else
+        [Params(JsonProcessor.Newtonsoft)]
+#endif
         public JsonProcessor JsonProcessor { get; set; }
 
         [GlobalSetup]
@@ -74,6 +82,7 @@
                  CancellationToken.None);
         }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [Benchmark]
         public async Task EncryptToProvidedStream()
         {
@@ -86,6 +95,7 @@
                 new CosmosDiagnosticsContext(),
                 CancellationToken.None);
         }
+#endif
 
         [Benchmark]
         public async Task Decrypt()
@@ -98,6 +108,7 @@
                 CancellationToken.None);
         }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         [Benchmark]
         public async Task DecryptToProvidedStream()
         {
@@ -110,6 +121,7 @@
                 this.JsonProcessor,
                 CancellationToken.None);
         }
+#endif
 
         private EncryptionOptions CreateEncryptionOptions()
         {
