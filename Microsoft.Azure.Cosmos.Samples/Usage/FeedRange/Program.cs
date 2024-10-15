@@ -12,32 +12,52 @@
     // 2. Microsoft.Azure.Cosmos NuGet package - 
     //    http://www.nuget.org/packages/Microsoft.Azure.Cosmos/ 
     // ----------------------------------------------------------------------------------------------------------
-    // Sample - demonstrates Container's IsFeedRangePartOfAsync operation.
-    // 1. **Creating a Cosmos DB Container (if it doesn't exist)**  
-    //    The method calls `CreateContainerIfNotExistsAsync` to ensure that a Cosmos DB `Container` is created in the database if it doesn’t already exist.  
-    //    - A new container is created with the following properties:
-    //      - **Id**: A unique ID is generated for the container using `Guid.NewGuid().ToString()`.
-    //      - **PartitionKeyPath**: Set to `/pk`.
-    // 
-    // 2. **Comparing Feed Ranges**  
-    //    The method compares two feed ranges (`x` and `y`) using the `IsFeedRangePartOfAsync` method of the `Container`.  
-    //    - It checks whether `FeedRange y` is part of `FeedRange x`.
-    //    - The method asynchronously waits for the result (`true` or `false`) of the comparison.
-    // 
-    // 3. **Asserting the Expected Result**  
-    //    After comparing the feed ranges, the method checks if the result matches the expected outcome (passed as the `expectedResult` parameter).  
-    //    - If the result does not match the expected value, a `Debug.Assert` is triggered with a message:
-    //      - `"Expected result: true, but got: false"`, or a similar message depending on the expected and actual result.
-    // 
-    // 4. **Handling Exceptions**  
-    //    A `try-catch` block is used to catch any exceptions that occur during the container creation or feed range comparison.  
-    //    - A `Debug.Assert` ensures that no exceptions are expected, and if an exception occurs, it triggers an assertion failure with details of the exception.
-    // 
-    // 5. **Releasing Resources (optional)**  
-    //    This step would typically include:
-    //    - **Deleting the database**: If the `database` is not `null`, it can be deleted using `database.DeleteAsync()`.
-    //    - **Disposing of the CosmosClient**: If the `cosmosClient` is not `null`, it can be disposed of to release resources.
-
+    /// <summary>
+    /// This class represents a Cosmos DB client application that demonstrates several key operations such as:
+    /// 1. **Creating and Managing a Cosmos DB Container**:
+    ///    - The program starts by checking for the existence of a Cosmos DB container and creates it if necessary.
+    ///    - It configures the throughput and manages container settings like partition key paths.
+    ///
+    /// 2. **Seeding Documents to the Cosmos DB Container**:
+    ///    - The `SeedDocumentsToContainerAsync` method generates 10,000 documents with random names and inserts them into the container using bulk upsert operations.
+    ///    - This method simulates data population for later partition splitting and change feed processing.
+    ///
+    /// 3. **Handling Partition Splits**:
+    ///    - The `WaitForPartitionSplitAsync` method seeds the container and waits for a partition split to occur.
+    ///    - It continuously polls the container for changes in feed ranges, using a 20-minute timeout window. If the partition split completes, the updated feed ranges are returned.
+    ///
+    /// 4. **Starting and Managing a Change Feed Processor**:
+    ///    - The `StartChangeFeedProcessorWithFeedRangeComparisonAsync` method demonstrates how to build and start a Change Feed Processor to track changes in the container.
+    ///    - The processor listens for changes, compares feed ranges for each change, and processes these changes asynchronously while allowing graceful cancellation (e.g., by pressing the 'ESC' key).
+    ///
+    /// 5. **Feed Range Comparison**:
+    ///    - The program includes the method `GivenContainerWithPartitionKeyExists_WhenFeedRangeWithInclusiveBoundsIsCompared_ThenItShouldBePartOfAnotherFeedRange`, which compares two feed ranges to determine if one is part of the other.
+    ///    - This helps verify how feed ranges behave, especially after partition splits.
+    ///    - Example output:
+    ///    <![CDATA[
+    ///    Given FeedRange y: {y}, When compared to FeedRange x: {x}, Then y is part of x.
+    ///
+    ///    Given FeedRange y: ["Raynor"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Beer"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Wiza"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Franecki"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///    Given FeedRange y: ["Raynor"], When compared to FeedRange x: [05C1DFFFFFFFFC,FF), Then y is part of x.
+    ///
+    ///    Given FeedRange y: ["Kassulke"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
+    ///    Given FeedRange y: ["Abshire"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
+    ///    Given FeedRange y: ["Ullrich"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
+    ///    Given FeedRange y: ["Walter"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
+    ///    Given FeedRange y: ["Hettinger"], When compared to FeedRange x: [,05C1DFFFFFFFFC), Then y is part of x.
+    ///    ]]>
+    ///
+    /// 6. **Error Handling and Resource Cleanup**:
+    ///    - The program is wrapped in `try-catch-finally` blocks to gracefully handle exceptions, including Cosmos DB connection errors, timeouts, or change feed processor issues.
+    ///    - In the `finally` block, the database is deleted, and the Cosmos client is disposed of to release resources properly.
+    ///
+    /// 7. **Real-time Cancellation**:
+    ///    - The program allows real-time cancellation of the Change Feed Processor via the 'ESC' key, using a `CancellationTokenSource`.
+    ///
+    /// This application demonstrates essential Cosmos DB operations, such as creating containers, handling partition splits, working with the change feed processor, and managing resources with asynchronous programming.
     internal class Program
     {
         private static async Task Main(string[] args)
@@ -61,74 +81,8 @@
             CosmosClient cosmosClient = new CosmosClient(endpoint, authKey);
             Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(id: Guid.NewGuid().ToString());
 
-            try 
-            {
-                // Given a container with a partition key exists, when two feed ranges are 
-                // compared, where one covers the full range and the other covers a subset up to a 
-                // specific value, then the second range should be part of the first.
-                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
-                    database: database,
-                    x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"FFFFFFFFFFFFFFFF\"}}"),
-                    y: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"3FFFFFFFFFFFFFFF\"}}"),
-                    expectedResult: true).ConfigureAwait(false);
+            Console.WriteLine($"Creating database with ID: {database.Id}. A new database instance is being provisioned to store and manage container data.");
 
-                // Given a container with a partition key exists, when two feed ranges are 
-                // compared, with one having a range from the minimum to a specific value and the other 
-                // having a range between two specific values, then the feed ranges should not overlap.
-                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
-                    database: database,
-                    x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"3FFFFFFFFFFFFFFF\",\"max\":\"7FFFFFFFFFFFFFFF\"}}"),
-                    y: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"3FFFFFFFFFFFFFFF\"}}"),
-                    expectedResult: false).ConfigureAwait(false);
-
-                // Given a container with a partition key exists, when a feed range and 
-                // a partition key-based feed range are compared, then the partition key feed range 
-                // should be part of the specified range.
-                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
-                    database: database,
-                    x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"\",\"max\":\"FFFFFFFFFFFFFFFF\"}}"),
-                    y: FeedRange.FromPartitionKey(
-                        new PartitionKeyBuilder()
-                            .Add("WA")
-                            .Add(Guid.NewGuid().ToString())
-                            .Build()
-                    ),
-                    expectedResult: true).ConfigureAwait(false);
-
-                // Given a container with a partition key exists, when a partition key-based feed range 
-                // and a feed range are compared, then the partition key feed range 
-                // should not be part of the specified range.
-                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
-                    database: database,
-                    x: FeedRange.FromJsonString(toStringValue: "{\"Range\":{\"min\":\"3FFFFFFFFFFFFFFF\",\"max\":\"7FFFFFFFFFFFFFFF\"}}"),
-                    y: FeedRange.FromPartitionKey(
-                        new PartitionKeyBuilder()
-                            .Add("WA")
-                            .Add(Guid.NewGuid().ToString())
-                            .Build()
-                    ),
-                    expectedResult: false).ConfigureAwait(false);
-            }
-            catch (Exception exception) 
-            {
-                Console.WriteLine(exception);
-            }
-            finally
-            {
-                Console.WriteLine($"Deleting database {database.Id}");
-
-                _ = await database?.DeleteAsync();
-
-                cosmosClient?.Dispose();
-            }
-        }
-
-        static async Task GivenContainerWithPartitionKeyExists_WhenFeedRangesAreCompared_ThenResultShouldBeAsExpected(
-            Database database,
-            FeedRange x,
-            FeedRange y,
-            bool expectedResult)
-        {
             try
             {
                 Container container = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties
@@ -137,18 +91,295 @@
                     PartitionKeyPath = "/pk",
                 });
 
-                bool results = await container
+                Console.WriteLine($"Creating container with ID: {container.Id}. A new container is being provisioned within the database to store partitioned data for optimized scalability and performance.");
+
+                await Program.UpdateContainerThroughputAsync(container, 12000);
+
+                await Program.WaitForPartitionSplitAsync(container);
+
+                var cancellationTokenSource = new CancellationTokenSource();
+
+                Task changeFeedTask = Program.StartChangeFeedProcessorWithFeedRangeComparisonAsync(
+                    cancellationTokenSource.Token,
+                    database,
+                    container);
+
+                Console.WriteLine("Press 'ESC' to stop the Change Feed Processor. This will safely stop monitoring for changes and gracefully shut down the processor, ensuring all current changes are processed.");
+
+                await Program.SeedDocumentsToContainerAsync(container);
+
+                // Monitor for 'ESC' key press to cancel
+                while (!cancellationTokenSource.Token.IsCancellationRequested)
+                {
+                    if (Console.KeyAvailable)
+                    {
+                        var key = Console.ReadKey(intercept: true).Key;
+                        if (key == ConsoleKey.Escape)
+                        {
+                            Console.WriteLine("ESC key pressed. Initiating graceful shutdown of the Change Feed Processor to stop monitoring changes and ensure all pending operations are completed.");
+                            cancellationTokenSource.Cancel();
+                            break;
+                        }
+                    }
+
+                    // Give a small delay to avoid tight looping
+                    await Task.Delay(100);
+                }
+
+                // Wait for the processor to stop gracefully
+                await changeFeedTask;
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine(exception);
+            }
+            finally
+            {
+                Console.WriteLine($"Initiating deletion of the database with ID: {database.Id}. All data and associated resources within this database will be permanently removed.");
+
+                _ = await database?.DeleteAsync();
+
+                cosmosClient?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Reads the current throughput of the specified Cosmos DB container, logs the current throughput value, 
+        /// and updates it to a higher throughput to handle increased workloads and ensure optimal performance.
+        /// </summary>
+        /// <param name="container">The Cosmos DB container whose throughput will be read and updated.</param>
+        /// <param name="newThroughput">The new throughput value to set for the container, specified in Request Units (RU/s).</param>
+        /// <returns>A Task that represents the asynchronous operation.</returns>
+        private static async Task UpdateContainerThroughputAsync(Container container, int newThroughput)
+        {
+            // Read and log the current throughput
+            int? currentThroughput = await container.ReadThroughputAsync();
+            Console.WriteLine($"Current throughput is {currentThroughput} RU/s. This indicates the number of Request Units per second allocated to the container, affecting its performance and scalability.");
+
+            // Set and update the new throughput value
+            ThroughputProperties throughputProperties = ThroughputProperties.CreateManualThroughput(newThroughput);
+            ThroughputResponse throughputResponse = await container.ReplaceThroughputAsync(throughputProperties);
+
+            // Log the new throughput value and the reason for the increase
+            Console.WriteLine($"Throughput successfully updated to {throughputResponse.Resource.Throughput} RU/s. Increasing the throughput is necessary to handle higher workloads, improve performance, and ensure the system can scale effectively with the anticipated data volume.");
+        }
+
+
+        /// <summary>
+        /// Seeds a set of documents into the specified Cosmos DB container asynchronously.
+        /// Generates 10,000 documents with random first and last names using the Bogus library,
+        /// and upserts them into the container.
+        /// </summary>
+        /// <param name="container">The Cosmos DB container where documents will be upserted.</param>
+        /// <returns>A Task that represents the asynchronous operation.</returns>
+        private static async Task SeedDocumentsToContainerAsync(Container container)
+        {
+            // Prepare a list to hold the asynchronous upsert tasks
+            List<Task> tasks = new List<Task>(10000);
+
+            // Loop to create and upsert 10,000 documents with random data
+            for (int i = 0; i < 10000; i++)
+            {
+                // Generate a random first and last name using Bogus
+                var name = new Bogus.Faker().Name;
+                string firstName = name.FirstName();
+                string lastName = name.LastName();
+
+                // Upsert a new document with a unique ID and a partition key based on the last name
+                Task<ItemResponse<dynamic>> task = container.UpsertItemAsync<dynamic>(
+                    new { id = Guid.NewGuid().ToString(), firstName = firstName, pk = lastName },
+                    new PartitionKey(lastName));
+
+                // Add task with error handling continuation
+                tasks.Add(task.ContinueWith(t =>
+                {
+                    if (t.Status != TaskStatus.RanToCompletion)
+                    {
+                        Console.WriteLine($"An error occurred during document upsert: {t.Exception?.Message}. Please check the document details and ensure the container is configured correctly.");
+                    }
+                }));
+            }
+
+            // Wait for all tasks to complete
+            await Task.WhenAll(tasks);
+
+            Console.WriteLine("Documents have been successfully seeded into the container. The container is now populated with sample data, ready for processing and partitioning operations.");
+        }
+
+        /// <summary>
+        /// Starts the Change Feed Processor for the specified Cosmos DB container asynchronously.
+        /// Creates a lease container if it does not exist, listens to the change feed, and compares feed ranges
+        /// for each change. Handles cancellation requests to stop the processor gracefully.
+        /// </summary>
+        /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+        /// <param name="database">The Cosmos DB database that contains the lease container.</param>
+        /// <param name="container">The Cosmos DB container that the Change Feed Processor will monitor.</param>
+        /// <returns>A Task that represents the asynchronous operation of the Change Feed Processor.</returns>
+        private static async Task StartChangeFeedProcessorWithFeedRangeComparisonAsync(
+            CancellationToken cancellationToken,
+            Database database,
+            Container container)
+        {
+            // Create the lease container if it doesn't exist
+            ContainerResponse leaseContainerResponse = await database.CreateContainerIfNotExistsAsync(id: "leaseContainer", partitionKeyPath: "/id");
+            Container leaseContainer = leaseContainerResponse.Container;
+
+            // Build the Change Feed Processor
+            ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<dynamic>(
+                Guid.NewGuid().ToString(),
+                (context, changes, token) => Program.HandleFeedRangeChangesAsync(context, changes, container, token))
+                .WithInstanceName(Guid.NewGuid().ToString())
+                .WithLeaseContainer(leaseContainer)
+                .WithErrorNotification((string leaseToken, Exception exception) =>
+                {
+                    Console.WriteLine($"Lease with token '{leaseToken}' encountered an error: {exception.Message}. The change feed processor may be unable to track changes for this partition until the issue is resolved.");
+
+                    return Task.CompletedTask;
+                })
+                .Build();
+
+            // Start the Change Feed Processor
+            await changeFeedProcessor.StartAsync();
+
+            // Log the current status
+            Console.WriteLine("Change Feed Processor has started. The processor is now actively monitoring the container for changes and will process them in real-time as they occur.");
+
+            try
+            {
+                // Await cancellation request
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            catch (OperationCanceledException exception)
+            {
+                // Handle cancellation
+                Console.WriteLine(exception);
+            }
+
+            // Stop the Change Feed Processor when cancellation is requested
+            await changeFeedProcessor.StopAsync();
+
+            // Log the current status
+            Console.WriteLine("Change Feed Processor has stopped. The monitoring of container changes has been gracefully terminated, ensuring that all current changes were processed before shutdown.");
+        }
+
+        /// <summary>
+        /// Handles the changes from the Cosmos DB Change Feed Processor by extracting the feed range from the context
+        /// and comparing each change's partition key feed range with the provided feed range.
+        /// </summary>
+        /// <param name="context">The context containing details about the change feed processing, including the feed range.</param>
+        /// <param name="changes">The collection of changes detected in the container.</param>
+        /// <param name="token">A cancellation token to handle cancellation requests.</param>
+        /// <param name="container">The Cosmos DB container where the feed range comparison will take place.</param>
+        /// <returns>A Task representing the asynchronous operation.</returns>
+        private static async Task HandleFeedRangeChangesAsync(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<dynamic> changes,
+            Container container,
+            CancellationToken token)
+        {
+            // Extract feed range from the context
+            FeedRange feedRange = context.FeedRange;
+
+            // Iterate over the changes and compare feed ranges
+            foreach (var change in changes)
+            {
+                // Create a partition feed range from the partition key in the change
+                FeedRange partitionFeedRange = FeedRange.FromPartitionKey(
+                    new PartitionKeyBuilder()
+                        .Add(change.pk.ToString())
+                        .Build());
+
+                // Compare the feed ranges using the provided method
+                await Program.GivenContainerWithPartitionKeyExists_WhenFeedRangeWithInclusiveBoundsIsCompared_ThenItShouldBePartOfAnotherFeedRange(
+                    container: container,
+                    x: feedRange,
+                    y: partitionFeedRange).ConfigureAwait(false);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the list of feed ranges after a partition split has occurred in the specified container.
+        /// The method seeds the container with documents, waits for the partition split to complete, and times out if the split does not occur within a specified period.
+        /// </summary>
+        /// <param name="container">The Cosmos DB container where the partition split is expected to occur.</param>
+        /// <returns>A Task that represents the asynchronous operation and returns the feed ranges after the split has occurred, or null if the operation times out.</returns>
+        /// <exception cref="TimeoutException">Thrown if the partition split does not complete within the specified timeout period.</exception>
+        private static async Task WaitForPartitionSplitAsync(Container container)
+        {
+            // Seed the container with documents
+            await Program.SeedDocumentsToContainerAsync(container);
+
+            const int timeoutInMinutes = 20;
+            DateTime startTime = DateTime.UtcNow;
+            IReadOnlyList<FeedRange>? feedRanges = null;
+
+            // Start a stopwatch to track the elapsed time
+            Stopwatch stopwatch = Stopwatch.StartNew();
+
+            while (true)
+            {
+                // Check if the timeout period has been exceeded
+                if (DateTime.UtcNow - startTime > TimeSpan.FromMinutes(timeoutInMinutes))
+                {
+                    stopwatch.Stop();
+                    throw new TimeoutException($"Partition split did not complete within the allocated timeout of {timeoutInMinutes} minutes. The container's data repartitioning process may be delayed or require manual intervention to handle increased data load and distribute partitions effectively.");
+                }
+
+                // Retrieve the feed ranges from the container
+                feedRanges = await container.GetFeedRangesAsync();
+
+                // Check if the partition split has completed
+                if (feedRanges.Count > 1)
+                {
+                    // Log the current status
+                    Console.WriteLine($"Partition split successfully completed after {stopwatch.Elapsed.TotalSeconds} seconds. The container has now been repartitioned to handle increased load and distribute data more efficiently.");
+
+                    stopwatch.Stop();
+                    break;
+                }
+
+                // Assert that the container has at least one feed range
+                Debug.Assert(feedRanges != null, "The container must have at least one feed range. This indicates that the container is improperly configured or has not been initialized correctly to support partitioning, which is critical for distributing data across multiple partitions.");
+
+                // Log the current status
+                Console.WriteLine($"Waiting for partition split to complete. Time elapsed: {stopwatch.Elapsed.TotalSeconds} seconds. Current partition count: {feedRanges.Count}. The container is being monitored to ensure it is correctly partitioned to handle the increasing data load efficiently.");
+
+                // Wait for 1 minute before checking again
+                await Task.Delay(60000);
+            }
+
+            Debug.Assert(feedRanges.Count > 1, $"The container needs to have at least two feed ranges to ensure proper partitioning and data distribution across multiple logical partitions.");
+        }
+
+        /// <summary>
+        /// Compares two feed ranges to determine if one is part of the other in the specified Cosmos DB container.
+        /// If no exception occurs, the result is printed to the console, indicating whether the second feed range is part of the first.
+        /// </summary>
+        /// <param name="container">The Cosmos DB container where the feed range comparison is performed.</param>
+        /// <param name="x">The feed range that is being compared as the source range.</param>
+        /// <param name="y">The feed range that is being compared as the target range.</param>
+        /// <returns>A Task that represents the asynchronous operation.</returns>
+        static async Task GivenContainerWithPartitionKeyExists_WhenFeedRangeWithInclusiveBoundsIsCompared_ThenItShouldBePartOfAnotherFeedRange(
+            Container container,
+            FeedRange x,
+            FeedRange y)
+        {
+            try
+            {
+                // Perform the feed range comparison asynchronously
+                bool isPartOf = await container
                     .IsFeedRangePartOfAsync(
                         x: x,
                         y: y)
                     .ConfigureAwait(continueOnCapturedContext: false);
 
-                Debug.Assert(results == expectedResult,
-                    $"Expected result: {expectedResult}, but got: {results}");
+                // Log the comparison result
+                Console.WriteLine($"Given FeedRange y: {y}, When compared to FeedRange x: {x}, Then y {(isPartOf ? "is" : "is not")} part of x.");
             }
-            catch (Exception exception)
+            catch (Exception ex)
             {
-                Debug.Assert(exception == null, $"No exception is expected with this scenario. {exception}");
+                // Assert that no exception should occur and log if an exception is thrown
+                Debug.Assert(ex == null, $"No exception was expected in this scenario. An unexpected exception occurred: {ex}. Please investigate the cause, as this might indicate an issue with the feed range comparison or container configuration.");
             }
         }
     }
