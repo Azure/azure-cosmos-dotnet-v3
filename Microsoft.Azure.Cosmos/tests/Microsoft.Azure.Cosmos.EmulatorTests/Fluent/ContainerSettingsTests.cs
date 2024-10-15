@@ -616,13 +616,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[0].Type);
                 Assert.AreEqual(vector2Path, containerSettings.IndexingPolicy.VectorIndexes[1].Path);
                 Assert.AreEqual(VectorIndexType.QuantizedFlat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
-                Assert.AreEqual(4, containerSettings.IndexingPolicy.VectorIndexes[1].QuantizationByteSize);
-                CollectionAssert.AreEqual(new string[] { "/Country/City" }, containerSettings.IndexingPolicy.VectorIndexes[1].VectorIndexShardKey);
+                Assert.AreEqual(3, containerSettings.IndexingPolicy.VectorIndexes[1].QuantizationByteSize);
+                CollectionAssert.AreEqual(new string[] { "/Country" }, containerSettings.IndexingPolicy.VectorIndexes[1].VectorIndexShardKey);
                 Assert.AreEqual(vector3Path, containerSettings.IndexingPolicy.VectorIndexes[2].Path);
                 Assert.AreEqual(VectorIndexType.DiskANN, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
-                Assert.AreEqual(8, containerSettings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize);
+                Assert.AreEqual(2, containerSettings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize);
                 Assert.AreEqual(5, containerSettings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize);
-                CollectionAssert.AreEqual(new string[] { "/Country/City", "ZipCode" }, containerSettings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey);
+                CollectionAssert.AreEqual(new string[] { "/ZipCode" }, containerSettings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey);
             }
             finally
             {
