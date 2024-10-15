@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Data.Encryption.Cryptography.Serializers;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
@@ -21,18 +21,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// </summary>
     internal static class EncryptionProcessor
     {
-        // UTF-8 encoding.
-        private static readonly SqlVarCharSerializer SqlVarCharSerializer = new (size: -1, codePageCharacterEncoding: 65001);
-        private static readonly SqlBitSerializer SqlBoolSerializer = new ();
-        private static readonly SqlFloatSerializer SqlDoubleSerializer = new ();
-        private static readonly SqlBigIntSerializer SqlLongSerializer = new ();
-
-        private static readonly JsonSerializerSettings JsonSerializerSettings = new ()
+        internal static readonly JsonSerializerSettings JsonSerializerSettings = new ()
         {
             DateParseHandling = DateParseHandling.None,
         };
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
+
+        private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
         /// <remarks>
         /// If there isn't any PathsToEncrypt, input stream will be returned without any modification.
@@ -48,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             _ = diagnosticsContext;
 
-            EncryptionProcessor.ValidateInputForEncrypt(
+            ValidateInputForEncrypt(
                 input,
                 encryptor,
                 encryptionOptions);
@@ -76,120 +72,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
             }
 
-            JObject itemJObj = BaseSerializer.FromStream<JObject>(input);
-            List<string> pathsEncrypted = new (encryptionOptions.PathsToEncrypt.Count());
-            EncryptionProperties encryptionProperties = null;
-            byte[] plainText = null;
-            byte[] cipherText = null;
-            TypeMarker typeMarker;
-
-            using ArrayPoolManager arrayPoolManager = new ();
-
 #pragma warning disable CS0618 // Type or member is obsolete
-            switch (encryptionOptions.EncryptionAlgorithm)
+            return encryptionOptions.EncryptionAlgorithm switch
             {
-                case CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized:
-
-                    DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionOptions.DataEncryptionKeyId, encryptionOptions.EncryptionAlgorithm, cancellationToken);
-
-                    foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
-                    {
-                        string propertyName = pathToEncrypt.Substring(1);
-                        if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
-                        {
-                            continue;
-                        }
-
-                        if (propertyValue.Type == JTokenType.Null)
-                        {
-                            continue;
-                        }
-
-                        (typeMarker, plainText, int plainTextLength) = EncryptionProcessor.Serialize(propertyValue, arrayPoolManager);
-
-                        if (plainText == null)
-                        {
-                            continue;
-                        }
-
-                        int cipherTextLength = encryptionKey.GetEncryptByteCount(plainTextLength);
-
-                        byte[] cipherTextWithTypeMarker = new byte[cipherTextLength + 1];
-
-                        cipherTextWithTypeMarker[0] = (byte)typeMarker;
-
-                        int encryptedBytesCount = encryptionKey.EncryptData(
-                            plainText,
-                            plainTextOffset: 0,
-                            plainTextLength,
-                            cipherTextWithTypeMarker,
-                            outputOffset: 1);
-
-                        if (encryptedBytesCount < 0)
-                        {
-                            throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
-                        }
-
-                        itemJObj[propertyName] = cipherTextWithTypeMarker;
-                        pathsEncrypted.Add(pathToEncrypt);
-                    }
-
-                    encryptionProperties = new EncryptionProperties(
-                            encryptionFormatVersion: 3,
-                            encryptionOptions.EncryptionAlgorithm,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptedData: null,
-                            pathsEncrypted);
-                    break;
-
-                case CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized:
-
-                    JObject toEncryptJObj = new ();
-
-                    foreach (string pathToEncrypt in encryptionOptions.PathsToEncrypt)
-                    {
-                        string propertyName = pathToEncrypt.Substring(1);
-                        if (!itemJObj.TryGetValue(propertyName, out JToken propertyValue))
-                        {
-                            continue;
-                        }
-
-                        toEncryptJObj.Add(propertyName, propertyValue.Value<JToken>());
-                        itemJObj.Remove(propertyName);
-                    }
-
-                    MemoryStream memoryStream = BaseSerializer.ToStream<JObject>(toEncryptJObj);
-                    Debug.Assert(memoryStream != null);
-                    Debug.Assert(memoryStream.TryGetBuffer(out _));
-                    plainText = memoryStream.ToArray();
-
-                    cipherText = await encryptor.EncryptAsync(
-                        plainText,
-                        encryptionOptions.DataEncryptionKeyId,
-                        encryptionOptions.EncryptionAlgorithm,
-                        cancellationToken);
-
-                    if (cipherText == null)
-                    {
-                        throw new InvalidOperationException($"{nameof(Encryptor)} returned null cipherText from {nameof(EncryptAsync)}.");
-                    }
-
-                    encryptionProperties = new EncryptionProperties(
-                            encryptionFormatVersion: 2,
-                            encryptionOptions.EncryptionAlgorithm,
-                            encryptionOptions.DataEncryptionKeyId,
-                            encryptedData: cipherText,
-                            encryptionOptions.PathsToEncrypt);
-                    break;
-
-                default:
-                    throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported.");
-            }
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.EncryptAsync(input, encryptor, encryptionOptions, cancellationToken),
+                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionOptions.EncryptionAlgorithm} is not supported."),
+            };
 #pragma warning restore CS0618 // Type or member is obsolete
-
-            itemJObj.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
-            input.Dispose();
-            return BaseSerializer.ToStream(itemJObj);
         }
 
         /// <remarks>
@@ -212,8 +102,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(encryptor != null);
             Debug.Assert(diagnosticsContext != null);
 
-            JObject itemJObj = EncryptionProcessor.RetrieveItem(input);
-            JObject encryptionPropertiesJObj = EncryptionProcessor.RetrieveEncryptionProperties(itemJObj);
+            JObject itemJObj = RetrieveItem(input);
+            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(itemJObj);
 
             if (encryptionPropertiesJObj == null)
             {
@@ -221,27 +111,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return (input, null);
             }
 
-            EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
-#pragma warning disable CS0618 // Type or member is obsolete
-            DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
-            {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
-                    itemJObj,
-                    encryptor,
-                    encryptionProperties,
-                    diagnosticsContext,
-                    cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
-                    itemJObj,
-                    encryptionProperties,
-                    encryptor,
-                    diagnosticsContext,
-                    cancellationToken),
-                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
-            };
-#pragma warning restore CS0618 // Type or member is obsolete
-
+            DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, itemJObj, encryptionPropertiesJObj, cancellationToken);
+#if NET8_0_OR_GREATER
+            await input.DisposeAsync();
+#else
             input.Dispose();
+#endif
             return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
@@ -255,25 +130,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             Debug.Assert(encryptor != null);
 
-            JObject encryptionPropertiesJObj = EncryptionProcessor.RetrieveEncryptionProperties(document);
+            JObject encryptionPropertiesJObj = RetrieveEncryptionProperties(document);
 
             if (encryptionPropertiesJObj == null)
             {
                 return (document, null);
             }
 
+            DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, document, encryptionPropertiesJObj, cancellationToken);
+
+            return (document, decryptionContext);
+        }
+
+        private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JObject itemJObj, JObject encryptionPropertiesJObj, CancellationToken cancellationToken)
+        {
             EncryptionProperties encryptionProperties = encryptionPropertiesJObj.ToObject<EncryptionProperties>();
 #pragma warning disable CS0618 // Type or member is obsolete
             DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
             {
-                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await EncryptionProcessor.MdeEncAlgoDecryptObjectAsync(
-                    document,
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.DecryptObjectAsync(
+                    itemJObj,
                     encryptor,
                     encryptionProperties,
                     diagnosticsContext,
                     cancellationToken),
-                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await EncryptionProcessor.LegacyEncAlgoDecryptContentAsync(
-                    document,
+                CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized => await AeAesEncryptionProcessor.DecryptContentAsync(
+                    itemJObj,
                     encryptionProperties,
                     encryptor,
                     diagnosticsContext,
@@ -281,72 +163,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
             };
 #pragma warning restore CS0618 // Type or member is obsolete
-
-            return (document, decryptionContext);
-        }
-
-        private static async Task<DecryptionContext> MdeEncAlgoDecryptObjectAsync(
-            JObject document,
-            Encryptor encryptor,
-            EncryptionProperties encryptionProperties,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            _ = diagnosticsContext;
-
-            if (encryptionProperties.EncryptionFormatVersion != 3)
-            {
-                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
-
-            using ArrayPoolManager arrayPoolManager = new ();
-
-            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
-
-            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
-            foreach (string path in encryptionProperties.EncryptedPaths)
-            {
-                string propertyName = path.Substring(1);
-                if (!document.TryGetValue(propertyName, out JToken propertyValue))
-                {
-                    continue;
-                }
-
-                byte[] cipherTextWithTypeMarker = propertyValue.ToObject<byte[]>();
-                if (cipherTextWithTypeMarker == null)
-                {
-                    continue;
-                }
-
-                int plainTextLength = encryptionKey.GetDecryptByteCount(cipherTextWithTypeMarker.Length - 1);
-
-                byte[] plainText = arrayPoolManager.Rent(plainTextLength);
-
-                int decryptedCount = EncryptionProcessor.MdeEncAlgoDecryptProperty(
-                    encryptionKey,
-                    cipherTextWithTypeMarker,
-                    cipherTextOffset: 1,
-                    cipherTextWithTypeMarker.Length - 1,
-                    plainText);
-
-                EncryptionProcessor.DeserializeAndAddProperty(
-                    (TypeMarker)cipherTextWithTypeMarker[0],
-                    plainText.AsSpan(0, decryptedCount),
-                    document,
-                    propertyName);
-
-                pathsDecrypted.Add(path);
-            }
-
-            DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
-                pathsDecrypted,
-                encryptionProperties.DataEncryptionKeyId);
-
-            document.Remove(Constants.EncryptedInfo);
             return decryptionContext;
         }
 
-        private static DecryptionContext CreateDecryptionContext(
+        internal static DecryptionContext CreateDecryptionContext(
             List<string> pathsDecrypted,
             string dataEncryptionKeyId)
         {
@@ -360,77 +180,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return decryptionContext;
         }
 
-        private static int MdeEncAlgoDecryptProperty(
-            DataEncryptionKey encryptionKey,
-            byte[] cipherText,
-            int cipherTextOffset,
-            int cipherTextLength,
-            byte[] buffer)
-        {
-            int decryptedCount = encryptionKey.DecryptData(
-                cipherText,
-                cipherTextOffset,
-                cipherTextLength,
-                buffer,
-                outputOffset: 0);
-
-            if (decryptedCount < 0)
-            {
-                throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            }
-
-            return decryptedCount;
-        }
-
-        private static async Task<DecryptionContext> LegacyEncAlgoDecryptContentAsync(
-            JObject document,
-            EncryptionProperties encryptionProperties,
-            Encryptor encryptor,
-            CosmosDiagnosticsContext diagnosticsContext,
-            CancellationToken cancellationToken)
-        {
-            _ = diagnosticsContext;
-
-            if (encryptionProperties.EncryptionFormatVersion != 2)
-            {
-                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
-            }
-
-            byte[] plainText = await encryptor.DecryptAsync(
-                encryptionProperties.EncryptedData,
-                encryptionProperties.DataEncryptionKeyId,
-                encryptionProperties.EncryptionAlgorithm,
-                cancellationToken) ?? throw new InvalidOperationException($"{nameof(Encryptor)} returned null plainText from {nameof(DecryptAsync)}.");
-            JObject plainTextJObj;
-            using (MemoryStream memoryStream = new (plainText))
-            using (StreamReader streamReader = new (memoryStream))
-            using (JsonTextReader jsonTextReader = new (streamReader))
-            {
-                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
-                plainTextJObj = JObject.Load(jsonTextReader);
-            }
-
-            List<string> pathsDecrypted = new ();
-            foreach (JProperty property in plainTextJObj.Properties())
-            {
-                document.Add(property.Name, property.Value);
-                pathsDecrypted.Add("/" + property.Name);
-            }
-
-            DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
-                pathsDecrypted,
-                encryptionProperties.DataEncryptionKeyId);
-
-            document.Remove(Constants.EncryptedInfo);
-
-            return decryptionContext;
-        }
-
         private static void ValidateInputForEncrypt(
             Stream input,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(input);
+            ArgumentNullException.ThrowIfNull(encryptor);
+            ArgumentNullException.ThrowIfNull(encryptionOptions);
+#else
             if (input == null)
             {
                 throw new ArgumentNullException(nameof(input));
@@ -445,21 +204,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(encryptionOptions));
             }
+#endif
 
-            if (string.IsNullOrWhiteSpace(encryptionOptions.DataEncryptionKeyId))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.DataEncryptionKeyId));
-            }
-
-            if (string.IsNullOrWhiteSpace(encryptionOptions.EncryptionAlgorithm))
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.EncryptionAlgorithm));
-            }
-
-            if (encryptionOptions.PathsToEncrypt == null)
-            {
-                throw new ArgumentNullException(nameof(encryptionOptions.PathsToEncrypt));
-            }
+            encryptionOptions.Validate();
         }
 
         private static JObject RetrieveItem(
@@ -497,114 +244,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return encryptionPropertiesJObj;
         }
 
-        private static (TypeMarker typeMarker, byte[] serializedBytes, int serializedBytesCount) Serialize(JToken propertyValue, ArrayPoolManager arrayPoolManager)
-        {
-            byte[] buffer;
-            int length;
-            switch (propertyValue.Type)
-            {
-                case JTokenType.Undefined:
-                    Debug.Assert(false, "Undefined value cannot be in the JSON");
-                    return (default, null, -1);
-                case JTokenType.Null:
-                    Debug.Assert(false, "Null type should have been handled by caller");
-                    return (TypeMarker.Null, null, -1);
-                case JTokenType.Boolean:
-                    (buffer, length) = SerializeFixed(SqlBoolSerializer);
-                    return (TypeMarker.Boolean, buffer, length);
-                case JTokenType.Float:
-                    (buffer, length) = SerializeFixed(SqlDoubleSerializer);
-                    return (TypeMarker.Double, buffer, length);
-                case JTokenType.Integer:
-                    (buffer, length) = SerializeFixed(SqlLongSerializer);
-                    return (TypeMarker.Long, buffer, length);
-                case JTokenType.String:
-                    (buffer, length) = SerializeString(propertyValue.ToObject<string>());
-                    return (TypeMarker.String, buffer, length);
-                case JTokenType.Array:
-                    (buffer, length) = SerializeString(propertyValue.ToString());
-                    return (TypeMarker.Array, buffer, length);
-                case JTokenType.Object:
-                    (buffer, length) = SerializeString(propertyValue.ToString());
-                    return (TypeMarker.Object, buffer, length);
-                default:
-                    throw new InvalidOperationException($" Invalid or Unsupported Data Type Passed : {propertyValue.Type}");
-            }
-
-            (byte[], int) SerializeFixed<T>(IFixedSizeSerializer<T> serializer)
-            {
-                byte[] buffer = arrayPoolManager.Rent(serializer.GetSerializedMaxByteCount());
-                int length = serializer.Serialize(propertyValue.ToObject<T>(), buffer);
-                return (buffer, length);
-            }
-
-            (byte[], int) SerializeString(string value)
-            {
-                byte[] buffer = arrayPoolManager.Rent(SqlVarCharSerializer.GetSerializedMaxByteCount(value.Length));
-                int length = SqlVarCharSerializer.Serialize(value, buffer);
-                return (buffer, length);
-            }
-        }
-
-        private static void DeserializeAndAddProperty(
-            TypeMarker typeMarker,
-            ReadOnlySpan<byte> serializedBytes,
-            JObject jObject,
-            string key)
-        {
-            switch (typeMarker)
-            {
-                case TypeMarker.Boolean:
-                    jObject[key] = SqlBoolSerializer.Deserialize(serializedBytes);
-                    break;
-                case TypeMarker.Double:
-                    jObject[key] = SqlDoubleSerializer.Deserialize(serializedBytes);
-                    break;
-                case TypeMarker.Long:
-                    jObject[key] = SqlLongSerializer.Deserialize(serializedBytes);
-                    break;
-                case TypeMarker.String:
-                    jObject[key] = SqlVarCharSerializer.Deserialize(serializedBytes);
-                    break;
-                case TypeMarker.Array:
-                    DeserializeAndAddProperty<JArray>(serializedBytes);
-                    break;
-                case TypeMarker.Object:
-                    DeserializeAndAddProperty<JObject>(serializedBytes);
-                    break;
-                default:
-                    Debug.Fail($"Unexpected type marker {typeMarker}");
-                    break;
-            }
-
-            void DeserializeAndAddProperty<T>(ReadOnlySpan<byte> serializedBytes)
-                where T : JToken
-            {
-                using ArrayPoolManager<char> manager = new ();
-
-                char[] buffer = manager.Rent(SqlVarCharSerializer.GetDeserializedMaxLength(serializedBytes.Length));
-                int length = SqlVarCharSerializer.Deserialize(serializedBytes, buffer.AsSpan());
-
-                JsonSerializer serializer = JsonSerializer.Create(JsonSerializerSettings);
-
-                using MemoryTextReader memoryTextReader = new (new Memory<char>(buffer, 0, length));
-                using JsonTextReader reader = new (memoryTextReader);
-
-                jObject[key] = serializer.Deserialize<T>(reader);
-            }
-        }
-
-        private enum TypeMarker : byte
-        {
-            Null = 1, // not used
-            String = 2,
-            Double = 3,
-            Long = 4,
-            Boolean = 5,
-            Array = 6,
-            Object = 7,
-        }
-
         internal static async Task<Stream> DeserializeAndDecryptResponseAsync(
             Stream content,
             Encryptor encryptor,
@@ -627,7 +266,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
                 using (diagnosticsContext.CreateScope("EncryptionProcessor.DeserializeAndDecryptResponseAsync"))
                 {
-                    await EncryptionProcessor.DecryptAsync(
+                    await DecryptAsync(
                         document,
                         encryptor,
                         diagnosticsContext,
@@ -637,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             // the contents of contentJObj get decrypted in place for MDE algorithm model, and for legacy model _ei property is removed
             // and corresponding decrypted properties are added back in the documents.
-            return EncryptionProcessor.BaseSerializer.ToStream(contentJObj);
+            return BaseSerializer.ToStream(contentJObj);
         }
     }
 }

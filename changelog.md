@@ -25,11 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Added
 
+- [4725](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4725) Region Availability: Added multiple new regions for public use in bulk.
+
 - [4664](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4664) OpenTelemetry: Added query text as an attribute to improve traceability and provide more detailed insights into query execution.
 
 - [4643](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4643) OpenTelemetry: Updated operation names to follow standard naming conventions, improving consistency and traceability across services.
 
 #### Fixed
+- [4762](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4762) OpenTelemetry: Fixed event filtering to correctly handle non-failure status codes like 404 or 0.
 
 - [4713](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4713/files) Routing: Resolved an issue with excluding specific regions in RequestOptions for the ReadMany operation, ensuring requests are routed only to the desired regions for optimized data retrieval.
 

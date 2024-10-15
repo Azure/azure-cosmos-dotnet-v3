@@ -64,7 +64,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                             NonPointOperationLatencyThreshold = TimeSpan.Zero
                         },
                         QueryTextMode = QueryTextMode.All
-                    }));
+                    })
+                    .WithConsistencyLevel(ConsistencyLevel.Session))
+                ;
             await Util.DeleteAllDatabasesAsync(client);
 
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
@@ -78,7 +80,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         NonPointOperationLatencyThreshold = TimeSpan.Zero
                     },
                     QueryTextMode = QueryTextMode.All
-                }));
+                })
+                .WithConsistencyLevel(ConsistencyLevel.Session));
 
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
@@ -1845,7 +1848,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
+            public void UpdateRegionContacted(TraceDatum _)
             {
                 //NoImplementation
             }
