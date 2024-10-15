@@ -1,14 +1,15 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <IsTestProject>true</IsTestProject>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Platform>AnyCPU</Platform>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Encryption.Tests</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
+    <DefineConstants Condition=" '$(IsPreview)' == 'True' ">$(DefineConstants);ENCRYPTION_CUSTOM_PREVIEW</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +21,7 @@
     <PackageReference Include="Moq" Version="4.8.3" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.2.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,21 +31,21 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
-   <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
-	</ItemGroup>
-	
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="3.1.7" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
-   <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.2" />
   </ItemGroup>
-	
+
   <ItemGroup>
-   <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0" />
   </ItemGroup>
-	
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
   </ItemGroup>
-	
+
   <PropertyGroup>
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
