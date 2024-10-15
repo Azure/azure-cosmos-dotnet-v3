@@ -235,13 +235,25 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return null;
             }
 
-            if (properties.EncryptionProperties.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            DecryptionContext context;
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (properties.EncryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
+            {
+                context = await StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
+            }
+            else if (properties.EncryptionProperties.EncryptionAlgorithm == CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized)
+            {
+                (Stream stream, context) = await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken);
+                await stream.CopyToAsync(output, cancellationToken);
+                output.Position = 0;
+            }
+            else
             {
                 input.Position = 0;
-                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
+                throw new NotSupportedException($"Streaming mode is not supported for encryption algorithm {properties.EncryptionProperties.EncryptionAlgorithm}");
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
-            DecryptionContext context = await StreamProcessor.DecryptStreamAsync(input, output, encryptor, properties.EncryptionProperties, diagnosticsContext, cancellationToken);
             if (context == null)
             {
                 input.Position = 0;
