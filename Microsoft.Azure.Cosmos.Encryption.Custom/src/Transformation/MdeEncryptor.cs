@@ -31,6 +31,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return encryptedText;
         }
 
+        internal virtual (byte[], int) Encrypt(DataEncryptionKey encryptionKey, TypeMarker typeMarker, byte[] plainText, int plainTextLength, ArrayPoolManager arrayPoolManager)
+        {
+            int encryptedTextLength = encryptionKey.GetEncryptByteCount(plainTextLength) + 1;
+
+            byte[] encryptedText = arrayPoolManager.Rent(encryptedTextLength);
+
+            encryptedText[0] = (byte)typeMarker;
+
+            int encryptedLength = encryptionKey.EncryptData(
+                plainText,
+                plainTextOffset: 0,
+                plainTextLength,
+                encryptedText,
+                outputOffset: 1);
+
+            if (encryptedLength < 0)
+            {
+                throw new InvalidOperationException($"{nameof(DataEncryptionKey)} returned null cipherText from {nameof(DataEncryptionKey.EncryptData)}.");
+            }
+
+            return (encryptedText, encryptedTextLength);
+        }
+
         internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, ArrayPoolManager arrayPoolManager)
         {
             int plainTextLength = encryptionKey.GetDecryptByteCount(cipherText.Length - 1);
