@@ -74,8 +74,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo != null)
             {
-                sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
-
                 return MonadicCreate(
                     documentContainer: documentContainer,
                     sqlQuerySpec: sqlQuerySpec,
@@ -106,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
         }
 
-        internal static TryCatch<IQueryPipelineStage> MonadicCreate(
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
@@ -160,6 +158,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             Debug.Assert(
                 (optimalPageSize > 0) && (optimalPageSize <= int.MaxValue),
                 $"Invalid MaxItemCount {optimalPageSize}");
+
+            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
 
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
