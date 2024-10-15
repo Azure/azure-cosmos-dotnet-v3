@@ -64,10 +64,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
         public VectorIndexDefinition<T> WithQuantizationByteSize(
-            int? quantizationByteSize)
+            int quantizationByteSize)
         {
-            this.vectorIndexPath.QuantizationByteSize = quantizationByteSize ?? throw new ArgumentNullException(nameof(quantizationByteSize));
-
+            this.vectorIndexPath.QuantizationByteSize = quantizationByteSize;
             return this;
         }
 
@@ -80,10 +79,9 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
         public VectorIndexDefinition<T> WithIndexingSearchListSize(
-            int? indexingSearchListSize)
+            int indexingSearchListSize)
         {
-            this.vectorIndexPath.IndexingSearchListSize = indexingSearchListSize ?? throw new ArgumentNullException(nameof(indexingSearchListSize));
-
+            this.vectorIndexPath.IndexingSearchListSize = indexingSearchListSize;
             return this;
         }
 

@@ -54,6 +54,12 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class VectorIndexPath
     {
+        [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
+        private int? indexingSearchListSizeInternal;
+
+        [JsonProperty(PropertyName = "quantizationByteSize", NullValueHandling = NullValueHandling.Ignore)]
+        private int? quantizationByteSizeInternal;
+
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
@@ -71,14 +77,23 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the quantization byte size for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
         /// The allowed range for this parameter is between 1 and 3.
         /// </summary>
-        [JsonProperty(PropertyName = "quantizationByteSize", NullValueHandling = NullValueHandling.Ignore)]
-        public int? QuantizationByteSize { get; set; }
+        [JsonIgnore]
+        public int QuantizationByteSize
+        {
+            get => this.quantizationByteSizeInternal == null ? 0 : this.quantizationByteSizeInternal.Value;
+            set => this.quantizationByteSizeInternal = value;
+        }
 
         /// <summary>
         /// Gets or sets the indexing search list size for the vector index path. This is only applicable for the diskann vector index type.
+        /// The allowed range for this parameter is between 25 and 500.
         /// </summary>
-        [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
-        public int? IndexingSearchListSize { get; set; }
+        [JsonIgnore]
+        public int IndexingSearchListSize
+        {
+            get => this.indexingSearchListSizeInternal == null ? 0 : this.indexingSearchListSizeInternal.Value;
+            set => this.indexingSearchListSizeInternal = value;
+        }
 
         /// <summary>
         /// Gets or sets the vector index shard key for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
