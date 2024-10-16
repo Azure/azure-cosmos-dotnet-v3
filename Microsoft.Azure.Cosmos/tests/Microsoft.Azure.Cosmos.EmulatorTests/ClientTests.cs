@@ -29,6 +29,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Spatial;
+    using System.Text.Json;
 
     [TestClass]
     public class ClientTests
@@ -936,7 +938,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
         }
-       
+
+        [TestMethod]
+        public async Task ValidateSpatialPointJSONSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey,
+               new CosmosClientOptions()
+               {
+                   UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
+                   {
+                       PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                   }
+               }))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = new Point(1, 1)
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+            }
+
+        }
+
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();
@@ -1023,4 +1061,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return false;
         }
     }
+
+    internal record SpatialItem
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Point Location { get; set; }
+
+
+    }
+
 }
