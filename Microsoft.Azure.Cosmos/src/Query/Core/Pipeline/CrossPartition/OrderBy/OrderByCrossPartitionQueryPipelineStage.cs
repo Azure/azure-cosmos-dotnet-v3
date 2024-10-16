@@ -1719,8 +1719,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private const int MaximumPageSize = 2048;
 
-            private const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
-
             private static readonly QueryState NonStreamingOrderByInProgress = new QueryState(CosmosString.Create("NonStreamingOrderByInProgress"));
 
             private readonly int pageSize;
@@ -1778,7 +1776,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         activityId: this.bufferedResults.QueryPageParameters.ActivityId,
                         cosmosQueryExecutionInfo: this.bufferedResults.QueryPageParameters.CosmosQueryExecutionInfo,
                         distributionPlanSpec: this.bufferedResults.QueryPageParameters.DistributionPlanSpec,
-                        disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
+                        disallowContinuationTokenMessage: DisallowContinuationTokenMessages.NonStreamingOrderBy,
                         additionalHeaders: this.bufferedResults.QueryPageParameters.AdditionalHeaders,
                         state: documents.Count > 0 ? NonStreamingOrderByInProgress : null,
                         streaming: false);

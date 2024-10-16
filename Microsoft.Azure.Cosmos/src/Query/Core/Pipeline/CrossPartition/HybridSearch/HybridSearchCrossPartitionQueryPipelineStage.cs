@@ -26,9 +26,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     {
         private delegate TryCatch<IQueryPipelineStage> HybridSearchComponentPipelineFactory(QueryInfo queryInfo);
 
-        private const string DisallowContinuationTokenMessage = "Hybrid search does not support continuation tokens";
-
-        private const int RRFConstant = 60;
+        private const int RrfConstant = 60;
 
         private const int MaximumPageSize = 2048;
 
@@ -304,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     page.ActivityId,
                     page.CosmosQueryExecutionInfo,
                     page.DistributionPlanSpec,
-                    DisallowContinuationTokenMessage,
+                    DisallowContinuationTokenMessages.HybridSearch,
                     page.AdditionalHeaders,
                     page.State,
                     streaming: false));
@@ -346,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     this.queryPageParameters.ActivityId,
                     this.queryPageParameters.CosmosQueryExecutionInfo,
                     this.queryPageParameters.DistributionPlanSpec,
-                    DisallowContinuationTokenMessage,
+                    DisallowContinuationTokenMessages.HybridSearch,
                     this.queryPageParameters.AdditionalHeaders,
                     state: Continuation,
                     streaming: false);
@@ -511,7 +509,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 queryPageParameters.ActivityId,
                 queryPageParameters.CosmosQueryExecutionInfo,
                 queryPageParameters.DistributionPlanSpec,
-                DisallowContinuationTokenMessage,
+                DisallowContinuationTokenMessages.HybridSearch,
                 queryPageParameters.AdditionalHeaders,
                 Continuation,
                 streaming: false);
@@ -594,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 double rrfScore = 0;
                 for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
                 {
-                    rrfScore += 1.0 / (RRFConstant + ranks[componentIndex, index]);
+                    rrfScore += 1.0 / (RrfConstant + ranks[componentIndex, index]);
                 }
 
                 queryResults[index] = queryResults[index].WithScore(rrfScore);
@@ -706,7 +704,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 queryPageParameters.ActivityId,
                 queryPageParameters.CosmosQueryExecutionInfo,
                 queryPageParameters.DistributionPlanSpec,
-                DisallowContinuationTokenMessage,
+                DisallowContinuationTokenMessages.HybridSearch,
                 queryPageParameters.AdditionalHeaders,
                 Continuation,
                 streaming: false);

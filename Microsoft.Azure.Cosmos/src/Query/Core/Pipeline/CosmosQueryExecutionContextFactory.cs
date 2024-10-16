@@ -278,7 +278,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 containerQueryProperties,
                 trace);
 
-            if (targetRange != null)
+            bool hybridSearchQuery = partitionedQueryExecutionInfo.HybridSearchQueryInfo != null;
+            if (!hybridSearchQuery && targetRange != null)
             {
                 tryCreatePipelineStage = await TryCreateSinglePartitionExecutionContextAsync(
                     documentContainer,
@@ -292,8 +293,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
             else
             {
-                bool hybridSearchQuery = partitionedQueryExecutionInfo.HybridSearchQueryInfo != null;
-
                 bool createPassthroughQuery;
                 if (hybridSearchQuery)
                 {

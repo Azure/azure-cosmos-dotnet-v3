@@ -10,11 +10,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
     internal sealed class FullTextStatistics
     {
+        private readonly long[] hitCounts;
+
         public long TotalWordCount { get; }
 
         public ReadOnlyMemory<long> HitCounts => this.hitCounts;
-
-        private readonly long[] hitCounts;
 
         public FullTextStatistics(long totalWordCount, long[] hitCounts)
         {
