@@ -10,6 +10,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
     using System.Linq;
     using System.Text;
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
@@ -27,6 +31,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         };
 
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
+#endif
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
 
@@ -120,6 +128,60 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return (BaseSerializer.ToStream(itemJObj), decryptionContext);
         }
 
+        public static async Task<(Stream, DecryptionContext)> DecryptAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            JsonProcessor jsonProcessor,
+            CancellationToken cancellationToken)
+        {
+            return jsonProcessor switch
+            {
+                JsonProcessor.Newtonsoft => await DecryptAsync(input, encryptor, diagnosticsContext, cancellationToken),
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                JsonProcessor.SystemTextJson => await DecryptJsonNodeAsync(input, encryptor, diagnosticsContext, cancellationToken),
+#endif
+                _ => throw new InvalidOperationException("Unsupported Json Processor")
+            };
+        }
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public static async Task<(Stream, DecryptionContext)> DecryptJsonNodeAsync(
+            Stream input,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            if (input == null)
+            {
+                return (input, null);
+            }
+
+            Debug.Assert(input.CanSeek);
+            Debug.Assert(encryptor != null);
+            Debug.Assert(diagnosticsContext != null);
+
+            JsonNode document = await JsonNode.ParseAsync(input, cancellationToken: cancellationToken);
+
+            (JsonNode decryptedDocument, DecryptionContext context) = await DecryptAsync(document, encryptor, diagnosticsContext, cancellationToken);
+            if (context == null)
+            {
+                input.Position = 0;
+                return (input, null);
+            }
+
+            await input.DisposeAsync();
+
+            MemoryStream ms = new ();
+            Utf8JsonWriter writer = new (ms, EncryptionProcessor.JsonWriterOptions);
+
+            System.Text.Json.JsonSerializer.Serialize(writer, decryptedDocument);
+
+            ms.Position = 0;
+            return (ms, context);
+        }
+#endif
+
         public static async Task<(JObject, DecryptionContext)> DecryptAsync(
             JObject document,
             Encryptor encryptor,
@@ -141,6 +203,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return (document, decryptionContext);
         }
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public static async Task<(JsonNode, DecryptionContext)> DecryptAsync(
+            JsonNode document,
+            Encryptor encryptor,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            Debug.Assert(document != null);
+
+            Debug.Assert(encryptor != null);
+
+            if (!document.AsObject().TryGetPropertyValue(Constants.EncryptedInfo, out JsonNode encryptionPropertiesNode))
+            {
+                return (document, null);
+            }
+
+            EncryptionProperties encryptionProperties;
+            try
+            {
+                encryptionProperties = System.Text.Json.JsonSerializer.Deserialize<EncryptionProperties>(encryptionPropertiesNode);
+            }
+            catch (Exception)
+            {
+                return (document, null);
+            }
+
+            DecryptionContext decryptionContext = await DecryptInternalAsync(encryptor, diagnosticsContext, document, encryptionProperties, cancellationToken);
+
+            return (document, decryptionContext);
+        }
+
+        private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JsonNode itemNode, EncryptionProperties encryptionProperties, CancellationToken cancellationToken)
+        {
+            DecryptionContext decryptionContext = encryptionProperties.EncryptionAlgorithm switch
+            {
+                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized => await MdeEncryptionProcessor.DecryptObjectAsync(
+                    itemNode,
+                    encryptor,
+                    encryptionProperties,
+                    diagnosticsContext,
+                    cancellationToken),
+                _ => throw new NotSupportedException($"Encryption Algorithm : {encryptionProperties.EncryptionAlgorithm} is not supported."),
+            };
+            return decryptionContext;
+        }
+#endif
 
         private static async Task<DecryptionContext> DecryptInternalAsync(Encryptor encryptor, CosmosDiagnosticsContext diagnosticsContext, JObject itemJObj, JObject encryptionPropertiesJObj, CancellationToken cancellationToken)
         {
@@ -225,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                 };
 
-                itemJObj = JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
+                itemJObj = Newtonsoft.Json.JsonSerializer.Create(jsonSerializerSettings).Deserialize<JObject>(jsonTextReader);
             }
 
             return itemJObj;
