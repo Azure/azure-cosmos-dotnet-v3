@@ -708,7 +708,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.connectionPolicy.PreferredLocations;
             }
 
-            return this.locationCache.EffectivePreferredLocations;
+            return this.connectionPolicy.PreferredLocations?.Count > 0 ? 
+                this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
         }
     }
 }

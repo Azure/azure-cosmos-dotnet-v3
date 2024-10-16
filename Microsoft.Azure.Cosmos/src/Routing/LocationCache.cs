@@ -355,6 +355,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             ReadOnlyCollection<string> effectivePreferredLocations = this.locationInfo.EffectivePreferredLocations;
 
+            if (effectivePreferredLocations == null || effectivePreferredLocations.Count == 0)
+            {
+                throw new ArgumentException("effectivePreferredLocations cannot be null or empty!");
+            }
+
             return GetApplicableRegions(
                 isReadRequest ? databaseAccountLocationsInfoSnapshot.AvailableReadLocations : databaseAccountLocationsInfoSnapshot.AvailableWriteLocations,
                 effectivePreferredLocations,
@@ -377,22 +382,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             IEnumerable<string> excludeRegions)
         {
             List<Uri> applicableEndpoints = new List<Uri>(regionNameByEndpoint.Count);
-            HashSet<string> excludeRegionsHash = excludeRegions == null ? null : new HashSet<string>(excludeRegions);
-            
-            if (excludeRegions != null)
+            HashSet<string> excludeRegionsHash = excludeRegions == null ? new HashSet<string>() : new HashSet<string>(excludeRegions);
+
+            foreach (string region in effectivePreferredLocations)
             {
-                foreach (string region in effectivePreferredLocations)
+                if (excludeRegionsHash.Count > 0)
                 {
-                    if (!excludeRegionsHash.Contains(region)
-                        && regionNameByEndpoint.TryGetValue(region, out Uri endpoint))
+                    if (!excludeRegionsHash.Contains(region) && regionNameByEndpoint.TryGetValue(region, out Uri endpoint))
                     {
                         applicableEndpoints.Add(endpoint);
                     }
                 }
-            }
-            else
-            {
-                foreach (string region in effectivePreferredLocations)
+                else
                 {
                     if (regionNameByEndpoint.TryGetValue(region, out Uri endpoint))
                     {
