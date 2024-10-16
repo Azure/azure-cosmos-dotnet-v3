@@ -28,6 +28,9 @@
         [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
+        [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson)]
+        public JsonProcessor JsonProcessor { get; set; }
+
         [GlobalSetup]
         public async Task Setup()
         {
@@ -87,7 +90,8 @@
                 CompressionOptions = new()
                 {
                     Algorithm = this.CompressionAlgorithm
-                }
+                },
+                JsonProcessor = this.JsonProcessor,
             };
 
             return options;

@@ -5,29 +5,37 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System.Collections.Generic;
+    using System.Text.Json.Serialization;
     using Newtonsoft.Json;
 
     internal class EncryptionProperties
     {
         [JsonProperty(PropertyName = Constants.EncryptionFormatVersion)]
+        [JsonPropertyName(Constants.EncryptionFormatVersion)]
         public int EncryptionFormatVersion { get; }
 
         [JsonProperty(PropertyName = Constants.EncryptionDekId)]
+        [JsonPropertyName(Constants.EncryptionDekId)]
         public string DataEncryptionKeyId { get; }
 
         [JsonProperty(PropertyName = Constants.EncryptionAlgorithm)]
+        [JsonPropertyName(Constants.EncryptionAlgorithm)]
         public string EncryptionAlgorithm { get; }
 
         [JsonProperty(PropertyName = Constants.EncryptedData)]
+        [JsonPropertyName(Constants.EncryptedData)]
         public byte[] EncryptedData { get; }
 
         [JsonProperty(PropertyName = Constants.EncryptedPaths)]
+        [JsonPropertyName(Constants.EncryptedPaths)]
         public IEnumerable<string> EncryptedPaths { get; }
 
         [JsonProperty(PropertyName = Constants.CompressionAlgorithm)]
+        [JsonPropertyName(Constants.CompressionAlgorithm)]
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; }
 
         [JsonProperty(PropertyName = Constants.CompressedEncryptedPaths)]
+        [JsonPropertyName(Constants.CompressedEncryptedPaths)]
         public IDictionary<string, int> CompressedEncryptedPaths { get; }
 
         public EncryptionProperties(

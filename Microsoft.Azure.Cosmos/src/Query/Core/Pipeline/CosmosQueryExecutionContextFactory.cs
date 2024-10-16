@@ -91,6 +91,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
         {
             using (ITrace createQueryPipelineTrace = trace.StartChild("Create Query Pipeline", TraceComponent.Query, Tracing.TraceLevel.Info))
             {
+                CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
+
+                ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
+                    cosmosQueryContext.ResourceLink,
+                    inputParameters.PartitionKey,
+                    createQueryPipelineTrace,
+                    cancellationToken);
+                cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
+
                 if (inputParameters.EnableDistributedQueryGatewayMode &&
                     cosmosQueryContext.ResourceTypeEnum == Documents.ResourceType.Document &&
                     cosmosQueryContext.OperationTypeEnum == Documents.OperationType.Query)
@@ -151,15 +160,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         queryPlanFromContinuationToken = latestVersionPipelineContinuationToken.QueryPlan;
                     }
                 }
-
-                CosmosQueryClient cosmosQueryClient = cosmosQueryContext.QueryClient;
-
-                ContainerQueryProperties containerQueryProperties = await cosmosQueryClient.GetCachedContainerQueryPropertiesAsync(
-                    cosmosQueryContext.ResourceLink,
-                    inputParameters.PartitionKey,
-                    createQueryPipelineTrace,
-                    cancellationToken); 
-                cosmosQueryContext.ContainerResourceId = containerQueryProperties.ResourceId;
 
                 Documents.PartitionKeyRange targetRange = await TryGetTargetRangeOptimisticDirectExecutionAsync(
                     inputParameters,

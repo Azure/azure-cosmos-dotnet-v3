@@ -295,6 +295,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.Newtonsoft,
                     CompressionOptions = new CompressionOptions()
                     {
                         Algorithm = CompressionOptions.CompressionAlgorithm.None
@@ -307,6 +308,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.SystemTextJson,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.None
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.Newtonsoft,
                     CompressionOptions = new CompressionOptions()
                     {
                         Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
@@ -319,6 +333,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     DataEncryptionKeyId = dekId,
                     EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
                     PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.Newtonsoft,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.NoCompression,
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.SystemTextJson,
+                    CompressionOptions = new CompressionOptions()
+                    {
+                        Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
+                        CompressionLevel = System.IO.Compression.CompressionLevel.Fastest
+                    }
+                }
+            },
+            new object[] { new EncryptionOptions()
+                {
+                    DataEncryptionKeyId = dekId,
+                    EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                    PathsToEncrypt = TestDoc.PathsToEncrypt,
+                    JsonProcessor = JsonProcessor.SystemTextJson,
                     CompressionOptions = new CompressionOptions()
                     {
                         Algorithm = CompressionOptions.CompressionAlgorithm.Brotli,
