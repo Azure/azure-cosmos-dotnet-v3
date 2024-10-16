@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -217,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             {
                 State.Uninitialized => this.MoveNextAsync_GatherGlobalStatisticsAsync(trace, cancellationToken),
                 State.Initialized => this.MoveNextAsync_RunComponentQueriesAsync(trace, cancellationToken),
-                State.Draining => new ValueTask<bool>(this.MoveNextAsync_DrainPage()),
+                State.Draining => this.MoveNextAsync_DrainPageAsync(trace, cancellationToken),
                 State.Done => new ValueTask<bool>(false),
                 _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(State)}: {this.state}"),
             };
@@ -257,9 +258,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private async ValueTask<bool> MoveNextAsync_RunComponentQueriesAsync(ITrace trace, CancellationToken cancellationToken)
         {
-            // TODO: Add optimization to skip the sorting and ranking if there is only one component query
             if (this.queryPipelineStages.Count == 1)
             {
+                return await this.MoveNextAsync_DrainSingletonComponentAsync(trace, cancellationToken);
             }
 
             TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)> tryCollateSortedPipelineStageResults = await CollateSortedPipelineStageResultsAsync(
@@ -312,6 +313,60 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.Current = TryCatch<QueryPage>.FromResult(emptyPage);
             this.state = done ? State.Done : State.Draining;
             return true;
+        }
+
+        private async ValueTask<bool> MoveNextAsync_DrainSingletonComponentAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            Debug.Assert(this.queryPipelineStages != null && this.queryPipelineStages.Count == 1);
+
+            if (await this.queryPipelineStages[0].MoveNextAsync(trace, cancellationToken))
+            {
+                if (this.queryPipelineStages[0].Current.Failed)
+                {
+                    this.Current = this.queryPipelineStages[0].Current;
+                    this.state = State.Done;
+                    return true;
+                }
+
+                QueryPage page = this.queryPipelineStages[0].Current.Result;
+
+                List<CosmosElement> documents = new List<CosmosElement>(page.Documents.Count);
+                foreach (CosmosElement cosmosElement in page.Documents)
+                {
+                    HybridSearchQueryResult hybridSearchQueryResult = HybridSearchQueryResult.Create(cosmosElement);
+                    documents.Add(hybridSearchQueryResult.Payload);
+                }
+
+                this.Current = TryCatch<QueryPage>.FromResult(new QueryPage(
+                    documents,
+                    page.RequestCharge,
+                    page.ActivityId,
+                    page.CosmosQueryExecutionInfo,
+                    page.DistributionPlanSpec,
+                    DisallowContinuationTokenMessage,
+                    page.AdditionalHeaders,
+                    page.State,
+                    streaming: false));
+                this.state = State.Draining;
+                return true;
+            }
+            else
+            {
+                this.state = State.Done;
+                return false;
+            }
+        }
+
+        private ValueTask<bool> MoveNextAsync_DrainPageAsync(ITrace trace, CancellationToken cancellationToken)
+        {
+            if (this.queryPipelineStages.Count == 1)
+            {
+                return this.MoveNextAsync_DrainSingletonComponentAsync(trace, cancellationToken);
+            }
+            else
+            {
+                return new ValueTask<bool>(this.MoveNextAsync_DrainPage());
+            }
         }
 
         private bool MoveNextAsync_DrainPage()
