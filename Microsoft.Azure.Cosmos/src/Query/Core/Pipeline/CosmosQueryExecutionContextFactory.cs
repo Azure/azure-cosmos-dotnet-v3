@@ -337,13 +337,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         forceRefresh: false,
                         trace);
 
-                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(
+                    tryCreatePipelineStage = TryCreateFullQueryPipeline(
                         documentContainer,
                         cosmosQueryContext,
                         inputParameters,
+                        partitionedQueryExecutionInfo,
                         targetRanges,
                         containerQueryProperties,
-                        partitionedQueryExecutionInfo,
                         allRanges);
                 }
             }
@@ -406,13 +406,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         forceRefresh: false,
                         trace);
 
-                    tryCreatePipelineStage = TryCreateSpecializedDocumentQueryExecutionContext(
+                    tryCreatePipelineStage = TryCreateFullQueryPipeline(
                         documentContainer,
                         cosmosQueryContext,
                         inputParameters,
+                        partitionedQueryExecutionInfo,
                         targetRanges,
                         containerQueryProperties,
-                        partitionedQueryExecutionInfo,
                         allRanges);
                 }
                 else 
@@ -428,27 +428,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
 
             return tryCreatePipelineStage;
-        }
-
-        private static TryCatch<IQueryPipelineStage> TryCreateSpecializedDocumentQueryExecutionContext(
-            DocumentContainer documentContainer,
-            CosmosQueryContext cosmosQueryContext,
-            InputParameters inputParameters,
-            IReadOnlyList<Documents.PartitionKeyRange> targetRanges,
-            ContainerQueryProperties containerQueryProperties,
-            PartitionedQueryExecutionInfo partitionedQueryExecutionInfo,
-            IReadOnlyList<Documents.PartitionKeyRange> allRanges)
-        {
-            SetTestInjectionPipelineType(inputParameters, Specialized);
-
-            return TryCreateSpecializedDocumentQueryExecutionContext(
-                documentContainer,
-                cosmosQueryContext,
-                inputParameters,
-                partitionedQueryExecutionInfo,
-                targetRanges,
-                containerQueryProperties,
-                allRanges);
         }
 
         private static async Task<TryCatch<IQueryPipelineStage>> TryCreateSpecializedDocumentQueryExecutionContextAsync(
@@ -482,13 +461,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 forceRefresh: false,
                 trace);
 
-            return TryCreateSpecializedDocumentQueryExecutionContext(
+            return TryCreateFullQueryPipeline(
                 documentContainer,
                 cosmosQueryContext,
                 inputParameters,
+                partitionedQueryExecutionInfo,
                 targetRanges,
                 containerQueryProperties,
-                partitionedQueryExecutionInfo,
                 allRanges);
         }
 
@@ -545,7 +524,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 continuationToken: inputParameters.InitialUserContinuationToken);
         }
 
-        private static TryCatch<IQueryPipelineStage> TryCreateSpecializedDocumentQueryExecutionContext(
+        private static TryCatch<IQueryPipelineStage> TryCreateFullQueryPipeline(
             DocumentContainer documentContainer,
             CosmosQueryContext cosmosQueryContext,
             InputParameters inputParameters,
@@ -554,6 +533,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             ContainerQueryProperties containerQueryProperties,
             IReadOnlyList<Documents.PartitionKeyRange> allRanges)
         {
+            SetTestInjectionPipelineType(inputParameters, Specialized);
+
             IReadOnlyList<FeedRangeEpk> targetFeedRanges = targetRanges
                     .Select(range => new FeedRangeEpk(
                         new Documents.Routing.Range<string>(
@@ -963,7 +944,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
             }
         }
 
-        internal sealed class AggregateProjectionDetector
+        private sealed class AggregateProjectionDetector
         {
             /// <summary>
             /// Determines whether or not the SqlSelectSpec has an aggregate in the outer most query.
