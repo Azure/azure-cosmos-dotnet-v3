@@ -907,7 +907,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             ItemRequestOptions requestOptions,
             ITrace trace,
-            JsonSerializationFormat targetResponseSerializationFormat,
+            JsonSerializationFormat? targetResponseSerializationFormat,
             CancellationToken cancellationToken)
         {
             if (trace == null)
@@ -942,11 +942,12 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Convert Binary Stream to Text.
-            if ((requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
+            if (targetResponseSerializationFormat.HasValue
+                && (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
                 && responseMessage?.Content is CloneableStream outputCloneableStream)
             {
                 responseMessage.Content = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
-                    targetSerializationFormat: targetResponseSerializationFormat,
+                    targetSerializationFormat: targetResponseSerializationFormat.Value,
                     inputStream: outputCloneableStream);
             }
 
