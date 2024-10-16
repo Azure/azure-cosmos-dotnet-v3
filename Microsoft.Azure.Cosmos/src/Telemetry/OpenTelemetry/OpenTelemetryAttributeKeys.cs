@@ -58,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ServerAddress = "server.address";
 
+        /// <summary>
+        /// Represents the server port.
+        /// </summary>
+        public const string ServerPort = "server.port";
+
         // Cosmos DB specific attributes
 
         /// <summary>
