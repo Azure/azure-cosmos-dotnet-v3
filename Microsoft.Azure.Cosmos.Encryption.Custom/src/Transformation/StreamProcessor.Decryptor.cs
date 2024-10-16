@@ -56,6 +56,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             JsonReaderState state = new (StreamProcessor.JsonReaderOptions);
 
+            HashSet<string> encryptedPaths = properties.EncryptedPaths as HashSet<string> ?? new (properties.EncryptedPaths, StringComparer.Ordinal);
+
             int leftOver = 0;
 
             bool isFinalBlock = false;
@@ -80,6 +82,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     ref state,
                     ref isIgnoredBlock,
                     ref decryptPropertyName,
+                    encryptedPaths,
                     pathsDecrypted,
                     properties,
                     containsCompressed,
@@ -107,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
         }
 
-        private long TransformDecryptBuffer(Span<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, List<string> pathsDecrypted, EncryptionProperties properties, bool containsCompressed, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
+        private long TransformDecryptBuffer(ReadOnlySpan<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, HashSet<string> encryptedPaths, List<string> pathsDecrypted, EncryptionProperties properties, bool containsCompressed, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
         {
             Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
@@ -173,13 +176,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         break;
                     case JsonTokenType.PropertyName:
                         string propertyName = "/" + reader.GetString();
-                        if (properties.EncryptedPaths.Contains(propertyName))
+                        if (encryptedPaths.Contains(propertyName))
                         {
                             decryptPropertyName = propertyName;
                         }
                         else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
                         {
-                            isIgnoredBlock = true;
+                            if (!reader.TrySkip())
+                            {
+                                isIgnoredBlock = true;
+                            }
+
                             break;
                         }
 
@@ -246,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 }
             }
 
-            Span<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
+            ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
             switch ((TypeMarker)cipherTextWithTypeMarker[0])
             {
                 case TypeMarker.String:
@@ -265,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     writer.WriteNullValue();
                     break;
                 default:
-                    writer.WriteRawValue(bytes.AsSpan(0, processedBytes), true);
+                    writer.WriteRawValue(bytesToWrite, true);
                     break;
             }
         }

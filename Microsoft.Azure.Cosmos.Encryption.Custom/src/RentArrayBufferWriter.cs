@@ -37,7 +37,15 @@ internal class RentArrayBufferWriter : IBufferWriter<byte>, IDisposable
         this.committed = 0;
     }
 
-    public (byte[], int) WrittenBuffer => (this.rentedBuffer, this.written);
+    public (byte[], int) WrittenBuffer
+    {
+        get
+        {
+            this.CheckIfDisposed();
+
+            return (this.rentedBuffer, this.written);
+        }
+    }
 
     public Memory<byte> WrittenMemory
     {
