@@ -72,6 +72,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 throw new ArgumentException($"{nameof(queryInfo)} and {nameof(hybridSearchQueryInfo)} cannot both be non-null.");
             }
 
+            if (hybridSearchQueryInfo != null && requestContinuationToken != null)
+            {
+                throw new ArgumentException($"Continuation tokens are not supported for hybrid search.");
+            }
+
             if (queryInfo != null)
             {
                 return MonadicCreate(
@@ -90,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             }
             else
             {
-                return HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate(
+                MonadicCreatePipelineStage monadicCreatePipelineStage = (_) => HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate(
                     documentContainer: documentContainer,
                     containerQueryProperties: containerQueryProperties,
                     sqlQuerySpec: sqlQuerySpec,
@@ -101,6 +106,29 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     maxItemCount: maxItemCount,
                     isContinuationExpected: isContinuationExpected,
                     maxConcurrency: maxConcurrency);
+
+                if (hybridSearchQueryInfo.Skip != null)
+                {
+                    MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
+                    monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
+                        hybridSearchQueryInfo.Skip.Value,
+                        continuationToken,
+                        monadicCreateSourceStage);
+                }
+
+                if (hybridSearchQueryInfo.Take != null)
+                {
+                    MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
+                    monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
+                        hybridSearchQueryInfo.Take.Value,
+                        requestContinuationToken,
+                        monadicCreateSourceStage);
+                }
+
+                // Allow hybrid search to emit empty pages for now
+                // If we decide to change this in the future, we can wrap the stage in a SkipEmptyPageQueryPipelineStage
+                // similar to how we do for regular queries (see below)
+                return monadicCreatePipelineStage(requestContinuationToken);
             }
         }
 

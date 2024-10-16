@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -47,8 +46,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private readonly IQueryPipelineStage globalStatisticsPipeline;
 
-        private readonly SkipTakeCounter skipTakeCounter;
-
         private State state;
 
         private IReadOnlyList<IQueryPipelineStage> queryPipelineStages;
@@ -76,8 +73,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             int maxConcurrency,
             State state,
             IQueryPipelineStage globalStatisticsPipeline,
-            IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
-            SkipTakeCounter skipTakeCounter)
+            IReadOnlyList<IQueryPipelineStage> queryPipelineStages)
         {
             this.hybridSearchQueryInfo = hybridSearchQueryInfo ?? throw new ArgumentNullException(nameof(hybridSearchQueryInfo));
             this.pipelineFactory = pipelineFactory ?? throw new ArgumentNullException(nameof(pipelineFactory));
@@ -86,7 +82,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             this.state = state;
             this.globalStatisticsPipeline = globalStatisticsPipeline;
             this.queryPipelineStages = queryPipelineStages;
-            this.skipTakeCounter = skipTakeCounter;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
@@ -188,8 +183,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     maxConcurrency,
                     state,
                     globalStatisticsPipeline,
-                    queryPipelineStages,
-                    skipTakeCounter));
+                    queryPipelineStages));
         }
 
         public ValueTask DisposeAsync()
@@ -277,58 +271,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             (IReadOnlyList<HybridSearchQueryResult> queryResults, QueryPage emptyPage) = tryCollateSortedPipelineStageResults.Result;
 
-            bool done = false;
-            IEnumerator<HybridSearchQueryResult> enumerator = queryResults.GetEnumerator();
-            if (this.skipTakeCounter != null)
-            {
-                for (; !done && this.skipTakeCounter.Skip > 0; --this.skipTakeCounter.Skip)
-                {
-                    done = !enumerator.MoveNext();
-                }
-
-                done = done || (this.skipTakeCounter.Take == 0);
-            }
-
-            if (done)
-            {
-                emptyPage = new QueryPage(
-                    emptyPage.Documents,
-                    emptyPage.RequestCharge,
-                    emptyPage.ActivityId,
-                    emptyPage.CosmosQueryExecutionInfo,
-                    emptyPage.DistributionPlanSpec,
-                    DisallowContinuationTokenMessage,
-                    emptyPage.AdditionalHeaders,
-                    null,
-                    streaming: false);
-            }
-
             this.queryPageParameters = new QueryPageParameters(
                 activityId: emptyPage.ActivityId,
                 cosmosQueryExecutionInfo: emptyPage.CosmosQueryExecutionInfo,
                 distributionPlanSpec: emptyPage.DistributionPlanSpec,
                 additionalHeaders: emptyPage.AdditionalHeaders);
             this.bufferedResults = queryResults;
-            this.enumerator = enumerator;
+            this.enumerator = queryResults.GetEnumerator();
             this.Current = TryCatch<QueryPage>.FromResult(emptyPage);
-            this.state = done ? State.Done : State.Draining;
+            this.state = State.Draining;
             return true;
         }
 
         private async ValueTask<bool> MoveNextAsync_DrainSingletonComponentAsync(ITrace trace, CancellationToken cancellationToken)
         {
             Debug.Assert(this.queryPipelineStages != null && this.queryPipelineStages.Count == 1);
+            IQueryPipelineStage sourceStage = this.queryPipelineStages[0];
 
-            if (await this.queryPipelineStages[0].MoveNextAsync(trace, cancellationToken))
+            if (await sourceStage.MoveNextAsync(trace, cancellationToken))
             {
-                if (this.queryPipelineStages[0].Current.Failed)
+                if (sourceStage.Current.Failed)
                 {
-                    this.Current = this.queryPipelineStages[0].Current;
+                    this.Current = sourceStage.Current;
                     this.state = State.Done;
                     return true;
                 }
 
-                QueryPage page = this.queryPipelineStages[0].Current.Result;
+                QueryPage page = sourceStage.Current.Result;
 
                 List<CosmosElement> documents = new List<CosmosElement>(page.Documents.Count);
                 foreach (CosmosElement cosmosElement in page.Documents)
@@ -371,20 +340,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private bool MoveNextAsync_DrainPage()
         {
-            int takeCount = Math.Min(this.pageSize, this.skipTakeCounter != null ? this.skipTakeCounter.Take : int.MaxValue);
-
-            List<CosmosElement> documents = new List<CosmosElement>(takeCount);
-            for (; documents.Count < takeCount && this.enumerator.MoveNext(); --takeCount)
+            List<CosmosElement> documents = new List<CosmosElement>(this.pageSize);
+            while (documents.Count < this.pageSize && this.enumerator.MoveNext())
             {
                 documents.Add(this.enumerator.Current.Payload);
-            }
-
-            bool done = false;
-            if (this.skipTakeCounter != null)
-            {
-                this.skipTakeCounter.Take -= documents.Count;
-                Debug.Assert(this.skipTakeCounter.Take >= 0, "The take counter should never be negative");
-                done = this.skipTakeCounter.Take == 0;
             }
 
             if (documents.Count > 0)
@@ -397,11 +356,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     this.queryPageParameters.DistributionPlanSpec,
                     DisallowContinuationTokenMessage,
                     this.queryPageParameters.AdditionalHeaders,
-                    state: done ? null : Continuation,
+                    state: Continuation,
                     streaming: false);
 
                 this.Current = TryCatch<QueryPage>.FromResult(queryPage);
-                this.state = done ? State.Done : State.Draining;
+                this.state = State.Draining;
                 return true;
             }
             else
@@ -773,19 +732,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             {
                 this.Score = score;
                 this.Index = index;
-            }
-        }
-
-        private sealed class SkipTakeCounter
-        {
-            public int Skip { get; set; }
-
-            public int Take { get; set; }
-
-            public SkipTakeCounter(int skip, int take)
-            {
-                this.Skip = skip;
-                this.Take = take;
             }
         }
 
