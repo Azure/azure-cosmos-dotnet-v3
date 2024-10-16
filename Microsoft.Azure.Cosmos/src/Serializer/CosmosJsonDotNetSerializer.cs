@@ -137,7 +137,8 @@ namespace Microsoft.Azure.Cosmos
             MemoryStream streamPayload;
             JsonSerializer jsonSerializer = this.GetSerializer();
 
-            if (this.BinaryEncodingEnabled)
+            if (this.BinaryEncodingEnabled
+                && CosmosSerializationUtil.IsInputTypeSupportedForBinaryOperation<T>())
             {
                 using (Json.Interop.CosmosDBToNewtonsoftWriter writer = new (
                     jsonSerializationFormat: Json.JsonSerializationFormat.Binary))

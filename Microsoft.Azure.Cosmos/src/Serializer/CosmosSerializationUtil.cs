@@ -8,9 +8,12 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Serialization;
@@ -101,6 +104,26 @@ namespace Microsoft.Azure.Cosmos
             byte[] formattedBytes = writer.GetResult().ToArray();
 
             return new MemoryStream(formattedBytes, index: 0, count: formattedBytes.Length, writable: true, publiclyVisible: true);
+        }
+
+        internal static bool IsInputTypeSupportedForBinaryOperation<T>()
+        {
+            Type inputType = typeof(T);
+
+            return !(inputType == typeof(AccountProperties) ||
+                inputType == typeof(DatabaseProperties) ||
+                inputType == typeof(ContainerProperties) ||
+                inputType == typeof(PermissionProperties) ||
+                inputType == typeof(StoredProcedureProperties) ||
+                inputType == typeof(TriggerProperties) ||
+                inputType == typeof(UserDefinedFunctionProperties) ||
+                inputType == typeof(UserProperties) ||
+                inputType == typeof(ConflictProperties) ||
+                inputType == typeof(ThroughputProperties) ||
+                inputType == typeof(OfferV2) ||
+                inputType == typeof(ClientEncryptionKeyProperties) ||
+                inputType == typeof(PartitionedQueryExecutionInfo) ||
+                inputType == typeof(ChangeFeedQuerySpec));
         }
     }
 }
