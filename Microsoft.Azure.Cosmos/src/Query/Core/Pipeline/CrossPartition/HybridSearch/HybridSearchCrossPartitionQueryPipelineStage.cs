@@ -167,14 +167,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                     Math.Min(MaximumPageSize, maxItemCount) :
                     MaximumPageSize;
 
-            SkipTakeCounter skipTakeCounter = null;
-            if (queryInfo.Skip.HasValue || queryInfo.Take.HasValue)
-            {
-                int skip = queryInfo.Skip.GetValueOrDefault(0);
-                int take = queryInfo.Take.GetValueOrDefault(int.MaxValue);
-                skipTakeCounter = new SkipTakeCounter(skip, take);
-            }
-
             return TryCatch<IQueryPipelineStage>.FromResult(
                 new HybridSearchCrossPartitionQueryPipelineStage(
                     queryInfo,
