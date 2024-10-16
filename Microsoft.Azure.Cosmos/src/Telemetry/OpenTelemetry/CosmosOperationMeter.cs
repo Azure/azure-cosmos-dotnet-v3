@@ -7,13 +7,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using System.Xml.Linq;
 
     internal static class CosmosOperationMeter
     {
         internal static Histogram<double> RequestLatencyHistogram = null;
         internal static Histogram<double> RequestUnitsHistogram = null;
         internal static Histogram<int> ActualItemHistogram = null;
-        internal static Histogram<int> InstanceCountHistogram = null;
+        internal static UpDownCounter<int> InstanceCounter = null;
 
         private static Meter cosmosMeter;
 
@@ -33,12 +34,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Count, 
                 description: OpenTelemetryMetricsConstant.OperationMetrics.Description.RowCount);
 
-            CosmosOperationMeter.InstanceCountHistogram = cosmosMeter.CreateHistogram<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.ActiveInstances,
+            CosmosOperationMeter.InstanceCounter = cosmosMeter.CreateUpDownCounter<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.ActiveInstances,
                 unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Count,
                 description: OpenTelemetryMetricsConstant.OperationMetrics.Description.ActiveInstances);
         }
 
-        public static void RecordTelemetry(string operationName, string accountName, string containerName, string databaseName, OpenTelemetryAttributes attributes)
+        public static void RecordTelemetry(string operationName, Uri accountName, string containerName, string databaseName, OpenTelemetryAttributes attributes)
         {
             Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
             {
@@ -46,10 +47,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName),
-
-                //new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Consistency, "consistency"),
-
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName.Port),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes.ConsistencyLevel),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)attributes.StatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)attributes.SubStatusCode)
             };
@@ -57,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             CosmosOperationMeter.RecordActualItemCount(Convert.ToInt32(attributes.ItemCount), dimensionsFunc);
             CosmosOperationMeter.RecordRequestUnit(attributes.RequestCharge.Value, dimensionsFunc);
             CosmosOperationMeter.RecordRequestLatency(attributes.Diagnostics.GetClientElapsedTime(), dimensionsFunc);
-            CosmosOperationMeter.RecordActiveInstances(dimensionsFunc);
         }
 
         public static void RecordActualItemCount(int actualItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
@@ -90,14 +89,38 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             CosmosOperationMeter.RequestLatencyHistogram.Record(requestLatency.Value.Milliseconds, dimensionsFunc());
         }
 
-        public static void RecordActiveInstances(Func<KeyValuePair<string, object>[]> dimensionsFunc)
+        public static void AddActiveInstance(Uri account)
         {
-            if (CosmosOperationMeter.InstanceCountHistogram == null || !CosmosOperationMeter.InstanceCountHistogram.Enabled)
+            if (CosmosOperationMeter.InstanceCounter == null || !CosmosOperationMeter.InstanceCounter.Enabled)
             {
                 return;
             }
 
-            CosmosOperationMeter.InstanceCountHistogram.Record(CosmosClient.NumberOfActiveClients, dimensionsFunc());
+            Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, "cosmosdb"),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, account.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, account.Port),
+            };
+
+            CosmosOperationMeter.InstanceCounter.Add(1, dimensionsFunc());
+        }
+
+        public static void DisposeActiveInstance(Uri account)
+        {
+            if (CosmosOperationMeter.InstanceCounter == null || !CosmosOperationMeter.InstanceCounter.Enabled)
+            {
+                return;
+            }
+
+            Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new[]
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, "cosmosdb"),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, account.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, account.Port),
+            };
+
+            CosmosOperationMeter.InstanceCounter.Add(-1, dimensionsFunc());
         }
     }
 }
