@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>A boolean flag indicating if binary encoding is enabled.</returns>
         public static bool IsBinaryEncodingEnabled()
         {
-            bool defaultValue = false;
+            bool defaultValue = true;
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.BinaryEncodingEnabled,
