@@ -309,14 +309,17 @@
         public async Task DeleteItemAsync()
         {
             int index = this.random.Next(this.deleteItems.Count);
-            Comment comment = this.deleteItems[index];
-            this.deleteItems.RemoveAt(index);
-
-            ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
-
-            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
+            if (index >= 0 && index < this.deleteItems.Count)
             {
-                Console.WriteLine($"Error: Item {comment.id} was not deleted : " + itemResponse.StatusCode);
+                Comment comment = this.deleteItems[index];
+                this.deleteItems.Remove(comment);
+
+                ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
+
+                if (itemResponse.StatusCode == HttpStatusCode.NotFound)
+                {
+                    Console.WriteLine($"Error: Item {comment.id} was not deleted : " + itemResponse.StatusCode);
+                }
             }
         }
 
@@ -324,14 +327,17 @@
         public async Task DeleteItemStreamAsync()
         {
             int index = this.random.Next(this.deleteStreamItems.Count);
-            Comment comment = this.deleteStreamItems[index];
-            this.deleteStreamItems.RemoveAt(index);
-
-            ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
-
-            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
+            if (index >= 0 && index < this.deleteItems.Count)
             {
-                Console.WriteLine($"Error: Item {comment.id} was not deleted stream: " + itemResponse.StatusCode);
+                Comment comment = this.deleteStreamItems[index];
+                this.deleteStreamItems.Remove(comment);
+
+                ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
+
+                if (itemResponse.StatusCode == HttpStatusCode.NotFound)
+                {
+                    Console.WriteLine($"Error: Item {comment.id} was not deleted stream: " + itemResponse.StatusCode);
+                }
             }
         }
 
