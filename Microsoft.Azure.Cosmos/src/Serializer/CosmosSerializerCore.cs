@@ -17,7 +17,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosSerializerCore
     {
-        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer());
+        private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(
+            new CosmosJsonDotNetSerializer(
+                ConfigurationManager.IsBinaryEncodingEnabled()));
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
@@ -58,7 +60,10 @@ namespace Microsoft.Azure.Cosmos
 
             if (serializationOptions != null)
             {
-                customSerializer = new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(serializationOptions));
+                customSerializer = new CosmosJsonSerializerWrapper(
+                    new CosmosJsonDotNetSerializer(
+                        serializationOptions,
+                        binaryEncodingEnabled: ConfigurationManager.IsBinaryEncodingEnabled()));
             }
 
             return new CosmosSerializerCore(customSerializer);
