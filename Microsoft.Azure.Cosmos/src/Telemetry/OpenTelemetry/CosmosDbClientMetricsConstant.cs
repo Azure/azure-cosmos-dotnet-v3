@@ -5,11 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     /// <summary>
-    /// The OpenTelemetryMetricsConstant class provides constants related to OpenTelemetry metrics for Azure Cosmos DB. 
+    /// The CosmosDbClientMetricsConstant class provides constants related to OpenTelemetry metrics for Azure Cosmos DB. 
     /// These metrics are useful for tracking various aspects of Cosmos DB client operations and compliant with Open Telemetry Semantic Conventions 
     /// It defines standardized names, units, descriptions, and histogram buckets for measuring and monitoring performance through OpenTelemetry.
     /// </summary>
-    public sealed class OpenTelemetryMetricsConstant
+    public sealed class CosmosDbClientMetricsConstant
     {
         /// <summary>
         /// OperationMetrics
