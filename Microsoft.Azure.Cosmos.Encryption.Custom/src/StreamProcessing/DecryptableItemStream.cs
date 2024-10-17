@@ -79,11 +79,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
                     JsonDocument jsonDocument = await JsonDocument.ParseAsync(this.decryptedStream, cancellationToken: cancellationToken);
                     return ((T)(object)jsonDocument, this.decryptionContext);
 
-                case JObject: // We must call explicit Newtonsoft implementation otherwise result would be nonsense
+                case JObject: // We must call explicit Newtonsoft implementation otherwise result would be nonsense if cosmosSerializer is not Newtonsoft and we have no chance to tell
                     return ((T)(object)EncryptionProcessor.BaseSerializer.FromStream(decryptedStream))
-                else: // Either Newtonsoft DOM or direct object mapping
+                else: // Direct object mapping
                 // this API is missing Async => should not be used
-                // we have no chance to 
                 return (this.cosmosSerializer.FromStream<T>(this.decryptedStream), this.decryptionContext);
             }
         }
