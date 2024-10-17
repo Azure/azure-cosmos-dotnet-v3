@@ -30,6 +30,7 @@
         private readonly List<Comment> upsertItems = new();
         private readonly List<Comment> replaceItems = new();
         private readonly List<Comment> deleteItems = new();
+        private readonly List<Comment> deleteStreamItems = new();
         private readonly Random random = new();
         private CosmosClient client;
         private Database database;
@@ -65,12 +66,20 @@
             Console.WriteLine("Inserted documents for replace benchmark.");
         }
 
-        [GlobalSetup(Targets = new[] { nameof(DeleteItemAsync), nameof(DeleteItemStreamAsync) })]
+        [GlobalSetup(Targets = new[] { nameof(DeleteItemAsync) })]
         public async Task GlobalSetupDelete()
         {
             await this.InitializeDatabaseAndContainers();
             await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.deleteItems); // Pre-create data for delete operations
             Console.WriteLine("Inserted documents for delete benchmark.");
+        }
+
+        [GlobalSetup(Targets = new[] { nameof(DeleteItemStreamAsync) })]
+        public async Task GlobalSetupDeleteStream()
+        {
+            await this.InitializeDatabaseAndContainers();
+            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.deleteStreamItems); // Pre-create data for delete stream operations
+            Console.WriteLine("Inserted documents for delete stream benchmark.");
         }
 
         private async Task InitializeDatabaseAndContainers()
@@ -145,11 +154,16 @@
                 EnableBinaryResponseOnPointOperations = false,
             };
 
-            await this.container.CreateItemAsync<Comment>(
+            ItemResponse<Comment> itemResponse = await this.container.CreateItemAsync<Comment>(
                 item: comment,
                 partitionKey: new PartitionKey(comment.pk),
                 requestOptions: requestOptions
             );
+
+            if (itemResponse.StatusCode != HttpStatusCode.Created)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not created.");
+            }
         }
 
         [Benchmark]
@@ -158,7 +172,12 @@
             Comment comment = this.GetRandomCommentItem();
 
             using Stream stream = ToStream(comment);
-            await this.container.CreateItemStreamAsync(stream, new PartitionKey(comment.pk));
+            ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(stream, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode != HttpStatusCode.Created)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not created stream.");
+            }
         }
 
         [Benchmark]
@@ -173,11 +192,16 @@
                 EnableBinaryResponseOnPointOperations = false,
             };
 
-            await this.container.ReadItemAsync<Comment>(
+            ItemResponse<Comment> itemResponse = await this.container.ReadItemAsync<Comment>(
                 id: comment.id,
                 partitionKey: new PartitionKey(comment.pk),
                 requestOptions: requestOptions
                 );
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not read.");
+            }
         }
 
         [Benchmark]
@@ -192,11 +216,16 @@
                 EnableBinaryResponseOnPointOperations = false,
             };
 
-            await this.container.ReadItemStreamAsync(
+            ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
                 id: comment.id,
                 partitionKey: new PartitionKey(comment.pk),
                 requestOptions: requestOptions
                 );
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not read stream.");
+            }
         }
 
         [Benchmark]
@@ -212,11 +241,16 @@
                 EnableBinaryResponseOnPointOperations = false,
             };
 
-            await this.container.UpsertItemAsync<Comment>(
+            ItemResponse<Comment> itemResponse = await this.container.UpsertItemAsync<Comment>(
                 item: comment,
                 partitionKey: new PartitionKey(comment.pk),
                 requestOptions: requestOptions
                 );
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not upserted.");
+            }
         }
 
         [Benchmark]
@@ -229,7 +263,12 @@
 
             using Stream stream = ToStream(comment);
 
-            await this.container.UpsertItemStreamAsync(stream, new PartitionKey(comment.pk));
+            ResponseMessage itemResponse = await this.container.UpsertItemStreamAsync(stream, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not upserted stream.");
+            }
         }
 
         [Benchmark]
@@ -240,7 +279,12 @@
             Comment comment = this.replaceItems[index];
             comment.Name = "ReplacedName";
 
-            await this.container.ReplaceItemAsync(comment, comment.id, new PartitionKey(comment.pk));
+            ItemResponse<Comment> itemResponse = await this.container.ReplaceItemAsync(comment, comment.id, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not replaced.");
+            }
         }
 
         [Benchmark]
@@ -252,45 +296,39 @@
             comment.Name = "ReplacedNameStream";
 
             using Stream stream = ToStream(comment);
-            await this.container.ReplaceItemStreamAsync(stream, comment.id, new PartitionKey(comment.pk));
+            ResponseMessage itemResponse = await this.container.ReplaceItemStreamAsync(stream, comment.id, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not replaced stream.");
+            }
         }
 
         [Benchmark]
         public async Task DeleteItemAsync()
         {
             int index = this.random.Next(this.deleteItems.Count);
-            await this.SafeDeleteAsync(this.deleteItems[index]);
+            Comment comment = this.deleteItems[index];
+
+            ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not deleted.");
+            }
         }
 
         [Benchmark]
         public async Task DeleteItemStreamAsync()
         {
-            int index = this.random.Next(this.deleteItems.Count);
-            await this.SafeDeleteAsync(this.deleteItems[index]);
-        }
+            int index = this.random.Next(this.deleteStreamItems.Count);
+            Comment comment = this.deleteStreamItems[index];
 
-        private async Task SafeDeleteAsync(Comment comment)
-        {
-            try
-            {
-                await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                Console.WriteLine($"Item {comment.id} not found: Skipping deletion.");
-            }
-        }
+            ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
 
-        private async Task SafeDeleteStreamAsync(Comment comment)
-        {
-            try
+            if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                using ResponseMessage response = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
-                response.EnsureSuccessStatusCode();
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                Console.WriteLine($"Item {comment.id} not found: Skipping stream deletion.");
+                Console.WriteLine($"Error: Item {comment.id} was not deleted stream.");
             }
         }
 
@@ -316,7 +354,7 @@
                 this.AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().ToArray());
 
                 // Minimal run to reduce time
-                this.AddJob(Job.MediumRun
+                this.AddJob(Job.ShortRun
                     .WithStrategy(BenchmarkDotNet.Engines.RunStrategy.Throughput));
 
                 this.AddExporter(HtmlExporter.Default);
