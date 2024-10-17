@@ -6,8 +6,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text.Json;
     using System.Text.Json.Nodes;
     using System.Threading;
@@ -16,13 +18,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
     internal class MdeJsonNodeEncryptionProcessor
     {
+        private readonly JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
+
         internal JsonNodeSqlSerializer Serializer { get; set; } = new JsonNodeSqlSerializer();
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
 
         internal JsonSerializerOptions JsonSerializerOptions { get; set; }
-
-        private JsonWriterOptions jsonWriterOptions = new () { SkipValidation = true };
 
         public MdeJsonNodeEncryptionProcessor()
         {
@@ -102,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #endif
                 (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
 
-                itemObj[propertyName] = JsonValue.Create(new JsonBytes(encryptedBytes, 0, encryptedBytesCount));
+                itemObj[propertyName] = JsonValue.Create(new Memory<byte>(encryptedBytes, 0, encryptedBytesCount));
                 pathsEncrypted.Add(pathToEncrypt);
             }
 
@@ -125,10 +127,96 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             MemoryStream ms = new ();
             Utf8JsonWriter writer = new (ms, this.jsonWriterOptions);
 
-            JsonSerializer.Serialize(writer, document, this.JsonSerializerOptions);
+            JsonSerializer.Serialize(writer, document);
 
             ms.Position = 0;
             return ms;
+        }
+
+        internal async Task<DecryptionContext> DecryptObjectAsync(
+            JsonNode document,
+            Encryptor encryptor,
+            EncryptionProperties encryptionProperties,
+            CosmosDiagnosticsContext diagnosticsContext,
+            CancellationToken cancellationToken)
+        {
+            _ = diagnosticsContext;
+
+            if (encryptionProperties.EncryptionFormatVersion != 3 && encryptionProperties.EncryptionFormatVersion != 4)
+            {
+                throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
+            }
+
+            using ArrayPoolManager arrayPoolManager = new ();
+
+            DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(encryptionProperties.DataEncryptionKeyId, encryptionProperties.EncryptionAlgorithm, cancellationToken);
+
+            List<string> pathsDecrypted = new (encryptionProperties.EncryptedPaths.Count());
+
+            JsonObject itemObj = document.AsObject();
+
+#if NET8_0_OR_GREATER
+            BrotliCompressor decompressor = null;
+            if (encryptionProperties.EncryptionFormatVersion == 4)
+            {
+                bool containsCompressed = encryptionProperties.CompressedEncryptedPaths?.Any() == true;
+                if (encryptionProperties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
+                {
+                    throw new NotSupportedException($"Unknown compression algorithm {encryptionProperties.CompressionAlgorithm}");
+                }
+
+                if (containsCompressed)
+                {
+                    decompressor = new ();
+                }
+            }
+#endif
+
+            foreach (string path in encryptionProperties.EncryptedPaths)
+            {
+                string propertyName = path[1..];
+
+                if (!itemObj.TryGetPropertyValue(propertyName, out JsonNode propertyValue))
+                {
+                    // malformed document, such record shouldn't be there at all
+                    continue;
+                }
+
+                // can we get to internal JsonNode buffers to avoid string allocation here?
+                string base64String = propertyValue.GetValue<string>();
+                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent((base64String.Length * sizeof(char) * 3 / 4) + 4);
+                if (!Convert.TryFromBase64Chars(base64String, cipherTextWithTypeMarker, out int cipherTextLength))
+                {
+                    continue;
+                }
+
+                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+
+#if NET8_0_OR_GREATER
+                if (decompressor != null)
+                {
+                    if (encryptionProperties.CompressedEncryptedPaths?.TryGetValue(path, out int decompressedSize) == true)
+                    {
+                        byte[] buffer = arrayPoolManager.Rent(decompressedSize);
+                        processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);
+
+                        bytes = buffer;
+                    }
+                }
+#endif
+                document[propertyName] = this.Serializer.Deserialize(
+                    (TypeMarker)cipherTextWithTypeMarker[0],
+                    bytes.AsSpan(0, processedBytes));
+
+                pathsDecrypted.Add(path);
+            }
+
+            DecryptionContext decryptionContext = EncryptionProcessor.CreateDecryptionContext(
+                pathsDecrypted,
+                encryptionProperties.DataEncryptionKeyId);
+
+            itemObj.Remove(Constants.EncryptedInfo);
+            return decryptionContext;
         }
     }
 }
