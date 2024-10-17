@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
 
-        [Ignore("This test can only be enabled after Direct package and emulator upgrade")]
+        // [Ignore("This test can only be enabled after Direct package and emulator upgrade")]
         [TestMethod]
         public async Task SanityTests()
         {
@@ -42,9 +42,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 indexingPolicy: CompositeIndexPolicy);
         }
 
-        [Ignore("This test can only be enabled after Direct package and emulator upgrade")]
         [TestMethod]
-        public async Task ParityTests()
+        public async Task LuceneSanityTest()
         {
             CosmosArray documentsArray = await LoadDocuments();
 
@@ -56,13 +55,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             LuceneQueryEngine luceneQueryEngine = LuceneQueryEngine.Create(documentsArray);
 
-            IReadOnlyList<ScoredTextDocument> luceneResults = luceneQueryEngine.RunLuceneQuery(queryDocument, skip: 0, take: -1)
+            IReadOnlyList<ScoredTextDocument> luceneResults = luceneQueryEngine.RunLuceneQuery(queryDocument, skip: 0, take: -1, x => x.Title)
                 .ToList();
 
             IEnumerable<int> actual = luceneResults.Select(scoredTextDocument => scoredTextDocument.Document.Index);
             List<int> expected = new List<int> { 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66, 57, 85 };
 
-            if (expected.SequenceEqual(actual))
+            if (!expected.SequenceEqual(actual))
             {
                 Trace.WriteLine($"Expected: {string.Join(", ", expected)}");
                 Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
@@ -70,9 +69,68 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
         }
 
+        // [Ignore("This test can only be enabled after Direct package and emulator upgrade")]
+        [TestMethod]
+        public async Task ParityTests()
+        {
+            CosmosArray documentsArray = await LoadDocuments();
+
+            LuceneQueryEngine luceneQueryEngine = LuceneQueryEngine.Create(documentsArray);
+
+            IEnumerable<string> documents = documentsArray.Select(document => document.ToString());
+
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct, // | ConnectionModes.Gateway,
+                collectionTypes: CollectionTypes.MultiPartition, // | CollectionTypes.SinglePartition,
+                documents: documents,
+                query: (container, cosmosDocuments) => RunParityTests(container, luceneQueryEngine, cosmosDocuments),
+                indexingPolicy: CompositeIndexPolicy);
+        }
+
+        private static async Task RunParityTests(Container container, LuceneQueryEngine luceneQueryEngine, IReadOnlyList<CosmosObject> cosmosDocuments)
+        {
+            List<ParityTestCase> testCases = new List<ParityTestCase>
+            {
+                MakeParityTest(@"
+                    SELECT c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    WHERE FullTextContains(c.title, 'John') OR FullTextContains(c.text, 'John') OR FullTextContains(c.text, 'United States')
+                    ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
+                    MakeLuceneQuery(title: "John", text: "United States", skip: 0, take: -1)),
+            };
+
+            TextDocumentKeySelector ridSelector = ConstructRidMap(cosmosDocuments);
+
+            foreach (ParityTestCase testCase in testCases)
+            {
+                IEnumerable<ScoredTextDocument> luceneResults = luceneQueryEngine.RunLuceneQuery(
+                    testCase.LuceneQuery.QueryDocument,
+                    testCase.LuceneQuery.Skip,
+                    testCase.LuceneQuery.Take,
+                    ridSelector);
+
+                IReadOnlyList<TextDocument> cosmosDbResults = await RunQueryCombinationsAsync<TextDocument>(
+                    container,
+                    testCase.SqlQuery,
+                    queryRequestOptions: null,
+                    queryDrainingMode: QueryDrainingMode.HoldState);
+
+                IEnumerable<int> luceneIndices = luceneResults.Select(scoredTextDocument => scoredTextDocument.Document.Index);
+                IEnumerable<int> cosmosDbIndices = cosmosDbResults.Select(document => document.Index);
+
+                if (!luceneIndices.SequenceEqual(cosmosDbIndices))
+                {
+                    Trace.WriteLine($"Query: {testCase.SqlQuery}");
+                    Trace.WriteLine($"Expected: {string.Join(", ", luceneIndices)}");
+                    Trace.WriteLine($"Actual: {string.Join(", ", cosmosDbIndices)}");
+                    Assert.Fail("The query results did not match the expected results.");
+                }
+            }
+        }
+
         private static async Task RunSanityTests(Container container, IReadOnlyList<CosmosObject> _)
         {
-            List<SanityTest> testCases = new List<SanityTest>
+            List<SanityTestCase> testCases = new List<SanityTestCase>
             {
                 MakeSanityTest(@"
                     SELECT c.index AS Index, c.title AS Title, c.text AS Text
@@ -125,7 +183,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     new List<int>{ 61, 51, 49, 54, 75, 24, 77, 76, 80, 25, 22, 2, 66 }),
             };
 
-            foreach (SanityTest testCase in testCases)
+            foreach (SanityTestCase testCase in testCases)
             {
                 List<TextDocument> result = await RunQueryCombinationsAsync<TextDocument>(
                     container,
@@ -169,16 +227,69 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             return policy;
         }
 
-        private static SanityTest MakeSanityTest(string query, IReadOnlyList<int> expectedIndices)
+        private static TextDocumentKeySelector ConstructRidMap(IReadOnlyList<CosmosObject> cosmosDocuments)
         {
-            return new SanityTest
+            Dictionary<int, string> ridMap = new Dictionary<int, string>(cosmosDocuments.Count);
+            foreach (CosmosObject cosmosObject in cosmosDocuments)
+            {
+                Assert.IsTrue(cosmosObject.TryGetValue(FieldNames.Rid, out CosmosString rid));
+                Assert.IsTrue(cosmosObject.TryGetValue(FieldNames.Index, out CosmosNumber index));
+                Assert.IsTrue(index.Value.IsInteger);
+                ridMap.Add((int)Number64.ToLong(index.Value), rid.Value);
+            }
+
+            return document => ridMap[document.Index];
+        }
+
+        private static SanityTestCase MakeSanityTest(string query, IReadOnlyList<int> expectedIndices)
+        {
+            return new SanityTestCase
             {
                 Query = query,
                 ExpectedIndices = expectedIndices,
             };
         }
 
-        private sealed class SanityTest
+        private static LuceneQuery MakeLuceneQuery(string title, string text, int skip = 0, int take = -1)
+        {
+            return new LuceneQuery
+            {
+                QueryDocument = new TextDocument
+                {
+                    Title = title,
+                    Text = text,
+                },
+                Skip = skip,
+                Take = take,
+            };
+        }
+
+        private static ParityTestCase MakeParityTest(string sqlQuery, LuceneQuery luceneQuery)
+        {
+            return new ParityTestCase
+            {
+                SqlQuery = sqlQuery,
+                LuceneQuery = luceneQuery,
+            };
+        }
+
+        private sealed class LuceneQuery
+        {
+            public TextDocument QueryDocument { get; init; }
+
+            public int Skip { get; init; }
+
+            public int Take { get; init; }
+        }
+
+        private sealed class ParityTestCase
+        {
+            public string SqlQuery { get; init; }
+
+            public LuceneQuery LuceneQuery { get; init; }
+        }
+
+        private sealed class SanityTestCase
         {
             public string Query { get; init; }
 
@@ -194,12 +305,15 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public string Text { get; set; }
         }
 
+        delegate string TextDocumentKeySelector(TextDocument document);
+
         private static class FieldNames
         {
             public const string Items = "items";
             public const string Index = "index";
             public const string Title = "title";
             public const string Text = "text";
+            public const string Rid = "_rid";
         }
 
         private class LuceneQueryEngine
@@ -246,14 +360,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 return new LuceneQueryEngine(directory, analyzer, indexSearcher);
             }
 
-            public IEnumerable<ScoredTextDocument> RunLuceneQuery(TextDocument queryDocument, int skip, int take)
+            public IEnumerable<ScoredTextDocument> RunLuceneQuery(TextDocument queryDocument, int skip, int take, TextDocumentKeySelector textDocumentKeySelector)
             {
                 int topForRRF = Math.Max(120, 2 * (skip + take));
 
-                List<ScoredTextDocument> textResults = RunQuery(this.analyzer, this.indexSearcher, FieldNames.Text, queryDocument.Text, topForRRF);
                 List<ScoredTextDocument> titleResults = RunQuery(this.analyzer, this.indexSearcher, FieldNames.Title, queryDocument.Title, topForRRF);
+                List<ScoredTextDocument> textResults = RunQuery(this.analyzer, this.indexSearcher, FieldNames.Text, queryDocument.Text, topForRRF);
 
-                IReadOnlyList<ScoredTextDocument> fusedResults = ReciprocalRankFusion(new List<List<ScoredTextDocument>> { textResults, titleResults });
+                IEnumerable<ScoredTextDocument> fusedResults = ReciprocalRankFusion(new List<List<ScoredTextDocument>> { titleResults, textResults }, textDocumentKeySelector);
 
                 IEnumerable<ScoredTextDocument> results = fusedResults;
 
@@ -302,8 +416,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 return result;
             }
 
-            private static IReadOnlyList<ScoredTextDocument> ReciprocalRankFusion(
-                IReadOnlyList<List<ScoredTextDocument>> componentResults)
+            private static IEnumerable<ScoredTextDocument> ReciprocalRankFusion(
+                IReadOnlyList<List<ScoredTextDocument>> componentResults,
+                TextDocumentKeySelector textDocumentKeySelector)
             {
                 // sort all as descending
                 foreach (List<ScoredTextDocument> componentResult in componentResults)
@@ -312,14 +427,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 }
 
                 int componentCount = componentResults.Count;
-                Dictionary<int, (int[], TextDocument)> ranks = new Dictionary<int, (int[], TextDocument)>();
+                Dictionary<int, (double[], int[], TextDocument)> ranks = new Dictionary<int, (double[], int[], TextDocument)>();
                 foreach (List<ScoredTextDocument> componentResult in componentResults)
                 {
                     foreach (ScoredTextDocument scoredTextDocument in componentResult)
                     {
                         if (!ranks.ContainsKey(scoredTextDocument.Document.Index))
                         {
-                            ranks.Add(scoredTextDocument.Document.Index, (new int[componentCount], scoredTextDocument.Document));
+                            ranks.Add(scoredTextDocument.Document.Index, (new double[componentCount], new int[componentCount], scoredTextDocument.Document));
                         }
                     }
                 }
@@ -335,28 +450,107 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             ++rank;
                         }
 
-                        ranks[componentResult[index].Document.Index].Item1[componentIndex] = rank;
+                        ranks[componentResult[index].Document.Index].Item1[componentIndex] = componentResult[index].Score;
+                        ranks[componentResult[index].Document.Index].Item2[componentIndex] = rank;
+                    }
+
+                    ++rank;
+                    foreach (KeyValuePair<int, (double[], int[], TextDocument)> kvp in ranks)
+                    {
+                        if (kvp.Value.Item2[componentIndex] == 0)
+                        {
+                            kvp.Value.Item2[componentIndex] = rank;
+                        }
                     }
                 }
 
-                List<ScoredTextDocument> result = new List<ScoredTextDocument>(ranks.Count);
-                foreach ((int[] componentRanks, TextDocument document) in ranks.Values)
+                DebugTraceHelper.Trace2ColumnHeader();
+
+                List<ScoredTextDocument> rrfScoredDocuments = new List<ScoredTextDocument>(ranks.Count);
+                foreach ((double[] scores, int[] componentRanks, TextDocument document) in ranks.Values)
                 {
-                    double score = 0.0;
+                    double rrfScore = 0.0;
                     for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
                     {
-                        score += 1.0 / (60 + componentRanks[componentIndex]);
+                        rrfScore += 1.0 / (60 + componentRanks[componentIndex]);
                     }
 
-                    result.Add(new ScoredTextDocument
+                    DebugTraceHelper.TraceRanksAndScores(scores, componentRanks, document, rrfScore);
+
+                    rrfScoredDocuments.Add(new ScoredTextDocument
                     {
                         Document = document,
-                        Score = score,
+                        Score = rrfScore,
                     });
                 }
 
-                result.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score));
+                IEnumerable<ScoredTextDocument> result = rrfScoredDocuments
+                    .OrderByDescending(x => x.Score)
+                    .ThenBy(x => textDocumentKeySelector(x.Document));
+
                 return result;
+            }
+
+            private static class DebugTraceHelper
+            {
+                private const bool Enabled = true;
+#pragma warning disable CS0162 // Unreachable code detected
+
+                [Conditional("DEBUG")]
+                public static void Trace2ColumnHeader()
+                {
+                    if (!Enabled)
+                    {
+                        return;
+                    }
+
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append("Payload");
+                    builder.Append("\t");
+                    builder.Append("Score0");
+                    builder.Append("\t");
+                    builder.Append("Score1");
+                    builder.Append("\t");
+                    builder.Append("RRFScore");
+                    builder.Append("\t");
+                    builder.Append("Rank0");
+                    builder.Append("\t");
+                    builder.Append("Rank1");
+                    Trace.WriteLine(builder.ToString());
+                }
+
+                [Conditional("DEBUG")]
+                public static void TraceRanksAndScores(double[] scores, int[] componentRanks, TextDocument document, double rrfScore)
+                {
+                    if (!Enabled)
+                    {
+                        return;
+                    }
+
+                    StringBuilder builder = new StringBuilder();
+                    builder.Append(@$"{{""Index"":{document.Index},""Title"":""{document.Title}"",""Text"":""{document.Text}""}}");
+                    builder.Append("\t");
+                    
+                    foreach (double score in scores)
+                    {
+                        builder.Append(score);
+                        builder.Append("\t");
+                    }
+
+                    builder.Append(rrfScore);
+                    builder.Append("\t");
+
+                    foreach (int rank in componentRanks)
+                    {
+                        builder.Append(rank);
+                        builder.Append("\t");
+                    }
+
+                    builder.Remove(builder.Length - 1, 1);
+
+                    Trace.WriteLine(builder.ToString());
+                }
+#pragma warning restore CS0162 // Unreachable code detected
             }
         }
 
