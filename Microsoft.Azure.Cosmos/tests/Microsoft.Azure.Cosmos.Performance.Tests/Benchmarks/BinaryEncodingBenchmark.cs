@@ -29,8 +29,8 @@
         private readonly List<Comment> readItems = new();
         private readonly List<Comment> upsertItems = new();
         private readonly List<Comment> replaceItems = new();
-        private readonly HashSet<Comment> deleteItems = new();
-        private readonly HashSet<Comment> deleteStreamItems = new();
+        private readonly List<Comment> deleteItems = new();
+        private readonly List<Comment> deleteStreamItems = new();
         private readonly Random random = new();
         private CosmosClient client;
         private Database database;
@@ -112,7 +112,7 @@
             Console.WriteLine("Successfully created Database and Containers with status: " + containerResponse.StatusCode);
         }
 
-        private async Task InitializeContainerWithPreCreatedItemsAsync(int start, int count, ICollection<Comment> items)
+        private async Task InitializeContainerWithPreCreatedItemsAsync(int start, int count, List<Comment> items)
         {
             for (int i = start; i < count; i++)
             {
@@ -308,48 +308,30 @@
         [Benchmark]
         public async Task DeleteItemAsync()
         {
-            using (IEnumerator<Comment> enumerator = this.deleteItems.GetEnumerator())
+            int index = this.random.Next(this.deleteItems.Count);
+            Comment comment = this.deleteItems[index];
+            this.deleteItems.RemoveAt(index);
+
+            ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                if (enumerator.MoveNext())
-                {
-                    Comment comment = enumerator.Current;
-                    this.deleteItems.Remove(comment);
-
-                    ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
-
-                    if (itemResponse.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        Console.WriteLine($"Error: Item {comment.id} was not deleted : " + itemResponse.StatusCode);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Error: No items available for deletion.");
-                }
+                Console.WriteLine($"Error: Item {comment.id} was not deleted : " + itemResponse.StatusCode);
             }
         }
 
         [Benchmark]
         public async Task DeleteItemStreamAsync()
         {
-            using (IEnumerator<Comment> enumerator = this.deleteStreamItems.GetEnumerator())
+            int index = this.random.Next(this.deleteStreamItems.Count);
+            Comment comment = this.deleteStreamItems[index];
+            this.deleteStreamItems.RemoveAt(index);
+
+            ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
+
+            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                if (enumerator.MoveNext())
-                {
-                    Comment comment = enumerator.Current;
-                    this.deleteStreamItems.Remove(comment);
-
-                    ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
-
-                    if (itemResponse.StatusCode == HttpStatusCode.NotFound)
-                    {
-                        Console.WriteLine($"Error: Item {comment.id} was not deleted stream: " + itemResponse.StatusCode);
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Error: No items available for deletion.");
-                }
+                Console.WriteLine($"Error: Item {comment.id} was not deleted stream: " + itemResponse.StatusCode);
             }
         }
 
