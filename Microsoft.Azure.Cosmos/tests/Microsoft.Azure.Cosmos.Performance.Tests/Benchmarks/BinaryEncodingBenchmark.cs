@@ -90,8 +90,9 @@
             {
                 ApplicationName = "dkunda-binary-encoding-perf-app",
                 EnableContentResponseOnWrite = true,
-                ApplicationPreferredRegions = new List<string> { Regions.WestEurope, Regions.WestUS2 },
+                ApplicationPreferredRegions = new List<string> { Regions.WestEurope },
                 RequestTimeout = TimeSpan.FromSeconds(10),
+                ConsistencyLevel = ConsistencyLevel.Strong,
                 //UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
                 //{
                 //}
@@ -309,12 +310,13 @@
         {
             int index = this.random.Next(this.deleteItems.Count);
             Comment comment = this.deleteItems[index];
+            this.deleteItems.RemoveAt(index);
 
             ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
 
-            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                Console.WriteLine($"Error: Item {comment.id} was not deleted.");
+                Console.WriteLine($"Error: Item {comment.id} was not deleted : " + itemResponse.StatusCode);
             }
         }
 
@@ -323,12 +325,13 @@
         {
             int index = this.random.Next(this.deleteStreamItems.Count);
             Comment comment = this.deleteStreamItems[index];
+            this.deleteStreamItems.RemoveAt(index);
 
             ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
 
-            if (itemResponse.StatusCode != HttpStatusCode.OK)
+            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
             {
-                Console.WriteLine($"Error: Item {comment.id} was not deleted stream.");
+                Console.WriteLine($"Error: Item {comment.id} was not deleted stream: " + itemResponse.StatusCode);
             }
         }
 
