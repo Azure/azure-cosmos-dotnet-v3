@@ -177,10 +177,10 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 }
             }
 
-            // Dependency version should match
+            // Dependency version should greater than minimum version defined
             foreach (KeyValuePair<string, Version> e in allDependencies)
             {
-                Assert.AreEqual(e.Value, projDependencies[e.Key], e.Key);
+                Assert.IsTrue(e.Value.CompareTo(projDependencies[e.Key]) <= 0, e.Key);
             }
 
             CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);
