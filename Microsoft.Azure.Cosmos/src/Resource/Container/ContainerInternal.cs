@@ -139,11 +139,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
 #if !PREVIEW
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-            Cosmos.PartitionKey partitionKey,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
