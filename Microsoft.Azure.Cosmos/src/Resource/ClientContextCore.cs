@@ -531,11 +531,11 @@ namespace Microsoft.Azure.Cosmos
                         OpenTelemetryAttributes response = openTelemetry?.Item2(result);
                         recorder.Record(response);
 
-                        CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1, 
-                            accountName: this.client.Endpoint,
-                            containerName: containerName, 
-                            databaseName: databaseName, 
-                            attributes: response);
+                        CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                                              accountName: this.client.Endpoint,
+                                                              containerName: containerName,
+                                                              databaseName: databaseName,
+                                                              attributes: response);
                     }
 
                     return result;
@@ -544,6 +544,11 @@ namespace Microsoft.Azure.Cosmos
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
                     recorder.MarkFailed(operationCancelledException);
+                    CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                       accountName: this.client.Endpoint,
+                                       containerName: containerName,
+                                       databaseName: databaseName,
+                                       ex: oe);
 
                     throw operationCancelledException;
                 }
@@ -554,6 +559,11 @@ namespace Microsoft.Azure.Cosmos
                         this.client,
                         trace);
                     recorder.MarkFailed(objectDisposedException);
+                    CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                       accountName: this.client.Endpoint,
+                                       containerName: containerName,
+                                       databaseName: databaseName,
+                                       ex: objectDisposed);
 
                     throw objectDisposedException;
                 }
@@ -563,13 +573,22 @@ namespace Microsoft.Azure.Cosmos
                         nullRefException,
                         trace);
                     recorder.MarkFailed(nullException);
+                    CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                       accountName: this.client.Endpoint,
+                                       containerName: containerName,
+                                       databaseName: databaseName,
+                                       ex: nullRefException);
 
                     throw nullException;
                 }
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
-
+                    CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                                           accountName: this.client.Endpoint,
+                                                           containerName: containerName,
+                                                           databaseName: databaseName,
+                                                           ex: ex);
                     throw;
                 }
             }
