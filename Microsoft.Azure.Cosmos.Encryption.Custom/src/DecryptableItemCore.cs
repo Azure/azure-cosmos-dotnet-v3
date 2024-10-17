@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
+    using System.Threading;
     using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
@@ -27,7 +28,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
-        public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
+        public override Task<(T, DecryptionContext)> GetItemAsync<T>()
+        {
+            return this.GetItemAsync<T>(CancellationToken.None);
+        }
+
+        public override async Task<(T, DecryptionContext)> GetItemAsync<T>(CancellationToken cancellationToken)
         {
             if (this.decryptableContent is not JObject document)
             {
@@ -40,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     document,
                     this.encryptor,
                     new CosmosDiagnosticsContext(),
-                    cancellationToken: default);
+                    cancellationToken: cancellationToken);
 
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(decryptedItem)), decryptionContext);
             }
