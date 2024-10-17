@@ -365,8 +365,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
-            
-            int expectedVersion = 
+
+            int expectedVersion =
                 (encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None)
                 ? 4 : 3;
             Assert.AreEqual(expectedVersion, encryptionProperties.EncryptionFormatVersion);
