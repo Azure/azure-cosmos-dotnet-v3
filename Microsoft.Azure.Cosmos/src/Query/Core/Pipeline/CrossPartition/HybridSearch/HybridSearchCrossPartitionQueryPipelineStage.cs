@@ -401,16 +401,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            // Collate results should return an IEnumerable<HybridSearchQueryResult>
             // Sort and coalesce the results on _rid
             // After sorting, each HybridSearchQueryResult has a fixed index in the list
             // This index can be used as the key for the ranking array
             // Now create an array (per dimension) of tuples (score, index) and sort it by score
-            // The index of the tuple in the sorted array is the rank of the document
-            // Create an array of tuples of ranks for each dimension
+            // We can use these sorted arrays to compute the ranks. Identical scores get the same rank
             // Create an array of tuples of (RRF scores, index) for each document using the ranks
+            // Use the ranks array to compute the RRF scores
             // Sort the array by RRF scores
-            // Emit the documents in the sorted order by using the index in the tuple
 
             TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)> tryGetResults = await PrefetchInParallelAsync(
                 queryPipelineStages,
@@ -433,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             queryResults.Sort((x, y) => string.CompareOrdinal(x.Rid.Value, y.Rid.Value));
 
-            UniqueRids(queryResults);
+            CoalesceDuplicateRids(queryResults);
 
             TryCatch<IReadOnlyList<List<ScoreTuple>>> tryGetComponentScores = RetrieveComponentScores(queryResults, queryPipelineStages.Count);
             if (tryGetComponentScores.Failed)
@@ -450,7 +448,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             int[,] ranks = ComputeRanks(componentScores);
 
-            ComputeRRFScores(ranks, queryResults);
+            ComputeRrfScores(ranks, queryResults);
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
@@ -475,26 +473,39 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             await ParallelPrefetch.PrefetchInParallelAsync(prefetchers, maxConcurrency, trace, cancellationToken);
 
-            double requestCharge = 0;
+            int queryResultCount = 0;
+            List<IReadOnlyList<QueryPage>> prefetchedPageLists = new List<IReadOnlyList<QueryPage>>(prefetchers.Count);
             QueryPageParameters queryPageParameters = null;
-            List<HybridSearchQueryResult> queryResults = new List<HybridSearchQueryResult>();
             foreach (QueryPipelineStagePrefetcher prefetcher in prefetchers)
             {
-                TryCatch<IReadOnlyList<QueryPage>> tryGetResults = await prefetcher.GetResultAsync(trace, cancellationToken);
+                TryCatch<(IReadOnlyList<QueryPage>, int)> tryGetResults = await prefetcher.GetResultAsync(trace, cancellationToken);
                 if (tryGetResults.Failed)
                 {
                     return TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)>.FromException(tryGetResults.Exception);
                 }
 
-                foreach (QueryPage queryPage in tryGetResults.Result)
+                (IReadOnlyList<QueryPage> queryPages, int documentCount) = tryGetResults.Result;
+                prefetchedPageLists.Add(queryPages);
+                queryResultCount += documentCount;
+
+                if (queryPageParameters == null && queryPages.Count > 0)
                 {
-                    requestCharge += queryPage.RequestCharge;
-                    queryPageParameters ??= new QueryPageParameters(
+                    QueryPage queryPage = queryPages[0];
+                    queryPageParameters = new QueryPageParameters(
                             activityId: queryPage.ActivityId,
                             cosmosQueryExecutionInfo: queryPage.CosmosQueryExecutionInfo,
                             distributionPlanSpec: queryPage.DistributionPlanSpec,
                             additionalHeaders: queryPage.AdditionalHeaders);
+                }
+            }
 
+            List<HybridSearchQueryResult> queryResults = new List<HybridSearchQueryResult>(queryResultCount);
+            double requestCharge = 0;
+            foreach (IReadOnlyList<QueryPage> queryPages in prefetchedPageLists)
+            {
+                foreach (QueryPage queryPage in queryPages)
+                {
+                    requestCharge += queryPage.RequestCharge;
                     foreach (CosmosElement document in queryPage.Documents)
                     {
                         HybridSearchQueryResult hybridSearchQueryResult = HybridSearchQueryResult.Create(document);
@@ -517,7 +528,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<(List<HybridSearchQueryResult> queryResults, QueryPage emptyPage)>.FromResult((queryResults, emptyPage));
         }
 
-        private static void UniqueRids(List<HybridSearchQueryResult> queryResults)
+        private static void CoalesceDuplicateRids(List<HybridSearchQueryResult> queryResults)
         {
             int writeIndex = 0;
             for (int readIndex = 1; readIndex < queryResults.Count; ++readIndex)
@@ -581,7 +592,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return ranks;
         }
 
-        private static void ComputeRRFScores(
+        private static void ComputeRrfScores(
             int[,] ranks,
             List<HybridSearchQueryResult> queryResults)
         {
@@ -729,7 +740,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
         {
             private readonly IQueryPipelineStage queryPipelineStage;
 
-            private TryCatch<IReadOnlyList<QueryPage>> result;
+            private TryCatch<(IReadOnlyList<QueryPage>, int)> result;
 
             private bool prefetched;
 
@@ -740,25 +751,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             public async ValueTask PrefetchAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                List<QueryPage> result = new List<QueryPage>();
+                int documentCount = 0;
+                List<QueryPage> pages = new List<QueryPage>();
                 while (await this.queryPipelineStage.MoveNextAsync(trace, cancellationToken))
                 {
                     TryCatch<QueryPage> tryCatchQueryPage = this.queryPipelineStage.Current;
                     if (tryCatchQueryPage.Failed)
                     {
-                        this.result = TryCatch<IReadOnlyList<QueryPage>>.FromException(tryCatchQueryPage.Exception);
+                        this.result = TryCatch<(IReadOnlyList<QueryPage>, int)>.FromException(tryCatchQueryPage.Exception);
                         this.prefetched = true;
                         return;
                     }
 
-                    result.Add(tryCatchQueryPage.Result);
+                    pages.Add(tryCatchQueryPage.Result);
+                    documentCount += tryCatchQueryPage.Result.Documents.Count;
                 }
 
-                this.result = TryCatch<IReadOnlyList<QueryPage>>.FromResult(result);
+                this.result = TryCatch<(IReadOnlyList<QueryPage>, int)>.FromResult((pages, documentCount));
                 this.prefetched = true;
             }
 
-            public async ValueTask<TryCatch<IReadOnlyList<QueryPage>>> GetResultAsync(ITrace trace, CancellationToken cancellationToken)
+            public async ValueTask<TryCatch<(IReadOnlyList<QueryPage>, int)>> GetResultAsync(ITrace trace, CancellationToken cancellationToken)
             {
                 if (!this.prefetched)
                 {
