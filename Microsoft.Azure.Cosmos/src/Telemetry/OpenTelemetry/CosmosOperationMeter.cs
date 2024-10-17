@@ -14,23 +14,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static Histogram<double> RequestUnitsHistogram = null;
         internal static Histogram<int> ActualItemHistogram = null;
 
-        private static Meter cosmosMeter;
+        internal static Meter OperationMeter;
 
         public static void Initialize()
         {
-            cosmosMeter ??= new Meter(OpenTelemetryMetricsConstant.OperationMetrics.MeterName, OpenTelemetryMetricsConstant.OperationMetrics.Version);
+            OperationMeter ??= new Meter(CosmosDbClientMetricsConstant.OperationMetrics.MeterName, CosmosDbClientMetricsConstant.OperationMetrics.Version);
             
-            CosmosOperationMeter.RequestLatencyHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.Latency,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Sec,
-                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.Latency);
+            CosmosOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.Latency,
+                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.Sec,
+                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.Latency);
 
-            CosmosOperationMeter.RequestUnitsHistogram = cosmosMeter.CreateHistogram<double>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.RequestCharge,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.RequestUnit,
-                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.RequestCharge);
+            CosmosOperationMeter.RequestUnitsHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.RequestCharge,
+                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.RequestUnit,
+                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.RequestCharge);
 
-            CosmosOperationMeter.ActualItemHistogram = cosmosMeter.CreateHistogram<int>(name: OpenTelemetryMetricsConstant.OperationMetrics.Name.RowCount,
-                unit: OpenTelemetryMetricsConstant.OperationMetrics.Unit.Count, 
-                description: OpenTelemetryMetricsConstant.OperationMetrics.Description.RowCount);
+            CosmosOperationMeter.ActualItemHistogram ??= OperationMeter.CreateHistogram<int>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.RowCount,
+                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.Count, 
+                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.RowCount);
         }
 
         public static void RecordTelemetry(string operationName, 
@@ -40,6 +40,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes = null, 
             Exception ex = null)
         {
+            Console.WriteLine($"Recording telemetry for operation: {operationName}");
+
             Func<KeyValuePair<string, object>[]> dimensionsFunc = () =>
             {
                 List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>()
@@ -73,10 +75,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 return dimensions.ToArray();
             };
-            
-            CosmosOperationMeter.RecordActualItemCount(Convert.ToInt32(attributes.ItemCount), dimensionsFunc);
-            CosmosOperationMeter.RecordRequestUnit(attributes.RequestCharge.Value, dimensionsFunc);
-            CosmosOperationMeter.RecordRequestLatency(attributes.Diagnostics.GetClientElapsedTime(), dimensionsFunc);
+
+            if (attributes != null)
+            {
+                CosmosOperationMeter.RecordActualItemCount(Convert.ToInt32(attributes.ItemCount), dimensionsFunc);
+                CosmosOperationMeter.RecordRequestUnit(attributes.RequestCharge.Value, dimensionsFunc);
+                CosmosOperationMeter.RecordRequestLatency(attributes.Diagnostics.GetClientElapsedTime(), dimensionsFunc);
+            }
+
+            if (ex != null && ex is CosmosException cosmosException)
+            {
+                CosmosOperationMeter.RecordActualItemCount(Convert.ToInt32(cosmosException.Headers.ItemCount), dimensionsFunc);
+                CosmosOperationMeter.RecordRequestUnit(cosmosException.Headers.RequestCharge, dimensionsFunc);
+                CosmosOperationMeter.RecordRequestLatency(cosmosException.Diagnostics.GetClientElapsedTime(), dimensionsFunc);
+            }
         }
 
         public static void RecordActualItemCount(int actualItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
@@ -96,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            CosmosOperationMeter.RequestUnitsHistogram?.Record(requestCharge, dimensionsFunc());
+            CosmosOperationMeter.RequestUnitsHistogram.Record(requestCharge, dimensionsFunc());
         }
 
         internal static void RecordRequestLatency(TimeSpan? requestLatency, Func<KeyValuePair<string, object>[]> dimensionsFunc)
