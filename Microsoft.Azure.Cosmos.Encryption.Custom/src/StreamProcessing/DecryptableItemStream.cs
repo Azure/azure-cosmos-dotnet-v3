@@ -7,22 +7,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
 {
     using System;
     using System.IO;
-    using System.Text.Json;
-    using System.Text.Json.Nodes;
     using System.Threading;
     using System.Threading.Tasks;
-    using Newtonsoft.Json.Linq;
 
-    internal sealed class DecryptableItemStream : DecryptableItem, IAsyncDisposable
+    internal sealed class DecryptableItemStream : DecryptableItem
     {
-        private readonly Stream encryptedStream; // this stream should be recyclable
         private readonly Encryptor encryptor;
         private readonly JsonProcessor jsonProcessor;
         private readonly StreamManager streamManager;
         private readonly CosmosSerializer cosmosSerializer;
 
+        private Stream encryptedStream; // this stream should be recyclable
         private Stream decryptedStream; // this stream should be recyclable
         private DecryptionContext decryptionContext;
+
+        private bool isDisposed;
 
         public DecryptableItemStream(
             Stream encryptedStream,
@@ -45,6 +44,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
 
         public override async Task<(T, DecryptionContext)> GetItemAsync<T>(CancellationToken cancellationToken)
         {
+            ObjectDisposedException.ThrowIf(this.isDisposed, this);
+
             if (this.decryptedStream == null)
             {
                 this.decryptedStream = this.streamManager.CreateStream();
@@ -58,32 +59,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
                     cancellationToken);
 
                 await this.encryptedStream.DisposeAsync();
+                this.encryptedStream = null;
             }
-
-            // class is not generic, so we cannot reasonably cache deserialized content
 
             T selector = default;
             switch (selector)
             {
                 case Stream: // consumer doesn't need payload deserialized
-                    // should we make deep copy here? handing out 'Recyclable' memory stream
-                    return ((T)(object)this.decryptedStream, this.decryptionContext);
-                
-                case JsonNode: // Read/Write System.Text.Json DOM
-                    // we don't have anywhere to get settings from atm
-                    JsonNode jsonNode = await JsonNode.ParseAsync(this.decryptedStream, cancellationToken: cancellationToken);
-                    return ((T)(object)jsonNode, this.decryptionContext);
-                
-                case JsonDocument: // Read only System.Text.Json DOM
-                    // we don't have anywhere to get settings from atm
-                    JsonDocument jsonDocument = await JsonDocument.ParseAsync(this.decryptedStream, cancellationToken: cancellationToken);
-                    return ((T)(object)jsonDocument, this.decryptionContext);
-
-                case JObject: // We must call explicit Newtonsoft implementation otherwise result would be nonsense if cosmosSerializer is not Newtonsoft and we have no chance to tell
-                    return ((T)(object)EncryptionProcessor.BaseSerializer.FromStream(decryptedStream))
-                else: // Direct object mapping
-                // this API is missing Async => should not be used
-                return (this.cosmosSerializer.FromStream<T>(this.decryptedStream), this.decryptionContext);
+                    MemoryStream ms = new ((int)this.decryptedStream.Length);
+                    await this.decryptedStream.CopyToAsync(ms, cancellationToken);
+                    return ((T)(object)ms, this.decryptionContext);
+                default:
+                    // this API is missing Async => should not be used
+                    return (this.cosmosSerializer.FromStream<T>(this.decryptedStream), this.decryptionContext);
             }
         }
 
@@ -94,6 +82,29 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
                 await this.streamManager.ReturnStreamAsync(this.decryptedStream);
                 this.decryptedStream = null;
             }
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.encryptedStream?.Dispose();
+                    this.decryptedStream?.Dispose();
+                    this.encryptedStream = null;
+                    this.decryptedStream = null;
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
+        public override void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            this.Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

@@ -4,6 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -72,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// ]]>
     /// </code>
     /// </example>
-    public abstract class DecryptableItem
+    public abstract class DecryptableItem : IDisposable
     {
         /// <summary>
         /// Decrypts and deserializes the content.
@@ -88,5 +89,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <typeparam name="T">The type of item to be returned.</typeparam>
         /// <returns>The requested item and the decryption related context.</returns>
         public abstract Task<(T, DecryptionContext)> GetItemAsync<T>(CancellationToken cancellationToken);
+
+        /// <summary>
+        /// Dispose unmanaged resources.
+        /// </summary>
+        public abstract void Dispose();
     }
 }

@@ -28,6 +28,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
 
+        public override void Dispose()
+        {
+        }
+
         public override Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
             return this.GetItemAsync<T>(CancellationToken.None);
