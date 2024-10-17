@@ -54,16 +54,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return (encryptedText, encryptedTextLength);
         }
 
-        internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, ArrayPoolManager arrayPoolManager)
+        internal virtual (byte[] plainText, int plainTextLength) Decrypt(DataEncryptionKey encryptionKey, byte[] cipherText, int cipherTextLength, ArrayPoolManager arrayPoolManager)
         {
-            int plainTextLength = encryptionKey.GetDecryptByteCount(cipherText.Length - 1);
+            int plainTextLength = encryptionKey.GetDecryptByteCount(cipherTextLength - 1);
 
             byte[] plainText = arrayPoolManager.Rent(plainTextLength);
 
             int decryptedLength = encryptionKey.DecryptData(
                 cipherText,
                 cipherTextOffset: 1,
-                cipherTextLength: cipherText.Length - 1,
+                cipherTextLength: cipherTextLength - 1,
                 plainText,
                 outputOffset: 0);
 
