@@ -559,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public bool CanSupportMultipleWriteLocations(RequestMessage request)
         {
             return this.locationCache.CanUseMultipleWriteLocations()
-                && this.locationCache.GetAvailableWriteLocations()?.Count > 1
+                && this.locationCache.GetAvailableAccountLevelWriteLocations()?.Count > 1
                 && (request.ResourceType == ResourceType.Document ||
                 (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
         }

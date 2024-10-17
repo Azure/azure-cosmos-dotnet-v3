@@ -318,7 +318,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { region1, region2 },
                 ApplicationPreferredRegions = isPreferredLocationsEmpty? new List<string>() : new List<string>() { region1, region2 },
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
@@ -380,8 +379,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { region1, region2 },
-                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() :List<string>() { region1, region2 },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
