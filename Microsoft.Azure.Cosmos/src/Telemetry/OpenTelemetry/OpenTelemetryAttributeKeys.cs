@@ -163,5 +163,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the stack trace of the exception.
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
+
+        /// <summary>
+        /// Represents the type of error.
+        /// </summary>
+        public const string ErrorType = "error.type";
     }
 }

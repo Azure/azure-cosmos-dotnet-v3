@@ -1424,8 +1424,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.IncrementNumberOfActiveClients();
 
-            CosmosOperationMeter.AddActiveInstance(this.Endpoint);
-
             return Interlocked.Increment(ref numberOfClientsCreated);
         }
 
@@ -1439,8 +1437,6 @@ namespace Microsoft.Azure.Cosmos
             // In case dispose is called multiple times. Check if at least 1 active client is there
             if (NumberOfActiveClients > 0)
             {
-                CosmosOperationMeter.DisposeActiveInstance(this.Endpoint);
-
                 return Interlocked.Decrement(ref NumberOfActiveClients);
             }
 
