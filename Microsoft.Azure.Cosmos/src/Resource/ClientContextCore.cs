@@ -525,11 +525,17 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
-                    if (openTelemetry != null && recorder.IsEnabled)
+                    if (openTelemetry != null)
                     {
                         // Record request response information
                         OpenTelemetryAttributes response = openTelemetry?.Item2(result);
                         recorder.Record(response);
+
+                        CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                                              accountName: this.client.Endpoint,
+                                                              containerName: containerName,
+                                                              databaseName: databaseName,
+                                                              attributes: response);
                     }
 
                     return result;
@@ -538,7 +544,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
                     recorder.MarkFailed(operationCancelledException);
-
+ 
                     throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
@@ -563,7 +569,11 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
-
+                    CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                                         accountName: this.client.Endpoint,
+                                                         containerName: containerName,
+                                                         databaseName: databaseName,
+                                                         ex: ex);
                     throw;
                 }
             }
