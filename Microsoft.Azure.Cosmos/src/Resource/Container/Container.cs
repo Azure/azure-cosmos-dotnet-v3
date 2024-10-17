@@ -1690,10 +1690,13 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.
         /// </returns>
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
+        public virtual Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
                Cosmos.PartitionKey partitionKey,
                RequestOptions requestOptions = null,
-               CancellationToken cancellationToken = default);
+               CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 
 #if PREVIEW
         /// <summary>
