@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// </summary>
         /// <param name="indexingSearchListSize">
         /// This represents the size of the candidate list of approximate neighbors stored while building the DiskANN index as part of the optimization processes.
-        /// Large values may improve recall at the expense of latency. This is an optional parameter and applies to index type DiskANN only.
+        /// This is an optional parameter and applies to index type DiskANN only. The allowed range for this parameter is between 25 and 500.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
         public VectorIndexDefinition<T> WithIndexingSearchListSize(

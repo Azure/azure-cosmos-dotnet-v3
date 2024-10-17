@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos
         public VectorDataType DataType { get; set; }
 
         /// <summary>
-        /// Gets or sets a long integer representing the dimensions of a vector. 
+        /// Gets or sets an integer representing the dimensions of a vector.
         /// </summary>
         [JsonProperty(PropertyName = "dimensions")]
         public int Dimensions { get; set; }
