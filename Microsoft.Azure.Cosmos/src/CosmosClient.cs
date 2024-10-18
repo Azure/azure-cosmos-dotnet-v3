@@ -1210,6 +1210,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// does stuff
+        /// </summary>
+        /// <returns>noting</returns>
+        public async Task InitilizeFaultInjectionAsync()
+        {
+            await this.DocumentClient.InitilizeFaultInjectionAsync();
+        }
+
+        /// <summary>
         /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
         /// </summary>
         private static void RemoveDefaultTraceListener()
