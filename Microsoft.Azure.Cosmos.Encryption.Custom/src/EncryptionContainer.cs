@@ -255,30 +255,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             using (diagnosticsContext.CreateScope("ReadItem"))
             {
                 ResponseMessage responseMessage;
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                if (typeof(T) == typeof(DecryptableItemStream))
-                {
-                    responseMessage = await this.ReadItemHelperAsync(
-                        id,
-                        partitionKey,
-                        requestOptions,
-                        decryptResponse: false,
-                        diagnosticsContext,
-                        cancellationToken);
 
-                    EncryptionItemRequestOptions options = requestOptions as EncryptionItemRequestOptions;
-                    DecryptableItem decryptableItem = new DecryptableItemStream(
-                            responseMessage.Content,
-                            this.Encryptor,
-                            options.EncryptionOptions.JsonProcessor,
-                            this.CosmosSerializer,
-                            this.streamManager);
-
-                    return new EncryptionItemResponse<T>(
-                        responseMessage,
-                        (T)(object)decryptableItem);
-                }
-#endif
                 if (typeof(T) == typeof(DecryptableItem))
                 {
                     responseMessage = await this.ReadItemHelperAsync(
@@ -289,10 +266,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         diagnosticsContext,
                         cancellationToken);
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                    EncryptionItemRequestOptions options = requestOptions as EncryptionItemRequestOptions;
+                    DecryptableItem decryptableItem = new DecryptableItemStream(
+                            responseMessage.Content,
+                            this.Encryptor,
+                            options.EncryptionOptions.JsonProcessor,
+                            this.CosmosSerializer,
+                            this.streamManager);
+#else
                     DecryptableItemCore decryptableItem = new (
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
+#endif
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -1367,7 +1354,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             CancellationToken cancellationToken)
         {
             List<T> decryptItems = new (documents.Count);
-            if (typeof(T) == typeof(DecryptableItemStream) || typeof(T) == typeof(DecryptableItem))
+            if (typeof(T) == typeof(DecryptableItem))
             {
                 foreach (Stream documentStream in documents)
                 {
