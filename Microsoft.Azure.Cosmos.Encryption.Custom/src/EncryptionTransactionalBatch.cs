@@ -16,8 +16,26 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     {
         private readonly Encryptor encryptor;
         private readonly CosmosSerializer cosmosSerializer;
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        private readonly StreamManager streamManager;
+#endif
+
         private TransactionalBatch transactionalBatch;
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public EncryptionTransactionalBatch(
+            TransactionalBatch transactionalBatch,
+            Encryptor encryptor,
+            CosmosSerializer cosmosSerializer,
+            StreamManager streamManager)
+        {
+            this.transactionalBatch = transactionalBatch ?? throw new ArgumentNullException(nameof(transactionalBatch));
+            this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
+            this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
+            this.streamManager = streamManager ?? throw new ArgumentNullException(nameof(streamManager));
+        }
+#else
         public EncryptionTransactionalBatch(
             TransactionalBatch transactionalBatch,
             Encryptor encryptor,
@@ -27,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.cosmosSerializer = cosmosSerializer ?? throw new ArgumentNullException(nameof(cosmosSerializer));
         }
+#endif
 
         public override TransactionalBatch CreateItem<T>(
             T item,
@@ -58,12 +77,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                    Stream temp = this.streamManager.CreateStream();
+                    EncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        temp,
+                        this.encryptor,
+                        encryptionItemRequestOptions.EncryptionOptions,
+                        diagnosticsContext,
+                        cancellationToken: default).GetAwaiter().GetResult();
+                    streamPayload = temp;
+#else
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
+#endif
                 }
             }
 
@@ -128,15 +159,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionItemRequestOptions.EncryptionOptions != null)
             {
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
-                using (diagnosticsContext.CreateScope("EncryptItemStream"))
-                {
-                    streamPayload = EncryptionProcessor.EncryptAsync(
-                        streamPayload,
-                        this.encryptor,
-                        encryptionItemRequestOptions.EncryptionOptions,
-                        diagnosticsContext,
-                        cancellationToken: default).Result;
-                }
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                Stream temp = this.streamManager.CreateStream();
+                EncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    temp,
+                    this.encryptor,
+                    encryptionItemRequestOptions.EncryptionOptions,
+                    diagnosticsContext,
+                    cancellationToken: default).GetAwaiter().GetResult();
+                streamPayload = temp;
+#else
+                streamPayload = EncryptionProcessor.EncryptAsync(
+                    streamPayload,
+                    this.encryptor,
+                    encryptionItemRequestOptions.EncryptionOptions,
+                    diagnosticsContext,
+                    cancellationToken: default).Result;
+#endif
             }
 
             this.transactionalBatch = this.transactionalBatch.ReplaceItemStream(
@@ -177,12 +217,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                    Stream temp = this.streamManager.CreateStream();
+                    EncryptionProcessor.EncryptAsync(
+                        streamPayload,
+                        temp,
+                        this.encryptor,
+                        encryptionItemRequestOptions.EncryptionOptions,
+                        diagnosticsContext,
+                        cancellationToken: default).GetAwaiter().GetResult();
+                    streamPayload = temp;
+#else
                     streamPayload = EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         this.encryptor,
                         encryptionItemRequestOptions.EncryptionOptions,
                         diagnosticsContext,
                         cancellationToken: default).Result;
+#endif
                 }
             }
 
@@ -233,11 +285,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 if (response.IsSuccessStatusCode && result.ResourceStream != null)
                 {
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                    Stream decryptedStream = this.streamManager.CreateStream();
+                    _ = await EncryptionProcessor.DecryptAsync(
+                        result.ResourceStream,
+                        decryptedStream,
+                        this.encryptor,
+                        diagnosticsContext,
+                        JsonProcessor.Stream,
+                        cancellationToken);
+#else
                     (Stream decryptedStream, _) = await EncryptionProcessor.DecryptAsync(
                         result.ResourceStream,
                         this.encryptor,
                         diagnosticsContext,
                         cancellationToken);
+#endif
 
                     decryptedTransactionalBatchOperationResults.Add(new EncryptionTransactionalBatchOperationResult(result, decryptedStream));
                 }

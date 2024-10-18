@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <remarks>Placeholder</remarks>
     internal class MemoryStreamManager : StreamManager
     {
-        private readonly RecyclableMemoryStreamManager streamManager = new RecyclableMemoryStreamManager();
+        private readonly RecyclableMemoryStreamManager streamManager = new ();
 
         /// <summary>
         /// Create stream
