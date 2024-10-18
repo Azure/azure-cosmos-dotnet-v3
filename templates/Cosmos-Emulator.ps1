@@ -104,7 +104,7 @@ if ($Stage -eq "Launch")
       $argumentList += , $StartParameters
   } else {
     # Use the default params if none provided
-    $argumentList = "/noexplorer /noui /enablepreview /EnableSqlComputeEndpoint /SqlComputePort=9999 /disableratelimiting /partitioncount=10 /consistency=Strong"
+    $argumentList = "/noexplorer /noui /enablepreview /EnableSqlComputeEndpoint /disableratelimiting /partitioncount=10 /consistency=Strong"
   }
 
   Write-Host "Starting emulator process: $Emulator $argumentList"
