@@ -342,6 +342,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                             break;
 
                         case AggregateOperator.Count:
+                        case AggregateOperator.CountIf:
                             tryCreateAggregator = CountAggregator.TryCreate(continuationToken);
                             break;
 

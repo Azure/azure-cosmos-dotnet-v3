@@ -332,7 +332,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     maxConcurrency: maxConcurrency,
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null,
-                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties());
+                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
+                    emitRawOrderByPayload: false);
 
             Assert.IsTrue(pipelineStage.Succeeded);
 

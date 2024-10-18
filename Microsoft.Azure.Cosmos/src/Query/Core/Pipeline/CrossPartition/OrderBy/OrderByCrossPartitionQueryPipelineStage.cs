@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             
             public QueryExecutionOptions QueryPaginationOptions { get; }
 
+            public bool EmitRawOrderByPayload { get; }
+
             public int MaxConcurrency { get; }
 
             public InitializationParameters(
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PartitionKey? partitionKey,
                 IReadOnlyList<OrderByColumn> orderByColumns,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency)
             {
                 this.DocumentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
@@ -74,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.PartitionKey = partitionKey;
                 this.OrderByColumns = orderByColumns ?? throw new ArgumentNullException(nameof(orderByColumns));
                 this.QueryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
+                this.EmitRawOrderByPayload = emitRawOrderByPayload;
                 this.MaxConcurrency = maxConcurrency;
             }
         }
@@ -95,6 +99,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             QueryExecutionOptions queryPaginationOptions,
             int maxConcurrency,
             bool nonStreamingOrderBy,
+            bool emitRawOrderByPayload,
             CosmosElement continuationToken)
         {
             if (documentContainer == null)
@@ -137,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     partitionKey,
                     orderByColumns,
                     queryPaginationOptions,
+                    emitRawOrderByPayload,
                     maxConcurrency,
                     continuationToken);
             }
@@ -153,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 partitionKey,
                 orderByColumns,
                 queryPaginationOptions,
+                emitRawOrderByPayload,
                 maxConcurrency));
         }
 
@@ -293,6 +300,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             return true;
         }
 
+        private static CosmosElement RetrievePayload(OrderByQueryResult orderByQueryResult, bool emitRawOrderByPayload)
+        {
+            return emitRawOrderByPayload ? orderByQueryResult.RawPayload : orderByQueryResult.Payload;
+        }
+
+        private static IReadOnlyList<CosmosElement> RetrievePayloads(IReadOnlyList<OrderByQueryResult> orderByQueryResults, bool emitRawOrderByPayload)
+        {
+            List<CosmosElement> payloads = new List<CosmosElement>(orderByQueryResults.Count);
+            foreach (OrderByQueryResult orderByQueryResult in orderByQueryResults)
+            {
+                payloads.Add(RetrievePayload(orderByQueryResult, emitRawOrderByPayload));
+            }
+
+            return payloads;
+        }
+
         /// <summary>
         /// This class is responsible for draining cross partition queries that have order by conditions.
         /// The way order by queries work is that they are doing a k-way merge of sorted lists from each partition with an added condition.
@@ -308,6 +331,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
             private readonly PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators;
             private readonly Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens;
             private readonly QueryExecutionOptions queryPaginationOptions;
+            private readonly bool emitRawOrderByPayload;
             private readonly int maxConcurrency;
 
             private QueryState state;
@@ -329,6 +353,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 ContainerQueryProperties containerQueryProperties,
                 IReadOnlyList<SortOrder> sortOrders,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency,
                 IEnumerable<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)> uninitializedEnumeratorsAndTokens,
                 QueryState state)
@@ -338,6 +363,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.sortOrders = sortOrders ?? throw new ArgumentNullException(nameof(sortOrders));
                 this.enumerators = new PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator>(new OrderByEnumeratorComparer(this.sortOrders));
                 this.queryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
+                this.emitRawOrderByPayload = emitRawOrderByPayload;
                 this.maxConcurrency = maxConcurrency < 0 ? throw new ArgumentOutOfRangeException($"{nameof(maxConcurrency)} must be a non negative number.") : maxConcurrency;
                 this.uninitializedEnumeratorsAndTokens = new Queue<(OrderByQueryPartitionRangePageAsyncEnumerator, OrderByContinuationToken)>(uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens)));
                 this.state = state ?? InitializingQueryState;
@@ -350,6 +376,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency)
             {
                 this.documentContainer = documentContainer ?? throw new ArgumentNullException(nameof(documentContainer));
@@ -358,6 +385,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 this.enumerators = enumerators ?? throw new ArgumentNullException(nameof(enumerators));
                 this.uninitializedEnumeratorsAndTokens = uninitializedEnumeratorsAndTokens ?? throw new ArgumentNullException(nameof(uninitializedEnumeratorsAndTokens));
                 this.queryPaginationOptions = queryPaginationOptions ?? throw new ArgumentNullException(nameof(queryPaginationOptions));
+                this.emitRawOrderByPayload = emitRawOrderByPayload;
                 this.maxConcurrency = maxConcurrency;
                 this.state = InitializingQueryState;
             }
@@ -651,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                             // No stats to report, since we already reported it when we moved to this page.
                             this.Current = TryCatch<QueryPage>.FromResult(
                                 new QueryPage(
-                                    documents: results.Select(result => result.Payload).ToList(),
+                                    documents: RetrievePayloads(results, this.emitRawOrderByPayload),
                                     requestCharge: 0,
                                     activityId: default,
                                     cosmosQueryExecutionInfo: default,
@@ -706,7 +734,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 // No stats to report, since we already reported it when we moved to this page.
                 this.Current = TryCatch<QueryPage>.FromResult(
                     new QueryPage(
-                        documents: results.Select(result => result.Payload).ToList(),
+                        documents: RetrievePayloads(results, this.emitRawOrderByPayload),
                         requestCharge: 0,
                         activityId: default,
                         cosmosQueryExecutionInfo: default,
@@ -796,6 +824,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 PriorityQueue<OrderByQueryPartitionRangePageAsyncEnumerator> enumerators,
                 Queue<(OrderByQueryPartitionRangePageAsyncEnumerator enumerator, OrderByContinuationToken token)> uninitializedEnumeratorsAndTokens,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency)
             {
                 return new StreamingOrderByCrossPartitionQueryPipelineStage(
@@ -805,6 +834,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     enumerators,
                     uninitializedEnumeratorsAndTokens,
                     queryPaginationOptions,
+                    emitRawOrderByPayload,
                     maxConcurrency);
             }
 
@@ -816,6 +846,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 Cosmos.PartitionKey? partitionKey,
                 IReadOnlyList<OrderByColumn> orderByColumns,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency,
                 CosmosElement continuationToken)
             {
@@ -1033,6 +1064,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     containerQueryProperties,
                     orderByColumns.Select(column => column.SortOrder).ToList(),
                     queryPaginationOptions,
+                    emitRawOrderByPayload,
                     maxConcurrency,
                     enumeratorsAndTokens,
                     continuationToken == null ? null : new QueryState(continuationToken));
@@ -1687,8 +1719,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             private const int MaximumPageSize = 2048;
 
-            private const string DisallowContinuationTokenMessage = "Continuation tokens are not supported for the non streaming order by pipeline.";
-
             private static readonly QueryState NonStreamingOrderByInProgress = new QueryState(CosmosString.Create("NonStreamingOrderByInProgress"));
 
             private readonly int pageSize;
@@ -1710,7 +1740,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public ValueTask DisposeAsync()
             {
-                this.bufferedResults.Enumerator.Dispose();
+                this.bufferedResults?.Enumerator?.Dispose();
                 return default;
             }
 
@@ -1734,7 +1764,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 List<CosmosElement> documents = new List<CosmosElement>(this.pageSize);
                 for (int count = 0; count < this.pageSize && this.bufferedResults.Enumerator.MoveNext(); ++count)
                 {
-                    documents.Add(this.bufferedResults.Enumerator.Current.Payload);
+                    documents.Add(RetrievePayload(this.bufferedResults.Enumerator.Current, this.parameters.EmitRawOrderByPayload));
                 }
 
                 if (firstPage || documents.Count > 0)
@@ -1746,7 +1776,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                         activityId: this.bufferedResults.QueryPageParameters.ActivityId,
                         cosmosQueryExecutionInfo: this.bufferedResults.QueryPageParameters.CosmosQueryExecutionInfo,
                         distributionPlanSpec: this.bufferedResults.QueryPageParameters.DistributionPlanSpec,
-                        disallowContinuationTokenMessage: DisallowContinuationTokenMessage,
+                        disallowContinuationTokenMessage: DisallowContinuationTokenMessages.NonStreamingOrderBy,
                         additionalHeaders: this.bufferedResults.QueryPageParameters.AdditionalHeaders,
                         state: documents.Count > 0 ? NonStreamingOrderByInProgress : null,
                         streaming: false);
@@ -1795,6 +1825,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                 Cosmos.PartitionKey? partitionKey,
                 IReadOnlyList<OrderByColumn> orderByColumns,
                 QueryExecutionOptions queryPaginationOptions,
+                bool emitRawOrderByPayload,
                 int maxConcurrency)
             {
                 int pageSize = queryPaginationOptions.PageSizeLimit.GetValueOrDefault(MaximumPageSize) > 0 ?
@@ -1809,6 +1840,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
                     partitionKey,
                     orderByColumns,
                     queryPaginationOptions,
+                    emitRawOrderByPayload,
                     maxConcurrency);
 
                 return new NonStreamingOrderByPipelineStage(

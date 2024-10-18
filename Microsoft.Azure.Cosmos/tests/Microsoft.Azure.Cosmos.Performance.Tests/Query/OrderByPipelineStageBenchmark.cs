@@ -69,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                     maxConcurrency: MaxConcurrency,
                     nonStreamingOrderBy: nonStreamingOrderBy,
                     continuationToken: null,
-                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties());
+                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
+                    emitRawOrderByPayload: false);
 
             IQueryPipelineStage pipeline = pipelineStage.Result;
 

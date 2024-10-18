@@ -751,11 +751,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
                 documentContainer,
                 new SqlQuerySpec(query),
-                new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 GetQueryPlan(query),
-                new QueryExecutionOptions(pageSizeHint: pageSize),
+                hybridSearchQueryInfo: null,
+                maxItemCount: pageSize,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
+                allRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
+                isContinuationExpected: true,
                 maxConcurrency: 10,
                 requestContinuationToken: state);
 
