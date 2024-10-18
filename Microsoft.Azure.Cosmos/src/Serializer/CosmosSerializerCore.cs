@@ -138,20 +138,7 @@ namespace Microsoft.Azure.Cosmos
                 return CosmosSerializerCore.propertiesSerializer;
             }
 
-            if (inputType == typeof(AccountProperties) ||
-                inputType == typeof(DatabaseProperties) ||
-                inputType == typeof(ContainerProperties) ||
-                inputType == typeof(PermissionProperties) ||
-                inputType == typeof(StoredProcedureProperties) ||
-                inputType == typeof(TriggerProperties) ||
-                inputType == typeof(UserDefinedFunctionProperties) ||
-                inputType == typeof(UserProperties) ||
-                inputType == typeof(ConflictProperties) ||
-                inputType == typeof(ThroughputProperties) ||
-                inputType == typeof(OfferV2) ||
-                inputType == typeof(ClientEncryptionKeyProperties) ||
-                inputType == typeof(PartitionedQueryExecutionInfo) ||
-                inputType == typeof(ChangeFeedQuerySpec))
+            if (CosmosSerializerCore.IsInputTypeInternal(inputType))
             {
                 return CosmosSerializerCore.propertiesSerializer;
             }
@@ -176,6 +163,25 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             return this.customSerializer;
+        }
+
+        internal static bool IsInputTypeInternal(
+            Type inputType)
+        {
+            return inputType == typeof(AccountProperties)
+                || inputType == typeof(DatabaseProperties)
+                || inputType == typeof(ContainerProperties)
+                || inputType == typeof(PermissionProperties)
+                || inputType == typeof(StoredProcedureProperties)
+                || inputType == typeof(TriggerProperties)
+                || inputType == typeof(UserDefinedFunctionProperties)
+                || inputType == typeof(UserProperties)
+                || inputType == typeof(ConflictProperties)
+                || inputType == typeof(ThroughputProperties)
+                || inputType == typeof(OfferV2)
+                || inputType == typeof(ClientEncryptionKeyProperties)
+                || inputType == typeof(PartitionedQueryExecutionInfo)
+                || inputType == typeof(ChangeFeedQuerySpec);
         }
     }
 }

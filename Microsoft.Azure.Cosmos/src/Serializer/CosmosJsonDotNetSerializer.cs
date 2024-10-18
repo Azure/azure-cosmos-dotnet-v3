@@ -137,8 +137,10 @@ namespace Microsoft.Azure.Cosmos
             MemoryStream streamPayload;
             JsonSerializer jsonSerializer = this.GetSerializer();
 
+            // Binary encoding is currently not supported for internal types, for e.g.
+            // container creation, database creation requests etc.
             if (this.BinaryEncodingEnabled
-                && CosmosSerializationUtil.IsInputTypeSupportedForBinaryOperation<T>())
+                && !CosmosSerializerCore.IsInputTypeInternal(typeof(T)))
             {
                 using (Json.Interop.CosmosDBToNewtonsoftWriter writer = new (
                     jsonSerializationFormat: Json.JsonSerializationFormat.Binary))

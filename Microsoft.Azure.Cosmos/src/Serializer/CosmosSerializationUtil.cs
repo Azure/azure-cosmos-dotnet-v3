@@ -105,25 +105,5 @@ namespace Microsoft.Azure.Cosmos
 
             return new MemoryStream(formattedBytes, index: 0, count: formattedBytes.Length, writable: true, publiclyVisible: true);
         }
-
-        internal static bool IsInputTypeSupportedForBinaryOperation<T>()
-        {
-            Type inputType = typeof(T);
-
-            return !(inputType == typeof(AccountProperties) ||
-                inputType == typeof(DatabaseProperties) ||
-                inputType == typeof(ContainerProperties) ||
-                inputType == typeof(PermissionProperties) ||
-                inputType == typeof(StoredProcedureProperties) ||
-                inputType == typeof(TriggerProperties) ||
-                inputType == typeof(UserDefinedFunctionProperties) ||
-                inputType == typeof(UserProperties) ||
-                inputType == typeof(ConflictProperties) ||
-                inputType == typeof(ThroughputProperties) ||
-                inputType == typeof(OfferV2) ||
-                inputType == typeof(ClientEncryptionKeyProperties) ||
-                inputType == typeof(PartitionedQueryExecutionInfo) ||
-                inputType == typeof(ChangeFeedQuerySpec));
-        }
     }
 }
