@@ -45,6 +45,11 @@ namespace Microsoft.Azure.Cosmos
                 /// For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service. 
                 /// </summary>
                 public const string RowCount = "db.client.response.row_count";
+
+                /// <summary>
+                /// Number of active SDK client instances. 
+                /// </summary>
+                public const string ActiveInstances = "db.cosmosdb.client.active_instances";
             }
 
             /// <summary>
@@ -88,6 +93,11 @@ namespace Microsoft.Azure.Cosmos
                 /// Description for the item count metric in responses
                 /// </summary>
                 public const string RowCount = "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service";
+                
+                /// <summary>
+                /// Description for the active SDK client instances metric
+                /// </summary>
+                public const string ActiveInstances = "Number of active SDK client instances.";
             }
         }
 

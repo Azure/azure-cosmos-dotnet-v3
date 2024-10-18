@@ -11,9 +11,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using OpenTelemetry;
     using OpenTelemetry.Resources;
     using System.Threading;
-    using System.Diagnostics;
     using System.Collections.Generic;
-    using Microsoft.Extensions.Options;
+    using System.Linq;
 
     [TestClass]
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
@@ -24,7 +23,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         {
             { "db.client.operation.duration", MetricType.Histogram },
             { "db.client.response.row_count", MetricType.Histogram},
-            { "db.cosmosdb.operation.request_charge", MetricType.Histogram }
+            { "db.cosmosdb.operation.request_charge", MetricType.Histogram },
+            { "db.cosmosdb.client.active_instances", MetricType.LongSumNonMonotonic }
         };
 
         [TestInitialize]
@@ -65,8 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     {
                         Boundaries = CosmosDbClientMetricsConstant.HistogramBuckets.RowCountBuckets
                     })
-                .AddConsoleExporter()
-                //.AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(this.manualResetEventSlim), exportIntervalMilliseconds: AggregatingInterval))
+                .AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(this.manualResetEventSlim), exportIntervalMilliseconds: AggregatingInterval))
                 .Build();
 
             // Intialize CosmosClient with Client Metrics enabled
@@ -101,16 +100,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             meterProvider.Dispose();
 
-            await Task.Delay(1000);
+            while (!this.manualResetEventSlim.IsSet)
+            {
+            }
 
-            Console.WriteLine("Disposed............");
-            //while (!this.manualResetEventSlim.IsSet)
-            //{
-            //    Console.WriteLine(this.manualResetEventSlim.IsSet);
-            //}
+            Assert.IsTrue(IsEqual(expectedMetrics, CustomMetricExporter.ActualMetrics), string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
+        }
 
-            //Console.WriteLine("Asserting............");
-            //Assert.AreEqual(CustomMetricExporter.ActualMetrics.Count, expectedMetrics.Count);
+        public static bool IsEqual<TKey, TValue>(Dictionary<TKey, TValue> expected, Dictionary<TKey, TValue> actual)
+        {
+            if (expected.Count != actual.Count)
+                return false;
+
+            // Compare both keys and values
+            foreach (KeyValuePair<TKey, TValue> pair in expected)
+            {
+                if (!actual.TryGetValue(pair.Key, out TValue value) || !EqualityComparer<TValue>.Default.Equals(pair.Value, value))
+                    return false;
+            }
+
+            return true;
         }
     }
 }
