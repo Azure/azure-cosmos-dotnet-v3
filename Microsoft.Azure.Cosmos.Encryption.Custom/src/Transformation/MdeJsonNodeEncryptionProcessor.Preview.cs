@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             _ = diagnosticsContext;
 
-            if (encryptionProperties.EncryptionFormatVersion != 3 && encryptionProperties.EncryptionFormatVersion != 4)
+            if (encryptionProperties.EncryptionFormatVersion != EncryptionFormatVersion.Mde && encryptionProperties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
 #if NET8_0_OR_GREATER
             BrotliCompressor decompressor = null;
-            if (encryptionProperties.EncryptionFormatVersion == 4)
+            if (encryptionProperties.EncryptionFormatVersion == EncryptionFormatVersion.MdeWithCompression)
             {
                 bool containsCompressed = encryptionProperties.CompressedEncryptedPaths?.Any() == true;
                 if (encryptionProperties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)

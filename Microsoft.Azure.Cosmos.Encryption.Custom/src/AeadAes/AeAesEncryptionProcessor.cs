@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             _ = diagnosticsContext;
 
-            if (encryptionProperties.EncryptionFormatVersion != 2)
+            if (encryptionProperties.EncryptionFormatVersion != EncryptionFormatVersion.AeAes)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }

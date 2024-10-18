@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             _ = diagnosticsContext;
 
-            if (encryptionProperties.EncryptionFormatVersion != 3)
+            if (encryptionProperties.EncryptionFormatVersion != EncryptionFormatVersion.Mde)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {encryptionProperties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
