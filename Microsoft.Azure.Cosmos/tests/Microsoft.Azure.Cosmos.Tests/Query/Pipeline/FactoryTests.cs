@@ -23,14 +23,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
 
             TryCatch<IQueryPipelineStage> monadicCreatePipeline = PipelineFactory.MonadicCreate(
-                ExecutionEnvironment.Compute,
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
+                allRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryInfo: new QueryInfo() { },
-                queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10),
+                hybridSearchQueryInfo: null,
+                maxItemCount: 10,
+                isContinuationExpected: true,
                 maxConcurrency: 10,
                 requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);

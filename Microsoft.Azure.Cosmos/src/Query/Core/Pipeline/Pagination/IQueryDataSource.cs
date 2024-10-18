@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination
         Task<QueryPage> QueryAsync(
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);
     }

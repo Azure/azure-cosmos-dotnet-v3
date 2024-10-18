@@ -29,7 +29,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.Top
             | QueryFeatures.NonValueAggregate
             | QueryFeatures.DCount
-            | QueryFeatures.NonStreamingOrderBy;
+            | QueryFeatures.NonStreamingOrderBy
+            | QueryFeatures.CountIf
+            | QueryFeatures.HybridSearch;
 
         private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
             SupportedQueryFeatures & (~QueryFeatures.NonStreamingOrderBy);
@@ -51,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             Documents.ResourceType resourceType,
             PartitionKeyDefinition partitionKeyDefinition,
+            VectorEmbeddingPolicy vectorEmbeddingPolicy,
             bool hasLogicalPartitionKey,
             GeospatialType geospatialType,
             bool useSystemPrefix,
@@ -82,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     sqlQuerySpec,
                     resourceType,
                     partitionKeyDefinition,
+                    vectorEmbeddingPolicy,
                     QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     useSystemPrefix,

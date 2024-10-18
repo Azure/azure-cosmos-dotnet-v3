@@ -229,15 +229,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector2",
-                            Type = Cosmos.VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.QuantizedFlat,
+                            VectorIndexShardKey = new[] { "/Country" },
+                            QuantizationByteSize = 3,
                         },
                         new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector3",
-                            Type = Cosmos.VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.DiskANN,
+                            VectorIndexShardKey = new[] { "/ZipCode" },
+                            QuantizationByteSize = 2,
+                            IndexingSearchListSize = 5,
                         }
                     },
-
                 },
             };
 
@@ -254,9 +258,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("/vector1", vectorIndexes[0].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[0].Type);
             Assert.AreEqual("/vector2", vectorIndexes[1].Path);
-            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[1].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.QuantizedFlat, vectorIndexes[1].Type);
+            Assert.AreEqual(3, vectorIndexes[1].QuantizationByteSize);
+            CollectionAssert.AreEqual(new string[] { "/Country" }, vectorIndexes[1].VectorIndexShardKey);
+
             Assert.AreEqual("/vector3", vectorIndexes[2].Path);
-            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[2].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.DiskANN, vectorIndexes[2].Type);
+            Assert.AreEqual(2, vectorIndexes[2].QuantizationByteSize);
+            Assert.AreEqual(5, vectorIndexes[2].IndexingSearchListSize);
+            CollectionAssert.AreEqual(new string[] { "/ZipCode" }, vectorIndexes[2].VectorIndexShardKey);
         }
 
         private static string SerializeDocumentCollection(DocumentCollection collection)

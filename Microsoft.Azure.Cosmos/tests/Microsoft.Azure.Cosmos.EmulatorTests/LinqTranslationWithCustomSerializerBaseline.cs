@@ -32,6 +32,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Database TestDb;
         private static Container TestContainer;
 
+        private static CosmosClient CosmosDefaultSTJClient;
+        private static Database TestDbSTJDefault;
+        private static Container TestSTJContainer;
+
         private const int RecordCount = 3;
         private const int MaxValue = 500;
         private const int MaxStringLength = 100;
@@ -51,6 +55,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid():N}";
             TestDb = await CosmosClient.CreateDatabaseAsync(dbName);
+
+            CosmosDefaultSTJClient = TestCommon.CreateCosmosClient((cosmosClientBuilder)
+                => cosmosClientBuilder
+                    .WithSystemTextJsonSerializerOptions(
+                        new JsonSerializerOptions()),
+                useCustomSeralizer: false);
+
+            string dbNameSTJ = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid():N}";
+            TestDbSTJDefault = await CosmosDefaultSTJClient.CreateDatabaseAsync(dbNameSTJ);
         }
 
         [ClassCleanup]
@@ -65,11 +78,17 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             {
                 await TestDb.DeleteStreamAsync();
             }
+
+            if (TestDbSTJDefault != null)
+            {
+                await TestDbSTJDefault.DeleteStreamAsync();
+            }
         }
 
         [TestInitialize]
         public async Task TestInitialize()
         {
+            TestSTJContainer = await TestDbSTJDefault.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
             TestLinqContainer = await TestDbLinq.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
             TestContainer = await TestDb.CreateContainerAsync(new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/Pk"));
         }
@@ -78,6 +97,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         public async Task TestCleanup()
         {
             await TestLinqContainer.DeleteContainerStreamAsync();
+            await TestSTJContainer.DeleteContainerStreamAsync();
             await TestContainer.DeleteContainerStreamAsync();
         }
 
@@ -143,6 +163,33 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                 inputs.AddRange(camelCaseSettingInputs);
             }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestMemberInitializerDotNetDefaultSerializer()
+        {
+            Func<bool, IQueryable<DataObjectDotNet>> getQuery;
+            (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(true, TestSTJContainer);
+
+            string insertedData = this.GetInsertedData(TestSTJContainer).Result;
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Filter w/ constant value", b => getQuery(b).Where(doc => doc.NumericField == 1), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ DataObject initializer with constant value", b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Select w/ DataObject initializer", b => getQuery(b).Select(doc => new DataObjectDotNet() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Deeper than top level reference", b => getQuery(b).Select(doc => doc.NumericField > 1 ? new DataObjectDotNet() { NumericField = 1, StringField = "1" } : new DataObjectDotNet() { NumericField = 1, StringField = "1" }), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ DataObject initializer with member initialization", b => getQuery(b).Where(doc => doc == new DataObjectDotNet() { NumericField = doc.NumericField, StringField = doc.StringField }).Select(b => "A"), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("OrderBy query", b => getQuery(b).Select(x => x).OrderBy(x => x.NumericField).Take(5), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Conditional", b => getQuery(b).Select(c => c.NumericField > 1 ? "true" : "false"), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ nullable property", b => getQuery(b).Where(doc => doc.DateTimeField != null), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField != null), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Filter w/ string null comparison", b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
+            };
 
             this.ExecuteTestSuite(inputs);
         }

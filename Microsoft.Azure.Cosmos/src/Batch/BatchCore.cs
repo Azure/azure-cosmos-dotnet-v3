@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
     internal class BatchCore : TransactionalBatchInternal
@@ -18,7 +19,10 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly ContainerInternal container;
 
-        private List<ItemBatchOperation> operations;
+        /// <summary>
+        /// The list of operations in the batch.
+        /// </summary>
+        protected List<ItemBatchOperation> operations;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BatchCore"/> class.
@@ -31,6 +35,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.container = container;
             this.partitionKey = partitionKey;
+
             this.operations = new List<ItemBatchOperation>();
         }
 
@@ -235,8 +240,7 @@ namespace Microsoft.Azure.Cosmos
                     this.operations = new List<ItemBatchOperation>();
                     return executor.ExecuteAsync(trace,  cancellationToken);
                 },
-                openTelemetry: (response) => new OpenTelemetryResponse(
-                    responseMessage: response));
+                openTelemetry: new (OpenTelemetryConstants.Operations.ExecuteBatch, (response) => new OpenTelemetryResponse(responseMessage: response)));
         }
 
         /// <summary>

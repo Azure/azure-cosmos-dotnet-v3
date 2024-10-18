@@ -6,12 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
-    using System.Threading;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount;
@@ -25,15 +26,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
     internal static class PipelineFactory
     {
+        private const int PageSizeFactorForTop = 5;
+
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            ExecutionEnvironment executionEnvironment,
             IDocumentContainer documentContainer,
             SqlQuerySpec sqlQuerySpec,
             IReadOnlyList<FeedRangeEpk> targetRanges,
             PartitionKey? partitionKey,
             QueryInfo queryInfo,
-            QueryPaginationOptions queryPaginationOptions,
+            HybridSearchQueryInfo hybridSearchQueryInfo,
+            int maxItemCount,
             ContainerQueryProperties containerQueryProperties,
+            IReadOnlyList<FeedRangeEpk> allRanges,
+            bool isContinuationExpected,
             int maxConcurrency,
             CosmosElement requestContinuationToken)
         {
@@ -57,14 +62,132 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 throw new ArgumentException($"{nameof(targetRanges)} must not be empty.");
             }
 
-            if (queryInfo == null)
+            if (queryInfo == null && hybridSearchQueryInfo == null)
             {
-                throw new ArgumentNullException(nameof(queryInfo));
+                throw new ArgumentNullException($"{nameof(queryInfo)} and {nameof(hybridSearchQueryInfo)} cannot both be null.");
             }
 
-            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
+            if (queryInfo != null && hybridSearchQueryInfo != null)
+            {
+                throw new ArgumentException($"{nameof(queryInfo)} and {nameof(hybridSearchQueryInfo)} cannot both be non-null.");
+            }
 
-            PrefetchPolicy prefetchPolicy = DeterminePrefetchPolicy(queryInfo);
+            if (hybridSearchQueryInfo != null && requestContinuationToken != null)
+            {
+                throw new ArgumentException($"Continuation tokens are not supported for hybrid search.");
+            }
+
+            if (queryInfo != null)
+            {
+                return MonadicCreate(
+                    documentContainer: documentContainer,
+                    sqlQuerySpec: sqlQuerySpec,
+                    targetRanges: targetRanges,
+                    partitionKey: partitionKey,
+                    queryInfo: queryInfo,
+                    prefetchPolicy: DeterminePrefetchPolicy(queryInfo),
+                    containerQueryProperties: containerQueryProperties,
+                    maxItemCount: maxItemCount,
+                    isContinuationExpected: true,
+                    emitRawOrderByPayload: false,
+                    maxConcurrency: maxConcurrency,
+                    requestContinuationToken: requestContinuationToken);
+            }
+            else
+            {
+                MonadicCreatePipelineStage monadicCreatePipelineStage = (_) => HybridSearchCrossPartitionQueryPipelineStage.MonadicCreate(
+                    documentContainer: documentContainer,
+                    containerQueryProperties: containerQueryProperties,
+                    sqlQuerySpec: sqlQuerySpec,
+                    targetRanges: targetRanges,
+                    partitionKey: partitionKey,
+                    queryInfo: hybridSearchQueryInfo,
+                    allRanges: allRanges,
+                    maxItemCount: maxItemCount,
+                    isContinuationExpected: isContinuationExpected,
+                    maxConcurrency: maxConcurrency);
+
+                if (hybridSearchQueryInfo.Skip != null)
+                {
+                    MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
+                    monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
+                        hybridSearchQueryInfo.Skip.Value,
+                        continuationToken,
+                        monadicCreateSourceStage);
+                }
+
+                if (hybridSearchQueryInfo.Take != null)
+                {
+                    MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
+                    monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
+                        hybridSearchQueryInfo.Take.Value,
+                        requestContinuationToken,
+                        monadicCreateSourceStage);
+                }
+
+                // Allow hybrid search to emit empty pages for now
+                // If we decide to change this in the future, we can wrap the stage in a SkipEmptyPageQueryPipelineStage
+                // similar to how we do for regular queries (see below)
+                return monadicCreatePipelineStage(requestContinuationToken);
+            }
+        }
+
+        public static TryCatch<IQueryPipelineStage> MonadicCreate(
+            IDocumentContainer documentContainer,
+            SqlQuerySpec sqlQuerySpec,
+            IReadOnlyList<FeedRangeEpk> targetRanges,
+            PartitionKey? partitionKey,
+            QueryInfo queryInfo,
+            PrefetchPolicy prefetchPolicy,
+            ContainerQueryProperties containerQueryProperties,
+            int maxItemCount,
+            bool emitRawOrderByPayload,
+            bool isContinuationExpected,
+            int maxConcurrency,
+            CosmosElement requestContinuationToken)
+        {
+            // We need to compute the optimal initial page size for order-by queries
+            long optimalPageSize = maxItemCount;
+            if (queryInfo.HasOrderBy)
+            {
+                int top;
+                if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
+                {
+                    top = queryInfo.Top.Value;
+                }
+                else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
+                {
+                    top = (queryInfo.Offset ?? 0) + queryInfo.Limit.Value;
+                }
+                else
+                {
+                    top = 0;
+                }
+
+                if (top > 0)
+                {
+                    // All partitions should initially fetch about 1/nth of the top value.
+                    long pageSizeWithTop = (long)Math.Min(
+                        Math.Ceiling(top / (double)targetRanges.Count) * PageSizeFactorForTop,
+                        top);
+
+                    optimalPageSize = Math.Min(pageSizeWithTop, optimalPageSize);
+                }
+                else if (isContinuationExpected)
+                {
+                    optimalPageSize = (long)Math.Min(
+                        Math.Ceiling(optimalPageSize / (double)targetRanges.Count) * PageSizeFactorForTop,
+                        optimalPageSize);
+                }
+            }
+
+            QueryExecutionOptions queryPaginationOptions = new QueryExecutionOptions(pageSizeHint: (int)optimalPageSize);
+
+            Debug.Assert(
+                (optimalPageSize > 0) && (optimalPageSize <= int.MaxValue),
+                $"Invalid MaxItemCount {optimalPageSize}");
+
+            sqlQuerySpec = !string.IsNullOrEmpty(queryInfo.RewrittenQuery) ? new SqlQuerySpec(queryInfo.RewrittenQuery, sqlQuerySpec.Parameters) : sqlQuerySpec;
 
             MonadicCreatePipelineStage monadicCreatePipelineStage;
             if (queryInfo.HasOrderBy)
@@ -80,7 +203,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     queryPaginationOptions: queryPaginationOptions,
                     maxConcurrency: maxConcurrency,
                     nonStreamingOrderBy: queryInfo.HasNonStreamingOrderBy,
-                    continuationToken: continuationToken);
+                    emitRawOrderByPayload: emitRawOrderByPayload,
+                    continuationToken: continuationToken,
+                    containerQueryProperties: containerQueryProperties);
             }
             else
             {
@@ -100,7 +225,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => AggregateQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     queryInfo.Aggregates,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
@@ -113,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => DistinctQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     continuationToken,
                     monadicCreateSourceStage,
                     queryInfo.DistinctType);
@@ -123,21 +246,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => GroupByQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     continuationToken,
                     monadicCreateSourceStage,
                     queryInfo.Aggregates,
                     queryInfo.GroupByAliasToAggregateType,
                     queryInfo.GroupByAliases,
                     queryInfo.HasSelectValue,
-                    (queryPaginationOptions ?? QueryPaginationOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
+                    (queryPaginationOptions ?? QueryExecutionOptions.Default).PageSizeLimit.GetValueOrDefault(int.MaxValue));
             }
 
             if (queryInfo.HasOffset)
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     queryInfo.Offset.Value,
                     continuationToken,
                     monadicCreateSourceStage);
@@ -147,7 +268,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                    executionEnvironment,
                     queryInfo.Limit.Value,
                     continuationToken,
                     monadicCreateSourceStage);
@@ -157,7 +277,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
-                    executionEnvironment,
                     queryInfo.Top.Value,
                     continuationToken,
                     monadicCreateSourceStage);
@@ -167,7 +286,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             {
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => DCountQueryPipelineStage.MonadicCreate(
-                    executionEnvironment,
                     queryInfo.DCountInfo,
                     continuationToken,
                     monadicCreateSourceStage);

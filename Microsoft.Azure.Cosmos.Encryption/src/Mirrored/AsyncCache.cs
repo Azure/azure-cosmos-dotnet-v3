@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     /// <summary>
     /// Cache which supports asynchronous value initialization.
-    /// It ensures that for given key only single inintialization funtion is running at any point in time.
+    /// It ensures that for given key only single initialization function is running at any point in time.
     /// </summary>
     /// <typeparam name="TKey">Type of keys.</typeparam>
     /// <typeparam name="TValue">Type of values.</typeparam>
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// <summary>
         /// Remove value from cache and return it if present.
         /// </summary>
-        /// <param name="key"> Key </param>
+        /// <param name="key"> Key. </param>
         /// <returns>Value if present, default value if not present.</returns>
         public async Task<TValue> RemoveAsync(TKey key)
         {

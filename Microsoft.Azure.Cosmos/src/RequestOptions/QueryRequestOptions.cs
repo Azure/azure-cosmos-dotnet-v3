@@ -171,6 +171,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
 
+        /// <summary>
+        /// Enables printing query in Traces db.query.text attribute. By default, query is not printed.
+        /// Users have the option to enable printing parameterized or all queries, 
+        /// but has to beware that customer data may be shown when the later option is chosen. It's the user's responsibility to sanitize the queries if necessary.
+        /// </summary>
+        public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
+
         internal CosmosElement CosmosElementContinuationToken { get; set; }
 
         internal string StartId { get; set; }
@@ -183,8 +190,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal SupportedSerializationFormats? SupportedSerializationFormats { get; set; }
 
-        internal ExecutionEnvironment? ExecutionEnvironment { get; set; }
-
         internal bool? ReturnResultsInDeterministicOrder { get; set; }
 
         internal TestInjections TestSettings { get; set; }
@@ -192,6 +197,11 @@ namespace Microsoft.Azure.Cosmos
         internal FeedRange FeedRange { get; set; }
 
         internal bool IsNonStreamingOrderByQueryFeatureDisabled { get; set; } = ConfigurationManager.IsNonStreamingOrderByQueryFeatureDisabled(defaultValue: false);
+
+        // This is a temporary flag to enable the distributed query gateway mode.
+        // This flag will be removed once we have a way for the client to determine
+        // that we are talking to a distributed query gateway.
+        internal bool EnableDistributedQueryGatewayMode { get; set; } = ConfigurationManager.IsDistributedQueryGatewayModeEnabled(defaultValue: false);
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
