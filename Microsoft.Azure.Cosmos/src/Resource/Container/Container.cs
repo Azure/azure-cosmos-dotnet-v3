@@ -1695,7 +1695,7 @@ namespace Microsoft.Azure.Cosmos
                RequestOptions requestOptions = null,
                CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Deriving classes are expected to override this method with a valid implementation");
         }
 
 #if PREVIEW
