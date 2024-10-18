@@ -46,35 +46,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static readonly FaultInjectionCondition readConditon = new FaultInjectionConditionBuilder()
             .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.ReadItem)
             .Build();
         private static readonly FaultInjectionCondition queryConditon = new FaultInjectionConditionBuilder()
             .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.QueryItem)
             .Build();
         private static readonly FaultInjectionCondition readManyCondition = new FaultInjectionConditionBuilder()
             .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.QueryItem)
             .Build();
         private static readonly FaultInjectionCondition changeFeedCondtion = new FaultInjectionConditionBuilder()
             .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.All)
             .Build();
 
         private static readonly FaultInjectionCondition readConditonStep = new FaultInjectionConditionBuilder()
             .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.ReadItem)
             .Build();
         private static readonly FaultInjectionCondition queryConditonStep = new FaultInjectionConditionBuilder()
             .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.QueryItem)
             .Build();
         private static readonly FaultInjectionCondition readManyConditionStep = new FaultInjectionConditionBuilder()
             .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.QueryItem)
             .Build();
         private static readonly FaultInjectionCondition changeFeedCondtionStep = new FaultInjectionConditionBuilder()
             .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
             .WithOperationType(FaultInjectionOperationType.ReadFeed)
             .Build();
 
@@ -383,7 +391,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "PartitionIsMigrating", false, DisplayName = "Read | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("Read", "Read", "ServiceUnavailable", false, DisplayName = "Read | ServiceUnavailable | With Preferred Regions")]
         [DataRow("Read", "Read", "ResponseDelay", false, DisplayName = "Read | ResponseDelay | With Preferred Regions")]
-        [DataRow("SinglePartitionQuery", "Query",  "Gone", false, DisplayName = "SinglePartitionQuery | Gone | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Gone", false, DisplayName = "SinglePartitionQuery | Gone | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", false, DisplayName = "SinglePartitionQuery | RetryWith | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", false, DisplayName = "SinglePartitionQuery | InternalServerError | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
@@ -428,7 +436,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "PartitionIsMigrating", true, DisplayName = "Read | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ServiceUnavailable", true, DisplayName = "Read | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ResponseDelay", true, DisplayName = "Read | ResponseDelay | W/O Preferred Regions")]
-        [DataRow("SinglePartitionQuery", "Query",  "Gone", true, DisplayName = "SinglePartitionQuery | Gone | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Gone", true, DisplayName = "SinglePartitionQuery | Gone | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", true, DisplayName = "SinglePartitionQuery | RetryWith | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", true, DisplayName = "SinglePartitionQuery | InternalServerError | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
