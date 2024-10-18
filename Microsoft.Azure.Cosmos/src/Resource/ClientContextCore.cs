@@ -573,12 +573,16 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
-                    // Records telemetry data related to the exception.
-                    CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
-                                                         accountName: this.client.Endpoint,
-                                                         containerName: containerName,
-                                                         databaseName: databaseName,
-                                                         ex: ex);
+                    if (openTelemetry != null)
+                    {
+                        // Records telemetry data related to the exception.
+                        CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
+                                                             accountName: this.client.Endpoint,
+                                                             containerName: containerName,
+                                                             databaseName: databaseName,
+                                                             ex: ex);
+                    }
+                 
                     throw;
                 }
             }
