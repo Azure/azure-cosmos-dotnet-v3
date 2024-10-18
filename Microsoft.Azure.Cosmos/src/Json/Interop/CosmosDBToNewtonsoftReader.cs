@@ -192,7 +192,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override DateTime? ReadAsDateTime()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override DateTimeOffset? ReadAsDateTimeOffset()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override string ReadAsString()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         private double? ReadNumberValue()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
             {
                 return null;
             }
