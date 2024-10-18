@@ -9,13 +9,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.RecyclableMemoryStreamMirror;
 
     internal sealed class DecryptableItemStream : DecryptableItem
     {
         private readonly Encryptor encryptor;
         private readonly JsonProcessor jsonProcessor;
-        private readonly StreamManager streamManager;
         private readonly CosmosSerializer cosmosSerializer;
+        private readonly StreamManager streamManager;
 
         private Stream encryptedStream; // this stream should be recyclable
         private Stream decryptedStream; // this stream should be recyclable
@@ -70,17 +71,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
                     await this.decryptedStream.CopyToAsync(ms, cancellationToken);
                     return ((T)(object)ms, this.decryptionContext);
                 default:
+#if SDKPROJECTREF
+                    return (await this.CosmosSerializer.FromStreamAsync<T>(this.decryptedStream, cancellationToken), this.decryptionContext);
+#else
                     // this API is missing Async => should not be used
                     return (this.cosmosSerializer.FromStream<T>(this.decryptedStream), this.decryptionContext);
-            }
-        }
+#endif
 
-        public async ValueTask DisposeAsync()
-        {
-            if (this.decryptedStream != null)
-            {
-                await this.streamManager.ReturnStreamAsync(this.decryptedStream);
-                this.decryptedStream = null;
             }
         }
 

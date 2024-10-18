@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
@@ -55,6 +57,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
+        public override async Task<T> FromStreamAsync<T>(Stream stream, CancellationToken cancellationToken)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+            {
+                return (T)(object)stream;
+            }
+
+            if (stream.CanSeek && stream.Length == 0)
+            {
+                return default;
+            }
+
+            using (stream)
+            {
+                return await JsonSerializer.DeserializeAsync<T>(stream, this.jsonSerializerOptions, cancellationToken);
+            }
+        }
+
+        /// <inheritdoc/>
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new ();
@@ -64,6 +88,13 @@ namespace Microsoft.Azure.Cosmos
 
             streamPayload.Position = 0;
             return streamPayload;
+        }
+
+        /// <inheritdoc/>
+        public override async Task ToStreamAsync<T>(T input, Stream output, CancellationToken cancellationToken)
+        {
+            await JsonSerializer.SerializeAsync(output, input, this.jsonSerializerOptions, cancellationToken);
+            output.Position = 0;
         }
 
         /// <summary>

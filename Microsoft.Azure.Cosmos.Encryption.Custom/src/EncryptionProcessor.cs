@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
         private static readonly StreamProcessor StreamProcessor = new ();
+        private static readonly ArrayStreamProcessor ArrayStreamProcessor = new ();
 #endif
 
         private static readonly MdeEncryptionProcessor MdeEncryptionProcessor = new ();
@@ -546,5 +547,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             // and corresponding decrypted properties are added back in the documents.
             return BaseSerializer.ToStream(contentJObj);
         }
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        internal static async Task DeserializeAndDecryptResponseAsync(
+            Stream inputStream,
+            Stream outputStream,
+            Encryptor encryptor,
+            StreamManager streamManager,
+            CancellationToken cancellationToken)
+        {
+            await ArrayStreamProcessor.DeserializeAndDecryptCollectionAsync(
+                inputStream,
+                outputStream,
+                encryptor,
+                streamManager,
+                cancellationToken);
+        }
+#endif
+
     }
 }

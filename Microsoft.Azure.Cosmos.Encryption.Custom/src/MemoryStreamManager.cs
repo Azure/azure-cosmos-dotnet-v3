@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System.IO;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.RecyclableMemoryStreamMirror;
 
     /// <summary>
     /// Memory Stream manager
@@ -14,14 +15,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     /// <remarks>Placeholder</remarks>
     internal class MemoryStreamManager : StreamManager
     {
+        private readonly RecyclableMemoryStreamManager streamManager = new RecyclableMemoryStreamManager();
+
         /// <summary>
         /// Create stream
         /// </summary>
-        /// <param name="hintSize">Desired minimal size of stream.</param>
+        /// <param name="hintSize">Desired minimal capacity of stream.</param>
         /// <returns>Instance of stream.</returns>
         public override Stream CreateStream(int hintSize = 0)
         {
-            return new MemoryStream(hintSize);
+            return new RecyclableMemoryStream(this.streamManager, null, hintSize);
         }
 
         /// <summary>

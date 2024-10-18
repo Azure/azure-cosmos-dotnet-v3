@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor,
             CosmosSerializer cosmosSerializer);
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
         /// <summary>
         /// Populates the DecryptableItem that can be used getting the decryption result.
         /// </summary>
@@ -57,11 +58,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="encryptor">Encryptor instance which will be used for decryption.</param>
         /// <param name="jsonProcessor">Json processor for decryption.</param>
         /// <param name="cosmosSerializer">Serializer instance which will be used for deserializing the content after decryption.</param>
+        /// <param name="streamManager">Stream manager providing output streams.</param>
         protected internal abstract void SetDecryptableStream(
             Stream decryptableStream,
             Encryptor encryptor,
             JsonProcessor jsonProcessor,
-            CosmosSerializer cosmosSerializer);
+            CosmosSerializer cosmosSerializer,
+            StreamManager streamManager);
+#endif
 
         /// <summary>
         /// Release unmananaged resources

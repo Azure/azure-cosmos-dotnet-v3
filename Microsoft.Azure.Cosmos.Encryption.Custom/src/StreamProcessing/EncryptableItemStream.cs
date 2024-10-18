@@ -6,38 +6,44 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
 {
     using System;
-    using System.Collections.Generic;
     using System.IO;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json.Linq;
 
-    public sealed class EncryptableItemStream<T> : EncryptableItem
+    /// <summary>
+    /// Input type that can be used to allow for lazy decryption in the write path.
+    /// </summary>
+    /// <typeparam name="T">Type of item.</typeparam>
+    public sealed class EncryptableItemStream<T> : EncryptableItem, IDisposable
     {
         private DecryptableItemStream decryptableItem = null;
+        private bool isDisposed;
 
         /// <summary>
         /// Gets the input item
         /// </summary>
         public T Item { get; }
 
-        private readonly StreamManager streamManager;
-
         /// <inheritdoc/>
-        public override DecryptableItem DecryptableItem => this.decryptableItem ?? throw new InvalidOperationException("Decryptable content is not initialized.");
+        public override DecryptableItem DecryptableItem
+        {
+            get
+            {
+                ObjectDisposedException.ThrowIf(this.isDisposed, this);
+                return this.decryptableItem ?? throw new InvalidOperationException("Decryptable content is not initialized.");
+            }
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EncryptableItemStream{T}"/> class.
         /// </summary>
         /// <param name="input">Item to be written.</param>
-        /// <param name="streamManager">Stream manager to provide output streams.</param>
         /// <exception cref="ArgumentNullException">Thrown when input is null.</exception>
-        public EncryptableItemStream(T input, StreamManager streamManager = null)
+        public EncryptableItemStream(T input)
         {
             this.Item = input ?? throw new ArgumentNullException(nameof(input));
-            this.streamManager = streamManager ?? new MemoryStreamManager();
         }
 
 #pragma warning disable CS0672 // Member overrides obsolete member
@@ -49,11 +55,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
         }
 
         /// <inheritdoc/>
-        protected internal override void SetDecryptableStream(Stream decryptableStream, Encryptor encryptor, JsonProcessor jsonProcessor, CosmosSerializer cosmosSerializer)
+        protected internal override void SetDecryptableStream(Stream decryptableStream, Encryptor encryptor, JsonProcessor jsonProcessor, CosmosSerializer cosmosSerializer, StreamManager streamManager)
         {
             ArgumentNullException.ThrowIfNull(decryptableStream);
 
-            this.decryptableItem = new DecryptableItemStream(decryptableStream, encryptor, jsonProcessor, cosmosSerializer, this.streamManager);
+            this.decryptableItem = new DecryptableItemStream(decryptableStream, encryptor, jsonProcessor, cosmosSerializer, streamManager);
         }
 
         /// <inheritdoc/>
@@ -67,9 +73,34 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
         /// <inheritdoc/>
         protected internal override async Task ToStreamAsync(CosmosSerializer serializer, Stream outputStream, CancellationToken cancellationToken)
         {
+#if SDKPROJECTREF
+            await serializer.ToStreamAsync(this.Item, outputStream, cancellationToken);
+#else
             // TODO: CosmosSerializer is lacking suitable methods
             Stream cosmosSerializerOutput = serializer.ToStream(this.Item);
             await cosmosSerializerOutput.CopyToAsync(outputStream, cancellationToken);
+#endif
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (!this.isDisposed)
+            {
+                if (disposing)
+                {
+                    this.DecryptableItem?.Dispose();
+                }
+
+                this.isDisposed = true;
+            }
+        }
+
+        /// <inheritdoc/>
+        public override void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            this.Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }
