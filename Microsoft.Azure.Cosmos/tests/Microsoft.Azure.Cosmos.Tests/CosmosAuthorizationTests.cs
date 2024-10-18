@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using ResourceType = Documents.ResourceType;
 
     [TestClass]
     public class CosmosAuthorizationTests
