@@ -63,24 +63,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return input;
             }
 
-            if (encryptionOptions.PathsToEncrypt is not HashSet<string> && encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
-            {
-                throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
-            }
-
-            foreach (string path in encryptionOptions.PathsToEncrypt)
-            {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.IndexOf('/', 1) != -1)
-                {
-                    throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
-                }
-
-                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
-                }
-            }
-
 #pragma warning disable CS0618 // Type or member is obsolete
             return encryptionOptions.EncryptionAlgorithm switch
             {
@@ -111,24 +93,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 await input.CopyToAsync(output, cancellationToken);
                 return;
-            }
-
-            if (encryptionOptions.PathsToEncrypt is not HashSet<string> && encryptionOptions.PathsToEncrypt.Distinct().Count() != encryptionOptions.PathsToEncrypt.Count())
-            {
-                throw new InvalidOperationException("Duplicate paths in PathsToEncrypt passed via EncryptionOptions.");
-            }
-
-            foreach (string path in encryptionOptions.PathsToEncrypt)
-            {
-                if (string.IsNullOrWhiteSpace(path) || path[0] != '/' || path.IndexOf('/', 1) != -1)
-                {
-                    throw new InvalidOperationException($"Invalid path {path ?? string.Empty}, {nameof(encryptionOptions.PathsToEncrypt)}");
-                }
-
-                if (path.AsSpan(1).Equals("id".AsSpan(), StringComparison.Ordinal))
-                {
-                    throw new InvalidOperationException($"{nameof(encryptionOptions.PathsToEncrypt)} includes a invalid path: '{path}'.");
-                }
             }
 
             if (encryptionOptions.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
@@ -250,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             else
             {
                 input.Position = 0;
-                throw new NotSupportedException($"Streaming mode is not supported for encryption algorithm {properties.EncryptionProperties.EncryptionAlgorithm}");
+                throw new NotSupportedException($"Encryption Algorithm: {properties.EncryptionProperties.EncryptionAlgorithm} is not supported.");
             }
 #pragma warning restore CS0618 // Type or member is obsolete
 

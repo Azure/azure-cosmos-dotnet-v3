@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         {
             _ = diagnosticsContext;
 
-            if (properties.EncryptionFormatVersion != 3 && properties.EncryptionFormatVersion != 4)
+            if (properties.EncryptionFormatVersion != EncryptionFormatVersion.Mde && properties.EncryptionFormatVersion != EncryptionFormatVersion.MdeWithCompression)
             {
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
@@ -75,19 +75,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 long bytesConsumed = 0;
 
                 // processing itself here
-                bytesConsumed = this.TransformDecryptBuffer(
-                    buffer.AsSpan(0, dataSize),
-                    isFinalBlock,
-                    writer,
-                    ref state,
-                    ref isIgnoredBlock,
-                    ref decryptPropertyName,
-                    encryptedPaths,
-                    pathsDecrypted,
-                    properties,
-                    containsCompressed,
-                    arrayPoolManager,
-                    encryptionKey);
+                bytesConsumed = TransformDecryptBuffer(buffer.AsSpan(0, dataSize));
 
                 leftOver = dataSize - (int)bytesConsumed;
 
@@ -108,115 +96,115 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             outputStream.Position = 0;
 
             return EncryptionProcessor.CreateDecryptionContext(pathsDecrypted, properties.DataEncryptionKeyId);
-        }
 
-        private long TransformDecryptBuffer(ReadOnlySpan<byte> buffer, bool isFinalBlock, Utf8JsonWriter writer, ref JsonReaderState state, ref bool isIgnoredBlock, ref string decryptPropertyName, HashSet<string> encryptedPaths, List<string> pathsDecrypted, EncryptionProperties properties, bool containsCompressed, ArrayPoolManager arrayPoolManager, DataEncryptionKey encryptionKey)
-        {
-            Utf8JsonReader reader = new (buffer, isFinalBlock, state);
-
-            while (reader.Read())
+            long TransformDecryptBuffer(ReadOnlySpan<byte> buffer)
             {
-                JsonTokenType tokenType = reader.TokenType;
+                Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
-                if (isIgnoredBlock && reader.CurrentDepth == 1 && tokenType == JsonTokenType.EndObject)
+                while (reader.Read())
                 {
-                    isIgnoredBlock = false;
-                    continue;
-                }
-                else if (isIgnoredBlock)
-                {
-                    continue;
-                }
+                    JsonTokenType tokenType = reader.TokenType;
 
-                switch (tokenType)
-                {
-                    case JsonTokenType.String:
-                        if (decryptPropertyName == null)
-                        {
-                            writer.WriteStringValue(reader.ValueSpan);
-                        }
-                        else
-                        {
-                            this.TransformDecryptProperty(
-                                ref reader,
-                                writer,
-                                decryptPropertyName,
-                                properties,
-                                encryptionKey,
-                                containsCompressed,
-                                arrayPoolManager);
+                    if (isIgnoredBlock && reader.CurrentDepth == 1 && tokenType == JsonTokenType.EndObject)
+                    {
+                        isIgnoredBlock = false;
+                        continue;
+                    }
+                    else if (isIgnoredBlock)
+                    {
+                        continue;
+                    }
 
-                            pathsDecrypted.Add(decryptPropertyName);
-                        }
-
-                        decryptPropertyName = null;
-                        break;
-                    case JsonTokenType.Number:
-                        decryptPropertyName = null;
-                        writer.WriteRawValue(reader.ValueSpan);
-                        break;
-                    case JsonTokenType.None:
-                        decryptPropertyName = null;
-                        break;
-                    case JsonTokenType.StartObject:
-                        decryptPropertyName = null;
-                        writer.WriteStartObject();
-                        break;
-                    case JsonTokenType.EndObject:
-                        decryptPropertyName = null;
-                        writer.WriteEndObject();
-                        break;
-                    case JsonTokenType.StartArray:
-                        decryptPropertyName = null;
-                        writer.WriteStartArray();
-                        break;
-                    case JsonTokenType.EndArray:
-                        decryptPropertyName = null;
-                        writer.WriteEndArray();
-                        break;
-                    case JsonTokenType.PropertyName:
-                        string propertyName = "/" + reader.GetString();
-                        if (encryptedPaths.Contains(propertyName))
-                        {
-                            decryptPropertyName = propertyName;
-                        }
-                        else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
-                        {
-                            if (!reader.TrySkip())
+                    switch (tokenType)
+                    {
+                        case JsonTokenType.String:
+                            if (decryptPropertyName == null)
                             {
-                                isIgnoredBlock = true;
+                                writer.WriteStringValue(reader.ValueSpan);
+                            }
+                            else
+                            {
+                                this.TransformDecryptProperty(
+                                    ref reader,
+                                    writer,
+                                    decryptPropertyName,
+                                    properties,
+                                    encryptionKey,
+                                    containsCompressed,
+                                    arrayPoolManager);
+
+                                pathsDecrypted.Add(decryptPropertyName);
                             }
 
+                            decryptPropertyName = null;
                             break;
-                        }
+                        case JsonTokenType.Number:
+                            decryptPropertyName = null;
+                            writer.WriteRawValue(reader.ValueSpan);
+                            break;
+                        case JsonTokenType.None:
+                            decryptPropertyName = null;
+                            break;
+                        case JsonTokenType.StartObject:
+                            decryptPropertyName = null;
+                            writer.WriteStartObject();
+                            break;
+                        case JsonTokenType.EndObject:
+                            decryptPropertyName = null;
+                            writer.WriteEndObject();
+                            break;
+                        case JsonTokenType.StartArray:
+                            decryptPropertyName = null;
+                            writer.WriteStartArray();
+                            break;
+                        case JsonTokenType.EndArray:
+                            decryptPropertyName = null;
+                            writer.WriteEndArray();
+                            break;
+                        case JsonTokenType.PropertyName:
+                            string propertyName = "/" + reader.GetString();
+                            if (encryptedPaths.Contains(propertyName))
+                            {
+                                decryptPropertyName = propertyName;
+                            }
+                            else if (propertyName == StreamProcessor.EncryptionPropertiesPath)
+                            {
+                                if (!reader.TrySkip())
+                                {
+                                    isIgnoredBlock = true;
+                                }
 
-                        writer.WritePropertyName(reader.ValueSpan);
-                        break;
-                    case JsonTokenType.Comment:
-                        break;
-                    case JsonTokenType.True:
-                        decryptPropertyName = null;
-                        writer.WriteBooleanValue(true);
-                        break;
-                    case JsonTokenType.False:
-                        decryptPropertyName = null;
-                        writer.WriteBooleanValue(false);
-                        break;
-                    case JsonTokenType.Null:
-                        decryptPropertyName = null;
-                        writer.WriteNullValue();
-                        break;
+                                break;
+                            }
+
+                            writer.WritePropertyName(reader.ValueSpan);
+                            break;
+                        case JsonTokenType.Comment:
+                            break;
+                        case JsonTokenType.True:
+                            decryptPropertyName = null;
+                            writer.WriteBooleanValue(true);
+                            break;
+                        case JsonTokenType.False:
+                            decryptPropertyName = null;
+                            writer.WriteBooleanValue(false);
+                            break;
+                        case JsonTokenType.Null:
+                            decryptPropertyName = null;
+                            writer.WriteNullValue();
+                            break;
+                    }
                 }
-            }
 
-            state = reader.CurrentState;
-            return reader.BytesConsumed;
+                state = reader.CurrentState;
+                return reader.BytesConsumed;
+            }
         }
 
         private void TransformDecryptProperty(ref Utf8JsonReader reader, Utf8JsonWriter writer, string decryptPropertyName, EncryptionProperties properties, DataEncryptionKey encryptionKey, bool containsCompressed, ArrayPoolManager arrayPoolManager)
         {
             BrotliCompressor decompressor = null;
-            if (properties.EncryptionFormatVersion == 4)
+            if (properties.EncryptionFormatVersion == EncryptionFormatVersion.MdeWithCompression)
             {
                 if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
                 {
