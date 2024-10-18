@@ -401,7 +401,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(3, containerProperties.VectorEmbeddingPolicy.Embeddings.Count);
             Assert.AreEqual("/vector1", containerProperties.VectorEmbeddingPolicy.Embeddings[0].Path);
             Assert.AreEqual(Cosmos.VectorDataType.Float32, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DataType);
-            Assert.AreEqual((ulong)1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
+            Assert.AreEqual(1200, containerProperties.VectorEmbeddingPolicy.Embeddings[0].Dimensions);
             Assert.AreEqual(Cosmos.DistanceFunction.Cosine, containerProperties.VectorEmbeddingPolicy.Embeddings[0].DistanceFunction);
 
             Assert.AreEqual(2, containerProperties.ComputedProperties.Count);
