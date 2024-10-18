@@ -25,6 +25,12 @@
         [Params(1, 10, 100)]
         public int DocumentSizeInKb { get; set; }
 
+        [Params(CompressionOptions.CompressionAlgorithm.None, CompressionOptions.CompressionAlgorithm.Brotli)]
+        public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
+
+        [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson)]
+        public JsonProcessor JsonProcessor { get; set; }
+
         [GlobalSetup]
         public async Task Setup()
         {
@@ -38,7 +44,7 @@
                 .ReturnsAsync(() => new MdeEncryptionAlgorithm(DekProperties, EncryptionType.Randomized, StoreProvider.Object, cacheTimeToLive: TimeSpan.MaxValue));
 
             this.encryptor = new(keyProvider.Object);
-            this.encryptionOptions = CreateEncryptionOptions();
+            this.encryptionOptions = this.CreateEncryptionOptions();
             this.plaintext = this.LoadTestDoc();
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
@@ -71,16 +77,22 @@
                 new MemoryStream(this.encryptedData!),
                 this.encryptor,
                 new CosmosDiagnosticsContext(),
+                this.JsonProcessor,
                 CancellationToken.None);
         }
 
-        private static EncryptionOptions CreateEncryptionOptions()
+        private EncryptionOptions CreateEncryptionOptions()
         {
             EncryptionOptions options = new()
             {
                 DataEncryptionKeyId = "dekId",
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                CompressionOptions = new()
+                {
+                    Algorithm = this.CompressionAlgorithm
+                },
+                JsonProcessor = this.JsonProcessor,
             };
 
             return options;

@@ -1010,7 +1010,7 @@ namespace Microsoft.Azure.Cosmos
           Cosmos.PartitionKey partitionKey,
           ITrace trace,
           RequestOptions requestOptions = null,
-          CancellationToken cancellationToken = default(CancellationToken))
+          CancellationToken cancellationToken = default)
         {
             PartitionKey? resultingPartitionKey = requestOptions != null && requestOptions.IsEffectivePartitionKeyRouting ? null : (PartitionKey?)partitionKey;
             ContainerCore.ValidatePartitionKey(resultingPartitionKey, requestOptions);
