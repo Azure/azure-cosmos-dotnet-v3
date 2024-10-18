@@ -329,6 +329,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Creates a new CosmosClient with the account endpoint and given CosmosAuthorizationTokenProvider
+        /// </summary>
+        /// <param name="accountEndpoint">The cosmos service endpoint to use.</param>
+        /// <param name="tokenProvider"><see cref="CosmosAuthorizationTokenProvider"/>authorization token provider.</param>
+        /// <param name="clientOptions">(Optional) client options</param>
+        /// <example>
+        /// The CosmosClient is created with the AccountEndpoint, AccountKey or ResourceToken and configured to use "East US 2" region.
+        /// <code language="c#">
+        /// <![CDATA[
+        ///   CosmosAuthorizationTokenProvider authorizationTokenProvider = CosmosAuthorizationTokenProvider.FromTokenCredential(endpoint, miTokenCredential);
+        ///   using (CosmosClient client = new CosmosClient(
+        ///       endpoint,
+        ///       miTokenCredential))
+        ///   {
+        ///        // do some work 
+        ///
+        ///        // Change 
+        ///        AzureKeyCredential masterKeyCredential = new AzureKeyCredential(authKey);
+        ///        authorizationTokenProvider.Update(CosmosAuthorizationTokenProvider.FromAzureKeyCredential(masterKeyCredential));
+        ///
+        ///        // do some more work 
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public CosmosClient(
+            string accountEndpoint,
+            CosmosAuthorizationTokenProvider tokenProvider,
+            CosmosClientOptions clientOptions = null)
+            : this(accountEndpoint, new ComposedAuthorizationTokenProvider(tokenProvider), clientOptions)
+        {
+        }
+
+        /// <summary>
         /// Used by Compute
         /// Creates a new CosmosClient with the AuthorizationTokenProvider
         /// </summary>
