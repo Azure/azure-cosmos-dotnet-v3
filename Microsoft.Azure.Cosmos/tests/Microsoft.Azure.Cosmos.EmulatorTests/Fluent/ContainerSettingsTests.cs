@@ -585,10 +585,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 .Path(vector1Path, VectorIndexType.Flat)
                              .Attach()
                             .WithVectorIndex()
-                                .Path(vector2Path, VectorIndexType.Flat)
+                                .Path(vector2Path, VectorIndexType.QuantizedFlat)
+                                .WithQuantizationByteSize(3)
+                                .WithVectorIndexShardKey(new string[] { "/Country" })
                              .Attach()
                             .WithVectorIndex()
-                                .Path(vector3Path, VectorIndexType.Flat)
+                                .Path(vector3Path, VectorIndexType.DiskANN)
+                                .WithQuantizationByteSize(2)
+                                .WithIndexingSearchListSize(5)
+                                .WithVectorIndexShardKey(new string[] { "/ZipCode" })
                              .Attach()
                         .Attach()
                         .CreateAsync();
@@ -610,9 +615,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(vector1Path, containerSettings.IndexingPolicy.VectorIndexes[0].Path);
                 Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[0].Type);
                 Assert.AreEqual(vector2Path, containerSettings.IndexingPolicy.VectorIndexes[1].Path);
-                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(VectorIndexType.QuantizedFlat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(3, containerSettings.IndexingPolicy.VectorIndexes[1].QuantizationByteSize);
+                CollectionAssert.AreEqual(new string[] { "/Country" }, containerSettings.IndexingPolicy.VectorIndexes[1].VectorIndexShardKey);
                 Assert.AreEqual(vector3Path, containerSettings.IndexingPolicy.VectorIndexes[2].Path);
-                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+                Assert.AreEqual(VectorIndexType.DiskANN, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+                Assert.AreEqual(2, containerSettings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize);
+                Assert.AreEqual(5, containerSettings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize);
+                CollectionAssert.AreEqual(new string[] { "/ZipCode" }, containerSettings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey);
             }
             finally
             {
