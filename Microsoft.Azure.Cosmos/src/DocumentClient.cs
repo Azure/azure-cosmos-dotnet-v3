@@ -957,6 +957,8 @@ namespace Microsoft.Azure.Cosmos
             if (this.cosmosClientTelemetryOptions.IsClientMetricsEnabled)
             {
                 CosmosOperationMeter.Initialize();
+
+                CosmosOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
             // Starting ClientTelemetry Job

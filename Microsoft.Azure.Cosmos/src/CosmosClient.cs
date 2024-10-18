@@ -1437,6 +1437,8 @@ namespace Microsoft.Azure.Cosmos
             // In case dispose is called multiple times. Check if at least 1 active client is there
             if (NumberOfActiveClients > 0)
             {
+                CosmosOperationMeter.RemoveInstanceCount(this.Endpoint);
+
                 return Interlocked.Decrement(ref NumberOfActiveClients);
             }
 

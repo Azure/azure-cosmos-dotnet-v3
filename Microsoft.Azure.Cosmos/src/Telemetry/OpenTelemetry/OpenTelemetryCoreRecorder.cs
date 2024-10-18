@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
-        private const string CosmosDb = "cosmosdb";
+        internal const string CosmosDb = "cosmosdb";
 
         private static readonly string otelStabilityMode = Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN");
 

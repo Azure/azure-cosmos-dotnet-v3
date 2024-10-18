@@ -352,10 +352,13 @@
       <Link>Documents\MillionSong1KDocuments.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+<<<<<<< HEAD
     <None Include="Documents\text-3properties-1536dimensions-100documents.json">
       <Link>Documents\text-3properties-1536dimensions-100documents.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+=======
+>>>>>>> 4e4d7223e (final commit)
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />

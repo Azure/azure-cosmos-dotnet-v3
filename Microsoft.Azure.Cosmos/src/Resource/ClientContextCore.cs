@@ -525,12 +525,16 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
+                    // Checks if OpenTelemetry is configured for this operation.
                     if (openTelemetry != null)
                     {
-                        // Record request response information
+                        // Extracts and records telemetry data from the result of the operation.
                         OpenTelemetryAttributes response = openTelemetry?.Item2(result);
+
+                        // Records the telemetry attributes for Distributed Tracing (if enabled)
                         recorder.Record(response);
 
+                        // Records metrics such as request units, latency, and item count for the operation.
                         CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
                                                               accountName: this.client.Endpoint,
                                                               containerName: containerName,
@@ -569,6 +573,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
+                    // Records telemetry data related to the exception.
                     CosmosOperationMeter.RecordTelemetry(operationName: openTelemetry.Item1,
                                                          accountName: this.client.Endpoint,
                                                          containerName: containerName,
