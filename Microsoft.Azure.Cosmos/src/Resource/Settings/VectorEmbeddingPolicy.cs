@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets a collection of <see cref="Embedding"/> that contains the vector embeddings of documents in collection in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = "vectorEmbeddings")]
+        [JsonProperty(PropertyName = "fullTextPaths")]
         public readonly Collection<Embedding> Embeddings;
 
         /// <summary>

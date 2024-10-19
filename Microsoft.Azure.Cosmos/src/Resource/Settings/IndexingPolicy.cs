@@ -148,6 +148,33 @@ namespace Microsoft.Azure.Cosmos
         Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
 
         /// <summary>
+        /// Gets the full text indexes
+        /// </summary>
+        /// <example>
+        /// <![CDATA[
+        /// "fullTextIndexes": [
+        ///  {
+        ///    "path": "/v1",
+        ///  },
+        ///  {
+        ///    "path": "/v2",
+        ///  },
+        ///  {
+        ///    "path": "/v3",
+        ///  }
+        /// ]
+        /// ]]>
+        /// </example>
+        [JsonProperty(PropertyName = "fullTextIndexes", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+
+        public
+#else
+        internal
+#endif
+        Collection<FullTextIndexPath> FullTextIndexes{ get; set; } = new Collection<FullTextIndexPath>();
+
+        /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
