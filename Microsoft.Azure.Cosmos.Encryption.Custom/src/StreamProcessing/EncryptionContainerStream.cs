@@ -34,15 +34,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="container">Regular cosmos container.</param>
         /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        public EncryptionContainerStream(Container container, Encryptor encryptor)
+            : this(container, encryptor, new MemoryStreamManager())
+        {
+        }
+
+        /// <summary>
+        /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
+        /// </summary>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="streamManager">Custom stream manager instance.</param>
         public EncryptionContainerStream(
             Container container,
-            Encryptor encryptor)
+            Encryptor encryptor,
+            StreamManager streamManager)
         {
             this.container = container ?? throw new ArgumentNullException(nameof(container));
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.CosmosSerializer = this.Database.Client.ClientOptions.Serializer;
-            this.streamManager = new MemoryStreamManager();
+            this.streamManager = streamManager;
         }
 
         public override string Id => this.container.Id;

@@ -46,10 +46,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
             this.Item = input ?? throw new ArgumentNullException(nameof(input));
         }
 
-#pragma warning disable CS0672 // Member overrides obsolete member
         /// <inheritdoc/>
         protected internal override void SetDecryptableItem(JToken decryptableContent, Encryptor encryptor, CosmosSerializer cosmosSerializer)
-#pragma warning restore CS0672 // Member overrides obsolete member
         {
             throw new NotImplementedException();
         }
@@ -63,9 +61,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
         }
 
         /// <inheritdoc/>
-#pragma warning disable CS0672 // Member overrides obsolete member
         protected internal override Stream ToStream(CosmosSerializer serializer)
-#pragma warning restore CS0672 // Member overrides obsolete member
         {
             return serializer.ToStream(this.Item);
         }

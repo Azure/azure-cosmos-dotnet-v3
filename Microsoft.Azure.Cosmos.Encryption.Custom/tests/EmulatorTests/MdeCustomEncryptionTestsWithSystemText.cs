@@ -2,6 +2,8 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
+#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
     using System;
@@ -23,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.Utils;
 
     [TestClass]
-    public class MdeCustomEncryptionTests
+    public class MdeCustomEncryptionTestsWithSystemText
     {
         private static readonly Uri masterKeyUri1 = new("https://demo.keyvault.net/keys/samplekey1/03ded886623sss09bzc60351e536a111");
         private static readonly Uri masterKeyUri2 = new("https://demo.keyvault.net/keys/samplekey2/47d306aeaaeyyyaabs9467235460dc22");
@@ -56,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         {
             _ = context;
 
-            client = TestCommon.CreateCosmosClient();
+            client = TestCommon.CreateCosmosClient(builder => builder.WithSystemTextJsonSerializerOptions(new System.Text.Json.JsonSerializerOptions()));
             database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             keyContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
             itemContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
@@ -65,12 +67,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             testKeyStoreProvider = new TestEncryptionKeyStoreProvider();
             await LegacyClassInitializeAsync();
 
-            MdeCustomEncryptionTests.encryptor = new TestEncryptor(MdeCustomEncryptionTests.dekProvider);
-            MdeCustomEncryptionTests.encryptionContainer = MdeCustomEncryptionTests.itemContainer.WithEncryptor(encryptor);
-            MdeCustomEncryptionTests.encryptionContainerForChangeFeed = MdeCustomEncryptionTests.itemContainerForChangeFeed.WithEncryptor(encryptor);
+            MdeCustomEncryptionTestsWithSystemText.encryptor = new TestEncryptor(MdeCustomEncryptionTestsWithSystemText.dekProvider);
+            MdeCustomEncryptionTestsWithSystemText.encryptionContainer = MdeCustomEncryptionTestsWithSystemText.itemContainer.WithEncryptor(encryptor);
+            MdeCustomEncryptionTestsWithSystemText.encryptionContainerForChangeFeed = MdeCustomEncryptionTestsWithSystemText.itemContainerForChangeFeed.WithEncryptor(encryptor);
             
-            await MdeCustomEncryptionTests.dekProvider.InitializeAsync(MdeCustomEncryptionTests.database, MdeCustomEncryptionTests.keyContainer.Id);
-            MdeCustomEncryptionTests.dekProperties = await MdeCustomEncryptionTests.CreateDekAsync(MdeCustomEncryptionTests.dekProvider, MdeCustomEncryptionTests.dekId);
+            await MdeCustomEncryptionTestsWithSystemText.dekProvider.InitializeAsync(MdeCustomEncryptionTestsWithSystemText.database, MdeCustomEncryptionTestsWithSystemText.keyContainer.Id);
+            MdeCustomEncryptionTestsWithSystemText.dekProperties = await MdeCustomEncryptionTestsWithSystemText.CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, MdeCustomEncryptionTestsWithSystemText.dekId);
         }
 
         [ClassCleanup]
@@ -88,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         public async Task EncryptionCreateDek()
         {
             string dekId = "anotherDek";
-            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, dekId);
             Assert.AreEqual(
                 new EncryptionKeyWrapMetadata(name: "metadata1", value: metadata1.Value),
                 dekProperties.EncryptionKeyWrapMetadata);
@@ -133,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         public async Task FetchDataEncryptionKeyLegacyDEKAndMdeBasedAlgorithm()
         {
             string dekId = "legacyDEK";
-            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, dekId, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
             // Use different DEK provider to avoid (unintentional) cache impact
             CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider(), new TestEncryptionKeyStoreProvider());
             await dekProvider.InitializeAsync(database, keyContainer.Id);
@@ -146,12 +148,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         {
             string dekId = "randomDek";
 
-            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, dekId);
             Assert.AreEqual(
                 metadata1,
                 dekProperties.EncryptionKeyWrapMetadata);
 
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTestsWithSystemText.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                 dekId,
                 metadata2);
 
@@ -176,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             string dekId = "dummyDek";
             EncryptionKeyWrapMetadata newMetadata = new(name: "newMetadata", value: "newMetadataValue");
 
-            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, dekId);
             Assert.AreEqual(
                 metadata1,
                 dekProperties.EncryptionKeyWrapMetadata);
@@ -194,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 new PartitionKey(dekProperties.Id));
 
             // rewrap should succeed, despite difference in cached value
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTestsWithSystemText.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                 dekId,
                 newMetadata);
 
@@ -291,20 +293,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                new EncryptionItemRequestOptions());
+                new EncryptionItemRequestOptions() { });
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemWithoutPartitionKey()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionCreateItemWithoutPartitionKey(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             TestDoc testDoc = TestDoc.Create();
             try
             {
                 await encryptionContainer.CreateItemAsync(
                     testDoc,
-                    requestOptions: GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                    requestOptions: GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
                 Assert.Fail("CreateItem should've failed because PartitionKey was not provided.");
             }
             catch (NotSupportedException ex)
@@ -314,13 +317,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionFailsWithUnknownDek()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionFailsWithUnknownDek(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string unknownDek = "unknownDek";
 
             try
             {
-                await CreateItemAsync(encryptionContainer, unknownDek, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(encryptionContainer, unknownDek, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
             }
             catch (ArgumentException ex)
             {
@@ -330,7 +334,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ValidateCachingOfProtectedDataEncryptionKey()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task ValidateCachingOfProtectedDataEncryptionKey(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             TestEncryptionKeyStoreProvider testEncryptionKeyStoreProvider = new()
             {
@@ -350,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             TestEncryptor encryptor = new(dekProvider);
             Container encryptionContainer = itemContainer.WithEncryptor(encryptor);
             for (int i = 0; i < 2; i++)
-                await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out int unwrapcount);
             Assert.AreEqual(1, unwrapcount);
@@ -367,7 +372,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             encryptor = new TestEncryptor(dekProvider);
             encryptionContainer = itemContainer.WithEncryptor(encryptor);
             for (int i = 0; i < 2; i++)
-                await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
             Assert.AreEqual(4, unwrapcount);
@@ -381,18 +386,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             encryptor = new TestEncryptor(dekProvider);
             encryptionContainer = itemContainer.WithEncryptor(encryptor);
             for (int i = 0; i < 2; i++)
-                await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
             Assert.AreEqual(1, unwrapcount);
         }
 
         [TestMethod]
-        public async Task EncryptionReadManyItemAsync()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionReadManyItemAsync(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
-            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             List<(string, PartitionKey)> itemList = new()
             {
@@ -427,9 +433,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItem()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionCreateItem(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
@@ -437,14 +444,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             TestDoc expectedDoc = new(testDoc);
 
-#if SDKPROJECTREF
-            // FIXME Remove the above once the binary encoding issue is fixed.
             // Read feed (null query)
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
+            await MdeCustomEncryptionTestsWithSystemText.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTestsWithSystemText.encryptionContainer,
                 query: null,
                 expectedDoc);
-#endif
 
             await ValidateQueryResultsAsync(
                 encryptionContainer,
@@ -498,13 +502,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemWithLazyDecryption()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionCreateItemWithLazyDecryption(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             TestDoc testDoc = TestDoc.Create();
             ItemResponse<EncryptableItem<TestDoc>> createResponse = await encryptionContainer.CreateItemAsync(
                 new EncryptableItem<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.IsNotNull(createResponse.Resource);
@@ -516,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             ItemResponse<EncryptableItemStream> createResponseStream = await encryptionContainer.CreateItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc1)),
                 new PartitionKey(testDoc1.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponseStream.StatusCode);
             Assert.IsNotNull(createResponseStream.Resource);
@@ -525,13 +530,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionChangeFeedDecryptionSuccessful()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionChangeFeedDecryptionSuccessful(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string dek2 = "dek2ForChangeFeed";
             await CreateDekAsync(dekProvider, dek2);
 
-            TestDoc testDoc1 = await CreateItemAsync(encryptionContainerForChangeFeed, dekId, TestDoc.PathsToEncrypt);
-            TestDoc testDoc2 = await CreateItemAsync(encryptionContainerForChangeFeed, dek2, TestDoc.PathsToEncrypt);
+            TestDoc testDoc1 = await CreateItemAsync(encryptionContainerForChangeFeed, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainerForChangeFeed, dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             // change feed iterator
             await ValidateChangeFeedIteratorResponse(encryptionContainerForChangeFeed, testDoc1, testDoc2);
@@ -553,13 +559,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionHandleDecryptionFailure()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionHandleDecryptionFailure(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string dek2 = "failDek";
             await CreateDekAsync(dekProvider, dek2);
 
-            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt);
-            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
 
@@ -620,10 +627,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionDecryptQueryResultMultipleDocs()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionDecryptQueryResultMultipleDocs(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
-            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             // test GetItemLinqQueryable
             await ValidateQueryResultsMultipleDocumentsAsync(encryptionContainer, testDoc1, testDoc2, null);
@@ -637,13 +645,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionDecryptQueryResultMultipleEncryptedProperties()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionDecryptQueryResultMultipleEncryptedProperties(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             List<string> pathsEncrypted = new() { "/Sensitive_StringFormat", "/NonSensitive" };
             TestDoc testDoc = await CreateItemAsync(
                 encryptionContainer,
                 dekId,
-                pathsEncrypted);
+                pathsEncrypted,
+                jsonProcessor,
+                compressionAlgorithm);
 
             TestDoc expectedDoc = new(testDoc);
 
@@ -655,9 +666,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionDecryptQueryValueResponse()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionDecryptQueryValueResponse(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
             string query = "SELECT VALUE COUNT(1) FROM c";
 
             await ValidateQueryResponseAsync(encryptionContainer, query);
@@ -665,12 +677,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionDecryptGroupByQueryResultTest()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionDecryptGroupByQueryResultTest(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string partitionKey = Guid.NewGuid().ToString();
 
-            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, partitionKey);
-            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, partitionKey);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
 
             string query = $"SELECT COUNT(c.Id), c.PK " +
                            $"FROM c WHERE c.PK = '{partitionKey}' " +
@@ -680,24 +693,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionStreamIteratorValidation()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionStreamIteratorValidation(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
-            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             // test GetItemLinqQueryable with ToEncryptionStreamIterator extension
             await ValidateQueryResponseAsync(encryptionContainer);
         }
 
         [TestMethod]
-        public async Task EncryptionRudItem()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionRudItem(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             TestDoc testDoc = await UpsertItemAsync(
                 encryptionContainer,
                 TestDoc.Create(),
                 dekId,
                 TestDoc.PathsToEncrypt,
-                HttpStatusCode.Created);
+                HttpStatusCode.Created,
+                jsonProcessor,
+                compressionAlgorithm);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
@@ -709,7 +726,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 testDoc,
                 dekId,
                 TestDoc.PathsToEncrypt,
-                HttpStatusCode.OK);
+                HttpStatusCode.OK,
+                jsonProcessor,
+                compressionAlgorithm);
             TestDoc updatedDoc = upsertResponse.Resource;
 
             await VerifyItemByReadAsync(encryptionContainer, updatedDoc);
@@ -722,6 +741,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 updatedDoc,
                 dekId,
                 TestDoc.PathsToEncrypt,
+                jsonProcessor,
+                compressionAlgorithm,
                 upsertResponse.ETag);
 
             await VerifyItemByReadAsync(encryptionContainer, replacedDoc);
@@ -730,14 +751,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionRudItemLazyDecryption()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionRudItemLazyDecryption(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             TestDoc testDoc = TestDoc.Create();
             // Upsert (item doesn't exist)
             ItemResponse<EncryptableItem<TestDoc>> upsertResponse = await encryptionContainer.UpsertItemAsync(
                 new EncryptableItem<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
             Assert.AreEqual(HttpStatusCode.Created, upsertResponse.StatusCode);
             Assert.IsNotNull(upsertResponse.Resource);
@@ -752,7 +774,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             ItemResponse<EncryptableItemStream> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc)),
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
             Assert.AreEqual(HttpStatusCode.OK, upsertResponseStream.StatusCode);
             Assert.IsNotNull(upsertResponseStream.Resource);
@@ -768,7 +790,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
                 new EncryptableItemStream(TestCommon.ToStream(testDoc)),
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, upsertResponseStream.ETag));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, upsertResponseStream.ETag));
 
             Assert.AreEqual(HttpStatusCode.OK, replaceResponseStream.StatusCode);
             Assert.IsNotNull(replaceResponseStream.Resource);
@@ -781,9 +803,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
 
         [TestMethod]
-        public async Task EncryptionResourceTokenAuthRestricted()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionResourceTokenAuthRestricted(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             User restrictedUser = database.GetUser(Guid.NewGuid().ToString());
             await database.CreateUserAsync(restrictedUser.Id);
@@ -849,11 +872,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionRestrictedProperties()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionRestrictedProperties(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             try
             {
-                await CreateItemAsync(encryptionContainer, dekId, new List<string>() { "/id" });
+                await CreateItemAsync(encryptionContainer, dekId, new List<string>() { "/id" }, jsonProcessor, compressionAlgorithm);
                 Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
             }
             catch (InvalidOperationException ex)
@@ -863,7 +887,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             try
             {
-                await CreateItemAsync(encryptionContainer, dekId, new List<string>() { "/PK" });
+                await CreateItemAsync(encryptionContainer, dekId, new List<string>() { "/PK" }, jsonProcessor, compressionAlgorithm);
                 Assert.Fail("Expected item creation with PK specified to be encrypted to fail.");
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
@@ -872,17 +896,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionBulkCrud()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionBulkCrud(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            TestDoc docToReplace = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc docToReplace = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
             docToReplace.NonSensitive = Guid.NewGuid().ToString();
             docToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc docToUpsert = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc docToUpsert = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
             docToUpsert.NonSensitive = Guid.NewGuid().ToString();
             docToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             CosmosClient clientWithBulk = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
@@ -894,10 +919,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             List<Task> tasks = new()
             {
-                CreateItemAsync(encryptionContainerWithBulk, dekId, TestDoc.PathsToEncrypt),
-                UpsertItemAsync(encryptionContainerWithBulk, TestDoc.Create(), dekId, TestDoc.PathsToEncrypt, HttpStatusCode.Created),
-                ReplaceItemAsync(encryptionContainerWithBulk, docToReplace, dekId, TestDoc.PathsToEncrypt),
-                UpsertItemAsync(encryptionContainerWithBulk, docToUpsert, dekId, TestDoc.PathsToEncrypt, HttpStatusCode.OK),
+                CreateItemAsync(encryptionContainerWithBulk, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm),
+                UpsertItemAsync(encryptionContainerWithBulk, TestDoc.Create(), dekId, TestDoc.PathsToEncrypt, HttpStatusCode.Created, jsonProcessor, compressionAlgorithm),
+                ReplaceItemAsync(encryptionContainerWithBulk, docToReplace, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm),
+                UpsertItemAsync(encryptionContainerWithBulk, docToUpsert, dekId, TestDoc.PathsToEncrypt, HttpStatusCode.OK, jsonProcessor, compressionAlgorithm),
                 DeleteItemAsync(encryptionContainerWithBulk, docToDelete)
             };
 
@@ -905,7 +930,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionTransactionBatchCrud()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionTransactionBatchCrud(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string partitionKey = "thePK";
             string dek1 = dekId;
@@ -917,35 +943,35 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             TestDoc doc3ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc4ToCreate = TestDoc.Create(partitionKey);
 
-            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
             doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc1ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc doc2ToReplace = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc2ToReplace = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
             doc2ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc2ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc doc1ToUpsert = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToUpsert = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
             doc1ToUpsert.NonSensitive = Guid.NewGuid().ToString();
             doc1ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc doc2ToUpsert = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc2ToUpsert = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
             doc2ToUpsert.NonSensitive = Guid.NewGuid().ToString();
             doc2ToUpsert.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
 
             TransactionalBatchResponse batchResponse = await encryptionContainer.CreateTransactionalBatch(new PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
-                .CreateItemStream(doc2ToCreate.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
+                .CreateItemStream(doc2ToCreate.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, doc1ToReplaceCreateResponse.ETag))
                 .CreateItem(doc3ToCreate)
-                .CreateItem(doc4ToCreate, GetBatchItemRequestOptions(dek1, new List<string>())) // empty PathsToEncrypt list
-                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
-                .UpsertItem(doc1ToUpsert, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .CreateItem(doc4ToCreate, GetBatchItemRequestOptions(dek1, new List<string>(), jsonProcessor, compressionAlgorithm)) // empty PathsToEncrypt list
+                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
+                .UpsertItem(doc1ToUpsert, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
                 .DeleteItem(docToDelete.Id)
-                .UpsertItemStream(doc2ToUpsert.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
+                .UpsertItemStream(doc2ToUpsert.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -992,7 +1018,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionTransactionalBatchWithCustomSerializer()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionTransactionalBatchWithCustomSerializer(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             CustomSerializer customSerializer = new();
             CosmosClient clientWithCustomSerializer = TestCommon.CreateCosmosClient(builder => builder
@@ -1008,14 +1035,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
 
-            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
             doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc1ToReplace.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
             TransactionalBatchResponse batchResponse = await encryptionContainerWithCustomSerializer.CreateTransactionalBatch(new PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, doc1ToReplaceCreateResponse.ETag))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -1035,7 +1062,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task VerifyDekOperationWithSystemTextSerializer()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task VerifyDekOperationWithSystemTextSerializer(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new()
             {
@@ -1103,7 +1131,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             ItemResponse<TestDocSystemText> createTestDoc = await encryptionContainerWithCosmosSystemTextJsonSerializer.CreateItemAsync(
                 testDocSystemText,
                 new PartitionKey(testDocSystemText.PartitionKey),
-                GetRequestOptions(dekId, new List<string>() { "/status" }, legacyAlgo: false));
+                GetRequestOptions(dekId, new List<string>() { "/status" }, jsonProcessor, compressionAlgorithm, legacyAlgo: false));
 
             Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
 
@@ -1168,18 +1196,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         }
 
         [TestMethod]
-        public async Task EncryptionTransactionalBatchConflictResponse()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionTransactionalBatchConflictResponse(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string partitionKey = "thePK";
             string dek1 = dekId;
 
-            ItemResponse<TestDoc> doc1CreatedResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1CreatedResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, partitionKey);
             TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
             doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
             doc1ToCreateAgain.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
             TransactionalBatchResponse batchResponse = await encryptionContainer.CreateTransactionalBatch(new PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreateAgain, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .CreateItem(doc1ToCreateAgain, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
@@ -1737,12 +1766,15 @@ cancellationToken) =>
             TestDoc testDoc,
             string dekId,
             List<string> pathsToEncrypt,
-            HttpStatusCode expectedStatusCode)
+            HttpStatusCode expectedStatusCode,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm
+            )
         {
             ItemResponse<TestDoc> upsertResponse = await container.UpsertItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt));
+                GetRequestOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm));
             Assert.AreEqual(expectedStatusCode, upsertResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, upsertResponse.Resource);
             return upsertResponse;
@@ -1752,6 +1784,8 @@ cancellationToken) =>
             Container container,
             string dekId,
             List<string> pathsToEncrypt,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm,
             string partitionKey = null,
             bool legacyAlgo = false)
         {
@@ -1759,7 +1793,7 @@ cancellationToken) =>
             ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt, legacyAlgo: legacyAlgo));
+                GetRequestOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm, legacyAlgo: legacyAlgo));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
             return createResponse;
@@ -1770,13 +1804,15 @@ cancellationToken) =>
             TestDoc testDoc,
             string dekId,
             List<string> pathsToEncrypt,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm,
             string etag = null)
         {
             ItemResponse<TestDoc> replaceResponse = await encryptedContainer.ReplaceItemAsync(
                 testDoc,
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt, etag));
+                GetRequestOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm, etag));
 
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
 
@@ -1801,6 +1837,8 @@ cancellationToken) =>
         private static EncryptionItemRequestOptions GetRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm,
             string ifMatchEtag = null,
             bool legacyAlgo = false)
         {
@@ -1808,7 +1846,7 @@ cancellationToken) =>
             {
                 return new EncryptionItemRequestOptions
                 {
-                    EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
+                    EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm),
                     IfMatchEtag = ifMatchEtag
                 };
             }
@@ -1816,7 +1854,7 @@ cancellationToken) =>
             {
                 return new EncryptionItemRequestOptions
                 {
-                    EncryptionOptions = GetLegacyEncryptionOptions(dekId, pathsToEncrypt),
+                    EncryptionOptions = GetLegacyEncryptionOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm),
                     IfMatchEtag = ifMatchEtag
                 };
             }
@@ -1825,24 +1863,31 @@ cancellationToken) =>
         private static EncryptionTransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm,
             string ifMatchEtag = null)
         {
             return new EncryptionTransactionalBatchItemRequestOptions
             {
-                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
+                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm),
                 IfMatchEtag = ifMatchEtag
             };
         }
 
         private static EncryptionOptions GetEncryptionOptions(
             string dekId,
-            List<string> pathsToEncrypt)
+            List<string> pathsToEncrypt,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm
+            )
         {
             return new EncryptionOptions()
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = pathsToEncrypt
+                PathsToEncrypt = pathsToEncrypt,
+                JsonProcessor = jsonProcessor,
+                CompressionOptions = new CompressionOptions { Algorithm = compressionAlgorithm}
             };
         }
 
@@ -1874,7 +1919,7 @@ cancellationToken) =>
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
             Assert.AreEqual(1, decryptionContext.DecryptionInfoList.Count);
             DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList[0];
-            Assert.AreEqual(dekId ?? MdeCustomEncryptionTests.dekId, decryptionInfo.DataEncryptionKeyId);
+            Assert.AreEqual(dekId ?? MdeCustomEncryptionTestsWithSystemText.dekId, decryptionInfo.DataEncryptionKeyId);
 
             pathsEncrypted ??= TestDoc.PathsToEncrypt;
 
@@ -2255,7 +2300,12 @@ cancellationToken) =>
             }
         }
 
-
+        public static IEnumerable<object[]> ProcessorAndCompressorCombinations => new[] {
+            new object[] { JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.None },
+            new object[] { JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.None },
+            new object[] { JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli },
+            new object[] { JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli },
+        };
 
         #region Legacy
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -2306,7 +2356,8 @@ cancellationToken) =>
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemWithIncompatibleWrapProvider()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionCreateItemWithIncompatibleWrapProvider(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             Container legacyEncryptionContainer;
             CosmosDataEncryptionKeyProvider legacydekProvider = new(new TestKeyWrapProvider());
@@ -2320,7 +2371,7 @@ cancellationToken) =>
                 ItemResponse<TestDoc> createResponse = await legacyEncryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, legacyAlgo: true));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, legacyAlgo: true));
                 Assert.Fail("CreateItemAsync should not have succeeded. ");
             }
             catch (InvalidOperationException ex)
@@ -2330,14 +2381,16 @@ cancellationToken) =>
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemUsingLegacyAlgoWithMdeDek()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionCreateItemUsingLegacyAlgoWithMdeDek(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
-            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, legacyAlgo: true);
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: dekId);
         }
 
         [TestMethod]
-        public async Task EncryptionCreateItemUsingMDEAlgoWithLegacyDek()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionCreateItemUsingMDEAlgoWithLegacyDek(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             CosmosDataEncryptionKeyProvider legacydekProvider = new(new TestKeyWrapProvider());
             await legacydekProvider.InitializeAsync(database, keyContainer.Id);
@@ -2347,7 +2400,7 @@ cancellationToken) =>
             ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(legacydekId, TestDoc.PathsToEncrypt, legacyAlgo: false));
+                GetRequestOptions(legacydekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, legacyAlgo: false));
 
             VerifyExpectedDocResponse(testDoc, createResponse);
 
@@ -2356,7 +2409,8 @@ cancellationToken) =>
 
 
         [TestMethod]
-        public async Task EncryptionRewrapLegacyDekToMdeWrap()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task EncryptionRewrapLegacyDekToMdeWrap(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             string dekId = "rewrapLegacyAlgoDektoMdeAlgoDek";
             DataEncryptionKeyProperties dataEncryptionKeyProperties;
@@ -2370,16 +2424,16 @@ cancellationToken) =>
             Assert.AreEqual(CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, dataEncryptionKeyProperties.EncryptionAlgorithm);
 
             // use it to create item with Legacy Algo
-            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, legacyAlgo: true);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, legacyAlgo: true);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: dekId);
 
             // validate key with new Algo
-            testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: dekId);
 
-            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+            ItemResponse<DataEncryptionKeyProperties> dekResponse = await MdeCustomEncryptionTestsWithSystemText.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                 dekId,
                 metadata2,
                 CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
@@ -2403,21 +2457,21 @@ cancellationToken) =>
             Assert.AreEqual(dataEncryptionKeyProperties, readProperties);
 
             // validate key
-            testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: dekId);
 
             // rewrap from Mde Algo to  Legacy algo should fail
             dekId = "rewrapMdeAlgoDekToLegacyAlgoDek";
 
-            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, dekId);
             Assert.AreEqual(
                 metadata1,
                 dekProperties.EncryptionKeyWrapMetadata);
 
             try
             {
-                await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+                await MdeCustomEncryptionTestsWithSystemText.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                     dekId,
                     metadata2,
                     CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized);
@@ -2434,12 +2488,12 @@ cancellationToken) =>
             // rewrap from Mde Algo to  Legacy algo should fail
             dekId = "rewrapMdeAlgoDekToMdeAlgoDek";
 
-            dekProperties = await CreateDekAsync(MdeCustomEncryptionTests.dekProvider, dekId);
+            dekProperties = await CreateDekAsync(MdeCustomEncryptionTestsWithSystemText.dekProvider, dekId);
             Assert.AreEqual(
                 metadata1,
                 dekProperties.EncryptionKeyWrapMetadata);
 
-            dekResponse = await MdeCustomEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
+            dekResponse = await MdeCustomEncryptionTestsWithSystemText.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                dekId,
                metadata2,
                CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
@@ -2459,12 +2513,13 @@ cancellationToken) =>
 
 
         [TestMethod]
-        public async Task ReadLegacyEncryptedDataWithMdeProcessor()
+        [DynamicData(nameof(ProcessorAndCompressorCombinations))]
+        public async Task ReadLegacyEncryptedDataWithMdeProcessor(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             // Setup the Container with a Dual Wrap Provider Container.
             encryptionContainer = itemContainer.WithEncryptor(encryptorWithDualWrapProvider);
 
-            TestDoc testDoc = await CreateItemAsyncUsingLegacyAlgorithm(encryptionContainer, legacydekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsyncUsingLegacyAlgorithm(encryptionContainer, legacydekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: legacydekId);
 
@@ -2472,15 +2527,12 @@ cancellationToken) =>
 
             TestDoc expectedDoc = new(testDoc);
 
-#if SDKPROJECTREF
-            // FIXME Remove the above once the binary encoding issue is fixed.
             // Read feed (null query)
-            await MdeCustomEncryptionTests.ValidateQueryResultsAsync(
-                MdeCustomEncryptionTests.encryptionContainer,
+            await MdeCustomEncryptionTestsWithSystemText.ValidateQueryResultsAsync(
+                MdeCustomEncryptionTestsWithSystemText.encryptionContainer,
                 query: null,
                 expectedDoc,
                 legacyAlgo: true);
-#endif
 
             await ValidateQueryResultsAsync(
                 encryptionContainer,
@@ -2528,7 +2580,7 @@ cancellationToken) =>
                 expectedDoc);
 
             // create Items with New Algorithm
-            await this.EncryptionCreateItem();
+            await this.EncryptionCreateItem(jsonProcessor, compressionAlgorithm);
 
             // read back Data Items encrypted with Old Algorithm
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: legacydekId);
@@ -2536,14 +2588,14 @@ cancellationToken) =>
             await VerifyItemByReadStreamAsync(encryptionContainer, testDoc);
 
             // Create and read back Data Items encrypted with Old Algorithm
-            TestDoc testDoc2 = await CreateItemAsyncUsingLegacyAlgorithm(encryptionContainer, legacydekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await CreateItemAsyncUsingLegacyAlgorithm(encryptionContainer, legacydekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm);
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc2, dekId: legacydekId);
 
             await VerifyItemByReadStreamAsync(encryptionContainer, testDoc2);
 
             // create Items with New Algorithm
-            await this.EncryptionCreateItem();
+            await this.EncryptionCreateItem(jsonProcessor, compressionAlgorithm);
 
             // read back Data Items encrypted with Old Algorithm
             await VerifyItemByReadAsync(encryptionContainer, testDoc2, dekId: legacydekId);
@@ -2559,13 +2611,15 @@ cancellationToken) =>
            Container container,
            string dekId,
            List<string> pathsToEncrypt,
+           JsonProcessor jsonProcessor,
+           CompressionOptions.CompressionAlgorithm compressionAlgorithm,
            string partitionKey = null)
         {
             TestDoc testDoc = TestDoc.Create(partitionKey);
             ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                GetRequestOptions(dekId, pathsToEncrypt, legacyAlgo: true));
+                GetRequestOptions(dekId, pathsToEncrypt, jsonProcessor, compressionAlgorithm, legacyAlgo: true));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
 
             VerifyExpectedDocResponse(testDoc, createResponse.Resource);
@@ -2575,9 +2629,9 @@ cancellationToken) =>
 
         private static async Task LegacyClassInitializeAsync()
         {
-            MdeCustomEncryptionTests.testKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600);
+            MdeCustomEncryptionTestsWithSystemText.testKeyStoreProvider.DataEncryptionKeyCacheTimeToLive = TimeSpan.FromSeconds(3600);
 
-            dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), MdeCustomEncryptionTests.testKeyStoreProvider);
+            dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider(), MdeCustomEncryptionTestsWithSystemText.testKeyStoreProvider);
             legacytestKeyWrapProvider = new TestKeyWrapProvider();
 
             TestEncryptionKeyStoreProvider testKeyStoreProvider = new()
@@ -2587,19 +2641,23 @@ cancellationToken) =>
             dualDekProvider = new CosmosDataEncryptionKeyProvider(legacytestKeyWrapProvider, testKeyStoreProvider);
             await dualDekProvider.InitializeAsync(database, keyContainer.Id);
 
-            _ = await CreateLegacyDekAsync(MdeCustomEncryptionTests.dualDekProvider, MdeCustomEncryptionTests.legacydekId);
+            _ = await CreateLegacyDekAsync(MdeCustomEncryptionTestsWithSystemText.dualDekProvider, MdeCustomEncryptionTestsWithSystemText.legacydekId);
             encryptorWithDualWrapProvider = new TestEncryptor(dualDekProvider);
         }
 
         private static EncryptionOptions GetLegacyEncryptionOptions(
             string dekId,
-            List<string> pathsToEncrypt)
+            List<string> pathsToEncrypt,
+            JsonProcessor jsonProcessor,
+            CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             return new EncryptionOptions()
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                PathsToEncrypt = pathsToEncrypt
+                PathsToEncrypt = pathsToEncrypt,
+                JsonProcessor = jsonProcessor,
+                CompressionOptions = new CompressionOptions() { Algorithm = compressionAlgorithm }
             };
         }
 
@@ -2646,3 +2704,4 @@ cancellationToken) =>
         #endregion
     }
 }
+#endif

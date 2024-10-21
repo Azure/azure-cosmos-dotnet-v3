@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Encryptor encryptor)
         {
 #if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            if (container.Database.Client.ClientOptions.SerializerOptions.UseSystemTextJsonSerializerWithOptions)
+            if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
             {
                 return new EncryptionContainerStream(container, encryptor);
             }
@@ -57,17 +57,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-#if SDKPROJECTREF
-            if (container.Database.Client.ClientOptions.SerializerOptions.UseSystemTextJsonSerializerWithOptions)
+#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+            if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
             {
-                if (container is not EncryptionContainerStream encryptionContainer)
+                if (container is not EncryptionContainerStream encryptionContainerStream)
                 {
                     throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainerStream)}.");
                 }
 
                 return new EncryptionFeedIteratorStream<T>(
-                    (EncryptionFeedIteratorStream)encryptionContainer.ToEncryptionStreamIterator(query),
-                    encryptionContainer.ResponseFactory);
+                    (EncryptionFeedIteratorStream)encryptionContainerStream.ToEncryptionStreamIterator(query),
+                    encryptionContainerStream.ResponseFactory);
             }
 #endif
             if (container is not EncryptionContainer encryptionContainer)
@@ -103,17 +103,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             IQueryable<T> query)
         {
 #if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            if (container.Database.Client.ClientOptions.SerializerOptions.UseSystemTextJsonSerializerWithOptions)
+            if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
             {
-                if (container is not EncryptionContainerStream encryptionContainer)
+                if (container is not EncryptionContainerStream encryptionContainerStream)
                 {
                     throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainerStream)}.");
                 }
 
                 return new EncryptionFeedIteratorStream(
                     query.ToStreamIterator(),
-                    encryptionContainer.Encryptor,
-                    encryptionContainer.CosmosSerializer,
+                    encryptionContainerStream.Encryptor,
+                    encryptionContainerStream.CosmosSerializer,
                     new MemoryStreamManager());
             }
 #endif

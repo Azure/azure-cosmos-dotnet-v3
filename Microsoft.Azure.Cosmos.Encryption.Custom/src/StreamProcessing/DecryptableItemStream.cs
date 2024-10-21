@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
                     return ((T)(object)ms, this.decryptionContext);
                 default:
 #if SDKPROJECTREF
-                    return (await this.CosmosSerializer.FromStreamAsync<T>(this.decryptedStream, cancellationToken), this.decryptionContext);
+                    return (await this.cosmosSerializer.FromStreamAsync<T>(this.decryptedStream, cancellationToken), this.decryptionContext);
 #else
                     // this API is missing Async => should not be used
                     return (this.cosmosSerializer.FromStream<T>(this.decryptedStream), this.decryptionContext);
