@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="serializer">Cosmos Serializer</param>
         /// <returns>Input payload in stream format</returns>
-        [Obsolete("Use overload with outputStream")]
         protected internal abstract Stream ToStream(CosmosSerializer serializer);
 
         /// <summary>
@@ -44,7 +43,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <param name="decryptableContent">The encrypted content which is yet to be decrypted.</param>
         /// <param name="encryptor">Encryptor instance which will be used for decryption.</param>
         /// <param name="cosmosSerializer">Serializer instance which will be used for deserializing the content after decryption.</param>
-        [Obsolete("Use overload with decryptableStream")]
         protected internal abstract void SetDecryptableItem(
             JToken decryptableContent,
             Encryptor encryptor,

@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.RecyclableMemoryStreamMirror
         }
 
         /// <summary>
-        /// Finalizes an instance of the RecyclableMemoryStream class.
+        /// Finalizes an instance of the <see cref="RecyclableMemoryStream" /> class.
         /// </summary>
         /// <remarks>Failing to dispose indicates a bug in the code using streams. Care should be taken to properly account for stream lifetime.</remarks>
         ~RecyclableMemoryStream()

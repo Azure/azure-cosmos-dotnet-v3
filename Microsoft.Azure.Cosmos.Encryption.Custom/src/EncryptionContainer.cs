@@ -10,9 +10,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-    using Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing;
-#endif
     using Newtonsoft.Json.Linq;
 
     internal sealed class EncryptionContainer : Container
@@ -24,10 +21,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public Encryptor Encryptor { get; }
 
         public CosmosResponseFactory ResponseFactory { get; }
-
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        private readonly StreamManager streamManager;
-#endif
 
         /// <summary>
         /// All the operations / requests for exercising client-side encryption functionality need to be made using this EncryptionContainer instance.
@@ -42,9 +35,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this.Encryptor = encryptor ?? throw new ArgumentNullException(nameof(encryptor));
             this.ResponseFactory = this.Database.Client.ResponseFactory;
             this.CosmosSerializer = this.Database.Client.ClientOptions.Serializer;
-#if NET8_0_OR_GREATER
-            this.streamManager = new MemoryStreamManager();
-#endif
         }
 
         public override string Id => this.container.Id;
@@ -86,27 +76,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 ResponseMessage responseMessage;
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                if (item is EncryptableItemStream<T> encryptableItemStream)
-                {
-                    using Stream rms = this.streamManager.CreateStream();
-                    await encryptableItemStream.ToStreamAsync(this.CosmosSerializer, rms, cancellationToken);
-                    responseMessage = await this.CreateItemHelperAsync(
-                        rms,
-                        partitionKey.Value,
-                        requestOptions,
-                        decryptResponse: false,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    encryptableItemStream.SetDecryptableStream(responseMessage.Content, this.Encryptor, encryptionItemRequestOptions.EncryptionOptions.JsonProcessor, this.CosmosSerializer, this.streamManager);
-
-                    return new EncryptionItemResponse<T>(responseMessage, item);
-                }
-#endif
                 if (item is EncryptableItem encryptableItem)
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
                     using (Stream streamPayload = encryptableItem.ToStream(this.CosmosSerializer))
                     {
                         responseMessage = await this.CreateItemHelperAsync(
@@ -117,14 +88,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             diagnosticsContext,
                             cancellationToken);
                     }
-#pragma warning restore CS0618 // Type or member is obsolete
 
-#pragma warning disable CS0618 // Type or member is obsolete
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
-#pragma warning restore CS0618 // Type or member is obsolete
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -266,20 +234,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                         diagnosticsContext,
                         cancellationToken);
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                    EncryptionItemRequestOptions options = requestOptions as EncryptionItemRequestOptions;
-                    DecryptableItem decryptableItem = new DecryptableItemStream(
-                            responseMessage.Content,
-                            this.Encryptor,
-                            options.EncryptionOptions.JsonProcessor,
-                            this.CosmosSerializer,
-                            this.streamManager);
-#else
                     DecryptableItemCore decryptableItem = new (
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
-#endif
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -333,31 +291,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                using Stream rms = this.streamManager.CreateStream();
-
-                EncryptionItemRequestOptions options = requestOptions as EncryptionItemRequestOptions;
-
-                if (options?.EncryptionOptions != null)
-                {
-                    _ = await EncryptionProcessor.DecryptAsync(responseMessage.Content, rms, this.Encryptor, diagnosticsContext, options.EncryptionOptions.JsonProcessor, cancellationToken);
-                    responseMessage.Content = rms;
-                }
-                else
-                {
-                    (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
-                        responseMessage.Content,
-                        this.Encryptor,
-                        diagnosticsContext,
-                        cancellationToken);
-                }
-#else
                 (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
                     cancellationToken);
-#endif
             }
 
             return responseMessage;
@@ -406,28 +344,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 ResponseMessage responseMessage;
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                if (item is EncryptableItemStream<T> encryptableItemStream)
-                {
-                    using Stream rms = this.streamManager.CreateStream();
-                    await encryptableItemStream.ToStreamAsync(this.CosmosSerializer, rms, cancellationToken);
-                    responseMessage = await this.CreateItemHelperAsync(
-                        rms,
-                        partitionKey.Value,
-                        requestOptions,
-                        decryptResponse: false,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    encryptableItemStream.SetDecryptableStream(responseMessage.Content, this.Encryptor, encryptionItemRequestOptions.EncryptionOptions.JsonProcessor, this.CosmosSerializer, this.streamManager);
-
-                    return new EncryptionItemResponse<T>(responseMessage, item);
-                }
-#endif
-
                 if (item is EncryptableItem encryptableItem)
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
                     using (Stream streamPayload = encryptableItem.ToStream(this.CosmosSerializer))
                     {
                         responseMessage = await this.ReplaceItemHelperAsync(
@@ -439,14 +357,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             diagnosticsContext,
                             cancellationToken);
                     }
-#pragma warning restore CS0618 // Type or member is obsolete
 
-#pragma warning disable CS0618 // Type or member is obsolete
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
-#pragma warning restore CS0618 // Type or member is obsolete
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -527,24 +442,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            Stream encryptedStream = this.streamManager.CreateStream();
-            await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                encryptedStream,
-                this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                diagnosticsContext,
-                cancellationToken);
-            streamPayload = encryptedStream;
-#else
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
                 diagnosticsContext,
                 cancellationToken);
-#endif
 
             ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
                 streamPayload,
@@ -555,23 +458,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                Stream decryptedStream = this.streamManager.CreateStream();
-                _ = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    decryptedStream,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    encryptionItemRequestOptions.EncryptionOptions.JsonProcessor,
-                    cancellationToken);
-                responseMessage.Content = decryptedStream;
-#else
                 (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
                     cancellationToken);
-#endif
             }
 
             return responseMessage;
@@ -608,28 +499,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 ResponseMessage responseMessage;
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                if (item is EncryptableItemStream<T> encryptableItemStream)
-                {
-                    using Stream rms = this.streamManager.CreateStream();
-                    await encryptableItemStream.ToStreamAsync(this.CosmosSerializer, rms, cancellationToken);
-                    responseMessage = await this.UpsertItemHelperAsync(
-                        rms,
-                        partitionKey.Value,
-                        requestOptions,
-                        decryptResponse: false,
-                        diagnosticsContext,
-                        cancellationToken);
-
-                    encryptableItemStream.SetDecryptableStream(responseMessage.Content, this.Encryptor, encryptionItemRequestOptions.EncryptionOptions.JsonProcessor, this.CosmosSerializer, this.streamManager);
-
-                    return new EncryptionItemResponse<T>(responseMessage, item);
-                }
-#endif
-
                 if (item is EncryptableItem encryptableItem)
                 {
-#pragma warning disable CS0618 // Type or member is obsolete
                     using (Stream streamPayload = encryptableItem.ToStream(this.CosmosSerializer))
                     {
                         responseMessage = await this.UpsertItemHelperAsync(
@@ -640,14 +511,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                             diagnosticsContext,
                             cancellationToken);
                     }
-#pragma warning restore CS0618 // Type or member is obsolete
 
-#pragma warning disable CS0618 // Type or member is obsolete
                     encryptableItem.SetDecryptableItem(
                         EncryptionProcessor.BaseSerializer.FromStream<JObject>(responseMessage.Content),
                         this.Encryptor,
                         this.CosmosSerializer);
-#pragma warning restore CS0618 // Type or member is obsolete
 
                     return new EncryptionItemResponse<T>(
                         responseMessage,
@@ -717,24 +585,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            Stream rms = this.streamManager.CreateStream();
-            await EncryptionProcessor.EncryptAsync(
-                streamPayload,
-                rms,
-                this.Encryptor,
-                encryptionItemRequestOptions.EncryptionOptions,
-                diagnosticsContext,
-                cancellationToken);
-            streamPayload = rms;
-#else
             streamPayload = await EncryptionProcessor.EncryptAsync(
                 streamPayload,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
                 diagnosticsContext,
                 cancellationToken);
-#endif
 
             ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
                 streamPayload,
@@ -744,23 +600,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                Stream decryptStream = this.streamManager.CreateStream();
-                _ = await EncryptionProcessor.DecryptAsync(
-                    responseMessage.Content,
-                    decryptStream,
-                    this.Encryptor,
-                    diagnosticsContext,
-                    encryptionItemRequestOptions.EncryptionOptions.JsonProcessor,
-                    cancellationToken);
-                responseMessage.Content = decryptStream;
-#else
                 (responseMessage.Content, _) = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     this.Encryptor,
                     diagnosticsContext,
                     cancellationToken);
-#endif
             }
 
             return responseMessage;
@@ -1039,26 +883,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             throw new NotImplementedException();
         }
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangesHandler<T> onChangesDelegate)
-        {
-            return this.container.GetChangeFeedProcessorBuilder(
-                processorName,
-                async (
-                    IReadOnlyCollection<Stream> documents,
-                    CancellationToken cancellationToken) =>
-                {
-                    List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
-                        documents,
-                        cancellationToken);
-
-                    // Call the original passed in delegate
-                    await onChangesDelegate(decryptItems, cancellationToken);
-                });
-        }
-#else
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
@@ -1077,29 +901,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     await onChangesDelegate(decryptItems, cancellationToken);
                 });
         }
-#endif
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
-            string processorName,
-            ChangeFeedHandler<T> onChangesDelegate)
-        {
-            return this.container.GetChangeFeedProcessorBuilder(
-                processorName,
-                async (
-                    ChangeFeedProcessorContext context,
-                    IReadOnlyCollection<Stream> documents,
-                    CancellationToken cancellationToken) =>
-                {
-                    List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
-                        documents,
-                        cancellationToken);
-
-                    // Call the original passed in delegate
-                    await onChangesDelegate(context, decryptItems, cancellationToken);
-                });
-        }
-#else
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangeFeedHandler<T> onChangesDelegate)
@@ -1119,30 +921,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     await onChangesDelegate(context, decryptItems, cancellationToken);
                 });
         }
-#endif
 
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
-            string processorName,
-            ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
-        {
-            return this.container.GetChangeFeedProcessorBuilderWithManualCheckpoint(
-                processorName,
-                async (
-                    ChangeFeedProcessorContext context,
-                    IReadOnlyCollection<Stream> documents,
-                    Func<Task> tryCheckpointAsync,
-                    CancellationToken cancellationToken) =>
-                {
-                    List<T> decryptItems = await this.DecryptChangeFeedDocumentsAsync<T>(
-                        documents,
-                        cancellationToken);
-
-                    // Call the original passed in delegate
-                    await onChangesDelegate(context, decryptItems, tryCheckpointAsync, cancellationToken);
-                });
-        }
-#else
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(
             string processorName,
             ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate)
@@ -1163,7 +942,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     await onChangesDelegate(context, decryptItems, tryCheckpointAsync, cancellationToken);
                 });
         }
-#endif
 
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(
             string processorName,
@@ -1176,20 +954,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Stream changes,
                     CancellationToken cancellationToken) =>
                 {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                    Stream decryptedChanges = this.streamManager.CreateStream();
-                    await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
-                        changes,
-                        decryptedChanges,
-                        this.Encryptor,
-                        this.streamManager,
-                        cancellationToken);
-#else
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         this.Encryptor,
                         cancellationToken);
-#endif
 
                     // Call the original passed in delegate
                     await onChangesDelegate(context, decryptedChanges, cancellationToken);
@@ -1208,20 +976,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     Func<Task> tryCheckpointAsync,
                     CancellationToken cancellationToken) =>
                 {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-                    Stream decryptedChanges = this.streamManager.CreateStream();
-                    await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
-                        changes,
-                        decryptedChanges,
-                        this.Encryptor,
-                        this.streamManager,
-                        cancellationToken);
-#else
                     Stream decryptedChanges = await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         changes,
                         this.Encryptor,
                         cancellationToken);
-#endif
 
                     // Call the original passed in delegate
                     await onChangesDelegate(context, decryptedChanges, tryCheckpointAsync, cancellationToken);
@@ -1347,56 +1105,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             return decryptItems;
         }
-
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        private async Task<List<T>> DecryptChangeFeedDocumentsAsync<T>(
-            IReadOnlyCollection<Stream> documents,
-            CancellationToken cancellationToken)
-        {
-            List<T> decryptItems = new (documents.Count);
-            if (typeof(T) == typeof(DecryptableItem))
-            {
-                foreach (Stream documentStream in documents)
-                {
-                    DecryptableItemStream item = new (
-                        documentStream,
-                        this.Encryptor,
-                        JsonProcessor.Stream,
-                        this.CosmosSerializer,
-                        this.streamManager);
-
-                    decryptItems.Add((T)(object)item);
-                }
-            }
-            else
-            {
-                foreach (Stream document in documents)
-                {
-                    CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(null);
-                    using (diagnosticsContext.CreateScope("DecryptChangeFeedDocumentsAsync<"))
-                    {
-                        Stream decryptedStream = this.streamManager.CreateStream();
-                        _ = await EncryptionProcessor.DecryptAsync(
-                            document,
-                            decryptedStream,
-                            this.Encryptor,
-                            diagnosticsContext,
-                            JsonProcessor.Stream,
-                            cancellationToken);
-
-#if SDKPROJECTREF
-                        decryptItems.Add(await this.CosmosSerializer.FromStreamAsync<T>(decryptedStream, cancellationToken));
-#else
-                        decryptItems.Add(this.CosmosSerializer.FromStream<T>(decryptedStream));
-#endif
-
-                        await decryptedStream.DisposeAsync();
-                    }
-                }
-            }
-
-            return decryptItems;
-        }
-#endif
-                    }
+    }
 }

@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Text.Json.Nodes;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation.SystemTextJson;
 
     internal class MdeJsonNodeEncryptionProcessor
     {
@@ -23,14 +22,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
         internal JsonNodeSqlSerializer Serializer { get; set; } = new JsonNodeSqlSerializer();
 
         internal MdeEncryptor Encryptor { get; set; } = new MdeEncryptor();
-
-        internal JsonSerializerOptions JsonSerializerOptions { get; set; }
-
-        public MdeJsonNodeEncryptionProcessor()
-        {
-            this.JsonSerializerOptions = new JsonSerializerOptions();
-            this.JsonSerializerOptions.Converters.Add(new JsonBytesConverter());
-        }
 
         public async Task<Stream> EncryptAsync(
             Stream input,
