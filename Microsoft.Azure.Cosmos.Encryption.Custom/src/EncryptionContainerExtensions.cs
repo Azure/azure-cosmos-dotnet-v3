@@ -23,6 +23,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             Encryptor encryptor)
         {
+#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+            if (container.Database.Client.ClientOptions.SerializerOptions.UseSystemTextJsonSerializerWithOptions)
+            {
+                return new EncryptionContainerStream(container, encryptor);
+            }
+#endif
+
             return new EncryptionContainer(
                 container,
                 encryptor);
@@ -50,6 +57,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
+#if SDKPROJECTREF
+            if (container.Database.Client.ClientOptions.SerializerOptions.UseSystemTextJsonSerializerWithOptions)
+            {
+                if (container is not EncryptionContainerStream encryptionContainer)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainerStream)}.");
+                }
+
+                return new EncryptionFeedIteratorStream<T>(
+                    (EncryptionFeedIteratorStream)encryptionContainer.ToEncryptionStreamIterator(query),
+                    encryptionContainer.ResponseFactory);
+            }
+#endif
             if (container is not EncryptionContainer encryptionContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
@@ -82,6 +102,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
+#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+            if (container.Database.Client.ClientOptions.SerializerOptions.UseSystemTextJsonSerializerWithOptions)
+            {
+                if (container is not EncryptionContainerStream encryptionContainer)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainerStream)}.");
+                }
+
+                return new EncryptionFeedIteratorStream(
+                    query.ToStreamIterator(),
+                    encryptionContainer.Encryptor,
+                    encryptionContainer.CosmosSerializer,
+                    new MemoryStreamManager());
+            }
+#endif
+
             if (container is not EncryptionContainer encryptionContainer)
             {
                 throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
