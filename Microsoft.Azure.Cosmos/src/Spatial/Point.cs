@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="position">
         /// Position of the point.
         /// </param>
-        public Point(Position position)
+        internal Point(Position position)
             : this(position, new GeometryParams())
         {
         }
@@ -51,12 +51,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         public Point(Position position, GeometryParams geometryParams)
             : base(GeometryType.Point, geometryParams)
         {
-            if (position == null)
-            {
-                throw new ArgumentNullException("position");
-            }
-
-            this.Position = position;
+            this.Position = position ?? throw new ArgumentNullException("position");
         }
 
         /// <summary>
@@ -76,9 +71,9 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinates of the point.
         /// </value>
-        [DataMember(Name = "coordinates")]
-        [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
-        public Position Position { get; set; }
+        [DataMember(Name = PositionMetadataFields.Coordinates)]
+        [JsonProperty(PositionMetadataFields.Coordinates, Required = Required.Always, Order = 1)]
+        public Position Position { get; private set; }
 
         /// <summary>
         /// Determines if this <see cref="Point"/> is equal to <paramref name="other" /> in the Azure Cosmos DB service.
@@ -87,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Point other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
