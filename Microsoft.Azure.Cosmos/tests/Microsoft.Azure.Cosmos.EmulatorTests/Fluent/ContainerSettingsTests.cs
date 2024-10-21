@@ -683,7 +683,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        //[Ignore("This test will be enabled once the full text search changes are made available into the public emulator.")]
+        [Ignore("This test will be enabled once the full text search changes are made available into the public emulator.")]
         public async Task TestFullTExtSearchPolicy()
         {
             string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
