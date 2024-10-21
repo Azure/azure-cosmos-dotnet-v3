@@ -12,12 +12,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the full text policy configuration for specifying the full text paths on documents in the collection in the Azure Cosmos DB service.
     /// </summary>
     /// <seealso cref="ContainerProperties"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class FullTextPolicy
+    internal sealed class FullTextPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FullTextPolicy"/> class.

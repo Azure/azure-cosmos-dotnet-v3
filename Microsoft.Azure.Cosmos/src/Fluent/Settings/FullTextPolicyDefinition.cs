@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="FullTextPolicyDefinition"/> fluent definition.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class FullTextPolicyDefinition
+    internal class FullTextPolicyDefinition
     {
         private readonly ContainerBuilder parent;
         private readonly Action<FullTextPolicy> attachCallback;
@@ -26,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Initializes a new instance of the <see cref="FullTextPolicyDefinition"/> class.
         /// </summary>
         /// <param name="parent">The original instance of <see cref="ContainerBuilder"/>.</param>
-        /// <param name="defaultLanguage">blabla</param>
+        /// <param name="defaultLanguage">A string indicating the default language for the inexing policy definition.</param>
         /// <param name="fullTextPaths">List of fullTextPaths to include in the policy definition.</param>
         /// <param name="attachCallback">A callback delegate to be used at a later point of time.</param>
         public FullTextPolicyDefinition(

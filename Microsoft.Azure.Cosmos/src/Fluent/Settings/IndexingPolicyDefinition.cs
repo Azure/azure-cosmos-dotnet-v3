@@ -130,15 +130,10 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defines a <see cref="VectorIndexPath"/> in the current <see cref="Container"/>'s definition.
+        /// Defines a <see cref="FullTextIndexPath"/> in the current <see cref="Container"/>'s definition.
         /// </summary>
-        /// <returns>An instance of <see cref="VectorIndexDefinition{T}"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        FullTextIndexDefinition<IndexingPolicyDefinition<T>> WithFullTextIndex()
+        /// <returns>An instance of <see cref="FullTextIndexDefinition{T}"/>.</returns>
+        internal FullTextIndexDefinition<IndexingPolicyDefinition<T>> WithFullTextIndex()
         {
             return new FullTextIndexDefinition<IndexingPolicyDefinition<T>>(
                 this,

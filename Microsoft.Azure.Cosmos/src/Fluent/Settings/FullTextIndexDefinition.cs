@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Full Text index fluent definition.
     /// </summary>
     /// <seealso cref="FullTextIndexPath"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class FullTextIndexDefinition<T>
+    internal class FullTextIndexDefinition<T>
     {
         private readonly FullTextIndexPath fullTextIndexPath = new ();
         private readonly T parent;

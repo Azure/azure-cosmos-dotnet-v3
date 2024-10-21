@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// DOM for a full text index policy. A full text policy is defined at the collection level.
+    /// DOM for a full text path. A full text path is defined at the collection level.
     /// </summary>
     /// <example>
     /// <![CDATA[
@@ -31,12 +31,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class FullTextPath : IEquatable<FullTextPath>
+    internal sealed class FullTextPath : IEquatable<FullTextPath>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the full text index.
