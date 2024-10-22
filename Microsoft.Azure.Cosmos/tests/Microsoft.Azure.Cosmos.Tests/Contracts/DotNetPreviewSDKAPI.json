@@ -842,12 +842,17 @@
     "Microsoft.Azure.Cosmos.FullTextPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] FullTextPaths[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"fullTextPaths\")]": {
-          "Type": "Field",
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] FullTextPaths[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
           "Attributes": [
-            "JsonPropertyAttribute"
+            "JsonIgnoreAttribute"
           ],
-          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] FullTextPaths;IsInitOnly:True;IsStatic:False;"
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] FullTextPaths;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextPaths(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.String DefaultLanguage[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultLanguage\")]": {
           "Type": "Property",
@@ -863,10 +868,10 @@
           ],
           "MethodInfo": "System.String get_DefaultLanguage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void .ctor(System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath])": {
+        "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
-          "MethodInfo": "[Void .ctor(System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath]), Void .ctor(System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath])]"
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
         "Void set_DefaultLanguage(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -874,6 +879,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DefaultLanguage(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextPaths(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_FullTextPaths(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
