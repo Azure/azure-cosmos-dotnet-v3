@@ -54,6 +54,13 @@ Copyright (C) Microsoft Corporation. All rights reserved.
       </ContentWithTargetPath>
   </ItemGroup>
 
+  <!-- Prevent Newtonsoft.Json from propagating to external consumers -->
+  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" PrivateAssets="all">
+        <NoWarn>NU1903</NoWarn>
+    </PackageReference>
+  </ItemGroup>
+
   <!-- Ensure validation before compilation -->
   <Target Name="VerifyNewtonsoftJsonReference"
       BeforeTargets="Compile"
