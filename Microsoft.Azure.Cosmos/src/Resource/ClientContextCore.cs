@@ -525,8 +525,9 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
-                    // Checks if OpenTelemetry is configured for this operation.
-                    if (openTelemetry != null)
+                    // Checks if OpenTelemetry is configured for this operation and either Trace or Metrics are enabled by customer
+                    if (openTelemetry != null && 
+                        (!this.ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing || this.ClientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled))
                     {
                         // Extracts and records telemetry data from the result of the operation.
                         OpenTelemetryAttributes response = openTelemetry?.Item2(result);

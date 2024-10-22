@@ -46,24 +46,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             MeterProvider meterProvider = Sdk
                 .CreateMeterProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Azure Cosmos DB Operation Level Metrics"))
-                .AddMeter(CosmosDbClientMetricsConstant.OperationMetrics.MeterName)
+                .AddMeter(CosmosDbClientMetrics.OperationMetrics.MeterName)
                 .AddView(
-                    instrumentName: CosmosDbClientMetricsConstant.OperationMetrics.Name.RequestCharge,
+                    instrumentName: CosmosDbClientMetrics.OperationMetrics.Name.RequestCharge,
                     metricStreamConfiguration: new ExplicitBucketHistogramConfiguration
                     {
-                        Boundaries = CosmosDbClientMetricsConstant.HistogramBuckets.RequestUnitBuckets
+                        Boundaries = CosmosDbClientMetrics.HistogramBuckets.RequestUnitBuckets
                     })
                 .AddView(
-                    instrumentName: CosmosDbClientMetricsConstant.OperationMetrics.Name.Latency,
+                    instrumentName: CosmosDbClientMetrics.OperationMetrics.Name.Latency,
                     metricStreamConfiguration: new ExplicitBucketHistogramConfiguration
                     {
-                        Boundaries = CosmosDbClientMetricsConstant.HistogramBuckets.RequestLatencyBuckets
+                        Boundaries = CosmosDbClientMetrics.HistogramBuckets.RequestLatencyBuckets
                     })
                 .AddView(
-                    instrumentName: CosmosDbClientMetricsConstant.OperationMetrics.Name.RowCount,
+                    instrumentName: CosmosDbClientMetrics.OperationMetrics.Name.RowCount,
                     metricStreamConfiguration: new ExplicitBucketHistogramConfiguration
                     {
-                        Boundaries = CosmosDbClientMetricsConstant.HistogramBuckets.RowCountBuckets
+                        Boundaries = CosmosDbClientMetrics.HistogramBuckets.RowCountBuckets
                     })
                 .AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(this.manualResetEventSlim), exportIntervalMilliseconds: AggregatingInterval))
                 .Build();

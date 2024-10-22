@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Meter instance for capturing various metrics related to Cosmos DB operations.
         /// </summary>
-        internal static Meter OperationMeter = new Meter(CosmosDbClientMetricsConstant.OperationMetrics.MeterName, CosmosDbClientMetricsConstant.OperationMetrics.Version);
+        internal static Meter OperationMeter = new Meter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.OperationMetrics.Version);
 
         /// <summary>
         /// Histogram to record request latency (in seconds) for Cosmos DB operations.
@@ -49,21 +49,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         internal static void Initialize()
         {
-            CosmosOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.Latency,
-                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.Sec,
-                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.Latency);
+            CosmosOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.OperationMetrics.Name.Latency,
+                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Sec,
+                description: CosmosDbClientMetrics.OperationMetrics.Description.Latency);
 
-            CosmosOperationMeter.RequestUnitsHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.RequestCharge,
-                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.RequestUnit,
-                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.RequestCharge);
+            CosmosOperationMeter.RequestUnitsHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.OperationMetrics.Name.RequestCharge,
+                unit: CosmosDbClientMetrics.OperationMetrics.Unit.RequestUnit,
+                description: CosmosDbClientMetrics.OperationMetrics.Description.RequestCharge);
 
-            CosmosOperationMeter.ActualItemHistogram ??= OperationMeter.CreateHistogram<int>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.RowCount,
-                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.Count, 
-                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.RowCount);
+            CosmosOperationMeter.ActualItemHistogram ??= OperationMeter.CreateHistogram<int>(name: CosmosDbClientMetrics.OperationMetrics.Name.RowCount,
+                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Count, 
+                description: CosmosDbClientMetrics.OperationMetrics.Description.RowCount);
 
-            CosmosOperationMeter.ActiveInstanceCounter ??= OperationMeter.CreateUpDownCounter<int>(name: CosmosDbClientMetricsConstant.OperationMetrics.Name.ActiveInstances,
-                unit: CosmosDbClientMetricsConstant.OperationMetrics.Unit.Count,
-                description: CosmosDbClientMetricsConstant.OperationMetrics.Description.ActiveInstances);
+            CosmosOperationMeter.ActiveInstanceCounter ??= OperationMeter.CreateUpDownCounter<int>(name: CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances,
+                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Count,
+                description: CosmosDbClientMetrics.OperationMetrics.Description.ActiveInstances);
 
             IsEnabled = true;
         }
