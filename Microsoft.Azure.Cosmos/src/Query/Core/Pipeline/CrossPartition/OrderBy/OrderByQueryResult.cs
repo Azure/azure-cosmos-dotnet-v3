@@ -30,6 +30,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         private readonly IReadOnlyList<OrderByItem> orderByItems;
 
+        public CosmosObject RawPayload => this.cosmosObject;
+
         public OrderByQueryResult(CosmosElement cosmosElement)
         {
             if (cosmosElement == null)

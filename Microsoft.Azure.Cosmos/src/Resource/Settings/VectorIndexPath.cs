@@ -32,11 +32,16 @@ namespace Microsoft.Azure.Cosmos
     ///         },
     ///         {
     ///             "path": "/vector2",
-    ///             "type": "flat"
+    ///             "type": "quantizedFlat",
+    ///             "quantizationByteSize": 3,
+    ///             "vectorIndexShardKey": ["/ZipCode"]
     ///         },
     ///         {
     ///             "path": "/embeddings/vector",
-    ///             "type": "flat"
+    ///             "type": "DiskANN",
+    ///             "quantizationByteSize": 2,
+    ///             "indexingSearchListSize": 100,
+    ///             "vectorIndexShardKey": ["/Country"]
     ///         }
     ///     ]
     /// }
@@ -49,6 +54,12 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class VectorIndexPath
     {
+        [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
+        private int? indexingSearchListSizeInternal;
+
+        [JsonProperty(PropertyName = "quantizationByteSize", NullValueHandling = NullValueHandling.Ignore)]
+        private int? quantizationByteSizeInternal;
+
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
@@ -61,6 +72,34 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "type")]
         [JsonConverter(typeof(StringEnumConverter))]
         public VectorIndexType Type { get; set; }
+
+        /// <summary>
+        /// Gets or sets the quantization byte size for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
+        /// The allowed range for this parameter is between 1 and 3.
+        /// </summary>
+        [JsonIgnore]
+        public int QuantizationByteSize
+        {
+            get => this.quantizationByteSizeInternal == null ? 0 : this.quantizationByteSizeInternal.Value;
+            set => this.quantizationByteSizeInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the indexing search list size for the vector index path. This is only applicable for the diskann vector index type.
+        /// The allowed range for this parameter is between 25 and 500.
+        /// </summary>
+        [JsonIgnore]
+        public int IndexingSearchListSize
+        {
+            get => this.indexingSearchListSizeInternal == null ? 0 : this.indexingSearchListSizeInternal.Value;
+            set => this.indexingSearchListSizeInternal = value;
+        }
+
+        /// <summary>
+        /// Gets or sets the vector index shard key for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
+        /// </summary>
+        [JsonProperty(PropertyName = "vectorIndexShardKey", NullValueHandling = NullValueHandling.Ignore)]
+        public string[] VectorIndexShardKey { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
