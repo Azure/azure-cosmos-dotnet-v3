@@ -323,7 +323,50 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.FullTextPolicy fullTextPolicy = containerSettings.FullTextPolicy;
             Assert.IsNotNull(fullTextPolicy.FullTextPaths);
             Assert.AreEqual(fullTextPaths.Count, fullTextPolicy.FullTextPaths.Count());
+            Assert.AreEqual(fullTextPaths[0].Path, fullTextPolicy.FullTextPaths[0].Path);
+            Assert.AreEqual(fullTextPaths[0].Language, fullTextPolicy.FullTextPaths[0].Language);
+
             CollectionAssert.AreEquivalent(fullTextPaths, fullTextPolicy.FullTextPaths.ToList());
+
+            Collection<Cosmos.FullTextIndexPath> fullTextIndexes = containerSettings.IndexingPolicy.FullTextIndexes;
+            Assert.AreEqual("/fts1", fullTextIndexes[0].Path);
+            Assert.AreEqual("/fts2", fullTextIndexes[1].Path);
+            Assert.AreEqual("/fts3", fullTextIndexes[2].Path);
+        }
+
+        [TestMethod]
+        public void ValidateFullTextPathsAndIndexesWithDefaultLanguage()
+        {
+            string defaultLanguage = "en-US", fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
+            ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
+            {
+                FullTextPolicy = new(defaultLanguage, fullTextPaths: new Collection<FullTextPath>()),
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    FullTextIndexes = new()
+                    {
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath1,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath2,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath3,
+                        }
+                    },
+                },
+            };
+
+            Assert.IsNotNull(containerSettings.IndexingPolicy);
+            Assert.IsNotNull(containerSettings.FullTextPolicy);
+            Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+
+            Cosmos.FullTextPolicy fullTextPolicy = containerSettings.FullTextPolicy;
+            Assert.AreEqual(0, fullTextPolicy.FullTextPaths.Count);
 
             Collection<Cosmos.FullTextIndexPath> fullTextIndexes = containerSettings.IndexingPolicy.FullTextIndexes;
             Assert.AreEqual("/fts1", fullTextIndexes[0].Path);

@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defined the vector embedding policy for this Azure Cosmos container
+        /// Defines the vector embedding policy for this Azure Cosmos container
         /// </summary>
         /// <param name="embeddings">List of vector embeddings to include in the policy definition.</param>
         /// <returns>An instance of <see cref="VectorEmbeddingPolicyDefinition"/>.</returns>
@@ -138,12 +138,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defined the full text policy for this Azure Cosmos container
+        /// Defines the full text policy for this Azure Cosmos container
         /// </summary>
-        /// <param name="defaultLanguage">A string indicating the default language for the inexing policy.</param>
+        /// <param name="defaultLanguage">A string indicating the default language.</param>
         /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
         /// <returns>An instance of <see cref="FullTextPolicyDefinition"/>.</returns>
-        internal FullTextPolicyDefinition WithFullTextPolicy(
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        FullTextPolicyDefinition WithFullTextPolicy(
             string defaultLanguage,
             Collection<FullTextPath> fullTextPaths)
         {

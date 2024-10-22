@@ -10,7 +10,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// <summary>
     /// <see cref="FullTextPolicyDefinition"/> fluent definition.
     /// </summary>
-    internal class FullTextPolicyDefinition
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class FullTextPolicyDefinition
     {
         private readonly ContainerBuilder parent;
         private readonly Action<FullTextPolicy> attachCallback;

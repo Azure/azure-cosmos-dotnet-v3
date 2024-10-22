@@ -31,7 +31,12 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-    internal sealed class FullTextPath : IEquatable<FullTextPath>
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    sealed class FullTextPath : IEquatable<FullTextPath>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the full text index.

@@ -9,10 +9,15 @@ namespace Microsoft.Azure.Cosmos
     using Newtonsoft.Json.Linq;
 
     /// <summary>
-    /// Represents the full text policy configuration for specifying the full text paths on documents in the collection in the Azure Cosmos DB service.
+    /// Represents the full text policy configuration for specifying the full text paths on items in the container in the Azure Cosmos DB service.
     /// </summary>
     /// <seealso cref="ContainerProperties"/>
-    internal sealed class FullTextPolicy
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    sealed class FullTextPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="FullTextPolicy"/> class.
@@ -42,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets a collection of <see cref="FullTextPath"/> that contains the full text paths of documents in collection in the Azure Cosmos DB service.
         /// </summary>
         [JsonProperty(PropertyName = "fullTextPaths", NullValueHandling = NullValueHandling.Ignore)]
-        public readonly Collection<FullTextPath> FullTextPaths;
+        public readonly Collection<FullTextPath> FullTextPaths = new Collection<FullTextPath>();
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields.

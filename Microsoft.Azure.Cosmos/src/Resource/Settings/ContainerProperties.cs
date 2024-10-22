@@ -364,8 +364,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the full text policy containing paths for full text search along with path-specific settings for the item
-        /// used in performing full text search on the items in a collection in the Azure CosmosDB database service.
+        /// Gets or sets the full text search paths for items in the container.
         /// </summary>
         /// <value>
         /// It is an optional property.
@@ -377,10 +376,14 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-        internal FullTextPolicy FullTextPolicy
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        FullTextPolicy FullTextPolicy
         {
             get => this.fullTextPolicyInternal;
-
             set => this.fullTextPolicyInternal = value;
         }
 

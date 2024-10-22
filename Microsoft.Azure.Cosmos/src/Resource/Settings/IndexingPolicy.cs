@@ -166,7 +166,13 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = "fullTextIndexes", NullValueHandling = NullValueHandling.Ignore)]
-        internal Collection<FullTextIndexPath> FullTextIndexes{ get; set; } = new Collection<FullTextIndexPath>();
+#if PREVIEW
+
+        public
+#else
+        internal
+#endif
+        Collection<FullTextIndexPath> FullTextIndexes{ get; set; } = new Collection<FullTextIndexPath>();
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
