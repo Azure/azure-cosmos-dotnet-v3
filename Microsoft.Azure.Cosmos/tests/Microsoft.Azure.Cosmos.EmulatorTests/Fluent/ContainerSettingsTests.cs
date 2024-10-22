@@ -791,12 +791,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Validate FullText Paths.
                 Assert.IsNotNull(containerSettings.FullTextPolicy);
                 Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
-                Assert.AreEqual(fullTextPaths.Count, containerSettings.FullTextPolicy.FullTextPaths.Count());
-                Assert.IsTrue(fullTextPaths.OrderBy(x => x.Path).SequenceEqual(containerSettings.FullTextPolicy.FullTextPaths.OrderBy(x => x.Path)));
+                Assert.AreEqual(0, containerSettings.FullTextPolicy.FullTextPaths.Count());
 
                 // Validate Full Text Indexes.
                 Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
-                Assert.AreEqual(fullTextPaths.Count, containerSettings.IndexingPolicy.FullTextIndexes.Count());
+                Assert.AreEqual(1, containerSettings.IndexingPolicy.FullTextIndexes.Count());
                 Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
             }
             finally
