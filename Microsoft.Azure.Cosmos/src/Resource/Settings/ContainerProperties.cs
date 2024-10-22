@@ -372,7 +372,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         /// <remarks>
         /// <para>
-        /// The <see cref="Cosmos.FullTextPolicy"/> will be applied to all the items in the container as the default policy.
+        /// The <see cref="Cosmos.FullTextPolicy"/> will be applied to all the items in the container.
         /// </para>
         /// </remarks>
         [JsonIgnore]
