@@ -54,27 +54,34 @@ Copyright (C) Microsoft Corporation. All rights reserved.
       </ContentWithTargetPath>
   </ItemGroup>
 
-  <!-- Prevent Newtonsoft.Json from propagating to external consumers -->
-  <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.2" PrivateAssets="all">
-        <NoWarn>NU1903</NoWarn>
-    </PackageReference>
-  </ItemGroup>
 
-  <!-- Ensure validation before compilation -->
+  <!-- Run validation before compilation starts -->
   <Target Name="VerifyNewtonsoftJsonReference"
-      BeforeTargets="Compile"
-      Condition="'$(BuildingProject)' != 'true'">
+    BeforeTargets="PrepareForBuild;CoreCompile;GetCompileOutputs"
+    Condition="'$(BuildingProject)' != 'true'">
   
    <ItemGroup>
-      <ConsumerPackageReferences Include="@(PackageReference)" />
-      <NewtonsoftPackage Include="@(ConsumerPackageReferences)" Condition="'%(Identity)' == 'Newtonsoft.Json'" />
-      <NewtonsoftAssembly Include="@(ReferencePath)" Condition="'%(Filename)' == 'Newtonsoft.Json'" />
+    <ConsumerPackageReferences Include="@(PackageReference)" />
+    <NewtonsoftPackage Include="@(ConsumerPackageReferences)"
+           Condition="'%(Identity)' == 'Newtonsoft.Json'" />
+    <NewtonsoftAssembly Include="@(ReferencePath)"
+           Condition="'%(Filename)' == 'Newtonsoft.Json'" />
    </ItemGroup>
-  
-   <!-- Force build failure if Newtonsoft.Json is not found -->
+   
+   <!-- Debugging Messages -->
+   <Message Text="Validating Newtonsoft.Json reference..." Importance="high" />
+   <Message Text="Newtonsoft.Json Package Version: %(NewtonsoftPackage.Version)" Importance="high" />
+   <Message Text="Newtonsoft.Json Assembly Reference Found: @(NewtonsoftAssembly)" Importance="high" />
+   
+   <!-- Error Handling -->
    <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 13.x.x."
-      Condition="'@(NewtonsoftPackage)' == '' AND '@(NewtonsoftAssembly)' == ''" />
+       Condition="'@(NewtonsoftPackage)' != '' AND 
+                   $([System.Version]::Parse('%(NewtonsoftPackage.Version)').Major) &lt; 13" />
+   
+   <Error Text="Newtonsoft.Json assembly reference detected. Please upgrade to version >= 13.x.x or higher."
+       Condition="'@(NewtonsoftAssembly)' != ''" />
+  
   </Target>
+
 
 </Project>
