@@ -769,7 +769,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ChangeFeedPolicy",
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
-                "VectorEmbeddingPolicy");
+                "VectorEmbeddingPolicy",
+                "FullTextPolicy");
 #else
             SettingsContractTests.TypeAccessorGuard(typeof(ContainerProperties),
                 "Id",
@@ -784,7 +785,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ConflictResolutionPolicy",
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
-                "VectorEmbeddingPolicy");
+                "VectorEmbeddingPolicy," +
+                "FullTextPolicy");
 #endif
 
             // Two equivalent definitions 
