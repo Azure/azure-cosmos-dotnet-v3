@@ -296,7 +296,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
             {
-                FullTextPolicy = new(defaultLanguage, fullTextPaths),
+                FullTextPolicy = new()
+                {
+                    DefaultLanguage = defaultLanguage,
+                    FullTextPaths = fullTextPaths
+                },
                 IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     FullTextIndexes = new()
@@ -341,7 +345,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             string defaultLanguage = "en-US", fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
             ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
             {
-                FullTextPolicy = new(defaultLanguage, fullTextPaths: new Collection<FullTextPath>()),
+                FullTextPolicy = new()
+                {
+                    DefaultLanguage = defaultLanguage,
+                    FullTextPaths = new Collection<FullTextPath>()
+                },
                 IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     FullTextIndexes = new()

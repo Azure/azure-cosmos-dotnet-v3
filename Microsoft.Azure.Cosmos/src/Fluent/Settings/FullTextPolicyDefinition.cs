@@ -47,9 +47,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <returns>An instance of the parent.</returns>
         public ContainerBuilder Attach()
         {
-            FullTextPolicy fullTextPolicy = new (
-                this.defaultLanguage,
-                this.fullTextPaths);
+            FullTextPolicy fullTextPolicy = new ()
+            {
+                DefaultLanguage = this.defaultLanguage,
+                FullTextPaths = this.fullTextPaths
+            };
 
             this.attachCallback(fullTextPolicy);
             return this.parent;

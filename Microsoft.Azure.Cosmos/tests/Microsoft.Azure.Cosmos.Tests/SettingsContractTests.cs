@@ -1169,7 +1169,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                     fullTextPath3,
                 };
 
-            containerSettings.FullTextPolicy = new Cosmos.FullTextPolicy(defaultLanguage, fullTextPaths);
+            containerSettings.FullTextPolicy = new Cosmos.FullTextPolicy()
+            {
+                DefaultLanguage = defaultLanguage,
+                FullTextPaths = fullTextPaths,
+            };
 
             string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
             Assert.IsTrue(serializationWithValues.Contains("fullTextPolicy"), "Full Text Policy should be included.");

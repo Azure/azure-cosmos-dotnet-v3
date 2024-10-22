@@ -19,23 +19,8 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class FullTextPolicy
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FullTextPolicy"/> class.
-        /// </summary>
-        /// <param name="defaultLanguage">String of the default language of the container.</param>
-        /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
-        public FullTextPolicy(
-            string defaultLanguage,
-            Collection<FullTextPath> fullTextPaths)
-        {
-            if (fullTextPaths != null)
-            {
-                FullTextPolicy.ValidateFullTextPaths(fullTextPaths);
-            }
-
-            this.DefaultLanguage = defaultLanguage;
-            this.FullTextPaths = fullTextPaths;
-        }
+        [JsonProperty(PropertyName = "fullTextPaths", NullValueHandling = NullValueHandling.Ignore)]
+        private Collection<FullTextPath> fullTextPathsInternal;
 
         /// <summary>
         /// Gets or sets a string containing the default language of the container.
@@ -44,10 +29,19 @@ namespace Microsoft.Azure.Cosmos
         public string DefaultLanguage { get; set; }
 
         /// <summary>
-        /// Gets a collection of <see cref="FullTextPath"/> that contains the full text paths of documents in collection in the Azure Cosmos DB service.
+        /// Gets or sets a collection of <see cref="FullTextPath"/> that contains the full text paths of documents in
+        /// a collection in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = "fullTextPaths", NullValueHandling = NullValueHandling.Ignore)]
-        public readonly Collection<FullTextPath> FullTextPaths = new Collection<FullTextPath>();
+        [JsonIgnore]
+        public Collection<FullTextPath> FullTextPaths
+        {
+            get => this.fullTextPathsInternal;
+            set
+            {
+                FullTextPolicy.ValidateFullTextPaths(value);
+                this.fullTextPathsInternal = value;
+            }
+        }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields.
