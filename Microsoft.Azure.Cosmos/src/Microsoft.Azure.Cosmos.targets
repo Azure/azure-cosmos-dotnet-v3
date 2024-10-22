@@ -13,45 +13,61 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 ***********************************************************************************************
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    
-  <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
-      <Visible>False</Visible>
-    </ContentWithTargetPath>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <TargetPath>Cosmos.CRTCompat.dll</TargetPath>
-      <Visible>False</Visible>
-    </ContentWithTargetPath>
-  </ItemGroup>
 
-  <ItemGroup>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <TargetPath>msvcp140.dll</TargetPath>
-          <Visible>False</Visible>
-      </ContentWithTargetPath>
-  </ItemGroup>
+	<ItemGroup>
+		<ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Microsoft.Azure.Cosmos.ServiceInterop.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>Microsoft.Azure.Cosmos.ServiceInterop.dll</TargetPath>
+			<Visible>False</Visible>
+		</ContentWithTargetPath>
+	</ItemGroup>
 
-  <ItemGroup>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <TargetPath>vcruntime140.dll</TargetPath>
-          <Visible>False</Visible>
-      </ContentWithTargetPath>
-  </ItemGroup>
+	<ItemGroup>
+		<ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\Cosmos.CRTCompat.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>Cosmos.CRTCompat.dll</TargetPath>
+			<Visible>False</Visible>
+		</ContentWithTargetPath>
+	</ItemGroup>
 
-  <ItemGroup>
-      <ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-          <TargetPath>vcruntime140_1.dll</TargetPath>
-          <Visible>False</Visible>
-      </ContentWithTargetPath>
-  </ItemGroup>
-    
+	<ItemGroup>
+		<ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\msvcp140.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>msvcp140.dll</TargetPath>
+			<Visible>False</Visible>
+		</ContentWithTargetPath>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>vcruntime140.dll</TargetPath>
+			<Visible>False</Visible>
+		</ContentWithTargetPath>
+	</ItemGroup>
+
+	<ItemGroup>
+		<ContentWithTargetPath Include="$(MSBuildThisFileDirectory)..\..\runtimes\win-x64\native\vcruntime140_1.dll">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<TargetPath>vcruntime140_1.dll</TargetPath>
+			<Visible>False</Visible>
+		</ContentWithTargetPath>
+	</ItemGroup>
+
+	<!-- Ensure validation before compilation -->
+	<Target Name="VerifyNewtonsoftJsonReference"
+			BeforeTargets="Compile"
+			Condition="'$(BuildingProject)' != 'true'">
+
+		<ItemGroup>
+			<ConsumerPackageReferences Include="@(PackageReference)" />
+			<NewtonsoftPackage Include="@(ConsumerPackageReferences)" Condition="'%(Identity)' == 'Newtonsoft.Json'" />
+			<NewtonsoftAssembly Include="@(ReferencePath)" Condition="'%(Filename)' == 'Newtonsoft.Json'" />
+		</ItemGroup>
+
+		<!-- Force build failure if Newtonsoft.Json is not found -->
+		<Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 13.x.x."
+			   Condition="'@(NewtonsoftPackage)' == '' AND '@(NewtonsoftAssembly)' == ''" />
+	</Target>
+	
 </Project>
