@@ -72,10 +72,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
-                if (request.Content != null)
-                {
-                    request.Headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, RequestInvokerHandler.BinarySerializationFormat);
-                }
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);

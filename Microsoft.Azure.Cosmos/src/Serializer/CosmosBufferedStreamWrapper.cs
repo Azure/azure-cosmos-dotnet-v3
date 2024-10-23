@@ -145,16 +145,13 @@ namespace Microsoft.Azure.Cosmos.Serializer
         public JsonSerializationFormat GetJsonSerializationFormat()
         {
             this.ReadFirstByteAndResetStream();
-            if (this.firstByteBuffer[0] == (byte)JsonSerializationFormat.Binary)
+
+            return this.firstByteBuffer[0] switch
             {
-                return JsonSerializationFormat.Binary;
-            }
-            else
-            {
-                return this.firstByteBuffer[0] == (byte)JsonSerializationFormat.HybridRow
-                    ? JsonSerializationFormat.HybridRow
-                    : JsonSerializationFormat.Text;
-            }
+                (byte)JsonSerializationFormat.Binary => JsonSerializationFormat.Binary,
+                (byte)JsonSerializationFormat.HybridRow => JsonSerializationFormat.HybridRow,
+                _ => JsonSerializationFormat.Text,
+            };
         }
 
         /// <summary>
