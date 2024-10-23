@@ -130,6 +130,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Defines a <see cref="FullTextIndexPath"/> in the current <see cref="Container"/>'s definition.
+        /// </summary>
+        /// <returns>An instance of <see cref="FullTextIndexDefinition{T}"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        FullTextIndexDefinition<IndexingPolicyDefinition<T>> WithFullTextIndex()
+        {
+            return new FullTextIndexDefinition<IndexingPolicyDefinition<T>>(
+                this,
+                (fullTextIndex) => this.AddFullTextndexPath(fullTextIndex));
+        }
+
+        /// <summary>
         /// Applies the current definition to the parent.
         /// </summary>
         /// <returns>An instance of the parent.</returns>
@@ -152,6 +168,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void AddVectorIndexPath(VectorIndexPath vectorIndexPath)
         {
             this.indexingPolicy.VectorIndexes.Add(vectorIndexPath);
+        }
+
+        private void AddFullTextndexPath(FullTextIndexPath fullTextIndexPath)
+        {
+            this.indexingPolicy.FullTextIndexes.Add(fullTextIndexPath);
         }
 
         private void AddIncludedPaths(IEnumerable<string> paths)
