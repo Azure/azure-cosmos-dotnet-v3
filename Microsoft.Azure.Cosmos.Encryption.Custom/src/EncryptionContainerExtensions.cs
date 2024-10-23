@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             Encryptor encryptor)
         {
-#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
             if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
             {
                 return new EncryptionContainerStream(container, encryptor);
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
             if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
             {
                 if (container is not EncryptionContainerStream encryptionContainerStream)
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
             if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
             {
                 if (container is not EncryptionContainerStream encryptionContainerStream)

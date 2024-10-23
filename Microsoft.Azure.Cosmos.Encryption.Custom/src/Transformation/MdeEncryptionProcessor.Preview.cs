@@ -56,6 +56,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 #endif
         }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        public async Task EncryptStreamAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CancellationToken token)
+        {
+            switch (encryptionOptions.JsonProcessor)
+            {
+                case JsonProcessor.Newtonsoft:
+                    await this.JObjectEncryptionProcessor.EncryptStreamAsync(input, output, encryptor, encryptionOptions, token);
+                    break;
+                case JsonProcessor.Stream:
+                    await this.StreamProcessor.EncryptStreamAsync(input, output, encryptor, encryptionOptions, token);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported JsonProcessor {encryptionOptions.JsonProcessor}");
+            }
+        }
+#endif
+
         internal async Task<DecryptionContext> DecryptObjectAsync(
             JObject document,
             Encryptor encryptor,

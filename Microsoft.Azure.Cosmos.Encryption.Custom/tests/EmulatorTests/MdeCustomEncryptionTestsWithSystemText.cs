@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
@@ -23,6 +23,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     using DataEncryptionKey = DataEncryptionKey;
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.Utils;
+    using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing;
 
     [TestClass]
     public class MdeCustomEncryptionTestsWithSystemText
@@ -506,8 +508,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         public async Task EncryptionCreateItemWithLazyDecryption(JsonProcessor jsonProcessor, CompressionOptions.CompressionAlgorithm compressionAlgorithm)
         {
             TestDoc testDoc = TestDoc.Create();
-            ItemResponse<EncryptableItem<TestDoc>> createResponse = await encryptionContainer.CreateItemAsync(
-                new EncryptableItem<TestDoc>(testDoc),
+            ItemResponse<EncryptableItemStream<TestDoc>> createResponse = await encryptionContainer.CreateItemAsync(
+                new EncryptableItemStream<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
@@ -518,8 +520,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             // stream
             TestDoc testDoc1 = TestDoc.Create();
-            ItemResponse<EncryptableItemStream> createResponseStream = await encryptionContainer.CreateItemAsync(
-                new EncryptableItemStream(TestCommon.ToStream(testDoc1)),
+            ItemResponse<EncryptableItemStream<Stream>> createResponseStream = await encryptionContainer.CreateItemAsync(
+                new EncryptableItemStream<Stream>(TestCommon.ToStream(testDoc1)),
                 new PartitionKey(testDoc1.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
@@ -756,8 +758,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
         {
             TestDoc testDoc = TestDoc.Create();
             // Upsert (item doesn't exist)
-            ItemResponse<EncryptableItem<TestDoc>> upsertResponse = await encryptionContainer.UpsertItemAsync(
-                new EncryptableItem<TestDoc>(testDoc),
+            ItemResponse<EncryptableItemStream<TestDoc>> upsertResponse = await encryptionContainer.UpsertItemAsync(
+                new EncryptableItemStream<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
@@ -771,8 +773,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            ItemResponse<EncryptableItemStream> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
-                new EncryptableItemStream(TestCommon.ToStream(testDoc)),
+            ItemResponse<EncryptableItemStream<Stream>> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
+                new EncryptableItemStream<Stream>(TestCommon.ToStream(testDoc)),
                 new PartitionKey(testDoc.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm));
 
@@ -786,8 +788,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive_StringFormat = Guid.NewGuid().ToString();
 
-            ItemResponse<EncryptableItemStream> replaceResponseStream = await encryptionContainer.ReplaceItemAsync(
-                new EncryptableItemStream(TestCommon.ToStream(testDoc)),
+            ItemResponse<EncryptableItemStream<Stream>> replaceResponseStream = await encryptionContainer.ReplaceItemAsync(
+                new EncryptableItemStream<Stream>(TestCommon.ToStream(testDoc)),
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
                 GetRequestOptions(dekId, TestDoc.PathsToEncrypt, jsonProcessor, compressionAlgorithm, upsertResponseStream.ETag));
@@ -2064,6 +2066,7 @@ cancellationToken) =>
                 };
 
             [JsonProperty("id")]
+            [JsonPropertyName("id")]
             public string Id { get; set; }
 
             public string PK { get; set; }

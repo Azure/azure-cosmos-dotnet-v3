@@ -178,12 +178,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         break;
 
                     case JsonTokenType.PropertyName:
-                        if (reader.ValueTextEquals(DocumentsPropertyUtf8Bytes.Span))
+                        if (chunkWriter == null && reader.ValueTextEquals(DocumentsPropertyUtf8Bytes.Span))
                         {
                             isDocumentsProperty = true;
                         }
 
                         currentWriter.WritePropertyName(reader.ValueSpan);
+                        break;
+                    case JsonTokenType.String:
+                        currentWriter.WriteStringValue(reader.ValueSpan);
                         break;
                     default:
                         currentWriter.WriteRawValue(reader.ValueSpan, true);

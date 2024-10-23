@@ -69,6 +69,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
                 case Stream: // consumer doesn't need payload deserialized
                     MemoryStream ms = new ((int)this.decryptedStream.Length);
                     await this.decryptedStream.CopyToAsync(ms, cancellationToken);
+                    ms.Position = 0;
                     return ((T)(object)ms, this.decryptionContext);
                 default:
 #if SDKPROJECTREF

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
 {
     using System;
     using System.IO;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -63,18 +64,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.StreamProcessing
         /// <inheritdoc/>
         protected internal override Stream ToStream(CosmosSerializer serializer)
         {
+            if (this.Item is Stream stream)
+            {
+                return stream;
+            }
+
             return serializer.ToStream(this.Item);
         }
 
         /// <inheritdoc/>
         protected internal override async Task ToStreamAsync(CosmosSerializer serializer, Stream outputStream, CancellationToken cancellationToken)
         {
+            if (this.Item is Stream stream)
+            {
+                await stream.CopyToAsync(outputStream, cancellationToken);
+                stream.Position = 0;
+                outputStream.Position = 0;
+                return;
+            }
+
 #if SDKPROJECTREF
             await serializer.ToStreamAsync(this.Item, outputStream, cancellationToken);
 #else
             // TODO: CosmosSerializer is lacking suitable methods
             Stream cosmosSerializerOutput = serializer.ToStream(this.Item);
             await cosmosSerializerOutput.CopyToAsync(outputStream, cancellationToken);
+            outputStream.Position = 0;
 #endif
         }
 

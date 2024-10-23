@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 ResponseMessage responseMessage;
 
-                if (item is EncryptableItemStream<T> encryptableItemStream)
+                if (item is EncryptableItem encryptableItemStream)
                 {
                     using Stream rms = this.streamManager.CreateStream();
                     await encryptableItemStream.ToStreamAsync(this.CosmosSerializer, rms, cancellationToken);
@@ -114,16 +114,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 else
                 {
-                    using (Stream itemStream = this.CosmosSerializer.ToStream<T>(item))
-                    {
-                        responseMessage = await this.CreateItemHelperAsync(
-                            itemStream,
-                            partitionKey.Value,
-                            requestOptions,
-                            decryptResponse: true,
-                            diagnosticsContext,
-                            cancellationToken);
-                    }
+                    using Stream itemStream = this.CosmosSerializer.ToStream<T>(item);
+                    responseMessage = await this.CreateItemHelperAsync(
+                        itemStream,
+                        partitionKey.Value,
+                        requestOptions,
+                        decryptResponse: true,
+                        diagnosticsContext,
+                        cancellationToken);
 
                     return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
                 }
@@ -179,14 +177,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
 
             ResponseMessage responseMessage = await this.container.CreateItemStreamAsync(
-                streamPayload,
+                encryptedStream,
                 partitionKey,
                 requestOptions,
                 cancellationToken);
 
             if (decryptResponse)
             {
-                using Stream decryptedStream = this.streamManager.CreateStream();
+                Stream decryptedStream = this.streamManager.CreateStream();
                 _ = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     decryptedStream,
@@ -251,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     DecryptableItem decryptableItem = new DecryptableItemStream(
                             responseMessage.Content,
                             this.Encryptor,
-                            options.EncryptionOptions.JsonProcessor,
+                            options?.EncryptionOptions?.JsonProcessor ?? JsonProcessor.Newtonsoft,
                             this.CosmosSerializer,
                             this.streamManager);
 
@@ -305,10 +303,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 requestOptions,
                 cancellationToken);
 
-            if (decryptResponse && requestOptions is EncryptionItemRequestOptions options)
+            if (decryptResponse)
             {
-                using Stream rms = this.streamManager.CreateStream();
-                _ = await EncryptionProcessor.DecryptAsync(responseMessage.Content, rms, this.Encryptor, diagnosticsContext, options.EncryptionOptions.JsonProcessor, cancellationToken);
+                JsonProcessor processor = (requestOptions as EncryptionItemRequestOptions)?.EncryptionOptions?.JsonProcessor ?? JsonProcessor.Newtonsoft;
+                Stream rms = this.streamManager.CreateStream();
+                _ = await EncryptionProcessor.DecryptAsync(responseMessage.Content, rms, this.Encryptor, diagnosticsContext, processor, cancellationToken);
                 responseMessage.Content = rms;
             }
 
@@ -346,12 +345,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 ResponseMessage responseMessage;
 
-                if (item is EncryptableItemStream<T> encryptableItemStream)
+                if (item is EncryptableItem encryptableItemStream)
                 {
                     using Stream rms = this.streamManager.CreateStream();
                     await encryptableItemStream.ToStreamAsync(this.CosmosSerializer, rms, cancellationToken);
-                    responseMessage = await this.CreateItemHelperAsync(
+                    responseMessage = await this.ReplaceItemHelperAsync(
                         rms,
+                        id,
                         partitionKey.Value,
                         requestOptions,
                         decryptResponse: false,
@@ -364,17 +364,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 }
                 else
                 {
-                    using (Stream itemStream = this.CosmosSerializer.ToStream<T>(item))
-                    {
-                        responseMessage = await this.ReplaceItemHelperAsync(
-                            itemStream,
-                            id,
-                            partitionKey.Value,
-                            requestOptions,
-                            decryptResponse: true,
-                            diagnosticsContext,
-                            cancellationToken);
-                    }
+                    using Stream itemStream = this.CosmosSerializer.ToStream<T>(item);
+                    responseMessage = await this.ReplaceItemHelperAsync(
+                        itemStream,
+                        id,
+                        partitionKey.Value,
+                        requestOptions,
+                        decryptResponse: true,
+                        diagnosticsContext,
+                        cancellationToken);
 
                     return this.ResponseFactory.CreateItemResponse<T>(responseMessage);
                 }
@@ -433,10 +431,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptionItemRequestOptions.EncryptionOptions,
                 diagnosticsContext,
                 cancellationToken);
-            streamPayload = encryptedStream;
 
             ResponseMessage responseMessage = await this.container.ReplaceItemStreamAsync(
-                streamPayload,
+                encryptedStream,
                 id,
                 partitionKey,
                 requestOptions,
@@ -444,7 +441,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             if (decryptResponse)
             {
-                using Stream decryptedStream = this.streamManager.CreateStream();
+                Stream decryptedStream = this.streamManager.CreateStream();
                 _ = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     decryptedStream,
@@ -489,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 ResponseMessage responseMessage;
 
-                if (item is EncryptableItemStream<T> encryptableItemStream)
+                if (item is EncryptableItem encryptableItemStream)
                 {
                     using Stream rms = this.streamManager.CreateStream();
                     await encryptableItemStream.ToStreamAsync(this.CosmosSerializer, rms, cancellationToken);
@@ -562,25 +559,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     cancellationToken);
             }
 
-            using Stream rms = this.streamManager.CreateStream();
+            Stream encryptedStream = this.streamManager.CreateStream();
             await EncryptionProcessor.EncryptAsync(
                 streamPayload,
-                rms,
+                encryptedStream,
                 this.Encryptor,
                 encryptionItemRequestOptions.EncryptionOptions,
                 diagnosticsContext,
                 cancellationToken);
-            streamPayload = rms;
 
             ResponseMessage responseMessage = await this.container.UpsertItemStreamAsync(
-                streamPayload,
+                encryptedStream,
                 partitionKey,
                 requestOptions,
                 cancellationToken);
 
             if (decryptResponse)
             {
-                using Stream decryptStream = this.streamManager.CreateStream();
+                Stream decryptStream = this.streamManager.CreateStream();
                 _ = await EncryptionProcessor.DecryptAsync(
                     responseMessage.Content,
                     decryptStream,

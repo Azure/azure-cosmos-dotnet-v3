@@ -17,6 +17,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     {
         private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
+        private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+
         internal async Task EncryptStreamAsync(
             Stream inputStream,
             Stream outputStream,
@@ -52,16 +54,23 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
             RentArrayBufferWriter bufferWriter = null;
+            bool firstRead = true;
 
             while (!isFinalBlock)
             {
+                int offset = 0;
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
+                if (firstRead && buffer.AsSpan(0, Utf8Bom.Length).StartsWith(Utf8Bom))
+                {
+                    offset = Utf8Bom.Length;
+                }
+
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
                 long bytesConsumed = 0;
 
                 bytesConsumed = this.TransformEncryptBuffer(
-                    buffer.AsSpan(0, dataSize),
+                    buffer.AsSpan(0 + offset, dataSize - offset),
                     isFinalBlock,
                     writer,
                     ref encryptionPayloadWriter,
@@ -76,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     encryptionKey,
                     encryptionOptions);
 
-                leftOver = dataSize - (int)bytesConsumed;
+                leftOver = dataSize - ((int)bytesConsumed + offset);
 
                 // we need to scale out buffer
                 if (leftOver == dataSize)
@@ -88,10 +97,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 else if (leftOver != 0)
                 {
                     buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    firstRead = false;
                 }
             }
-
-            await inputStream.DisposeAsync();
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: compressionEnabled ? 4 : 3,
@@ -107,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
+            inputStream.Position = 0;
             outputStream.Position = 0;
         }
 
