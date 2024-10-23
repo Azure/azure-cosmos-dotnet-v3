@@ -50,6 +50,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         internal static void Initialize()
         {
+            // If already initialized, do not initialize again
+            if (IsEnabled)
+            {
+                return;
+            }
+
             CosmosOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.OperationMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.OperationMetrics.Unit.Sec,
                 description: CosmosDbClientMetrics.OperationMetrics.Description.Latency);
