@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using System.Net;
 
     /// <summary>
     /// CosmosOperationMeter is a utility class responsible for collecting and recording telemetry metrics related to Cosmos DB operations.
@@ -91,42 +92,36 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             Func<KeyValuePair<string, object>[]> dimensionsFunc = () =>
             {
-                List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>()
+                HttpStatusCode? statusCode = attributes?.StatusCode;
+                int? subStatusCode = attributes?.SubStatusCode;
+                string consistencyLevel = attributes?.ConsistencyLevel;
+
+                if (ex is not null && ex is CosmosException cosmosException)
                 {
-                    { new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb)},
-                    { new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName)},
-                    { new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName)},
-                    { new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host)},
-                    { new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName.Port)},
-                    { new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName)}
+                    statusCode = cosmosException.StatusCode;
+                    subStatusCode = cosmosException.SubStatusCode;
+                    consistencyLevel = cosmosException.Headers.ConsistencyLevel;
+                }
+
+                return new KeyValuePair<string, object>[]
+                {
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName.Port),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)statusCode.Value),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode,  subStatusCode),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, consistencyLevel),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex.Message)
                 };
-
-                if (attributes != null)
-                {
-                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)attributes.StatusCode));
-                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)attributes.SubStatusCode));
-                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes.ConsistencyLevel));
-                }
-
-                if (ex != null)
-                {
-                    if (ex is CosmosException cosmosException)
-                    {
-                        dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)cosmosException.StatusCode));
-                        dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, (int)cosmosException.SubStatusCode));
-                        dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, cosmosException.Headers.ConsistencyLevel));
-                    }
-
-                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex.Message));
-                }
-
-                return dimensions.ToArray();
             };
 
             if (attributes != null)
             {
-                CosmosOperationMeter.RecordActualItemCount(attributes.ItemCount, dimensionsFunc);
-                CosmosOperationMeter.RecordRequestUnit(attributes.RequestCharge, dimensionsFunc);
+                CosmosOperationMeter.RecordActualItemCount(attributes?.ItemCount, dimensionsFunc);
+                CosmosOperationMeter.RecordRequestUnit(attributes?.RequestCharge, dimensionsFunc);
                 CosmosOperationMeter.RecordRequestLatency(attributes.Diagnostics?.GetClientElapsedTime(), dimensionsFunc);
             }
 
@@ -145,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="dimensionsFunc">A function providing telemetry dimensions for the metric.</param>
         internal static void RecordActualItemCount(string actualItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (CosmosOperationMeter.ActualItemHistogram == null || !CosmosOperationMeter.ActualItemHistogram.Enabled || string.IsNullOrEmpty(actualItemCount))
+            if (!IsEnabled || CosmosOperationMeter.ActualItemHistogram == null || !CosmosOperationMeter.ActualItemHistogram.Enabled || string.IsNullOrEmpty(actualItemCount))
             {
                 return;
             }
@@ -160,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="dimensionsFunc">A function providing telemetry dimensions for the metric.</param>
         internal static void RecordRequestUnit(double? requestCharge, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (CosmosOperationMeter.RequestUnitsHistogram == null || !CosmosOperationMeter.RequestUnitsHistogram.Enabled || !requestCharge.HasValue)
+            if (!IsEnabled || CosmosOperationMeter.RequestUnitsHistogram == null || !CosmosOperationMeter.RequestUnitsHistogram.Enabled || !requestCharge.HasValue)
             {
                 return;
             }
@@ -175,7 +170,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <param name="dimensionsFunc">A function providing telemetry dimensions for the metric.</param>
         internal static void RecordRequestLatency(TimeSpan? requestLatency, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
-            if (CosmosOperationMeter.ActiveInstanceCounter == null || !CosmosOperationMeter.ActiveInstanceCounter.Enabled || !requestLatency.HasValue)
+            if (!IsEnabled || CosmosOperationMeter.ActiveInstanceCounter == null || !CosmosOperationMeter.ActiveInstanceCounter.Enabled || !requestLatency.HasValue)
             {
                 return;
             }
