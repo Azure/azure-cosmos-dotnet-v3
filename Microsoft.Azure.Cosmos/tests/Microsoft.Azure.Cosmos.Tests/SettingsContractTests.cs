@@ -785,7 +785,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "ConflictResolutionPolicy",
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
-                "VectorEmbeddingPolicy," +
+                "VectorEmbeddingPolicy",
                 "FullTextPolicy");
 #endif
 
