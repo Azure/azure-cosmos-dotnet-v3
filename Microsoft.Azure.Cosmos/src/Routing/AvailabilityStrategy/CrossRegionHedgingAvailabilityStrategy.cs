@@ -49,11 +49,11 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
-        /// <param name="multiMasterWritesEnabled"></param>
+        /// <param name="enableMultiWriteRegionHedge"></param>
         public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
             TimeSpan? thresholdStep,
-            bool multiMasterWritesEnabled = false)
+            bool enableMultiWriteRegionHedge = false)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
-            this.MultiMasterWriteHedge = multiMasterWritesEnabled;
+            this.EnableMultiWriteRegionHedge = enableMultiWriteRegionHedge;
         }
 
         /// <inheritdoc/>
