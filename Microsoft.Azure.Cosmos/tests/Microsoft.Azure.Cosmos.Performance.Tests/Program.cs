@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.Generic;
     using BenchmarkDotNet.Reports;
     using BenchmarkDotNet.Running;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics;
+    using Microsoft.Azure.Cosmos.Tracing;
     using OpenTelemetry;
     using OpenTelemetry.Metrics;
     using OpenTelemetry.Trace;
@@ -27,12 +29,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             using TracerProvider tracebuilder = Sdk.CreateTracerProviderBuilder()
                 .AddSource("Azure.Cosmos.*")
-                .AddConsoleExporter()
+                .AddCustomOtelExporter()
                 .Build();
 
             using MeterProvider metricsBuilder = Sdk.CreateMeterProviderBuilder()
                 .AddMeter("Azure.Cosmos.Client.*")
-                .AddConsoleExporter()
+                .AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(), 10000))
                 .Build();
 
             if (validateBaseline)

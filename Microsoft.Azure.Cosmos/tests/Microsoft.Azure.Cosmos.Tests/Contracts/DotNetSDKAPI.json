@@ -3309,15 +3309,15 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+HistogramBuckets": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+HistogramBuckets": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
@@ -3329,7 +3329,7 @@
         }
       },
       "NestedTypes": {
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Double[] RequestLatencyBuckets": {
@@ -3350,20 +3350,20 @@
           },
           "NestedTypes": {}
         },
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Description": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Description": {
               "Type": "NestedType",
               "Attributes": [],
               "MethodInfo": null
             },
-            "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Name": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Name": {
               "Type": "NestedType",
               "Attributes": [],
               "MethodInfo": null
             },
-            "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Unit": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit": {
               "Type": "NestedType",
               "Attributes": [],
               "MethodInfo": null
@@ -3380,7 +3380,7 @@
             }
           },
           "NestedTypes": {
-            "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
               "Subclasses": {},
               "Members": {
                 "System.String ActiveInstances": {
@@ -3406,7 +3406,7 @@
               },
               "NestedTypes": {}
             },
-            "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
               "Subclasses": {},
               "Members": {
                 "System.String ActiveInstances": {
@@ -3432,7 +3432,7 @@
               },
               "NestedTypes": {}
             },
-            "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
               "Subclasses": {},
               "Members": {
                 "System.String Count": {
@@ -3457,7 +3457,7 @@
         }
       }
     },
-    "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+HistogramBuckets;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Double[] RequestLatencyBuckets": {
@@ -3478,20 +3478,20 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Description": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Description": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Name": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Name": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
         },
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Unit": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit": {
           "Type": "NestedType",
           "Attributes": [],
           "MethodInfo": null
@@ -3508,7 +3508,7 @@
         }
       },
       "NestedTypes": {
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.String ActiveInstances": {
@@ -3534,7 +3534,7 @@
           },
           "NestedTypes": {}
         },
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.String ActiveInstances": {
@@ -3560,7 +3560,7 @@
           },
           "NestedTypes": {}
         },
-        "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "System.String Count": {
@@ -3583,7 +3583,7 @@
         }
       }
     },
-    "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String ActiveInstances": {
@@ -3609,7 +3609,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String ActiveInstances": {
@@ -3635,7 +3635,7 @@
       },
       "NestedTypes": {}
     },
-    "Microsoft.Azure.Cosmos.CosmosDbClientMetricsConstant+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "System.String Count": {
