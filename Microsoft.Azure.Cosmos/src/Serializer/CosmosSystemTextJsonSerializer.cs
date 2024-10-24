@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -78,6 +80,28 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
+        public override async Task<T> FromStreamAsync<T>(Stream stream, CancellationToken cancellationToken)
+        {
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            if (typeof(Stream).IsAssignableFrom(typeof(T)))
+            {
+                return (T)(object)stream;
+            }
+
+            if (stream.CanSeek && stream.Length == 0)
+            {
+                return default;
+            }
+
+            using (stream)
+            {
+                return await System.Text.Json.JsonSerializer.DeserializeAsync<T>(stream, this.jsonSerializerOptions, cancellationToken);
+            }
+        }
+
+        /// <inheritdoc/>
         public override Stream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new ();
@@ -87,6 +111,13 @@ namespace Microsoft.Azure.Cosmos
 
             streamPayload.Position = 0;
             return streamPayload;
+        }
+
+        /// <inheritdoc/>
+        public override async Task ToStreamAsync<T>(T input, Stream output, CancellationToken cancellationToken)
+        {
+            await System.Text.Json.JsonSerializer.SerializeAsync(output, input, this.jsonSerializerOptions, cancellationToken);
+            output.Position = 0;
         }
 
         /// <summary>
