@@ -139,13 +139,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </example>
         [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
-#if PREVIEW
-        
-        public
-#else
-        internal
-#endif
-        Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
+        public Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
 
         /// <summary>
         /// Gets the full text indexes
