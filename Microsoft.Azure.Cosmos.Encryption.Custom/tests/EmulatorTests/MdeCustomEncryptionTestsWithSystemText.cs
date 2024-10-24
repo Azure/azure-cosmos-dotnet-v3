@@ -1020,14 +1020,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await VerifyItemByReadAsync(itemContainer, doc3ToCreate);
             await VerifyItemByReadAsync(itemContainer, doc4ToCreate);
 
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc1ToCreate.Id, new PartitionKey(doc1ToCreate.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc2ToCreate.Id, new PartitionKey(doc2ToCreate.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc1ToReplace.Id, new PartitionKey(doc1ToReplace.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc3ToCreate.Id, new PartitionKey(doc3ToCreate.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc4ToCreate.Id, new PartitionKey(doc4ToCreate.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc2ToReplace.Id, new PartitionKey(doc2ToReplace.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc1ToUpsert.Id, new PartitionKey(doc1ToUpsert.Id));
-            await encryptionContainer.DeleteItemAsync<TestDoc>(doc2ToUpsert.Id, new PartitionKey(doc2ToUpsert.Id));
+            await dekProvider.Container.DeleteItemAsync<DataEncryptionKeyProperties>(dek2, new PartitionKey(dek2));
         }
 
         [TestMethod]
@@ -2475,6 +2468,8 @@ cancellationToken) =>
 
             await VerifyItemByReadAsync(encryptionContainer, testDoc, dekId: dekId);
 
+            await dekProvider.Container.DeleteItemAsync<DataEncryptionKeyProperties>(dekId, new PartitionKey(dekId));
+
             // rewrap from Mde Algo to  Legacy algo should fail
             dekId = "rewrapMdeAlgoDekToLegacyAlgoDek";
 
@@ -2497,6 +2492,7 @@ cancellationToken) =>
                 Assert.AreEqual("Rewrap operation with EncryptionAlgorithm 'AEAes256CbcHmacSha256Randomized' is not supported on Data Encryption Keys which are configured with 'MdeAeadAes256CbcHmac256Randomized'. ", ex.Message);
             }
 
+            await dekProvider.Container.DeleteItemAsync<DataEncryptionKeyProperties>(dekId, new PartitionKey(dekId));
             // rewrap Mde to Mde with Option
 
             // rewrap from Mde Algo to  Legacy algo should fail
@@ -2523,6 +2519,8 @@ cancellationToken) =>
             Assert.AreEqual(
                 metadata2,
                 dataEncryptionKeyProperties.EncryptionKeyWrapMetadata);
+
+            await dekProvider.Container.DeleteItemAsync<DataEncryptionKeyProperties>(dekId, new PartitionKey(dekId));
         }
 
 

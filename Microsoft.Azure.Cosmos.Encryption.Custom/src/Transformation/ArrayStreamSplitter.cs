@@ -64,6 +64,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataLength = await readStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
+                if (isFinalBlock)
+                {
+                    break;
+                }
+
                 long bytesConsumed = 0;
 
                 bytesConsumed = this.TransformBuffer(
@@ -104,8 +109,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             while (reader.Read())
             {
-                Utf8JsonWriter currentWriter = chunkWriter;
-
                 JsonTokenType tokenType = reader.TokenType;
 
                 switch (tokenType)
@@ -117,19 +120,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             bufferWriter = new RecyclableMemoryStream(manager);
                             chunkWriter = new Utf8JsonWriter((IBufferWriter<byte>)bufferWriter);
-                            chunkWriter?.WriteStartObject();
                         }
-                        else
-                        {
-                            currentWriter?.WriteStartObject();
-                        }
+
+                        chunkWriter?.WriteStartObject();
 
                         break;
                     case JsonTokenType.EndObject:
-                        currentWriter?.WriteEndObject();
+                        chunkWriter?.WriteEndObject();
                         if (reader.CurrentDepth == 2 && chunkWriter != null)
                         {
-                            currentWriter.Flush();
+                            chunkWriter.Flush();
                             bufferWriter.Position = 0;
                             outputList.Add(bufferWriter);
 
@@ -146,11 +146,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             isDocumentsArray = true;
                         }
 
-                        currentWriter?.WriteStartArray();
+                        chunkWriter?.WriteStartArray();
                         break;
 
                     case JsonTokenType.EndArray:
-                        currentWriter?.WriteEndArray();
+                        chunkWriter?.WriteEndArray();
                         if (isDocumentsArray && reader.CurrentDepth == 1)
                         {
                             isDocumentsArray = false;
@@ -164,24 +164,27 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         {
                             isDocumentsProperty = true;
                         }
+                        else
+                        {
+                            chunkWriter?.WritePropertyName(reader.ValueSpan);
+                        }
 
-                        currentWriter?.WritePropertyName(reader.ValueSpan);
                         break;
                     case JsonTokenType.String:
                         if (!reader.ValueIsEscaped)
                         {
-                            currentWriter.WriteStringValue(reader.ValueSpan);
+                            chunkWriter?.WriteStringValue(reader.ValueSpan);
                         }
                         else
                         {
                             byte[] temp = arrayPoolManager.Rent(reader.ValueSpan.Length);
                             int tempBytes = reader.CopyString(temp);
-                            currentWriter.WriteStringValue(temp.AsSpan(0, tempBytes));
+                            chunkWriter?.WriteStringValue(temp.AsSpan(0, tempBytes));
                         }
 
                         break;
                     default:
-                        currentWriter?.WriteRawValue(reader.ValueSpan, true);
+                        chunkWriter?.WriteRawValue(reader.ValueSpan, true);
                         break;
                 }
             }

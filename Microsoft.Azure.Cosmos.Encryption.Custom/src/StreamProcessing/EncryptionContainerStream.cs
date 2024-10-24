@@ -1051,7 +1051,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 readManyRequestOptions,
                 cancellationToken);
 
-            using Stream decryptedStream = this.streamManager.CreateStream();
+            Stream decryptedStream = this.streamManager.CreateStream();
             await EncryptionProcessor.DeserializeAndDecryptResponseAsync(responseMessage.Content, decryptedStream, this.Encryptor, this.streamManager, cancellationToken);
 
             return new DecryptedResponseMessage(responseMessage, decryptedStream);

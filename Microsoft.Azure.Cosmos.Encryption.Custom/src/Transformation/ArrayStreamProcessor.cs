@@ -65,6 +65,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataLength = await readStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
+
+                if (isFinalBlock)
+                {
+                    break;
+                }
+
                 long bytesConsumed = 0;
 
                 bytesConsumed = this.TransformBuffer(
@@ -95,6 +101,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
                 }
             }
+
+            writer.Flush();
 
             await readStream.DisposeAsync();
             output.Position = 0;

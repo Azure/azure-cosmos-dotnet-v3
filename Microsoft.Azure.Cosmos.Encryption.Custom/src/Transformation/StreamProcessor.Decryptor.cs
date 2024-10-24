@@ -77,6 +77,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
+
+                if (isFinalBlock)
+                {
+                    break;
+                }
+
                 long bytesConsumed = 0;
 
                 // processing itself here

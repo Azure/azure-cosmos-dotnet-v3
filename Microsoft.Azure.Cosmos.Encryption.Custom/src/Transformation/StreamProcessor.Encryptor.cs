@@ -72,6 +72,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
+
+                if (isFinalBlock)
+                {
+                    break;
+                }
+
                 long bytesConsumed = 0;
 
                 bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0 + offset, dataSize - offset));
