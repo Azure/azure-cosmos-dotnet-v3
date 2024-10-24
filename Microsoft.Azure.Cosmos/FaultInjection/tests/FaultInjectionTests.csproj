@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<Nullable>enable</Nullable>
+	<Nullable>annotations</Nullable>
 	<IsTestProject>true</IsTestProject>
 	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	<Platform>AnyCPU</Platform>

@@ -34,6 +34,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos.Encr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjection", "Microsoft.Azure.Cosmos\FaultInjection\src\FaultInjection.csproj", "{021DDC27-02EF-42C4-9A9E-AA600833C2EE}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjectionTests", "Microsoft.Azure.Cosmos\FaultInjection\tests\FaultInjectionTests.csproj", "{D744906A-1091-403F-B0B6-794DE045169A}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests", "Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj", "{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}"
 EndProject
 Global

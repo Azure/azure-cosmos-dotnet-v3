@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils.TestCommon;
 
     [TestClass]
     public class FaultInjectionDirectModeTests
@@ -40,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             this.container = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 5000);
         }
 
-        public async Task Initialize(bool multiRegion)
+        public async Task Initialize(bool multiRegion, int ru = 400)
         {
             this.client = TestCommon.CreateCosmosClient(false, multiRegion);
             this.database = await this.client.CreateDatabaseIfNotExistsAsync("testDb");
@@ -50,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 Id = "test",
                 PartitionKeyPath = "/Pk"
             };
-            this.container = await this.database.CreateContainerIfNotExistsAsync(containerProperties, 5000);
+            this.container = await this.database.CreateContainerIfNotExistsAsync(containerProperties, ru);
             await Task.Delay(5000);
         }
 
@@ -470,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Description("Tests filtering on partition")]
         public void FaultInjectionServerErrorRule_PartitionTest()
         {
-            if (!this.Timeout_FaultInjectionServerErrorRule_RegionTest().Wait(Timeout))
+            if (!this.Timeout_FaultInjectionServerErrorRule_PartitionTest().Wait(Timeout))
             {
                 Assert.Fail("Test timed out");
             }
@@ -478,7 +479,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
         private async Task Timeout_FaultInjectionServerErrorRule_PartitionTest()
         {
-            await this.Initialize(true);
+            await this.Initialize(true, 11000);
             if (this.container != null && this.client != null)
             {
                 for (int i = 0; i < 10; i++)
@@ -490,15 +491,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 Assert.IsTrue(feedRanges.Count > 1);
 
                 string query = "SELECT * FROM c";
-                QueryRequestOptions queryOptions = new QueryRequestOptions
-                {
-                    FeedRange = feedRanges[0]
-                };
 
-                JObject query0 = (await this.container.GetItemQueryIterator<JObject>(query, requestOptions: queryOptions).ReadNextAsync()).First();
+                FeedIterator<JObject> feedIterator = this.container.GetItemQueryIterator<JObject>(query);
 
-                queryOptions.FeedRange = feedRanges[1];
-                JObject query1 = (await this.container.GetItemQueryIterator<JObject>(query, requestOptions: queryOptions).ReadNextAsync()).First();
+                JObject query0 = (await feedIterator.ReadNextAsync()).First();
+                JObject query1 = (await feedIterator.ReadNextAsync()).First();
 
                 this.client?.Dispose();
 
@@ -508,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     condition:
                         new FaultInjectionConditionBuilder()
                             .WithEndpoint(
-                                new FaultInjectionEndpointBuilder("testDb", "testContianer", feedRanges[0])
+                                new FaultInjectionEndpointBuilder("testDb", "test", feedRanges[0])
                                     .Build())
                             .Build(),
                     result:
@@ -522,12 +519,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serverErrorFeedRangeRule };
                 FaultInjector faultInjector = new FaultInjector(rules);
                 await this.Initialize(faultInjector, true);
+                if (this.client != null)
+                {
+                    await this.client.InitilizeFaultInjectionAsync();
+                }
 
                 GlobalEndpointManager? globalEndpointManager = this.client?.ClientContext.DocumentClient.GlobalEndpointManager;
                 List<Uri> readRegions = new List<Uri>();
-                if (globalEndpointManager != null) { readRegions = (List<Uri>)globalEndpointManager.ReadEndpoints.AsEnumerable(); }
+                if (globalEndpointManager != null) 
+                { 
+                    foreach(Uri regionEndpoint in globalEndpointManager.AccountReadEndpoints)
+                    {
+                        readRegions.Add(regionEndpoint);
+                    }
+                }
 
-                Assert.IsTrue(serverErrorFeedRangeRule.GetRegionEndpoints().Count == readRegions.Count);
+                Assert.IsTrue(serverErrorFeedRangeRule.GetRegionEndpoints().Count == (readRegions.Count + 1));
 
                 foreach (Uri regionEndpoint in readRegions)
                 {

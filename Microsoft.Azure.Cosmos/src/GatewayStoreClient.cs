@@ -363,7 +363,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                request);
         }
     }
 }
