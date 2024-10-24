@@ -36,7 +36,7 @@
         public CompressionOptions.CompressionAlgorithm CompressionAlgorithm { get; set; }
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        [Params(JsonProcessor.Newtonsoft, JsonProcessor.SystemTextJson, JsonProcessor.Stream)]
+        [Params(JsonProcessor.Newtonsoft, JsonProcessor.Stream)]
 #else
         [Params(JsonProcessor.Newtonsoft)]
 #endif
