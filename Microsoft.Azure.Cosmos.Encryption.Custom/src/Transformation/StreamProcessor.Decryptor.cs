@@ -44,6 +44,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 throw new NotSupportedException($"Unknown encryption format version: {properties.EncryptionFormatVersion}. Please upgrade your SDK to the latest version.");
             }
 
+            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
+
+            if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
+            {
+                throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
+            }
+
             using ArrayPoolManager arrayPoolManager = new ();
 
             DataEncryptionKey encryptionKey = await encryptor.GetEncryptionKeyAsync(properties.DataEncryptionKeyId, properties.EncryptionAlgorithm, cancellationToken);
@@ -64,8 +71,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             bool isIgnoredBlock = false;
 
             string decryptPropertyName = null;
-
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
 
             while (!isFinalBlock)
             {
@@ -124,14 +129,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else
                             {
-                                this.TransformDecryptProperty(
-                                    ref reader,
-                                    writer,
-                                    decryptPropertyName,
-                                    properties,
-                                    encryptionKey,
-                                    containsCompressed,
-                                    arrayPoolManager);
+                                TransformDecryptProperty(ref reader);
 
                                 pathsDecrypted.Add(decryptPropertyName);
                             }
@@ -199,69 +197,53 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 state = reader.CurrentState;
                 return reader.BytesConsumed;
             }
-        }
 
-        private void TransformDecryptProperty(ref Utf8JsonReader reader, Utf8JsonWriter writer, string decryptPropertyName, EncryptionProperties properties, DataEncryptionKey encryptionKey, bool containsCompressed, ArrayPoolManager arrayPoolManager)
-        {
-            BrotliCompressor decompressor = null;
-            if (properties.EncryptionFormatVersion == EncryptionFormatVersion.MdeWithCompression)
+            void TransformDecryptProperty(ref Utf8JsonReader reader)
             {
-                if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
+                byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(reader.ValueSpan.Length);
+
+                // necessary for proper un-escaping
+                int initialLength = reader.CopyString(cipherTextWithTypeMarker);
+
+                OperationStatus status = Base64.DecodeFromUtf8InPlace(cipherTextWithTypeMarker.AsSpan(0, initialLength), out int cipherTextLength);
+                if (status != OperationStatus.Done)
                 {
-                    throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
+                    throw new InvalidOperationException($"Base64 decoding failed: {status}");
                 }
 
-                if (containsCompressed)
+                (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
+
+                if (containsCompressed && properties.CompressedEncryptedPaths?.TryGetValue(decryptPropertyName, out int decompressedSize) == true)
                 {
-                    decompressor = new ();
-                }
-            }
-
-            byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(reader.ValueSpan.Length);
-
-            // necessary for proper un-escaping
-            int initialLength = reader.CopyString(cipherTextWithTypeMarker);
-
-            OperationStatus status = Base64.DecodeFromUtf8InPlace(cipherTextWithTypeMarker.AsSpan(0, initialLength), out int cipherTextLength);
-            if (status != OperationStatus.Done)
-            {
-                throw new InvalidOperationException($"Base64 decoding failed: {status}");
-            }
-
-            (byte[] bytes, int processedBytes) = this.Encryptor.Decrypt(encryptionKey, cipherTextWithTypeMarker, cipherTextLength, arrayPoolManager);
-
-            if (containsCompressed)
-            {
-                if (properties.CompressedEncryptedPaths?.TryGetValue(decryptPropertyName, out int decompressedSize) == true)
-                {
+                    BrotliCompressor decompressor = new ();
                     byte[] buffer = arrayPoolManager.Rent(decompressedSize);
                     processedBytes = decompressor.Decompress(bytes, processedBytes, buffer);
 
                     bytes = buffer;
                 }
-            }
 
-            ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
-            switch ((TypeMarker)cipherTextWithTypeMarker[0])
-            {
-                case TypeMarker.String:
-                    writer.WriteStringValue(bytesToWrite);
-                    break;
-                case TypeMarker.Long:
-                    writer.WriteNumberValue(SqlLongSerializer.Deserialize(bytesToWrite));
-                    break;
-                case TypeMarker.Double:
-                    writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(bytesToWrite));
-                    break;
-                case TypeMarker.Boolean:
-                    writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
-                    break;
-                case TypeMarker.Null:
-                    writer.WriteNullValue();
-                    break;
-                default:
-                    writer.WriteRawValue(bytesToWrite, true);
-                    break;
+                ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
+                switch ((TypeMarker)cipherTextWithTypeMarker[0])
+                {
+                    case TypeMarker.String:
+                        writer.WriteStringValue(bytesToWrite);
+                        break;
+                    case TypeMarker.Long:
+                        writer.WriteNumberValue(SqlLongSerializer.Deserialize(bytesToWrite));
+                        break;
+                    case TypeMarker.Double:
+                        writer.WriteNumberValue(SqlDoubleSerializer.Deserialize(bytesToWrite));
+                        break;
+                    case TypeMarker.Boolean:
+                        writer.WriteBooleanValue(SqlBoolSerializer.Deserialize(bytesToWrite));
+                        break;
+                    case TypeMarker.Null:
+                        writer.WriteNullValue();
+                        break;
+                    default:
+                        writer.WriteRawValue(bytesToWrite, true);
+                        break;
+                }
             }
         }
     }

@@ -14,12 +14,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the embedding settings for the vector index.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class Embedding : IEquatable<Embedding>
+    public class Embedding : IEquatable<Embedding>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the vector index.
