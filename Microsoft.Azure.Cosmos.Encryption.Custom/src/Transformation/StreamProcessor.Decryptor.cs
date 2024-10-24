@@ -72,8 +72,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             string decryptPropertyName = null;
 
-            bool containsCompressed = properties.CompressedEncryptedPaths?.Count > 0;
-
             while (!isFinalBlock)
             {
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
@@ -199,24 +197,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 state = reader.CurrentState;
                 return reader.BytesConsumed;
             }
-        }
-
-        private void TransformDecryptProperty(ref Utf8JsonReader reader, Utf8JsonWriter writer, string decryptPropertyName, EncryptionProperties properties, DataEncryptionKey encryptionKey, bool containsCompressed, ArrayPoolManager arrayPoolManager)
-        {
-            BrotliCompressor decompressor = null;
-            if (properties.EncryptionFormatVersion == EncryptionFormatVersion.MdeWithCompression)
-            {
-                if (properties.CompressionAlgorithm != CompressionOptions.CompressionAlgorithm.Brotli && containsCompressed)
-                {
-                    throw new NotSupportedException($"Unknown compression algorithm {properties.CompressionAlgorithm}");
-                }
 
             void TransformDecryptProperty(ref Utf8JsonReader reader)
             {
-                    decompressor = new ();
-                }
-            }
-
                 byte[] cipherTextWithTypeMarker = arrayPoolManager.Rent(reader.ValueSpan.Length);
 
                 // necessary for proper un-escaping
@@ -238,7 +221,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                     bytes = buffer;
                 }
-            }
 
                 ReadOnlySpan<byte> bytesToWrite = bytes.AsSpan(0, processedBytes);
                 switch ((TypeMarker)cipherTextWithTypeMarker[0])

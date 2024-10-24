@@ -26,10 +26,6 @@
     <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(IsPreview)' == 'True' ">
-    <PackageReference Include="Microsoft.IO.RecyclableMemoryStream" Version="3.0.1" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.Encryption.Custom.csproj" />
   </ItemGroup>

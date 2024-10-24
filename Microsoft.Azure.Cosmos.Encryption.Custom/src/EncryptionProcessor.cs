@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static readonly CosmosJsonDotNetSerializer BaseSerializer = new (JsonSerializerSettings);
 
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-        private static readonly JsonWriterOptions JsonWriterOptions = new () { SkipValidation = true };
         private static readonly StreamProcessor StreamProcessor = new ();
 #endif
 
@@ -95,20 +94,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
             }
-            if (encryptionOptions.EncryptionAlgorithm != CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)
-            {
-                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized)}");
-            }
 
             if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
             {
                 throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
             }
 
-            if (encryptionOptions.JsonProcessor != JsonProcessor.Stream)
-            {
-                throw new NotSupportedException($"Streaming mode is only allowed for {nameof(JsonProcessor.Stream)}");
-            }
             await EncryptionProcessor.StreamProcessor.EncryptStreamAsync(input, output, encryptor, encryptionOptions, cancellationToken);
         }
 #endif
