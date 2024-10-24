@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
-        private const string CosmosDb = "cosmosdb";
+        internal const string CosmosDb = "cosmosdb";
 
         private static readonly string otelStabilityMode = Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN");
 
@@ -157,6 +157,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
+                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerPort, clientContext.Client?.Endpoint?.Port.ToString());
                     this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
                 }
                 else

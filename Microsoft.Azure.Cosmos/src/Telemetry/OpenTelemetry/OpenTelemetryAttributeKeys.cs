@@ -58,6 +58,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ServerAddress = "server.address";
 
+        /// <summary>
+        /// Represents the server port.
+        /// </summary>
+        public const string ServerPort = "server.port";
+
         // Cosmos DB specific attributes
 
         /// <summary>
@@ -158,5 +163,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the stack trace of the exception.
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
+
+        /// <summary>
+        /// Represents the type of error.
+        /// </summary>
+        public const string ErrorType = "error.type";
     }
 }

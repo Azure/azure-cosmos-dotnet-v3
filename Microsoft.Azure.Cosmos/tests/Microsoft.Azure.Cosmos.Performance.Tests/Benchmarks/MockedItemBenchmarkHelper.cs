@@ -34,9 +34,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             bool useCustomSerializer = false,
             bool includeDiagnosticsToString = false,
             bool useBulk = false,
-            bool? isClientTelemetryEnabled = null)
+            bool isDistributedTracingEnabled = false,
+            bool isClientMetricsEnabled = false)
         {
-            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, isClientTelemetryEnabled, (builder) => builder.WithBulkExecution(useBulk));
+            this.TestClient = MockDocumentClient.CreateMockCosmosClient(useCustomSerializer, 
+                (builder) => builder
+                                .WithBulkExecution(useBulk)
+                                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                {
+                                    DisableDistributedTracing = !isDistributedTracingEnabled,
+                                    IsClientMetricsEnabled = isClientMetricsEnabled
+                                }));
+
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
 
