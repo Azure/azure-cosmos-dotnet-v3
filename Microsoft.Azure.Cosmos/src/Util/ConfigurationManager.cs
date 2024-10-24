@@ -37,6 +37,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
+        /// be removed once binary encoding is enabled by default for both preview
+        /// and GA.
+        /// </summary>
+        internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -123,6 +130,22 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: DistributedQueryGatewayModeEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if binary encoding is enabled based on the environment variable override.
+        /// Note that binary encoding is disabled by default for both preview and GA releases. The user can set the
+        /// respective environment variable 'AZURE_COSMOS_BINARY_ENCODING_ENABLED' to override the value for both preview and GA.
+        /// This method will eventually be removed once binary encoding is enabled by default for both preview and GA.
+        /// </summary>
+        /// <returns>A boolean flag indicating if binary encoding is enabled.</returns>
+        public static bool IsBinaryEncodingEnabled()
+        {
+            bool defaultValue = false;
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BinaryEncodingEnabled,
                         defaultValue: defaultValue);
         }
     }
