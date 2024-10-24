@@ -560,6 +560,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             // change feed processor manual checkpoint with feed stream handler
             await ValidateChangeFeedProcessorStreamWithManualCheckpointResponse(encryptionContainerForChangeFeed, testDoc1, testDoc2);
+
+            await dekProvider.Container.DeleteItemAsync<DataEncryptionKeyProperties>(dek2, new PartitionKey(dek2));
         }
 
         [TestMethod]
@@ -628,6 +630,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             await ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
 
             encryptor.FailDecryption = false;
+
+            await dekProvider.Container.DeleteItemAsync<DataEncryptionKeyProperties>(dek2, new PartitionKey(dek2));
         }
 
         [TestMethod]
@@ -1345,7 +1349,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             }
         }
 
-        private static async Task ValidateQueryResponseAsync(Container container,
+        private static async Task ValidateQueryResponseAsync(
+            Container container,
             string query = null)
         {
             FeedIterator feedIterator;
@@ -1437,7 +1442,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             bool isStartOk = allDocsProcessed.WaitOne(60000);
             await cfp.StopAsync();
 
-            Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
+            Assert.AreEqual(2, changeFeedReturnedDocs.Count);
 
             VerifyExpectedDocResponse(testDoc1, changeFeedReturnedDocs[^2]);
             VerifyExpectedDocResponse(testDoc2, changeFeedReturnedDocs[^1]);

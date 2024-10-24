@@ -79,27 +79,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
+            return container switch
+            {
 #if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
-            {
-                if (container is not EncryptionContainerStream encryptionContainerStream)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainerStream)}.");
-                }
-
-                return new EncryptionFeedIteratorStream<T>(
+                EncryptionContainerStream encryptionContainerStream => new EncryptionFeedIteratorStream<T>(
                     (EncryptionFeedIteratorStream)encryptionContainerStream.ToEncryptionStreamIterator(query),
-                    encryptionContainerStream.ResponseFactory);
-            }
+                    encryptionContainerStream.ResponseFactory),
 #endif
-            if (container is not EncryptionContainer encryptionContainer)
-            {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainer)}.");
-            }
+                EncryptionContainer encryptionContainer => new EncryptionFeedIterator<T>(
+                    (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
+                    encryptionContainer.ResponseFactory),
 
-            return new EncryptionFeedIterator<T>(
-                (EncryptionFeedIterator)encryptionContainer.ToEncryptionStreamIterator(query),
-                encryptionContainer.ResponseFactory);
+                _ => throw new ArgumentOutOfRangeException(nameof(container), $"Container type {container.GetType().Name} is not supported.")
+
+            };
         }
 
         /// <summary>
@@ -124,31 +117,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             this Container container,
             IQueryable<T> query)
         {
-#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
-            if (container.Database.Client.ClientOptions.UseSystemTextJsonSerializerWithOptions is not null)
+            return container switch
             {
-                if (container is not EncryptionContainerStream encryptionContainerStream)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionFeedIterator)} is only supported with {nameof(EncryptionContainerStream)}.");
-                }
-
-                return new EncryptionFeedIteratorStream(
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                EncryptionContainerStream encryptionContainerStream => new EncryptionFeedIteratorStream(
                     query.ToStreamIterator(),
                     encryptionContainerStream.Encryptor,
                     encryptionContainerStream.CosmosSerializer,
-                    new MemoryStreamManager());
-            }
+                    new MemoryStreamManager()),
 #endif
-
-            if (container is not EncryptionContainer encryptionContainer)
-            {
-                throw new ArgumentOutOfRangeException(nameof(query), $"{nameof(ToEncryptionStreamIterator)} is only supported with {nameof(EncryptionContainer)}.");
-            }
-
-            return new EncryptionFeedIterator(
-                query.ToStreamIterator(),
-                encryptionContainer.Encryptor,
-                encryptionContainer.CosmosSerializer);
+                EncryptionContainer encryptionContainer => new EncryptionFeedIterator(
+                    query.ToStreamIterator(),
+                    encryptionContainer.Encryptor,
+                    encryptionContainer.CosmosSerializer),
+                _ => throw new ArgumentOutOfRangeException(nameof(container), $"Container type {container.GetType().Name} is not supported.")
+            };
         }
     }
 }
