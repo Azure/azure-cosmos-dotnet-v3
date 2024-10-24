@@ -46,10 +46,9 @@
   </ItemGroup>  
     
   <ItemGroup>
-     <PackageReference Include="Azure.Core" Version="1.38.0" />
      <PackageReference Include="Azure.Identity" Version="1.11.4" />
      <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
-     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />     
+     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
   </ItemGroup>
 
   <ItemGroup>

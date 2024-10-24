@@ -11,6 +11,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Serializer;
 
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
@@ -51,8 +54,28 @@ namespace Microsoft.Azure.Cosmos
 
             using (stream)
             {
-                using StreamReader reader = new (stream);
-                return JsonSerializer.Deserialize<T>(reader.ReadToEnd(), this.jsonSerializerOptions);
+                if (stream is Documents.CloneableStream cloneableStream)
+                {
+                    using (CosmosBufferedStreamWrapper bufferedStream = new (cloneableStream, shouldDisposeInnerStream: false))
+                    {
+                        if (bufferedStream.GetJsonSerializationFormat() == JsonSerializationFormat.Binary)
+                        {
+                            byte[] content = bufferedStream.ReadAll();
+
+                            if (CosmosObject.TryCreateFromBuffer(content, out CosmosObject cosmosObject))
+                            {
+                                return System.Text.Json.JsonSerializer.Deserialize<T>(cosmosObject.ToString(), this.jsonSerializerOptions);
+                            }
+                            else
+                            {
+                                using Stream textStream = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(content, JsonSerializationFormat.Text);
+                                return this.DeserializeStream<T>(textStream);
+                            }
+                        }
+                    }
+                }
+
+                return this.DeserializeStream<T>(stream);
             }
         }
 
@@ -74,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
 
             using (stream)
             {
-                return await JsonSerializer.DeserializeAsync<T>(stream, this.jsonSerializerOptions, cancellationToken);
+                return await System.Text.Json.JsonSerializer.DeserializeAsync<T>(stream, this.jsonSerializerOptions, cancellationToken);
             }
         }
 
@@ -84,7 +107,7 @@ namespace Microsoft.Azure.Cosmos
             MemoryStream streamPayload = new ();
             using Utf8JsonWriter writer = new (streamPayload);
 
-            JsonSerializer.Serialize(writer, input, this.jsonSerializerOptions);
+            System.Text.Json.JsonSerializer.Serialize(writer, input, this.jsonSerializerOptions);
 
             streamPayload.Position = 0;
             return streamPayload;
@@ -93,7 +116,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override async Task ToStreamAsync<T>(T input, Stream output, CancellationToken cancellationToken)
         {
-            await JsonSerializer.SerializeAsync(output, input, this.jsonSerializerOptions, cancellationToken);
+            await System.Text.Json.JsonSerializer.SerializeAsync(output, input, this.jsonSerializerOptions, cancellationToken);
             output.Position = 0;
         }
 
@@ -130,6 +153,19 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return memberInfo.Name;
+        }
+
+        /// <summary>
+        /// Deserializes the stream into the specified type using STJ Serializer.
+        /// </summary>
+        /// <typeparam name="T">The desired type, the input stream to be deserialize into</typeparam>
+        /// <param name="stream">An instance of <see cref="Stream"/> containing th raw input stream.</param>
+        /// <returns>The deserialized output of type <typeparamref name="T"/>.</returns>
+        private T DeserializeStream<T>(
+            Stream stream)
+        {
+            using StreamReader reader = new (stream);
+            return System.Text.Json.JsonSerializer.Deserialize<T>(reader.ReadToEnd(), this.jsonSerializerOptions);
         }
     }
 }

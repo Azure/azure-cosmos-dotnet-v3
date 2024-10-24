@@ -8,12 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines the target index type of an vector index path specification in the Azure Cosmos DB service.
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    enum VectorIndexType
+    public enum VectorIndexType
     {
         /// <summary>
         /// Represents a flat vector index type.

@@ -6,18 +6,22 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.RecyclableMemoryStreamMirror;
 
     internal partial class StreamProcessor
     {
         private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
 
         private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+
+        private readonly RecyclableMemoryStreamManager streamManager = new ();
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
@@ -53,7 +57,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
-            RentArrayBufferWriter bufferWriter = null;
+
+            RecyclableMemoryStream bufferWriter = null;
             bool firstRead = true;
 
             while (!isFinalBlock)
@@ -69,21 +74,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 isFinalBlock = dataSize == 0;
                 long bytesConsumed = 0;
 
-                bytesConsumed = this.TransformEncryptBuffer(
-                    buffer.AsSpan(0 + offset, dataSize - offset),
-                    isFinalBlock,
-                    writer,
-                    ref encryptionPayloadWriter,
-                    ref bufferWriter,
-                    ref state,
-                    ref encryptPropertyName,
-                    pathsToEncrypt,
-                    pathsEncrypted,
-                    compressedPaths,
-                    compressor,
-                    arrayPoolManager,
-                    encryptionKey,
-                    encryptionOptions);
+                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0 + offset, dataSize - offset));
 
                 leftOver = dataSize - ((int)bytesConsumed + offset);
 
@@ -117,178 +108,188 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.Flush();
             inputStream.Position = 0;
             outputStream.Position = 0;
-        }
 
-        private long TransformEncryptBuffer(
-            ReadOnlySpan<byte> buffer,
-            bool isFinalBlock,
-            Utf8JsonWriter writer,
-            ref Utf8JsonWriter encryptionPayloadWriter,
-            ref RentArrayBufferWriter bufferWriter,
-            ref JsonReaderState state,
-            ref string encryptPropertyName,
-            HashSet<string> pathsToEncrypt,
-            List<string> pathsEncrypted,
-            Dictionary<string, int> compressedPaths,
-            BrotliCompressor compressor,
-            ArrayPoolManager arrayPoolManager,
-            DataEncryptionKey encryptionKey,
-            EncryptionOptions encryptionOptions)
-        {
-            Utf8JsonReader reader = new (buffer, isFinalBlock, state);
-
-            while (reader.Read())
+            long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
             {
-                Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
+                Utf8JsonReader reader = new (buffer, isFinalBlock, state);
 
-                JsonTokenType tokenType = reader.TokenType;
-
-                switch (tokenType)
+                while (reader.Read())
                 {
-                    case JsonTokenType.None:
-                        break;
-                    case JsonTokenType.StartObject:
-                        if (encryptPropertyName != null && encryptionPayloadWriter == null)
-                        {
-                            bufferWriter = new RentArrayBufferWriter();
-                            encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
-                            encryptionPayloadWriter.WriteStartObject();
-                        }
-                        else
-                        {
-                            currentWriter.WriteStartObject();
-                        }
+                    Utf8JsonWriter currentWriter = encryptionPayloadWriter ?? writer;
 
-                        break;
-                    case JsonTokenType.EndObject:
-                        if (reader.CurrentDepth == 0)
-                        {
-                            continue;
-                        }
+                    JsonTokenType tokenType = reader.TokenType;
 
-                        currentWriter.WriteEndObject();
-                        if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
-                        {
-                            currentWriter.Flush();
-                            (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                            ReadOnlySpan<byte> encryptedBytes = this.TransformEncryptPayload(bytes, length, TypeMarker.Object, encryptPropertyName, encryptionOptions, encryptionKey, pathsEncrypted, compressedPaths, compressor, arrayPoolManager);
-                            writer.WriteBase64StringValue(encryptedBytes);
+                    switch (tokenType)
+                    {
+                        case JsonTokenType.None:
+                            break;
+                        case JsonTokenType.StartObject:
+                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            {
+                                bufferWriter = new RecyclableMemoryStream(this.streamManager);
+                                encryptionPayloadWriter = new Utf8JsonWriter((IBufferWriter<byte>)bufferWriter);
+                                encryptionPayloadWriter.WriteStartObject();
+                            }
+                            else
+                            {
+                                currentWriter.WriteStartObject();
+                            }
 
-                            encryptPropertyName = null;
-                            encryptionPayloadWriter.Dispose();
-                            encryptionPayloadWriter = null;
-                            bufferWriter.Dispose();
-                            bufferWriter = null;
-                        }
+                            break;
+                        case JsonTokenType.EndObject:
+                            if (reader.CurrentDepth == 0)
+                            {
+                                continue;
+                            }
 
-                        break;
-                    case JsonTokenType.StartArray:
-                        if (encryptPropertyName != null && encryptionPayloadWriter == null)
-                        {
-                            bufferWriter = new RentArrayBufferWriter();
-                            encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
-                            encryptionPayloadWriter.WriteStartArray();
-                        }
-                        else
-                        {
-                            currentWriter.WriteStartArray();
-                        }
+                            currentWriter.WriteEndObject();
+                            if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
+                            {
+                                currentWriter.Flush();
+                                byte[] bytes = bufferWriter.GetBuffer();
+                                int length = (int)bufferWriter.Length;
+                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
+                                writer.WriteBase64StringValue(encryptedBytes);
 
-                        break;
-                    case JsonTokenType.EndArray:
-                        currentWriter.WriteEndArray();
-                        if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
-                        {
-                            currentWriter.Flush();
-                            (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
-                            ReadOnlySpan<byte> encryptedBytes = this.TransformEncryptPayload(bytes, length, TypeMarker.Array, encryptPropertyName, encryptionOptions, encryptionKey, pathsEncrypted, compressedPaths, compressor, arrayPoolManager);
-                            writer.WriteBase64StringValue(encryptedBytes);
+                                encryptPropertyName = null;
+#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
+                                encryptionPayloadWriter.Dispose();
+                                bufferWriter.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
+                                encryptionPayloadWriter = null;
+                                bufferWriter = null;
+                            }
 
-                            encryptPropertyName = null;
-                            encryptionPayloadWriter.Dispose();
-                            encryptionPayloadWriter = null;
-                            bufferWriter.Dispose();
-                            bufferWriter = null;
-                        }
+                            break;
+                        case JsonTokenType.StartArray:
+                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            {
+                                bufferWriter = new RecyclableMemoryStream(this.streamManager);
+                                encryptionPayloadWriter = new Utf8JsonWriter((IBufferWriter<byte>)bufferWriter);
+                                encryptionPayloadWriter.WriteStartArray();
+                            }
+                            else
+                            {
+                                currentWriter.WriteStartArray();
+                            }
 
-                        break;
-                    case JsonTokenType.PropertyName:
-                        string propertyName = "/" + reader.GetString();
-                        if (pathsToEncrypt.Contains(propertyName))
-                        {
-                            encryptPropertyName = propertyName;
-                        }
+                            break;
+                        case JsonTokenType.EndArray:
+                            currentWriter.WriteEndArray();
+                            if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
+                            {
+                                currentWriter.Flush();
+                                byte[] bytes = bufferWriter.GetBuffer();
+                                int length = (int)bufferWriter.Length;
+                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
+                                writer.WriteBase64StringValue(encryptedBytes);
 
-                        currentWriter.WritePropertyName(reader.ValueSpan);
-                        break;
-                    case JsonTokenType.Comment:
-                        currentWriter.WriteCommentValue(reader.ValueSpan);
-                        break;
-                    case JsonTokenType.String:
-                        if (encryptPropertyName != null && encryptionPayloadWriter == null)
-                        {
-                            byte[] bytes = arrayPoolManager.Rent(reader.ValueSpan.Length);
-                            int length = reader.CopyString(bytes);
-                            ReadOnlySpan<byte> encryptedBytes = this.TransformEncryptPayload(bytes, length, TypeMarker.String, encryptPropertyName, encryptionOptions, encryptionKey, pathsEncrypted, compressedPaths, compressor, arrayPoolManager);
-                            currentWriter.WriteBase64StringValue(encryptedBytes);
-                            encryptPropertyName = null;
-                        }
-                        else
-                        {
-                            currentWriter.WriteStringValue(reader.ValueSpan);
-                        }
+                                encryptPropertyName = null;
+#pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
+                                encryptionPayloadWriter.Dispose();
+                                bufferWriter.Dispose();
+#pragma warning restore VSTHRD103 // Call async methods when in an async method
+                                encryptionPayloadWriter = null;
+                                bufferWriter = null;
+                            }
 
-                        break;
-                    case JsonTokenType.Number:
-                        if (encryptPropertyName != null && encryptionPayloadWriter == null)
-                        {
-                            (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(reader.ValueSpan, arrayPoolManager);
-                            ReadOnlySpan<byte> encryptedBytes = this.TransformEncryptPayload(bytes, length, typeMarker, encryptPropertyName, encryptionOptions, encryptionKey, pathsEncrypted, compressedPaths, compressor, arrayPoolManager);
-                            currentWriter.WriteBase64StringValue(encryptedBytes);
-                            encryptPropertyName = null;
-                        }
-                        else
-                        {
-                            currentWriter.WriteRawValue(reader.ValueSpan, true);
-                        }
+                            break;
+                        case JsonTokenType.PropertyName:
+                            string propertyName = "/" + reader.GetString();
+                            if (pathsToEncrypt.Contains(propertyName))
+                            {
+                                encryptPropertyName = propertyName;
+                            }
 
-                        break;
-                    case JsonTokenType.True:
-                        if (encryptPropertyName != null && encryptionPayloadWriter == null)
-                        {
-                            (byte[] bytes, int length) = Serialize(true, arrayPoolManager);
-                            ReadOnlySpan<byte> encryptedBytes = this.TransformEncryptPayload(bytes, length, TypeMarker.Boolean, encryptPropertyName, encryptionOptions, encryptionKey, pathsEncrypted, compressedPaths, compressor, arrayPoolManager);
-                            currentWriter.WriteBase64StringValue(encryptedBytes);
-                            encryptPropertyName = null;
-                        }
-                        else
-                        {
-                            currentWriter.WriteBooleanValue(true);
-                        }
+                            currentWriter.WritePropertyName(reader.ValueSpan);
+                            break;
+                        case JsonTokenType.Comment:
+                            currentWriter.WriteCommentValue(reader.ValueSpan);
+                            break;
+                        case JsonTokenType.String:
+                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            {
+                                byte[] bytes = arrayPoolManager.Rent(reader.ValueSpan.Length);
+                                int length = reader.CopyString(bytes);
+                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.String);
+                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                encryptPropertyName = null;
+                            }
+                            else
+                            {
+                                currentWriter.WriteStringValue(reader.ValueSpan);
+                            }
 
-                        break;
-                    case JsonTokenType.False:
-                        if (encryptPropertyName != null && encryptionPayloadWriter == null)
-                        {
-                            (byte[] bytes, int length) = Serialize(false, arrayPoolManager);
-                            ReadOnlySpan<byte> encryptedBytes = this.TransformEncryptPayload(bytes, length, TypeMarker.Boolean, encryptPropertyName, encryptionOptions, encryptionKey, pathsEncrypted, compressedPaths, compressor, arrayPoolManager);
-                            currentWriter.WriteBase64StringValue(encryptedBytes);
-                            encryptPropertyName = null;
-                        }
-                        else
-                        {
-                            currentWriter.WriteBooleanValue(false);
-                        }
+                            break;
+                        case JsonTokenType.Number:
+                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            {
+                                (TypeMarker typeMarker, byte[] bytes, int length) = SerializeNumber(reader.ValueSpan, arrayPoolManager);
+                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, typeMarker);
+                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                encryptPropertyName = null;
+                            }
+                            else
+                            {
+                                currentWriter.WriteRawValue(reader.ValueSpan, true);
+                            }
 
-                        break;
-                    case JsonTokenType.Null:
-                        currentWriter.WriteNullValue();
-                        break;
+                            break;
+                        case JsonTokenType.True:
+                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            {
+                                (byte[] bytes, int length) = Serialize(true, arrayPoolManager);
+                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
+                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                encryptPropertyName = null;
+                            }
+                            else
+                            {
+                                currentWriter.WriteBooleanValue(true);
+                            }
+
+                            break;
+                        case JsonTokenType.False:
+                            if (encryptPropertyName != null && encryptionPayloadWriter == null)
+                            {
+                                (byte[] bytes, int length) = Serialize(false, arrayPoolManager);
+                                ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Boolean);
+                                currentWriter.WriteBase64StringValue(encryptedBytes);
+                                encryptPropertyName = null;
+                            }
+                            else
+                            {
+                                currentWriter.WriteBooleanValue(false);
+                            }
+
+                            break;
+                        case JsonTokenType.Null:
+                            currentWriter.WriteNullValue();
+                            break;
+                    }
                 }
+
+                state = reader.CurrentState;
+                return reader.BytesConsumed;
             }
 
-            state = reader.CurrentState;
-            return reader.BytesConsumed;
+            ReadOnlySpan<byte> TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker)
+            {
+                byte[] processedBytes = payload;
+                int processedBytesLength = payloadSize;
+
+                if (compressor != null && payloadSize >= encryptionOptions.CompressionOptions.MinimalCompressedLength)
+                {
+                    byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
+                    processedBytesLength = compressor.Compress(compressedPaths, encryptPropertyName, processedBytes, payloadSize, compressedBytes);
+                    processedBytes = compressedBytes;
+                }
+
+                (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
+
+                pathsEncrypted.Add(encryptPropertyName);
+                return encryptedBytes.AsSpan(0, encryptedBytesCount);
+            }
         }
 
         private static (byte[] buffer, int length) Serialize(bool value, ArrayPoolManager arrayPoolManager)
@@ -332,24 +333,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             int length = StreamProcessor.SqlDoubleSerializer.Serialize(value, buffer);
 
             return (TypeMarker.Double, buffer, length);
-        }
-
-        private ReadOnlySpan<byte> TransformEncryptPayload(byte[] payload, int payloadSize, TypeMarker typeMarker, string encryptName, EncryptionOptions options, DataEncryptionKey encryptionKey, List<string> pathsEncrypted, Dictionary<string, int> pathsCompressed, BrotliCompressor compressor, ArrayPoolManager arrayPoolManager)
-        {
-            byte[] processedBytes = payload;
-            int processedBytesLength = payloadSize;
-
-            if (compressor != null && payloadSize >= options.CompressionOptions.MinimalCompressedLength)
-            {
-                byte[] compressedBytes = arrayPoolManager.Rent(BrotliCompressor.GetMaxCompressedSize(payloadSize));
-                processedBytesLength = compressor.Compress(pathsCompressed, encryptName, processedBytes, payloadSize, compressedBytes);
-                processedBytes = compressedBytes;
-            }
-
-            (byte[] encryptedBytes, int encryptedBytesCount) = this.Encryptor.Encrypt(encryptionKey, typeMarker, processedBytes, processedBytesLength, arrayPoolManager);
-
-            pathsEncrypted.Add(encryptName);
-            return encryptedBytes.AsSpan(0, encryptedBytesCount);
         }
     }
 }
