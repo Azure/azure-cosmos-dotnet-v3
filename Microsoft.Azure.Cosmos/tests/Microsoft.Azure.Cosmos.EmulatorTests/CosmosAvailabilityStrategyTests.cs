@@ -930,7 +930,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50),
-                        multiMasterWritesEnabled: true)
+                        enableMultiWriteRegionHedge: true)
                 };
 
                 AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
@@ -998,7 +998,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50),
-                        multiMasterWritesEnabled: true)
+                        enableMultiWriteRegionHedge: true)
                 };
 
                 AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
@@ -1090,7 +1090,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50),
-                        multiMasterWritesEnabled: true)
+                        enableMultiWriteRegionHedge: true)
                 };
 
                 AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
@@ -1186,7 +1186,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50),
-                        multiMasterWritesEnabled: true)
+                        enableMultiWriteRegionHedge: true)
                 };
 
                 AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject

@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos
             //check to see if it is a not a read-only request/ if multimaster writes are enabled
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
-                if (this.MultiMasterWriteHedge
+                if (this.EnableMultiWriteRegionHedge
                     && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request))
                 {
                     return true;
