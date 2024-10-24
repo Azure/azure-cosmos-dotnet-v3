@@ -24,6 +24,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using System;
     using System.Linq;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
 
     [TestClass]
     public class NonStreamingOrderByQueryTests
@@ -48,7 +51,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const string Payload = "payload";
 
+        private const string ComponentScores = "componentScores";
+
         private const string Item = "item";
+
+        private const string Text = "text";
 
         private const string Index = "index";
 
@@ -241,6 +248,75 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             await RunParityTests(testCases);
         }
 
+        [TestMethod]
+        public async Task HybridSearchTests()
+        {
+            IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
+            {
+                new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("AA", "BB", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("BB", "CC", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("CC", "DD", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("DD", "EE", true, false)),
+                new FeedRangeEpk(new Documents.Routing.Range<string>("EE", "FF", true, false)),
+            };
+
+            // TODO: parameterize this test by pulling out the constants as parameters
+            // e.g. leafPageCount, backendPageSize, pageSize, take
+            // we can easily add a skip parameter to simulate offset/limit
+            // Similarly, we can increase/decrease the number of component queries
+            // Only marginally more involved is to add validation for the global statistics query:
+            // Make the MockDocumentContainer recognize when it receives the statistics query and return a simple hard coded result
+            // Finally, it would be cool if we could make the scores independent of each other
+
+            int feedRangeCount = ranges.Count;
+            int leafPageCount = 4;
+            int backendPageSize = 10;
+
+            int documentCount = feedRangeCount * leafPageCount * backendPageSize;
+
+            int take = 100;
+
+            IEnumerable<int> expectedIndices = Enumerable
+                .Range(0, documentCount)
+                .Reverse()
+                .Take(take);
+
+            MockDocumentContainer nonStreamingDocumentContainer = MockDocumentContainer.Create(
+                ranges,
+                PartitionedFeedMode.NonStreamingReversed,
+                componentCount: 2,
+                leafPageCount: leafPageCount,
+                backendPageSize: backendPageSize);
+
+            (IReadOnlyList<CosmosElement> results, double requestCharge) = await CreateAndRunHybridSearchQueryPipelineStage(
+                documentContainer: nonStreamingDocumentContainer,
+                ranges: ranges,
+                pageSize: 1000,
+                take: take);
+
+            Assert.AreEqual(expectedIndices.Count(), results.Count);
+
+            List<int> actual = new List<int>(results.Count);
+            foreach (CosmosElement result in results)
+            {
+                CosmosObject cosmosObject = result as CosmosObject;
+                CosmosNumber cosmosNumber = cosmosObject[Index] as CosmosNumber;
+                Assert.IsTrue(cosmosNumber != null && cosmosNumber.Value.IsInteger);
+                actual.Add((int)Number64.ToLong(cosmosNumber.Value));
+            }
+
+            if (!expectedIndices.SequenceEqual(actual))
+            {
+                System.Diagnostics.Trace.WriteLine("Mismatch in query results");
+                System.Diagnostics.Trace.WriteLine($"Expected: {string.Join(", ", expectedIndices)}");
+                System.Diagnostics.Trace.WriteLine($"Actual: {string.Join(", ", actual)}");
+                Assert.Fail();
+            }
+
+            Assert.AreEqual(nonStreamingDocumentContainer.TotalRequestCharge, requestCharge);
+        }
+
         private static Task RunParityTests(
             IDocumentContainer documentContainer,
             IDocumentContainer nonStreamingDocumentContainer,
@@ -295,6 +371,30 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
+        private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunHybridSearchQueryPipelineStage(
+            IDocumentContainer documentContainer,
+            IReadOnlyList<FeedRangeEpk> ranges,
+            int pageSize,
+            int take)
+        {
+            TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
+                documentContainer,
+                Create2ItemSqlQuerySpec(),
+                ranges,
+                partitionKey: null,
+                queryInfo: null,
+                Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics: false, take),
+                maxItemCount: pageSize,
+                new ContainerQueryProperties(),
+                ranges,
+                isContinuationExpected: true,
+                maxConcurrency: MaxConcurrency,
+                requestContinuationToken: null);
+
+            Assert.IsTrue(tryCreatePipeline.Succeeded);
+            return RunPipelineStage(tryCreatePipeline.Result, pageSize);
+        }
+
         private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunPipelineStage(
             IDocumentContainer documentContainer,
             IReadOnlyList<FeedRangeEpk> ranges,
@@ -313,7 +413,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 MaxConcurrency);
         }
 
-        private static async Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunPipelineStage(
+        private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunPipelineStage(
             IDocumentContainer documentContainer,
             IReadOnlyList<FeedRangeEpk> ranges,
             string queryText,
@@ -337,8 +437,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             Assert.IsTrue(pipelineStage.Succeeded);
 
+            return RunPipelineStage(pipelineStage.Result, pageSize);
+        }
+
+        private static async Task<(IReadOnlyList<CosmosElement>, double)> RunPipelineStage(IQueryPipelineStage stage, int pageSize)
+        {
             double totalRequestCharge = 0;
-            IQueryPipelineStage stage = pipelineStage.Result;
             List<CosmosElement> documents = new List<CosmosElement>();
             while (await stage.MoveNextAsync(NoOpTrace.Singleton, default))
             {
@@ -806,32 +910,75 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private class MockDocumentContainer : IDocumentContainer
         {
-            private readonly IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages;
+            private readonly IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages;
 
             private readonly bool streaming;
 
-            public double TotalRequestCharge { get; }
+            private readonly Func<SqlQuerySpec, int> componentSelector;
+
+            private readonly double totalRequestCharge;
+
+            private int queryCount;
+
+            public double TotalRequestCharge
+            {
+                get
+                {
+                    if (this.totalRequestCharge > 0)
+                    {
+                        return this.totalRequestCharge;
+                    }
+                    else
+                    {
+                        int queryCount = Interlocked.CompareExchange(ref this.queryCount, 0, 0);
+                        return queryCount * QueryCharge;
+                    }
+                }
+            }
+
+            public static MockDocumentContainer Create(
+                IReadOnlyList<FeedRangeEpk> feedRanges,
+                PartitionedFeedMode feedMode,
+                int componentCount,
+                int leafPageCount,
+                int backendPageSize)
+            {
+                IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages = CreateHybridSearchPartitionedFeed(
+                    componentCount,
+                    feedRanges,
+                    feedMode,
+                    leafPageCount,
+                    backendPageSize);
+                return new MockDocumentContainer(pages, !feedMode.HasFlag(PartitionedFeedMode.NonStreaming), GetOrderByScoreKind, 0);
+            }
 
             public static MockDocumentContainer Create(IReadOnlyList<FeedRangeEpk> feedRanges, PartitionedFeedMode feedMode, DocumentCreationMode documentCreationMode)
             {
-                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages = CreatePartitionedFeed(
                     feedRanges,
                     LeafPageCount,
                     PageSize,
                     feedMode,
                     (index) => CreateDocument(index, documentCreationMode));
                 double totalRequestCharge = feedRanges.Count * LeafPageCount * QueryCharge;
-                return new MockDocumentContainer(pages, !feedMode.HasFlag(PartitionedFeedMode.NonStreaming), totalRequestCharge);
+
+                return new MockDocumentContainer(
+                    pages,
+                    !feedMode.HasFlag(PartitionedFeedMode.NonStreaming),
+                    _ => 0,
+                    totalRequestCharge);
             }
 
             private MockDocumentContainer(
-                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages,
+                IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages,
                 bool streaming,
+                Func<SqlQuerySpec, int> componentSelector,
                 double totalRequestCharge)
             {
                 this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
                 this.streaming = streaming;
-                this.TotalRequestCharge = totalRequestCharge;
+                this.componentSelector = componentSelector;
+                this.totalRequestCharge = totalRequestCharge;
             }
 
             public Task<ChangeFeedPage> ChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedExecutionOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
@@ -851,7 +998,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<List<FeedRangeEpk>> GetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                return Task.FromResult(this.pages.Keys.Cast<FeedRangeEpk>().ToList());
+                return Task.FromResult(this.pages[0].Keys.Cast<FeedRangeEpk>().ToList());
             }
 
             public Task<string> GetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
@@ -881,7 +1028,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                return Task.FromResult(TryCatch<List<FeedRangeEpk>>.FromResult(this.pages.Keys.Cast<FeedRangeEpk>().ToList()));
+                return Task.FromResult(TryCatch<List<FeedRangeEpk>>.FromResult(this.pages[0].Keys.Cast<FeedRangeEpk>().ToList()));
             }
 
             public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
@@ -896,7 +1043,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
-                IReadOnlyList<IReadOnlyList<CosmosElement>> feedRangePages = this.pages[feedRangeState.FeedRange];
+                int componentIndex = this.componentSelector(sqlQuerySpec);
+                IReadOnlyList<IReadOnlyList<CosmosElement>> feedRangePages = this.pages[componentIndex][feedRangeState.FeedRange];
                 int index = feedRangeState.State == null ? 0 : int.Parse(((CosmosString)feedRangeState.State.Value).Value);
                 IReadOnlyList<CosmosElement> documents = feedRangePages[index];
 
@@ -911,6 +1059,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     additionalHeaders: null,
                     state: state,
                     streaming: this.streaming);
+
+                DebugTraceHelpers.TraceBackendResponse(queryPage);
+                Interlocked.Increment(ref this.queryCount);
 
                 return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));
             }
@@ -973,12 +1124,79 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             NonStreamingReversed = NonStreaming | Reversed,
         }
 
-        private static IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> CreatePartitionedFeed(
+        private static int GetOrderByScoreKind(SqlQuerySpec sqlQuerySpec)
+        {
+            string queryText = sqlQuerySpec.QueryText;
+            if (queryText.Contains(@"ORDER BY _FullTextScore(c.text"))
+            {
+                return 0;
+            }
+            else if (queryText.Contains(@"ORDER BY _FullTextScore(c.abstract"))
+            {
+                return 1;
+            }
+            else if (queryText.Contains(@"ORDER BY _FullTextScore(c.image"))
+            {
+                return 2;
+            }
+            else
+            {
+                throw new ArgumentException("Unknown query text");
+            }
+        }
+
+        private static IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> CreatePartitionedFeed(
             IReadOnlyList<FeedRangeEpk> feedRanges,
             int leafPageCount,
             int pageSize,
             PartitionedFeedMode mode,
             Func<int, CosmosElement> createDocument)
+        {
+            IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                feedRanges,
+                leafPageCount,
+                pageSize,
+                mode,
+                componentIndex: 0,
+                (_, index) => createDocument(index));
+
+            return new List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>>
+            {
+                pages
+            };
+        }
+
+        private static IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> CreateHybridSearchPartitionedFeed(
+            int componentCount,
+            IReadOnlyList<FeedRangeEpk> feedRanges,
+            PartitionedFeedMode feedMode,
+            int leafPageCount,
+            int pageSize)
+        {
+            List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> componentPages = new List<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>>(componentCount);
+            for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+            {
+                IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = CreatePartitionedFeed(
+                    feedRanges,
+                    leafPageCount,
+                    pageSize,
+                    feedMode,
+                    componentIndex,
+                    (componentIndex, index) => CreateHybridSearchDocument(componentCount, index, componentIndex));
+
+                componentPages.Add(pages);
+            }
+
+            return componentPages;
+        }
+
+        private static IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> CreatePartitionedFeed(
+            IReadOnlyList<FeedRangeEpk> feedRanges,
+            int leafPageCount,
+            int pageSize,
+            PartitionedFeedMode mode,
+            int componentIndex,
+            Func<int, int, CosmosElement> createDocument)
         {
             int feedRangeIndex = 0;
             Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>> pages = new Dictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>();
@@ -991,7 +1209,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     List<CosmosElement> documents = new List<CosmosElement>(pageSize);
                     for (int documentCount = 0; documentCount < pageSize; ++documentCount)
                     {
-                        documents.Add(createDocument(index));
+                        documents.Add(createDocument(componentIndex, index));
                         index += feedRanges.Count;
                     }
 
@@ -1028,6 +1246,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Swapped = 2,
 
             MultiItemSwapped = MultiItem | Swapped,
+        }
+
+        private static CosmosElement CreateHybridSearchDocument(int componentCount, int index, int componentIndex)
+        {
+            CosmosElement indexElement = CosmosNumber64.Create(index);
+            CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
+
+            double[] scores = new double[componentCount];
+            double delta = 0.1;
+            for (int scoreIndex = 0; scoreIndex < componentCount; ++scoreIndex)
+            {
+                scores[scoreIndex] = index + ((1 + scoreIndex) * delta);
+            }
+
+            List<CosmosElement> orderByItems = new List<CosmosElement>
+            {
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [Item] = CosmosNumber64.Create(scores[componentIndex])
+                })
+            };
+
+            Dictionary<string, CosmosElement> payload = new Dictionary<string, CosmosElement>
+            {
+                [Payload] = CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [Text] = indexStringElement,
+                    [Index] = indexElement,
+                }),
+                [ComponentScores] = CosmosArray.Create(scores.Select(score => CosmosNumber64.Create(score))),
+            };
+
+            Documents.ResourceId resourceId = Documents.ResourceId.NewCollectionChildResourceId(
+                CollectionRid,
+                (ulong)index,
+                Documents.ResourceType.Document);
+
+            CosmosElement document = CosmosObject.Create(new Dictionary<string, CosmosElement>
+            {
+                [RId] = CosmosString.Create(resourceId.ToString()),
+                [OrderByItems] = CosmosArray.Create(orderByItems),
+                [Payload] = CosmosObject.Create(payload)
+            });
+
+            return document;
         }
 
         private static CosmosElement CreateDocument(int index, DocumentCreationMode mode)
@@ -1091,6 +1354,114 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 list[index] = list[other];
                 list[other] = temp;
             }
+        }
+
+        private static HybridSearchQueryInfo Create2ItemHybridSearchQueryInfo(bool requiresGlobalStatistics, int? take)
+        {
+            return new HybridSearchQueryInfo
+            {
+                GlobalStatisticsQuery = @"
+                    SELECT 
+                        COUNT(1) AS documentCount,
+                        [
+                            {
+                                totalWordCount: SUM(_FullTextWordCount(c.text)),
+                                hitCounts: [
+                                    COUNTIF(FullTextContains(c.text, ""swim"")),
+                                    COUNTIF(FullTextContains(c.text, ""run""))
+                                ]
+                            },
+                            {
+                                totalWordCount: SUM(_FullTextWordCount(c.abstract)),
+                                hitCounts: [
+                                    COUNTIF(FullTextContains(c.abstract, ""energy""))
+                                ]
+                            }
+                        ] AS fullTextStatistics
+                    FROM c",
+
+                ComponentQueryInfos = new List<QueryInfo>
+                {
+                    new QueryInfo
+                    {
+                        DistinctType = DistinctQueryType.None,
+                        Top = 200,
+                        OrderBy = new List<SortOrder>{ SortOrder.Descending },
+                        OrderByExpressions = new List<string>
+                        {
+                            "_FullTextScore(c.text, [\"swim\", \"run\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})",
+                        },
+                        HasSelectValue = false,
+                        RewrittenQuery = @"
+                            SELECT TOP 200 
+                                c._rid,
+                                [
+                                    {
+                                        item: _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})
+                                    }
+                                ] AS orderByItems,
+                                {
+                                    payload: {
+                                        text: c.text,
+                                        abstract: c.abstract
+                                    },
+                                    componentScores: [
+                                        _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}),
+                                        _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})
+                                    ]
+                                } AS payload
+                            FROM c
+                            WHERE {documentdb-formattableorderbyquery-filter}
+                            ORDER BY _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC",
+                        HasNonStreamingOrderBy = true,
+                    },
+
+                    new QueryInfo
+                    {
+                        DistinctType = DistinctQueryType.None,
+                        Top = 200,
+                        OrderBy = new List<SortOrder>{ SortOrder.Descending },
+                        OrderByExpressions = new List<string>
+                        {
+                            "_FullTextScore(c.abstract, [\"energy\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})",
+                        },
+                        HasSelectValue = false,
+                        RewrittenQuery = @"
+                            SELECT TOP 200 
+                                c._rid,
+                                [
+                                    {
+                                        item: _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})
+                                    }
+                                ] AS orderByItems,
+                                {
+                                    payload: {
+                                        text: c.text,
+                                        abstract: c.abstract
+                                    },
+                                    componentScores: [
+                                        _FullTextScore(c.text, [""swim"", ""run""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}),
+                                        _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1})
+                                    ]
+                                } AS payload
+                            FROM c
+                            WHERE {documentdb-formattableorderbyquery-filter}
+                            ORDER BY _FullTextScore(c.abstract, [""energy""], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-1}, {documentdb-formattablehybridsearchquery-hitcountsarray-1}) DESC",
+                        HasNonStreamingOrderBy = true,
+                    },
+                },
+
+                Take = take,
+                RequiresGlobalStatistics = requiresGlobalStatistics,
+            };
+        }
+
+        private static SqlQuerySpec Create2ItemSqlQuerySpec()
+        {
+            return new SqlQuerySpec(@"
+              SELECT TOP 100 c.text, c.abstract
+              FROM c
+              ORDER BY RANK RRF(FullTextScore(c.text, ['swim', 'run']), FullTextScore(c.abstract, ['energy']))");
         }
 
         private static async Task<IDocumentContainer> CreateDocumentContainerAsync(int documentCount)
