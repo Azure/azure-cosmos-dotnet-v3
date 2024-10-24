@@ -118,9 +118,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             {
                 QueryExecutionOptions queryExecutionOptions = new QueryExecutionOptions(pageSizeHint: maxItemCount);
 
-                // TODO: Remove this once the FullTextWordCount is fixed in the backend
-                queryInfo.GlobalStatisticsQuery = queryInfo.GlobalStatisticsQuery.Replace("_FullTextWordCount", "_FullText_WordCount");
-
                 SqlQuerySpec globalStatisticsQuerySpec = new SqlQuerySpec(
                     queryInfo.GlobalStatisticsQuery,
                     sqlQuerySpec.Parameters);
@@ -293,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 foreach (CosmosElement cosmosElement in page.Documents)
                 {
                     HybridSearchQueryResult hybridSearchQueryResult = HybridSearchQueryResult.Create(cosmosElement);
+                    HybridSearchDebugTraceHelpers.TraceQueryResult(hybridSearchQueryResult);
                     documents.Add(hybridSearchQueryResult.Payload);
                 }
 
@@ -877,7 +875,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static class HybridSearchDebugTraceHelpers
         {
-            private const bool Enabled = true;
+            private const bool Enabled = false;
 #pragma warning disable CS0162 // Unreachable code detected
 
             [Conditional("DEBUG")]
@@ -923,6 +921,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                         string row = builder.ToString();
                         System.Diagnostics.Trace.WriteLine(row);
                     }
+                }
+            }
+
+            [Conditional("DEBUG")]
+            public static void TraceQueryResult(HybridSearchQueryResult queryResult)
+            {
+                if (Enabled)
+                {
+                    StringBuilder builder = new StringBuilder();
+                    AppendQueryResult(queryResult, builder);
+                    string row = builder.ToString();
+                    System.Diagnostics.Trace.WriteLine(row);
                 }
             }
 
