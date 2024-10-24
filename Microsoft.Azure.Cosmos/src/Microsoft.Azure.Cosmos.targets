@@ -53,5 +53,18 @@ Copyright (C) Microsoft Corporation. All rights reserved.
           <Visible>False</Visible>
       </ContentWithTargetPath>
   </ItemGroup>
-    
+
+
+  <!-- Add check for Newtonsoft.Json package in cosnumer app.  -->
+  <Target Name="CheckNewtonsoftJsonVersion" BeforeTargets="CoreCompile" Condition="'$(ExcludeRestorePackageImports)' != 'true'">
+
+    <ItemGroup>
+        <NewtonsoftJsonPackageReference Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Newtonsoft.Json'" />
+    </ItemGroup>
+    <!-- If Newtonsoft.Json is not referenced, fail the build -->
+    <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 13.x.x."
+        Condition="'@(NewtonsoftJsonPackageReference)' == ''" />
+
+  </Target>
+
 </Project>
