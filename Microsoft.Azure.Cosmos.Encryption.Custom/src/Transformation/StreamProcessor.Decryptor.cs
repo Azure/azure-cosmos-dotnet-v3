@@ -133,7 +133,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     case JsonTokenType.String:
                         if (decryptPropertyName == null)
                         {
-                            writer.WriteStringValue(reader.ValueSpan);
+                            if (!reader.ValueIsEscaped)
+                            {
+                                writer.WriteStringValue(reader.ValueSpan);
+                            }
+                            else
+                            {
+                                byte[] temp = arrayPoolManager.Rent(reader.ValueSpan.Length);
+                                int tempBytes = reader.CopyString(temp);
+                                writer.WriteStringValue(temp.AsSpan(0, tempBytes));
+                            }
                         }
                         else
                         {

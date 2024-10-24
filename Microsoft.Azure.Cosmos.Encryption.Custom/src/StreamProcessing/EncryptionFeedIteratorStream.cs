@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
                 if (responseMessage.IsSuccessStatusCode && responseMessage.Content != null)
                 {
-                    using Stream decryptedContent = this.streamManager.CreateStream();
+                    Stream decryptedContent = this.streamManager.CreateStream();
                     await EncryptionProcessor.DeserializeAndDecryptResponseAsync(
                         responseMessage.Content,
                         decryptedContent,

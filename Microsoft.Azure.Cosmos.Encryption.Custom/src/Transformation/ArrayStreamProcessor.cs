@@ -186,7 +186,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         currentWriter.WritePropertyName(reader.ValueSpan);
                         break;
                     case JsonTokenType.String:
-                        currentWriter.WriteStringValue(reader.ValueSpan);
+                        if (!reader.ValueIsEscaped)
+                        {
+                            currentWriter.WriteStringValue(reader.ValueSpan);
+                        }
+                        else
+                        {
+                            byte[] temp = arrayPoolManager.Rent(reader.ValueSpan.Length);
+                            int tempBytes = reader.CopyString(temp);
+                            currentWriter.WriteStringValue(temp.AsSpan(0, tempBytes));
+                        }
+
                         break;
                     default:
                         currentWriter.WriteRawValue(reader.ValueSpan, true);

@@ -35,6 +35,28 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 encryptor);
         }
 
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        /// <summary>
+        /// Get container with <see cref="Encryptor"/> for performing operations using client-side encryption.
+        /// </summary>
+        /// <param name="container">Regular cosmos container.</param>
+        /// <param name="encryptor">Provider that allows encrypting and decrypting data.</param>
+        /// <param name="jsonProcessor">Json Processor used for the container.</param>
+        /// <returns>Container to perform operations supporting client-side encryption / decryption.</returns>
+        public static Container WithEncryptor(
+            this Container container,
+            Encryptor encryptor,
+            JsonProcessor jsonProcessor)
+        {
+            return jsonProcessor switch
+            {
+                JsonProcessor.Stream => new EncryptionContainerStream(container, encryptor),
+                JsonProcessor.Newtonsoft => new EncryptionContainer(container, encryptor),
+                _ => throw new NotSupportedException($"Json Processor {jsonProcessor} is not supported.")
+            };
+        }
+#endif
+
         /// <summary>
         /// This method gets the FeedIterator from LINQ IQueryable to execute query asynchronously.
         /// This will create the fresh new FeedIterator when called which will support decryption.

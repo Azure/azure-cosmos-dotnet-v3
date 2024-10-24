@@ -111,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (!encryptionOptions.PathsToEncrypt.Any())
             {
                 await input.CopyToAsync(output, cancellationToken);
+                output.Position = 0;
                 return;
             }
 
@@ -245,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             if (properties?.EncryptionProperties == null)
             {
                 await input.CopyToAsync(output, cancellationToken: cancellationToken);
+                output.Position = 0;
                 return null;
             }
 

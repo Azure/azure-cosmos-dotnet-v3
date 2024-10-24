@@ -75,7 +75,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                     ref state,
                     ref isDocumentsProperty,
                     ref isDocumentsArray,
-                    recyclableMemoryStreamManager);
+                    recyclableMemoryStreamManager,
+                    arrayPoolManager);
 
                 leftOver = dataSize - (int)bytesConsumed;
 
@@ -97,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return outputList;
         }
 
-        private long TransformBuffer(Span<byte> buffer, List<Stream> outputList, bool isFinalBlock, ref RecyclableMemoryStream bufferWriter, ref Utf8JsonWriter chunkWriter, ref JsonReaderState state, ref bool isDocumentsProperty, ref bool isDocumentsArray, RecyclableMemoryStreamManager manager)
+        private long TransformBuffer(Span<byte> buffer, List<Stream> outputList, bool isFinalBlock, ref RecyclableMemoryStream bufferWriter, ref Utf8JsonWriter chunkWriter, ref JsonReaderState state, ref bool isDocumentsProperty, ref bool isDocumentsArray, RecyclableMemoryStreamManager manager, ArrayPoolManager arrayPoolManager)
         {
             Utf8JsonReader reader = new Utf8JsonReader(buffer, isFinalBlock, state);
 
@@ -165,6 +166,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         }
 
                         currentWriter?.WritePropertyName(reader.ValueSpan);
+                        break;
+                    case JsonTokenType.String:
+                        if (!reader.ValueIsEscaped)
+                        {
+                            currentWriter.WriteStringValue(reader.ValueSpan);
+                        }
+                        else
+                        {
+                            byte[] temp = arrayPoolManager.Rent(reader.ValueSpan.Length);
+                            int tempBytes = reader.CopyString(temp);
+                            currentWriter.WriteStringValue(temp.AsSpan(0, tempBytes));
+                        }
+
                         break;
                     default:
                         currentWriter?.WriteRawValue(reader.ValueSpan, true);

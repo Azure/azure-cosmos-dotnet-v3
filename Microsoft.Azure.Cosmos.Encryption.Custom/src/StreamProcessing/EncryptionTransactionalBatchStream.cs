@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
                 using (diagnosticsContext.CreateScope("EncryptItemStream"))
                 {
-                    using Stream temp = this.streamManager.CreateStream();
+                    Stream temp = this.streamManager.CreateStream();
                     EncryptionProcessor.EncryptAsync(
                         streamPayload,
                         temp,

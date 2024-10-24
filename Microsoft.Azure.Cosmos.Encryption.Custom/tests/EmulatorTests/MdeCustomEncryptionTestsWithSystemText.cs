@@ -392,6 +392,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             testEncryptionKeyStoreProvider.UnWrapKeyCallsCount.TryGetValue(masterKeyUri1.ToString(), out unwrapcount);
             Assert.AreEqual(1, unwrapcount);
+
+            await dekProvider.Container.DeleteItemAsync< DataEncryptionKeyProperties>(dekId, new PartitionKey(dekId));
         }
 
         [TestMethod]
@@ -1017,6 +1019,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
             // doc3ToCreate, doc4ToCreate wasn't encrypted
             await VerifyItemByReadAsync(itemContainer, doc3ToCreate);
             await VerifyItemByReadAsync(itemContainer, doc4ToCreate);
+
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc1ToCreate.Id, new PartitionKey(doc1ToCreate.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc2ToCreate.Id, new PartitionKey(doc2ToCreate.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc1ToReplace.Id, new PartitionKey(doc1ToReplace.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc3ToCreate.Id, new PartitionKey(doc3ToCreate.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc4ToCreate.Id, new PartitionKey(doc4ToCreate.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc2ToReplace.Id, new PartitionKey(doc2ToReplace.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc1ToUpsert.Id, new PartitionKey(doc1ToUpsert.Id));
+            await encryptionContainer.DeleteItemAsync<TestDoc>(doc2ToUpsert.Id, new PartitionKey(doc2ToUpsert.Id));
         }
 
         [TestMethod]
@@ -1030,7 +1041,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 
             Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(database.Id);
             Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(itemContainer.Id);
-            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(encryptor);
+            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(encryptor, JsonProcessor.Stream);
 
             string partitionKey = "thePK";
             string dek1 = dekId;
