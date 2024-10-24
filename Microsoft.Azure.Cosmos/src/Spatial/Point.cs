@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        internal Point()
+        public Point()
             : base(GeometryType.Point, new GeometryParams())
         {
         }
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// </value>
         [DataMember(Name = "coordinates")]
         [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
-        public Position Position { get; private set; }
+        public Position Position { get; set; }
 
         /// <summary>
         /// Determines if this <see cref="Point"/> is equal to <paramref name="other" /> in the Azure Cosmos DB service.
