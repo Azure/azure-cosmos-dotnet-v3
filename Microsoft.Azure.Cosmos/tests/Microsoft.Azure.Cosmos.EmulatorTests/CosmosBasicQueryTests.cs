@@ -839,6 +839,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(responseMessage.CosmosException.ToString().Contains(expectedErrorMessage));
         }
 
+        [TestMethod]
+        public async Task ItemQueryIteratorToAsyncEnumerable()
+        {
+            CosmosClient client = DirectCosmosClient;
+            Container container = client.GetContainer(DatabaseId, ContainerId);
+
+            int expected = 3;
+            string partitionKey = "example-partition-key";
+
+            List<Task> insertionTasks = new();
+            foreach(int index in Enumerable.Range(1, expected))
+            {
+                insertionTasks.Add(
+                    container.CreateItemAsync(
+                        item: ToDoActivity.CreateRandomToDoActivity(
+                            id: $"{index:0000}", 
+                            pk: partitionKey
+                        )
+                    )
+                );
+            }
+            await Task.WhenAll(insertionTasks);
+
+            QueryDefinition query = new QueryDefinition(
+                query: "SELECT * FROM items i WHERE i.pk = @pk ORDER BY i.cost"
+            ).WithParameter("@pk", partitionKey);
+
+            FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(
+                queryDefinition: query
+            );
+
+            IAsyncEnumerable<FeedResponse<ToDoActivity>> pages = feedIterator.AsAsyncEnumerable();
+
+            double requestUnits = 0.0;
+            int found = 0;
+            await foreach (FeedResponse<ToDoActivity> page in pages)
+            {
+                Assert.IsNotNull(page);
+                Assert.AreEqual(page.StatusCode, System.Net.HttpStatusCode.OK);
+                requestUnits += page.RequestCharge;
+                found += page.Count;
+                foreach (ToDoActivity item in page)
+                {
+                    Assert.IsNotNull(item);
+                    Assert.AreEqual(item.pk, partitionKey);
+                }
+            }
+
+            Assert.IsTrue(requestUnits > 0);
+            Assert.AreEqual(expected, found);
+        }
+
         private class CustomHandler : RequestHandler
         {
             string correlatedActivityId;
