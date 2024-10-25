@@ -25,6 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Contracts\DotNetSDKEncryptionCustomAPI.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
