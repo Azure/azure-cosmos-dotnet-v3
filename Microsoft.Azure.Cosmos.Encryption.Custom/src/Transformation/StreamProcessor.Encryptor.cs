@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Encryption.Custom.RecyclableMemoryStreamMirror;
+    using Microsoft.IO;
 
     internal partial class StreamProcessor
     {
