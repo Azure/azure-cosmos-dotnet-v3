@@ -362,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 return asyncEnumerable;
             }
 
-            throw new ArgumentException("AsAsyncEnumerable is only supported on Cosmos LINQ query operations", nameof(query));
+            throw new NotSupportedException("AsAsyncEnumerable is only supported for IQueryable<T> instances created by the Azure Cosmos DB LINQ provider.");
         }
 
         /// <summary>
