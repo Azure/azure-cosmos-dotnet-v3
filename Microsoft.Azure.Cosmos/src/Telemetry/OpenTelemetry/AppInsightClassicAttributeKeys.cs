@@ -4,6 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
+    using global::Azure.Core;
+
     internal sealed class AppInsightClassicAttributeKeys
     {
         /// <summary>
@@ -90,5 +93,71 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the item count in the operation.
         /// </summary>
         public const string ItemCount = "db.cosmosdb.item_count";
+
+        /// <summary>
+        /// Represents the type of exception.
+        /// </summary>
+        public const string ExceptionType = "exception.type";
+
+        /// <summary>
+        /// Represents the message of the exception.
+        /// </summary>
+        public const string ExceptionMessage = "exception.message";
+
+        /// <summary>
+        /// Represents the stack trace of the exception.
+        /// </summary>
+        public const string ExceptionStacktrace = "exception.stacktrace";
+
+        public static void PopulateAttributes(DiagnosticScope scope,
+            string operationName,
+            string databaseName,
+            string containerName,
+            string accountName,
+            string userAgent,
+            string machineId,
+            string clientId,
+            string connectionMode)
+    {
+            scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.DbName, databaseName);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, accountName);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, userAgent);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.MachineId, machineId);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ClientId, clientId);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ConnectionMode, connectionMode);
+        }
+
+        public static void PopulateAttributes(DiagnosticScope scope, Exception exception)
+        {
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionType, exception.GetType().Name);
+
+            // If Exception is not registered with open Telemetry
+            if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, scope))
+            {
+                scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionMessage, exception.Message);
+            }
+        }
+
+        public static void PopulateAttributes(DiagnosticScope scope, string operationType, OpenTelemetryAttributes response)
+        {
+            scope.AddAttribute(AppInsightClassicAttributeKeys.OperationType, operationType);
+            if (response != null)
+            {
+                scope.AddAttribute(AppInsightClassicAttributeKeys.RequestContentLength, response.RequestContentLength);
+                scope.AddAttribute(AppInsightClassicAttributeKeys.ResponseContentLength, response.ResponseContentLength);
+                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)response.StatusCode);
+                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.SubStatusCode, response.SubStatusCode);
+                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.RequestCharge, (int)response.RequestCharge);
+                scope.AddAttribute(AppInsightClassicAttributeKeys.ItemCount, response.ItemCount);
+                scope.AddAttribute(AppInsightClassicAttributeKeys.ActivityId, response.ActivityId);
+
+                if (response.Diagnostics != null)
+                {
+                    scope.AddAttribute(AppInsightClassicAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+                }
+            }
     }
 }

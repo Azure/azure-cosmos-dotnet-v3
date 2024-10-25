@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -18,8 +19,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
         private const string CosmosDb = "cosmosdb";
-
-        private static readonly string otelStabilityMode = Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN");
 
         private readonly DiagnosticScope scope = default;
         private readonly CosmosThresholdOptions config = null;
@@ -69,12 +68,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.config = config;
 
             this.operationType = operationType;
-            this.connectionModeCache = Enum.GetName(typeof(ConnectionMode), clientContext.ClientOptions.ConnectionMode);
+            this.connectionModeCache = clientContext.ClientOptions.ConnectionMode switch
+            {
+                ConnectionMode.Direct => "direct",
+                ConnectionMode.Gateway => "gateway",
+                _ => throw new NotImplementedException()
+            };
+
             this.queryTextMode = queryTextMode;
 
             if (scope.IsEnabled)
             {
                 this.scope.Start();
+
+                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
 
                 this.Record(
                         operationName: operationName,
@@ -151,28 +158,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, clientContext.UserAgent);
-                }
-                else
-                {
-                    // Classic Appinsights Support
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.DbName, databaseName);
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, clientContext.Client?.Endpoint?.Host);
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, clientContext.UserAgent);
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.MachineId, VmMetadataApiHandler.GetMachineId());
-                }
-
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientContext?.Client?.Id);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, this.connectionModeCache);
+                TracesStabilityFactory.SetAttributes(this.scope,
+                    operationName,
+                    databaseName,
+                    containerName,
+                    clientContext.Client?.Endpoint?.Host,
+                    clientContext.UserAgent,
+                    VmMetadataApiHandler.GetMachineId(),
+                    clientContext?.Client?.Id,
+                    this.connectionModeCache);
             }
         }
 
@@ -196,14 +190,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
-                this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
-
-                // If Exception is not registered with open Telemetry
-                if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, this.scope))
-                {
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
-                }
+                TracesStabilityFactory.SetAttributes(this.scope, exception);
 
                 if (exception is not CosmosException || (exception is CosmosException cosmosException
                             && !DiagnosticsFilterHelper
@@ -242,58 +229,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 OperationType operationType
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
-                if (otelStabilityMode != OpenTelemetryStablityModes.DatabaseDupe)
+                string operationTypeName = Enum.GetName(typeof(OperationType), operationType);
+
+                TracesStabilityFactory.SetAttributes(this.scope, operationTypeName, this.queryTextMode, this.response);
+
+                CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
+
+                if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
                 {
-                    string operationName = Enum.GetName(typeof(OperationType), operationType);
-                    this.scope.AddAttribute(AppInsightClassicAttributeKeys.OperationType, operationName);
-                }
-
-                if (this.response != null)
-                {
-                    if (this.response.BatchSize is not null)
-                    {
-                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)this.response.BatchSize);
-                    }
-
-                    if (otelStabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
-                    {
-                        this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)this.response.StatusCode);
-                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, this.response.RequestContentLength);
-                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
-                    }
-                    else
-                    {
-                        this.scope.AddAttribute(AppInsightClassicAttributeKeys.RequestContentLength, this.response.RequestContentLength);
-                        this.scope.AddAttribute(AppInsightClassicAttributeKeys.ResponseContentLength, this.response.ResponseContentLength);
-                        this.scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)this.response.StatusCode);
-                    }
-
-                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, this.response.SubStatusCode);
-                    this.scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)this.response.RequestCharge);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, this.response.ItemCount);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, this.response.ActivityId);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, this.response.CorrelatedActivityId);
-                    this.scope.AddAttribute(OpenTelemetryAttributeKeys.ConsistencyLevel, this.response.ConsistencyLevel);
-
-                    if (this.response.QuerySpec is not null)
-                    {
-                        if (this.queryTextMode == QueryTextMode.All || 
-                            (this.queryTextMode == QueryTextMode.ParameterizedOnly && this.response.QuerySpec.ShouldSerializeParameters()))
-                        {
-                            this.scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, this.response.QuerySpec?.QueryText);
-                        }
-                    }
-                    
-                    if (this.response.Diagnostics != null)
-                    {
-                        this.scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(this.response.Diagnostics.GetContactedRegions()));
-                        CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
-                    }
-
-                    if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
-                    {
-                        this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
-                    }
+                    this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
                 }
 
                 this.scope.Dispose();

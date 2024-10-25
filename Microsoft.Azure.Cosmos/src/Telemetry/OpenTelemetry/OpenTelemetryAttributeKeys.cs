@@ -4,6 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
+    using global::Azure.Core;
+
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
     /// These keys follow the OpenTelemetry conventions and the Cosmos DB semantic conventions as outlined in the OpenTelemetry specification.
@@ -115,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the item count in the operation.
         /// </summary>
-        public const string ItemCount = "db.cosmosdb.item_count";
+        public const string ItemCount = "db.cosmosdb.row_count";
 
         /// <summary>
         /// Represents the activity ID for the operation.
@@ -158,5 +161,73 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the stack trace of the exception.
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
+
+        public static void PopulateAttributes(DiagnosticScope scope,
+            string operationName,
+            string databaseName,
+            string containerName,
+            string accountName,
+            string userAgent,
+            string clientId,
+            string connectionMode)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, accountName);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, userAgent);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientId);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, connectionMode);
+        }
+
+        public static void PopulateAttributes(DiagnosticScope scope, Exception exception)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
+
+            // If Exception is not registered with open Telemetry
+            if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, scope))
+            {
+                scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+            }
+        }
+
+        public static void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, OpenTelemetryAttributes response)
+        {
+            if (response == null)
+            {
+                return;
+            }
+
+            if (response.BatchSize is not null)
+            {
+                scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)response.BatchSize);
+            }
+
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)response.StatusCode);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, response.SubStatusCode);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)response.RequestCharge);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, response.ActivityId);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, response.CorrelatedActivityId);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ConsistencyLevel, response.ConsistencyLevel);
+
+            if (response.QuerySpec is not null)
+            {
+                if (queryTextMode == QueryTextMode.All ||
+                    (queryTextMode == QueryTextMode.ParameterizedOnly && response.QuerySpec.ShouldSerializeParameters()))
+                {
+                    scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, response.QuerySpec?.QueryText);
+                }
+            }
+
+            if (response.Diagnostics != null)
+            {
+                scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+            }
+            
+        }
     }
 }
