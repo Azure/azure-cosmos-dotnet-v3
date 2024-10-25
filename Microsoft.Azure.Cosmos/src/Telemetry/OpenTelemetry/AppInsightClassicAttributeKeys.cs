@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string machineId,
             string clientId,
             string connectionMode)
-    {
+        {
             scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
             scope.AddAttribute(AppInsightClassicAttributeKeys.DbName, databaseName);
             scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
@@ -159,5 +159,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     scope.AddAttribute(AppInsightClassicAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
                 }
             }
+        }
     }
 }
