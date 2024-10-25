@@ -749,7 +749,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(fullTextPaths.Count, containerSettings.IndexingPolicy.FullTextIndexes.Count());
                 Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
                 Assert.AreEqual(fullTextPath2, containerSettings.IndexingPolicy.FullTextIndexes[1].Path);
-                Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[2].Path);
+                Assert.AreEqual(fullTextPath3, containerSettings.IndexingPolicy.FullTextIndexes[2].Path);
             }
             finally
             {
