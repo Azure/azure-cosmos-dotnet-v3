@@ -304,22 +304,58 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// This extension method returns the query as an asynchronous enumerable.
+        /// This extension method returns the current LINQ-derived NoSQL query for items within an Azure Cosmos DB for NoSQL container as an <see cref="IAsyncEnumerable{T}"/>.
+        /// 
+        /// The <see cref="IAsyncEnumerable{T}"/> enables iteration over pages of results with sets of items.
         /// </summary>
-        /// <typeparam name="T">the type of object to query.</typeparam>
-        /// <param name="query">the IQueryable{T} to be converted.</param>
-        /// <returns>An asynchronous enumerable to go through the items.</returns>
+        /// <typeparam name="T">
+        /// The generic type to deserialize items to.
+        /// </typeparam>
+        /// <param name="query">
+        /// The <see cref="IQueryable{T}"/> to be converted to an asynchornous enumerable.
+        /// </param>
+        /// <seealso cref="IAsyncEnumerable{T}"/>
+        /// <seealso cref="FeedResponse{T}"/> 
+        /// <returns>
+        /// This method returns an asynchronous enumerable that enables iteration over pages of results and sets of items for each page.
+        /// </returns>
         /// <example>
-        /// This example shows how to get the query as an asynchronous enumerable.
+        /// This example shows how to:
+        /// 
+        /// 1. Create a <seealso cref="IQueryable{T}"/> from an existing <seealso cref="Container"/>.
+        /// 1. Use this extension method to convert the iterator into an <seealso cref="IAsyncEnumerable{T}"/>.
         /// 
         /// <code language="c#">
         /// <![CDATA[
-        /// IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>();
-        /// IAsyncEnumerable<ToDoActivity> asyncEnumerable = linqQueryable.Where(item => (item.taskNum < 100)).AsAsyncEnumerable();
+        /// IQueryable<Item> query = container.GetItemLinqQueryable<Item>()
+        ///     .Where(item => item.partitionKey == "example-partition-key")
+        ///     .OrderBy(item => item.value);
+        /// 
+        /// IAsyncEnumerable<FeedResponse<Item>> pages = query.AsAsyncEnumerable();
+        /// 
+        /// List<Item> items = new();
+        /// double requestCharge = 0.0; 
+        /// await foreach(var page in pages)
+        /// {
+        ///     requestCharge += page.RequestCharge;
+        ///     foreach (var item in page)
+        ///     {
+        ///         items.Add(item);
+        ///     }
+        /// }
+        /// </code>
+        /// 
+        /// <code language="c#">
+        /// <![CDATA[
+        /// record Item(
+        ///    string id,
+        ///    string partitionKey,
+        ///    string value
+        /// );
         /// ]]>
         /// </code>
         /// </example>
-        public static IAsyncEnumerable<T> AsAsyncEnumerable<T>(this IQueryable<T> query)
+        public static IAsyncEnumerable<FeedResponse<T>> AsAsyncEnumerable<T>(this IQueryable<T> query)
         {
             if (query is CosmosLinqQuery<T> asyncEnumerable)
             {
