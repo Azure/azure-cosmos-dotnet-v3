@@ -30,7 +30,8 @@
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
-
+  
+  
    <ItemGroup>
     <Compile Include="..\..\..\Microsoft.Azure.Cosmos\tests\Microsoft.Azure.Cosmos.EmulatorTests\Utils\ConfigurationManager.cs" Link="Utils\ConfigurationManager.cs" />
   </ItemGroup>
