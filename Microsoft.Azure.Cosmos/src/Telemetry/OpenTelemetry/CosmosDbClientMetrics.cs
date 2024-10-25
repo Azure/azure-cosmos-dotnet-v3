@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// Total request units per operation (sum of RUs for all requested needed when processing an operation)
                 /// </summary>
-                public const string RequestCharge = "db.cosmosdb.operation.request_charge";
+                public const string RequestCharge = "db.client.cosmosdb.operation.request_charge";
 
                 /// <summary>
                 /// Total end-to-end duration of the operation
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// Number of active SDK client instances. 
                 /// </summary>
-                public const string ActiveInstances = "db.cosmosdb.client.active_instances";
+                public const string ActiveInstances = "db.client.cosmosdb.active_instance.count";
             }
 
             /// <summary>

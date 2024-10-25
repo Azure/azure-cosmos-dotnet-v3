@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using OpenTelemetry;
     using System.Collections.Generic;
     using System.Threading;
-    using System;
 
     public class CustomMetricExporter : BaseExporter<Metric>
     {
@@ -26,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         {
             foreach (Metric metric in batch)
             {
-                ActualMetrics.Add(metric.Name, metric.MetricType);
+                ActualMetrics.TryAdd(metric.Name, metric.MetricType);
             }
 
             if (ActualMetrics.Count > 0)

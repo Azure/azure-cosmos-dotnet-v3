@@ -49,6 +49,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.BaseInit(this.cosmosClient);
         }
 
+        public async Task TestInit(Action<CosmosClientBuilder> customizeClientBuilder = null)
+        {
+            this.cosmosClient = TestCommon.CreateCosmosClient(customizeClientBuilder: customizeClientBuilder);
+            await this.BaseInit(this.cosmosClient);
+        }
+
         public async Task TestCleanup()
         {
             if (this.database != null)

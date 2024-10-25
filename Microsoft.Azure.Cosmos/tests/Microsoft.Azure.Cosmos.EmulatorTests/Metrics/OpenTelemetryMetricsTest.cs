@@ -23,27 +23,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         {
             { "db.client.operation.duration", MetricType.Histogram },
             { "db.client.response.row_count", MetricType.Histogram},
-            { "db.cosmosdb.operation.request_charge", MetricType.Histogram },
-            { "db.cosmosdb.client.active_instances", MetricType.LongSumNonMonotonic }
+            { "db.client.cosmosdb.operation.request_charge", MetricType.Histogram },
+            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic }
         };
 
+        private MeterProvider meterProvider;
         [TestInitialize]
         public async Task Init()
         {
-            await base.TestInit();
-        }
-
-        [TestCleanup]
-        public async Task Cleanup()
-        {
-            await base.TestCleanup();
-        }
-
-        [TestMethod]
-        public async Task OperationLevelMetricsGenerationTest()
-        {
             // Initialize OpenTelemetry MeterProvider
-            MeterProvider meterProvider = Sdk
+            this.meterProvider = Sdk
                 .CreateMeterProviderBuilder()
                 .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Azure Cosmos DB Operation Level Metrics"))
                 .AddMeter(CosmosDbClientMetrics.OperationMetrics.MeterName)
@@ -68,17 +57,23 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 .AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(this.manualResetEventSlim), exportIntervalMilliseconds: AggregatingInterval))
                 .Build();
 
-            // Intialize CosmosClient with Client Metrics enabled
-            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
             {
-                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
-                {
-                    IsClientMetricsEnabled = true
-                }
-            };
-            this.SetClient(new CosmosClient(endpoint, authKey, cosmosClientOptions));
+                IsClientMetricsEnabled = true
+            }));
+        }
 
+        [TestCleanup]
+        public async Task Cleanup()
+        {
+            this.meterProvider.Dispose();
+
+            await base.TestCleanup();
+        }
+
+        [TestMethod]
+        public async Task OperationLevelMetricsGenerationTest()
+        {
             Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
             for (int count = 0; count < 10; count++)
             {
@@ -97,8 +92,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     await feedIterator.ReadNextAsync();
                 }
             }
-
-            meterProvider.Dispose();
 
             while (!this.manualResetEventSlim.IsSet)
             {
