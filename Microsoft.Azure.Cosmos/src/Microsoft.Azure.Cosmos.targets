@@ -62,7 +62,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
         <NewtonsoftJsonPackageReference Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Newtonsoft.Json'" />
     </ItemGroup>
     <!-- If Newtonsoft.Json is not referenced, fail the build -->
-    <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 13.x.x."
+    <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 10.0.2."
         Condition="'@(NewtonsoftJsonPackageReference)' == ''" />
 
   </Target>
