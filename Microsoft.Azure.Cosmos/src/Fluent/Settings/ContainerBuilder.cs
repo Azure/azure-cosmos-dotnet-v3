@@ -270,6 +270,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.VectorEmbeddingPolicy = this.vectorEmbeddingPolicy;
             }
 
+            if (this.fullTextPolicy != null)
+            {
+                containerProperties.FullTextPolicy = this.fullTextPolicy;
+            }
+
             return containerProperties;
         }
 

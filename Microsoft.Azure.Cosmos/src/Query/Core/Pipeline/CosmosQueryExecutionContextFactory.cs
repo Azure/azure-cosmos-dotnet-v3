@@ -575,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
            CancellationToken cancellationToken)
         {
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
-            if (cosmosQueryContext.QueryClient.BypassQueryParsing())
+            //if (true)
             {
                 // For non-Windows platforms(like Linux and OSX) in .NET Core SDK, we cannot use ServiceInterop, so need to bypass in that case.
                 // We are also now bypassing this for 32 bit host process running even on Windows as there are many 32 bit apps that will not work without this
@@ -588,22 +588,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                     trace,
                     cancellationToken);
             }
-            else
-            {
-                Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
+            //else
+            //{
+            //    Documents.PartitionKeyDefinition partitionKeyDefinition = GetPartitionKeyDefinition(inputParameters, containerQueryProperties);
 
-                partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
-                    cosmosQueryContext.QueryClient,
-                    inputParameters.SqlQuerySpec,
-                    cosmosQueryContext.ResourceTypeEnum,
-                    partitionKeyDefinition,
-                    containerQueryProperties.VectorEmbeddingPolicy,
-                    inputParameters.PartitionKey != null,
-                    containerQueryProperties.GeospatialType,
-                    cosmosQueryContext.UseSystemPrefix,
-                    trace,
-                    cancellationToken);
-            }
+            //    partitionedQueryExecutionInfo = await QueryPlanRetriever.GetQueryPlanWithServiceInteropAsync(
+            //        cosmosQueryContext.QueryClient,
+            //        inputParameters.SqlQuerySpec,
+            //        cosmosQueryContext.ResourceTypeEnum,
+            //        partitionKeyDefinition,
+            //        containerQueryProperties.VectorEmbeddingPolicy,
+            //        inputParameters.PartitionKey != null,
+            //        containerQueryProperties.GeospatialType,
+            //        cosmosQueryContext.UseSystemPrefix,
+            //        trace,
+            //        cancellationToken);
+            //}
 
             return partitionedQueryExecutionInfo;
         }
