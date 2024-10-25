@@ -15,10 +15,6 @@ LaunchCount=2  WarmupCount=10
 | EncryptToProvidedStream |                1 |                 None |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 Decrypt |                1 |                 None |     Newtonsoft |    26.31 μs |  0.224 μs |  0.322 μs |    26.23 μs |  0.1526 |  0.0305 |       - |   41440 B |
 | DecryptToProvidedStream |                1 |                 None |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 **Encrypt** |                **1** |                 **None** | **SystemTextJson** |    **14.33 μs** |  **0.137 μs** |  **0.201 μs** |    **14.32 μs** |  **0.0916** |  **0.0153** |       **-** |   **22904 B** |
-| EncryptToProvidedStream |                1 |                 None | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 Decrypt |                1 |                 None | SystemTextJson |    14.54 μs |  0.124 μs |  0.186 μs |    14.52 μs |  0.0610 |  0.0305 |       - |   21448 B |
-| DecryptToProvidedStream |                1 |                 None | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 **Encrypt** |                **1** |                 **None** |         **Stream** |    **12.85 μs** |  **0.095 μs** |  **0.143 μs** |    **12.84 μs** |  **0.0610** |  **0.0153** |       **-** |   **17528 B** |
 | EncryptToProvidedStream |                1 |                 None |         Stream |    13.00 μs |  0.096 μs |  0.141 μs |    12.98 μs |  0.0458 |  0.0153 |       - |   11392 B |
 |                 Decrypt |                1 |                 None |         Stream |    13.01 μs |  0.152 μs |  0.228 μs |    13.05 μs |  0.0458 |  0.0153 |       - |   12672 B |
@@ -27,10 +23,6 @@ LaunchCount=2  WarmupCount=10
 | EncryptToProvidedStream |                1 |               Brotli |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 Decrypt |                1 |               Brotli |     Newtonsoft |    33.49 μs |  0.910 μs |  1.335 μs |    33.99 μs |  0.1221 |       - |       - |   41064 B |
 | DecryptToProvidedStream |                1 |               Brotli |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 **Encrypt** |                **1** |               **Brotli** | **SystemTextJson** |    **20.92 μs** |  **0.136 μs** |  **0.199 μs** |    **20.95 μs** |  **0.0610** |       **-** |       **-** |   **21952 B** |
-| EncryptToProvidedStream |                1 |               Brotli | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 Decrypt |                1 |               Brotli | SystemTextJson |    20.53 μs |  0.136 μs |  0.200 μs |    20.52 μs |  0.0610 |  0.0305 |       - |   20488 B |
-| DecryptToProvidedStream |                1 |               Brotli | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 **Encrypt** |                **1** |               **Brotli** |         **Stream** |    **21.15 μs** |  **1.037 μs** |  **1.521 μs** |    **20.52 μs** |  **0.0610** |  **0.0305** |       **-** |   **16584 B** |
 | EncryptToProvidedStream |                1 |               Brotli |         Stream |    20.57 μs |  0.213 μs |  0.292 μs |    20.57 μs |  0.0305 |       - |       - |   11672 B |
 |                 Decrypt |                1 |               Brotli |         Stream |    21.14 μs |  2.212 μs |  3.311 μs |    19.46 μs |  0.0305 |       - |       - |   13216 B |
@@ -39,10 +31,6 @@ LaunchCount=2  WarmupCount=10
 | EncryptToProvidedStream |               10 |                 None |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 Decrypt |               10 |                 None |     Newtonsoft |   112.98 μs | 15.294 μs | 21.934 μs |   100.38 μs |  0.6104 |  0.1221 |       - |  157425 B |
 | DecryptToProvidedStream |               10 |                 None |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 **Encrypt** |               **10** |                 **None** | **SystemTextJson** |    **41.85 μs** |  **0.868 μs** |  **1.272 μs** |    **41.40 μs** |  **0.4272** |  **0.0610** |       **-** |  **105345 B** |
-| EncryptToProvidedStream |               10 |                 None | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 Decrypt |               10 |                 None | SystemTextJson |    41.79 μs |  0.501 μs |  0.718 μs |    41.64 μs |  0.3662 |  0.0610 |       - |   96464 B |
-| DecryptToProvidedStream |               10 |                 None | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 **Encrypt** |               **10** |                 **None** |         **Stream** |    **39.63 μs** |  **0.658 μs** |  **0.923 μs** |    **39.41 μs** |  **0.3052** |  **0.0610** |       **-** |   **82928 B** |
 | EncryptToProvidedStream |               10 |                 None |         Stream |    36.59 μs |  0.272 μs |  0.399 μs |    36.57 μs |  0.1221 |       - |       - |   37048 B |
 |                 Decrypt |               10 |                 None |         Stream |    28.64 μs |  0.378 μs |  0.517 μs |    28.59 μs |  0.1221 |  0.0305 |       - |   29520 B |
@@ -51,10 +39,6 @@ LaunchCount=2  WarmupCount=10
 | EncryptToProvidedStream |               10 |               Brotli |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 Decrypt |               10 |               Brotli |     Newtonsoft |   118.98 μs |  1.530 μs |  2.195 μs |   118.76 μs |  0.4883 |       - |       - |  144849 B |
 | DecryptToProvidedStream |               10 |               Brotli |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 **Encrypt** |               **10** |               **Brotli** | **SystemTextJson** |    **71.40 μs** |  **0.799 μs** |  **1.145 μs** |    **71.23 μs** |  **0.2441** |       **-** |       **-** |   **86217 B** |
-| EncryptToProvidedStream |               10 |               Brotli | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 Decrypt |               10 |               Brotli | SystemTextJson |    73.37 μs |  7.283 μs | 10.676 μs |    67.12 μs |  0.2441 |       - |       - |   82201 B |
-| DecryptToProvidedStream |               10 |               Brotli | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 **Encrypt** |               **10** |               **Brotli** |         **Stream** |    **90.10 μs** |  **3.136 μs** |  **4.693 μs** |    **88.92 μs** |  **0.2441** |       **-** |       **-** |   **63809 B** |
 | EncryptToProvidedStream |               10 |               Brotli |         Stream |    97.27 μs |  1.885 μs |  2.703 μs |    97.35 μs |  0.1221 |       - |       - |   32465 B |
 |                 Decrypt |               10 |               Brotli |         Stream |    58.48 μs |  0.956 μs |  1.372 μs |    58.59 μs |  0.1221 |  0.0610 |       - |   30064 B |
@@ -63,10 +47,6 @@ LaunchCount=2  WarmupCount=10
 | EncryptToProvidedStream |              100 |                 None |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 Decrypt |              100 |                 None |     Newtonsoft | 1,177.48 μs | 25.746 μs | 38.535 μs | 1,172.04 μs | 17.5781 | 15.6250 | 15.6250 | 1260228 B |
 | DecryptToProvidedStream |              100 |                 None |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 **Encrypt** |              **100** |                 **None** | **SystemTextJson** |   **824.48 μs** | **31.605 μs** | **47.305 μs** |   **812.80 μs** | **25.3906** | **25.3906** | **25.3906** |  **965259 B** |
-| EncryptToProvidedStream |              100 |                 None | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 Decrypt |              100 |                 None | SystemTextJson |   814.40 μs | 50.865 μs | 76.132 μs |   811.34 μs | 21.4844 | 21.4844 | 21.4844 |  950333 B |
-| DecryptToProvidedStream |              100 |                 None | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 **Encrypt** |              **100** |                 **None** |         **Stream** |   **636.72 μs** | **31.468 μs** | **47.099 μs** |   **630.15 μs** | **16.6016** | **16.6016** | **16.6016** |  **678066 B** |
 | EncryptToProvidedStream |              100 |                 None |         Stream |   383.33 μs |  7.441 μs | 10.671 μs |   384.69 μs |  4.3945 |  4.3945 |  4.3945 |  230133 B |
 |                 Decrypt |              100 |                 None |         Stream |   384.93 μs | 12.519 μs | 18.738 μs |   383.59 μs |  5.8594 |  5.8594 |  5.8594 |  230753 B |
@@ -75,10 +55,6 @@ LaunchCount=2  WarmupCount=10
 | EncryptToProvidedStream |              100 |               Brotli |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 Decrypt |              100 |               Brotli |     Newtonsoft | 1,175.01 μs | 41.917 μs | 61.441 μs | 1,156.01 μs | 11.7188 |  9.7656 |  9.7656 | 1124274 B |
 | DecryptToProvidedStream |              100 |               Brotli |     Newtonsoft |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 **Encrypt** |              **100** |               **Brotli** | **SystemTextJson** | **1,050.27 μs** | **31.128 μs** | **46.591 μs** | **1,052.70 μs** | **17.5781** | **17.5781** | **17.5781** |  **766642 B** |
-| EncryptToProvidedStream |              100 |               Brotli | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
-|                 Decrypt |              100 |               Brotli | SystemTextJson |   926.80 μs | 28.605 μs | 41.025 μs |   925.73 μs | 18.5547 | 18.5547 | 18.5547 |  801460 B |
-| DecryptToProvidedStream |              100 |               Brotli | SystemTextJson |          NA |        NA |        NA |          NA |       - |       - |       - |         - |
 |                 **Encrypt** |              **100** |               **Brotli** |         **Stream** |   **757.11 μs** | **19.549 μs** | **29.260 μs** |   **754.55 μs** | **10.7422** | **10.7422** | **10.7422** |  **479493 B** |
 | EncryptToProvidedStream |              100 |               Brotli |         Stream |   563.46 μs |  9.960 μs | 14.284 μs |   561.60 μs |  2.9297 |  2.9297 |  2.9297 |  180637 B |
 |                 Decrypt |              100 |               Brotli |         Stream |   542.34 μs | 14.514 μs | 21.724 μs |   542.04 μs |  6.8359 |  6.8359 |  6.8359 |  231162 B |
