@@ -47,12 +47,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class VectorIndexPath
+    public sealed class VectorIndexPath
     {
         [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
         private int? indexingSearchListSizeInternal;
@@ -78,7 +73,12 @@ namespace Microsoft.Azure.Cosmos
         /// The allowed range for this parameter is between 1 and 3.
         /// </summary>
         [JsonIgnore]
-        public int QuantizationByteSize
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int QuantizationByteSize
         {
             get => this.quantizationByteSizeInternal == null ? 0 : this.quantizationByteSizeInternal.Value;
             set => this.quantizationByteSizeInternal = value;
@@ -89,7 +89,12 @@ namespace Microsoft.Azure.Cosmos
         /// The allowed range for this parameter is between 25 and 500.
         /// </summary>
         [JsonIgnore]
-        public int IndexingSearchListSize
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int IndexingSearchListSize
         {
             get => this.indexingSearchListSizeInternal == null ? 0 : this.indexingSearchListSizeInternal.Value;
             set => this.indexingSearchListSizeInternal = value;
@@ -99,7 +104,12 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the vector index shard key for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
         /// </summary>
         [JsonProperty(PropertyName = "vectorIndexShardKey", NullValueHandling = NullValueHandling.Ignore)]
-        public string[] VectorIndexShardKey { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        string[] VectorIndexShardKey { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
