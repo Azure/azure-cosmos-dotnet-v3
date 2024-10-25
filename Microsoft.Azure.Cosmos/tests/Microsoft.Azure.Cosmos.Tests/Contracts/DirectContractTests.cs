@@ -63,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             string[] locationNames = typeof(LocationNames)
                             .GetMembers(BindingFlags.Static | BindingFlags.Public)
                             .Select(e => e.Name)
+                            .Where(e => e != "GermanyCentral" && e != "GermanyNortheast") // Decommissioned regions
                             .ToArray();
 
             if (locationNames.Length > cosmosRegions.Length)
@@ -118,16 +119,18 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Collections.Immutable", new Version(1, 7, 0) },
                 { "System.Numerics.Vectors", new Version(4, 5, 0) },
                 { "Newtonsoft.Json", new Version(10, 0, 2) },
-                { "Microsoft.Bcl.AsyncInterfaces", new Version(1, 0, 0) },
+                { "Microsoft.Bcl.AsyncInterfaces", new Version(6, 0, 0) },
                 { "System.Configuration.ConfigurationManager", new Version(6, 0, 0) },
-                { "System.Memory", new Version(4, 5, 4) },
+                { "System.Memory", new Version(4, 5, 5) },
                 { "System.Buffers", new Version(4, 5, 1) },
                 { "System.Runtime.CompilerServices.Unsafe", new Version(6, 0, 0) },
                 { "System.Threading.Tasks.Extensions", new Version(4, 5, 4) },
                 { "System.ValueTuple", new Version(4, 5, 0) },
                 { "Microsoft.Bcl.HashCode", new Version(1, 1, 0) },
-                { "Azure.Core", new Version(1, 19, 0) },
-                { "System.Diagnostics.DiagnosticSource", new Version(6, 0, 1) },
+                { "Azure.Core", new Version(1, 44, 1) },
+                { "System.Diagnostics.DiagnosticSource", new Version(8, 0, 1) },
+                { "System.Net.Http", new Version(4, 3, 4) },
+                { "System.Text.RegularExpressions", new Version(4, 3, 1) },
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
@@ -139,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
         }
 
         /// <summary>
-        /// Ignoring HybridRow dependency check as it is using System.Runtime.CompilerServices.Unsafe 4.5.3 and Azure.Core 1.19.0 needs >=4.6.0 version of the same
+        /// Ignoring HybridRow dependency check as it is using System.Runtime.CompilerServices.Unsafe 4.5.3 and Azure.Core 1.44.1 needs >=4.6.0 version of the same
         /// </summary>
         [TestMethod]
         public void PackageDependenciesTest()
@@ -174,10 +177,10 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 }
             }
 
-            // Dependency version should match
+            // Dependency version should greater than minimum version defined
             foreach (KeyValuePair<string, Version> e in allDependencies)
             {
-                Assert.AreEqual(e.Value, projDependencies[e.Key], e.Key);
+                Assert.IsTrue(e.Value.CompareTo(projDependencies[e.Key]) <= 0, e.Key);
             }
 
             CollectionAssert.IsSubsetOf(allDependencies.Keys, projDependencies.Keys);

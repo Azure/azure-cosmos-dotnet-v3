@@ -42,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <summary>
         /// Gets a provider of type EncryptionKeyWrapProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
         /// </summary>
+#pragma warning disable CS0618 // Type or member is obsolete
         public EncryptionKeyWrapProvider EncryptionKeyWrapProvider { get; }
+#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
         /// Gets a provider of type EncryptionKeyStoreProvider that will be used to wrap (encrypt) and unwrap (decrypt) data encryption keys for envelope based encryption.
@@ -146,14 +148,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 throw new InvalidOperationException($"{nameof(CosmosDataEncryptionKeyProvider)} has already been initialized.");
             }
 
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(database);
+#else
             if (database == null)
             {
                 throw new ArgumentNullException(nameof(database));
             }
+#endif
 
             ContainerResponse containerResponse = await database.CreateContainerIfNotExistsAsync(
                 containerId,
-                partitionKeyPath: CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath);
+                partitionKeyPath: CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath,
+                cancellationToken: cancellationToken);
 
             if (containerResponse.Resource.PartitionKeyPath != CosmosDataEncryptionKeyProvider.ContainerPartitionKeyPath)
             {
@@ -192,17 +199,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken: cancellationToken);
 
             // supports Encryption with MDE based algorithm using Legacy Encryption Algorithm Configured DEK.
-            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized) &&
-                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized))
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal) &&
+                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal))
             {
                 return await this.dataEncryptionKeyContainerCore.FetchUnWrappedMdeSupportedLegacyDekAsync(
                     dataEncryptionKeyProperties,
                     cancellationToken);
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // supports Encryption with Legacy based algorithm using Mde Encryption Algorithm Configured DEK.
-            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized) &&
-                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized))
+#pragma warning disable CS0618 // Type or member is obsolete
+            if (string.Equals(encryptionAlgorithm, CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized, StringComparison.Ordinal) &&
+                string.Equals(dataEncryptionKeyProperties.EncryptionAlgorithm, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized, StringComparison.Ordinal))
             {
                 return await this.dataEncryptionKeyContainerCore.FetchUnWrappedLegacySupportedMdeDekAsync(
                     dataEncryptionKeyProperties,
@@ -210,6 +220,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     diagnosticsContext: CosmosDiagnosticsContext.Create(null),
                     cancellationToken);
             }
+#pragma warning restore CS0618 // Type or member is obsolete
 
             InMemoryRawDek inMemoryRawDek = await this.dataEncryptionKeyContainerCore.FetchUnwrappedAsync(
                 dataEncryptionKeyProperties,

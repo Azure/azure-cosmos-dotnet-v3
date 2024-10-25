@@ -114,18 +114,5 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                    this.Value == other.Value &&
                    this.Name == other.Name;
         }
-
-        internal string GetName(EncryptionKeyWrapMetadata encryptionKeyWrapMetadata)
-        {
-            /* A legacy DEK may not have a Name value in meta-data*/
-            if (string.IsNullOrWhiteSpace(encryptionKeyWrapMetadata.Name))
-            {
-                return encryptionKeyWrapMetadata.Value;
-            }
-            else
-            {
-                return encryptionKeyWrapMetadata.Name;
-            }
-        }
     }
 }

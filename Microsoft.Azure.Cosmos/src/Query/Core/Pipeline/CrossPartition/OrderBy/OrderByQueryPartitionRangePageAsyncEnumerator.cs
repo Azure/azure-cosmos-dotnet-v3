@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class OrderByQueryPartitionRangePageAsyncEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>, IPrefetcher
@@ -20,15 +21,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public static OrderByQueryPartitionRangePageAsyncEnumerator Create(
             IQueryDataSource queryDataSource,
+            ContainerQueryProperties containerQueryProperties,
             SqlQuerySpec sqlQuerySpec,
             FeedRangeState<QueryState> feedRangeState,
             PartitionKey? partitionKey,
-            QueryPaginationOptions queryPaginationOptions,
+            QueryExecutionOptions queryPaginationOptions,
             string filter,
             PrefetchPolicy prefetchPolicy)
         {
             InnerEnumerator enumerator = new InnerEnumerator(
                 queryDataSource,
+                containerQueryProperties,
                 sqlQuerySpec,
                 feedRangeState,
                 partitionKey,
@@ -58,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
         public SqlQuerySpec SqlQuerySpec => this.innerEnumerator.SqlQuerySpec;
 
-        public QueryPaginationOptions QueryPaginationOptions => this.innerEnumerator.QueryPaginationOptions;
+        public QueryExecutionOptions QueryPaginationOptions => this.innerEnumerator.QueryPaginationOptions;
 
         public string Filter => this.innerEnumerator.Filter;
 
@@ -106,20 +109,23 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
         private sealed class InnerEnumerator : PartitionRangePageAsyncEnumerator<OrderByQueryPage, QueryState>
         {
             private readonly IQueryDataSource queryDataSource;
+            private readonly ContainerQueryProperties containerQueryProperties;
 
             public InnerEnumerator(
                 IQueryDataSource queryDataSource,
+                ContainerQueryProperties containerQueryProperties,
                 SqlQuerySpec sqlQuerySpec,
                 FeedRangeState<QueryState> feedRangeState,
                 PartitionKey? partitionKey,
-                QueryPaginationOptions queryPaginationOptions,
+                QueryExecutionOptions queryPaginationOptions,
                 string filter)
                 : base(feedRangeState)
             {
                 this.queryDataSource = queryDataSource ?? throw new ArgumentNullException(nameof(queryDataSource));
+                this.containerQueryProperties = containerQueryProperties;
                 this.SqlQuerySpec = sqlQuerySpec ?? throw new ArgumentNullException(nameof(sqlQuerySpec));
                 this.PartitionKey = partitionKey;
-                this.QueryPaginationOptions = queryPaginationOptions ?? QueryPaginationOptions.Default;
+                this.QueryPaginationOptions = queryPaginationOptions ?? QueryExecutionOptions.Default;
                 this.Filter = filter;
             }
 
@@ -127,19 +133,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             public PartitionKey? PartitionKey { get; }
 
-            public QueryPaginationOptions QueryPaginationOptions { get; }
+            public QueryExecutionOptions QueryPaginationOptions { get; }
 
             public string Filter { get; }
 
             public InnerEnumerator CloneWithMaxPageSize()
             {
-                QueryPaginationOptions options = new QueryPaginationOptions(
+                QueryExecutionOptions options = new QueryExecutionOptions(
                     pageSizeHint: int.MaxValue,
                     optimisticDirectExecute: this.QueryPaginationOptions.OptimisticDirectExecute,
                     additionalHeaders: this.QueryPaginationOptions.AdditionalHeaders);
 
                 return new InnerEnumerator(
                     this.queryDataSource,
+                    this.containerQueryProperties,
                     this.SqlQuerySpec,
                     this.FeedRangeState,
                     this.PartitionKey,
@@ -151,9 +158,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 
             protected override async Task<TryCatch<OrderByQueryPage>> GetNextPageAsync(ITrace trace, CancellationToken cancellationToken)
             {
-                // Unfortunately we need to keep both the epk range and partition key for queries
-                // Since the continuation token format uses epk range even though we only need the partition key to route the request.
-                FeedRangeInternal feedRange = this.PartitionKey.HasValue ? new FeedRangePartitionKey(this.PartitionKey.Value) : this.FeedRangeState.FeedRange;
+                FeedRangeInternal feedRange = HierarchicalPartitionUtils.LimitFeedRangeToSinglePartition(this.PartitionKey, this.FeedRangeState.FeedRange, this.containerQueryProperties);
 
                 TryCatch<QueryPage> monadicQueryPage = await this.queryDataSource
                     .MonadicQueryAsync(

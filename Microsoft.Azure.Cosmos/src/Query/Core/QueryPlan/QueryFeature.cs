@@ -29,5 +29,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         NonValueAggregate = 1 << 9,
         DCount = 1 << 10,
         NonStreamingOrderBy = 1 << 11,
+        ListAndSetAggregate = 1 << 12,
+        CountIf = 1 << 13,
+        HybridSearch = 1 << 14,
     }
 }

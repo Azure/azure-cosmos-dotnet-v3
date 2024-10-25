@@ -11,8 +11,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Http;
     using System.Net.Security;
+    using System.Reflection;
     using System.Security.Cryptography;
     using System.Security.Cryptography.X509Certificates;
+    using System.Text;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
@@ -479,6 +481,26 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ValidateThatCustomSerializerGetsOverriddenWhenSTJSerializerEnabled()
+        {
+            CosmosClientOptions options = new CosmosClientOptions()
+            {
+                UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions()
+                {
+                    PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+                }
+            };
+
+            CosmosClient client = new(
+                "https://fake-account.documents.azure.com:443/",
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                options
+            );
+
+            Assert.AreEqual(typeof(CosmosSystemTextJsonSerializer), client.ClientOptions.Serializer.GetType());
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
         public void ThrowOnSerializerOptionsWithCustomSerializer()
         {
@@ -500,6 +522,56 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             options.Serializer = new CosmosJsonDotNetSerializer();
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "Test when the client options order is maintained")]
+        [DataRow(true, DisplayName = "Test when the client options order is reversed")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnCustomSerializerWithSTJSerializerEnabled(
+            bool reverseOrder)
+        {
+            if (reverseOrder)
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    Serializer = new CosmosJsonDotNetSerializer(),
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                };
+            }
+            else
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                    Serializer = new CosmosJsonDotNetSerializer(),
+                };
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "Test when the client options order is maintained")]
+        [DataRow(true, DisplayName = "Test when the client options order is reversed")]
+        [ExpectedException(typeof(ArgumentException))]
+        public void ThrowOnSerializerOptionsWithSTJSerializerEnabled(
+            bool reverseOrder)
+        {
+            if (reverseOrder)
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    SerializerOptions = new CosmosSerializationOptions(),
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                };
+            }
+            else
+            {
+                CosmosClientOptions options = new CosmosClientOptions()
+                {
+                    UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions(),
+                    SerializerOptions = new CosmosSerializationOptions(),
+                };
+            }
         }
 
         [TestMethod]
@@ -628,6 +700,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettings()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = Regions.EastUS, LimitToEndpoint = true };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -636,6 +710,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyLimitToEndpointSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, LimitToEndpoint = true };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
         }
 
@@ -644,7 +720,33 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyApplicationRegionSettingsWithPreferredRegions()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationPreferredRegions = new List<string>() { Regions.EastUS }, ApplicationRegion = Regions.EastUS };
+
+            // For invalid regions GetConnectionPolicy will throw exception
             cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(GetPublicRegionNames), DynamicDataSourceType.Method)]
+        public void VerifyApplicationRegionSettingsForAllPublicRegions(string regionName)
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions { ApplicationRegion = regionName };
+
+            // For invalid regions GetConnectionPolicy will throw exception
+            cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+        }
+
+        private static IEnumerable<object[]> GetPublicRegionNames()
+        {
+            List<object[]> regionNames = new List<object[]>();
+
+            // BindingFlags.FlattenHierarchy MUST for const fields 
+            foreach (FieldInfo fieldInfo in typeof(Regions).GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy))
+            {
+                string regionValue = fieldInfo.GetValue(null).ToString();
+                regionNames.Add(new object[] { regionValue });
+            }
+
+            return regionNames;
         }
 
         [TestMethod]
@@ -1003,8 +1105,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient httpClient = cosmosClient.DocumentClient.httpClient;
             SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)httpClient.HttpMessageHandler;
 
+#nullable enable
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
+#nullable disable
         }
 
         private class TestWebProxy : IWebProxy

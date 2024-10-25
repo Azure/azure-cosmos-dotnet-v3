@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
+        private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
         private static (bool, ResponseMessage) clientIsValid = (false, null);
 
         private readonly CosmosClient client;
@@ -38,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             Cosmos.PriorityLevel? requestedClientPriorityLevel)
         {
             this.client = client;
+
             this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
         }
@@ -52,11 +55,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
 
             RequestOptions promotedRequestOptions = request.RequestOptions;
-            if (promotedRequestOptions != null)
-            {
-                // Fill request options
-                promotedRequestOptions.PopulateRequestOptions(request);
-            }
+            // Fill request options
+            promotedRequestOptions?.PopulateRequestOptions(request);
 
             // Adds the NoContent header if not already added based on Client Level flag
             if (RequestInvokerHandler.ShouldSetNoContentResponseHeaders(
@@ -66,6 +66,12 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.ResourceType))
             {
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
+            }
+
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
             }
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
@@ -79,6 +85,56 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
+
+            AvailabilityStrategyInternal strategy = this.AvailabilityStrategy(request);
+
+            ResponseMessage response = strategy != null && strategy.Enabled()
+                ? await strategy.ExecuteAvailabilityStrategyAsync(
+                    this.BaseSendAsync,
+                    this.client,
+                    request,
+                    cancellationToken)
+                : await this.BaseSendAsync(request, cancellationToken);
+
+            if (request.RequestOptions?.ExcludeRegions != null)
+            {
+                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
+            }
+
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request)
+                && response.Content != null
+                && response.Content is not CloneableStream)
+            {
+                response.Content = await StreamExtension.AsClonableStreamAsync(response.Content, default);
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// This method determines if there is an availability strategy that the request can use.
+        /// Note that the request level availability strategy options override the client level options.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>whether the request should be a parallel hedging request.</returns>
+        public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
+        {
+            AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
+                    ?? this.client.ClientOptions.AvailabilityStrategy;
+
+            if (strategy == null)
+            {
+                return null;
+            }
+
+            return strategy as AvailabilityStrategyInternal;
+        }
+
+        public virtual async Task<ResponseMessage> BaseSendAsync(
+            RequestMessage request,
+            CancellationToken cancellationToken)
+        {
             return await base.SendAsync(request, cancellationToken);
         }
 
@@ -504,6 +560,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
               operationType == OperationType.Replace ||
               operationType == OperationType.Upsert ||
               operationType == OperationType.Patch);
+        }
+
+        private static bool IsPointOperationSupportedForBinaryEncoding(RequestMessage request)
+        {
+            return request.ResourceType == ResourceType.Document 
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
 
         private static bool IsClientNoResponseSet(CosmosClientOptions clientOptions, OperationType operationType)

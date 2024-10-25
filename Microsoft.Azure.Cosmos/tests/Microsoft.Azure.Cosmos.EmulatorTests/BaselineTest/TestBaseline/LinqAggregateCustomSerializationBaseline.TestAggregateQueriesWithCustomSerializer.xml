@@ -1,7 +1,7 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[Avg, Custom serializer: True]]></Description>
+      <Description><![CDATA[Avg, Serializer Name: SystemTextJsonLinqSerializer]]></Description>
       <Expression><![CDATA[query.Average(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -12,7 +12,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Sum, Custom serializer: True]]></Description>
+      <Description><![CDATA[Sum, Serializer Name: SystemTextJsonLinqSerializer]]></Description>
       <Expression><![CDATA[query.Sum(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -23,7 +23,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select many -> Filter -> Select -> Average, Custom serializer: True]]></Description>
+      <Description><![CDATA[Select many -> Filter -> Select -> Average, Serializer Name: SystemTextJsonLinqSerializer]]></Description>
       <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Average(), Object)]]></Expression>
     </Input>
     <Output>
@@ -36,7 +36,7 @@ WHERE ((m0 % 3) = 0)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select number -> Skip -> Count, Custom serializer: True]]></Description>
+      <Description><![CDATA[Select number -> Skip -> Count, Serializer Name: SystemTextJsonLinqSerializer]]></Description>
       <Expression><![CDATA[query.Select(f => f.NumericField).Skip(2).Count(), Object)]]></Expression>
     </Input>
     <Output>
@@ -63,7 +63,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Avg, Custom serializer: False]]></Description>
+      <Description><![CDATA[Avg, Serializer Name: SystemTextJsonSerializer]]></Description>
       <Expression><![CDATA[query.Average(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -74,7 +74,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Sum, Custom serializer: False]]></Description>
+      <Description><![CDATA[Sum, Serializer Name: SystemTextJsonSerializer]]></Description>
       <Expression><![CDATA[query.Sum(doc => doc.NumericField), Object)]]></Expression>
     </Input>
     <Output>
@@ -85,7 +85,7 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select many -> Filter -> Select -> Average, Custom serializer: False]]></Description>
+      <Description><![CDATA[Select many -> Filter -> Select -> Average, Serializer Name: SystemTextJsonSerializer]]></Description>
       <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Average(), Object)]]></Expression>
     </Input>
     <Output>
@@ -98,7 +98,7 @@ WHERE ((m0 % 3) = 0)]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Select number -> Skip -> Count, Custom serializer: False]]></Description>
+      <Description><![CDATA[Select number -> Skip -> Count, Serializer Name: SystemTextJsonSerializer]]></Description>
       <Expression><![CDATA[query.Select(f => f.NumericField).Skip(2).Count(), Object)]]></Expression>
     </Input>
     <Output>
@@ -120,6 +120,68 @@ FROM (
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE MIN(root["NumericField"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Avg, Serializer Name: CosmosSystemTextJsonSerializer]]></Description>
+      <Expression><![CDATA[query.Average(doc => doc.NumericField), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(root["NumberValueDotNet"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Sum, Serializer Name: CosmosSystemTextJsonSerializer]]></Description>
+      <Expression><![CDATA[query.Sum(doc => doc.NumericField), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE SUM(root["NumberValueDotNet"]) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select many -> Filter -> Select -> Average, Serializer Name: CosmosSystemTextJsonSerializer]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.ArrayField.Where(m => ((m % 3) == 0)).Select(m => m)).Average(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE AVG(m0) 
+FROM root 
+JOIN m0 IN root["ArrayValuesDotNet"] 
+WHERE ((m0 % 3) = 0)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Skip -> Count, Serializer Name: CosmosSystemTextJsonSerializer]]></Description>
+      <Expression><![CDATA[query.Select(f => f.NumericField).Skip(2).Count(), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE COUNT(1) 
+FROM (
+    SELECT VALUE root["NumberValueDotNet"] 
+    FROM root 
+    OFFSET 2 LIMIT 2147483647) AS r0
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":77,"end":102},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Select number -> Min w/ mapping]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.NumericField).Min(num => num), Object)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE MIN(root["NumberValueDotNet"]) 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

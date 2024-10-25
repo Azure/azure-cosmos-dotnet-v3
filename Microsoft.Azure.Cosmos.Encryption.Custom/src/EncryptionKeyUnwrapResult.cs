@@ -35,12 +35,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         }
 
         /// <summary>
-        /// Raw form of the data encryption key.
+        /// Gets raw form of the data encryption key.
         /// </summary>
         public byte[] DataEncryptionKey { get; }
 
         /// <summary>
-        /// Amount of time after which the raw data encryption key must not be used
+        /// Gets amount of time after which the raw data encryption key must not be used
         /// without invoking the <see cref="EncryptionKeyWrapProvider.UnwrapKeyAsync"/> again.
         /// </summary>
         public TimeSpan ClientCacheTimeToLive { get; }

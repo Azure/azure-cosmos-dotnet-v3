@@ -5,6 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text.Json;
+    using Microsoft.Azure.Cosmos.Resource.FullFidelity;
+    using Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -12,62 +15,44 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
     /// </summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(ChangeFeedMetadataConverter))]
 #if PREVIEW
     public
 #else
     internal
-#endif 
+#endif
         class ChangeFeedMetadata
     {
         /// <summary>
-        /// New instance of meta data for <see cref="ChangeFeedItem{T}"/> created.
+        /// The change's conflict resolution timestamp.
         /// </summary>
-        /// <param name="conflictResolutionTimestamp"></param>
-        /// <param name="lsn"></param>
-        /// <param name="operationType"></param>
-        /// <param name="previousLsn"></param>
-        public ChangeFeedMetadata(
-            DateTime conflictResolutionTimestamp,
-            long lsn,
-            ChangeFeedOperationType operationType,
-            long previousLsn)
-        {
-            this.ConflictResolutionTimestamp = conflictResolutionTimestamp;
-            this.Lsn = lsn;
-            this.OperationType = operationType;
-            this.PreviousLsn = previousLsn;
-        }
-
-        /// <summary>
-        /// The conflict resolution timestamp.
-        /// </summary>
-        [JsonProperty(PropertyName = "crts", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        public DateTime ConflictResolutionTimestamp { get; }
+        public DateTime ConflictResolutionTimestamp { get; internal set; }
 
         /// <summary>
-        /// The current logical sequence number.
+        /// The current change's logical sequence number.
         /// </summary>
-        [JsonProperty(PropertyName = "lsn", NullValueHandling = NullValueHandling.Ignore)]
-        public long Lsn { get; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.Lsn, NullValueHandling = NullValueHandling.Ignore)]
+        public long Lsn { get; internal set; }
 
         /// <summary>
-        /// The change feed operation type.
+        /// The change's feed operation type <see cref="ChangeFeedOperationType"/>.
         /// </summary>
-        [JsonProperty(PropertyName = "operationType")]
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.OperationType, NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(StringEnumConverter))]
-        public ChangeFeedOperationType OperationType { get; }
+        public ChangeFeedOperationType OperationType { get; internal set; }
 
         /// <summary>
-        /// The previous logical sequence number.
+        /// The previous change's logical sequence number.
         /// </summary>
-        [JsonProperty(PropertyName = "previousImageLSN", NullValueHandling = NullValueHandling.Ignore)]
-        public long PreviousLsn { get; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.PreviousImageLSN, NullValueHandling = NullValueHandling.Ignore)]
+        public long PreviousLsn { get; internal set; }
 
         /// <summary>
         /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
         /// </summary>
-        [JsonProperty(PropertyName = "timeToLiveExpired", NullValueHandling= NullValueHandling.Ignore)]
-        public bool IsTimeToLiveExpired { get; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.TimeToLiveExpired, NullValueHandling = NullValueHandling.Ignore)]
+        public bool IsTimeToLiveExpired { get; internal set; }
     }
 }

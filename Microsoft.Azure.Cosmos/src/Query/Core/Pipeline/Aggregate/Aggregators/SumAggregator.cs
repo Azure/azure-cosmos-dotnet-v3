@@ -69,11 +69,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             return CosmosNumber64.Create(this.globalSum);
         }
 
-        public CosmosElement GetCosmosElementContinuationToken()
-        {
-            return CosmosNumber64.Create(this.globalSum);
-        }
-
         public static TryCatch<IAggregator> TryCreate(CosmosElement requestContinuationToken)
         {
             double partialSum;

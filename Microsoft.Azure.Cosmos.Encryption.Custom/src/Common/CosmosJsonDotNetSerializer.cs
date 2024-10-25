@@ -40,19 +40,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(stream);
+#else
             if (stream == null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
+#endif
 
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
                 return (T)(object)stream;
             }
 
-            using (StreamReader sr = new StreamReader(stream))
-            using (JsonTextReader jsonTextReader = new JsonTextReader(sr))
+            using (StreamReader sr = new (stream))
+            using (JsonTextReader jsonTextReader = new (sr))
             {
+                jsonTextReader.ArrayPool = JsonArrayPool.Instance;
                 JsonSerializer jsonSerializer = this.GetSerializer();
                 return jsonSerializer.Deserialize<T>(jsonTextReader);
             }
@@ -66,10 +71,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
         public MemoryStream ToStream<T>(T input)
         {
-            MemoryStream streamPayload = new MemoryStream();
-            using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
-            using (JsonWriter writer = new JsonTextWriter(streamWriter))
+            MemoryStream streamPayload = new ();
+            using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+            using (JsonTextWriter writer = new (streamWriter))
             {
+                writer.ArrayPool = JsonArrayPool.Instance;
                 writer.Formatting = Newtonsoft.Json.Formatting.None;
                 JsonSerializer jsonSerializer = this.GetSerializer();
                 jsonSerializer.Serialize(writer, input);

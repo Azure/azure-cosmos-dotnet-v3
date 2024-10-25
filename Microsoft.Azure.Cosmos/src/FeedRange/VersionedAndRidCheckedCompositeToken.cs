@@ -60,13 +60,13 @@ namespace Microsoft.Azure.Cosmos
             if (!cosmosObject.TryGetValue(PropertyNames.Continuation, out CosmosElement continuationValue))
             {
                 return TryCatch<VersionedAndRidCheckedCompositeToken>.FromException(
-                    new FormatException($"expected number {nameof(PropertyNames.Continuation)} property for {nameof(VersionedAndRidCheckedCompositeToken)}: {cosmosElement}."));
+                    new FormatException($"expected object {nameof(PropertyNames.Continuation)} property for {nameof(VersionedAndRidCheckedCompositeToken)}: {cosmosElement}."));
             }
 
             if (!cosmosObject.TryGetValue(PropertyNames.Rid, out CosmosString ridValue))
             {
                 return TryCatch<VersionedAndRidCheckedCompositeToken>.FromException(
-                    new FormatException($"expected number {nameof(PropertyNames.Version)} property for {nameof(VersionedAndRidCheckedCompositeToken)}: {cosmosElement}."));
+                    new FormatException($"expected string {nameof(PropertyNames.Rid)} property for {nameof(VersionedAndRidCheckedCompositeToken)}: {cosmosElement}."));
             }
 
             VersionedAndRidCheckedCompositeToken token = new VersionedAndRidCheckedCompositeToken(

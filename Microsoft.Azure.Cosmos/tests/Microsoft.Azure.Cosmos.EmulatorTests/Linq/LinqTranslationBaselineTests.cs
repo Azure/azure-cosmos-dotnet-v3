@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     NullValueHandling = NullValueHandling.Ignore
                 })).WithConnectionModeGateway();
             });
+            await Util.DeleteAllDatabasesAsync(cosmosClient);
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid().ToString("N")}";
             testDb = await cosmosClient.CreateDatabaseAsync(dbName);
@@ -288,6 +289,28 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("IsString string", b => getQuery(b).Where(doc => doc.StringField.IsString())),
                 new LinqTestInput("IsString number", b => getQuery(b).Select(doc => doc.NumericField.IsString())),
             };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestDocumentIdBuiltinFunction()
+        {
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("In Select clause", b => getQuery(b).Select(doc => doc.DocumentId())),
+                new LinqTestInput("In Filter clause", b => getQuery(b).Where(doc => doc.DocumentId() > 123)),
+                new LinqTestInput("With non root term", b => getQuery(b).Where(doc => doc.BooleanField.DocumentId() > 123)),
+                new LinqTestInput("With JOIN", b => getQuery(b).SelectMany(doc => doc.EnumerableField
+                    .Where(number => doc.DocumentId() > 0)
+                    .Select(number => number))),
+                // Negative case
+                new LinqTestInput("In Order by clause", b => getQuery(b).OrderBy(doc => doc.DocumentId())),
+            };
+
             this.ExecuteTestSuite(inputs);
         }
 

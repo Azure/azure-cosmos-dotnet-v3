@@ -32,7 +32,6 @@
             {
                 List<CosmosElement> elements = await SkipQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,
-                    executionEnvironment: ExecutionEnvironment.Compute,
                     offsetCount: offsetCount,
                     continuationToken: null);
 
@@ -42,14 +41,12 @@
 
         private static async Task<List<CosmosElement>> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            ExecutionEnvironment executionEnvironment,
             int offsetCount,
             CosmosElement continuationToken)
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateSkipQueryPipelineStage = SkipQueryPipelineStage.MonadicCreate(
-                executionEnvironment: executionEnvironment,
                 offsetCount: offsetCount,
                 continuationToken: continuationToken,
                 monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));

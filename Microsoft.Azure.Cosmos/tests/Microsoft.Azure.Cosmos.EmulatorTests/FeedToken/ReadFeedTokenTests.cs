@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 ContainerResponse containerResponse = await this.database.CreateContainerAsync(
                     new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: "/id"),
-                    throughput: 50000,
+                    throughput: 30000,
                     cancellationToken: this.cancellationToken);
                 container = (ContainerInlineCore)containerResponse;
 

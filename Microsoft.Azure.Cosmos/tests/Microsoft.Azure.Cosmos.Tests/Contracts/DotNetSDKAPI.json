@@ -410,6 +410,16 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosDiagnostics get_Diagnostics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.FeedRange FeedRange": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange FeedRange;CanRead:True;CanWrite:False;Microsoft.Azure.Cosmos.FeedRange get_FeedRange();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.FeedRange get_FeedRange()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FeedRange get_FeedRange();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Headers get_Headers()": {
           "Type": "Method",
           "Attributes": [],
@@ -1572,6 +1582,11 @@
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateItemStreamAsync(System.IO.Stream, Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteAllItemsByPartitionKeyStreamAsync(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteAllItemsByPartitionKeyStreamAsync(Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -2177,6 +2192,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.UniqueKeyPolicy get_UniqueKeyPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UniqueKeyPolicy(Microsoft.Azure.Cosmos.UniqueKeyPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorEmbeddingPolicy get_VectorEmbeddingPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IReadOnlyList`1[System.String] get_PartitionKeyPaths()": {
           "Type": "Method",
           "Attributes": [],
@@ -2391,6 +2418,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Void set_UniqueKeyPolicy(Microsoft.Azure.Cosmos.UniqueKeyPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_VectorEmbeddingPolicy(Microsoft.Azure.Cosmos.VectorEmbeddingPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -2988,6 +3020,16 @@
           ],
           "MethodInfo": "System.String get_ApplicationRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions;CanRead:True;CanWrite:True;System.Text.Json.JsonSerializerOptions get_UseSystemTextJsonSerializerWithOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.TimeSpan get_RequestTimeout()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3165,6 +3207,11 @@
           ],
           "MethodInfo": "Void set_TokenCredentialBackgroundRefreshInterval(System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_UseSystemTextJsonSerializerWithOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_WebProxy(System.Net.IWebProxy)": {
           "Type": "Method",
           "Attributes": [],
@@ -3212,6 +3259,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
@@ -3237,6 +3296,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DisableSendingMetricsToService(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -4213,6 +4279,145 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.DistanceFunction;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.DistanceFunction Cosine[System.Runtime.Serialization.EnumMemberAttribute(Value = \"cosine\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction Cosine;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.DistanceFunction DotProduct[System.Runtime.Serialization.EnumMemberAttribute(Value = \"dotproduct\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction DotProduct;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.DistanceFunction Euclidean[System.Runtime.Serialization.EnumMemberAttribute(Value = \"euclidean\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction Euclidean;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Embedding;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.Embedding)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.Embedding);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
+        "Int32 Dimensions[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"dimensions\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Int32 Dimensions;CanRead:True;CanWrite:True;Int32 get_Dimensions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Dimensions(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 get_Dimensions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int32 get_Dimensions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"distanceFunction\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType DataType[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"dataType\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType DataType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorDataType get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Path;CanRead:True;CanWrite:True;System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Dimensions(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Dimensions(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Path(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void ValidateEmbeddingPath()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void ValidateEmbeddingPath();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -4562,6 +4767,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ContainerResponse] CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties, System.Threading.CancellationToken)[System.Runtime.CompilerServices.AsyncStateMachineAttribute(typeof(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder+<CreateAsync>))]": {
           "Type": "Method",
           "Attributes": [
@@ -4737,6 +4947,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan, Int32)": {
           "Type": "Method",
           "Attributes": [],
@@ -4803,6 +5018,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithSpatialIndex();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithVectorIndex()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithVectorIndex();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "T Attach()": {
           "Type": "Method",
           "Attributes": [],
@@ -4865,6 +5085,43 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Fluent.VectorEmbeddingPolicyDefinition;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding], System.Action`1[Microsoft.Azure.Cosmos.VectorEmbeddingPolicy])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding], System.Action`1[Microsoft.Azure.Cosmos.VectorEmbeddingPolicy]), Void .ctor(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding], System.Action`1[Microsoft.Azure.Cosmos.VectorEmbeddingPolicy])]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] Path(System.String, Microsoft.Azure.Cosmos.VectorIndexType)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] Path(System.String, Microsoft.Azure.Cosmos.VectorIndexType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "T Attach()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T Attach();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath]), Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath])]"
         }
       },
       "NestedTypes": {}
@@ -5249,6 +5506,20 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialPath] SpatialIndexes;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.SpatialPath] get_SpatialIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"vectorIndexes\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] VectorIndexes;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath] get_VectorIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_VectorIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.ObjectModel.Collection`1[System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.CompositePath]] CompositeIndexes[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"compositeIndexes\")]": {
           "Type": "Property",
           "Attributes": [
@@ -5281,6 +5552,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IndexingMode(Microsoft.Azure.Cosmos.IndexingMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_VectorIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_VectorIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.VectorIndexPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -5649,6 +5927,13 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Boolean RegexMatch(System.Object, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 DocumentId(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Int32 DocumentId(System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.FeedIterator ToStreamIterator[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -6612,6 +6897,18 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
           "Type": "Property",
           "Attributes": [],
@@ -6803,6 +7100,13 @@
           ],
           "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -6816,6 +7120,32 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_SessionToken(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.QueryTextMode;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode All": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode All;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode None": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode None;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.QueryTextMode ParameterizedOnly": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode ParameterizedOnly;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -6888,6 +7218,21 @@
           "Attributes": [],
           "MethodInfo": "System.String AustraliaSoutheast;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String AustriaEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String AustriaEast;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String BleuFranceCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BleuFranceCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String BleuFranceSouth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BleuFranceSouth;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String BrazilSouth": {
           "Type": "Field",
           "Attributes": [],
@@ -6923,6 +7268,11 @@
           "Attributes": [],
           "MethodInfo": "System.String CentralUSEUAP;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String ChileCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChileCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String ChinaEast": {
           "Type": "Field",
           "Attributes": [],
@@ -6952,6 +7302,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String ChinaNorth3;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String DelosCloudGermanyCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DelosCloudGermanyCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String DelosCloudGermanyNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DelosCloudGermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String EastAsia": {
           "Type": "Field",
@@ -6988,25 +7348,20 @@
           "Attributes": [],
           "MethodInfo": "System.String FranceSouth;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String GermanyCentral": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String GermanyCentral;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String GermanyNorth": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String GermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
-        "System.String GermanyNortheast": {
-          "Type": "Field",
-          "Attributes": [],
-          "MethodInfo": "System.String GermanyNortheast;IsInitOnly:False;IsStatic:True;"
-        },
         "System.String GermanyWestCentral": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String GermanyWestCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String IndonesiaCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IndonesiaCentral;IsInitOnly:False;IsStatic:True;"
         },
         "System.String IsraelCentral": {
           "Type": "Field",
@@ -7053,10 +7408,20 @@
           "Attributes": [],
           "MethodInfo": "System.String MalaysiaSouth;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String MalaysiaWest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String MalaysiaWest;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String MexicoCentral": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String MexicoCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String NewZealandNorth": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String NewZealandNorth;IsInitOnly:False;IsStatic:True;"
         },
         "System.String NorthCentralUS": {
           "Type": "Field",
@@ -7103,15 +7468,30 @@
           "Attributes": [],
           "MethodInfo": "System.String SouthCentralUS;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SouthCentralUS2": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SouthCentralUS2;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SoutheastAsia": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastAsia;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String SoutheastUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String SouthIndia": {
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SouthIndia;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SouthwestUS": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SouthwestUS;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SpainCentral": {
           "Type": "Field",
@@ -7683,6 +8063,18 @@
               ],
               "MethodInfo": "Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions get_DedicatedGatewayRequestOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
+            "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "System.Nullable`1[Microsoft.Azure.Cosmos.ConsistencyLevel] ConsistencyLevel": {
               "Type": "Property",
               "Attributes": [],
@@ -7873,6 +8265,13 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_ResponseContinuationTokenLimitInKb(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -11850,6 +12249,142 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.String get_ETag();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.VectorDataType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType Float32[System.Runtime.Serialization.EnumMemberAttribute(Value = \"float32\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType Float32;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType Int8[System.Runtime.Serialization.EnumMemberAttribute(Value = \"int8\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType Int8;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType Uint8[System.Runtime.Serialization.EnumMemberAttribute(Value = \"uint8\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType Uint8;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.VectorEmbeddingPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding] Embeddings[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"vectorEmbeddings\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding] Embeddings;IsInitOnly:True;IsStatic:False;"
+        },
+        "Void .ctor(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding]), Void .ctor(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.Embedding])]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.VectorIndexPath;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.VectorIndexType get_Type()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType get_Type();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorIndexType Type[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"type\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonConverterAttribute",
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType Type;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorIndexType get_Type();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Type(Microsoft.Azure.Cosmos.VectorIndexType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Path;CanRead:True;CanWrite:True;System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_Path(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Type(Microsoft.Azure.Cosmos.VectorIndexType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Type(Microsoft.Azure.Cosmos.VectorIndexType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.VectorIndexType;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorIndexType DiskANN[System.Runtime.Serialization.EnumMemberAttribute(Value = \"diskANN\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType DiskANN;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.VectorIndexType Flat[System.Runtime.Serialization.EnumMemberAttribute(Value = \"flat\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType Flat;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.VectorIndexType QuantizedFlat[System.Runtime.Serialization.EnumMemberAttribute(Value = \"quantizedFlat\")]": {
+          "Type": "Field",
+          "Attributes": [
+            "EnumMemberAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType QuantizedFlat;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
