@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
         private static readonly JsonSerializerSettings JsonSerializerSettings = EncryptionProcessor.JsonSerializerSettings;
 
-        internal (TypeMarker, byte[]) Serialize(JToken propertyValue)
+        internal virtual (TypeMarker, byte[]) Serialize(JToken propertyValue)
         {
             switch (propertyValue.Type)
             {

@@ -7,7 +7,7 @@
     {
         internal class TestDoc
         {
-            public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt", "/SensitiveDict" };
+            public static HashSet<string> PathsToEncrypt { get; } = new HashSet<string>{ "/SensitiveStr", "/SensitiveInt", "/SensitiveDict" };
 
             [JsonProperty("id")]
             public string Id { get; set; } = default!;

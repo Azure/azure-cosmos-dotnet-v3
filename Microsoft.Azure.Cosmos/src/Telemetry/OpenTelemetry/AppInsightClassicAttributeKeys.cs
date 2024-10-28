@@ -52,6 +52,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string SubStatusCode = "db.cosmosdb.sub_status_code";
 
         /// <summary>
+        /// Represents the content length of the request.
+        /// </summary>
+        public const string RequestContentLength = "db.cosmosdb.request_content_length_bytes";
+
+        /// <summary>
         /// Represents the content length of the response.
         /// </summary>
         public const string ResponseContentLength = "db.cosmosdb.response_content_length_bytes";
