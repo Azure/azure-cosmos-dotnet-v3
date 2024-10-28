@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// enabled only when debugging queries.
         /// </para>
         /// </remarks>
-        public bool? PopulateQueryAdvice { get; set; }
+        internal bool? PopulateQueryAdvice { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
