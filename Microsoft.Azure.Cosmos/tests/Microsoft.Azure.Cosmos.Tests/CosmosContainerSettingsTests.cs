@@ -102,6 +102,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Ignore("This test will be enabled once the V2 DocumentCollection starts supporting the full text indexing policy.")]
         public void DefaultIndexingPolicySameAsDocumentCollection()
         {
             ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/partitionKey")
@@ -229,15 +230,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                         new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector2",
-                            Type = Cosmos.VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.QuantizedFlat,
+                            VectorIndexShardKey = new[] { "/Country" },
+                            QuantizationByteSize = 3,
                         },
                         new Cosmos.VectorIndexPath()
                         {
                             Path = "/vector3",
-                            Type = Cosmos.VectorIndexType.Flat,
+                            Type = Cosmos.VectorIndexType.DiskANN,
+                            VectorIndexShardKey = new[] { "/ZipCode" },
+                            QuantizationByteSize = 2,
+                            IndexingSearchListSize = 5,
                         }
                     },
-
                 },
             };
 
@@ -254,9 +259,128 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("/vector1", vectorIndexes[0].Path);
             Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[0].Type);
             Assert.AreEqual("/vector2", vectorIndexes[1].Path);
-            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[1].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.QuantizedFlat, vectorIndexes[1].Type);
+            Assert.AreEqual(3, vectorIndexes[1].QuantizationByteSize);
+            CollectionAssert.AreEqual(new string[] { "/Country" }, vectorIndexes[1].VectorIndexShardKey);
+
             Assert.AreEqual("/vector3", vectorIndexes[2].Path);
-            Assert.AreEqual(Cosmos.VectorIndexType.Flat, vectorIndexes[2].Type);
+            Assert.AreEqual(Cosmos.VectorIndexType.DiskANN, vectorIndexes[2].Type);
+            Assert.AreEqual(2, vectorIndexes[2].QuantizationByteSize);
+            Assert.AreEqual(5, vectorIndexes[2].IndexingSearchListSize);
+            CollectionAssert.AreEqual(new string[] { "/ZipCode" }, vectorIndexes[2].VectorIndexShardKey);
+        }
+
+        [TestMethod]
+        public void ValidateFullTextPathsAndIndexes()
+        {
+            string defaultLanguage = "en-US", fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
+
+            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new Cosmos.FullTextPath()
+                    {
+                        Path = fullTextPath1,
+                        Language = "en-US",
+                    },
+                    new Cosmos.FullTextPath()
+                    {
+                        Path = fullTextPath2,
+                        Language = "en-US",
+                    },
+                    new Cosmos.FullTextPath()
+                    {
+                        Path = fullTextPath3,
+                        Language = "en-US",
+                    },
+                };
+
+            ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
+            {
+                FullTextPolicy = new()
+                {
+                    DefaultLanguage = defaultLanguage,
+                    FullTextPaths = fullTextPaths
+                },
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    FullTextIndexes = new()
+                    {
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath1,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath2,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath3,
+                        }
+                    },
+                },
+            };
+
+            Assert.IsNotNull(containerSettings.IndexingPolicy);
+            Assert.IsNotNull(containerSettings.FullTextPolicy);
+            Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+
+            Cosmos.FullTextPolicy fullTextPolicy = containerSettings.FullTextPolicy;
+            Assert.IsNotNull(fullTextPolicy.FullTextPaths);
+            Assert.AreEqual(fullTextPaths.Count, fullTextPolicy.FullTextPaths.Count());
+            Assert.AreEqual(fullTextPaths[0].Path, fullTextPolicy.FullTextPaths[0].Path);
+            Assert.AreEqual(fullTextPaths[0].Language, fullTextPolicy.FullTextPaths[0].Language);
+
+            CollectionAssert.AreEquivalent(fullTextPaths, fullTextPolicy.FullTextPaths.ToList());
+
+            Collection<Cosmos.FullTextIndexPath> fullTextIndexes = containerSettings.IndexingPolicy.FullTextIndexes;
+            Assert.AreEqual("/fts1", fullTextIndexes[0].Path);
+            Assert.AreEqual("/fts2", fullTextIndexes[1].Path);
+            Assert.AreEqual("/fts3", fullTextIndexes[2].Path);
+        }
+
+        [TestMethod]
+        public void ValidateFullTextPathsAndIndexesWithDefaultLanguage()
+        {
+            string defaultLanguage = "en-US", fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
+            ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
+            {
+                FullTextPolicy = new()
+                {
+                    DefaultLanguage = defaultLanguage,
+                    FullTextPaths = new Collection<FullTextPath>()
+                },
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    FullTextIndexes = new()
+                    {
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath1,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath2,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath3,
+                        }
+                    },
+                },
+            };
+
+            Assert.IsNotNull(containerSettings.IndexingPolicy);
+            Assert.IsNotNull(containerSettings.FullTextPolicy);
+            Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+
+            Cosmos.FullTextPolicy fullTextPolicy = containerSettings.FullTextPolicy;
+            Assert.AreEqual(0, fullTextPolicy.FullTextPaths.Count);
+
+            Collection<Cosmos.FullTextIndexPath> fullTextIndexes = containerSettings.IndexingPolicy.FullTextIndexes;
+            Assert.AreEqual("/fts1", fullTextIndexes[0].Path);
+            Assert.AreEqual("/fts2", fullTextIndexes[1].Path);
+            Assert.AreEqual("/fts3", fullTextIndexes[2].Path);
         }
 
         private static string SerializeDocumentCollection(DocumentCollection collection)
