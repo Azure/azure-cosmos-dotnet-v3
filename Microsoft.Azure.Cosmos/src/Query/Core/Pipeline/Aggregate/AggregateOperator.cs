@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
     {
         Average,
         Count,
+        CountIf,
         MakeList,
         MakeSet,
         Max,

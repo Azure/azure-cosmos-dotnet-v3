@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
         public override async Task<(T, DecryptionContext)> GetItemAsync<T>()
         {
-            if (!(this.decryptableContent is JObject document))
+            if (this.decryptableContent is not JObject document)
             {
                 return (this.cosmosSerializer.FromStream<T>(EncryptionProcessor.BaseSerializer.ToStream(this.decryptableContent)), null);
             }

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     public sealed class EncryptionOptions
     {
         /// <summary>
-        /// Identifier of the data encryption key to be used for encrypting the data in the request payload.
+        /// Gets or sets identifier of the data encryption key to be used for encrypting the data in the request payload.
         /// The data encryption key must be suitable for use with the <see cref="EncryptionAlgorithm"/> provided.
         /// </summary>
         /// <remarks>
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public string DataEncryptionKeyId { get; set; }
 
         /// <summary>
-        /// Algorithm to be used for encrypting the data in the request payload.
+        /// Gets or sets algorithm to be used for encrypting the data in the request payload.
         /// </summary>
         /// <remarks>
         /// Authenticated Encryption algorithm based on https://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public string EncryptionAlgorithm { get; set; }
 
         /// <summary>
-        /// For the request payload, list of JSON paths to encrypt.
+        /// Gets or sets list of JSON paths to encrypt on the payload.
         /// Only top level paths are supported.
         /// Example of a path specification: /sensitive
         /// </summary>

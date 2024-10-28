@@ -5,8 +5,8 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=LongRunning & TestCategory!=MultiRegion & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion" --verbosity normal '
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=LongRunning & TestCategory!=MultiRegion & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion" --verbosity normal '
   EmulatorPipeline3Arguments: ' --filter "TestCategory=MultiRegion" --verbosity normal '
   EmulatorPipeline1CategoryListName: ' Client Telemetry, Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
   EmulatorPipeline2CategoryListName: ' Others '
@@ -14,10 +14,45 @@ parameters:
   MultiRegionConnectionString : ''
   IncludeEncryption: true
   IncludePerformance: true
+  IncludeCoverage: true
 
 jobs:
 - job:
-  displayName: Tests Debug
+  displayName: Microsoft.Azure.Cosmos.Tests
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET SDK and runtimes
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+      
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.Tests
+    condition: succeeded()
+    retryCountOnTaskFailure: 2
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
+      arguments: ${{ parameters.Arguments }} /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Tests
+
+- job:
+  displayName: Microsoft.Azure.Cosmos.Tests Flaky
   pool:
     name: 'OneES'
 
@@ -29,8 +64,49 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
+      
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.Tests
+    condition: succeeded()
+    retryCountOnTaskFailure: 4
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.Tests/*.csproj'
+      arguments: --filter "TestCategory=Flaky" --verbosity normal /p:OS=${{ parameters.OS }}
+      publishTestResults: true
+      nugetConfigPath: NuGet.config
+      testRunTitle: Microsoft.Azure.Cosmos.Tests
+
+
+- job:
+  displayName: Microsoft.Azure.Cosmos.Tests Coverage
+  condition: and(succeeded(), eq(${{ parameters.IncludeCoverage }}, true))
+  pool:
+    name: 'OneES'
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
       
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Tests
@@ -46,13 +122,13 @@ jobs:
       dotnet tool install -g dotnet-reportgenerator-globaltool
       reportgenerator -reports:$(Build.SourcesDirectory)/Microsoft.Azure.Cosmos/tests/**/coverage.cobertura.xml -targetdir:$(Build.SourcesDirectory)/CodeCoverage -reporttypes:HtmlInline_AzurePipelines;Cobertura
     displayName: Create Code coverage report
-  - task: PublishCodeCoverageResults@1
+  - task: PublishCodeCoverageResults@2
     displayName: 'Publish code coverage'
     inputs:
       codeCoverageTool: Cobertura
       summaryFileLocation: '$(Build.SourcesDirectory)/CodeCoverage/Cobertura.xml'
       reportDirectory: '$(Build.SourcesDirectory)/CodeCoverage'
-      
+
 - job:
   displayName: PerformanceTests ${{ parameters.BuildConfiguration }}
   condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
@@ -67,8 +143,14 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.PerformanceTests - Build
@@ -90,7 +172,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline1CategoryListName }}
-  timeoutInMinutes: 120
+  timeoutInMinutes: 60
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -103,14 +185,21 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
@@ -123,7 +212,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline2CategoryListName }}
-  timeoutInMinutes: 120
+  timeoutInMinutes: 60
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -136,14 +225,21 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
@@ -154,9 +250,50 @@ jobs:
     env: 
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
 
+
+- job:
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} Flaky
+  timeoutInMinutes: 60
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  # Add this Command to Include the .NET 6 SDK
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  - template:  emulator-setup.yml
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    retryCountOnTaskFailure: 4
+    condition: succeeded()
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
+      arguments: --filter "TestCategory=Flaky" --verbosity normal --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
+    env: 
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
+
 - job:
   displayName: Encryption EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 90
+  timeoutInMinutes: 60
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
@@ -169,14 +306,21 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos.Encryption/tests/EmulatorTests/*.csproj'
@@ -189,7 +333,7 @@ jobs:
 
 - job:
   displayName: Encryption.Custom EmulatorTests ${{ parameters.BuildConfiguration }}
-  timeoutInMinutes: 90
+  timeoutInMinutes: 60
   condition: and(eq(${{ parameters.IncludeEncryption }}, true), and(succeeded(), eq('${{ parameters.OS }}', 'Windows')))
   pool:
     name: 'OneES'
@@ -202,14 +346,21 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
       
   - template:  emulator-setup.yml
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
     condition: succeeded()
+    retryCountOnTaskFailure: 2
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos.Encryption.Custom/tests/EmulatorTests/*.csproj'
@@ -222,7 +373,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline3CategoryListName }}
-  timeoutInMinutes: 120
+  timeoutInMinutes: 60
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
@@ -235,11 +386,18 @@ jobs:
   - task: UseDotNet@2
     displayName: Use .NET 6.0
     inputs:
+      packageType: 'runtime'
+      version: '6.x'      
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
       packageType: 'sdk'
-      version: '6.x'
+      version: '8.x'
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    retryCountOnTaskFailure: 2
     condition: succeeded()
     inputs:
       command: test
