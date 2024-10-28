@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -17,11 +20,12 @@
     public sealed class QueryAdvisorTest : QueryTestsBase
     {
         [TestMethod]
+        [Ignore] // Ignoreed until the emulator supports query advisor
         public async Task TestQueryAdvisorExistence()
         {
             // Generate some documents
             int seed = (int)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalSeconds;
-            uint numberOfDocuments = 10;
+            uint numberOfDocuments = 1;
             QueryOracleUtil util = new QueryOracle2(seed);
             IEnumerable<string> inputDocuments = util.GetDocuments(numberOfDocuments);
 
@@ -34,10 +38,10 @@
 
             static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
             {
-                string query = string.Format("SELECT VALUE r.id  FROM root r WHERE RegexMatch(r.name, \"Abc\")");
+                string query = string.Format("SELECT VALUE r.id FROM root r WHERE CONTAINS(r.name, \"Abc\") ");
 
                 // Test using GetItemQueryIterator
-                QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
+                QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateQueryAdvice = true };
 
                 FeedIterator<CosmosElement> itemQuery = container.GetItemQueryIterator<CosmosElement>(
                     query,
@@ -58,7 +62,7 @@
                 continuationToken: null,
                 requestOptions: new QueryRequestOptions
                 {
-                    PopulateIndexMetrics = true,
+                    PopulateQueryAdvice = true,
                 }))
                 {
                     using (ResponseMessage response = await feedIterator.ReadNextAsync())

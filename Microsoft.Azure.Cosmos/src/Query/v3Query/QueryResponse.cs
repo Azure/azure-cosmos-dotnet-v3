@@ -181,7 +181,6 @@ namespace Microsoft.Azure.Cosmos
                 })
                 : null;
 
-
             this.RequestMessage = requestMessage;
         }
 

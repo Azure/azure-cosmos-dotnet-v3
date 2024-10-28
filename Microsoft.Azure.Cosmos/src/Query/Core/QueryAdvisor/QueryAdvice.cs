@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 {
     using System;
     using System.Collections.Generic;
