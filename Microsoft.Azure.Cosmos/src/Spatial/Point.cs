@@ -6,12 +6,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Point geometry class in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
+    [System.Text.Json.Serialization.JsonConverter(typeof(PointSTJJsonConverter))]
     public sealed class Point : Geometry, IEquatable<Point>
     {
         /// <summary>
@@ -34,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <param name="position">
         /// Position of the point.
         /// </param>
-        internal Point(Position position)
+        public Point(Position position)
             : this(position, new GeometryParams())
         {
         }
@@ -60,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <remarks>
         /// This constructor is used only during deserialization.
         /// </remarks>
-        public Point()
+        internal Point()
             : base(GeometryType.Point, new GeometryParams())
         {
         }

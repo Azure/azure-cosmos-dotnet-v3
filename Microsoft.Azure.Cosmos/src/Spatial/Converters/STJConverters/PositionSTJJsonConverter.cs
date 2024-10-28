@@ -30,7 +30,6 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             }
 
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
-            //Position position = new Position();
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
                 if (property.NameEquals(PositionMetadataFields.Coordinates))
@@ -56,7 +55,8 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 return;
             }
 
-            writer.WriteStartObject();
+            //writer.WriteStartObject("position");
+
             writer.WriteStartArray(PositionMetadataFields.Coordinates);
             writer.WriteNumberValue(position.Longitude);
             writer.WriteNumberValue(position.Latitude);
@@ -76,7 +76,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 writer.WriteNull(PositionMetadataFields.Altitude);
 
             }
-            writer.WriteEndObject();
+            //writer.WriteEndObject();
             
         }
 
