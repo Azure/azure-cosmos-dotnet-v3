@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -172,9 +173,14 @@ namespace Microsoft.Azure.Cosmos
                 responseMessageHeaders, 
                 isBase64Encoded: false);
 
-            this.QueryAdviceText = (responseMessageHeaders?.QueryAdvice != null)
-                ? new Lazy<string>(() => System.Web.HttpUtility.UrlDecode(responseMessageHeaders.QueryAdvice, Encoding.UTF8))
+            this.QueryAdviceText = (this.Headers?.QueryAdvice != null)
+                ? new Lazy<string>(() =>
+                {
+                    QueryAdvice advice = Query.Core.QueryAdvisor.QueryAdvice.TryCreateFromString(this.Headers.QueryAdvice, out QueryAdvice queryAdvice) ? queryAdvice : null;
+                    return Query.Core.QueryAdvisor.QueryAdvice.ToString(advice);
+                })
                 : null;
+
 
             this.RequestMessage = requestMessage;
         }
