@@ -148,9 +148,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 scope.AddAttribute(AppInsightClassicAttributeKeys.RequestContentLength, response.RequestContentLength);
                 scope.AddAttribute(AppInsightClassicAttributeKeys.ResponseContentLength, response.ResponseContentLength);
-                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, (int)response.StatusCode);
+                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.StatusCode, Convert.ToInt32(response.StatusCode));
                 scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.SubStatusCode, response.SubStatusCode);
-                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.RequestCharge, (int)response.RequestCharge);
+                scope.AddIntegerAttribute(AppInsightClassicAttributeKeys.RequestCharge, Convert.ToInt32(response.RequestCharge));
                 scope.AddAttribute(AppInsightClassicAttributeKeys.ItemCount, response.ItemCount);
                 scope.AddAttribute(AppInsightClassicAttributeKeys.ActivityId, response.ActivityId);
 

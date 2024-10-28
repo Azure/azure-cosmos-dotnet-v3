@@ -201,14 +201,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (response.BatchSize is not null)
             {
-                scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, (int)response.BatchSize);
+                scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, Convert.ToInt32(response.BatchSize));
             }
 
-            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, (int)response.StatusCode);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, Convert.ToInt32(response.StatusCode));
             scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
             scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, response.SubStatusCode);
-            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, (int)response.RequestCharge);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, Convert.ToInt32(response.RequestCharge));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, response.ActivityId);
             scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, response.CorrelatedActivityId);
