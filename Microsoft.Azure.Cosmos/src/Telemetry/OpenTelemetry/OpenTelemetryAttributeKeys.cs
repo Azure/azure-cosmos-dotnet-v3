@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     /// <remarks>
     /// For more details on the semantic conventions, refer to the OpenTelemetry documentation at:
-    /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/>
+    /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/> OpenTelemetry Semantic Conventions 1.28.0 conventions are followed
     /// </remarks>
     internal sealed class OpenTelemetryAttributeKeys
     {
@@ -60,6 +60,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the server address.
         /// </summary>
         public const string ServerAddress = "server.address";
+
+        /// <summary>
+        /// Represents the server address.
+        /// </summary>
+        public const string ServerPort = "server.port";
 
         // Cosmos DB specific attributes
 
@@ -138,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the size of the batch operation.
         /// </summary>
-        public const string BatchSize = "db.operation.batch_size";
+        public const string BatchSize = "db.operation.batch.size";
 
         /// <summary>
         /// Consistency Level
@@ -166,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string operationName,
             string databaseName,
             string containerName,
-            string accountName,
+            Uri accountName,
             string userAgent,
             string clientId,
             string connectionMode)
@@ -174,7 +179,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
             scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
-            scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, accountName);
+            if (accountName != null)
+            {
+                scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host);
+                scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.ServerPort, accountName.Port);
+            }
             scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, userAgent);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientId);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, connectionMode);

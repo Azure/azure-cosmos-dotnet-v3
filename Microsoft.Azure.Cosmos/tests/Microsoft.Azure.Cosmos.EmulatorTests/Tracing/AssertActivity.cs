@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "db.cosmosdb.request_charge",
                      "db.cosmosdb.regions_contacted",
                      "db.cosmosdb.item_count",
-                     "db.operation.batch_size",
+                     "db.operation.batch.size",
                      "db.cosmosdb.activity_id",
                      "db.cosmosdb.correlated_activity_id",
                      "db.cosmosdb.consistency_level",

@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Core.Trace;
 
     [TestClass]
     public class TracesStabilityFactoryTests
@@ -68,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 operationName: OperationName,
                 databaseName: "databaseName",
                 containerName: "containerName",
-                accountName: "accountName",
+                accountName: new Uri("http://accountName:443"),
                 userAgent: "userAgent",
                 machineId: "machineId",
                 clientId: "clientId",

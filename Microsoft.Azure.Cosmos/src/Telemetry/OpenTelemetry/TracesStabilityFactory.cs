@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
             string operationName,
             string databaseName,
             string containerName,
-            string accountName,
+            Uri accountName,
             string userAgent,
             string machineId,
             string clientId,

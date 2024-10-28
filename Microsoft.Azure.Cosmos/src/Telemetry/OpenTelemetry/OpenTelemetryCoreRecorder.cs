@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     operationName,
                     databaseName,
                     containerName,
-                    clientContext.Client?.Endpoint?.Host,
+                    clientContext.Client?.Endpoint,
                     clientContext.UserAgent,
                     VmMetadataApiHandler.GetMachineId(),
                     clientContext?.Client?.Id,

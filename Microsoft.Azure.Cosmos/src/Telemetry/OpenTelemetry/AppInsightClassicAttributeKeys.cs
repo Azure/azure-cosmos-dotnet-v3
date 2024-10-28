@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string operationName,
             string databaseName,
             string containerName,
-            string accountName,
+            Uri accountName,
             string userAgent,
             string machineId,
             string clientId,
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             scope.AddAttribute(AppInsightClassicAttributeKeys.DbOperation, operationName);
             scope.AddAttribute(AppInsightClassicAttributeKeys.DbName, databaseName);
             scope.AddAttribute(AppInsightClassicAttributeKeys.ContainerName, containerName);
-            scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, accountName);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ServerAddress, accountName?.Host);
             scope.AddAttribute(AppInsightClassicAttributeKeys.UserAgent, userAgent);
             scope.AddAttribute(AppInsightClassicAttributeKeys.MachineId, machineId);
             scope.AddAttribute(AppInsightClassicAttributeKeys.ClientId, clientId);
