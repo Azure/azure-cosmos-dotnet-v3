@@ -95,15 +95,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
                 return string.Empty;
             }
 
+            // Generate the help link
+            string helpLink = " For more information, please visit " + ruleDocument.Element("UrlPrefix").Value + advice.Id;
+
             // Format message with parameters if available
             string message = rule.Element("Message").Value;
             if (advice.Parameters == null || advice.Parameters.Count == 0)
             {
-                return message;
+                return message + helpLink;
             }
             else
             {
-                return string.Format(message, advice.Parameters.ToArray());
+                return string.Format(message, advice.Parameters.ToArray()) + helpLink;
             }
         }
     }
