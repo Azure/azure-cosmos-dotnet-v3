@@ -15,13 +15,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using System.Linq;
     using Microsoft.Azure.Cosmos.Telemetry;
     using System.Diagnostics.Tracing;
+    using System.Net;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     [TestClass]
     public class TracesStabilityFactoryTests
     {
         private const string StabilityEnvVariableName = "OTEL_SEMCONV_STABILITY_OPT_IN";
         private const string OperationName = "operationName";
-        private const string ExceptionMessage = "Exception of type 'System.Exception' was thrown";
+        private const string ExceptionMessage = "Exception of type 'System.Exception' was thrown.";
 
         [TestInitialize]
         public void TestInitialize()
@@ -77,27 +82,44 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 scope: scope,
                 operationType: "operationType",
                 queryTextMode: QueryTextMode.All,
-                response: new Cosmos.Telemetry.OpenTelemetryAttributes());
+                response: new Cosmos.Telemetry.OpenTelemetryAttributes
+                {
+                    StatusCode = HttpStatusCode.OK,
+                    RequestCharge = 1.0,
+                    RequestContentLength = "100",
+                    ResponseContentLength = "200",
+                    ItemCount = "10",
+                    Diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton),
+                    SubStatusCode = 0,
+                    ActivityId = "dummyActivityId",
+                    CorrelatedActivityId = "dummyCorrelatedActivityId",
+                    OperationType = Documents.OperationType.Read,
+                    ResourceType = Documents.ResourceType.Document,
+                    BatchSize = 5,
+                    QuerySpec = new SqlQuerySpec("SELECT * FROM c"),
+                    ConsistencyLevel = "Strong"
+                });
         }
 
         private static void VerifyTagCollection(DiagnosticScope scope, string stabilityMode)
         {
             ActivityTagsCollection tagCollection = GetTagCollection(scope);
             Assert.IsNotNull(tagCollection);
-
+            Console.WriteLine(tagCollection.Count);
+            tagCollection.ToList().ForEach(tag => Console.WriteLine($"{tag.Key} : {tag.Value}"));
             if (stabilityMode == OpenTelemetryStablityModes.Database)
             {
-                Assert.AreEqual(13, tagCollection.Count);
+                Assert.AreEqual(21, tagCollection.Count);
                 VerifyNewAttributesOnly(tagCollection);
             }
             else if (stabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
             {
-                Assert.AreEqual(21, tagCollection.Count);
+                Assert.AreEqual(32, tagCollection.Count);
                 VerifyNewAndOldAttributes(tagCollection);
             }
             else
             {
-                Assert.AreEqual(15, tagCollection.Count);
+                Assert.AreEqual(19, tagCollection.Count);
                 VerifyDefaultAttributes(tagCollection);
             }
         }
@@ -114,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         private static void VerifyNewAttributesOnly(ActivityTagsCollection tagCollection)
         {
-            Assert.AreEqual("Microsoft.DocumentDB", tagCollection[OpenTelemetryAttributeKeys.ResourceProviderNamespace]);
+            Assert.AreEqual("Microsoft.DocumentDB", tagCollection["az.namespace"]);
             Assert.AreEqual("operationName", tagCollection[OpenTelemetryAttributeKeys.DbOperation]);
             Assert.AreEqual("databaseName", tagCollection[OpenTelemetryAttributeKeys.DbName]);
             Assert.AreEqual("containerName", tagCollection[OpenTelemetryAttributeKeys.ContainerName]);
@@ -123,11 +145,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual("clientId", tagCollection[OpenTelemetryAttributeKeys.ClientId]);
             Assert.AreEqual("connectionMode", tagCollection[OpenTelemetryAttributeKeys.ConnectionMode]);
             Assert.AreEqual("Exception", tagCollection[OpenTelemetryAttributeKeys.ExceptionType]);
-            Assert.AreEqual("Exception of type 'System.Exception' was thrown", tagCollection[OpenTelemetryAttributeKeys.ExceptionMessage]);
-            Assert.AreEqual("0", tagCollection[OpenTelemetryAttributeKeys.SubStatusCode]);
-            Assert.AreEqual("0", tagCollection[OpenTelemetryAttributeKeys.StatusCode]);
-            Assert.AreEqual("0", tagCollection[OpenTelemetryAttributeKeys.RequestCharge]);
-
+            Assert.AreEqual(ExceptionMessage, tagCollection[OpenTelemetryAttributeKeys.ExceptionMessage]);
+            Assert.AreEqual(0, tagCollection[OpenTelemetryAttributeKeys.SubStatusCode]);
+            Assert.AreEqual(200, tagCollection[OpenTelemetryAttributeKeys.StatusCode]);
+            Assert.AreEqual(1, tagCollection[OpenTelemetryAttributeKeys.RequestCharge]);
         }
 
         private static void VerifyNewAndOldAttributes(ActivityTagsCollection tagCollection)
@@ -138,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         private static void VerifyDefaultAttributes(ActivityTagsCollection tagCollection)
         {
-            Assert.AreEqual("Microsoft.DocumentDB", tagCollection[OpenTelemetryAttributeKeys.ResourceProviderNamespace]);
+            Assert.AreEqual("Microsoft.DocumentDB", tagCollection["az.namespace"]);
             Assert.AreEqual("operationName", tagCollection[AppInsightClassicAttributeKeys.DbOperation]);
             Assert.AreEqual("databaseName", tagCollection[AppInsightClassicAttributeKeys.DbName]);
             Assert.AreEqual("containerName", tagCollection[AppInsightClassicAttributeKeys.ContainerName]);
@@ -148,10 +169,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual("clientId", tagCollection[AppInsightClassicAttributeKeys.ClientId]);
             Assert.AreEqual("connectionMode", tagCollection[AppInsightClassicAttributeKeys.ConnectionMode]);
             Assert.AreEqual("Exception", tagCollection[AppInsightClassicAttributeKeys.ExceptionType]);
-            Assert.AreEqual("Exception of type 'System.Exception' was thrown", tagCollection[AppInsightClassicAttributeKeys.ExceptionMessage]);
-            Assert.AreEqual("0", tagCollection[AppInsightClassicAttributeKeys.SubStatusCode]);
-            Assert.AreEqual("0", tagCollection[AppInsightClassicAttributeKeys.StatusCode]);
-            Assert.AreEqual("0", tagCollection[AppInsightClassicAttributeKeys.RequestCharge]);
+            Assert.AreEqual(ExceptionMessage, tagCollection[AppInsightClassicAttributeKeys.ExceptionMessage]);
+            Assert.AreEqual(0, tagCollection[AppInsightClassicAttributeKeys.SubStatusCode]);
+            Assert.AreEqual(200, tagCollection[AppInsightClassicAttributeKeys.StatusCode]);
+            Assert.AreEqual(1, tagCollection[AppInsightClassicAttributeKeys.RequestCharge]);
         }
 
         [TestCleanup]
