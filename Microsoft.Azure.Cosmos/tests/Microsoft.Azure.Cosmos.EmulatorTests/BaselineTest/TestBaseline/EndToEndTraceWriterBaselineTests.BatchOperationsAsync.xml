@@ -151,6 +151,12 @@
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">execute_batch</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
@@ -158,9 +164,13 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.batch.size">90</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">400/1001</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="FailedRequest" />
+  <EVENT name="Exception" />
   <EVENT name="Exception" />
 </OTelActivities></Output>
   </Result>
@@ -304,6 +314,12 @@
     <ATTRIBUTE key="db.cosmosdb.machine_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.client_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.connection_mode">direct</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.name">execute_batch</ATTRIBUTE>
+    <ATTRIBUTE key="db.namespace">databaseName</ATTRIBUTE>
+    <ATTRIBUTE key="db.collection.name">containerName</ATTRIBUTE>
+    <ATTRIBUTE key="server.address">127.0.0.1</ATTRIBUTE>
+    <ATTRIBUTE key="server.port">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="user_agent.original">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.operation_type">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.sub_status_code">Some Value</ATTRIBUTE>
@@ -311,6 +327,9 @@
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
+    <ATTRIBUTE key="db.operation.batch.size">50</ATTRIBUTE>
+    <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="error.type">400/1001</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="FailedRequest" />

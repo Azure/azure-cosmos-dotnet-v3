@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public static async Task ClassInitAsync(TestContext _)
         {
             Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", OpenTelemetryStablityModes.DatabaseDupe);
+
             EndToEndTraceWriterBaselineTests.testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(

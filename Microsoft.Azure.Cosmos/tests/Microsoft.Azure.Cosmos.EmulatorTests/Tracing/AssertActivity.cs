@@ -41,6 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "db.namespace",
                      "db.operation.name",
                      "server.address",
+                     "server.port",
                      "db.cosmosdb.client_id",
                      "user_agent.original",
                      "db.cosmosdb.connection_mode",
@@ -51,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "db.cosmosdb.sub_status_code",
                      "db.cosmosdb.request_charge",
                      "db.cosmosdb.regions_contacted",
-                     "db.cosmosdb.item_count",
+                     "db.cosmosdb.row_count",
                      "db.operation.batch.size",
                      "db.cosmosdb.activity_id",
                      "db.cosmosdb.correlated_activity_id",
@@ -70,7 +71,8 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      AppInsightClassicAttributeKeys.MachineId,
                      AppInsightClassicAttributeKeys.OperationType,
                      AppInsightClassicAttributeKeys.ResponseContentLength,
-                     AppInsightClassicAttributeKeys.RequestContentLength
+                     AppInsightClassicAttributeKeys.RequestContentLength,
+                     AppInsightClassicAttributeKeys.ItemCount
                 };
 
                 foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
