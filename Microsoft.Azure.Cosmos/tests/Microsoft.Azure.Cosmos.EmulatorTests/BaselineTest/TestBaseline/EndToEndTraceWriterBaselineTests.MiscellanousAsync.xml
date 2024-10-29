@@ -165,8 +165,6 @@
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
-  <EVENT name="Exception" />
-  <EVENT name="Exception" />
 </OTelActivities></Output>
   </Result>
   <Result>

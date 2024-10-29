@@ -170,8 +170,6 @@
     <ATTRIBUTE key="error.type">400/1001</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="FailedRequest" />
-  <EVENT name="Exception" />
-  <EVENT name="Exception" />
 </OTelActivities></Output>
   </Result>
   <Result>

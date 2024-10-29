@@ -231,13 +231,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     = (this.response == null || this.response?.OperationType == OperationType.Invalid) ? this.operationType : this.response.OperationType;
                 string operationTypeName = Enum.GetName(typeof(OperationType), operationType);
 
-                TracesStabilityFactory.SetAttributes(this.scope, operationTypeName, this.queryTextMode, this.response);
-
-                CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
-
-                if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
+                if (this.response != null)
                 {
-                    this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
+                    TracesStabilityFactory.SetAttributes(this.scope, operationTypeName, this.queryTextMode, this.response);
+
+                    CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
+
+                    if (!DiagnosticsFilterHelper.IsSuccessfulResponse(this.response.StatusCode, this.response.SubStatusCode))
+                    {
+                        this.scope.Failed($"{(int)this.response.StatusCode}/{this.response.SubStatusCode}");
+                    }
                 }
 
                 this.scope.Dispose();
