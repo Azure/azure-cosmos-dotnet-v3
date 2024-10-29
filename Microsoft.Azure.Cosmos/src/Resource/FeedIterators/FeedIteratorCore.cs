@@ -218,6 +218,8 @@ namespace Microsoft.Azure.Cosmos
 
             this.operationName = feedIterator.operationName;
             this.operationType = feedIterator.operationType;
+
+            this.querySpec = feedIterator.querySpec;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
