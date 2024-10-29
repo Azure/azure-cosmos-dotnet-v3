@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Cosmos.Tests.Tracing;
 
     [TestClass]
     public class TracesStabilityFactoryTests
@@ -62,16 +64,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         private static void SetAttributes(DiagnosticScope scope)
         {
+            ITrace trace;
+            using (trace = Cosmos.Tracing.Trace.GetRootTrace("Root Trace", TraceComponent.Unknown, Cosmos.Tracing.TraceLevel.Info))
+            {
+                using (ITrace firstLevel = trace.StartChild("First level Node", TraceComponent.Unknown, Cosmos.Tracing.TraceLevel.Info))
+                {
+                    firstLevel.AddDatum("Client Side Request Stats", GetDatumObject(Regions.FranceCentral));
+                }
+            }
+
             TracesStabilityFactory.SetAttributes(
                 scope: scope,
                 operationName: OperationName,
                 databaseName: "databaseName",
                 containerName: "containerName",
-                accountName: new Uri("http://accountName:443"),
+                accountName: new Uri("http://accountname:443"),
                 userAgent: "userAgent",
                 machineId: "machineId",
                 clientId: "clientId",
-                connectionMode: "connectionMode");
+                connectionMode: "gateway");
 
             TracesStabilityFactory.SetAttributes(
                 scope: scope,
@@ -88,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     RequestContentLength = "100",
                     ResponseContentLength = "200",
                     ItemCount = "10",
-                    Diagnostics = new CosmosTraceDiagnostics(NoOpTrace.Singleton),
+                    Diagnostics = new CosmosTraceDiagnostics(trace),
                     SubStatusCode = 0,
                     ActivityId = "dummyActivityId",
                     CorrelatedActivityId = "dummyCorrelatedActivityId",
@@ -100,6 +111,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 });
         }
 
+        private static TraceDatum GetDatumObject(string regionName1, string regionName2 = null)
+        {
+            ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, Cosmos.Tracing.Trace.GetRootTrace(nameof(ContactedRegionsTests)));
+            Uri uri1 = new Uri("http://someUri1.com");
+            datum.RegionsContacted.Add((regionName1, uri1));
+            if (regionName2 != null)
+            {
+                Uri uri2 = new Uri("http://someUri2.com");
+                datum.RegionsContacted.Add((regionName2, uri2));
+            }
+
+            return datum;
+        }
+
         private static void VerifyTagCollection(DiagnosticScope scope, string stabilityMode)
         {
             ActivityTagsCollection tagCollection = GetTagCollection(scope);
@@ -108,17 +133,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             tagCollection.ToList().ForEach(tag => Console.WriteLine($"{tag.Key} : {tag.Value}"));
             if (stabilityMode == OpenTelemetryStablityModes.Database)
             {
-                Assert.AreEqual(21, tagCollection.Count);
+                Assert.AreEqual(23, tagCollection.Count);
                 VerifyNewAttributesOnly(tagCollection);
             }
             else if (stabilityMode == OpenTelemetryStablityModes.DatabaseDupe)
             {
-                Assert.AreEqual(32, tagCollection.Count);
+                Assert.AreEqual(34, tagCollection.Count);
                 VerifyNewAndOldAttributes(tagCollection);
             }
             else
             {
-                Assert.AreEqual(19, tagCollection.Count);
+                Assert.AreEqual(20, tagCollection.Count);
                 VerifyDefaultAttributes(tagCollection);
             }
         }
@@ -139,15 +164,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual("operationName", tagCollection[OpenTelemetryAttributeKeys.DbOperation]);
             Assert.AreEqual("databaseName", tagCollection[OpenTelemetryAttributeKeys.DbName]);
             Assert.AreEqual("containerName", tagCollection[OpenTelemetryAttributeKeys.ContainerName]);
-            Assert.AreEqual("accountName", tagCollection[OpenTelemetryAttributeKeys.ServerAddress]);
+            Assert.AreEqual("accountname", tagCollection[OpenTelemetryAttributeKeys.ServerAddress]);
+            Assert.AreEqual(443, tagCollection[OpenTelemetryAttributeKeys.ServerPort]);
             Assert.AreEqual("userAgent", tagCollection[OpenTelemetryAttributeKeys.UserAgent]);
             Assert.AreEqual("clientId", tagCollection[OpenTelemetryAttributeKeys.ClientId]);
-            Assert.AreEqual("connectionMode", tagCollection[OpenTelemetryAttributeKeys.ConnectionMode]);
+            Assert.AreEqual("gateway", tagCollection[OpenTelemetryAttributeKeys.ConnectionMode]);
             Assert.AreEqual("Exception", tagCollection[OpenTelemetryAttributeKeys.ExceptionType]);
             Assert.AreEqual(ExceptionMessage, tagCollection[OpenTelemetryAttributeKeys.ExceptionMessage]);
-            Assert.AreEqual(0, tagCollection[OpenTelemetryAttributeKeys.SubStatusCode]);
+            Assert.AreEqual(5, tagCollection[OpenTelemetryAttributeKeys.BatchSize]);
             Assert.AreEqual(200, tagCollection[OpenTelemetryAttributeKeys.StatusCode]);
+            Assert.AreEqual(0, tagCollection[OpenTelemetryAttributeKeys.SubStatusCode]);
             Assert.AreEqual(1, tagCollection[OpenTelemetryAttributeKeys.RequestCharge]);
+            Assert.AreEqual("100", tagCollection[OpenTelemetryAttributeKeys.RequestContentLength]);
+            Assert.AreEqual("200", tagCollection[OpenTelemetryAttributeKeys.ResponseContentLength]);
+            Assert.AreEqual("10", tagCollection[OpenTelemetryAttributeKeys.ItemCount]);
+            Assert.AreEqual("dummyActivityId", tagCollection[OpenTelemetryAttributeKeys.ActivityId]);
+            Assert.AreEqual("dummyCorrelatedActivityId", tagCollection[OpenTelemetryAttributeKeys.CorrelatedActivityId]);
+            Assert.AreEqual("Strong", tagCollection[OpenTelemetryAttributeKeys.ConsistencyLevel]);
+            Assert.AreEqual("SELECT * FROM c", tagCollection[OpenTelemetryAttributeKeys.QueryText]);
+            Assert.AreEqual("France Central", tagCollection[OpenTelemetryAttributeKeys.Region]);
         }
 
         private static void VerifyNewAndOldAttributes(ActivityTagsCollection tagCollection)
@@ -162,16 +197,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             Assert.AreEqual("operationName", tagCollection[AppInsightClassicAttributeKeys.DbOperation]);
             Assert.AreEqual("databaseName", tagCollection[AppInsightClassicAttributeKeys.DbName]);
             Assert.AreEqual("containerName", tagCollection[AppInsightClassicAttributeKeys.ContainerName]);
-            Assert.AreEqual("accountName", tagCollection[AppInsightClassicAttributeKeys.ServerAddress]);
+            Assert.AreEqual("accountname", tagCollection[AppInsightClassicAttributeKeys.ServerAddress]);
             Assert.AreEqual("userAgent", tagCollection[AppInsightClassicAttributeKeys.UserAgent]);
             Assert.AreEqual("machineId", tagCollection[AppInsightClassicAttributeKeys.MachineId]);
             Assert.AreEqual("clientId", tagCollection[AppInsightClassicAttributeKeys.ClientId]);
-            Assert.AreEqual("connectionMode", tagCollection[AppInsightClassicAttributeKeys.ConnectionMode]);
+            Assert.AreEqual("gateway", tagCollection[AppInsightClassicAttributeKeys.ConnectionMode]);
             Assert.AreEqual("Exception", tagCollection[AppInsightClassicAttributeKeys.ExceptionType]);
             Assert.AreEqual(ExceptionMessage, tagCollection[AppInsightClassicAttributeKeys.ExceptionMessage]);
-            Assert.AreEqual(0, tagCollection[AppInsightClassicAttributeKeys.SubStatusCode]);
             Assert.AreEqual(200, tagCollection[AppInsightClassicAttributeKeys.StatusCode]);
+            Assert.AreEqual(0, tagCollection[AppInsightClassicAttributeKeys.SubStatusCode]);
             Assert.AreEqual(1, tagCollection[AppInsightClassicAttributeKeys.RequestCharge]);
+            Assert.AreEqual("100", tagCollection[AppInsightClassicAttributeKeys.RequestContentLength]);
+            Assert.AreEqual("200", tagCollection[AppInsightClassicAttributeKeys.ResponseContentLength]);
+            Assert.AreEqual("10", tagCollection[AppInsightClassicAttributeKeys.ItemCount]);
+            Assert.AreEqual("dummyActivityId", tagCollection[AppInsightClassicAttributeKeys.ActivityId]);
+            Assert.AreEqual("France Central", tagCollection[AppInsightClassicAttributeKeys.Region]);
+            Assert.AreEqual("operationType", tagCollection[AppInsightClassicAttributeKeys.OperationType]);
         }
 
         [TestCleanup]

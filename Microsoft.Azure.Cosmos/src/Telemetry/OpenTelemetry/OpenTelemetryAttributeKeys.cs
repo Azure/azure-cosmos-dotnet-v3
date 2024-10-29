@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     /// <remarks>
     /// For more details on the semantic conventions, refer to the OpenTelemetry documentation at:
-    /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/> OpenTelemetry Semantic Conventions 1.28.0 conventions are followed
+    /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/> OpenTelemetry Semantic Conventions 1.28.0 conventions are followed.
     /// </remarks>
     internal sealed class OpenTelemetryAttributeKeys
     {
