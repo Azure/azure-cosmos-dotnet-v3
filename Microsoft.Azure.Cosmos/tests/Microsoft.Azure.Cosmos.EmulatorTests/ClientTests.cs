@@ -29,6 +29,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using Microsoft.Azure.Cosmos.Spatial;
+    using System.Text.Json;
+    //using System.Drawing;
 
     [TestClass]
     public class ClientTests
@@ -936,7 +939,78 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
         }
-       
+
+        [TestMethod]
+        public async Task ValidateSpatialPointJSONSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey,
+               new CosmosClientOptions()
+               {
+                   UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
+                   {
+                       PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                   }
+               }))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+
+                /*Point point = new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        /*AdditionalProperties = new Dictionary<string, object> {
+                            ["battle"] = "a large abttle",
+                            ["cruise"] = "a new cruise"
+                        },*/
+                //BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                //Crs = Crs.Named("SomeCrs")
+                //Crs = new UnspecifiedCrs()
+                //});*/
+                Point point = new Point(
+                      new Position(20.3, 30.5),
+                      new GeometryParams
+                      {
+                          BoundingBox = new BoundingBox(new Position(1.0, 2.0), new Position(40.0, 40.2)),
+                          Crs = new UnspecifiedCrs()
+
+                      });
+
+
+                /*Point point = new Point(
+                    new Position(20, 30)
+                    );*/
+
+
+                /*Dictionary<string, object> dictionary = new Dictionary<string, object>
+                {
+                    ["battle"] = "a large abttle",
+                    ["cruise"] = "a new cruise"
+                };*/
+
+
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = point
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+            }
+
+        }
+
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();
@@ -1023,4 +1097,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return false;
         }
     }
+
+    internal record SpatialItem
+    {
+        [JsonProperty("id")]
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public Point Location { get; set; }
+
+
+    }
+
 }

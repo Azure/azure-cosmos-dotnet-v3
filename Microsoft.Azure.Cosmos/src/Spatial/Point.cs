@@ -6,12 +6,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Point geometry class in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
+    [System.Text.Json.Serialization.JsonConverter(typeof(PointSTJJsonConverter))]
     public sealed class Point : Geometry, IEquatable<Point>
     {
         /// <summary>
@@ -51,12 +53,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         public Point(Position position, GeometryParams geometryParams)
             : base(GeometryType.Point, geometryParams)
         {
-            if (position == null)
-            {
-                throw new ArgumentNullException("position");
-            }
-
-            this.Position = position;
+            this.Position = position ?? throw new ArgumentNullException("position");
         }
 
         /// <summary>
@@ -76,8 +73,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinates of the point.
         /// </value>
-        [DataMember(Name = "coordinates")]
-        [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
+        [DataMember(Name = PositionMetadataFields.Coordinates)]
+        [JsonProperty(PositionMetadataFields.Coordinates, Required = Required.Always, Order = 1)]
         public Position Position { get; private set; }
 
         /// <summary>
@@ -87,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Point other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

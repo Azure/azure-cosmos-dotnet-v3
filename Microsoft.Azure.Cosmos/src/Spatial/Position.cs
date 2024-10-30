@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Linq;
     using System.Runtime.Serialization;
     using Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -23,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(PositionJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(PositionSTJJsonConverter))]
     public sealed class Position : IEquatable<Position>
     {
         /// <summary>
@@ -39,6 +41,16 @@ namespace Microsoft.Azure.Cosmos.Spatial
         {
         }
 
+        /*
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Position"/> class in the Azure Cosmos DB service.
+        /// </summary>
+        public Position() 
+            : this(0.0d, 0.0d)
+        {
+        }
+        */
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Position"/> class in the Azure Cosmos DB service.
         /// </summary>
@@ -53,14 +65,9 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// </param>
         public Position(double longitude, double latitude, double? altitude)
         {
-            if (altitude != null)
-            {
-                this.Coordinates = new ReadOnlyCollection<double>(new[] { longitude, latitude, altitude.Value });
-            }
-            else
-            {
-                this.Coordinates = new ReadOnlyCollection<double>(new[] { longitude, latitude });
-            }
+            this.Coordinates = altitude != null
+                ? new ReadOnlyCollection<double>(new[] { longitude, latitude, altitude.Value })
+                : new ReadOnlyCollection<double>(new[] { longitude, latitude });
         }
 
         /// <summary>
@@ -94,6 +101,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Longitude value.
         /// </value>
+        [JsonProperty(PropertyName = PositionMetadataFields.Longitude, NullValueHandling = NullValueHandling.Ignore)]
         public double Longitude => this.Coordinates[0];
 
         /// <summary>
@@ -102,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Latitude value.
         /// </value>
+        [JsonProperty(PropertyName = PositionMetadataFields.Latitude, NullValueHandling = NullValueHandling.Ignore)]
         public double Latitude => this.Coordinates[1];
 
         /// <summary>
@@ -110,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Altitude value.
         /// </value>
+        [JsonProperty(PropertyName = PositionMetadataFields.Altitude, NullValueHandling = NullValueHandling.Ignore)]
         public double? Altitude => this.Coordinates.Count > 2 ? (double?)this.Coordinates[2] : null;
 
         /// <summary>
@@ -145,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Position other)
         {
-            if (object.ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }

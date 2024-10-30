@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
 {
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -13,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(CrsJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(CrsSTJJsonConverter))]
     public abstract class Crs
     {
         /// <summary>

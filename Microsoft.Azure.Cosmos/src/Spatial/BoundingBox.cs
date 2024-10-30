@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -14,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(BoundingBoxJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(BoundingBoxSTJJsonConverter))]
     public sealed class BoundingBox : IEquatable<BoundingBox>
     {
         /// <summary>
