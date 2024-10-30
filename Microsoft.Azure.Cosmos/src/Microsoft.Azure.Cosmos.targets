@@ -56,43 +56,22 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 
 
   <!-- Add check for Newtonsoft.Json package in consumer app.  -->
-  <Target Name="CheckNewtonsoftJsonPresence" BeforeTargets="CoreCompile" Condition="'$(ExcludeRestorePackageImports)' != 'true'">
-  
-    <!-- Allow consumers to disable this check -->
-    <PropertyGroup>
-        <DisableNewtonsoftJsonCheck Condition="'$(DisableNewtonsoftJsonCheck)' == ''">false</DisableNewtonsoftJsonCheck>
-    </PropertyGroup>
+    <Target Name="CheckNewtonsoftJsonPresence" BeforeTargets="CoreCompile" Condition="'$(ExcludeRestorePackageImports)' != 'true' AND '$(DisableNewtonsoftJsonCheck)' != 'true'">
     
-    <!-- Check for PackageReference to Newtonsoft.Json -->
-    <ItemGroup>
-        <NewtonsoftJsonPackageReference Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Newtonsoft.Json'" />
-    </ItemGroup>
+        <!-- Check for PackageReference to Newtonsoft.Json -->
+        <ItemGroup>
+            <NewtonsoftJsonPackageReference Include="@(PackageReference)" Condition="'%(PackageReference.Identity)' == 'Newtonsoft.Json'" />
+        </ItemGroup>
+        
+        <!-- Check for assembly references to Newtonsoft.Json (including transitive dependencies) -->
+        <ItemGroup>
+            <NewtonsoftJsonAssemblyReference Include="@(ReferencePath)" Condition="'%(FileName)' == 'Newtonsoft.Json'" />
+        </ItemGroup>
+        
+        <!-- Produce an error if Newtonsoft.Json is not found -->
+        <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 10.0.2. Please add a reference to Newtonsoft.Json, or set the 'DisableNewtonsoftJsonCheck' property to 'true' to bypass this check."
+               Condition="'@(NewtonsoftJsonPackageReference)' == '' and '@(NewtonsoftJsonAssemblyReference)' == ''" />
     
-    <!-- Check for assembly references to Newtonsoft.Json (including transitive dependencies) -->
-    <ItemGroup>
-        <NewtonsoftJsonAssemblyReference Include="@(ReferencePath)" Condition="'%(FileName)' == 'Newtonsoft.Json'" />
-    </ItemGroup>
-    
-    <!-- Check for Newtonsoft.Json in packages.config -->
-    <PropertyGroup>
-        <PackagesConfigPath>packages.config</PackagesConfigPath>
-        <NewtonsoftJsonInPackagesConfig>false</NewtonsoftJsonInPackagesConfig>
-    </PropertyGroup>
-    
-    <XmlPeek Condition="Exists('$(PackagesConfigPath)')"
-         XmlInputPath="$(PackagesConfigPath)"
-         Query="/packages/package[@id='Newtonsoft.Json']">
-        <Output TaskParameter="Result" PropertyName="NewtonsoftJsonPackagesConfigResult" />
-    </XmlPeek>
-    
-    <PropertyGroup>
-        <NewtonsoftJsonInPackagesConfig Condition="'$(NewtonsoftJsonPackagesConfigResult)' != ''">true</NewtonsoftJsonInPackagesConfig>
-    </PropertyGroup>
-    
-    <!-- Produce an error if Newtonsoft.Json is not found and the check is not disabled -->
-    <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 10.0.2. Please add a reference to Newtonsoft.Json, or set the 'DisableNewtonsoftJsonCheck' property to 'true' to bypass this check."
-           Condition="'$(DisableNewtonsoftJsonCheck)' != 'true' and '@(NewtonsoftJsonPackageReference)' == '' and '@(NewtonsoftJsonAssemblyReference)' == '' and '$(NewtonsoftJsonInPackagesConfig)' != 'true'" />
-  
-  </Target>
+    </Target>
 
 </Project>
