@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(PositionJsonConverter))]
-    [System.Text.Json.Serialization.JsonConverter(typeof(PositionSTJJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(PositionSTJConverter))]
     public sealed class Position : IEquatable<Position>
     {
         /// <summary>

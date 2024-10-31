@@ -9,12 +9,14 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
     /// Represents a geometry consisting of other geometries.
     /// </summary>
     [DataContract]
+    [System.Text.Json.Serialization.JsonConverter(typeof(GeometryCollectionSTJConverter))]
     internal sealed class GeometryCollection : Geometry, IEquatable<GeometryCollection>
     {
         /// <summary>

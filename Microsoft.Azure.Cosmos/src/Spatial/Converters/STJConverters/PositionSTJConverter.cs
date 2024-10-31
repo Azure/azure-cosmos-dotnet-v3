@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     /// <summary>
     /// Converter used to support System.Text.Json de/serialization of type Position/>.
     /// </summary>
-    internal class PositionSTJJsonConverter : JsonConverter<Position>
+    internal class PositionSTJConverter : JsonConverter<Position>
     {
         public override Position Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

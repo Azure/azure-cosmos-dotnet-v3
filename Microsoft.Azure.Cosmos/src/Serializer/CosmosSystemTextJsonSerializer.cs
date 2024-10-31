@@ -9,9 +9,12 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
+
 
     /// <summary>
     /// This class provides a default implementation of System.Text.Json Cosmos Linq Serializer.
@@ -32,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
             JsonSerializerOptions jsonSerializerOptions)
         {
             this.jsonSerializerOptions = jsonSerializerOptions;
+            //somehow adding a .NET native type converter as an attribute on properties doesnt take effect. In this case I tried adding it to AdditionalProperties of Geometry class.
+            this.jsonSerializerOptions.Converters.Add(new DictionarySTJConverter());
         }
 
         /// <inheritdoc/>
@@ -82,9 +87,7 @@ namespace Microsoft.Azure.Cosmos
         {
             MemoryStream streamPayload = new ();
             using Utf8JsonWriter writer = new (streamPayload);
-
             System.Text.Json.JsonSerializer.Serialize(writer, input, this.jsonSerializerOptions);
-
             streamPayload.Position = 0;
             return streamPayload;
         }

@@ -1172,14 +1172,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //Crs = Crs.Named("SomeCrs")
                 //Crs = new UnspecifiedCrs()
                 //});*/
-                Point point = new Point(
+                /*Point point = new Point(
                       new Position(20.3, 30.5),
                       new GeometryParams
                       {
                           BoundingBox = new BoundingBox(new Position(1.0, 2.0), new Position(40.0, 40.2)),
                           Crs = new UnspecifiedCrs()
 
-                      });
+                      });*/
 
 
                 /*Point point = new Point(
@@ -1192,13 +1192,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     ["battle"] = "a large abttle",
                     ["cruise"] = "a new cruise"
                 };*/
+                /*Polygon polygon = new Polygon(
+                         new[]
+                {
+                        new LinearRing(
+                            new[]
+                                {
+                                    new Position(20, 20),
+                                    new Position(20, 21),
+                                    new Position(21, 21),
+                                    new Position(21, 20),
+                                    new Position(22, 20)
+                                })
+                },
+                         new GeometryParams
+                         {
+                             AdditionalProperties = new Dictionary<string, object> { { "b", "c" } },
+                             BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                             Crs = Crs.Named("SomeCrs")
+                         });*/
+                /*MultiPolygon multiPolygon =
+                        new MultiPolygon(
+                        new[]
+                {
+                    new PolygonCoordinates(
+                            new[]
+                                {
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(20, 20)
+                                            })
+                                })
+                });*/
 
+                LineString lineString = new LineString(
+                new[] { new Position(20, 30), new Position(30, 40) },
+                new GeometryParams
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                    Crs = Crs.Named("linestringCrs")
+                });
+
+                GeometryCollection geometryCollection1 = new GeometryCollection(
+                    new[] { lineString  },
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
+                /*GeometryCollection geometryCollection1 = new GeometryCollection(
+                    new[] { new Point(20, 30), new Point(30, 40) }
+                );*/
 
                 SpatialItem inputItem = new SpatialItem()
                 {
                     Id = GUID,
                     Name = "Spatial Point",
-                    Location = point
+                    Location = geometryCollection1
                 };
 
                 SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
@@ -1302,7 +1356,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [JsonProperty("id")]
         public string Id { get; set; }
         public string Name { get; set; }
-        public Point Location { get; set; }
+        public GeometryCollection Location { get; set; }
 
 
     }

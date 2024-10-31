@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     [DataContract]
     [JsonConverter(typeof(CrsJsonConverter))]
-    [System.Text.Json.Serialization.JsonConverter(typeof(CrsSTJJsonConverter))]
+    [System.Text.Json.Serialization.JsonConverter(typeof(CrsSTJConverter))]
     public abstract class Crs
     {
         /// <summary>

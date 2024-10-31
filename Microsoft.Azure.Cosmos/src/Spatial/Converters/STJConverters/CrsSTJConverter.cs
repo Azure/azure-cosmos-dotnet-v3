@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using Microsoft.Azure.Documents;
     using static System.Text.Json.JsonElement;
 
-    internal class CrsSTJJsonConverter : JsonConverter<Crs>
+    internal class CrsSTJConverter : JsonConverter<Crs>
     {
         public override Crs Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

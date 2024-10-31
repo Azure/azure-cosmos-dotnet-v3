@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using Microsoft.Azure.Documents;
     using static System.Text.Json.JsonElement;
 
-    internal class BoundingBoxSTJJsonConverter : JsonConverter<BoundingBox>
+    internal class BoundingBoxSTJConverter : JsonConverter<BoundingBox>
     {
         public override BoundingBox Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {

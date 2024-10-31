@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -16,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     /// </summary>
     /// <seealso cref="LineString"/>.
     [DataContract]
+    [System.Text.Json.Serialization.JsonConverter(typeof(MultiLineStringSTJConverter))]
     internal sealed class MultiLineString : Geometry, IEquatable<MultiLineString>
     {
         /// <summary>
