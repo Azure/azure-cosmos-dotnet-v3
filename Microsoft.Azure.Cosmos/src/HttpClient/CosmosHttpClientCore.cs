@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler httpMessageHandler,
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
             EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs,
-            IChaosInterceptor faultInjectionchaosInterceptor)
+            IChaosInterceptor faultInjectionchaosInterceptor = null)
         {
             if (connectionPolicy == null)
             {
@@ -355,23 +355,9 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
-                            CancellationToken fiToken = cancellationTokenSource.Token;
-                            //Set a request fault injeciton id for rule limit tracking
-                            if (string.IsNullOrEmpty(documentServiceRequest.Headers.Get(CosmosHttpClientCore.FautInjecitonId)))
-                            {
-                                documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
-                            }
-                            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
-
-                            fiToken.ThrowIfCancellationRequested();
-                            
-                            (bool hasFault,
-                                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
-
-                            fiToken.ThrowIfCancellationRequested();
+                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
                             if (hasFault)
                             {
-                                fiResponseMessage.RequestMessage = requestMessage;
                                 return fiResponseMessage;
                             }
                         }
@@ -475,6 +461,31 @@ namespace Microsoft.Azure.Cosmos
                     await Task.Delay(delayForNextRequest);
                 }
             }
+        }
+
+        private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(
+            CancellationTokenSource cancellationTokenSource, 
+            DocumentServiceRequest documentServiceRequest, 
+            HttpRequestMessage requestMessage)
+        {
+            CancellationToken fiToken = cancellationTokenSource.Token;
+            fiToken.ThrowIfCancellationRequested();
+
+            //Set a request fault injeciton id for rule limit tracking
+            if (string.IsNullOrEmpty(documentServiceRequest.Headers.Get(CosmosHttpClientCore.FautInjecitonId)))
+            {
+                documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
+            }
+            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
+
+            (bool hasFault,
+                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+
+            if (hasFault)
+            {
+                fiResponseMessage.RequestMessage = requestMessage;
+            }
+            return (hasFault, fiResponseMessage);
         }
 
         private static bool IsOutOfRetries(

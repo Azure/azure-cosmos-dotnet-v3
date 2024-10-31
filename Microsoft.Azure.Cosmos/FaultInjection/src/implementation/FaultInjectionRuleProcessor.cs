@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="collectionCache"></param>
         /// <param name="globalEndpointManager"></param>
         /// <param name="addressResolver"></param>
-        /// <param name="retryOptions"></param>
         /// <param name="routingMapProvider"></param>
         /// <param name="applicationContext"></param>
         public FaultInjectionRuleProcessor(
@@ -41,43 +40,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             ConnectionMode connectionMode,
             CollectionCache collectionCache,
             GlobalEndpointManager globalEndpointManager,
-            GlobalAddressResolver addressResolver,
             IRoutingMapProvider routingMapProvider,
-            FaultInjectionApplicationContext applicationContext)
+            FaultInjectionApplicationContext applicationContext,
+            GlobalAddressResolver? addressResolver = null)
         {
             this.connectionMode = connectionMode;
             this.collectionCache = collectionCache ?? throw new ArgumentNullException(nameof(collectionCache));
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
-            this.addressResolver = addressResolver ??  throw new ArgumentNullException(nameof(addressResolver));
             this.retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
             this.routingMapProvider = routingMapProvider ?? throw new ArgumentNullException(nameof(routingMapProvider));
             this.applicationContext = applicationContext ?? throw new ArgumentNullException(nameof(applicationContext));
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                this.addressResolver = addressResolver ?? throw new ArgumentNullException(nameof(addressResolver));
+            }
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="FaultInjectionRuleProcessor"/> class.
-        /// </summary>
-        /// <param name="connectionMode"></param>
-        /// <param name="collectionCache"></param>
-        /// <param name="globalEndpointManager"></param>
-        /// <param name="retryOptions"></param>
-        /// <param name="routingMapProvider"></param>
-        /// <param name="applicationContext"></param>
-        public FaultInjectionRuleProcessor(
-            Func<IRetryPolicy> retryPolicy,
-            ConnectionMode connectionMode,
-            CollectionCache collectionCache,
-            GlobalEndpointManager globalEndpointManager,
-            IRoutingMapProvider routingMapProvider,
-            FaultInjectionApplicationContext applicationContext)
-        {
-            this.connectionMode = connectionMode;
-            this.collectionCache = collectionCache ?? throw new ArgumentNullException(nameof(collectionCache));
-            this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
-            this.retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
-            this.routingMapProvider = routingMapProvider ?? throw new ArgumentNullException(nameof(routingMapProvider));
-            this.applicationContext = applicationContext ?? throw new ArgumentNullException(nameof(applicationContext));
-        }
 
         public async Task<IFaultInjectionRuleInternal> ProcessFaultInjectionRule(FaultInjectionRule rule)
         {
