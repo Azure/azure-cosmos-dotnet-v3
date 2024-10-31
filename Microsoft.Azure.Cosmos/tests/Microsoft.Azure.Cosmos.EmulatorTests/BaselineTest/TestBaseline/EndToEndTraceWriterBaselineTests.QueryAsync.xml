@@ -1391,15 +1391,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -1425,15 +1421,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -1459,15 +1451,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -1493,15 +1481,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -2903,15 +2887,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -2937,15 +2917,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -2971,15 +2947,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -3005,15 +2977,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c WHERE c.id != @customIdentifier</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -3751,15 +3719,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -3785,15 +3749,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -3819,15 +3779,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -3853,15 +3809,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -5281,15 +5233,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -5315,15 +5263,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -5349,15 +5293,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.query_items" displayName="query_items containerName">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -5383,15 +5323,11 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.item_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
-<<<<<<< HEAD
-    <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
-    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
-=======
->>>>>>> 226ace122 (update contracts)
     <ATTRIBUTE key="db.cosmosdb.regions_contacted">South Central US</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.row_count">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.correlated_activity_id">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.query.text">SELECT * FROM c</ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
