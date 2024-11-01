@@ -14,14 +14,6 @@
     {
         private CosmosClient CreateCosmosClient(bool local)
         {
-            return local ?
-                new CosmosClient(
-                    "https://localhost:8081",
-                    "") :
-                new CosmosClient(
-                    "https://hybridranktest.documents.azure.com:443/",
-                    "",
-                    new CosmosClientOptions() { ConnectionMode = ConnectionMode.Gateway });
         }
 
         [TestMethod]
@@ -67,6 +59,32 @@
             Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
             Assert.AreEqual(fullTextPaths.Count, containerSettings.IndexingPolicy.FullTextIndexes.Count());
             Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
+        }
+
+        [TestMethod]
+        public async Task CreatePolicyAndIdnexOnExistingContainer()
+        {
+            string path = "/abstract";
+            CosmosClient client = this.CreateCosmosClient(local: false);
+            Container container = client.GetContainer("HybridRankTesting", "arxiv-250kdocuments-index");
+            ContainerResponse response = await container.ReadContainerAsync();
+            ContainerProperties containerProperties = response.Resource;
+            containerProperties.FullTextPolicy = new FullTextPolicy
+            {
+                DefaultLanguage = "en-US",
+                FullTextPaths = new Collection<FullTextPath>
+                    {
+                        new FullTextPath
+                        {
+                            Path = path,
+                            Language = "en-US",
+                        }
+                    }
+            };
+            containerProperties.IndexingPolicy.FullTextIndexes.Add(new FullTextIndexPath { Path = path });
+
+            ContainerResponse containerResponse = await container.ReplaceContainerAsync(containerProperties);
+            Assert.IsTrue(containerResponse.StatusCode == HttpStatusCode.OK);
         }
 
         [TestMethod]
