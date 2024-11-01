@@ -106,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, string.Join(",", attributes.Diagnostics.GetContactedRegions())),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
             };
 
