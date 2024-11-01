@@ -5,13 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Drawing;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
     using Point = Point;
@@ -40,8 +39,50 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                     geometries = new List<Geometry>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
                     {
-                        Geometry geometry = System.Text.Json.JsonSerializer.Deserialize<Geometry>(arrayElement.GetRawText(), options);
-                        geometries.Add(geometry);
+                        GeometryShape shape = (GeometryShape)arrayElement.GetProperty("type").GetInt16();
+                        Type type = shape.GetType();
+
+                        switch (shape.ToString())
+                        {
+                            case "Point":
+                                Point point = JsonSerializer.Deserialize<Point>(arrayElement.GetRawText(), options);
+                                geometries.Add(point);
+                                break;
+
+                            case "MultiPoint":
+                                MultiPoint multiPoint = JsonSerializer.Deserialize<MultiPoint>(arrayElement.GetRawText(), options);
+                                geometries.Add(multiPoint);
+                                break;
+
+                            case "LineString":
+                                LineString lineString = JsonSerializer.Deserialize<LineString>(arrayElement.GetRawText(), options);
+                                geometries.Add(lineString);
+                                break;
+
+                            case "MultiLineString":
+                                MultiLineString multiLineString = JsonSerializer.Deserialize<MultiLineString>(arrayElement.GetRawText(), options);
+                                geometries.Add(multiLineString);
+                                break;
+
+                            case "Polygon":
+                                Polygon polygon = JsonSerializer.Deserialize<Polygon>(arrayElement.GetRawText(), options);
+                                geometries.Add(polygon);
+                                break;
+
+                            case "MultiPolygon":
+                                MultiPolygon multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(arrayElement.GetRawText(), options);
+                                geometries.Add(multiPolygon);
+                                break;
+
+                            case "GeometryCollection":
+                                GeometryCollection geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(arrayElement.GetRawText(), options);
+                                geometries.Add(geometryCollection);
+                                break;
+
+                            default:
+                                throw new JsonException(RMResources.SpatialInvalidGeometryType);
+
+                        }
                     }
                 }
                 else if (property.NameEquals("additionalProperties"))
@@ -109,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 {
                     System.Text.Json.JsonSerializer.Serialize(writer, (GeometryCollection)geometry, options);
                 }
-             
+
             }
 
             writer.WriteEndArray();

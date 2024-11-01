@@ -1,64 +1,274 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Spatial
+﻿namespace Microsoft.Azure.Cosmos.Test.Spatial
 {
-    using System;
     using System.Collections.Generic;
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
+    using Point = Cosmos.Spatial.Point;
 
     /// <summary>
-    /// Tests <see cref="Point"/> class and serialization.
+    /// Spatial STJ serialization/deserialization tests
     /// </summary>
     [TestClass]
     public class STJSpatialTest
     {
         /// <summary>
-        /// Tests serialization/deserialization.
+        /// Tests serialization/deserialization of Point class.
         /// </summary>
         [TestMethod]
-        public void TestDictSerialization()
+        [DynamicData(nameof(PointData))]
+        public void TestPointSerialization(Point input)
         {
-            JsonSerializerOptions serializeOptions = new JsonSerializerOptions
+            JsonSerializerOptions options = new JsonSerializerOptions
             {
                 Converters =
                 {
                     new DictionarySTJConverter()
                 }
             };
-            Dictionary<string, object> input = new Dictionary<string, object>
-            {
-                ["battle"] = "a large abttle",
-                ["cruise"] = "a new cruise"
-            };
-
-            string json = System.Text.Json.JsonSerializer.Serialize(input, serializeOptions);
-
-            JsonSerializerOptions deserializeOptions = new JsonSerializerOptions();
-            deserializeOptions.Converters.Add(new DictionarySTJConverter());
-
-
-            Dictionary<string, object> result = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json, serializeOptions);
+            string json = JsonSerializer.Serialize(input, options);
+            Point result = JsonSerializer.Deserialize<Point>(json, options);
             Assert.AreEqual(input, result);
-
-            /*Assert.AreEqual(2, point.Position.Coordinates.Count);
-            Assert.AreEqual(20.232323232323232, point.Position.Longitude);
-            Assert.AreEqual(30.3, point.Position.Latitude);
-            Assert.AreEqual(new Position(20, 20), point.BoundingBox.Min);
-            Assert.AreEqual(new Position(30, 30), point.BoundingBox.Max);
-            Assert.AreEqual("hello", ((NamedCrs)point.Crs).Name);
-            Assert.AreEqual(1, point.AdditionalProperties.Count);
-            Assert.AreEqual(1L, point.AdditionalProperties["extra"]);
-
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
-            Assert.AreEqual(GeometryType.Point, geom.Type);
-
-            Assert.AreEqual(geom, point);
-
-            string json1 = JsonConvert.SerializeObject(point);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
-            Assert.AreEqual(geom1, geom);*/
         }
+
+        /// <summary>
+        /// Tests serialization/deserialization of MultiPoint class.
+        /// </summary>
+        [TestMethod]
+        public void TestMultiPointSerialization()
+        {
+
+            MultiPoint input = new MultiPoint(
+                    new[] { new Position(20, 30), new Position(30, 40) },
+                    new GeometryParams
+                    {
+                        //AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    });
+                    
+            string json = JsonSerializer.Serialize(input);
+            MultiPoint result = JsonSerializer.Deserialize<MultiPoint>(json);
+            Assert.AreEqual(input, result);
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of LineString class.
+        /// </summary>
+        [TestMethod]
+        [DynamicData(nameof(LineStringData))]
+        public void TestLineStringSerialization(LineString input)
+        {
+
+            string json = JsonSerializer.Serialize(input);
+            LineString result = JsonSerializer.Deserialize<LineString>(json);
+            Assert.AreEqual(input, result);
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of MultiLineString class.
+        /// </summary>
+        [TestMethod]
+        public void TestMultiLineStringSerialization()
+        {
+            MultiLineString input = new MultiLineString(
+               new[]
+                   {
+                        new LineStringCoordinates(new[] { new Position(20, 30), new Position(30, 40) }),
+                        new LineStringCoordinates(new[] { new Position(40, 50), new Position(60, 60) })
+                   },
+               new GeometryParams
+               {
+                   BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                   Crs = Crs.Named("SomeCrs")
+               });
+
+            string json = JsonSerializer.Serialize(input);
+            MultiLineString result = JsonSerializer.Deserialize<MultiLineString>(json);
+            Assert.AreEqual(input, result);
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of Polygon class.
+        /// </summary>
+        [TestMethod]
+        [DynamicData(nameof(PolygonData))]
+        public void TestPolygonSerialization(Polygon input)
+        {
+
+            string json = JsonSerializer.Serialize(input);
+            Polygon result = JsonSerializer.Deserialize<Polygon>(json);
+            Assert.AreEqual(input, result);
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of MultiPolygon class.
+        /// </summary>
+        [TestMethod]
+        [DynamicData(nameof(MultiPolygonData))]
+        public void TestMultiPolygonSerialization(MultiPolygon input)
+        {
+
+            string json = JsonSerializer.Serialize(input);
+            MultiPolygon result = JsonSerializer.Deserialize<MultiPolygon>(json);
+            Assert.AreEqual(input, result);
+        }
+
+        /// <summary>
+        /// Tests serialization/deserialization of GeometryCollection class.
+        /// </summary>
+        [TestMethod]
+        public void TestGeometricCollectionSerialization()
+        {
+            GeometryCollection input = new GeometryCollection(
+                 new[] { new Point(20, 30), new Point(30, 40) },
+                 new GeometryParams
+                 {
+                     BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                     Crs = Crs.Named("SomeCrs")
+                 });
+                
+
+            string json = JsonSerializer.Serialize(input);
+            GeometryCollection result = JsonSerializer.Deserialize<GeometryCollection>(json);
+            Assert.AreEqual(input, result);
+        }
+
+        public static IEnumerable<object[]> PointData => new[]
+        {
+              new object[] { 
+                  new Point(new Position(20.4, 30.6))
+              },
+              new object[] {
+                  new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object> {
+                            ["battle"] = "a large abttle",
+                            ["cruise"] = "a new cruise"
+                        },
+                    })
+              },
+              new object[] {
+                  new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object> {
+                            ["battle"] = "a large abttle",
+                            ["cruise"] = "a new cruise"
+                        },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = new UnspecifiedCrs()
+                    })
+              },
+
+
+        };
+
+        public static IEnumerable<object[]> LineStringData => new[]
+        {
+              new object[] {
+                  new LineString(
+                    new[] { new Position(20, 30), new Position(30, 40) }
+                )
+              },
+              new object[] {
+                 new LineString(
+                    new[] { new Position(20, 30), new Position(30, 40) },
+                    new GeometryParams
+                    {
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                    })
+              },
+              new object[] {
+                 new LineString(
+                    new[] { new Position(20, 30), new Position(30, 40) },
+                    new GeometryParams
+                    {
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 41)),
+                        Crs = Crs.Linked("http://foo.com", "link")
+                    })
+              },
+
+        };
+
+        public static IEnumerable<object[]> PolygonData => new[]
+       {
+              new object[] {
+                  new Polygon(
+                     new[]{
+                        new LinearRing(
+                            new[]{
+                                    new Position(20, 20),
+                                    new Position(20, 21),
+                                    new Position(21, 21),
+                                    new Position(21, 20),
+                                    new Position(22, 20)
+                                })
+                })
+              },
+              new object[] {
+                  new Polygon(
+                         new[]{
+                         new LinearRing(
+                            new[]{
+                                    new Position(20, 20),
+                                    new Position(20, 21),
+                                    new Position(21, 21),
+                                    new Position(21, 20),
+                                    new Position(22, 20)
+                                })
+                         },
+                         new GeometryParams
+                         {
+                             BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                             Crs = Crs.Named("SomeCrs")
+                         })
+              },
+               new object[] {
+                  new Polygon(
+                         new[]{
+                         new LinearRing(
+                            new[]{
+                                    new Position(20, 20),
+                                    new Position(20, 21),
+                                    new Position(21, 21),
+                                    new Position(21, 20),
+                                    new Position(22, 20)
+                                })
+                         },
+                         new GeometryParams
+                         {
+                             Crs = Crs.Named("SomeCrs")
+                         })
+              },
+        };
+
+        public static IEnumerable<object[]> MultiPolygonData => new[]
+        {
+              new object[] {
+                        new MultiPolygon(
+                        new[]{
+                            new PolygonCoordinates(
+                                new[]{
+                                    new LinearRing(
+                                        new[]
+                                            {
+                                                new Position(20, 20), new Position(20, 21), new Position(21, 21),
+                                                new Position(21, 20), new Position(20, 20)
+                                            })
+                                })
+                        })
+              },
+
+        };
+
+
+
+
+
     }
 }

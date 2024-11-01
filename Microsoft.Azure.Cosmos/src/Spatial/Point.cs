@@ -53,7 +53,13 @@ namespace Microsoft.Azure.Cosmos.Spatial
         public Point(Position position, GeometryParams geometryParams)
             : base(GeometryType.Point, geometryParams)
         {
-            this.Position = position ?? throw new ArgumentNullException("position");
+            if (position == null)
+            {
+                throw new ArgumentNullException("position");
+            }
+
+            this.Position = position;
+
         }
 
         /// <summary>
@@ -73,8 +79,8 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <value>
         /// Coordinates of the point.
         /// </value>
-        [DataMember(Name = PositionMetadataFields.Coordinates)]
-        [JsonProperty(PositionMetadataFields.Coordinates, Required = Required.Always, Order = 1)]
+        [DataMember(Name = "coordinates")]
+        [JsonProperty("coordinates", Required = Required.Always, Order = 1)]
         public Position Position { get; private set; }
 
         /// <summary>
@@ -84,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// <returns><c>true</c> if objects are equal. <c>false</c> otherwise.</returns>
         public bool Equals(Point other)
         {
-            if (other is null)
+            if (object.ReferenceEquals(null, other))
             {
                 return false;
             }

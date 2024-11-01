@@ -48,8 +48,12 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
                 case "link":
                     string crsHref = properties.GetProperty("href").GetString();
-                    string crsHrefType = properties.GetProperty("type").GetString();
-                    return new LinkedCrs(crsHref, crsHrefType);
+                    if (properties.TryGetProperty("type", out JsonElement crsHrefType))
+                    {
+                        return new LinkedCrs(crsHref, crsHrefType.GetString());
+                    }
+                    //string crsHrefType = properties.GetProperty("type").GetString();
+                    return new LinkedCrs(crsHref);
 
                 default:
                     throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);

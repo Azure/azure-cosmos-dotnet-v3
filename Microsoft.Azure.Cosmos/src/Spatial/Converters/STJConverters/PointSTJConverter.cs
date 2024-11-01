@@ -88,15 +88,9 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
             if (point.AdditionalProperties.Count > 0)
             {
-                //writer.WriteStartObject("additionalProperties");
                 writer.WritePropertyName("additionalProperties");
-                /*foreach (KeyValuePair<string, object> keyValue in point.AdditionalProperties)
-                {
-                    writer.WritePropertyName(keyValue.Key);
-                    System.Text.Json.JsonSerializer.Serialize(writer, keyValue.Value, options);
-                }*/
                 System.Text.Json.JsonSerializer.Serialize(writer, point.AdditionalProperties, options);
-                //writer.WriteEndObject();
+
             }
             
             writer.WriteEndObject();

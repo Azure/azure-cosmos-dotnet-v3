@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
     using System.Linq;
     using System.Runtime.Serialization;
     using Microsoft.Azure.Cosmos.Spatial.Converters;
+    using Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -89,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// </value>
         [JsonExtensionData]
         [DataMember(Name = "properties")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(DictionarySTJConverter))]
         public IDictionary<string, object> AdditionalProperties { get; private set; }
 
         /// <summary>

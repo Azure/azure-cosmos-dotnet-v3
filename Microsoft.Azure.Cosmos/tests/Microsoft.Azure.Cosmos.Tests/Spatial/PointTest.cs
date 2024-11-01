@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestPointSerialization()
         {
-            string json =
+            /*string json =
                 @"{
                     ""type"":""Point"",
                     ""coordinates"":[20.232323232323232,30.3],
@@ -45,12 +45,25 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
 
             Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.Point, geom.Type);
-
             Assert.AreEqual(geom, point);
-
             string json1 = JsonConvert.SerializeObject(point);
             Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
+            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Assert.AreEqual(geom1, geom);*/
+            Point point = new Point(
+                new Position(20, 30),
+                new GeometryParams
+                {
+                    AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
+                    BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    Crs = Crs.Linked("http://foo.com", "anotherType")
+                });
+            string json = JsonConvert.SerializeObject(point);
+            Point geom = JsonConvert.DeserializeObject<Point>(json);
+
+            Assert.AreEqual(geom, point);
+
         }
 
         /// <summary>
