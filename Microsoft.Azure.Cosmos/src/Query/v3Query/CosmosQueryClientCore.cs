@@ -208,6 +208,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
+
+                //using (var streamReader = new StreamReader(message.Content))
+                //{
+                //    string result = streamReader.ReadToEnd();
+                //    Console.WriteLine(result);
+                //}
+                //message.Content.Seek(0, SeekOrigin.Begin);
                 partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
 

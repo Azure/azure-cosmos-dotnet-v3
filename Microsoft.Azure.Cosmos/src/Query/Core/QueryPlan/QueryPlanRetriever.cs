@@ -149,7 +149,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     OperationType.QueryPlan,
                     sqlQuerySpec,
                     partitionKey,
-                    GetSupportedQueryFeaturesString(isNonStreamingOrderByQueryFeatureDisabled),
+                    // GetSupportedQueryFeaturesString(isNonStreamingOrderByQueryFeatureDisabled),
+                    "Aggregate, Distinct, GroupBy, MultipleAggregates, MultipleOrderBy, OffsetAndLimit, OrderBy, Top, NonValueAggregate, DCount, NonStreamingOrderBy, CountIf, HybridSearch",
                     trace,
                     cancellationToken);
             }
