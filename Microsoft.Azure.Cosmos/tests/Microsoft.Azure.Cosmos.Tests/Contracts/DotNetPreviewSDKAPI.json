@@ -660,12 +660,8 @@
         "T Attach()": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "T Attach();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath])": {
-          "Type": "Constructor",
-          "Attributes": [],
-          "MethodInfo": "[Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath]), Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath])]"
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition`1[T] WithQuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+
         }
       },
       "NestedTypes": {}
@@ -854,26 +850,16 @@
           "Attributes": [],
           "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
         },
-        "Microsoft.Azure.Cosmos.VectorIndexType DiskANN[System.Runtime.Serialization.EnumMemberAttribute(Value = \"diskANN\")]": {
-          "Type": "Field",
-          "Attributes": [
-            "EnumMemberAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType DiskANN;IsInitOnly:False;IsStatic:True;"
+
+        "Void set_IndexingSearchListSize(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_IndexingSearchListSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Microsoft.Azure.Cosmos.VectorIndexType Flat[System.Runtime.Serialization.EnumMemberAttribute(Value = \"flat\")]": {
-          "Type": "Field",
-          "Attributes": [
-            "EnumMemberAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType Flat;IsInitOnly:False;IsStatic:True;"
-        },
-        "Microsoft.Azure.Cosmos.VectorIndexType QuantizedFlat[System.Runtime.Serialization.EnumMemberAttribute(Value = \"quantizedFlat\")]": {
-          "Type": "Field",
-          "Attributes": [
-            "EnumMemberAttribute"
-          ],
-          "MethodInfo": "Microsoft.Azure.Cosmos.VectorIndexType QuantizedFlat;IsInitOnly:False;IsStatic:True;"
+        "Void set_QuantizationByteSize(Int32)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_QuantizationByteSize(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
