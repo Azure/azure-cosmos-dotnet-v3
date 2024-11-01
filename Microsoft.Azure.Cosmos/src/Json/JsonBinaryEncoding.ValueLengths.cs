@@ -27,6 +27,10 @@ namespace Microsoft.Azure.Cosmos.Json
             private const int CS6BL1 = -12;      // 6-bit Compressed string w/ 1-byte length followed by 1-byte base char
             private const int Arr1 = -13;        // 1-item array
             private const int Obj1 = -14;        // 1-property object
+            private const int NC1 = -15;         // Fixed-size numeric items of 1-byte item count
+            private const int NC2 = -16;         // Fixed-size numeric items of 2-byte item count
+            private const int ANC1 = -17;        // Array of fixed-size numeric items of 1-byte item count
+            private const int ANC2 = -18;        // Array of fixed-size numeric items of 2-byte item count
 
             /// <summary>
             /// Lookup table for encoded value length for each TypeMarker value (0 to 255)
@@ -106,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 3,      // StrR2 (Reference string of 2-byte offset)
                 4,      // StrR3 (Reference string of 3-byte offset)
                 5,      // StrR4 (Reference string of 4-byte offset)
-                0,      // <empty> 0xC7
+                9,      // NumUI64
 
                 // Number Values
                 2,      // NumUI8
@@ -116,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 9,      // NumDbl,
                 5,      // Float32
                 9,      // Float64
-                0,      // <empty> 0xCF
+                3,      // Float16
 
                 // Other Value Types
                 1,      // Null
@@ -126,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 0,      // <empty> 0xD4
                 0,      // <empty> 0xD5
                 0,      // <empty> 0xD6
-                0,      // <empty> 0xD7
+                2,      // UInt8
 
                 2,      // Int8
                 3,      // Int16
@@ -157,11 +161,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 LC2,    // ObjLC2 (2-byte length and count)
                 LC4,    // ObjLC4 (4-byte length and count)
 
-                // Empty Range
-                0,      // <empty> 0xF0
-                0,      // <empty> 0xF1
-                0,      // <empty> 0xF2
-                0,      // <empty> 0xF3
+                // Array and Object Special Type Markers
+                NC1,    // ArrNumC1 Uniform number array of 1-byte item count
+                NC2,    // ArrNumC2 Uniform number array of 2-byte item count
+                ANC1,   // Array of 1-byte item count of Uniform number array of 1-byte item count
+                ANC2,   // Array of 2-byte item count of Uniform number array of 2-byte item count
                 0,      // <empty> 0xF4
                 0,      // <empty> 0xF5
                 0,      // <empty> 0xF6
@@ -244,6 +248,27 @@ namespace Microsoft.Azure.Cosmos.Json
                             length = TypeMarkerLength + OneByteLength + OneByteBaseChar + GetCompressedStringLength(buffer[1], numberOfBits: 6);
                             break;
 
+                        case NC1:
+                            return 1 + 1 + 1 + (GetUniformNumberArrayItemSize(buffer[1]) * GetFixedSizedValue<byte>(buffer.Slice(2)));
+                        case NC2:
+                            return 1 + 1 + 2 + (GetUniformNumberArrayItemSize(buffer[1]) * GetFixedSizedValue<ushort>(buffer.Slice(2)));
+
+                        case ANC1:
+                            {
+                                long nItemSize = GetUniformNumberArrayItemSize(buffer[2]) * GetFixedSizedValue<byte>(buffer.Slice(3));
+                                long nItemCount = GetFixedSizedValue<byte>(buffer.Slice(4));
+
+                                return 1 + 3 + 1 + (nItemSize * nItemCount);
+                            }
+
+                        case ANC2:
+                            {
+                                long nItemSize = GetUniformNumberArrayItemSize(buffer[2]) * GetFixedSizedValue<ushort>(buffer.Slice(3));
+                                long nItemCount = GetFixedSizedValue<ushort>(buffer.Slice(5));
+
+                                return 1 + 4 + 2 + (nItemSize * nItemCount);
+                            }
+
                         default:
                             throw new ArgumentException($"Invalid variable length type marker length: {length}");
                     }
@@ -254,6 +279,12 @@ namespace Microsoft.Azure.Cosmos.Json
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static int GetCompressedStringLength(int length, int numberOfBits) => ((length * numberOfBits) + 7) / 8;
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static int GetUniformNumberArrayItemSize(byte typeMarker)
+            {
+                return ValueLengths.Lookup[typeMarker] - 1;
+            }
         }
     }
 }

@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Json
         Null,
 
         /// <summary>
-        /// Corresponds to the JSON fieldname in a JSON object.
+        /// Corresponds to the JSON field name in a JSON object.
         /// </summary>
         FieldName,
 
@@ -87,6 +87,11 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Corresponds to a signed 8 byte integer.
         /// </summary>
         Int64,
+
+        /// <summary>
+        /// Corresponds to an unsigned 1 byte integer
+        /// </summary>
+        UInt8,
 
         /// <summary>
         /// Corresponds to an unsigned 4 byte integer
