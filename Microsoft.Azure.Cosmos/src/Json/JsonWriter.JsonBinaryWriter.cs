@@ -997,14 +997,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 int valueLength,
                 int itemCount)
             {
-                if (arrayWriter == null) throw new ArgumentNullException($"{nameof(arrayWriter)}");
+                if (arrayWriter == null) throw new ArgumentNullException(nameof(arrayWriter));
+                if (byteCount <= 0) throw new ArgumentException($"Value must be greater than 0.", nameof(byteCount));
+                if (valueLength <= 0) throw new ArgumentException($"Value must be greater than 0.", nameof(valueLength));
 
                 // Uniform arrays only support 1 and 2-byte item count
                 if (itemCount > ushort.MaxValue) return false;
-
-                // DOCDBASSERT(TypeMarker.IsArray(m_pbyBuffer[startOffset]));
-                // DOCDBASSERT(byteCount > 0);
-                // DOCDBASSERT(valueLength > 0);
 
                 int floatCount = 0;
                 long maxValue = long.MinValue;
@@ -1046,8 +1044,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     arrayBuffer = arrayBuffer.Slice(itemLength);
                 }
 
-                // DOCDBASSERT(numberValues.GetCount() == itemCount);
-                // DOCDBASSERT(itemCount >= floatCount);
+                // Assert(numberValues.Count == itemCount);
+                // Assert(itemCount >= floatCount);
 
                 byte itemTypeMarker;
                 int itemSize;
@@ -1179,15 +1177,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 int valueLength,
                 int itemCount)
             {
-                if (arrayWriter == null) throw new ArgumentNullException($"{nameof(arrayWriter)}");
+                if (arrayWriter == null) throw new ArgumentNullException(nameof(arrayWriter));
+                if (byteCount <= 0) throw new ArgumentException($"Value must be greater than 0.", nameof(byteCount));
+                if (valueLength <= 0) throw new ArgumentException($"Value must be greater than 0.", nameof(valueLength));
 
                 // Uniform arrays only support 1 and 2-byte item count
                 if (itemCount > ushort.MaxValue) return false;
                 if (itemCount < 2) return false;
-
-                // DOCDBASSERT(TypeMarker::IsArray(m_pbyBuffer[nStartOffset]));
-                // DOCDBASSERT(nByteCount > 0);
-                // DOCDBASSERT(nValueLength > 0);
 
                 UniformArrayInfo commonArrayInfo = default;
                 int commonArrayLength = 0;
