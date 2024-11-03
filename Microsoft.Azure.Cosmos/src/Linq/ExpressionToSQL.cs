@@ -1795,27 +1795,26 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
             }
 
-            // bind the parameters in the value selector to the current input
-            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
-            {
-                context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            }
-
             // Key Selector handling
-
             // First argument is input, second is key selector and third is value selector
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
 
             //// Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
             //SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
             Collection collection = new Collection("Group By");
-
+            context.CurrentQuery.GroupByParameter = new FromParameterBindings();
             switch (keySelectorLambda.Body.NodeType)
             {
-                case ExpressionType.Constant:
                 case ExpressionType.Parameter:
                 case ExpressionType.Call:
+                case ExpressionType.MemberAccess:
                     {
+                        // bind the parameters in the value selector to the current input
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+                        {
+                            context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+                        }
+
                         //Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
                         SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
 
@@ -1824,15 +1823,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                         context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
 
-                        // Create a GroupBy collection and bind the new GroupBy collection to the new parameters created from the key
-                        collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
-                        collection.isOuter = true;
-                        collection.Name = "GroupBy";
-
                         ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
                         Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
 
-                        context.CurrentQuery.GroupByParameter = new FromParameterBindings();
                         context.CurrentQuery.GroupByParameter.Add(binding);
                         // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
                         ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
@@ -1842,18 +1835,17 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }
                 case ExpressionType.New:
                     {
-                        // GroupBy(k => 
-                        //new
-                        //{
-                        //    key1 = 123,
-                        //    key2 = "abc"
-                        //} /*keySelector*/,
-                        //   (key, values) => key.key1
-                        NewExpression newExpression = (NewExpression)(keySelectorLambda.Body);
+                        NewExpression newExpression = (NewExpression)keySelectorLambda.Body;
 
                         if (newExpression.Members == null)
                         {
                             throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                        }
+
+                        //bind the parameters in the value selector to the current input
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[1]).Parameters)
+                        {
+                            context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
                         }
 
                         // Step 1: visit all of the member expressions to bind them to the current input
@@ -1873,7 +1865,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                             keySelectorFunctions.Add(keySelectorFunc);
                         }
 
-                        // The group by clause don't need to handle the value selector, so adding the clause to the uery now.
+                        // Bind the alias
+                        ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunctions.ToString(), includeSuffix: false);
+                        Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
+
+                        context.CurrentQuery.GroupByParameter.Add(binding);
+                        // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
+                        ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
+                        context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression/*Utilities.GetLambda(arguments[1]).Body*/);
+
+                        // The group by clause don't need to handle the value selector, so adding the clause to the qery now.
                         SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunctions.ToImmutableArray());
 
                         context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
@@ -1887,6 +1888,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             SqlIdentifier alias = SqlIdentifier.Create(memberName);
 
                             // TODO: add these alias to a dict
+
                         }
 
                         //SqlSelectListSpec sqlSpec = SqlSelectListSpec.Create(selectItems);
@@ -1907,6 +1909,28 @@ namespace Microsoft.Azure.Cosmos.Linq
             // The value selector function needs to be either a MethodCall or an AnonymousType
             switch (valueSelectorExpression.NodeType)
             {
+                case ExpressionType.MemberAccess:
+                    {
+                        MemberExpression memberAccessExpression = (MemberExpression)valueSelectorExpression;
+
+                        if (memberAccessExpression.Expression.NodeType == ExpressionType.Parameter)
+                        {
+                            // Look up the object of the expression to see if it is the key
+                            ParameterExpression memberAccessObject = (ParameterExpression)memberAccessExpression.Expression;
+                            Expression subst = context.GroupByKeySubstitution.Lookup(memberAccessObject);
+                            if (subst != null)
+                            {
+                                // If  there is a match, we construct a new Member Access expression with the substituted expression and visit it to create a select clause
+                                MemberExpression newMemberAccessExpression = memberAccessExpression.Update(keySelectorLambda.Body); /*System.Linq.Expressions.Expression.Field(subst, memberAccessExpression.Member.Name);*/
+                                SqlScalarExpression selectExpression = ExpressionToSql.VisitMemberAccess(newMemberAccessExpression, context);
+
+                                SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                                SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                                context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                            }
+                        }
+                        break;
+                    }
                 case ExpressionType.Constant:
                     {
                         ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
@@ -1984,6 +2008,27 @@ namespace Microsoft.Azure.Cosmos.Linq
                                         selectItems[i] = prop;
                                         break;
                                     }
+                                case ExpressionType.MemberAccess:
+                                    {
+                                        MemberExpression memberAccessExpression = (MemberExpression)arg;
+
+                                        if (memberAccessExpression.Expression.NodeType == ExpressionType.Parameter)
+                                        {
+                                            // Look up the object of the expression to see if it is the key
+                                            ParameterExpression memberAccessObject = (ParameterExpression)memberAccessExpression.Expression;
+                                            Expression subst = context.GroupByKeySubstitution.Lookup(memberAccessObject);
+                                            if (subst != null)
+                                            {
+                                                // If  there is a match, we construct a new Member Access expression with the substituted expression and visit it to create a select clause
+                                                MemberExpression newMemberAccessExpression = memberAccessExpression.Update(keySelectorLambda.Body); /*System.Linq.Expressions.Expression.Field(subst, memberAccessExpression.Member.Name);*/
+                                                SqlScalarExpression selectExpression = ExpressionToSql.VisitMemberAccess(newMemberAccessExpression, context);
+
+                                                SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                                selectItems[i] = prop;
+                                            }
+                                        }
+                                        break;
+                                    }
                                 default:
                                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, arg.NodeType));
                             }
@@ -1999,9 +2044,36 @@ namespace Microsoft.Azure.Cosmos.Linq
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
             }
 
-            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+            //foreach (ParameterExpression par in Utilities.GetLambda(arguments[1]).Parameters)
+            //{
+            //    context.PopParameter();
+            //}
+
+            // Pop the correct item off the parameter stack
+            // Pop the correct item off the parameter stack
+            switch (keySelectorLambda.Body.NodeType)
             {
-                context.PopParameter();
+                case ExpressionType.Parameter:
+                case ExpressionType.Call:
+                case ExpressionType.MemberAccess:
+                    {
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+                        {
+                            context.PopParameter();
+                        }
+                        break;
+                    }
+                case ExpressionType.New:
+                    {
+                        //bind the parameters in the value selector to the current input
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[1]).Parameters)
+                        {
+                            context.PopParameter();
+                        }
+                        break;
+                    }
+                default:
+                    break;
             }
 
             return collection;
