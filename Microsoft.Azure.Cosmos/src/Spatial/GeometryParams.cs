@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.Spatial
         /// Additional geometry properties.
         /// </value>
         [DataMember(Name = "properties")]
-        [System.Text.Json.Serialization.JsonConverter(typeof(DictionarySTJConverter))]
         public IDictionary<string, object> AdditionalProperties { get; set; }
 
         /// <summary>
