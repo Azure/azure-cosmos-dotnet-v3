@@ -32,23 +32,23 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             {
                 if (property.NameEquals(STJMetaDataFields.Position))
                 {
-                    pos = JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
+                    pos = JsonSerializer.Deserialize<Position>(property.Value.GetRawText(), options);
                 }
                 else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.GetRawText(), options);
                     
                 }
                 else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.GetRawText(), options);
 
                 }
                 else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.GetRawText(), options);
 
                 }
 

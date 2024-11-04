@@ -82,19 +82,19 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 }
                 else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.GetRawText(), options);
                     Console.WriteLine(additionalProperties.ToString());
                 }
                 else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.GetRawText(), options);
 
                 }
                 else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.GetRawText(), options);
 
                 }
 
@@ -147,19 +147,6 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             writer.WriteEndArray();
 
             SpatialHelper.SerializePartialSpatialObject(geometryCollection.Crs, (int)geometryCollection.Type, geometryCollection.BoundingBox, geometryCollection.AdditionalProperties, writer, options);
-            /*System.Text.Json.JsonSerializer.Serialize(writer, geometryCollection.Crs, options);
-            writer.WriteNumber("type", (int)geometryCollection.Type);
-            if (geometryCollection.BoundingBox != null)
-            {
-                System.Text.Json.JsonSerializer.Serialize(writer, geometryCollection.BoundingBox, options);
-            }
-            if (geometryCollection.AdditionalProperties.Count > 0)
-            {
-                writer.WritePropertyName("additionalProperties");
-                System.Text.Json.JsonSerializer.Serialize(writer, geometryCollection.AdditionalProperties, options);
-
-            }*/
-
             writer.WriteEndObject();
 
         }

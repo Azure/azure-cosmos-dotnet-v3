@@ -27,12 +27,11 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             {
                 if (property.NameEquals(STJMetaDataFields.Min))
                 {
-                    min = JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
-                    
+                    min = JsonSerializer.Deserialize<Position>(property.Value.GetRawText(), options);
                 }
                 else if (property.NameEquals(STJMetaDataFields.Max))
                 {
-                    max = JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
+                    max = JsonSerializer.Deserialize<Position>(property.Value.GetRawText(), options);
 
                 }
             }

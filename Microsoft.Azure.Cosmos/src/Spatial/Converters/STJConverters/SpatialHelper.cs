@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
-    using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Drawing;
     using System.Text.Json;
 
     internal static class SpatialHelper
@@ -26,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             if (additionalProperties.Count > 0)
             {
                 writer.WritePropertyName(STJMetaDataFields.AdditionalProperties);
-                System.Text.Json.JsonSerializer.Serialize(writer, additionalProperties, options);
+                JsonSerializer.Serialize(writer, additionalProperties, options);
             }
 
         }
