@@ -1140,7 +1140,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        public async Task ValidateSpatialPointJSONSerialization()
+        public async Task ValidateSpatialPointSTJSerialization()
         {
             string authKey = ConfigurationManager.AppSettings["MasterKey"];
             string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
@@ -1148,6 +1148,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey,
                new CosmosClientOptions()
                {
+                   // this makes it use STJ library for serialization/de-serialization
                    UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions()
                    {
                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -1168,7 +1169,47 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             ["battle"] = "a large abttle",
                             ["cruise"] = "a new cruise"
                         },
-                        Crs = Crs.Linked("http://foo.com")
+                        Crs = Crs.Linked("http://foo.com", "link")
+                    });
+
+                SpatialItem inputItem = new SpatialItem()
+                {
+                    Id = GUID,
+                    Name = "Spatial Point",
+                    Location = point
+                };
+
+                SpatialItem result = await container.CreateItemAsync<SpatialItem>(inputItem);
+                SpatialItem readItem = await container.ReadItemAsync<SpatialItem>(GUID, new Cosmos.PartitionKey(GUID));
+
+                Assert.AreEqual<SpatialItem>(readItem, inputItem);
+                Assert.AreEqual<SpatialItem>(result, inputItem);
+            }
+
+        }
+        [TestMethod]
+        public async Task ValidateSpatialPointNewtonSoftSerialization()
+        {
+            string authKey = ConfigurationManager.AppSettings["MasterKey"];
+            string endpoint = ConfigurationManager.AppSettings["GatewayEndpoint"];
+            // default serialization uses NewtonSoft
+            using (CosmosClient cosmosClient = new CosmosClient(endpoint, authKey))
+            {
+
+                string GUID = Guid.NewGuid().ToString();
+                Cosmos.Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync("AzureCosmosSpatialSerialization");
+                Container container = await database.CreateContainerIfNotExistsAsync("spatial-items", "/id");
+
+                Point point = new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object>
+                        {
+                            ["battle"] = "a large abttle",
+                            ["cruise"] = "a new cruise"
+                        },
+                        Crs = Crs.Linked("http://foo.com", "link")
                     });
 
                 SpatialItem inputItem = new SpatialItem()

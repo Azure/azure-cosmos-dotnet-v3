@@ -7,12 +7,9 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using static System.Text.Json.JsonElement;
-
     /// <summary>
     /// Converter used to support System.Text.Json de/serialization of type Position/>.
     /// </summary>
@@ -20,10 +17,6 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     {
         public override Position Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -32,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals(PositionMetadataFields.Coordinates))
+                if (property.NameEquals(STJMetaDataFields.Coordinates))
                 {
                     IList<double> coordinates = new List<double>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
@@ -41,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                     }
 
                     return new Position(new ReadOnlyCollection<double>(coordinates));
-                    
                 }
 
             }
@@ -50,14 +42,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, Position position, JsonSerializerOptions options)
         {
-            if (position == null)
-            {
-                return;
-            }
-
-            //writer.WriteStartObject("position");
-
-            writer.WriteStartArray(PositionMetadataFields.Coordinates);
+            writer.WriteStartArray(STJMetaDataFields.Coordinates);
             writer.WriteNumberValue(position.Longitude);
             writer.WriteNumberValue(position.Latitude);
             if (position.Altitude.HasValue)
@@ -65,19 +50,17 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 writer.WriteNumberValue(position.Altitude.Value);
             }
             writer.WriteEndArray();
-            writer.WriteNumber(PositionMetadataFields.Longitude, position.Longitude);
-            writer.WriteNumber(PositionMetadataFields.Latitude, position.Latitude);
+            writer.WriteNumber(STJMetaDataFields.Longitude, position.Longitude);
+            writer.WriteNumber(STJMetaDataFields.Latitude, position.Latitude);
             if (position.Altitude.HasValue)
             {
-                writer.WriteNumber(PositionMetadataFields.Altitude, position.Altitude.Value);
+                writer.WriteNumber(STJMetaDataFields.Altitude, position.Altitude.Value);
             }
             else
             {
-                writer.WriteNull(PositionMetadataFields.Altitude);
+                writer.WriteNull(STJMetaDataFields.Altitude);
 
             }
-            //writer.WriteEndObject();
-            
         }
 
     }

@@ -5,24 +5,19 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Drawing;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type MultiPolygon/>.
+    /// </summary>
     internal class MultiPolygonSTJConverter : JsonConverter<MultiPolygon>
     {
         public override MultiPolygon Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -34,30 +29,30 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             BoundingBox boundingBox = null;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("polygons"))
+                if (property.NameEquals(STJMetaDataFields.Polygons))
                 {
                     coordinates = new List<PolygonCoordinates>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
                     {
-                        PolygonCoordinates coordinate = System.Text.Json.JsonSerializer.Deserialize<PolygonCoordinates>(arrayElement.GetRawText(), options);
+                        PolygonCoordinates coordinate = JsonSerializer.Deserialize<PolygonCoordinates>(arrayElement.GetRawText(), options);
                         coordinates.Add(coordinate);
                     }
                 }
-                else if (property.NameEquals("additionalProperties"))
+                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = System.Text.Json.JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
                     Console.WriteLine(additionalProperties.ToString());
                 }
-                else if (property.NameEquals("crs"))
+                else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : System.Text.Json.JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
 
                 }
-                else if (property.NameEquals("boundingBox"))
+                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = System.Text.Json.JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
 
                 }
 
@@ -72,38 +67,20 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, MultiPolygon multiPolygon, JsonSerializerOptions options)
         {
-            if (multiPolygon == null)
-            {
-                return;
-            }
-
             writer.WriteStartObject();
 
-            writer.WriteStartArray("polygons");
+            writer.WriteStartArray(STJMetaDataFields.Polygons);
             foreach (PolygonCoordinates coordinates in multiPolygon.Polygons)
             {
                 writer.WriteStartObject();
-                System.Text.Json.JsonSerializer.Serialize(writer, coordinates, options);
+                JsonSerializer.Serialize(writer, coordinates, options);
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
 
-            System.Text.Json.JsonSerializer.Serialize(writer, multiPolygon.Crs, options);
-            writer.WriteNumber("type", (int)multiPolygon.Type);
-            if (multiPolygon.BoundingBox != null)
-            {
-                System.Text.Json.JsonSerializer.Serialize(writer, multiPolygon.BoundingBox, options);
-            }
-            if (multiPolygon.AdditionalProperties.Count > 0)
-            {
-                writer.WritePropertyName("additionalProperties");
-                System.Text.Json.JsonSerializer.Serialize(writer, multiPolygon.AdditionalProperties, options);
-
-            }
-
+            SpatialHelper.SerializePartialSpatialObject(multiPolygon.Crs, (int)multiPolygon.Type, multiPolygon.BoundingBox, multiPolygon.AdditionalProperties, writer, options);
             writer.WriteEndObject();
         }
-
     }
 
 }

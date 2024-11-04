@@ -6,23 +6,18 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
     using System.Collections.Generic;
-    using System.Drawing;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
     using Point = Point;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type GeometryCollection/>.
+    /// </summary>
     internal class GeometryCollectionSTJConverter : JsonConverter<GeometryCollection>
     {
         public override GeometryCollection Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -34,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("geometries"))
+                if (property.NameEquals(STJMetaDataFields.Geometries))
                 {
                     geometries = new List<Geometry>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
@@ -44,37 +39,37 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
                         switch (shape.ToString())
                         {
-                            case "Point":
+                            case nameof(GeometryShape.Point):
                                 Point point = JsonSerializer.Deserialize<Point>(arrayElement.GetRawText(), options);
                                 geometries.Add(point);
                                 break;
 
-                            case "MultiPoint":
+                            case nameof(GeometryShape.MultiPoint):
                                 MultiPoint multiPoint = JsonSerializer.Deserialize<MultiPoint>(arrayElement.GetRawText(), options);
                                 geometries.Add(multiPoint);
                                 break;
 
-                            case "LineString":
+                            case nameof(GeometryShape.LineString):
                                 LineString lineString = JsonSerializer.Deserialize<LineString>(arrayElement.GetRawText(), options);
                                 geometries.Add(lineString);
                                 break;
 
-                            case "MultiLineString":
+                            case nameof(GeometryShape.MultiLineString):
                                 MultiLineString multiLineString = JsonSerializer.Deserialize<MultiLineString>(arrayElement.GetRawText(), options);
                                 geometries.Add(multiLineString);
                                 break;
 
-                            case "Polygon":
+                            case nameof(GeometryShape.Polygon):
                                 Polygon polygon = JsonSerializer.Deserialize<Polygon>(arrayElement.GetRawText(), options);
                                 geometries.Add(polygon);
                                 break;
 
-                            case "MultiPolygon":
+                            case nameof(GeometryShape.MultiPolygon):
                                 MultiPolygon multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(arrayElement.GetRawText(), options);
                                 geometries.Add(multiPolygon);
                                 break;
 
-                            case "GeometryCollection":
+                            case nameof(GeometryShape.GeometryCollection):
                                 GeometryCollection geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(arrayElement.GetRawText(), options);
                                 geometries.Add(geometryCollection);
                                 break;
@@ -85,21 +80,21 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                         }
                     }
                 }
-                else if (property.NameEquals("additionalProperties"))
+                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = System.Text.Json.JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
                     Console.WriteLine(additionalProperties.ToString());
                 }
-                else if (property.NameEquals("crs"))
+                else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : System.Text.Json.JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
 
                 }
-                else if (property.NameEquals("boundingBox"))
+                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = System.Text.Json.JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
 
                 }
 
@@ -114,47 +109,45 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, GeometryCollection geometryCollection, JsonSerializerOptions options)
         {
-            if (geometryCollection == null)
-            {
-                return;
-            }
             writer.WriteStartObject();
-            writer.WriteStartArray("geometries");
+            writer.WriteStartArray(STJMetaDataFields.Geometries);
             foreach (Geometry geometry in geometryCollection.Geometries)
             {
                 if (geometry.GetType() == typeof(Point))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (Point)geometry, options);
+                    JsonSerializer.Serialize(writer, (Point)geometry, options);
                 }
                 else if (geometry.GetType() == typeof(MultiPoint))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (MultiPoint)geometry, options);
+                    JsonSerializer.Serialize(writer, (MultiPoint)geometry, options);
                 }
                 else if (geometry.GetType() == typeof(LineString))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (LineString)geometry, options);
+                    JsonSerializer.Serialize(writer, (LineString)geometry, options);
                 }
                 else if (geometry.GetType() == typeof(MultiLineString))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (MultiLineString)geometry, options);
+                    JsonSerializer.Serialize(writer, (MultiLineString)geometry, options);
                 }
                 else if (geometry.GetType() == typeof(Polygon))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (Polygon)geometry, options);
+                    JsonSerializer.Serialize(writer, (Polygon)geometry, options);
                 }
                 else if (geometry.GetType() == typeof(MultiPolygon))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (MultiPolygon)geometry, options);
+                    JsonSerializer.Serialize(writer, (MultiPolygon)geometry, options);
                 }
                 else if (geometry.GetType() == typeof(GeometryCollection))
                 {
-                    System.Text.Json.JsonSerializer.Serialize(writer, (GeometryCollection)geometry, options);
+                    JsonSerializer.Serialize(writer, (GeometryCollection)geometry, options);
                 }
 
             }
 
             writer.WriteEndArray();
-            System.Text.Json.JsonSerializer.Serialize(writer, geometryCollection.Crs, options);
+
+            SpatialHelper.SerializePartialSpatialObject(geometryCollection.Crs, (int)geometryCollection.Type, geometryCollection.BoundingBox, geometryCollection.AdditionalProperties, writer, options);
+            /*System.Text.Json.JsonSerializer.Serialize(writer, geometryCollection.Crs, options);
             writer.WriteNumber("type", (int)geometryCollection.Type);
             if (geometryCollection.BoundingBox != null)
             {
@@ -165,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 writer.WritePropertyName("additionalProperties");
                 System.Text.Json.JsonSerializer.Serialize(writer, geometryCollection.AdditionalProperties, options);
 
-            }
+            }*/
 
             writer.WriteEndObject();
 

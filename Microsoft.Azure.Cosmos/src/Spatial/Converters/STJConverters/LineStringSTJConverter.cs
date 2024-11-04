@@ -5,24 +5,18 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Drawing;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type LineString/>.
+    /// </summary>
     internal class LineStringSTJConverter : JsonConverter<LineString>
     {
         public override LineString Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -34,29 +28,29 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             BoundingBox boundingBox = null;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("positions"))
+                if (property.NameEquals(STJMetaDataFields.Positions))
                 {
                     positions = new List<Position>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
                     {
-                        Position pos = System.Text.Json.JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
+                        Position pos = JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
                         positions.Add(pos);
                     }
                 }
-                else if (property.NameEquals("additionalProperties"))
+                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = System.Text.Json.JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
                 }
-                else if (property.NameEquals("crs"))
+                else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : System.Text.Json.JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
 
                 }
-                else if (property.NameEquals("boundingBox"))
+                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = System.Text.Json.JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
 
                 }
 
@@ -70,34 +64,18 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, LineString lineString, JsonSerializerOptions options)
         {
-            if (lineString == null)
-            {
-                return;
-            }
-
             writer.WriteStartObject();
 
-            writer.WriteStartArray("positions");
+            writer.WriteStartArray(STJMetaDataFields.Positions);
             foreach (Position position in lineString.Positions)
             {
                 writer.WriteStartObject();
-                System.Text.Json.JsonSerializer.Serialize(writer, position, options);
+                JsonSerializer.Serialize(writer, position, options);
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
 
-            System.Text.Json.JsonSerializer.Serialize(writer, lineString.Crs, options);
-            writer.WriteNumber("type", (int)lineString.Type);
-            if (lineString.BoundingBox != null)
-            {
-                System.Text.Json.JsonSerializer.Serialize(writer, lineString.BoundingBox, options);
-            }
-            if (lineString.AdditionalProperties.Count > 0)
-            {
-                writer.WritePropertyName("additionalProperties");
-                System.Text.Json.JsonSerializer.Serialize(writer, lineString.AdditionalProperties, options);
-
-            }
+            SpatialHelper.SerializePartialSpatialObject(lineString.Crs, (int)lineString.Type, lineString.BoundingBox, lineString.AdditionalProperties, writer, options);
 
             writer.WriteEndObject();
         }

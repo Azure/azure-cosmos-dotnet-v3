@@ -5,24 +5,18 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Drawing;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type MultiPoint/>.
+    /// </summary>
     internal class MultiPointSTJConverter : JsonConverter<MultiPoint>
     {
         public override MultiPoint Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -34,30 +28,30 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             BoundingBox boundingBox = null;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("points"))
+                if (property.NameEquals(STJMetaDataFields.Points))
                 {
                     positions = new List<Position>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
                     {
-                        Position pos = System.Text.Json.JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
+                        Position pos = JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
                         positions.Add(pos);
                     }
                 }
-                else if (property.NameEquals("additionalProperties"))
+                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = System.Text.Json.JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
                     Console.WriteLine(additionalProperties.ToString());
                 }
-                else if (property.NameEquals("crs"))
+                else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : System.Text.Json.JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
 
                 }
-                else if (property.NameEquals("boundingBox"))
+                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = System.Text.Json.JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
 
                 }
 
@@ -71,34 +65,18 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, MultiPoint multiPoint, JsonSerializerOptions options)
         {
-            if (multiPoint == null)
-            {
-                return;
-            }
-
             writer.WriteStartObject();
             
-            writer.WriteStartArray("points");
+            writer.WriteStartArray(STJMetaDataFields.Points);
             foreach (Position position in multiPoint.Points)
             {
                 writer.WriteStartObject();
-                System.Text.Json.JsonSerializer.Serialize(writer, position, options);
+                JsonSerializer.Serialize(writer, position, options);
                 writer.WriteEndObject();
             }
             writer.WriteEndArray();
 
-            System.Text.Json.JsonSerializer.Serialize(writer, multiPoint.Crs, options);
-            writer.WriteNumber("type", (int)multiPoint.Type);
-            if (multiPoint.BoundingBox != null)
-            {
-                System.Text.Json.JsonSerializer.Serialize(writer, multiPoint.BoundingBox, options);
-            }
-            if (multiPoint.AdditionalProperties.Count > 0)
-            {
-                writer.WritePropertyName("additionalProperties");
-                System.Text.Json.JsonSerializer.Serialize(writer, multiPoint.AdditionalProperties, options);
-
-            }
+            SpatialHelper.SerializePartialSpatialObject(multiPoint.Crs, (int)multiPoint.Type, multiPoint.BoundingBox, multiPoint.AdditionalProperties, writer, options);
 
             writer.WriteEndObject();
         }

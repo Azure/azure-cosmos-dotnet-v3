@@ -43,7 +43,6 @@
                     new[] { new Position(20, 30), new Position(30, 40) },
                     new GeometryParams
                     {
-                        //AdditionalProperties = new Dictionary<string, object> { { "a", "b" } },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
                         Crs = Crs.Named("SomeCrs")
                     });
@@ -164,6 +163,30 @@
                         Crs = new UnspecifiedCrs()
                     })
               },
+              new object[] {
+                  new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object> {
+                            ["battle"] = "a large abttle",
+                            ["cruise"] = "a new cruise"
+                        },
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                    })
+              },
+              new object[] {
+                  new Point(
+                    new Position(20, 30),
+                    new GeometryParams
+                    {
+                        AdditionalProperties = new Dictionary<string, object> {
+                            ["battle"] = "a large abttle",
+                            ["cruise"] = "a new cruise"
+                        },
+                        Crs = new UnspecifiedCrs()
+                    })
+              }
 
 
         };
@@ -262,6 +285,28 @@
                                             })
                                 })
                         })
+              },
+
+              new object[] {
+                new MultiPolygon(
+                    new[]
+                        {
+                            new PolygonCoordinates(
+                                new[]
+                                    {
+                                        new LinearRing(
+                                            new[]
+                                                {
+                                                    new Position(20, 21), new Position(20, 21), new Position(21, 21),
+                                                    new Position(21, 20), new Position(22, 20)
+                                                })
+                                    })
+                        },
+                    new GeometryParams
+                    {
+                        BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
+                        Crs = Crs.Named("SomeCrs")
+                    })
               },
 
         };

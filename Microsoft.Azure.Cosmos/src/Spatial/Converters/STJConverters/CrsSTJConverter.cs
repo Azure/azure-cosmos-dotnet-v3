@@ -5,15 +5,12 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
-    using static System.Text.Json.JsonElement;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type Crs/>.
+    /// </summary>
     internal class CrsSTJConverter : JsonConverter<Crs>
     {
         public override Crs Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -22,19 +19,15 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
             }
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return Crs.Unspecified;
-            }
 
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
-            JsonElement properties = rootElement.GetProperty("properties");
+            JsonElement properties = rootElement.GetProperty(STJMetaDataFields.Properties);
             if (properties.ValueKind == JsonValueKind.Null || properties.ValueKind != JsonValueKind.Object)
             {
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
             }
 
-            JsonElement crsType = rootElement.GetProperty("type");
+            JsonElement crsType = rootElement.GetProperty(STJMetaDataFields.Type);
             if (crsType.ValueKind == JsonValueKind.Null || crsType.ValueKind != JsonValueKind.String)
             {
                 throw new JsonException(RMResources.SpatialFailedToDeserializeCrs);
@@ -42,17 +35,16 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
             switch (crsType.GetString())
             {
-                case "name":
-                    string crsName = properties.GetProperty("name").GetString();
+                case STJMetaDataFields.Name:
+                    string crsName = properties.GetProperty(STJMetaDataFields.Name).GetString();
                     return new NamedCrs(crsName);
 
-                case "link":
-                    string crsHref = properties.GetProperty("href").GetString();
-                    if (properties.TryGetProperty("type", out JsonElement crsHrefType))
+                case STJMetaDataFields.Link:
+                    string crsHref = properties.GetProperty(STJMetaDataFields.Href).GetString();
+                    if (properties.TryGetProperty(STJMetaDataFields.Type, out JsonElement crsHrefType))
                     {
                         return new LinkedCrs(crsHref, crsHrefType.GetString());
                     }
-                    //string crsHrefType = properties.GetProperty("type").GetString();
                     return new LinkedCrs(crsHref);
 
                 default:
@@ -62,23 +54,18 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, Crs crs, JsonSerializerOptions options)
         {
-            if (crs == null)
-            {
-                return;
-            }
-
             switch (crs.Type)
             {
                 case CrsType.Linked:
-                    writer.WriteStartObject("crs");
+                    writer.WriteStartObject(STJMetaDataFields.Crs);
                     LinkedCrs linkedCrs = (LinkedCrs)crs;
-                    writer.WriteString("type", "link");
-                    writer.WritePropertyName("properties");
+                    writer.WriteString(STJMetaDataFields.Type, STJMetaDataFields.Link);
+                    writer.WritePropertyName(STJMetaDataFields.Properties);
                     writer.WriteStartObject();
-                    writer.WriteString("href", linkedCrs.Href);
+                    writer.WriteString(STJMetaDataFields.Href, linkedCrs.Href);
                     if (linkedCrs.HrefType != null)
                     {
-                        writer.WriteString("type", linkedCrs.HrefType);
+                        writer.WriteString(STJMetaDataFields.Type, linkedCrs.HrefType);
                     }
 
                     writer.WriteEndObject();
@@ -86,19 +73,19 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                     break;
 
                 case CrsType.Named:
-                    writer.WriteStartObject("crs");
+                    writer.WriteStartObject(STJMetaDataFields.Crs);
                     NamedCrs namedCrs = (NamedCrs)crs;
-                    writer.WriteString("type", "name");
-                    writer.WritePropertyName("properties");
+                    writer.WriteString(STJMetaDataFields.Type, STJMetaDataFields.Name);
+                    writer.WritePropertyName(STJMetaDataFields.Properties);
                     writer.WriteStartObject();
-                    writer.WriteString("name", namedCrs.Name);
+                    writer.WriteString(STJMetaDataFields.Name, namedCrs.Name);
                     writer.WriteEndObject();
 
                     writer.WriteEndObject();
                     break;
 
                 case CrsType.Unspecified:
-                    writer.WriteNull("crs");
+                    writer.WriteNull(STJMetaDataFields.Crs);
                     break;
             }
 

@@ -5,23 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Drawing;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using static System.Text.Json.JsonElement;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type BoundingBox/>.
+    /// </summary>
     internal class BoundingBoxSTJConverter : JsonConverter<BoundingBox>
     {
         public override BoundingBox Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -32,14 +25,14 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("min"))
+                if (property.NameEquals(STJMetaDataFields.Min))
                 {
-                    min = System.Text.Json.JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
+                    min = JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
                     
                 }
-                else if (property.NameEquals("max"))
+                else if (property.NameEquals(STJMetaDataFields.Max))
                 {
-                    max = System.Text.Json.JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
+                    max = JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
 
                 }
             }
@@ -49,19 +42,14 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
         public override void Write(Utf8JsonWriter writer, BoundingBox box, JsonSerializerOptions options)
         {
-            if (box == null)
-            {
-                return;
-            }
-
-            writer.WriteStartObject("boundingBox");
+            writer.WriteStartObject(STJMetaDataFields.BoundingBox);
             
-            writer.WriteStartObject("min");
-            System.Text.Json.JsonSerializer.Serialize(writer, box.Min, options);
+            writer.WriteStartObject(STJMetaDataFields.Min);
+            JsonSerializer.Serialize(writer, box.Min, options);
             writer.WriteEndObject();
 
-            writer.WriteStartObject("max");
-            System.Text.Json.JsonSerializer.Serialize(writer, box.Max, options);
+            writer.WriteStartObject(STJMetaDataFields.Max);
+            JsonSerializer.Serialize(writer, box.Max, options);
             writer.WriteEndObject();
 
             writer.WriteEndObject();

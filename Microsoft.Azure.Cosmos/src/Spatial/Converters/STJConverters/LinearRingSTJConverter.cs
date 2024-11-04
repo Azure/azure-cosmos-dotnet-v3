@@ -5,24 +5,22 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
-    using System.Drawing;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
-
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type LinearRing/>.
+    /// </summary>
     internal class LinearRingSTJConverter : JsonConverter<LinearRing>
     {
         public override LinearRing Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
+            /*if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
-            }
+            }*/
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
@@ -31,12 +29,12 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("positions"))
+                if (property.NameEquals(STJMetaDataFields.Positions))
                 {
                     positions = new List<Position>();
                     foreach (JsonElement arrayElement in property.Value.EnumerateArray())
                     {
-                        Position pos = System.Text.Json.JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
+                        Position pos = JsonSerializer.Deserialize<Position>(arrayElement.GetRawText(), options);
                         positions.Add(pos);
                     }
                 }
@@ -47,15 +45,11 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, LinearRing linearRing, JsonSerializerOptions options)
         {
-            if (linearRing == null)
-            {
-                return;
-            }
-            writer.WriteStartArray("positions");
+            writer.WriteStartArray(STJMetaDataFields.Positions);
             foreach (Position position in linearRing.Positions)
             {
                 writer.WriteStartObject();
-                System.Text.Json.JsonSerializer.Serialize(writer, position, options);
+                JsonSerializer.Serialize(writer, position, options);
                 writer.WriteEndObject();
             }
 

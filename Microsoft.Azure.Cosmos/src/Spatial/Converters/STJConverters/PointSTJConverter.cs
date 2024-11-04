@@ -5,53 +5,50 @@
 namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Antlr4.Runtime.Sharpen;
     using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.Azure.Documents;
-   
+    /// <summary>
+    /// Converter used to support System.Text.Json de/serialization of type Point/>.
+    /// </summary>
     internal class PointSTJConverter : JsonConverter<Point>
     {
         public override Point Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);
             }
+            
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             Position pos = null;
             IDictionary<string, object> additionalProperties = null;
             Crs crs = null;
             BoundingBox boundingBox = null;
+
             foreach (JsonProperty property in rootElement.EnumerateObject())
             {
-                if (property.NameEquals("position"))
+                if (property.NameEquals(STJMetaDataFields.Position))
                 {
-                    pos = System.Text.Json.JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
+                    pos = JsonSerializer.Deserialize<Position>(property.Value.ToString(), options);
                 }
-                else if (property.NameEquals("additionalProperties"))
+                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
                 {
-                    additionalProperties = System.Text.Json.JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
+                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.ToString(), options);
                     
                 }
-                else if (property.NameEquals("crs"))
+                else if (property.NameEquals(STJMetaDataFields.Crs))
                 {
                     crs = property.Value.ValueKind == JsonValueKind.Null
                         ? Crs.Unspecified
-                        : System.Text.Json.JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
+                        : JsonSerializer.Deserialize<Crs>(property.Value.ToString(), options);
 
                 }
-                else if (property.NameEquals("boundingBox"))
+                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
                 {
-                    boundingBox = System.Text.Json.JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
+                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.ToString(), options);
 
                 }
 
@@ -66,33 +63,13 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
         }
         public override void Write(Utf8JsonWriter writer, Point point, JsonSerializerOptions options)
         {
-            if (point == null)
-            {
-                return;
-            }
-
             writer.WriteStartObject();
             
-            writer.WriteStartObject("position");
-            System.Text.Json.JsonSerializer.Serialize(writer, point.Position, options);
+            writer.WriteStartObject(STJMetaDataFields.Position);
+            JsonSerializer.Serialize(writer, point.Position, options);
             writer.WriteEndObject();
 
-            System.Text.Json.JsonSerializer.Serialize(writer, point.Crs, options);
-
-            writer.WriteNumber("type", (int)point.Type);
-
-            if (point.BoundingBox != null)
-            {
-                System.Text.Json.JsonSerializer.Serialize(writer, point.BoundingBox, options);
-            }
-
-            if (point.AdditionalProperties.Count > 0)
-            {
-                writer.WritePropertyName("additionalProperties");
-                System.Text.Json.JsonSerializer.Serialize(writer, point.AdditionalProperties, options);
-
-            }
-            
+            SpatialHelper.SerializePartialSpatialObject(point.Crs, (int)point.Type, point.BoundingBox, point.AdditionalProperties, writer, options);
             writer.WriteEndObject();
 
         }
