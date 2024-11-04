@@ -34,9 +34,10 @@ namespace Microsoft.Azure.Cosmos.Json
                 if (uniformArrayInfo != null)
                 {
                     int itemStartOffset = arrayOffset + uniformArrayInfo.PrefixSize;
-                    for (int i = 0; i < uniformArrayInfo.ItemCount; i++)
+                    int itemEndOffset = itemStartOffset + (uniformArrayInfo.ItemSize * uniformArrayInfo.ItemCount);
+                    for (int offset = itemStartOffset; offset < itemEndOffset; offset += uniformArrayInfo.ItemSize)
                     {
-                        yield return new ArrayItem(itemStartOffset + (i * uniformArrayInfo.ItemSize), uniformArrayInfo);
+                        yield return new ArrayItem(offset, uniformArrayInfo);
                     }
                 }
                 else
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             throw new JsonInvalidTokenException();
                         }
 
-                        yield return new ArrayItem(arrayOffset + (arrayLength - buffer.Length), default);
+                        yield return new ArrayItem(arrayOffset + (arrayLength - buffer.Length), null);
 
                         // Slice off the array item
                         buffer = buffer.Slice(arrayItemLength);

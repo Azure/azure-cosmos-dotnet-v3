@@ -6,9 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using System.Xml.Linq;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
@@ -421,15 +419,10 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new InvalidOperationException($"Expected writer to implement: {nameof(IJsonBinaryWriterExtensions)}.");
                     }
 
-                    if (!(this.rootNode is BinaryNavigatorNode binaryRootNode))
-                    {
-                        throw new InvalidOperationException($"Expected {nameof(this.rootNode)} to be a {nameof(BinaryNavigatorNode)}.");
-                    }
-
                     jsonBinaryWriter.WriteRawJsonValue(
                         this.rootBuffer,
                         valueOffset: binaryNavigatorNode.Offset,
-                        isRootNode: object.ReferenceEquals(jsonNavigatorNode, this.rootNode),
+                        externalArrayInfo: binaryNavigatorNode.ExternalArrayInfo,
                         isFieldName);
                 }
                 else

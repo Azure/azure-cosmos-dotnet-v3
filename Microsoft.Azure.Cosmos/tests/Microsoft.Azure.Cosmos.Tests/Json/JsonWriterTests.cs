@@ -4,12 +4,11 @@
     using System.Buffers;
     using System.Collections.Generic;
     using System.Globalization;
-    using System.IO;
     using System.Linq;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using static Microsoft.Azure.Cosmos.Tests.Json.JsonTestUtils;
 
     [TestClass]
     public class JsonWriterTests
@@ -8507,7 +8506,7 @@
 
             try
             {
-                WriteTokens(tokensToWrite, jsonWriter, writeAsUtf8String);
+                JsonTestUtils.WriteTokens(tokensToWrite, jsonWriter, writeAsUtf8String);
             }
             catch (Exception exception)
             {
@@ -8532,14 +8531,14 @@
             }
         }
 
-        static private void ExecuteAndValidate(
-            JsonToken[] tokensToWrite,
+        private static void ExecuteAndValidate(
+            JsonToken[] inputTokens,
             string[] expectedTextResult,
             string[] expectedBinaryResult,
             JsonWriteOptions writeOptions,
             bool skipRoundTripTest = false)
         {
-            Assert.IsNotNull(tokensToWrite);
+            Assert.IsNotNull(inputTokens);
             Assert.IsNotNull(expectedTextResult);
             Assert.IsNotNull(expectedBinaryResult);
 
@@ -8565,10 +8564,10 @@
                 foreach (bool writeAsUtf8String in new bool[] { false, true })
                 {
                     IJsonWriter jsonWriter = JsonWriter.Create(serializationFormat, writeOptions);
-                    WriteTokens(tokensToWrite, jsonWriter, writeAsUtf8String);
+                    JsonTestUtils.WriteTokens(inputTokens, jsonWriter, writeAsUtf8String);
                     ReadOnlyMemory<byte> result = jsonWriter.GetResult();
 
-                    string[] actualResult = SerializeResultBuffer(result.ToArray(), serializationFormat);
+                    string[] actualResult = JsonTestUtils.SerializeResultBuffer(result.ToArray(), serializationFormat);
                     if (!VerifyResults(expectedResult, actualResult))
                     {
                         Assert.Fail($"JsonWriter validation failed for format '{serializationFormat}' and write options '{writeOptions}'.");
@@ -8580,519 +8579,43 @@
             {
                 SerializationSpec[] serializationSpecs = new SerializationSpec[]
                 {
-                    new SerializationSpec(JsonSerializationFormat.Text, JsonWriteOptions.None),
-                    new SerializationSpec(JsonSerializationFormat.Binary, JsonWriteOptions.None),
-                    new SerializationSpec(JsonSerializationFormat.Binary, JsonWriteOptions.EnableNumberArrays),
-                    new SerializationSpec(JsonSerializationFormat.Binary, JsonWriteOptions.EnableUInt64),
+                    SerializationSpec.Text(JsonWriteOptions.None),
+                    SerializationSpec.Binary(JsonWriteOptions.None),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableUInt64),
                 };
 
-                VerifyDocumentRoundTrip(tokensToWrite, serializationSpecs);
-            }
-        }
-
-        static private void WriteTokens(
-            JsonToken[] tokensToWrite,
-            IJsonWriter jsonWriter,
-            bool writeAsUtf8String)
-        {
-            Assert.IsNotNull(tokensToWrite);
-            Assert.IsNotNull(jsonWriter);
-
-            foreach (JsonToken token in tokensToWrite)
-            {
-                if (token.IsNumberArray)
+                RewriteScenario[] rewriteScenarios = new RewriteScenario[]
                 {
-                    switch (token.JsonTokenType)
-                    {
-                        case JsonTokenType.UInt8:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<byte>).Values);
-                            break;
+                    RewriteScenario.NavigatorRoot,
+                    RewriteScenario.NavigatorNode,
+                    RewriteScenario.ReaderAll,
+                    RewriteScenario.ReaderToken,
+                };
 
-                        case JsonTokenType.Int8:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<sbyte>).Values);
-                            break;
-
-                        case JsonTokenType.Int16:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<short>).Values);
-                            break;
-
-                        case JsonTokenType.Int32:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<int>).Values);
-                            break;
-
-                        case JsonTokenType.Int64:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<long>).Values);
-                            break;
-
-                        case JsonTokenType.Float32:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<float>).Values);
-                            break;
-
-                        case JsonTokenType.Float64:
-                            jsonWriter.WriteNumberArray((token as JsonNumberArrayToken<double>).Values);
-                            break;
-                        default:
-                            Assert.Fail($"Unexpected number array JsonTokenType: {token.JsonTokenType}.");
-                            break;
-                    }
-                }
-                else
+                foreach (SerializationSpec inputSpec in serializationSpecs)
                 {
-                    switch (token.JsonTokenType)
+                    IJsonWriter inputWriter = JsonWriter.Create(inputSpec.SerializationFormat, inputSpec.WriteOptions);
+                    WriteTokens(inputTokens, inputWriter, writeAsUtf8String: true);
+                    ReadOnlyMemory<byte> inputResult = inputWriter.GetResult();
+
+                    foreach (SerializationSpec outputSpec in serializationSpecs)
                     {
-                        case JsonTokenType.BeginArray:
-                            jsonWriter.WriteArrayStart();
-                            break;
-
-                        case JsonTokenType.EndArray:
-                            jsonWriter.WriteArrayEnd();
-                            break;
-
-                        case JsonTokenType.BeginObject:
-                            jsonWriter.WriteObjectStart();
-                            break;
-
-                        case JsonTokenType.EndObject:
-                            jsonWriter.WriteObjectEnd();
-                            break;
-
-                        case JsonTokenType.String:
-                            string stringValue = (token as JsonStringToken).Value;
-                            if (writeAsUtf8String)
-                            {
-                                jsonWriter.WriteStringValue(Utf8Span.TranscodeUtf16(stringValue));
-                            }
-                            else
-                            {
-                                jsonWriter.WriteStringValue(stringValue);
-                            }
-                            break;
-
-                        case JsonTokenType.Number:
-                            Number64 numberValue = (token as JsonNumberToken).Value;
-                            jsonWriter.WriteNumber64Value(numberValue);
-                            break;
-
-                        case JsonTokenType.True:
-                            jsonWriter.WriteBoolValue(true);
-                            break;
-
-                        case JsonTokenType.False:
-                            jsonWriter.WriteBoolValue(false);
-                            break;
-
-                        case JsonTokenType.Null:
-                            jsonWriter.WriteNullValue();
-                            break;
-
-                        case JsonTokenType.FieldName:
-                            string fieldNameValue = (token as JsonFieldNameToken).Value;
-                            if (writeAsUtf8String)
-                            {
-                                jsonWriter.WriteFieldName(Utf8Span.TranscodeUtf16(fieldNameValue));
-                            }
-                            else
-                            {
-                                jsonWriter.WriteFieldName(fieldNameValue);
-                            }
-                            break;
-
-                        case JsonTokenType.Int8:
-                            sbyte int8Value = (token as JsonInt8Token).Value;
-                            jsonWriter.WriteInt8Value(int8Value);
-                            break;
-
-                        case JsonTokenType.Int16:
-                            short int16Value = (token as JsonInt16Token).Value;
-                            jsonWriter.WriteInt16Value(int16Value);
-                            break;
-
-                        case JsonTokenType.Int32:
-                            int int32Value = (token as JsonInt32Token).Value;
-                            jsonWriter.WriteInt32Value(int32Value);
-                            break;
-
-                        case JsonTokenType.Int64:
-                            long int64Value = (token as JsonInt64Token).Value;
-                            jsonWriter.WriteInt64Value(int64Value);
-                            break;
-
-                        case JsonTokenType.UInt32:
-                            uint uint32Value = (token as JsonUInt32Token).Value;
-                            jsonWriter.WriteUInt32Value(uint32Value);
-                            break;
-
-                        case JsonTokenType.Float32:
-                            float float32Value = (token as JsonFloat32Token).Value;
-                            jsonWriter.WriteFloat32Value(float32Value);
-                            break;
-
-                        case JsonTokenType.Float64:
-                            double float64Value = (token as JsonFloat64Token).Value;
-                            jsonWriter.WriteFloat64Value(float64Value);
-                            break;
-
-                        case JsonTokenType.Guid:
-                            Guid guidValue = (token as JsonGuidToken).Value;
-                            jsonWriter.WriteGuidValue(guidValue);
-                            break;
-
-                        case JsonTokenType.Binary:
-                            ReadOnlyMemory<byte> binaryValue = (token as JsonBinaryToken).Value;
-                            jsonWriter.WriteBinaryValue(binaryValue.Span);
-                            break;
-
-                        case JsonTokenType.NotStarted:
-                        default:
-                            Assert.Fail(string.Format("Got an unexpected JsonTokenType: {0} as an expected token type", token.JsonTokenType));
-                            break;
-                    }
-                }
-            }
-        }
-
-        static private void VerifyDocumentRoundTrip(
-            JsonToken[] tokensToWrite,
-            SerializationSpec[] serializationSpecs)
-        {
-            foreach (SerializationSpec inputSpec in serializationSpecs)
-            {
-                IJsonWriter inputWriter = JsonWriter.Create(inputSpec.SerializationFormat, inputSpec.WriteOptions);
-                WriteTokens(tokensToWrite, inputWriter, writeAsUtf8String: true);
-                ReadOnlyMemory<byte> inputResult = inputWriter.GetResult();
-
-                foreach (SerializationSpec outputSpec in serializationSpecs)
-                {
-                    foreach (RewriteType rewriteType in new RewriteType[] { RewriteType.Navigator, RewriteType.ReaderAll, RewriteType.ReaderToken})
-                    {
-                        IJsonWriter outputWriter = JsonWriter.Create(outputSpec.SerializationFormat, outputSpec.WriteOptions);
-                        ReadOnlyMemory<byte> outputResult;
-
-                        switch (rewriteType)
+                        foreach (RewriteScenario rewriteScenario in rewriteScenarios)
                         {
-                            case RewriteType.Navigator:
-                                {
-                                    IJsonNavigator inputNavigator = JsonNavigator.Create(inputResult);
-                                    IJsonNavigatorNode rootNode = inputNavigator.GetRootNode();
-                                    inputNavigator.WriteNode(rootNode, outputWriter);
-                                }
-                                break;
-
-                            case RewriteType.ReaderAll:
-                                {
-                                    IJsonReader inputReader = JsonReader.Create(inputResult);
-                                    inputReader.WriteAll(outputWriter);
-                                }
-                                break;
-
-                            case RewriteType.ReaderToken:
-                                {
-                                    IJsonReader inputReader = JsonReader.Create(inputResult);
-                                    while(inputReader.Read())
-                                    {
-                                        inputReader.WriteCurrentToken(outputWriter);
-                                    }
-                                }
-                                break;
-
-                            default:
-                                Assert.Fail($"Unexpected rewrite type '{rewriteType}'.");
-                                break;
-                        }
-
-                        outputResult = outputWriter.GetResult();
-
-                        byte[] inputResultBytes = inputResult.ToArray();
-                        byte[] outputResultBytes = outputResult.ToArray();
-
-                        StringBuilder verboseOutput = new StringBuilder();
-                        if (!CompareResults(inputResultBytes, outputResultBytes, verboseWriter: new StringWriter(verboseOutput)))
-                        {
-                            Console.WriteLine($"Rewriting JSON document failed!");
-                            Console.WriteLine();
-                            Console.WriteLine($"  Input Format        : {inputSpec.SerializationFormat}");
-                            Console.WriteLine($"  Input Write Options : {inputSpec.WriteOptions}");
-                            Console.WriteLine();
-                            Console.WriteLine($"  Output Format       : {outputSpec.SerializationFormat}");
-                            Console.WriteLine($"  Output Write Options: {outputSpec.WriteOptions}");
-                            Console.WriteLine();
-                            Console.WriteLine($"Comparison Errors:");
-                            Console.WriteLine(verboseOutput.ToString());
-                            Console.WriteLine();
-
-                            Assert.Fail();
+                            VerifyJsonRoundTrip(
+                                inputResult,
+                                inputJson: null,
+                                inputSpec,
+                                outputSpec,
+                                rewriteScenario);
                         }
                     }
                 }
             }
         }
 
-        static private bool CompareResults(
-            byte[] resultBuffer1,
-            byte[] resultBuffer2,
-            TextWriter verboseWriter = default)
-        {
-            Assert.IsNotNull(resultBuffer1);
-            Assert.IsNotNull(resultBuffer2);
-
-            // Fast check for identical buffers
-            if (resultBuffer1.Equals(resultBuffer2)) return true;
-
-            IJsonReader reader1 = JsonReader.Create(resultBuffer1);
-            IJsonReader reader2 = JsonReader.Create(resultBuffer2);
-
-            int tokenCount = 0;
-            while (true)
-            {
-                bool read1 = reader1.Read();
-                bool read2 = reader2.Read();
-
-                if (read1 != read2)
-                {
-                    if (verboseWriter != null)
-                    {
-                        verboseWriter.WriteLine($"Read method return value mismatch at token number {tokenCount}");
-                        verboseWriter.WriteLine($"  Return Value 1: {read1}");
-                        verboseWriter.WriteLine($"  Return Value 2: {read2}");
-                    }
-
-                    return false;
-                }
-
-                // If EOF, exit the while loop
-                if (!read1) break;
-
-                tokenCount++;
-
-                JsonTokenType tokenType1 = reader1.CurrentTokenType;
-                JsonTokenType tokenType2 = reader2.CurrentTokenType;
-
-                if (tokenType1 != tokenType2)
-                {
-                    if (verboseWriter != null)
-                    {
-                        verboseWriter.WriteLine($"JSON token type mismatch at token number {tokenCount}");
-                        verboseWriter.WriteLine($"  Token Type 1: {tokenType1}");
-                        verboseWriter.WriteLine($"  Token Type 2: {tokenType2}");
-                    }
-
-                    return false;
-                }
-
-                switch (tokenType1)
-                {
-                    case JsonTokenType.NotStarted:
-                    case JsonTokenType.BeginArray:
-                    case JsonTokenType.EndArray:
-                    case JsonTokenType.BeginObject:
-                    case JsonTokenType.EndObject:
-                    case JsonTokenType.True:
-                    case JsonTokenType.False:
-                    case JsonTokenType.Null:
-                        // No further comparison
-                        break;
-
-                    case JsonTokenType.FieldName:
-                    case JsonTokenType.String:
-                        {
-                            string value1 = reader1.GetStringValue();
-                            string value2 = reader2.GetStringValue();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"String value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Number:
-                        {
-                            Number64 value1 = reader1.GetNumberValue();
-                            Number64 value2 = reader2.GetNumberValue();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Number value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Int8:
-                        {
-                            sbyte value1 = reader1.GetInt8Value();
-                            sbyte value2 = reader2.GetInt8Value();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Int8 value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Int16:
-                        {
-                            short value1 = reader1.GetInt16Value();
-                            short value2 = reader2.GetInt16Value();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Int16 value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Int32:
-                        {
-                            int value1 = reader1.GetInt32Value();
-                            int value2 = reader2.GetInt32Value();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Int32 value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Int64:
-                        {
-                            long value1 = reader1.GetInt64Value();
-                            long value2 = reader2.GetInt64Value();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Int64 value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Float32:
-                        {
-                            float value1 = reader1.GetFloat32Value();
-                            float value2 = reader2.GetFloat32Value();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Float32 value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Float64:
-                        {
-                            double value1 = reader1.GetFloat64Value();
-                            double value2 = reader2.GetFloat64Value();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Float64 value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Guid:
-                        {
-                            Guid value1 = reader1.GetGuidValue();
-                            Guid value2 = reader2.GetGuidValue();
-
-                            if (value1 != value2)
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"GUID value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    case JsonTokenType.Binary:
-                        {
-                            ReadOnlyMemory<byte> value1 = reader1.GetBinaryValue();
-                            ReadOnlyMemory<byte> value2 = reader2.GetBinaryValue();
-
-                            if (value1.ToArray() != value2.ToArray())
-                            {
-                                if (verboseWriter != null)
-                                {
-                                    verboseWriter.WriteLine($"Binary value mismatch at token number {tokenCount}");
-                                    verboseWriter.WriteLine($"  Value 1: {value1}");
-                                    verboseWriter.WriteLine($"  Value 2: {value2}");
-                                }
-
-                                return false;
-                            }
-                        }
-                        break;
-
-                    default:
-                        Assert.Fail($"Unexpected JsonTokenType value {tokenType1}.");
-                        break;
-                }
-            }
-
-            return true;
-        }
-
-        static private bool VerifyResults(
+        private static bool VerifyResults(
             string[] expectedStringResults,
             string[] actualStringResults)
         {
@@ -9124,7 +8647,7 @@
             return true;
         }
 
-        static private void DumpExpectedActualResults(
+        private static void DumpExpectedActualResults(
             string[] expectedStringResults,
             string[] actualStringResults)
         {
@@ -9146,76 +8669,6 @@
             }
         }
 
-        static private string[] SerializeResultBuffer(
-            byte[] resultBuffer,
-            JsonSerializationFormat serializationFormat)
-        {
-            if (resultBuffer == null) throw new ArgumentNullException(nameof(resultBuffer));
-
-            const int TextLineSize = 100;
-            const int RowSize = 16;
-
-            string[] result;
-
-            switch (serializationFormat)
-            {
-                case JsonSerializationFormat.Text:
-                    {
-                        string stringResult = Encoding.UTF8.GetString(resultBuffer);
-
-                        result = new string[(stringResult.Length + TextLineSize - 1) / TextLineSize];
-                        for (int i = 0; i < result.Length; i++)
-                        {
-                            int remainingLength = stringResult.Length - (i * TextLineSize);
-                            result[i] = stringResult.Substring(i * TextLineSize, Math.Min(remainingLength, TextLineSize));
-                        }
-                    }
-                    break;
-
-                case JsonSerializationFormat.Binary:
-                    {
-                        List<string> lines = new List<string>();
-
-                        StringBuilder stringBuilder = new StringBuilder();
-                        for (int i = 0; i < resultBuffer.Length; i++)
-                        {
-                            if (i % RowSize == 0)
-                            {
-                                if(stringBuilder.Length > 0)
-                                {
-                                    lines.Add(stringBuilder.ToString());
-                                    stringBuilder.Clear();
-                                }
-
-                                stringBuilder.Append(i.ToString("X8"));
-                            }
-
-                            if (i % (RowSize / 2) == 0)
-                            {
-                                stringBuilder.Append(' ');
-                            }
-
-                            stringBuilder.Append(' ').Append(resultBuffer[i].ToString("X2"));
-                        }
-
-                        if (stringBuilder.Length > 0)
-                        {
-                            lines.Add(stringBuilder.ToString());
-                        }
-
-                        result = lines.ToArray();
-                    }
-                    break;
-
-                default:
-                    Assert.Fail($"Unexpected JsonSerializationFormat: {serializationFormat}.");
-                    result = null;
-                    break;
-            }
-
-            return result;
-        }
-
         static private sbyte[] Int8Array(params sbyte[] values) => values;
         static private byte[] UInt8Array(params byte[] values) => values;
         static private short[] Int16Array(params short[] values) => values;
@@ -9223,24 +8676,5 @@
         static private long[] Int64Array(params long[] values) => values;
         static private float[] Float32Array(params float[] values) => values;
         static private double[] Float64Array(params double[] values) => values;
-
-        enum RewriteType
-        {
-            Navigator,
-            ReaderAll,
-            ReaderToken,
-        };
-
-        private readonly struct SerializationSpec
-        {
-            public SerializationSpec(JsonSerializationFormat serializationFormat, JsonWriteOptions writeOptions)
-            {
-                this.SerializationFormat = serializationFormat;
-                this.WriteOptions = writeOptions;
-            }
-
-            public JsonSerializationFormat SerializationFormat { get; }
-            public JsonWriteOptions WriteOptions { get; }
-        }
     }
 }

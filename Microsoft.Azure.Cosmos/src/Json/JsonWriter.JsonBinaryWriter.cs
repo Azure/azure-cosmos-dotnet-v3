@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     /// <summary>
@@ -75,6 +76,9 @@ namespace Microsoft.Azure.Cosmos.Json
                 Obj1,
                 Arr,
                 Obj,
+                ArrNum,
+                ArrArrNum,
+                UInt64,
             }
 
             private const int MaxStackAllocSize = 4 * 1024;
@@ -203,11 +207,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 RawValueType.Obj,        // RawValueType.ObjLC2 (2-byte length and count)
                 RawValueType.Obj,        // RawValueType.ObjLC4 (4-byte length and count)
 
-                // Empty Range
-                RawValueType.Token,      // <empty> 0xF0
-                RawValueType.Token,      // <empty> 0xF1
-                RawValueType.Token,      // <empty> 0xF2
-                RawValueType.Token,      // <empty> 0xF3
+                // Array and Object Special Type Markers
+                RawValueType.ArrNum,     // ArrNumC1 Uniform number array of 1-byte item count
+                RawValueType.ArrNum,     // ArrNumC2 Uniform number array of 2-byte item count
+                RawValueType.ArrArrNum,  // Array of 1-byte item count of Uniform number array of 1-byte item count
+                RawValueType.ArrArrNum,  // Array of 2-byte item count of Uniform number array of 2-byte item count
                 RawValueType.Token,      // <empty> 0xF4
                 RawValueType.Token,      // <empty> 0xF5
                 RawValueType.Token,      // <empty> 0xF6
@@ -1569,167 +1573,174 @@ namespace Microsoft.Azure.Cosmos.Json
             public void WriteRawJsonValue(
                 ReadOnlyMemory<byte> rootBuffer,
                 int valueOffset,
-                bool isRootNode,
+                UniformArrayInfo externalArrayInfo,
                 bool isFieldName)
             {
-                ReadOnlyMemory<byte> rawJsonValue = rootBuffer.Slice(valueOffset);
-
-                if (isRootNode && (this.binaryWriter.Position == 1))
-                {
-                    // Other that whether or not this is a field name, the type of the value does not matter here
-                    this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
-                    this.binaryWriter.Write(rawJsonValue.Span);
-                    if (!isFieldName)
-                    {
-                        this.bufferedContexts.Peek().Count++;
-                    }
-                }
-                else
-                {
-                    this.ForceRewriteRawJsonValue(rootBuffer, valueOffset, default, isFieldName);
-                }
+                this.ForceRewriteRawJsonValue(rootBuffer, valueOffset, externalArrayInfo, isFieldName);
             }
 
             private void ForceRewriteRawJsonValue(
                 ReadOnlyMemory<byte> rootBuffer,
                 int valueOffset,
-                JsonBinaryEncoding.UniformArrayInfo externalArrayInfo,
+                UniformArrayInfo externalArrayInfo,
                 bool isFieldName)
             {
                 ReadOnlyMemory<byte> rawJsonValue = rootBuffer.Slice(valueOffset);
-
                 byte typeMarker = rawJsonValue.Span[0];
-                RawValueType rawType = (RawValueType)RawValueTypes[typeMarker];
-                switch (rawType)
+
+                if (externalArrayInfo != null)
                 {
-                    case RawValueType.Token:
-                        {
-                            int valueLength = JsonBinaryEncoding.GetValueLength(rawJsonValue.Span);
+                    this.WriteRawUniformArrayItem(rawJsonValue.Span, externalArrayInfo);
+                }
+                else
+                {
+                    RawValueType rawType = (RawValueType)RawValueTypes[typeMarker];
 
-                            rawJsonValue = rawJsonValue.Slice(start: 0, length: valueLength);
+                    // If the writer supports uniform-number arrays then we treat them as a value token
+                    if (this.enableEncodedStrings && ((rawType == RawValueType.ArrNum) || (rawType == RawValueType.ArrArrNum)))
+                    {
+                        rawType = RawValueType.Token;
+                    }
 
-                            // We only care if the type is a field name or not
-                            this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
-
-                            this.binaryWriter.Write(rawJsonValue.Span);
-
-                            if (!isFieldName)
+                    switch (rawType)
+                    {
+                        case RawValueType.Token:
                             {
-                                this.bufferedContexts.Peek().Count++;
+                                int valueLength = JsonBinaryEncoding.GetValueLength(rawJsonValue.Span);
+
+                                rawJsonValue = rawJsonValue.Slice(start: 0, length: valueLength);
+
+                                // We only care if the type is a field name or not
+                                this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
+
+                                this.binaryWriter.Write(rawJsonValue.Span);
+
+                                if (!isFieldName)
+                                {
+                                    this.bufferedContexts.Peek().Count++;
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case RawValueType.StrUsr:
-                    case RawValueType.StrEncLen:
-                    case RawValueType.StrL1:
-                    case RawValueType.StrL2:
-                    case RawValueType.StrL4:
-                        this.WriteRawStringValue(rawType, rawJsonValue, isFieldName);
-                        break;
+                        case RawValueType.StrUsr:
+                        case RawValueType.StrEncLen:
+                        case RawValueType.StrL1:
+                        case RawValueType.StrL2:
+                        case RawValueType.StrL4:
+                            this.WriteRawStringValue(rawType, rawJsonValue, isFieldName);
+                            break;
 
-                    case RawValueType.StrR1:
-                        this.ForceRewriteRawJsonValue(
-                            rootBuffer,
-                            JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: 1).Span),
-                            default,
-                            isFieldName);
-                        break;
-                    case RawValueType.StrR2:
-                        this.ForceRewriteRawJsonValue(
-                            rootBuffer,
-                            JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: 1).Span),
-                            default,
-                            isFieldName);
-                        break;
-                    case RawValueType.StrR3:
-                        this.ForceRewriteRawJsonValue(
-                            rootBuffer,
-                            JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: 1).Span),
-                            default,
-                            isFieldName);
-                        break;
-                    case RawValueType.StrR4:
-                        this.ForceRewriteRawJsonValue(
-                            rootBuffer,
-                            JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: 1).Span),
-                            default,
-                            isFieldName);
-                        break;
-
-                    case RawValueType.Arr1:
-                        {
-                            this.JsonObjectState.RegisterToken(JsonTokenType.BeginArray);
-
-                            this.binaryWriter.Write(typeMarker);
-
+                        case RawValueType.StrR1:
                             this.ForceRewriteRawJsonValue(
                                 rootBuffer,
-                                valueOffset: valueOffset + 1,
-                                externalArrayInfo: default,
-                                isFieldName: false);
-
-                            this.JsonObjectState.RegisterToken(JsonTokenType.EndArray);
-                        }
-                        break;
-
-                    case RawValueType.Obj1:
-                        {
-                            this.JsonObjectState.RegisterToken(JsonTokenType.BeginObject);
-
-                            this.binaryWriter.Write(typeMarker);
-
+                                JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: 1).Span),
+                                default,
+                                isFieldName);
+                            break;
+                        case RawValueType.StrR2:
                             this.ForceRewriteRawJsonValue(
                                 rootBuffer,
-                                valueOffset: valueOffset + 1,
-                                externalArrayInfo: default,
-                                isFieldName: true);
-
-                            int nameLength = JsonBinaryEncoding.GetValueLength(rawJsonValue.Slice(start: 1).Span);
-
+                                JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: 1).Span),
+                                default,
+                                isFieldName);
+                            break;
+                        case RawValueType.StrR3:
                             this.ForceRewriteRawJsonValue(
                                 rootBuffer,
-                                valueOffset: valueOffset + 1 + nameLength,
-                                externalArrayInfo: default,
-                                isFieldName: false);
+                                JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: 1).Span),
+                                default,
+                                isFieldName);
+                            break;
+                        case RawValueType.StrR4:
+                            this.ForceRewriteRawJsonValue(
+                                rootBuffer,
+                                JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: 1).Span),
+                                default,
+                                isFieldName);
+                            break;
 
-                            this.JsonObjectState.RegisterToken(JsonTokenType.EndObject);
-                        }
-                        break;
-
-                    case RawValueType.Arr:
-                        {
-                            this.WriteArrayStart();
-
-                            foreach (JsonBinaryEncoding.Enumerator.ArrayItem arrayItem in JsonBinaryEncoding.Enumerator.GetArrayItems(rootBuffer, valueOffset, externalArrayInfo))
+                        case RawValueType.Arr1:
                             {
+                                this.JsonObjectState.RegisterToken(JsonTokenType.BeginArray);
+
+                                this.binaryWriter.Write(typeMarker);
+
                                 this.ForceRewriteRawJsonValue(
                                     rootBuffer,
-                                    arrayItem.Offset,
-                                    arrayItem.ExternalArrayInfo,
-                                    isFieldName);
+                                    valueOffset: valueOffset + 1,
+                                    externalArrayInfo: default,
+                                    isFieldName: false);
+
+                                this.JsonObjectState.RegisterToken(JsonTokenType.EndArray);
                             }
+                            break;
 
-                            this.WriteArrayEnd();
-                        }
-                        break;
-
-                    case RawValueType.Obj:
-                        {
-                            this.WriteObjectStart();
-
-                            foreach (JsonBinaryEncoding.Enumerator.ObjectProperty property in JsonBinaryEncoding.Enumerator.GetObjectProperties(rootBuffer, valueOffset))
+                        case RawValueType.Obj1:
                             {
-                                this.ForceRewriteRawJsonValue(rootBuffer, property.NameOffset, externalArrayInfo: default, isFieldName: true);
-                                this.ForceRewriteRawJsonValue(rootBuffer, property.ValueOffset, externalArrayInfo: default, isFieldName: false);
+                                this.JsonObjectState.RegisterToken(JsonTokenType.BeginObject);
+
+                                this.binaryWriter.Write(typeMarker);
+
+                                this.ForceRewriteRawJsonValue(
+                                    rootBuffer,
+                                    valueOffset: valueOffset + 1,
+                                    externalArrayInfo: default,
+                                    isFieldName: true);
+
+                                int nameLength = JsonBinaryEncoding.GetValueLength(rawJsonValue.Slice(start: 1).Span);
+
+                                this.ForceRewriteRawJsonValue(
+                                    rootBuffer,
+                                    valueOffset: valueOffset + 1 + nameLength,
+                                    externalArrayInfo: default,
+                                    isFieldName: false);
+
+                                this.JsonObjectState.RegisterToken(JsonTokenType.EndObject);
                             }
+                            break;
 
-                            this.WriteObjectEnd();
-                        }
-                        break;
+                        case RawValueType.Arr:
+                            {
+                                this.WriteArrayStart();
 
-                    default:
-                        throw new InvalidOperationException($"Unknown {nameof(RawValueType)} {rawType}.");
+                                foreach (JsonBinaryEncoding.Enumerator.ArrayItem arrayItem in JsonBinaryEncoding.Enumerator.GetArrayItems(rootBuffer, valueOffset, externalArrayInfo))
+                                {
+                                    this.ForceRewriteRawJsonValue(
+                                        rootBuffer,
+                                        arrayItem.Offset,
+                                        arrayItem.ExternalArrayInfo,
+                                        isFieldName);
+                                }
+
+                                this.WriteArrayEnd();
+                            }
+                            break;
+
+                        case RawValueType.Obj:
+                            {
+                                this.WriteObjectStart();
+
+                                foreach (JsonBinaryEncoding.Enumerator.ObjectProperty property in JsonBinaryEncoding.Enumerator.GetObjectProperties(rootBuffer, valueOffset))
+                                {
+                                    this.ForceRewriteRawJsonValue(rootBuffer, property.NameOffset, externalArrayInfo: default, isFieldName: true);
+                                    this.ForceRewriteRawJsonValue(rootBuffer, property.ValueOffset, externalArrayInfo: default, isFieldName: false);
+                                }
+
+                                this.WriteObjectEnd();
+                            }
+                            break;
+
+                        case RawValueType.ArrNum:
+                            this.WriteRawNumberArray(rawJsonValue.Span, GetUniformArrayInfo(rawJsonValue.Span));
+                            break;
+
+                        case RawValueType.ArrArrNum:
+                            this.WriteRawNumberArrayArray(rawJsonValue.Span, GetUniformArrayInfo(rawJsonValue.Span));
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"Unknown {nameof(RawValueType)} {rawType}.");
+                    }
                 }
             }
 
@@ -1784,6 +1795,130 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 this.WriteFieldNameOrString(isFieldName, rawStringValue);
+            }
+
+            private void WriteRawUniformArrayItem(
+                ReadOnlySpan<byte> rawValue,
+                UniformArrayInfo arrayInfo)
+            {
+                if (arrayInfo == null) throw new ArgumentNullException(nameof(arrayInfo));
+
+                switch (arrayInfo.ItemTypeMarker)
+                {
+                    case TypeMarker.Int8:
+                        this.WriteNumber64Value(GetFixedSizedValue<sbyte>(rawValue));
+                        break;
+                    case TypeMarker.UInt8:
+                        this.WriteNumber64Value(GetFixedSizedValue<byte>(rawValue));
+                        break;
+                    case TypeMarker.Int16:
+                        this.WriteNumber64Value(GetFixedSizedValue<short>(rawValue));
+                        break;
+                    case TypeMarker.Int32:
+                        this.WriteNumber64Value(GetFixedSizedValue<int>(rawValue));
+                        break;
+                    case TypeMarker.Int64:
+                        this.WriteNumber64Value(GetFixedSizedValue<long>(rawValue));
+                        break;
+                    case TypeMarker.Float32:
+                        this.WriteNumber64Value(GetFixedSizedValue<float>(rawValue));
+                        break;
+                    case TypeMarker.Float64:
+                        this.WriteNumber64Value(GetFixedSizedValue<double>(rawValue));
+                        break;
+
+                    case TypeMarker.ArrNumC1:
+                    case TypeMarker.ArrNumC2:
+                        this.WriteRawNumberArray(rawValue, arrayInfo.NestedArrayInfo);
+                        break;
+
+                    default:
+                        throw new JsonInvalidTokenException();
+                }
+            }
+
+            private void WriteRawNumberArray(
+                ReadOnlySpan<byte> rawValue,
+                UniformArrayInfo arrayInfo)
+            {
+                if (arrayInfo == null) throw new ArgumentNullException(nameof(arrayInfo));
+
+                this.WriteArrayStart();
+
+                int endOffset = arrayInfo.ItemCount * arrayInfo.ItemSize;
+                switch (arrayInfo.ItemTypeMarker)
+                {
+                    case TypeMarker.Int8:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<sbyte>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    case TypeMarker.UInt8:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<byte>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    case TypeMarker.Int16:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<short>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    case TypeMarker.Int32:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<int>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    case TypeMarker.Int64:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<long>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    case TypeMarker.Float32:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<float>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    case TypeMarker.Float64:
+                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        {
+                            this.WriteNumber64Value(GetFixedSizedValue<double>(rawValue.Slice(offset)));
+                        }
+                        break;
+
+                    default:
+                        throw new JsonInvalidTokenException();
+                }
+
+                this.WriteArrayEnd();
+            }
+
+            private void WriteRawNumberArrayArray(
+                ReadOnlySpan<byte> rawValue,
+                UniformArrayInfo arrayInfo)
+            {
+                if (arrayInfo == null) throw new ArgumentNullException(nameof(arrayInfo));
+
+                this.WriteArrayStart();
+
+                int endOffset = arrayInfo.ItemCount * arrayInfo.ItemSize;
+                for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                {
+                    this.WriteRawNumberArray(rawValue.Slice(offset), arrayInfo.NestedArrayInfo);
+                }
+
+                this.WriteArrayEnd();
             }
 
             private sealed class ArrayAndObjectInfo

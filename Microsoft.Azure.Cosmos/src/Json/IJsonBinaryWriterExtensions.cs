@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Json
         void WriteRawJsonValue(
             ReadOnlyMemory<byte> rootBuffer,
             int valueOffset,
-            bool isRootNode,
+            JsonBinaryEncoding.UniformArrayInfo externalArrayInfo,
             bool isFieldName);
     }
 }

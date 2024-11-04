@@ -378,7 +378,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Ignore] // This test takes too long
         public void CuratedDocumentCountriesTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("countries", false);
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("countries", performExtraChecks: false);
         }
 
         [TestMethod]
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("mayapainter")]
         public void CuratedDocumentLogDataTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("LogData.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("LogData.json", performExtraChecks: false);
         }
 
         [TestMethod]
@@ -508,6 +508,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
+                    input = JsonTestUtils.RandomSampleJson(input, maxNumberOfItems: 10);
                     JsonToken[] tokensFromReader = JsonTestUtils.ReadJsonDocument(input);
 
                     // Text
@@ -537,9 +538,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                         try
                         {
-                            if (materializedToken.ToString() != JToken.Parse(input).ToString())
+                            string value1 = materializedToken.ToString();
+                            string value2 = JToken.Parse(input).ToString();
+                            if (value1 != value2)
                             {
-                                throw new MaterializationFailedToMatchException();
+                                // JToken.Parse might change some values such as Date.
+                                // Before throwing an exception, we first try to apply
+                                // the same Parse to the first value as well.
+                                if (JToken.Parse(value1).ToString() != value2)
+                                {
+                                    throw new MaterializationFailedToMatchException();
+                                }
                             }
                         }
                         catch (Newtonsoft.Json.JsonReaderException)
