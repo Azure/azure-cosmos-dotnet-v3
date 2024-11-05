@@ -56,7 +56,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
 
 
   <!-- Add check for Newtonsoft.Json package in consumer app.  -->
-    <Target Name="CheckNewtonsoftJsonPresence" BeforeTargets="CoreCompile" Condition="'$(ExcludeRestorePackageImports)' != 'true' AND '$(DisableNewtonsoftJsonCheck)' != 'true'">
+    <Target Name="CheckNewtonsoftJsonPresence" BeforeTargets="CoreCompile" Condition="'$(ExcludeRestorePackageImports)' != 'true' AND '$(AzureCosmosDisableNewtonsoftJsonCheck)' != 'true'">
     
         <!-- Check for PackageReference to Newtonsoft.Json -->
         <ItemGroup>
@@ -69,7 +69,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
         </ItemGroup>
         
         <!-- Produce an error if Newtonsoft.Json is not found -->
-        <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 10.0.2. Please add a reference to Newtonsoft.Json, or set the 'DisableNewtonsoftJsonCheck' property to 'true' to bypass this check."
+        <Error Text="The Newtonsoft.Json package must be explicitly referenced with version >= 10.0.2. Please add a reference to Newtonsoft.Json, or set the 'AzureCosmosDisableNewtonsoftJsonCheck' property to 'true' to bypass this check."
                Condition="'@(NewtonsoftJsonPackageReference)' == '' and '@(NewtonsoftJsonAssemblyReference)' == ''" />
     
     </Target>
