@@ -63,7 +63,6 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Point geom = JsonConvert.DeserializeObject<Point>(json);
 
             Assert.AreEqual(geom, point);
-
         }
 
         /// <summary>

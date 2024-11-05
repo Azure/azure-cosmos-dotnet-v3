@@ -23,82 +23,60 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 throw new JsonException(RMResources.JsonUnexpectedToken);
             }
             IList<Geometry> geometries = null;
-            IDictionary<string, object> additionalProperties = null;
-            Crs crs = null;
-            BoundingBox boundingBox = null;
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
-            foreach (JsonProperty property in rootElement.EnumerateObject())
+            if (rootElement.TryGetProperty(STJMetaDataFields.Geometries, out JsonElement value))
             {
-                if (property.NameEquals(STJMetaDataFields.Geometries))
+                geometries = new List<Geometry>();
+                foreach (JsonElement arrayElement in value.EnumerateArray())
                 {
-                    geometries = new List<Geometry>();
-                    foreach (JsonElement arrayElement in property.Value.EnumerateArray())
+                    GeometryShape shape = (GeometryShape)arrayElement.GetProperty("type").GetInt16();
+                    Type type = shape.GetType();
+
+                    switch (shape.ToString())
                     {
-                        GeometryShape shape = (GeometryShape)arrayElement.GetProperty("type").GetInt16();
-                        Type type = shape.GetType();
+                        case nameof(GeometryShape.Point):
+                            Point point = JsonSerializer.Deserialize<Point>(arrayElement.GetRawText(), options);
+                            geometries.Add(point);
+                            break;
 
-                        switch (shape.ToString())
-                        {
-                            case nameof(GeometryShape.Point):
-                                Point point = JsonSerializer.Deserialize<Point>(arrayElement.GetRawText(), options);
-                                geometries.Add(point);
-                                break;
+                        case nameof(GeometryShape.MultiPoint):
+                            MultiPoint multiPoint = JsonSerializer.Deserialize<MultiPoint>(arrayElement.GetRawText(), options);
+                            geometries.Add(multiPoint);
+                            break;
 
-                            case nameof(GeometryShape.MultiPoint):
-                                MultiPoint multiPoint = JsonSerializer.Deserialize<MultiPoint>(arrayElement.GetRawText(), options);
-                                geometries.Add(multiPoint);
-                                break;
+                        case nameof(GeometryShape.LineString):
+                            LineString lineString = JsonSerializer.Deserialize<LineString>(arrayElement.GetRawText(), options);
+                            geometries.Add(lineString);
+                            break;
 
-                            case nameof(GeometryShape.LineString):
-                                LineString lineString = JsonSerializer.Deserialize<LineString>(arrayElement.GetRawText(), options);
-                                geometries.Add(lineString);
-                                break;
+                        case nameof(GeometryShape.MultiLineString):
+                            MultiLineString multiLineString = JsonSerializer.Deserialize<MultiLineString>(arrayElement.GetRawText(), options);
+                            geometries.Add(multiLineString);
+                            break;
 
-                            case nameof(GeometryShape.MultiLineString):
-                                MultiLineString multiLineString = JsonSerializer.Deserialize<MultiLineString>(arrayElement.GetRawText(), options);
-                                geometries.Add(multiLineString);
-                                break;
+                        case nameof(GeometryShape.Polygon):
+                            Polygon polygon = JsonSerializer.Deserialize<Polygon>(arrayElement.GetRawText(), options);
+                            geometries.Add(polygon);
+                            break;
 
-                            case nameof(GeometryShape.Polygon):
-                                Polygon polygon = JsonSerializer.Deserialize<Polygon>(arrayElement.GetRawText(), options);
-                                geometries.Add(polygon);
-                                break;
+                        case nameof(GeometryShape.MultiPolygon):
+                            MultiPolygon multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(arrayElement.GetRawText(), options);
+                            geometries.Add(multiPolygon);
+                            break;
 
-                            case nameof(GeometryShape.MultiPolygon):
-                                MultiPolygon multiPolygon = JsonSerializer.Deserialize<MultiPolygon>(arrayElement.GetRawText(), options);
-                                geometries.Add(multiPolygon);
-                                break;
+                        case nameof(GeometryShape.GeometryCollection):
+                            GeometryCollection geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(arrayElement.GetRawText(), options);
+                            geometries.Add(geometryCollection);
+                            break;
 
-                            case nameof(GeometryShape.GeometryCollection):
-                                GeometryCollection geometryCollection = JsonSerializer.Deserialize<GeometryCollection>(arrayElement.GetRawText(), options);
-                                geometries.Add(geometryCollection);
-                                break;
+                        default:
+                            throw new JsonException(RMResources.SpatialInvalidGeometryType);
 
-                            default:
-                                throw new JsonException(RMResources.SpatialInvalidGeometryType);
-
-                        }
                     }
                 }
-                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
-                {
-                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.GetRawText(), options);
-                    Console.WriteLine(additionalProperties.ToString());
-                }
-                else if (property.NameEquals(STJMetaDataFields.Crs))
-                {
-                    crs = property.Value.ValueKind == JsonValueKind.Null
-                        ? Crs.Unspecified
-                        : JsonSerializer.Deserialize<Crs>(property.Value.GetRawText(), options);
-
-                }
-                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
-                {
-                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.GetRawText(), options);
-
-                }
-
             }
+
+            (IDictionary<string, object> additionalProperties, Crs crs, BoundingBox boundingBox) = SpatialHelper.DeSerializePartialSpatialObject(rootElement, options);
             return new GeometryCollection(geometries, new GeometryParams
             {
                 AdditionalProperties = additionalProperties,

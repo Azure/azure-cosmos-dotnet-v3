@@ -24,38 +24,18 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             }
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             IList<LinearRing> linearRings = null;
-            IDictionary<string, object> additionalProperties = null;
-            Crs crs = null;
-            BoundingBox boundingBox = null;
-            foreach (JsonProperty property in rootElement.EnumerateObject())
+
+            if (rootElement.TryGetProperty(STJMetaDataFields.Rings, out JsonElement value))
             {
-                if (property.NameEquals(STJMetaDataFields.Rings))
+                linearRings = new List<LinearRing>();
+                foreach (JsonElement arrayElement in value.EnumerateArray())
                 {
-                    linearRings = new List<LinearRing>();
-                    foreach (JsonElement arrayElement in property.Value.EnumerateArray())
-                    {
-                        LinearRing linearRing = JsonSerializer.Deserialize<LinearRing>(arrayElement.GetRawText(), options);
-                        linearRings.Add(linearRing);
-                    }
+                    LinearRing linearRing = JsonSerializer.Deserialize<LinearRing>(arrayElement.GetRawText(), options);
+                    linearRings.Add(linearRing);
                 }
-                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
-                {
-                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.GetRawText(), options);
-                }
-                else if (property.NameEquals(STJMetaDataFields.Crs))
-                {
-                    crs = property.Value.ValueKind == JsonValueKind.Null
-                        ? Crs.Unspecified
-                        : JsonSerializer.Deserialize<Crs>(property.Value.GetRawText(), options);
-
-                }
-                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
-                {
-                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.GetRawText(), options);
-
-                }
-
             }
+
+            (IDictionary<string, object> additionalProperties, Crs crs, BoundingBox boundingBox) = SpatialHelper.DeSerializePartialSpatialObject(rootElement, options);
             return new Polygon(linearRings, new GeometryParams
             {
                 AdditionalProperties = additionalProperties,

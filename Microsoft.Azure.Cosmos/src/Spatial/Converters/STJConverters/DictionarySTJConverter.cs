@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    // System.Text.Json by default returns JsonElement as a value type for any key in the dictionary as it cant infer the type of value data. This Converter is required to properly return .NET type instead of JsonElement back to the client.
+    // System.Text.Json by default returns JsonElement as a value type for any key in the dictionary as it cant infer the type of value . This Converter is required to translate JsonElement to .NET type to return back to the client.
     internal class DictionarySTJConverter : JsonConverter<IDictionary<string, object>>
     {
         public override IDictionary<string, object> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
                 JsonTokenType.String => reader.GetString(),
                 JsonTokenType.True => true,
                 JsonTokenType.False => false,
+                JsonTokenType.Number when reader.TryGetInt32(out int i) => i,
                 JsonTokenType.Number when reader.TryGetInt64(out long l) => l,
                 JsonTokenType.Number => reader.GetDouble(),
                 JsonTokenType.Null => null,

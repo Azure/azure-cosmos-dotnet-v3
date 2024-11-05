@@ -28,6 +28,32 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
 
         }
 
+        public static (IDictionary<string, object>, Crs, BoundingBox) DeSerializePartialSpatialObject(JsonElement rootElement, JsonSerializerOptions options)
+        {
+            IDictionary<string, object> additionalProperties = null;
+            Crs crs = null;
+            BoundingBox boundingBox = null;
+
+            if (rootElement.TryGetProperty(STJMetaDataFields.AdditionalProperties, out JsonElement value))
+            {
+                additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(value.GetRawText(), options);
+            }
+            if (rootElement.TryGetProperty(STJMetaDataFields.Crs, out JsonElement crsValue))
+            {
+                crs = crsValue.ValueKind == JsonValueKind.Null
+                        ? Crs.Unspecified
+                        : JsonSerializer.Deserialize<Crs>(crsValue.GetRawText(), options);
+
+            }
+            if (rootElement.TryGetProperty(STJMetaDataFields.BoundingBox, out JsonElement boxValue))
+            {
+                boundingBox = JsonSerializer.Deserialize<BoundingBox>(boxValue.GetRawText(), options);
+            }
+
+            return (additionalProperties, crs, boundingBox);
+
+        }
+
     }
     
 }

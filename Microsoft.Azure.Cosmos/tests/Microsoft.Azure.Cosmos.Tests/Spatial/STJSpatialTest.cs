@@ -141,23 +141,23 @@
               },
               new object[] {
                   new Point(
-                    new Position(20, 30),
+                    new Position(20.4, 30.1),
                     new GeometryParams
                     {
                         AdditionalProperties = new Dictionary<string, object> {
-                            ["battle"] = "a large abttle",
-                            ["cruise"] = "a new cruise"
+                            ["one"] = 1,
+                            ["two"] = 2
                         },
                     })
               },
               new object[] {
                   new Point(
-                    new Position(20, 30),
+                    new Position(20.2, 30.9),
                     new GeometryParams
                     {
                         AdditionalProperties = new Dictionary<string, object> {
-                            ["battle"] = "a large abttle",
-                            ["cruise"] = "a new cruise"
+                            ["one"] = 1.2,
+                            ["two"] = 3.4
                         },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
                         Crs = new UnspecifiedCrs()
@@ -165,12 +165,12 @@
               },
               new object[] {
                   new Point(
-                    new Position(20, 30),
+                    new Position(20.5, 30.4),
                     new GeometryParams
                     {
                         AdditionalProperties = new Dictionary<string, object> {
-                            ["battle"] = "a large abttle",
-                            ["cruise"] = "a new cruise"
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
                         },
                         BoundingBox = new BoundingBox(new Position(0, 0), new Position(40, 40)),
                     })
@@ -181,8 +181,8 @@
                     new GeometryParams
                     {
                         AdditionalProperties = new Dictionary<string, object> {
-                            ["battle"] = "a large abttle",
-                            ["cruise"] = "a new cruise"
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
                         },
                         Crs = new UnspecifiedCrs()
                     })

@@ -8,13 +8,8 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     using System.Collections.Generic;
     using System.Text;
 
-    internal class STJMetaDataFields
+    internal static class STJMetaDataFields
     {
-        private STJMetaDataFields() 
-        {
-            throw new InvalidOperationException(" cannot instantitate utility class. use it as static reference");
-        }
-
         public const string Position = "position";
         public const string AdditionalProperties = "additionalProperties";
         public const string Crs = "crs";

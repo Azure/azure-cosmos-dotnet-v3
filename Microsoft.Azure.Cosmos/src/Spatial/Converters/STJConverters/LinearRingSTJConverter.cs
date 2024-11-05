@@ -17,10 +17,6 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
     {
         public override LinearRing Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            /*if (reader.TokenType == JsonTokenType.Null)
-            {
-                return null;
-            }*/
             if (reader.TokenType != JsonTokenType.StartObject)
             {
                 throw new JsonException(RMResources.JsonUnexpectedToken);

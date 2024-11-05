@@ -24,35 +24,13 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             Position pos = null;
-            IDictionary<string, object> additionalProperties = null;
-            Crs crs = null;
-            BoundingBox boundingBox = null;
-
-            foreach (JsonProperty property in rootElement.EnumerateObject())
+            if (rootElement.TryGetProperty(STJMetaDataFields.Position, out JsonElement value))
             {
-                if (property.NameEquals(STJMetaDataFields.Position))
-                {
-                    pos = JsonSerializer.Deserialize<Position>(property.Value.GetRawText(), options);
-                }
-                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
-                {
-                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.GetRawText(), options);
-                    
-                }
-                else if (property.NameEquals(STJMetaDataFields.Crs))
-                {
-                    crs = property.Value.ValueKind == JsonValueKind.Null
-                        ? Crs.Unspecified
-                        : JsonSerializer.Deserialize<Crs>(property.Value.GetRawText(), options);
-
-                }
-                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
-                {
-                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.GetRawText(), options);
-
-                }
-
+                pos = JsonSerializer.Deserialize<Position>(value.GetRawText(), options);
             }
+
+            (IDictionary<string, object> additionalProperties, Crs crs, BoundingBox boundingBox) = SpatialHelper.DeSerializePartialSpatialObject(rootElement, options);
+
             return new Point(pos, new GeometryParams
             {
                 AdditionalProperties = additionalProperties,

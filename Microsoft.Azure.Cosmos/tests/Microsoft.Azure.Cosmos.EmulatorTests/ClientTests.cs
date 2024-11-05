@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Spatial;
     using System.Text.Json;
-    //using System.Drawing;
 
     [TestClass]
     public class ClientTests
@@ -1166,8 +1165,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new GeometryParams
                     {
                         AdditionalProperties = new Dictionary<string, object> {
-                            ["battle"] = "a large abttle",
-                            ["cruise"] = "a new cruise"
+                           ["one"] = "a large one",
+                           ["two"] = "a new two"
                         },
                         Crs = Crs.Linked("http://foo.com", "link")
                     });
@@ -1206,8 +1205,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         AdditionalProperties = new Dictionary<string, object>
                         {
-                            ["battle"] = "a large abttle",
-                            ["cruise"] = "a new cruise"
+                            ["one"] = "a large one",
+                            ["two"] = "a new two"
                         },
                         Crs = Crs.Linked("http://foo.com", "link")
                     });

@@ -23,39 +23,19 @@ namespace Microsoft.Azure.Cosmos.Spatial.Converters.STJConverters
             }
             JsonElement rootElement = JsonDocument.ParseValue(ref reader).RootElement;
             IList<LineStringCoordinates> coordinates = null;
-            IDictionary<string, object> additionalProperties = null;
-            Crs crs = null;
-            BoundingBox boundingBox = null;
-            foreach (JsonProperty property in rootElement.EnumerateObject())
+
+            if (rootElement.TryGetProperty(STJMetaDataFields.LineStrings, out JsonElement value))
             {
-                if (property.NameEquals(STJMetaDataFields.LineStrings))
+                coordinates = new List<LineStringCoordinates>();
+                foreach (JsonElement arrayElement in value.EnumerateArray())
                 {
-                    coordinates = new List<LineStringCoordinates>();
-                    foreach (JsonElement arrayElement in property.Value.EnumerateArray())
-                    {
-                        LineStringCoordinates lineStringCoordinate = JsonSerializer.Deserialize<LineStringCoordinates>(arrayElement.GetRawText(), options);
-                        coordinates.Add(lineStringCoordinate);
-                    }
+                    LineStringCoordinates lineStringCoordinate = JsonSerializer.Deserialize<LineStringCoordinates>(arrayElement.GetRawText(), options);
+                    coordinates.Add(lineStringCoordinate);
                 }
-                else if (property.NameEquals(STJMetaDataFields.AdditionalProperties))
-                {
-                    additionalProperties = JsonSerializer.Deserialize<IDictionary<string, object>>(property.Value.GetRawText(), options);
-                    Console.WriteLine(additionalProperties.ToString());
-                }
-                else if (property.NameEquals(STJMetaDataFields.Crs))
-                {
-                    crs = property.Value.ValueKind == JsonValueKind.Null
-                        ? Crs.Unspecified
-                        : JsonSerializer.Deserialize<Crs>(property.Value.GetRawText(), options);
-
-                }
-                else if (property.NameEquals(STJMetaDataFields.BoundingBox))
-                {
-                    boundingBox = JsonSerializer.Deserialize<BoundingBox>(property.Value.GetRawText(), options);
-
-                }
-
             }
+
+            (IDictionary<string, object> additionalProperties, Crs crs, BoundingBox boundingBox) = SpatialHelper.DeSerializePartialSpatialObject(rootElement, options);
+
             return new MultiLineString(coordinates, new GeometryParams
             {
                 AdditionalProperties = additionalProperties,
