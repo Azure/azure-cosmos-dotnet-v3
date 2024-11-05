@@ -918,7 +918,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             t.ContinueWith(static (failedTask, connectionIdObject) =>
             {
-                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEvent callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
+                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEventAsync callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
             }, this.ConnectionCorrelationId, TaskContinuationOptions.OnlyOnFaulted);
         }
 

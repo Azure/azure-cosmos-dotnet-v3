@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Documents
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
-        private ConnectionStateListener connectionStateListener = null;
+        private readonly ConnectionStateListener connectionStateListener = null;
 
         public StoreClientFactory(
             Protocol protocol,
@@ -194,9 +194,9 @@ namespace Microsoft.Azure.Documents
                     sendHangDetectionTimeSeconds = maxSendHangDetectionTimeSeconds;
                 }
 
-                if (enableTcpConnectionEndpointRediscovery && addressResolver != null)
+                if (enableTcpConnectionEndpointRediscovery)
                 {
-                    this.connectionStateListener = new ConnectionStateListener(addressResolver);
+                    this.connectionStateListener = new ConnectionStateListener();
                 }
 
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
@@ -316,39 +316,47 @@ namespace Microsoft.Azure.Documents
             bool enableReplicaValidation = false)
         {
             this.ThrowIfDisposed();
+
+            StoreClient storeClient;
             if (useFallbackClient && this.fallbackTransportClient != null)
             {
                 DefaultTrace.TraceInformation("Using fallback TransportClient");
-                return new StoreClient(
-                addressResolver: addressResolver,
-                sessionContainer: sessionContainer,
-                serviceConfigurationReader: serviceConfigurationReader,
-                userTokenProvider: authorizationTokenProvider,
-                protocol: this.protocol,
-                transportClient: this.fallbackTransportClient,
-                enableRequestDiagnostics: enableRequestDiagnostics,
-                enableReadRequestsFallback: enableReadRequestsFallback,
-                useMultipleWriteLocations: useMultipleWriteLocations,
-                detectClientConnectivityIssues: detectClientConnectivityIssues,
-                disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
-                retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                storeClient = new StoreClient(
+                    addressResolver: addressResolver,
+                    sessionContainer: sessionContainer,
+                    serviceConfigurationReader: serviceConfigurationReader,
+                    userTokenProvider: authorizationTokenProvider,
+                    protocol: this.protocol,
+                    transportClient: this.fallbackTransportClient,
+                    enableRequestDiagnostics: enableRequestDiagnostics,
+                    enableReadRequestsFallback: enableReadRequestsFallback,
+                    useMultipleWriteLocations: useMultipleWriteLocations,
+                    detectClientConnectivityIssues: detectClientConnectivityIssues,
+                    disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                    retryWithConfiguration: this.retryWithConfiguration,
+                    enableReplicaValidation: enableReplicaValidation,
+                    connectionStateListener: this.connectionStateListener);
+            }
+            else
+            {
+                storeClient = new StoreClient(
+                    addressResolver: addressResolver,
+                    sessionContainer: sessionContainer,
+                    serviceConfigurationReader: serviceConfigurationReader,
+                    userTokenProvider: authorizationTokenProvider,
+                    protocol: this.protocol,
+                    transportClient: this.transportClient,
+                    enableRequestDiagnostics: enableRequestDiagnostics,
+                    enableReadRequestsFallback: enableReadRequestsFallback,
+                    useMultipleWriteLocations: useMultipleWriteLocations,
+                    detectClientConnectivityIssues: detectClientConnectivityIssues,
+                    disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
+                    retryWithConfiguration: this.retryWithConfiguration,
+                    enableReplicaValidation: enableReplicaValidation,
+                    connectionStateListener: this.connectionStateListener);
             }
 
-            return new StoreClient(
-                addressResolver: addressResolver,
-                sessionContainer: sessionContainer,
-                serviceConfigurationReader: serviceConfigurationReader,
-                userTokenProvider: authorizationTokenProvider,
-                protocol: this.protocol,
-                transportClient: this.transportClient,
-                enableRequestDiagnostics: enableRequestDiagnostics,
-                enableReadRequestsFallback: enableReadRequestsFallback,
-                useMultipleWriteLocations: useMultipleWriteLocations,
-                detectClientConnectivityIssues: detectClientConnectivityIssues,
-                disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
-                retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+            return storeClient;
         }
 
         #region IDisposable
