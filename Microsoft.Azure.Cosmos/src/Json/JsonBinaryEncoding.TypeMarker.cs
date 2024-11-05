@@ -189,7 +189,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             public const byte ReferenceString4ByteOffset = 0xC6;
 
-            // <empty> 0xC7
+            /// <summary>
+            /// Type marker for a 8-byte unsigned integer
+            /// </summary>
+            public const byte NumberUInt64 = 0xC7;
             #endregion
 
             #region [0xC8, 0xD0): Number Values
@@ -228,7 +231,10 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             public const byte Float64 = 0xCE;
 
-            // <number reserved> 0xCF
+            /// <summary>
+            /// Type marker for 16-bit floating point number.
+            /// </summary>
+            public const byte Float16 = 0xCF;
             #endregion
 
             #region [0xDO, 0xE0): Other Value Types
@@ -255,7 +261,11 @@ namespace Microsoft.Azure.Cosmos.Json
             // <other types empty> 0xD4
             // <other types empty> 0xD5
             // <other types empty> 0xD6
-            // <other types empty> 0xD7
+
+            /// <summary>
+            /// The type marker for a 1-byte unsigned integer value.
+            /// </summary>
+            public const byte UInt8 = 0xD7;
 
             /// <summary>
             /// The type marker for a 1-byte signed integer value.
@@ -299,95 +309,110 @@ namespace Microsoft.Azure.Cosmos.Json
             #endregion
 
             #region [0xE0, 0xE8): Array Type Markers
-
             /// <summary>
             /// Empty array type marker.
             /// </summary>
-            public const byte EmptyArray = 0xE0;
+            public const byte Arr0 = 0xE0;
 
             /// <summary>
             /// Single-item array type marker.
             /// </summary>
-            public const byte SingleItemArray = 0xE1;
+            public const byte Arr1 = 0xE1;
 
             /// <summary>
             /// Array of 1-byte length type marker.
             /// </summary>
-            public const byte Array1ByteLength = 0xE2;
+            public const byte ArrL1 = 0xE2;
 
             /// <summary>
             /// Array of 2-byte length type marker.
             /// </summary>
-            public const byte Array2ByteLength = 0xE3;
+            public const byte ArrL2 = 0xE3;
 
             /// <summary>
             /// Array of 4-byte length type marker.
             /// </summary>
-            public const byte Array4ByteLength = 0xE4;
+            public const byte ArrL4 = 0xE4;
 
             /// <summary>
             /// Array of 1-byte length and item count type marker.
             /// </summary>
-            public const byte Array1ByteLengthAndCount = 0xE5;
+            public const byte ArrLC1 = 0xE5;
 
             /// <summary>
             /// Array of 2-byte length and item count type marker.
             /// </summary>
-            public const byte Array2ByteLengthAndCount = 0xE6;
+            public const byte ArrLC2 = 0xE6;
 
             /// <summary>
             /// Array of 4-byte length and item count type marker.
             /// </summary>
-            public const byte Array4ByteLengthAndCount = 0xE7;
+            public const byte ArrLC4 = 0xE7;
             #endregion
 
             #region [0xE8, 0xF0): Object Type Markers
             /// <summary>
             /// Empty object type marker.
             /// </summary>
-            public const byte EmptyObject = 0xE8;
+            public const byte Obj0 = 0xE8;
 
             /// <summary>
             /// Single-property object type marker.
             /// </summary>
-            public const byte SinglePropertyObject = 0xE9;
+            public const byte Obj1 = 0xE9;
 
             /// <summary>
             /// Object of 1-byte length type marker.
             /// </summary>
-            public const byte Object1ByteLength = 0xEA;
+            public const byte ObjL1 = 0xEA;
 
             /// <summary>
             /// Object of 2-byte length type marker.
             /// </summary>
-            public const byte Object2ByteLength = 0xEB;
+            public const byte ObjL2 = 0xEB;
 
             /// <summary>
             /// Object of 4-byte length type maker.
             /// </summary>
-            public const byte Object4ByteLength = 0xEC;
+            public const byte ObjL4 = 0xEC;
 
             /// <summary>
             /// Object of 1-byte length and property count type marker.
             /// </summary>
-            public const byte Object1ByteLengthAndCount = 0xED;
+            public const byte ObjLC1 = 0xED;
 
             /// <summary>
             /// Object of 2-byte length and property count type marker.
             /// </summary>
-            public const byte Object2ByteLengthAndCount = 0xEE;
+            public const byte ObjLC2 = 0xEE;
 
             /// <summary>
             /// Object of 4-byte length and property count type marker.
             /// </summary>
-            public const byte Object4ByteLengthAndCount = 0xEF;
+            public const byte ObjLC4 = 0xEF;
             #endregion
 
-            #region [0xF0, 0xF8): Empty Range
-            // <empty> 0xF0
-            // <empty> 0xF1
-            // <empty> 0xF2
-            // <empty> 0xF3
+            #region [0xF0, 0xF8): Special Arrays Type Markers
+            /// <summary>
+            /// Uniform number array of 1-byte item count.
+            /// </summary>
+            public const byte ArrNumC1 = 0xF0;
+
+            /// <summary>
+            /// Uniform number array of 2-byte item count.
+            /// </summary>
+            public const byte ArrNumC2 = 0xF1;
+
+            /// <summary>
+            /// Array of 1-byte item count of uniform number arrays of 1-byte item count.
+            /// </summary>
+            public const byte ArrArrNumC1C1 = 0xF2;
+
+            /// <summary>
+            /// Array of 2-byte item count of uniform number arrays of 2-byte item count.
+            /// </summary>
+            public const byte ArrArrNumC2C2 = 0xF3;
+
             // <empty> 0xF4
             // <empty> 0xF5
             // <empty> 0xF6
@@ -693,7 +718,7 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsEmptyArray(byte typeMarker)
             {
-                return typeMarker == EmptyArray;
+                return typeMarker == Arr0;
             }
 
             /// <summary>
@@ -704,7 +729,8 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsArray(byte typeMarker)
             {
-                return InRange(typeMarker, EmptyArray, Array4ByteLengthAndCount + 1);
+                return InRange(typeMarker, Arr0, ArrLC4 + 1) ||
+                    InRange(typeMarker, ArrNumC1, ArrArrNumC2C2 + 1);
             }
 
             /// <summary>
@@ -715,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsEmptyObject(byte typeMarker)
             {
-                return typeMarker == EmptyObject;
+                return typeMarker == Obj0;
             }
 
             /// <summary>
@@ -726,7 +752,7 @@ namespace Microsoft.Azure.Cosmos.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsObject(byte typeMarker)
             {
-                return InRange(typeMarker, EmptyObject, Object4ByteLengthAndCount + 1);
+                return InRange(typeMarker, Obj0, ObjLC4 + 1);
             }
             #endregion
 
