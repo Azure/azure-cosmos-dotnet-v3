@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         #region SimpleTests
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrueTest()
         {
             string input = "true";
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void FalseTest()
         {
             string input = "false";
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullTest()
         {
             string input = "null";
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntegerTest()
         {
             string input = "1337";
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DoubleTest()
         {
             string input = "1337.0";
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NegativeNumberTest()
         {
             string input = "-1337.0";
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberWithScientificNotationTest()
         {
             string input = "6.02252e23";
@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberRegressionTest()
         {
             // regression test - the value 0.00085647800000000004 was being incorrectly rejected
@@ -106,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StringTest()
         {
             string input = "\"Hello World\"";
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyArrayTest()
         {
             string input = "[  ]  ";
@@ -124,7 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntArrayTest()
         {
             string input = "[ -2, -1, 0, 1, 2]  ";
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberArrayTest()
         {
             string input = "[15,  22, 0.1, -7.3e-2, 77.0001e90 ]  ";
@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BooleanArrayTest()
         {
             string input = "[ true, false]  ";
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullArrayTest()
         {
             string input = "[ null, null, null]  ";
@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ObjectArrayTest()
         {
             string input = "[{}, {}]  ";
@@ -169,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitiveArrayTest()
         {
             string input = "[0, 0.0, -1, -1.0, 1, 2, \"hello\", null, true, false]  ";
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NestedArrayTest()
         {
             string input = "[[], []]  ";
@@ -187,7 +187,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StrangeNumberArrayTest()
         {
             string input = @"[
@@ -201,14 +201,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 JsonNavigatorTests.VerifyNavigator(input);
             }
-            catch (MaterilizationFailedToMatchException)
+            catch (MaterializationFailedToMatchException)
             {
                 // Newtonsoft does not use IEEE double precision for these long integers.
             }
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyObjectTest()
         {
             string input = "{}";
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SimpleObjectTest()
         {
             string input = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitivesObjectTest()
         {
             string input = @"{
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int8Test()
         {
             sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int16Test()
         {
             short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int32Test()
         {
             int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int64Test()
         {
             long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
@@ -299,7 +299,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UInt32Test()
         {
             uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float32Test()
         {
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
@@ -323,7 +323,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float64Test()
         {
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
@@ -335,7 +335,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidTest()
         {
             Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BinaryTest()
         {
             {
@@ -365,124 +365,123 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
         #endregion
 
-        #region CurratedDocs
+        #region CuratedDocs
         [TestMethod]
-        [Owner("brchon")]
-        public void CombinedScriptsDataTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentCombinedScriptsDataTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("CombinedScriptsData.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("CombinedScriptsData.json");
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         [Ignore] // This test takes too long
-        public void CountriesTest()
+        public void CuratedDocumentCountriesTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("countries", false);
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("countries", performExtraChecks: false);
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void DevTestCollTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentDevTestCollTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("devtestcoll.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("devtestcoll.json");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void LastFMTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentLastFMTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("lastfm");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("lastfm");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void LogDataTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentLogDataTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("LogData.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("LogData.json", performExtraChecks: false);
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void MillionSong1KDocumentsTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentMillionSong1KDocumentsTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("MillionSong1KDocuments.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("MillionSong1KDocuments.json");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void MsnCollectionTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentMsnCollectionTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("MsnCollection.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("MsnCollection.json");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void NutritionDataTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentNutritionDataTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("NutritionData");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("NutritionData");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void RunsCollectionTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentRunsCollectionTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("runsCollection");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("runsCollection");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void StatesCommitteesTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentStatesCommitteesTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("states_committees.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("states_committees.json");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void StatesLegislatorsTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentStatesLegislatorsTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("states_legislators");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("states_legislators");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void Store01Test()
+        [Owner("mayapainter")]
+        public void CuratedDocumentStore01Test()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("store01C.json");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("store01C.json");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void TicinoErrorBucketsTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentTicinoErrorBucketsTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("TicinoErrorBuckets");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("TicinoErrorBuckets");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void TwitterDataTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentTwitterDataTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("twitter_data");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("twitter_data");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void Ups1Test()
+        [Owner("mayapainter")]
+        public void CuratedDocumentUps1Test()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("ups1");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("ups1");
         }
 
         [TestMethod]
-        [Owner("brchon")]
-        public void XpertEventsTest()
+        [Owner("mayapainter")]
+        public void CuratedDocumentXpertEventsTest()
         {
-            JsonNavigatorTests.VerifyNavigatorWithCurratedDoc("XpertEvents");
+            JsonNavigatorTests.VerifyNavigatorWithCuratedDoc("XpertEvents");
         }
 
-        private static void VerifyNavigatorWithCurratedDoc(string path, bool performExtraChecks = true)
+        private static void VerifyNavigatorWithCuratedDoc(string filename, bool performExtraChecks = true)
         {
-            path = string.Format("TestJsons/{0}", path);
-            string json = TextFileConcatenation.ReadMultipartFile(path);
+            string json = JsonTestUtils.LoadJsonCuratedDocument(filename);
 #if true
             json = JsonTestUtils.RandomSampleJson(json, maxNumberOfItems: 10);
 #endif
@@ -509,8 +508,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     System.Threading.Thread.CurrentThread.CurrentCulture = cultureInfo;
 
-                    IJsonReader jsonReader = JsonReader.Create(Encoding.UTF8.GetBytes(input));
-                    JsonToken[] tokensFromReader = JsonNavigatorTests.GetTokensWithReader(jsonReader);
+                    input = JsonTestUtils.RandomSampleJson(input, maxNumberOfItems: 10);
+                    JsonToken[] tokensFromReader = JsonTestUtils.ReadJsonDocument(input);
 
                     // Text
                     IJsonNavigator textNavigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(input));
@@ -539,9 +538,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                         try
                         {
-                            if (materializedToken.ToString() != JToken.Parse(input).ToString())
+                            string value1 = materializedToken.ToString();
+                            string value2 = JToken.Parse(input).ToString();
+                            if (value1 != value2)
                             {
-                                throw new MaterilizationFailedToMatchException();
+                                // JToken.Parse might change some values such as Date.
+                                // Before throwing an exception, we first try to apply
+                                // the same Parse to the first value as well.
+                                if (JToken.Parse(value1).ToString() != value2)
+                                {
+                                    throw new MaterializationFailedToMatchException();
+                                }
                             }
                         }
                         catch (Newtonsoft.Json.JsonReaderException)
@@ -557,106 +564,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        private static JsonToken[] GetTokensWithReader(IJsonReader jsonReader)
-        {
-            List<JsonToken> tokens = new List<JsonToken>();
-            while (jsonReader.Read())
-            {
-                JsonToken token;
-                switch (jsonReader.CurrentTokenType)
-                {
-                    case JsonTokenType.NotStarted:
-                        throw new InvalidOperationException();
-
-                    case JsonTokenType.BeginArray:
-                        token = JsonToken.ArrayStart();
-                        break;
-
-                    case JsonTokenType.EndArray:
-                        token = JsonToken.ArrayEnd();
-                        break;
-
-                    case JsonTokenType.BeginObject:
-                        token = JsonToken.ObjectStart();
-                        break;
-
-                    case JsonTokenType.EndObject:
-                        token = JsonToken.ObjectEnd();
-                        break;
-
-                    case JsonTokenType.String:
-                        token = JsonToken.String(jsonReader.GetStringValue());
-                        break;
-
-                    case JsonTokenType.Number:
-                        token = JsonToken.Number(jsonReader.GetNumberValue());
-                        break;
-
-                    case JsonTokenType.True:
-                        token = JsonToken.Boolean(true);
-                        break;
-
-                    case JsonTokenType.False:
-                        token = JsonToken.Boolean(false);
-                        break;
-
-                    case JsonTokenType.Null:
-                        token = JsonToken.Null();
-                        break;
-
-                    case JsonTokenType.FieldName:
-                        token = JsonToken.FieldName(jsonReader.GetStringValue());
-                        break;
-
-                    case JsonTokenType.Int8:
-                        token = JsonToken.Int8(jsonReader.GetInt8Value());
-                        break;
-
-                    case JsonTokenType.Int16:
-                        token = JsonToken.Int16(jsonReader.GetInt16Value());
-                        break;
-
-                    case JsonTokenType.Int32:
-                        token = JsonToken.Int32(jsonReader.GetInt32Value());
-                        break;
-
-                    case JsonTokenType.Int64:
-                        token = JsonToken.Int64(jsonReader.GetInt64Value());
-                        break;
-
-                    case JsonTokenType.UInt32:
-                        token = JsonToken.UInt32(jsonReader.GetUInt32Value());
-                        break;
-
-                    case JsonTokenType.Float32:
-                        token = JsonToken.Float32(jsonReader.GetFloat32Value());
-                        break;
-
-                    case JsonTokenType.Float64:
-                        token = JsonToken.Float64(jsonReader.GetFloat64Value());
-                        break;
-
-                    case JsonTokenType.Guid:
-                        token = JsonToken.Guid(jsonReader.GetGuidValue());
-                        break;
-
-                    case JsonTokenType.Binary:
-                        token = JsonToken.Binary(jsonReader.GetBinaryValue());
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {jsonReader.CurrentTokenType}");
-                }
-
-                tokens.Add(token);
-            }
-
-            return tokens.ToArray();
-        }
-
         private static JsonToken[] GetTokensFromNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
         {
-            switch (navigator.GetNodeType(node))
+            JsonNodeType nodeType = navigator.GetNodeType(node);
+            switch (nodeType)
             {
                 case JsonNodeType.Null:
                     return new JsonToken[] { JsonToken.Null() };
@@ -775,7 +686,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 // Get tokens once again through indexer
                 List<JsonToken> tokensFromIndexer = new List<JsonToken>();
                 tokensFromIndexer.Add(JsonToken.ArrayStart());
-                for (int i = 0; i < navigator.GetArrayItemCount(node); ++i)
+
+                int itemCount = navigator.GetArrayItemCount(node);
+                for (int i = 0; i < itemCount; ++i)
                 {
                     tokensFromIndexer.AddRange(JsonNavigatorTests.GetTokensFromNode(navigator.GetArrayItemAt(node, i), navigator, performCorrectnessCheck));
                 }
@@ -784,28 +697,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                 Assert.AreEqual(arrayItems.Count(), navigator.GetArrayItemCount(node));
                 Assert.IsTrue(tokensFromIEnumerable.SequenceEqual(tokensFromIndexer));
-
-                try
-                {
-                    navigator.GetArrayItemAt(node, navigator.GetArrayItemCount(node) + 1);
-                    Assert.Fail("Expected to get an index out of range exception from going one past the end of the array.");
-                }
-                catch (IndexOutOfRangeException)
-                {
-                    Assert.AreEqual(navigator.SerializationFormat, JsonSerializationFormat.Binary);
-                }
-                catch (ArgumentOutOfRangeException)
-                {
-                    Assert.AreEqual(navigator.SerializationFormat, JsonSerializationFormat.Text);
-                }
             }
 
             return tokensFromIEnumerable.ToArray();
         }
 
-        private sealed class MaterilizationFailedToMatchException : Exception
+        private sealed class MaterializationFailedToMatchException : Exception
         {
-            public MaterilizationFailedToMatchException()
+            public MaterializationFailedToMatchException()
             {
             }
         }

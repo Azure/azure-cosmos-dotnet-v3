@@ -4,10 +4,11 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
     /// <summary>
-    /// Interface for all JsonWriters that know how to write jsons of a specific serialization format.
+    /// Common interface for all JSON writers that can write JSON in a specific serialization format.
     /// </summary>
 #if INTERNAL
     public
@@ -87,6 +88,54 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         void WriteNullValue();
 
+        #region Number Arrays
+
+        /// <summary>
+        /// Writes an array of 8-byte unsigned integer values.
+        /// </summary>
+        /// <param name="values">The array of 8-byte unsigned integer values to write.</param>
+        void WriteNumberArray(IReadOnlyList<byte> values);
+
+        /// <summary>
+        /// Writes an array of 8-byte signed integer values.
+        /// </summary>
+        /// <param name="values">The array of 8-byte signed integer values to write.</param>
+        void WriteNumberArray(IReadOnlyList<sbyte> values);
+
+        /// <summary>
+        /// Writes an array of 16-byte signed integer values.
+        /// </summary>
+        /// <param name="values">The array of 16-byte signed integer values to write.</param>
+        void WriteNumberArray(IReadOnlyList<short> values);
+
+        /// <summary>
+        /// Writes an array of 32-byte signed integer values.
+        /// </summary>
+        /// <param name="values">The array of 32-byte signed integer values to write.</param>
+        void WriteNumberArray(IReadOnlyList<int> values);
+
+        /// <summary>
+        /// Writes an array of 64-byte signed integer values.
+        /// </summary>
+        /// <param name="values">The array of 64-byte signed integer values to write.</param>
+        void WriteNumberArray(IReadOnlyList<long> values);
+
+        /// <summary>
+        /// Writes an array of single-precision floating-point numbers.
+        /// </summary>
+        /// <param name="values">The array of single-precision floating-point numbers to write.</param>
+        void WriteNumberArray(IReadOnlyList<float> values);
+
+        /// <summary>
+        /// Writes an array of double-precision floating-point numbers.
+        /// </summary>
+        /// <param name="values">The array of double-precision floating-point numbers to write.</param>
+        void WriteNumberArray(IReadOnlyList<double> values);
+
+        #endregion
+
+        #region Extended Types
+
         /// <summary>
         /// Writes an single signed byte integer to the internal buffer.
         /// </summary>
@@ -140,6 +189,8 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="value">The value of the bytes to write.</param>
         void WriteBinaryValue(ReadOnlySpan<byte> value);
+
+        #endregion
 
         /// <summary>
         /// Gets the result of the JsonWriter.

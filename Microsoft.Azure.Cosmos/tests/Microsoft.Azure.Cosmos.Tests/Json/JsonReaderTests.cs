@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         #region Literals
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrueTest()
         {
             string input = "true";
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void FalseTest()
         {
             string input = "false";
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullTest()
         {
             string input = "null";
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         #endregion
         #region Numbers
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntegerTest()
         {
             string input = "1337";
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DoubleTest()
         {
             string input = "1337.0";
@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NegativeNumberTest()
         {
             string input = "-1337.0";
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberWithPlusSignTest()
         {
             string input = "+1337.0";
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberWithLeadingZeros()
         {
             string input = "01";
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberWithScientificNotationTest()
         {
             string input = "6.02252e23";
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberRegressionTest()
         {
             // regression test - the value 0.00085647800000000004 was being incorrectly rejected
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllNumberRepresentationsTest()
         {
             // trying to read 4 from all possible representations
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberLimitsTest()
         {
             // min byte
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberStartingWithDotTest()
         {
             string input = ".001";
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ScientificWithNoExponent()
         {
             string input = "1e";
@@ -506,7 +506,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ScientificWithPostitiveExponent()
         {
             string input = "6.02252e+23";
@@ -522,7 +522,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ScientificWithNegativeExponent()
         {
             string input = "6.02252e-23";
@@ -539,7 +539,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         #endregion
         #region Strings
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyStringTest()
         {
             string input = "\"\"";
@@ -552,7 +552,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StringTest()
         {
             string input = "\"Hello World\"";
@@ -598,7 +598,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SystemStringTest()
         {
             int systemStringId = 0;
@@ -622,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberAsStringTest()
         {
             string input = "\"42\"";
@@ -635,7 +635,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BoolAsStringTest()
         {
             string input = "\"true\"";
@@ -648,7 +648,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullAsStringTest()
         {
             string input = "\"null\"";
@@ -661,7 +661,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ArrayAsStringTest()
         {
             string input = "\"[]\"";
@@ -674,7 +674,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ObjectAsStringTest()
         {
             string input = "\"{}\"";
@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidStringsTest()
         {
             {
@@ -983,7 +983,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void DateTimeStringsTest()
         {
             {
@@ -1184,7 +1184,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void HexStringsTest()
         {
             {
@@ -1245,7 +1245,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EncodedStringLengthTests()
         {
             for (int i = JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin; i < JsonBinaryEncoding.TypeMarker.EncodedStringLengthMax; i++)
@@ -1270,7 +1270,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ReferenceStringTests()
         {
             string stringPayload = "[\"hello\", \"hello\"]";
@@ -1289,7 +1289,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                         BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.ArrL1,
                         9,
                         JsonBinaryEncoding.TypeMarker.String1ByteLength,
                         (byte)"hello".Length,
@@ -1307,7 +1307,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                         BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.ArrL1,
                         10,
                         JsonBinaryEncoding.TypeMarker.String1ByteLength,
                         (byte)"hello".Length,
@@ -1325,7 +1325,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                         BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.ArrL1,
                         11,
                         JsonBinaryEncoding.TypeMarker.String1ByteLength,
                         (byte)"hello".Length,
@@ -1343,7 +1343,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                         BinaryFormat,
-                        JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.ArrL1,
                         12,
                         JsonBinaryEncoding.TypeMarker.String1ByteLength,
                         (byte)"hello".Length,
@@ -1358,7 +1358,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void PackedStringsTest()
         {
             {
@@ -1514,14 +1514,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         #endregion
         #region Arrays
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ArrayRepresentationTest()
         {
             string input = "[true, false]";
             byte[] binary1ByteLengthInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL1,
                 // length
                 2,
                 JsonBinaryEncoding.TypeMarker.True,
@@ -1531,7 +1531,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary1ByteLengthAndCountInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount,
+                JsonBinaryEncoding.TypeMarker.ArrLC1,
                 // length
                 2,
                 // count
@@ -1543,7 +1543,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary2ByteLengthInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array2ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL2,
                 // length
                 2, 0x00,
                 JsonBinaryEncoding.TypeMarker.True,
@@ -1553,7 +1553,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary2ByteLengthAndCountInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount,
+                JsonBinaryEncoding.TypeMarker.ArrLC2,
                 // length
                 2, 0x00,
                 // count
@@ -1565,7 +1565,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary4ByteLengthInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array4ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL4,
                 // length
                 2, 0x00, 0x00, 0x00,
                 JsonBinaryEncoding.TypeMarker.True,
@@ -1575,7 +1575,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary4ByteLengthAndCountInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount,
+                JsonBinaryEncoding.TypeMarker.ArrLC4,
                 // length
                 2, 0x00, 0x00, 0x00,
                 // count
@@ -1602,14 +1602,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyArrayTest()
         {
             string input = "[  ]  ";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.EmptyArray
+                JsonBinaryEncoding.TypeMarker.Arr0
             };
 
             JsonToken[] expectedTokens =
@@ -1623,14 +1623,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SingleItemArrayTest()
         {
             string input = "[ true ]  ";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.SingleItemArray,
+                JsonBinaryEncoding.TypeMarker.Arr1,
                 JsonBinaryEncoding.TypeMarker.True
             };
 
@@ -1646,13 +1646,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void IntArrayTest()
         {
             string input = "[ -2, -1, 0, 1, 2]  ";
             List<byte[]> binaryInputBuilder = new List<byte[]>
             {
-                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength }
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ArrL1 }
             };
 
             List<byte[]> numbers = new List<byte[]>
@@ -1685,14 +1685,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NumberArrayTest()
         {
             string input = "[15,  22, 0.1, -7.3e-2, 77.0001e90 ]  ";
 
             List<byte[]> binaryInputBuilder = new List<byte[]>
             {
-                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength }
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ArrL1 }
             };
 
             List<byte[]> numbers = new List<byte[]>
@@ -1725,14 +1725,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StringArrayTest()
         {
             string input = @"[""Hello"", ""World"", ""Bye""]";
 
             List<byte[]> binaryInputBuilder = new List<byte[]>
             {
-                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength }
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ArrL1 }
             };
 
             List<byte[]> strings = new List<byte[]>
@@ -1765,14 +1765,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BooleanArrayTest()
         {
             string input = "[ true, false]  ";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL1,
                 // length
                 2,
                 JsonBinaryEncoding.TypeMarker.True,
@@ -1792,14 +1792,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NullArrayTest()
         {
             string input = "[ null, null, null]  ";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL1,
                 // length
                 3,
                 JsonBinaryEncoding.TypeMarker.Null,
@@ -1821,18 +1821,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ObjectArrayTest()
         {
             string input = "[{}, {}]  ";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL1,
                 // length
                 2,
-                JsonBinaryEncoding.TypeMarker.EmptyObject,
-                JsonBinaryEncoding.TypeMarker.EmptyObject,
+                JsonBinaryEncoding.TypeMarker.Obj0,
+                JsonBinaryEncoding.TypeMarker.Obj0,
             };
 
             JsonToken[] expectedTokens =
@@ -1850,13 +1850,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitiveArrayTest()
         {
             string input = "[0, 0.0, -1, -1.0, 1, 2, \"hello\", null, true, false]  ";
             List<byte[]> binaryInputBuilder = new List<byte[]>
             {
-                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength }
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ArrL1 }
             };
 
             List<byte[]> elements = new List<byte[]>
@@ -1899,18 +1899,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void NestedArrayTest()
         {
             string input = "[[], []]  ";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL1,
                 // length
                 2,
-                JsonBinaryEncoding.TypeMarker.EmptyArray,
-                JsonBinaryEncoding.TypeMarker.EmptyArray,
+                JsonBinaryEncoding.TypeMarker.Arr0,
+                JsonBinaryEncoding.TypeMarker.Arr0,
             };
 
             JsonToken[] expectedTokens =
@@ -1928,7 +1928,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void StrangeNumberArrayTest()
         {
             string input = @"[
@@ -1940,7 +1940,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             List<byte[]> binaryInputBuilder = new List<byte[]>
             {
-                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Array1ByteLength }
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ArrL1 }
             };
 
             List<byte[]> elements = new List<byte[]>
@@ -1971,7 +1971,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ExtendedTypeArrayTest()
         {
             string input = @"[I1,H2,L3,LL4,UL5,S6,D7,BbilGgyjThtuSzs5Md/5Dew==,G00000000-0000-0000-0000-000000000000]";
@@ -1979,7 +1979,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             List<byte> bytes = new List<byte>
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.Array1ByteLength,
+                JsonBinaryEncoding.TypeMarker.ArrL1,
                 JsonBinaryEncoding.TypeMarker.Int8,
                 (byte)1,
                 JsonBinaryEncoding.TypeMarker.Int16
@@ -2023,7 +2023,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         #endregion
         #region Escaping
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EscapeCharacterTest()
         {
             // Set of all escape characters in JSON.
@@ -2053,7 +2053,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void WhitespaceCharacterTest()
         {
             // http://www.ietf.org/rfc/rfc4627.txt for JSON whitespace definition (Section 2).
@@ -2074,7 +2074,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnicodeEscapeTest()
         {
             {
@@ -2109,7 +2109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TwoAdjacentUnicodeCharactersTest()
         {
             // 2 unicode escape characters that are not surrogate pairs
@@ -2127,7 +2127,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnicodeTest()
         {
             // the user might literally paste a unicode character into the json.
@@ -2152,7 +2152,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmojiUTF32Test()
         {
             // the user might literally paste a utf 32 character (like the poop emoji).
@@ -2177,7 +2177,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EscapedEmojiUTF32Test()
         {
             // the user might want to encode the utf32 character as an escape utf32 character.
@@ -2206,7 +2206,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void ControlCharacterTests()
         {
             // control characters (U+0000 through U+001F)
@@ -2225,14 +2225,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         #endregion
         #region Objects
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void EmptyObjectTest()
         {
             string input = "{}";
             byte[] binaryInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.EmptyObject,
+                JsonBinaryEncoding.TypeMarker.Obj0,
             };
 
             JsonToken[] expectedTokens =
@@ -2246,7 +2246,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void SimpleObjectTest()
         {
             string input = "{\"GlossDiv\":10,\"title\": \"example glossary\" }";
@@ -2255,7 +2255,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 List<byte[]> binaryInputBuilder = new List<byte[]>
                 {
-                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength }
+                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 }
                 };
 
                 List<byte[]> elements = new List<byte[]>
@@ -2276,7 +2276,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 List<byte[]> binaryInputBuilder = new List<byte[]>
                 {
-                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength }
+                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 }
                 };
 
                 List<byte[]> elements = new List<byte[]>
@@ -2308,7 +2308,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void AllPrimitivesObjectTest()
         {
             string input = @"{
@@ -2333,7 +2333,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 List<byte[]> binaryInputBuilder = new List<byte[]>
                 {
-                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object2ByteLength }
+                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL2 }
                 };
 
                 List<byte[]> elements = new List<byte[]>
@@ -2376,11 +2376,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 };
                 byte[] innerArrayElementsBytes = innerArrayElements.SelectMany(x => x).ToArray();
 
-                innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Array1ByteLength, (byte)innerArrayElementsBytes.Length });
+                innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.ArrL1, (byte)innerArrayElementsBytes.Length });
                 innerObjectElements.Add(innerArrayElementsBytes);
 
                 byte[] innerObjectElementsBytes = innerObjectElements.SelectMany(x => x).ToArray();
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Object1ByteLength, (byte)innerObjectElementsBytes.Length });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.ObjL1, (byte)innerObjectElementsBytes.Length });
                 elements.Add(innerObjectElementsBytes);
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "text".Length), 116, 101, 120, 116 });
@@ -2397,7 +2397,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 List<byte[]> binaryInputBuilder = new List<byte[]>
                 {
-                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object2ByteLength }
+                    new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL2 }
                 };
 
                 List<byte[]> elements = new List<byte[]>
@@ -2440,11 +2440,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 };
                 byte[] innerArrayElementsBytes = innerArrayElements.SelectMany(x => x).ToArray();
 
-                innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Array1ByteLength, (byte)innerArrayElementsBytes.Length });
+                innerObjectElements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.ArrL1, (byte)innerArrayElementsBytes.Length });
                 innerObjectElements.Add(innerArrayElementsBytes);
 
                 byte[] innerObjectElementsBytes = innerObjectElements.SelectMany(x => x).ToArray();
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.Object1ByteLength, (byte)innerObjectElementsBytes.Length });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.ObjL1, (byte)innerObjectElementsBytes.Length });
                 elements.Add(innerObjectElementsBytes);
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 7) });
@@ -2504,14 +2504,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrailingGarbageTest()
         {
             string input = "{\"name\":\"477cecf7-5547-4f87-81c2-72ee2c7d6179\",\"permissionMode\":\"Read\",\"resource\":\"-iQET8M3A0c=\"}..garbage..";
 
             List<byte[]> binaryInputBuilder = new List<byte[]>
             {
-                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object4ByteLength }
+                new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL4 }
             };
 
             List<byte[]> elements = new List<byte[]>
@@ -2548,7 +2548,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void InvalidIntTest()
         {
             string invalidIntString = "{\"type\": 1??? }";
@@ -2564,7 +2564,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void InvalidExponentTest()
         {
             string invalidExponent = "{\"type\": 1.0e-??? }";
@@ -2582,7 +2582,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void InvalidExponentTest2()
         {
             string invalidExponent = "{\"type\": 1e+1e1 }";
@@ -2600,7 +2600,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void InvalidNumberTest()
         {
             string input = "{\"type\": 1.e5 }";
@@ -2618,7 +2618,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void InvalidNumberWithoutExponentTest()
         {
             string input = "{\"type\": 1Garbage }";
@@ -2634,7 +2634,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingClosingQuoteTest()
         {
             string missingQuote = "{\"type\": \"unfinished }";
@@ -2650,7 +2650,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingPropertyTest()
         {
             string input = "[{{";
@@ -2666,7 +2666,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingPropertyTest2()
         {
             string input = "{true: false}";
@@ -2681,7 +2681,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingNameSeperatorTest()
         {
             string input = "{\"prop\"\"value\"}";
@@ -2697,7 +2697,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingValueSeperatorTest()
         {
             string input = "[true false]";
@@ -2713,7 +2713,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnexpectedNameSeperatorTest()
         {
             string input = "[true: false]";
@@ -2729,7 +2729,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnexpectedEndObjectTest()
         {
             string input = "[true,}";
@@ -2745,7 +2745,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrailingCommaUnexpectedEndObjectTest()
         {
             string input = "{\"prop\": false, }";
@@ -2762,7 +2762,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UnexpectedEndArrayTest()
         {
             string input = "{\"prop\": false, ]";
@@ -2779,7 +2779,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TrailingCommaUnexpectedEndArrayTest()
         {
             string input = "[true, ]";
@@ -2795,7 +2795,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingEndObjectTest()
         {
             string input = "{";
@@ -2810,7 +2810,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void MissingEndArrayTest()
         {
             string input = "[";
@@ -2825,7 +2825,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void InvalidEscapeCharacterTest()
         {
             JsonToken[] expectedTokens =
@@ -2840,7 +2840,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         #endregion
         #region ExtendedTypes
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int8Test()
         {
             sbyte[] values = new sbyte[] { sbyte.MinValue, sbyte.MinValue + 1, -1, 0, 1, sbyte.MaxValue, sbyte.MaxValue - 1 };
@@ -2869,7 +2869,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int16Test()
         {
             short[] values = new short[] { short.MinValue, short.MinValue + 1, -1, 0, 1, short.MaxValue, short.MaxValue - 1 };
@@ -2898,7 +2898,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int32Test()
         {
             int[] values = new int[] { int.MinValue, int.MinValue + 1, -1, 0, 1, int.MaxValue, int.MaxValue - 1 };
@@ -2927,7 +2927,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Int64Test()
         {
             long[] values = new long[] { long.MinValue, long.MinValue + 1, -1, 0, 1, long.MaxValue, long.MaxValue - 1 };
@@ -2956,7 +2956,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UInt32Test()
         {
             uint[] values = new uint[] { uint.MinValue, uint.MinValue + 1, 0, 1, uint.MaxValue, uint.MaxValue - 1 };
@@ -2985,7 +2985,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float32Test()
         {
             float[] values = new float[] { float.MinValue, float.MinValue + 1, 0, 1, float.MaxValue, float.MaxValue - 1 };
@@ -3014,7 +3014,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void Float64Test()
         {
             double[] values = new double[] { double.MinValue, double.MinValue + 1, 0, 1, double.MaxValue, double.MaxValue - 1 };
@@ -3043,7 +3043,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void GuidTest()
         {
             Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
@@ -3072,7 +3072,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void BinaryTest()
         {
             {

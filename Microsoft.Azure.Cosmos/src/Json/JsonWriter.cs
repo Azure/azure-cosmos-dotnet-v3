@@ -4,7 +4,9 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using RMResources = Documents.RMResources;
@@ -45,20 +47,20 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Creates a JsonWriter that can write in a particular JsonSerializationFormat (utf8 if text)
         /// </summary>
         /// <param name="jsonSerializationFormat">The JsonSerializationFormat of the writer.</param>
-        /// <param name="initalCapacity">Initial capacity to help avoid intermeidary allocations.</param>
-        /// <param name="enableEncodedStrings">Only applicable to the binary writer</param>
+        /// <param name="writeOptions">The write options the control the write behavior.</param>
+        /// <param name="initialCapacity">Initial capacity to help avoid intermediary allocations.</param>
         /// <returns>A JsonWriter that can write in a particular JsonSerializationFormat</returns>
         public static IJsonWriter Create(
             JsonSerializationFormat jsonSerializationFormat,
-            int initalCapacity = 256,
-            bool enableEncodedStrings = true)
+            JsonWriteOptions writeOptions = JsonWriteOptions.None,
+            int initialCapacity = 256)
         {
             return jsonSerializationFormat switch
             {
-                JsonSerializationFormat.Text => new JsonTextWriter(initalCapacity),
+                JsonSerializationFormat.Text => new JsonTextWriter(initialCapacity),
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
-                    initialCapacity: initalCapacity,
-                    enableEncodedStrings: enableEncodedStrings),
+                    enableNumberArrays: writeOptions.HasFlag(JsonWriteOptions.EnableNumberArrays),
+                    initialCapacity: initialCapacity),
                 _ => throw new ArgumentException(
                         string.Format(
                             CultureInfo.CurrentCulture,
@@ -142,6 +144,104 @@ namespace Microsoft.Azure.Cosmos.Json
 
         /// <inheritdoc />
         public abstract void WriteBinaryValue(ReadOnlySpan<byte> value);
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<byte> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (byte value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<sbyte> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (sbyte value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<short> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (short value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<int> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (int value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<long> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (long value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<float> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (float value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
+
+        /// <inheritdoc />
+        public virtual void WriteNumberArray(IReadOnlyList<double> values)
+        {
+            this.WriteArrayStart();
+
+            foreach (double value in values)
+            {
+                Number64 number64 = value;
+                this.WriteNumber64Value(number64);
+            }
+
+            this.WriteArrayEnd();
+        }
 
         /// <inheritdoc />
         public abstract ReadOnlyMemory<byte> GetResult();
