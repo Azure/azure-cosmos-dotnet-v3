@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
 
+        [Ignore("This test can only be enabled after emulator upgrade")]
         [TestMethod]
         public async Task SanityTests()
         {
