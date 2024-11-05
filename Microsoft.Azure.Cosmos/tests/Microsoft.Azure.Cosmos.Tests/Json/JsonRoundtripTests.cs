@@ -692,7 +692,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                             inputSpec,
                             outputSpec,
                             scenario,
-                            expectedOutputResults[i]);
+                            expectedOutputResults[i],
+                            (string _) => new JsonNewtonsoftNavigator(_));
 
                         expectedOutputResults[i] = roundTripResult.OutputResult;
 

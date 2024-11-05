@@ -364,14 +364,15 @@
             SerializationSpec inputSpec,
             SerializationSpec outputSpec,
             RewriteScenario rewriteScenario,
-            ReadOnlyMemory<byte> expectedOutputResult = default)
+            ReadOnlyMemory<byte> expectedOutputResult = default,
+            Func<string, IJsonNavigator> newtonsoftNavigatorCreate = default)
         {
             Func<SerializationSpec, IJsonReader> createReader = (SerializationSpec spec) => spec.IsNewtonsoft ?
                 NewtonsoftToCosmosDBReader.CreateFromString(inputJson) :
                 JsonReader.Create(inputResult);
 
             Func<SerializationSpec, IJsonNavigator> createNavigator = (SerializationSpec spec) => spec.IsNewtonsoft ?
-                new JsonNewtonsoftNavigator(inputJson) :
+                (newtonsoftNavigatorCreate != null ? newtonsoftNavigatorCreate(inputJson) : null) :
                 JsonNavigator.Create(inputResult);
 
             Func<SerializationSpec, IJsonWriter> createWriter = (SerializationSpec spec) => spec.IsNewtonsoft ?
