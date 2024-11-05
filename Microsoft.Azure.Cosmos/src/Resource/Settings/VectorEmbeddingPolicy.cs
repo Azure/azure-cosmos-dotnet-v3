@@ -13,12 +13,7 @@ namespace Microsoft.Azure.Cosmos
     /// Represents the vector embedding policy configuration for specifying the vector embeddings on documents in the collection in the Azure Cosmos DB service.
     /// </summary>
     /// <seealso cref="ContainerProperties"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class VectorEmbeddingPolicy
+    public sealed class VectorEmbeddingPolicy
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="VectorEmbeddingPolicy"/> class.
