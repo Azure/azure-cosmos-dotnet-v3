@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
                                         request,
                                         hedgeRegions.ElementAt(requestNumber),
                                         cancellationToken,
-                                        cancellationTokenSource);
+                                        cancellationTokenSource, trace);
 
                                     requestTasks.Add(primaryRequest);
                                 }
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                     clonedRequest,
                     region,
                     cancellationToken,
-                    cancellationTokenSource);
+                    cancellationTokenSource, trace);
             }
         }
 
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             string hedgedRegion,
             CancellationToken cancellationToken,
-            CancellationTokenSource cancellationTokenSource)
+            CancellationTokenSource cancellationTokenSource, ITrace trace)
         {
             try
             {
@@ -288,9 +288,9 @@ namespace Microsoft.Azure.Cosmos
 
                 return new HedgingResponse(false, response, hedgedRegion);
             }
-            catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
+            catch (OperationCanceledException oce ) when (cancellationTokenSource.IsCancellationRequested)
             {
-                return new HedgingResponse(false, null, hedgedRegion);
+                throw new CosmosOperationCanceledException(oce, trace);
             }
             catch (Exception ex)
             {
