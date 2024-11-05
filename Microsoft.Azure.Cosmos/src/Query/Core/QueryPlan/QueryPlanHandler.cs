@@ -59,14 +59,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 return tryGetQueryInfo;
             }
 
-            if (QueryPlanExceptionFactory.TryGetUnsupportedException(
-                tryGetQueryInfo.Result.QueryInfo,
-                supportedQueryFeatures,
-                out Exception queryPlanHandlerException))
-            {
-                return TryCatch<PartitionedQueryExecutionInfo>.FromException(queryPlanHandlerException);
-            }
-
             return tryGetQueryInfo;
         }
 
