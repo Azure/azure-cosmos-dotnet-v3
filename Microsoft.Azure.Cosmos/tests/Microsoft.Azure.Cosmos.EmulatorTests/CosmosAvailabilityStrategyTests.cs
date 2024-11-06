@@ -842,7 +842,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [ExpectedException(typeof(CosmosOperationCanceledException))]
         public async Task AvailabilityStrategyWithCancellationTokenThrowsExceptionTest()
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
@@ -885,10 +884,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
                 Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                "testId",
-                    new PartitionKey("pk"), cancellationToken: cts.Token
-                    );
+                CosmosOperationCanceledException cancelledException = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
+                        container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                            "testId",
+                            new PartitionKey("pk"), cancellationToken: cts.Token
+                    ));
 
             }
 
