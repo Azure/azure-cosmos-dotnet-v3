@@ -86,7 +86,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     resourceType,
                     partitionKeyDefinition,
                     vectorEmbeddingPolicy,
-                    QueryPlanRetriever.SupportedQueryFeatures,
                     hasLogicalPartitionKey,
                     useSystemPrefix,
                     geospatialType,
