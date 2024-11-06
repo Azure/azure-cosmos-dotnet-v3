@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
         internal class TestDoc
         {
-            public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt", "/SensitiveArr", "/SensitiveDict" };
+            public static List<string> PathsToEncrypt { get; } = new List<string>() { "/SensitiveStr", "/SensitiveInt", "/SensitiveArr", "/SensitiveDict", "/SensitiveUtf8Escapedřňěščřžýáíé" };
 
             [JsonProperty("id")]
             public string Id { get; set; }
@@ -74,6 +74,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             public string NonSensitive { get; set; }
 
             public string SensitiveStr { get; set; }
+
+            public string SensitiveUtf8Escapedřňěščřžýáíé { get; set; }
 
             public int SensitiveInt { get; set; }
 
@@ -93,21 +95,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                        && this.NonSensitive == doc.NonSensitive
                        && this.SensitiveInt == doc.SensitiveInt
                        && this.SensitiveStr == doc.SensitiveStr
+                       && this.SensitiveUtf8Escapedřňěščřžýáíé == doc.SensitiveUtf8Escapedřňěščřžýáíé
                        && this.SensitiveArr?.Equals(doc.SensitiveArr) == true
                        && this.SensitiveDict?.Equals(doc.SensitiveDict) == true;
             }
 
             public override int GetHashCode()
             {
-                int hashCode = 1652434776;
-                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.Id);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.PK);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.NonSensitive);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<string>.Default.GetHashCode(this.SensitiveStr);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<int>.Default.GetHashCode(this.SensitiveInt);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<string[]>.Default.GetHashCode(this.SensitiveArr);
-                hashCode = (hashCode * -1521134295) + EqualityComparer<Dictionary<string, string>>.Default.GetHashCode(this.SensitiveDict);
-                return hashCode;
+                return HashCode.Combine(this.Id, this.PK, this.NonSensitive, this.SensitiveStr, this.SensitiveUtf8Escapedřňěščřžýáíé, this.SensitiveInt, this.SensitiveArr, this.SensitiveDict);
             }
 
             public static TestDoc Create(string partitionKey = null)
@@ -118,6 +113,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                     PK = partitionKey ?? Guid.NewGuid().ToString(),
                     NonSensitive = Guid.NewGuid().ToString(),
                     SensitiveStr = Guid.NewGuid().ToString(),
+                    SensitiveUtf8Escapedřňěščřžýáíé = "řňěščřžýáíéこぼれたお茶",
                     SensitiveInt = new Random().Next(),
                     SensitiveArr = new string[]
                     {
