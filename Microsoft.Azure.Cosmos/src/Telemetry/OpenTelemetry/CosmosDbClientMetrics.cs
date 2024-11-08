@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     public sealed class CosmosDbClientMetrics
     {
         /// <summary>
-        /// OperationMetrics
+        /// Operation Metrics
         /// </summary>
         public static class OperationMetrics
         {
@@ -98,6 +98,120 @@ namespace Microsoft.Azure.Cosmos
                 /// Description for the active SDK client instances metric
                 /// </summary>
                 public const string ActiveInstances = "Number of active SDK client instances.";
+            }
+        }
+
+        /// <summary>
+        /// Network Metrics
+        /// </summary>
+        public static class NetworkMetrics
+        {
+            /// <summary>
+            /// the name of the operation meter
+            /// </summary>
+            public const string MeterName = "Azure.Cosmos.Client.Request";
+
+            /// <summary>
+            /// Version of the operation meter
+            /// </summary>
+            public const string Version = "1.0.0";
+
+            /// <summary>
+            /// Metric Names
+            /// </summary>
+            public static class Name
+            {
+                /// <summary>
+                /// Network Call Latency
+                /// </summary>
+                public const string Latency = "db.client.cosmosdb.request.duration";
+
+                /// <summary>
+                /// Request Payload Size
+                /// </summary>
+                public const string RequestBodySize = "db.client.cosmosdb.request.body.size";
+
+                /// <summary>
+                /// Request Payload Size
+                /// </summary>
+                public const string ResponseBodySize = "db.client.cosmosdb.response.body.size";
+
+                /// <summary>
+                /// Channel Aquisition Latency
+                /// </summary>
+                public const string ChannelAquisitionLatency = "db.client.cosmosdb.request.channel_aquisition.duration";
+
+                /// <summary>
+                /// Backend Server Latency
+                /// </summary>
+                public const string BackendLatency = "db.server.cosmosdb.request.duration";
+
+                /// <summary>
+                /// Transit Time Latency
+                /// </summary>
+                public const string TransitTimeLatency = "db.client.cosmosdb.request.transit.duration";
+
+                /// <summary>
+                /// Received Time Latency
+                /// </summary>
+                public const string ReceivedTimeLatency = "db.client.cosmosdb.request.received.duration";
+            }
+
+            /// <summary>
+            /// Unit for metrics
+            /// </summary>
+            public static class Unit
+            {
+                /// <summary>
+                /// Unit representing bytes
+                /// </summary>
+                public const string Bytes = "bytes";
+
+                /// <summary>
+                /// Unit representing time in seconds
+                /// </summary>
+                public const string Sec = "s";
+            }
+
+            /// <summary>
+            /// Provides descriptions for metrics.
+            /// </summary>
+            public static class Description
+            {
+                /// <summary>
+                /// Network Call Latency
+                /// </summary>
+                public const string Latency = "Duration of client requests.";
+
+                /// <summary>
+                /// Request Payload Size
+                /// </summary>
+                public const string RequestBodySize = "Size of client request body.";
+
+                /// <summary>
+                /// Request Payload Size
+                /// </summary>
+                public const string ResponseBodySize = "Size of client response body.";
+
+                /// <summary>
+                /// Channel Aquisition Latency
+                /// </summary>
+                public const string ChannelAquisitionLatency = "The duration of the successfully established outbound TCP connections. i.e. Channel Aquisition Time (for direct mode).";
+
+                /// <summary>
+                /// Backend Server Latency
+                /// </summary>
+                public const string BackendLatency = "Backend Latency (for direct mode).";
+
+                /// <summary>
+                /// Transit Time Latency
+                /// </summary>
+                public const string TransitTimeLatency = "Time spent on the wire (for direct mode).";
+
+                /// <summary>
+                /// Received Time Latency
+                /// </summary>
+                public const string ReceivedTimeLatency = "Time spent on 'Received' stage (for direct mode).";
             }
         }
 

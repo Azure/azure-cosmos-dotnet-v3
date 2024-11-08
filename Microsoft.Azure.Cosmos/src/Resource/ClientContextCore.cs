@@ -533,17 +533,23 @@ namespace Microsoft.Azure.Cosmos
                         && (!this.ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing || this.ClientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled))
                     {
                         // Extracts and records telemetry data from the result of the operation.
-                        OpenTelemetryAttributes response = openTelemetry?.Item2(result);
+                        OpenTelemetryAttributes otelAttributes = openTelemetry?.Item2(result);
 
                         // Records the telemetry attributes for Distributed Tracing (if enabled)
-                        recorder.Record(response);
+                        recorder.Record(otelAttributes);
 
                         // Records metrics such as request units, latency, and item count for the operation.
                         CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,
-                                                             attributes: response);
+                                                             attributes: otelAttributes);
+
+                        CosmosNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                             accountName: this.client.Endpoint,
+                                                             containerName: containerName,
+                                                             databaseName: databaseName,
+                                                             attributes: otelAttributes);
                     }
                     return result;
                 }
@@ -580,6 +586,12 @@ namespace Microsoft.Azure.Cosmos
                     {
                         // Records telemetry data related to the exception.
                         CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                             accountName: this.client.Endpoint,
+                                                             containerName: containerName,
+                                                             databaseName: databaseName,
+                                                             ex: cosmosException);
+
+                        CosmosNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,

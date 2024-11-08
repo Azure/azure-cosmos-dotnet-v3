@@ -170,10 +170,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
 
-        /// <summary>
-        /// Represents the type of error.
-        /// </summary>
         public const string ErrorType = "error.type";
+
+        public const string NetworkProtocolName = "network.protocol.name";
+
+        public const string ServiceEndpointHost = "network.protocol.host";
+
+        public const string ServiceEndPointPort = "network.protocol.port";
+
+        public const string ServiceEndpointStatusCode = "db.cosmosdb.network.response.status_code";
+        
+        public const string ServiceEndpointSubStatusCode = "db.cosmosdb.network.response.sub_status_code";
+        
+        public const string ServiceEndpointRegion = "cloud.region";
+        
+        public const string ServiceEndpointResourceId = "db.cosmosdb.network.routing_id ";
 
         public void PopulateAttributes(DiagnosticScope scope, 
             string operationName, 

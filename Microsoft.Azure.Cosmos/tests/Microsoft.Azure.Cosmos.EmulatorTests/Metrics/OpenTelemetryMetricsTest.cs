@@ -25,7 +25,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             { "db.client.operation.duration", MetricType.Histogram },
             { "db.client.response.row_count", MetricType.Histogram},
             { "db.client.cosmosdb.operation.request_charge", MetricType.Histogram },
-            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic }
+            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic },
+            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
+            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
+            { "db.server.cosmosdb.request.duration", MetricType.Histogram},
+          /*  { "db.client.cosmosdb.request.channel_aquisition.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}*/
         };
 
         private MeterProvider meterProvider;
@@ -35,8 +42,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             // Initialize OpenTelemetry MeterProvider
             this.meterProvider = Sdk
                 .CreateMeterProviderBuilder()
-                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Azure Cosmos DB Operation Level Metrics"))
-                .AddMeter(CosmosDbClientMetrics.OperationMetrics.MeterName)
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Azure Cosmos DB Metrics"))
+                .AddMeter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.NetworkMetrics.MeterName)
                 .AddView(
                     instrumentName: CosmosDbClientMetrics.OperationMetrics.Name.RequestCharge,
                     metricStreamConfiguration: new ExplicitBucketHistogramConfiguration
@@ -75,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         }
 
         [TestMethod]
-        public async Task OperationLevelMetricsGenerationTest()
+        public async Task MetricsGenerationTest()
         {
             Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
             for (int count = 0; count < 10; count++)
