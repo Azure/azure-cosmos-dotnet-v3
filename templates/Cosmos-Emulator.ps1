@@ -67,14 +67,14 @@ if ($Stage -eq "Install")
     Remove-Item -Recurse -Force $Env:LOCALAPPDATA\CosmosDbEmulator
   }
 
-  Write-Host "Getting Cosmos DB Emulator Version"
+  Write-Host "Getting Cosmos DB Emulator Version $Emulator"
   $fileVersion = Get-ChildItem $Emulator
   Write-Host $Emulator $fileVersion.VersionInfo
 }
 
 if ($Stage -eq "Launch")
 {
-  Write-Host "Launching Cosmos DB Emulator"
+  Write-Host "Launching Cosmos DB Emulator $Emulator"
   if (!(Test-Path $Emulator)) {
     Write-Error "The emulator is not installed where expected at '$Emulator'"
     return
