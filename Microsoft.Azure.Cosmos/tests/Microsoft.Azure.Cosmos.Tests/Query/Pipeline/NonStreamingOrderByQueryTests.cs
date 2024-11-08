@@ -292,6 +292,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     take: 100,
                     pageSize: 10),
                 MakeHybridSearchTest(
+                    leafPageCount: 10,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchTest(
                     leafPageCount: 4,
                     backendPageSize: 100,
                     requiresGlobalStatistics: true,
