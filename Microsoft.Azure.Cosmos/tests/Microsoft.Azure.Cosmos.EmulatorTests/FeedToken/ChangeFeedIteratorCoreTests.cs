@@ -894,6 +894,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             {
                 FeedResponse<ChangeFeedItem<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
 
+#if DEBUG
+                Console.WriteLine(JsonConvert.SerializeObject(feedResponse.Resource));
+#endif
+
                 foreach (ChangeFeedItem<Document> item in feedResponse)
                 {
                     Assert.AreEqual("id3", item.Previous.Id);
