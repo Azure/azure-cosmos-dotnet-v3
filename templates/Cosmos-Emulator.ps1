@@ -27,14 +27,7 @@ Param (
   [string] $Stage
 )
 
-if ([string]::IsNullOrEmpty($Emulator))
-{
-  $targetDir = Join-Path $Env:Temp AzureCosmosEmulator
-}
-else
-{
-  $targetDir = (Get-ChildItem (Get-ChildItem $Emulator).DirectoryName).DirectoryName
-}
+$targetDir = Join-Path $Env:Temp AzureCosmosEmulator
 
 $logFile = Join-Path $Env:Temp log.txt
 $productName = "Azure Cosmos DB Emulator"

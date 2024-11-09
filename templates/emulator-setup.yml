@@ -10,7 +10,6 @@ steps:
       arguments: >
         -EmulatorMsiUrl "${{ parameters.EmulatorMsiUrl }}"
         -StartParameters "${{ parameters.StartParameters }}"
-        -Emulator "${{ parameters.EmulatorInstallPath }}"
         -Stage "Install"
       pwsh: true
     displayName: Install Cosmos DB Emulator
@@ -21,7 +20,6 @@ steps:
       arguments: >
         -EmulatorMsiUrl "${{ parameters.EmulatorMsiUrl }}"
         -StartParameters "${{ parameters.StartParameters }}"
-        -Emulator "${{ parameters.EmulatorInstallPath }}"
         -Stage "Launch"
       pwsh: true
     displayName: Launch Public Cosmos DB Emulator
