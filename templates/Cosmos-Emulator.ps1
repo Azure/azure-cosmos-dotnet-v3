@@ -28,7 +28,6 @@ Param (
 )
 
 $targetDir = Join-Path $Env:Temp AzureCosmosEmulator
-
 $logFile = Join-Path $Env:Temp log.txt
 $productName = "Azure Cosmos DB Emulator"
 
@@ -40,12 +39,12 @@ if ([string]::IsNullOrEmpty($Emulator))
 if ($Stage -eq "Install")
 {
   $downloadTryCount = 0
-  New-Item $targetDir -Type Directory -ErrorAction Ignore 
-  New-Item $logFile -Type File -Force
+  New-Item $targetDir -Type Directory
+  New-Item $logFile -Type File
   do
   {
     # Download and Extract Public Cosmos DB Emulator
-    Write-Host "Downloading and extracting Cosmos DB Emulator - $EmulatorMsiUrl $Emulator"
+    Write-Host "Downloading and extracting Cosmos DB Emulator - $EmulatorMsiUrl"
     Write-Host "Target Directory $targetDir"
     Write-Host "Log File $logFile"
 
@@ -68,14 +67,14 @@ if ($Stage -eq "Install")
     Remove-Item -Recurse -Force $Env:LOCALAPPDATA\CosmosDbEmulator
   }
 
-  Write-Host "Getting Cosmos DB Emulator Version $Emulator"
+  Write-Host "Getting Cosmos DB Emulator Version"
   $fileVersion = Get-ChildItem $Emulator
-  Write-Host $Emulator $fileVersion.FullName  $fileVersion.VersionInfo
+  Write-Host $Emulator $fileVersion.VersionInfo
 }
 
 if ($Stage -eq "Launch")
 {
-  Write-Host "Launching Cosmos DB Emulator $Emulator"
+  Write-Host "Launching Cosmos DB Emulator"
   if (!(Test-Path $Emulator)) {
     Write-Error "The emulator is not installed where expected at '$Emulator'"
     return
