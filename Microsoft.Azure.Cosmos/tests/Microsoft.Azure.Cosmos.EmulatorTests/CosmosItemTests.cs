@@ -1629,10 +1629,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-                MaxBufferedItemCount = 10,
-                ResponseContinuationTokenLimitInKb = 500,
                 MaxItemCount = 1,
-                MaxConcurrency = 1,
+                MaxConcurrency = -1,
             };
 
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -1655,6 +1653,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (metrics != null)
                 {
+                    // This assumes that we are using parallel prefetch to hit multiple partitions concurrently
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                     Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
