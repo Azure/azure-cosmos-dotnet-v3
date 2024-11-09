@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     foreach (KeyValuePair<string, IEnumerable<string>> header in requestMessage.Headers)
                     {
-                        contextBuilder.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value)};");
+                        contextBuilder.AppendLine($"Header: {header.Key} Length: {string.Join(",", header.Value).Length};");
                     }
                 }
             }
