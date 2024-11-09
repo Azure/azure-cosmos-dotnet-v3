@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
     using Newtonsoft.Json.Linq;
     using Microsoft.Azure.Cosmos.Services.Management.Tests;
     using Microsoft.Azure.Cosmos.Telemetry;
-    using System.Diagnostics;
 
     [SDK.EmulatorTests.TestClass]
     [TestCategory("ChangeFeed")]
@@ -799,9 +798,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
         /// This test validates Full Fidelity Change Feed with query support by inserting and deleting documents and verifying it returns the query matched documents
         /// </summary>
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task ValidateChangeFeedIteratorCore_WithQuery(
+        public async Task ChangeFeedIteratorCore_WithQuery()
+        {
+            await this.ValidateChangeFeedIteratorCore_WithQuery(useGateway: false);
+            await this.ValidateChangeFeedIteratorCore_WithQuery(useGateway: true);
+        }
+
+        private async Task ValidateChangeFeedIteratorCore_WithQuery(
             bool useGateway)
         {
             this.cancellationTokenSource = new CancellationTokenSource();
@@ -869,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                 }
 
                 detectedEvents += feedResponse.Count;
-                // initialContinuation = feedResponse.ContinuationToken;
+                initialContinuation = feedResponse.ContinuationToken;
                 if (feedResponse.StatusCode == HttpStatusCode.NotModified)
                 {
                     break;
@@ -877,38 +880,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
             }
             Assert.AreEqual(1, detectedEvents, "Only one changed feed document should be returned which matches the query");
 
-            ////// Delete an item and check that change feed query runs on previous image
-            ////await container.DeleteItemAsync<Document>("id2", new Cosmos.PartitionKey("pkey1"));
-            ////await container.DeleteItemAsync<Document>("id3", new Cosmos.PartitionKey("pkey1"));
+            // Delete an item and check that change feed query runs on previous image
+            await container.DeleteItemAsync<Document>("id2", new Cosmos.PartitionKey("pkey1"));
+            await container.DeleteItemAsync<Document>("id3", new Cosmos.PartitionKey("pkey1"));
 
-            ////Trace.TraceInformation($"ContinueationToken: {initialContinuation}");
-            ////Trace.TraceInformation($"ContinueationToken: {ChangeFeedStartFrom.ContinuationToken(initialContinuation)}");
+            fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItem<Document>>(
+                ChangeFeedStartFrom.ContinuationToken(initialContinuation),
+                ChangeFeedMode.AllVersionsAndDeletes,
+                querySpec,
+                null);
+            detectedEvents = 0;
+            while (fullFidelityIterator.HasMoreResults)
+            {
+                FeedResponse<ChangeFeedItem<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
 
-            ////fullFidelityIterator = container.GetChangeFeedIteratorWithQuery<ChangeFeedItem<Document>>(
-            ////    ChangeFeedStartFrom.ContinuationToken(initialContinuation),
-            ////    ChangeFeedMode.AllVersionsAndDeletes,
-            ////    querySpec,
-            ////    null);
-            ////detectedEvents = 0;
-            ////while (fullFidelityIterator.HasMoreResults)
-            ////{
-            ////    FeedResponse<ChangeFeedItem<Document>> feedResponse = await fullFidelityIterator.ReadNextAsync(this.cancellationToken);
+                foreach (ChangeFeedItem<Document> item in feedResponse)
+                {
+                    Assert.AreEqual("id3", item.Previous.Id);
+                    Assert.AreEqual(ChangeFeedOperationType.Delete, item.Metadata.OperationType);
+                }
 
-            ////    foreach (ChangeFeedItem<Document> item in feedResponse)
-            ////    {
-            ////        Assert.AreEqual("id3", item.Previous.Id);
-            ////        Assert.AreEqual(ChangeFeedOperationType.Delete, item.Metadata.OperationType);
-            ////    }
+                detectedEvents += feedResponse.Count;
 
-            ////    detectedEvents += feedResponse.Count;
-
-            ////    if (feedResponse.StatusCode == HttpStatusCode.NotModified)
-            ////    {
-            ////        break;
-            ////    }
-            ////}
-
-            ////Assert.AreEqual(1, detectedEvents, "Only one changed feed document should be returned which matches the query");
+                if (feedResponse.StatusCode == HttpStatusCode.NotModified)
+                {
+                    break;
+                }
+            }
+            Assert.AreEqual(1, detectedEvents, "Only one changed feed document should be returned which matches the query");
         }
 
         /// This test will execute <see cref="Container.GetChangeFeedIterator{T}(ChangeFeedStartFrom, ChangeFeedMode, ChangeFeedRequestOptions)"/> in <see cref="ChangeFeedMode.OperationsLog"/> (FullFidelity) with a typed item.
@@ -1094,12 +1093,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.FeedRanges
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.ConflictResolutionTimestamp);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.Lsn);
                         Assert.AreNotEqual(notExpected: default, actual: deleteOperation.Metadata.PreviousLsn);
-                        //Assert.IsNotNull(deleteOperation.Previous);
-                        //Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
-                        //Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
-                        //Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
-                        //Assert.AreEqual(expected: "GA", actual: deleteOperation.Previous.State);
-                        //Assert.AreEqual(expected: "30363", actual: deleteOperation.Previous.ZipCode);
+                        Assert.IsNotNull(deleteOperation.Previous);
+                        Assert.AreEqual(expected: id, actual: deleteOperation.Previous.Id);
+                        Assert.AreEqual(expected: "205 16th St NW", actual: deleteOperation.Previous.Line1);
+                        Assert.AreEqual(expected: "Atlanta", actual: deleteOperation.Previous.City);
+                        Assert.AreEqual(expected: "GA", actual: deleteOperation.Previous.State);
+                        Assert.AreEqual(expected: "30363", actual: deleteOperation.Previous.ZipCode);
 
                         break;
                     }
