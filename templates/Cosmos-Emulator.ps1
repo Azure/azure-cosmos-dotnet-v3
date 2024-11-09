@@ -27,7 +27,15 @@ Param (
   [string] $Stage
 )
 
-$targetDir = Join-Path $Env:Temp AzureCosmosEmulator
+if ([string]::IsNullOrEmpty($Emulator))
+{
+  $targetDir = Join-Path $Env:Temp AzureCosmosEmulator
+}
+else
+{
+  $targetDir = (Get-ChildItem (Get-ChildItem $Emulator).DirectoryName).DirectoryName
+}
+
 $logFile = Join-Path $Env:Temp log.txt
 $productName = "Azure Cosmos DB Emulator"
 
@@ -44,7 +52,7 @@ if ($Stage -eq "Install")
   do
   {
     # Download and Extract Public Cosmos DB Emulator
-    Write-Host "Downloading and extracting Cosmos DB Emulator - $EmulatorMsiUrl"
+    Write-Host "Downloading and extracting Cosmos DB Emulator - $EmulatorMsiUrl $Emulator"
     Write-Host "Target Directory $targetDir"
     Write-Host "Log File $logFile"
 
@@ -69,7 +77,7 @@ if ($Stage -eq "Install")
 
   Write-Host "Getting Cosmos DB Emulator Version $Emulator"
   $fileVersion = Get-ChildItem $Emulator
-  Write-Host $Emulator $fileVersion.VersionInfo
+  Write-Host $Emulator $fileVersion.FullName  $fileVersion.VersionInfo
 }
 
 if ($Stage -eq "Launch")
