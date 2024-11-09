@@ -47,8 +47,8 @@ if ([string]::IsNullOrEmpty($Emulator))
 if ($Stage -eq "Install")
 {
   $downloadTryCount = 0
-  New-Item $targetDir -Type Directory
-  New-Item $logFile -Type File
+  New-Item $targetDir -Type Directory -ErrorAction Ignore 
+  New-Item $logFile -Type File -Force
   do
   {
     # Download and Extract Public Cosmos DB Emulator
