@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"Invalid status code: {innerException}");
             }
 
             headers = new Documents.Collections.RequestNameValueCollection
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"Invalid status code: {innerException}");
             }
 
             // Invalid value
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"Invalid status code: {innerException}");
             }
 
             headers = new Documents.Collections.RequestNameValueCollection();
@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"Invalid status code: {innerException}");
             }
 
             // Valid page size
@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers = new RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Eventual.ToString());
             var response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
         }
 
         [TestMethod]
@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"invalid status code: {innerException}");
             }
 
             // Supported values
@@ -247,13 +247,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.JsonText.ToString());
             var response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // None
             headers = new Documents.Collections.RequestNameValueCollection();
             response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // Binary (Read feed should ignore all options)
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
             response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
-            Assert.AreEqual<int>((int)JsonSerializationFormat.Binary, response.ResponseBody.ReadByte());
+            Assert.AreEqual((int)JsonSerializationFormat.Binary, response.ResponseBody.ReadByte());
         }
 
         private void ValidateJsonSerializationFormatQuery(DocumentClient client, DocumentCollection collection)
@@ -279,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"Invalid status code: {innerException}");
             }
 
             // Supported values
@@ -288,20 +288,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.JsonText.ToString());
             var response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // None
             headers = new Documents.Collections.RequestNameValueCollection();
             response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
 
             // Binary
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
             response = QueryRequest(client, collection.ResourceId, sqlQuerySpec, headers);
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
             Assert.IsTrue(response.ResponseBody.ReadByte() == HeadersValidationTests.BinarySerializationByteMarkValue);
         }
 
@@ -363,8 +363,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 if (isHttps)
                 {
                     // Invalid value is treated as default JsonText if HTTPS
-                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
-                    Assert.IsTrue(this.CheckSerializationFormat(response) == JsonSerializationFormat.Text);
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
+                    Assert.AreEqual(JsonSerializationFormat.Text, this.CheckSerializationFormat(response));
                 }
                 else
                 {
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 DocumentClientException innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"invalid status code {innerException}");
             }
         }
 
@@ -399,7 +399,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 response = this.ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             }
 
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
             
             if(expectedFormat == SupportedSerializationFormats.JsonText)
             {
@@ -505,7 +505,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"invalid status code {innerException}");
             }
 
             headers = new Documents.Collections.RequestNameValueCollection();
@@ -519,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"invalid status code {innerException}");
             }
 
             // Valid Indexing Directive
@@ -531,7 +531,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add("indexAction", "\"exclude\"");
             var result = CreateDocumentScript(client, headers);
-            Assert.IsTrue(result.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, result.StatusCode, "Invalid status code");
         }
 
         [TestMethod]
@@ -564,20 +564,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 else
                 {
                     // Invalid boolean is treated as false by TCP
-                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
                 }
             }
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"invalid status code {innerException}");
             }
 
             // Valid boolean
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableScanInQuery, "true");
             var response2 = ReadDatabaseFeedRequest(client, headers);
-            Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response2.StatusCode, "Invalid status code");
         }
 
         [TestMethod]
@@ -611,13 +611,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 else
                 {
                     // Invalid boolean is treated as false by TCP"
-                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
                 }
             }
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, "Invalid status code");
             }
 
             // Valid boolean
@@ -625,7 +625,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EnableLowPrecisionOrderBy, "true");
             var response2 = ReadDocumentRequest(client, document, headers);
-            Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response2.StatusCode, "Invalid status code");
         }
 
         [TestMethod]
@@ -658,20 +658,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 else
                 {
                     // Invalid boolean is treated as false by TCP
-                    Assert.IsTrue(response.StatusCode == HttpStatusCode.OK, "Invalid status code");
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
                 }
             }
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.BadRequest, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.BadRequest, innerException.StatusCode, $"invalid status code {innerException}");
             }
 
             // Valid boolean
             headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.EmitVerboseTracesInQuery, "true");
             var response2 = ReadDatabaseFeedRequest(client, headers);
-            Assert.IsTrue(response2.StatusCode == HttpStatusCode.OK, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.OK, response2.StatusCode, "Invalid status code");
         }
 
         [TestMethod]
@@ -1060,7 +1060,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             var headers = new Documents.Collections.RequestNameValueCollection();
             headers.Add(HttpConstants.HttpHeaders.IfNoneMatch, document.ETag);
             var response = ReadDocumentRequest(client, document, headers);
-            Assert.IsTrue(response.StatusCode == HttpStatusCode.NotModified, "Invalid status code");
+            Assert.AreEqual(HttpStatusCode.NotModified, response.StatusCode, "Invalid status code");
 
             // validateInvalidIfMatch
             AccessCondition condition = new AccessCondition() { Type = AccessConditionType.IfMatch, Condition = "invalid etag" };
@@ -1072,7 +1072,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (Exception ex)
             {
                 var innerException = ex.InnerException as DocumentClientException;
-                Assert.IsTrue(innerException.StatusCode == HttpStatusCode.PreconditionFailed, "Invalid status code");
+                Assert.AreEqual(HttpStatusCode.PreconditionFailed, innerException.StatusCode, $"invalid status code {innerException}");
             }
         }
 
