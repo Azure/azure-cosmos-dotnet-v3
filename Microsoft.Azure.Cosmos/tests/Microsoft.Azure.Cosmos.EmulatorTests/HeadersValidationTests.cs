@@ -261,8 +261,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             headers.Add(HttpConstants.HttpHeaders.ContentSerializationFormat, ContentSerializationFormat.CosmosBinary.ToString());
             response = ReadDocumentFeedRequestAsync(client, collection.ResourceId, headers).Result;
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode, "Invalid status code");
-            Assert.IsTrue(response.ResponseBody.ReadByte() < HeadersValidationTests.BinarySerializationByteMarkValue);
-            //Assert.AreEqual(JsonSerializationFormat.Binary, response.ResponseBody.ReadByte());
+            Assert.AreEqual((int)JsonSerializationFormat.Binary, response.ResponseBody.ReadByte());
         }
 
         private void ValidateJsonSerializationFormatQuery(DocumentClient client, DocumentCollection collection)
