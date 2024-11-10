@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                         .ToList())
             };
 
-            foreach (AggressivePrefetchTestCase testCase in testCases)
+            foreach(AggressivePrefetchTestCase testCase in testCases)
             {
                 await RunTest(testCase);
             }
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
 
             return new AggressivePrefetchTestCase(
-                query: query,
+                query: query, 
                 continuationCount: continuationCount,
                 partitionCount: partitionCount,
                 expectedDocuments: new List<CosmosElement> { expectedDocument });

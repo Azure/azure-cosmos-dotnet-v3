@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                     trace: NoOpTrace.Singleton,
                     cancellationToken: cancellationToken).Result;
                 Assert.AreEqual(1, ranges.Count);
-
+                
                 IAsyncEnumerator<TryCatch<OrderByQueryPage>> enumerator = new TracingAsyncEnumerator<TryCatch<OrderByQueryPage>>(
                     OrderByQueryPartitionRangePageAsyncEnumerator.Create(
                         queryDataSource: documentContainer,

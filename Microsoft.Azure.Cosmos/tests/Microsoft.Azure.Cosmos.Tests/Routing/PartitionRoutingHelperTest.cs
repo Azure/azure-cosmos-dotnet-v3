@@ -6,21 +6,21 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
-    using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using System.Collections.ObjectModel;
+    using System.Net;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     /// <summary>
     /// Tests for <see cref="PartitionRoutingHelper"/> class.
@@ -40,10 +40,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             Func<string, INameValueCollection> getHeadersWithContinuation = (string continuationToken) =>
             {
-                INameValueCollection headers = new RequestNameValueCollection
-                {
-                    [HttpConstants.HttpHeaders.Continuation] = continuationToken
-                };
+                INameValueCollection headers = new RequestNameValueCollection();
+                headers[HttpConstants.HttpHeaders.Continuation] = continuationToken;
                 return headers;
             };
 
@@ -56,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     foreach (ExtractPartitionKeyRangeFromHeadersTestData testData in testSet.Postive)
                     {
                         INameValueCollection headers = getHeadersWithContinuation(testData.CompositeContinuationToken);
-                        Range<string> range = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
+                        List<CompositeContinuationToken> suppliedTokens;
+                        Range<string> range = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
 
                         if (suppliedTokens != null)
                         {
@@ -75,7 +74,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         INameValueCollection headers = getHeadersWithContinuation(testData.CompositeContinuationToken);
                         try
                         {
-                            Range<string> rangeOrId = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
+                            List<CompositeContinuationToken> suppliedTokens;
+                            Range<string> rangeOrId = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
                             Assert.Fail("Expect BadRequestException");
                         }
                         catch (BadRequestException)
@@ -103,13 +103,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     CollectionRoutingMap routingMap =
                         CollectionRoutingMap.TryCreateCompleteRoutingMap(
                             testData.RoutingMap.Select(range => Tuple.Create(range, (ServiceIdentity)null)), string.Empty);
-                    RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
+                    RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);              
 
                     foreach (AddFormattedContinuationToHeaderTestUnit positiveTestData in testData.TestSet.Postive)
                     {
 
+                        INameValueCollection headers;
+                        List<CompositeContinuationToken> resolvedContinuationTokens;
+                        List<PartitionKeyRange> resolvedRanges;
 
-                        this.AddFormattedContinuationHeaderHelper(positiveTestData, out INameValueCollection headers, out List<PartitionKeyRange> resolvedRanges, out List<CompositeContinuationToken> resolvedContinuationTokens);
+                        this.AddFormattedContinuationHeaderHelper(positiveTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
 
                         bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, positiveTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null), NoOpTrace.Singleton);
 
@@ -120,8 +123,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     {
                         try
                         {
+                            INameValueCollection headers;
+                            List<CompositeContinuationToken> resolvedContinuationTokens;
+                            List<PartitionKeyRange> resolvedRanges;
 
-                            this.AddFormattedContinuationHeaderHelper(negativeTestData, out INameValueCollection headers, out List<PartitionKeyRange> resolvedRanges, out List<CompositeContinuationToken> resolvedContinuationTokens);
+                            this.AddFormattedContinuationHeaderHelper(negativeTestData, out headers, out resolvedRanges, out resolvedContinuationTokens);
 
                             bool answer = await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, negativeTestData.ProvidedRanges, routingMapProvider, null, new PartitionRoutingHelper.ResolvedRangeInfo(resolvedRanges[0], (resolvedContinuationTokens.Count > 0) ? resolvedContinuationTokens : null), NoOpTrace.Singleton);
 
@@ -157,24 +163,34 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             CompositeContinuationToken[] initialContinuationTokens = null;
             if (!string.IsNullOrEmpty(positiveTestData.InputCompositeContinuationToken))
             {
-                initialContinuationTokens = positiveTestData.InputCompositeContinuationToken.Trim().StartsWith("[", StringComparison.Ordinal)
-                    ? JsonConvert.DeserializeObject<CompositeContinuationToken[]>(positiveTestData.InputCompositeContinuationToken)
-                    : (new CompositeContinuationToken[] { JsonConvert.DeserializeObject<CompositeContinuationToken>(positiveTestData.InputCompositeContinuationToken) });
+                if (positiveTestData.InputCompositeContinuationToken.Trim().StartsWith("[", StringComparison.Ordinal))
+                {
+                    initialContinuationTokens = JsonConvert.DeserializeObject<CompositeContinuationToken[]>(positiveTestData.InputCompositeContinuationToken);
+                }
+                else
+                {
+                    initialContinuationTokens = new CompositeContinuationToken[] { JsonConvert.DeserializeObject<CompositeContinuationToken>(positiveTestData.InputCompositeContinuationToken) };
+                }
             }
 
             if (resolvedRanges.Count > 1)
             {
-                CompositeContinuationToken continuationToBeCopied = initialContinuationTokens != null && initialContinuationTokens.Length > 0
-                    ? (CompositeContinuationToken)initialContinuationTokens[0].ShallowCopy()
-                    : new CompositeContinuationToken
-                    {
-                        Token = string.Empty
-                    };
+                CompositeContinuationToken continuationToBeCopied;
+                if (initialContinuationTokens != null && initialContinuationTokens.Length > 0)
+                {
+                    continuationToBeCopied = (CompositeContinuationToken) initialContinuationTokens[0].ShallowCopy();
+                }
+                else
+                {
+                    continuationToBeCopied = new CompositeContinuationToken();
+                    continuationToBeCopied.Token = string.Empty;
+                }
+
                 headers = getHeadersWithContinuation(continuationToBeCopied.Token);
 
                 foreach (PartitionKeyRange pkrange in resolvedRanges)
                 {
-                    CompositeContinuationToken token = (CompositeContinuationToken)continuationToBeCopied.ShallowCopy();
+                    CompositeContinuationToken token = (CompositeContinuationToken) continuationToBeCopied.ShallowCopy();
                     token.Range = pkrange.ToRange();
                     resolvedContinuationTokens.Add(token);
                 }
@@ -222,7 +238,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                             await this.partitionRoutingHelper.TryAddPartitionKeyRangeToContinuationTokenAsync(headers, testCase.ProvidedRanges, routingMapProvider, string.Empty, resolvedRangeInfo, NoOpTrace.Singleton);
 
-                            Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> suppliedTokens);
+                            List<CompositeContinuationToken> suppliedTokens;
+                            Range<string> nextRange = this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out suppliedTokens);
                             currentRange = nextRange.IsEmpty ? null : nextRange;
                         }
 
@@ -261,7 +278,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"Microsoft\"",
-                    epkRanges => epkRanges.Count == 1,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 1; //Routes to only one pkRange.
+                    },
                     partitionKeyRanges);
             }
 
@@ -286,12 +306,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\" or (r.path1 = \"seattle\" and r.path2 = \"bellevue\")",
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2; //Since data is split at pkey [seattle, redmond], it should route to two pkRange.
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 =\"redmond\"",
-                    epkRanges => epkRanges.Count == 1,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 1; //Since data is split at pkey [seattle, redmond], this query should route to one pkRange
+                    },
                     partitionKeyRanges);
             }
 
@@ -316,17 +342,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 =\"redmond\"",
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2; //Since data is split at pkey [seattle, redmond, 5.12312419050912359123], it should route to two pkRange.
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyTestRunnerAsync(
                    partitionKeyDefinition,
                    $"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 =\"redmond\" and r.path3=5.12312419050912359123",
-                   epkRanges => epkRanges.Count == 1,
+                   epkRanges =>
+                   {
+                       return epkRanges.Count == 1;
+                   },
                    partitionKeyRanges);
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2;
+                    },
                     partitionKeyRanges);
             }
 
@@ -356,7 +391,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
-                    epkRanges => epkRanges.Count == 3,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 3;
+                    },
                     partitionKeyRanges);
             }
 
@@ -394,12 +432,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\"",
-                    epkRanges => epkRanges.Count == 3,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 3; //Routes tp three pkRanges
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyTestRunnerAsync(
                     partitionKeyDefinition,
                     $"SELECT VALUE r.id from r where r.path1 = \"seattle\" and r.path2 = \"redmond\"",
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2;  //Routes to two pkRanges.
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyTestRunnerAsync(
                    partitionKeyDefinition,
@@ -444,7 +488,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("Microsoft").Build(),
-                    epkRanges => epkRanges.Count == 1,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 1; //Routes to only one pkRange.
+                    },
                     partitionKeyRanges);
             }
 
@@ -469,12 +516,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Build(),
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2; //Since data is split at pkey [seattle, redmond], it should route to two pkRange.
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Add("redmond").Build(),
-                    epkRanges => epkRanges.Count == 1,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 1; //Since data is split at pkey [seattle, redmond], this query should route to one pkRange
+                    },
                     partitionKeyRanges);
             }
 
@@ -499,17 +552,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Add("redmond").Build(),
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2; //Since data is split at pkey [seattle, redmond, 5.12312419050912359123], it should route to two pkRange.
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                    partitionKeyDefinition,
                    new PartitionKeyBuilder().Add("seattle").Add("redmond").Add(5.12312419050912359123).Build(),
-                   epkRanges => epkRanges.Count == 1,
+                   epkRanges =>
+                   {
+                       return epkRanges.Count == 1;
+                   },
                    partitionKeyRanges);
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Build(),
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2;
+                    },
                     partitionKeyRanges);
             }
 
@@ -539,7 +601,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Build(),
-                    epkRanges => epkRanges.Count == 3,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 3;
+                    },
                     partitionKeyRanges);
             }
 
@@ -577,12 +642,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Build(),
-                    epkRanges => epkRanges.Count == 3,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 3; //Routes tp three pkRanges
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                     partitionKeyDefinition,
                     new PartitionKeyBuilder().Add("seattle").Add("redmond").Build(),
-                    epkRanges => epkRanges.Count == 2,
+                    epkRanges =>
+                    {
+                        return epkRanges.Count == 2;  //Routes to two pkRanges.
+                    },
                     partitionKeyRanges);
                 await PrefixPartitionKeyChangeFeedTestRunnerAsync(
                    partitionKeyDefinition,
@@ -663,11 +734,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.IsTrue(validator(resolvedPKRanges));
         }
 
-        private static async Task PrefixPartitionKeyChangeFeedTestRunnerAsync(
-                    PartitionKeyDefinition partitionKeyDefinition,
-                    Cosmos.PartitionKey partitionKey,
-                    Predicate<HashSet<PartitionKeyRange>> validator,
-                    List<PartitionKeyRange> partitionKeyRanges)
+    private static async Task PrefixPartitionKeyChangeFeedTestRunnerAsync(
+                PartitionKeyDefinition partitionKeyDefinition,
+                Cosmos.PartitionKey partitionKey,
+                Predicate<HashSet<PartitionKeyRange>> validator,
+                List<PartitionKeyRange> partitionKeyRanges)
         {
             IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangesAndServiceIdentity = partitionKeyRanges
                 .Select(range => Tuple.Create(range, (ServiceIdentity)null));
@@ -678,7 +749,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     collectionRid);
 
             RoutingMapProvider routingMapProvider = new RoutingMapProvider(routingMap);
-
+            
             HashSet<PartitionKeyRange> resolvedPKRanges = new HashSet<PartitionKeyRange>();
             FeedRangePartitionKey feedRangePartitionKey = new FeedRangePartitionKey(partitionKey);
             List<Range<string>> effectiveRanges = await feedRangePartitionKey.GetEffectiveRangesAsync(routingMapProvider, null, partitionKeyDefinition, null);
@@ -779,7 +850,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 }
             };
 
-            foreach (PartitionRoutingHelperTestCase testcase in testcases)
+            foreach(PartitionRoutingHelperTestCase testcase in testcases)
             {
                 try
                 {
@@ -801,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
                     Assert.Fail();
                 }
-                catch (DocumentClientException dce)
+                catch(DocumentClientException dce)
                 {
                     Assert.AreEqual(testcase.StatusCode, dce.StatusCode);
                     Assert.AreEqual(testcase.SubStatusCode, dce.GetSubStatus());
@@ -824,7 +895,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             internal bool HasLogicalPartitionKey { get; set; }
 
-            internal HttpStatusCode StatusCode { get; set; }
+            internal HttpStatusCode StatusCode { get; set;}
 
             internal SubStatusCodes SubStatusCode { get; set; }
 
@@ -842,8 +913,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
 
             public Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
-                string collectionResourceId,
-                Range<string> range,
+                string collectionResourceId, 
+                Range<string> range, 
                 ITrace trace,
                 bool forceRefresh = false)
             {
@@ -851,8 +922,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
 
             public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
-                string collectionResourceId,
-                string partitionKeyRangeId,
+                string collectionResourceId, 
+                string partitionKeyRangeId, 
                 ITrace trace,
                 bool forceRefresh = false)
             {
@@ -860,7 +931,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
 
             public Task<PartitionKeyRange> TryGetRangeByEffectivePartitionKey(
-                string collectionResourceId,
+                string collectionResourceId, 
                 string effectivePartitionKey)
             {
                 return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(Range<string>.GetPointRange(effectivePartitionKey)).Single());

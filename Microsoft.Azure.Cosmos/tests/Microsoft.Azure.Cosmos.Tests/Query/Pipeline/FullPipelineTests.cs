@@ -404,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 }
                 );
 
-            List<PartitionKeyRange> targetPartitionKeyRanges = new(){
+            List<PartitionKeyRange> targetPartitionKeyRanges = new (){
                 new PartitionKeyRange()
                 {
                     MinInclusive = "",
@@ -725,7 +725,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 this.PageSizeSpecified = queryPaginationOptions.PageSizeLimit;
-
+                
                 return this.MonadicDocumentContainer.MonadicQueryAsync(sqlQuerySpec, feedRangeState, queryPaginationOptions, trace, cancellationToken);
             }
 

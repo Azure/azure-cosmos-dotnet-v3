@@ -417,7 +417,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                     using (rootTrace = TraceForBaselineTesting.GetRootTrace())
                     {
                         ClientSideRequestStatisticsTraceDatum datum = new ClientSideRequestStatisticsTraceDatum(DateTime.MinValue, rootTrace);
-                        TraceWriterBaselineTests.SetEndRequestTime(datum, DateTime.MaxValue);
+                        TraceWriterBaselineTests.SetEndRequestTime(datum,DateTime.MaxValue);
 
                         HttpResponseStatistics httpResponseStatistics = new HttpResponseStatistics(
                             DateTime.MinValue,
@@ -826,10 +826,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         .Join(
                             Environment.NewLine,
                             codeSnippet
-                                .Select(x => x != string.Empty ? x["            ".Length..] : string.Empty))
+                                .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
                     + Environment.NewLine;
                 }
-                catch (Exception)
+                catch(Exception)
                 {
                     throw;
                 }

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             CosmosElement continuationToken)
         {
             MockQueryPipelineStage stage = new MockQueryPipelineStage(pages);
-
+            
             if (continuationToken != null)
             {
                 CosmosNumber index = continuationToken as CosmosNumber;

@@ -25,7 +25,7 @@
         }
 
         public override Task<ResponseMessage> SendAsync(
-            RequestMessage request,
+            RequestMessage request, 
             CancellationToken cancellationToken)
         {
             return this._handlerFunc(request, cancellationToken);
@@ -48,7 +48,7 @@
         }
 
         public static Task<ResponseMessage> ReturnStatusCode(
-            HttpStatusCode statusCode,
+            HttpStatusCode statusCode, 
             SubStatusCodes subStatusCode = SubStatusCodes.Unknown)
         {
             return Task.Factory.StartNew(
@@ -58,7 +58,7 @@
                     if (subStatusCode != SubStatusCodes.Unknown)
                     {
                         httpResponse.Headers.Add(
-                            WFConstants.BackendHeaders.SubStatus,
+                            WFConstants.BackendHeaders.SubStatus, 
                             ((uint)subStatusCode).ToString(CultureInfo.InvariantCulture));
                     }
 
