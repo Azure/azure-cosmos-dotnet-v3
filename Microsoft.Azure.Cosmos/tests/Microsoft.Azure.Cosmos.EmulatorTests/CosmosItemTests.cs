@@ -2560,7 +2560,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.Container.ReadItemAsync<ToDoActivity>("id2002", new Cosmos.PartitionKey("pk2002"));
         }
 
-        [Ignore]
         [TestMethod]
         public async Task BatchPatchConditionTest()
         {
@@ -2652,7 +2651,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task PatchConditionTest()
         {
@@ -2743,7 +2741,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task ItemPatchViaGatewayTest()
         {
