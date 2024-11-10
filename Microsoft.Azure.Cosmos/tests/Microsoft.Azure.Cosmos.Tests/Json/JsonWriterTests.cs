@@ -7136,7 +7136,7 @@
 
             // Common set of number arrays for the tests to follow
             sbyte[] i8Values1 = { -100, -50, 50, 100 };
-            _ = { -125, -100, -50, 50, 100, 125 };
+            sbyte[] i8Values2 = { -125, -100, -50, 50, 100, 125 };
 
             short[] i16Values1 = { -2000, -1000, 1000, 2000 };
             short[] i16Values2 = { -2500, -2000, -1000, 1000, 2000, 2500 };
@@ -7356,18 +7356,19 @@
 
             // Common set of number arrays for the tests to follow
             sbyte[] i8Values1 = { -100, -50, 50, 100 };
-            _ = { -125, -100, -50, 50, 100, 125 };
+            sbyte[] i8Values2 = { -125, -100, -50, 50, 100, 125 };
 
             short[] i16Values1 = { -2000, -1000, 1000, 2000 };
             short[] i16Values2 = { -2500, -2000, -1000, 1000, 2000, 2500 };
 
             int[] i32Values1 = { -200000, -100000, 100000, 200000 };
-            _ = { -250000, -200000, -100000, 100000, 200000, 250000 };
-            _ = { -20000000000, -10000000000, 10000000000, 20000000000 };
+            int[] i32Values2 = { -250000, -200000, -100000, 100000, 200000, 250000 };
+
+            long[] i64Values1 = { -20000000000, -10000000000, 10000000000, 20000000000 };
             long[] i64Values2 = { -25000000000, -20000000000, -10000000000, 10000000000, 20000000000, 25000000000 };
 
             double[] f64Values1 = { -2.1, -1.1, 1.1, 2.1 };
-            _ = { -3.1, -2.1, -1.1, 1.1, 2.1, 3.1 };
+            double[] f64Values2 = { -3.1, -2.1, -1.1, 1.1, 2.1, 3.1 };
 
             // Case 1
             {
@@ -8574,7 +8575,7 @@
                 }
             }
 
-            if (!skipRoundTripTest)
+            if(!skipRoundTripTest)
             {
                 SerializationSpec[] serializationSpecs = new SerializationSpec[]
                 {
@@ -8668,39 +8669,12 @@
             }
         }
 
-        static private sbyte[] Int8Array(params sbyte[] values)
-        {
-            return values;
-        }
-
-        static private byte[] UInt8Array(params byte[] values)
-        {
-            return values;
-        }
-
-        static private short[] Int16Array(params short[] values)
-        {
-            return values;
-        }
-
-        static private int[] Int32Array(params int[] values)
-        {
-            return values;
-        }
-
-        static private long[] Int64Array(params long[] values)
-        {
-            return values;
-        }
-
-        static private float[] Float32Array(params float[] values)
-        {
-            return values;
-        }
-
-        static private double[] Float64Array(params double[] values)
-        {
-            return values;
-        }
+        static private sbyte[] Int8Array(params sbyte[] values) => values;
+        static private byte[] UInt8Array(params byte[] values) => values;
+        static private short[] Int16Array(params short[] values) => values;
+        static private int[] Int32Array(params int[] values) => values;
+        static private long[] Int64Array(params long[] values) => values;
+        static private float[] Float32Array(params float[] values) => values;
+        static private double[] Float64Array(params double[] values) => values;
     }
 }
