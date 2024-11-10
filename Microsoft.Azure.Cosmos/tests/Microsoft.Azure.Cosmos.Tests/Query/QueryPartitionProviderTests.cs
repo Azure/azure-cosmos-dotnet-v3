@@ -2,9 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
@@ -98,7 +98,7 @@
 
             QueryPartitionProvider queryPartitionProvider = new QueryPartitionProvider(configuration);
 
-            foreach ((string queryPlan, string expected) in testCases)
+            foreach ((string queryPlan, string expected)in testCases)
             {
                 PartitionedQueryExecutionInfoInternal queryInfoInternal =
                    JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
@@ -115,13 +115,20 @@
 
                 Assert.IsTrue(queryInfo.QueryInfo != null || queryInfo.HybridSearchQueryInfo != null);
 
-                string actual = queryInfo.QueryInfo != null
-                    ? JsonConvert.SerializeObject(
+                string actual;
+                if (queryInfo.QueryInfo != null)
+                {
+                    actual = JsonConvert.SerializeObject(
                         queryInfo.QueryInfo,
-                        new JsonSerializerSettings { Formatting = Formatting.None })
-                    : JsonConvert.SerializeObject(
+                        new JsonSerializerSettings { Formatting = Formatting.None });
+                }
+                else
+                {
+                    actual = JsonConvert.SerializeObject(
                         queryInfo.HybridSearchQueryInfo,
                         new JsonSerializerSettings { Formatting = Formatting.None });
+                }
+
                 Assert.AreEqual(expected, actual);
             }
         }

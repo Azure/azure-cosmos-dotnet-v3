@@ -1,23 +1,23 @@
 ﻿namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
-    using System.Collections.Concurrent;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
-    using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using Microsoft.Azure.Documents.Client;
+    using Microsoft.Azure.Cosmos.Common;
+    using System.Net.Http;
+    using System.Reflection;
+    using System.Collections.Concurrent;
 
     /// <summary>
     /// Tests for <see cref="ClientRetryPolicy"/>
@@ -25,8 +25,8 @@
     [TestClass]
     public sealed class ClientRetryPolicyTests
     {
-        private static readonly Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
-        private static readonly Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
+        private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
+        private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
 
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
@@ -107,7 +107,7 @@
 
             await endpointManager.RefreshLocationAsync();
 
-            ClientRetryPolicy retryPolicy = new(
+            ClientRetryPolicy retryPolicy = new (
                 endpointManager,
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
@@ -127,9 +127,9 @@
             HttpStatusCode throttleException = HttpStatusCode.TooManyRequests;
             SubStatusCodes resourceNotAvailable = SubStatusCodes.SystemResourceUnavailable;
 
-            Exception innerException = new();
-            Mock<INameValueCollection> nameValueCollection = new();
-            DocumentClientException documentClientException = new(
+            Exception innerException = new ();
+            Mock<INameValueCollection> nameValueCollection = new ();
+            DocumentClientException documentClientException = new (
                 message: "SystemResourceUnavailable: 429 with 3092 occurred.",
                 innerException: innerException,
                 statusCode: throttleException,
@@ -219,7 +219,7 @@
 
             //Creates a sample write request
             DocumentServiceRequest request = this.CreateRequest(false, false);
-            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+            request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" , MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
 
             //Create GlobalEndpointManager
             using GlobalEndpointManager endpointManager = this.Initialize(
@@ -232,15 +232,15 @@
             ReadOnlyCollection<Uri> readLocations = endpointManager.ReadEndpoints;
 
             //Create Retry Policy
-            ClientRetryPolicy retryPolicy = new(
+            ClientRetryPolicy retryPolicy = new (
                 globalEndpointManager: endpointManager,
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
                 retryOptions: new RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
                 isPertitionLevelFailoverEnabled: enablePartitionLevelFailover);
 
-            CancellationToken cancellationToken = new();
-            HttpRequestException httpRequestException = new(message: "Connecting to endpoint has failed.");
+            CancellationToken cancellationToken = new ();
+            HttpRequestException httpRequestException = new (message: "Connecting to endpoint has failed.");
 
             GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
@@ -323,21 +323,17 @@
             bool usesPreferredLocations,
             bool shouldHaveRetried)
         {
-            List<string> newPhysicalUris = new List<string>
-            {
-                "https://default.documents.azure.com",
-                "https://location1.documents.azure.com",
-                "https://location2.documents.azure.com",
-                "https://location3.documents.azure.com"
-            };
+            List<string> newPhysicalUris = new List<string>();
+            newPhysicalUris.Add("https://default.documents.azure.com");
+            newPhysicalUris.Add("https://location1.documents.azure.com");
+            newPhysicalUris.Add("https://location2.documents.azure.com");
+            newPhysicalUris.Add("https://location3.documents.azure.com");
 
-            Dictionary<Uri, Exception> uriToException = new Dictionary<Uri, Exception>
-            {
-                { new Uri("https://default.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://default.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410) },
-                { new Uri("https://location1.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://location1.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410) },
-                { new Uri("https://location2.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://location2.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410) },
-                { new Uri("https://location3.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://location3.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410) }
-            };
+            Dictionary<Uri, Exception> uriToException = new Dictionary<Uri, Exception>();
+            uriToException.Add(new Uri("https://default.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://default.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410));
+            uriToException.Add(new Uri("https://location1.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://location1.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410));
+            uriToException.Add(new Uri("https://location2.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://location2.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410));
+            uriToException.Add(new Uri("https://location3.documents.azure.com"), new GoneException(new TransportException(TransportErrorCode.ConnectTimeout, innerException: null, activityId: Guid.NewGuid(), requestUri: new Uri("https://location3.documents.azure.com"), sourceDescription: "description", userPayload: true, payloadSent: true), SubStatusCodes.TransportGenerated410));
 
             using MockDocumentClientContext mockDocumentClientContext = this.InitializeMockedDocumentClient(useMultipleWriteLocations, !usesPreferredLocations);
             mockDocumentClientContext.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(mockDocumentClientContext.DatabaseAccount);
@@ -359,11 +355,10 @@
                 useMultipleWriteLocations: useMultipleWriteLocations,
                 detectClientConnectivityIssues: true,
                 disableRetryWithRetryPolicy: false,
-                enableReplicaValidation: false)
-            {
-                // Reducing retry timeout to avoid long-running tests
-                GoneAndRetryWithRetryTimeoutInSecondsOverride = 1
-            };
+                enableReplicaValidation: false);
+
+            // Reducing retry timeout to avoid long-running tests
+            replicatedResourceClient.GoneAndRetryWithRetryTimeoutInSecondsOverride = 1;
 
             this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
 
@@ -397,9 +392,14 @@
                                 }
                                 else
                                 {
-                                    expectedEndpoint = isReadRequest
-                                        ? new Uri(mockDocumentClientContext.DatabaseAccount.ReadLocationsInternal[1].Endpoint)
-                                        : new Uri(mockDocumentClientContext.DatabaseAccount.WriteLocationsInternal[1].Endpoint);
+                                    if (isReadRequest)
+                                    {
+                                        expectedEndpoint = new Uri(mockDocumentClientContext.DatabaseAccount.ReadLocationsInternal[1].Endpoint);
+                                    }
+                                    else
+                                    {
+                                        expectedEndpoint = new Uri(mockDocumentClientContext.DatabaseAccount.WriteLocationsInternal[1].Endpoint);
+                                    }
                                 }
 
                                 Assert.AreEqual(expectedEndpoint, request.RequestContext.LocationEndpointToRoute);
@@ -507,7 +507,7 @@
             else
             {
                 // Allow for override at the test method level if needed
-                this.preferredLocations = preferedRegionListOverride ?? new List<string>()
+                this.preferredLocations = preferedRegionListOverride != null ? preferedRegionListOverride : new List<string>()
                 {
                     "location1",
                     "location2"
@@ -517,14 +517,14 @@
             if (!multimasterMetadataWriteRetryTest)
             {
                 this.mockedClient = new Mock<IDocumentClientInternal>();
-                this.mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
-                this.mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
+                mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location1Endpoint);
+                mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
             }
             else
             {
                 this.mockedClient = new Mock<IDocumentClientInternal>();
-                this.mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location2Endpoint);
-                this.mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
+                mockedClient.Setup(owner => owner.ServiceEndpoint).Returns(ClientRetryPolicyTests.Location2Endpoint);
+                mockedClient.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>())).ReturnsAsync(this.databaseAccount);
             }
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
@@ -541,9 +541,14 @@
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(this.mockedClient.Object, connectionPolicy);
             endpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(this.databaseAccount);
 
-            this.partitionKeyRangeLocationCache = enablePartitionLevelFailover
-                ? new GlobalPartitionEndpointManagerCore(endpointManager)
-                : GlobalPartitionEndpointManagerNoOp.Instance;
+            if (enablePartitionLevelFailover)
+            {
+                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(endpointManager);
+            }
+            else
+            {
+                this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
+            }
 
             return endpointManager;
         }
@@ -581,16 +586,14 @@
                 }
             };
 
-            MockDocumentClientContext mockDocumentClientContext = new MockDocumentClientContext
-            {
-                DatabaseAccount = databaseAccount,
+            MockDocumentClientContext mockDocumentClientContext = new MockDocumentClientContext();
+            mockDocumentClientContext.DatabaseAccount = databaseAccount;
 
-                PreferredLocations = isPreferredLocationsListEmpty ? new List<string>().AsReadOnly() : new List<string>()
+            mockDocumentClientContext.PreferredLocations = isPreferredLocationsListEmpty ? new List<string>().AsReadOnly() : new List<string>()
             {
                 "location1",
                 "location3"
-            }.AsReadOnly()
-            };
+            }.AsReadOnly();
 
             mockDocumentClientContext.LocationCache = new LocationCache(
                 mockDocumentClientContext.PreferredLocations,
@@ -635,8 +638,8 @@
 
         private class MockAddressResolver : IAddressResolverExtension
         {
-            private readonly List<AddressInformation> oldAddressInformations;
-            private readonly List<AddressInformation> newAddressInformations;
+            private List<AddressInformation> oldAddressInformations;
+            private List<AddressInformation> newAddressInformations;
 
             public int NumberOfRefreshes { get; set; }
 
@@ -667,7 +670,7 @@
 
             public Task<PartitionAddressInformation> ResolveAsync(DocumentServiceRequest request, bool forceRefreshPartitionAddresses, CancellationToken cancellationToken)
             {
-                _ = new List<AddressInformation>();
+                List<AddressInformation> addressInformations = new List<AddressInformation>();
                 request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" };
                 if (forceRefreshPartitionAddresses)
                 {
@@ -705,8 +708,8 @@
 
         private class MockTransportClient : TransportClient
         {
-            private readonly Dictionary<Uri, StoreResponse> uriToStoreResponseMap;
-            private readonly Dictionary<Uri, Exception> uriToExceptionMap;
+            private Dictionary<Uri, StoreResponse> uriToStoreResponseMap;
+            private Dictionary<Uri, Exception> uriToExceptionMap;
 
             public MockTransportClient(
                 Dictionary<Uri, StoreResponse> uriToStoreResponseMap,
@@ -735,29 +738,62 @@
         private class MockServiceConfigurationReader : IServiceConfigurationReader
         {
 
-            public string DatabaseAccountId => "localhost";
+            public string DatabaseAccountId
+            {
+                get { return "localhost"; }
+            }
 
             public Uri DatabaseAccountApiEndpoint { get; private set; }
 
-            public ReplicationPolicy UserReplicationPolicy => new ReplicationPolicy();
+            public ReplicationPolicy UserReplicationPolicy
+            {
+                get { return new ReplicationPolicy(); }
+            }
 
-            public ReplicationPolicy SystemReplicationPolicy => new ReplicationPolicy();
+            public ReplicationPolicy SystemReplicationPolicy
+            {
+                get { return new ReplicationPolicy(); }
+            }
 
-            public ConsistencyLevel DefaultConsistencyLevel => ConsistencyLevel.BoundedStaleness;
+            public ConsistencyLevel DefaultConsistencyLevel
+            {
+                get { return ConsistencyLevel.BoundedStaleness; }
+            }
 
-            public ReadPolicy ReadPolicy => new ReadPolicy();
+            public ReadPolicy ReadPolicy
+            {
+                get { return new ReadPolicy(); }
+            }
 
-            public string PrimaryMasterKey => "key";
+            public string PrimaryMasterKey
+            {
+                get { return "key"; }
+            }
 
-            public string SecondaryMasterKey => "key";
+            public string SecondaryMasterKey
+            {
+                get { return "key"; }
+            }
 
-            public string PrimaryReadonlyMasterKey => "key";
+            public string PrimaryReadonlyMasterKey
+            {
+                get { return "key"; }
+            }
 
-            public string SecondaryReadonlyMasterKey => "key";
+            public string SecondaryReadonlyMasterKey
+            {
+                get { return "key"; }
+            }
 
-            public string ResourceSeedKey => "seed";
+            public string ResourceSeedKey
+            {
+                get { return "seed"; }
+            }
 
-            public string SubscriptionId => Guid.Empty.ToString();
+            public string SubscriptionId
+            {
+                get { return Guid.Empty.ToString(); }
+            }
 
             public Task InitializeAsync()
             {

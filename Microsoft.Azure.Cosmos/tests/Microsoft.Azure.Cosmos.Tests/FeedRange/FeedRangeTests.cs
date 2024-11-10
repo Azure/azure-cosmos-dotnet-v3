@@ -6,18 +6,18 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
     using System.Net;
-    using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.Routing;
     using Moq;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
+    using System.Text;
+    using System.IO;
+    using System.Net.Http;
     using Newtonsoft.Json.Linq;
 
     [TestClass]

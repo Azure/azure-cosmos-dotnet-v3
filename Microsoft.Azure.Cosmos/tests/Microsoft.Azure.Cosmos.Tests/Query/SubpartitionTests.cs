@@ -251,7 +251,7 @@
             InMemoryContainer inMemoryContainer = new InMemoryContainer(partitionKeyDefinition, createSplitForMultiHashAtSecondlevel: true, resolvePartitionsBasedOnPrefix: true, queryRequestOptions: queryRequestOptions);
             for (int i = 0; i < numItems; i++)
             {
-                CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i % 5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\", \"intVal\" : {(numItems / 2) - i} }}");
+                CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i % 5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\", \"intVal\" : {(numItems/2) - i} }}");
                 while (true)
                 {
                     TryCatch<Record> monadicCreateRecord = await inMemoryContainer.MonadicCreateItemAsync(item, cancellationToken: default);
@@ -384,7 +384,7 @@
     public class SubpartitionTestInput : BaselineTestInput
     {
         public SubpartitionTestInput(string description, string query, bool ode, bool sortResults = true)
-            : base(description)
+            :base(description)
         {
             this.Query = query;
             this.ODE = ode;
@@ -423,7 +423,7 @@
             xmlWriter.WriteStartElement("Documents");
 
             IEnumerable<string> lines = this.documents.Select(doc => doc.ToString());
-            if (this.sortResults)
+            if(this.sortResults)
             {
                 lines = lines.OrderBy(serializedDoc => serializedDoc);
             }

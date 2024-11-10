@@ -1,14 +1,14 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System.Collections.Generic;
-    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
-    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Threading;
+    using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tests.Query.Pipeline;
 
     [TestClass]
     public sealed class BufferedPartitionPartitionRangeEnumeratorTests
