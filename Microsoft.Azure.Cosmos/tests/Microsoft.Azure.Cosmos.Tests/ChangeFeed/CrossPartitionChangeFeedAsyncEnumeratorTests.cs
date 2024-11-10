@@ -6,19 +6,19 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
 {
     using System;
     using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Tests.Pagination;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using System.IO;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Moq;
-    using System.Threading;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public sealed class CrossPartitionChangeFeedAsyncEnumeratorTests
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
                 It.IsAny<ChangeFeedExecutionOptions>(),
                 It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(
-                (FeedRangeState<ChangeFeedState> state, ChangeFeedExecutionOptions options, ITrace trace, CancellationToken token) 
+                (FeedRangeState<ChangeFeedState> state, ChangeFeedExecutionOptions options, ITrace trace, CancellationToken token)
                     => TryCatch<ChangeFeedPage>.FromResult(new ChangeFeedNotModifiedPage(requestCharge: 1, activityId: string.Empty, additionalHeaders: default, state.State)));
             CrossPartitionChangeFeedAsyncEnumerator enumerator = CrossPartitionChangeFeedAsyncEnumerator.Create(
                 documentContainer.Object,
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
         }
 
         private static async Task<(int, double)> DrainWithUntilNotModifiedWithContinuationTokens(
-            IDocumentContainer documentContainer, 
+            IDocumentContainer documentContainer,
             CrossPartitionChangeFeedAsyncEnumerator enumerator)
         {
             double requestCharge = 0;

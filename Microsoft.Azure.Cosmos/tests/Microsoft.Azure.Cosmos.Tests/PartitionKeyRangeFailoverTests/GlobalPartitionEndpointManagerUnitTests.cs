@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
             GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
 
-            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri>() {new Uri("https://localhost:443/") }));
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri>() { new Uri("https://localhost:443/") }));
 
             PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
             {
@@ -71,10 +71,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void VerifyAllReadRegionsAreVisited(int numOfReadRegions)
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
-            
+
             GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
-            List<Uri> readRegions = new (), writeRegions = new();
-            for(int i = 0; i < numOfReadRegions; i++)
+            List<Uri> readRegions = new(), writeRegions = new();
+            for (int i = 0; i < numOfReadRegions; i++)
             {
                 readRegions.Add(new Uri($"https://localhost:{i}/"));
             }
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     createRequest);
 
                 // If there are no more regions to failover it will return false.
-                if(region == readRegions.Last())
+                if (region == readRegions.Last())
                 {
                     Assert.IsFalse(tryFailover);
                     Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));

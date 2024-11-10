@@ -335,8 +335,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void TestMidPoint()
         {
-            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition();
-            partitionKey.Kind = PartitionKind.Hash;
+            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Hash
+            };
             string middle1 = PartitionKeyInternal.GetMiddleRangeEffectivePartitionKey(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -356,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             string middle2Left = PartitionKeyInternal.GetMinInclusiveEffectivePartitionKey(384, 1024, partitionKey);
             string middle2Right = PartitionKeyInternal.GetMaxExclusiveEffectivePartitionKey(384, 1024, partitionKey);
 
-            Assert.IsTrue(StringComparer.Ordinal.Compare(middle2, middle2Left) >=0);
+            Assert.IsTrue(StringComparer.Ordinal.Compare(middle2, middle2Left) >= 0);
             Assert.IsTrue(StringComparer.Ordinal.Compare(middle2, middle2Right) < 0);
 
             string middle3 = PartitionKeyInternal.GetMiddleRangeEffectivePartitionKey(
@@ -376,9 +378,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void TestMidPointV2()
         {
-            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition();
-            partitionKey.Kind = PartitionKind.Hash;
-            partitionKey.Version = PartitionKeyDefinitionVersion.V2;
+            PartitionKeyDefinition partitionKey = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2
+            };
             string middle1 = PartitionKeyInternal.GetMiddleRangeEffectivePartitionKey(
                 PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
@@ -418,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             pkDefinition.Paths.Add("/field1");
             pkDefinition.Version = v2 ? PartitionKeyDefinitionVersion.V2 : PartitionKeyDefinitionVersion.V1;
 
-            PartitionKeyInternal pk = new PartitionKeyInternal(new[] { new StringPartitionKeyComponent(buffer.Substring(0, length)) });
+            PartitionKeyInternal pk = new PartitionKeyInternal(new[] { new StringPartitionKeyComponent(buffer[..length]) });
             Assert.AreEqual(expectedValue, pk.GetEffectivePartitionKeyString(pkDefinition));
         }
 
@@ -521,9 +525,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString(partitionKeyRangeJson);
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            partitionKeyDefinition.Kind = PartitionKind.Hash;
-            partitionKeyDefinition.Version = PartitionKeyDefinitionVersion.V2;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Hash,
+                Version = PartitionKeyDefinitionVersion.V2
+            };
             for (int i = 0; i < partitionKey.Components.Count; i++)
             {
                 partitionKeyDefinition.Paths.Add("/path" + i);
@@ -538,8 +544,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         {
             PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString(partitionKeyRangeJson);
 
-            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition();
-            partitionKeyDefinition.Kind = PartitionKind.Range;
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+            {
+                Kind = PartitionKind.Range
+            };
             for (int i = 0; i < partitionKey.Components.Count; i++)
             {
                 partitionKeyDefinition.Paths.Add("/path" + i);
@@ -549,7 +557,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
 #pragma warning disable 0612
             PartitionKeyInternal partitionKeyRoundTrip = PartitionKeyInternal.FromHexEncodedBinaryString(hexEncodedEffectivePartitionKey);
-            PartitionKeyInternal partitionKeyRoundTrip1 = PartitionKeyInternal.FromHexEncodedBinaryString("05C1E149CFCD84087071667362756A706F736674766D7500");
+            _ = PartitionKeyInternal.FromHexEncodedBinaryString("05C1E149CFCD84087071667362756A706F736674766D7500");
 #pragma warning restore 0612
 
             Assert.AreEqual(partitionKey, partitionKeyRoundTrip);

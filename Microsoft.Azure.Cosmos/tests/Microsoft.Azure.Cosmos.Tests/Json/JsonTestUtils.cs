@@ -2,16 +2,16 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Cosmos.Core;
-    using System.Diagnostics;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     internal class JsonTestUtils
     {
@@ -105,92 +105,30 @@
             List<JsonToken> tokens = new List<JsonToken>();
             while (reader.Read())
             {
-                JsonToken token;
-                switch (reader.CurrentTokenType)
+                JsonToken token = reader.CurrentTokenType switch
                 {
-                    case JsonTokenType.NotStarted:
-                        throw new InvalidOperationException();
-
-                    case JsonTokenType.BeginArray:
-                        token = JsonToken.ArrayStart();
-                        break;
-
-                    case JsonTokenType.EndArray:
-                        token = JsonToken.ArrayEnd();
-                        break;
-
-                    case JsonTokenType.BeginObject:
-                        token = JsonToken.ObjectStart();
-                        break;
-
-                    case JsonTokenType.EndObject:
-                        token = JsonToken.ObjectEnd();
-                        break;
-
-                    case JsonTokenType.String:
-                        token = JsonToken.String(reader.GetStringValue());
-                        break;
-
-                    case JsonTokenType.Number:
-                        token = JsonToken.Number(reader.GetNumberValue());
-                        break;
-
-                    case JsonTokenType.True:
-                        token = JsonToken.Boolean(true);
-                        break;
-
-                    case JsonTokenType.False:
-                        token = JsonToken.Boolean(false);
-                        break;
-
-                    case JsonTokenType.Null:
-                        token = JsonToken.Null();
-                        break;
-
-                    case JsonTokenType.FieldName:
-                        token = JsonToken.FieldName(reader.GetStringValue());
-                        break;
-
-                    case JsonTokenType.Int8:
-                        token = JsonToken.Int8(reader.GetInt8Value());
-                        break;
-
-                    case JsonTokenType.Int16:
-                        token = JsonToken.Int16(reader.GetInt16Value());
-                        break;
-
-                    case JsonTokenType.Int32:
-                        token = JsonToken.Int32(reader.GetInt32Value());
-                        break;
-
-                    case JsonTokenType.Int64:
-                        token = JsonToken.Int64(reader.GetInt64Value());
-                        break;
-
-                    case JsonTokenType.UInt32:
-                        token = JsonToken.UInt32(reader.GetUInt32Value());
-                        break;
-
-                    case JsonTokenType.Float32:
-                        token = JsonToken.Float32(reader.GetFloat32Value());
-                        break;
-
-                    case JsonTokenType.Float64:
-                        token = JsonToken.Float64(reader.GetFloat64Value());
-                        break;
-
-                    case JsonTokenType.Guid:
-                        token = JsonToken.Guid(reader.GetGuidValue());
-                        break;
-
-                    case JsonTokenType.Binary:
-                        token = JsonToken.Binary(reader.GetBinaryValue());
-                        break;
-
-                    default:
-                        throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {reader.CurrentTokenType}");
-                }
-
+                    JsonTokenType.NotStarted => throw new InvalidOperationException(),
+                    JsonTokenType.BeginArray => JsonToken.ArrayStart(),
+                    JsonTokenType.EndArray => JsonToken.ArrayEnd(),
+                    JsonTokenType.BeginObject => JsonToken.ObjectStart(),
+                    JsonTokenType.EndObject => JsonToken.ObjectEnd(),
+                    JsonTokenType.String => JsonToken.String(reader.GetStringValue()),
+                    JsonTokenType.Number => JsonToken.Number(reader.GetNumberValue()),
+                    JsonTokenType.True => JsonToken.Boolean(true),
+                    JsonTokenType.False => JsonToken.Boolean(false),
+                    JsonTokenType.Null => JsonToken.Null(),
+                    JsonTokenType.FieldName => JsonToken.FieldName(reader.GetStringValue()),
+                    JsonTokenType.Int8 => JsonToken.Int8(reader.GetInt8Value()),
+                    JsonTokenType.Int16 => JsonToken.Int16(reader.GetInt16Value()),
+                    JsonTokenType.Int32 => JsonToken.Int32(reader.GetInt32Value()),
+                    JsonTokenType.Int64 => JsonToken.Int64(reader.GetInt64Value()),
+                    JsonTokenType.UInt32 => JsonToken.UInt32(reader.GetUInt32Value()),
+                    JsonTokenType.Float32 => JsonToken.Float32(reader.GetFloat32Value()),
+                    JsonTokenType.Float64 => JsonToken.Float64(reader.GetFloat64Value()),
+                    JsonTokenType.Guid => JsonToken.Guid(reader.GetGuidValue()),
+                    JsonTokenType.Binary => JsonToken.Binary(reader.GetBinaryValue()),
+                    _ => throw new ArgumentException($"Unknown {nameof(JsonTokenType)}: {reader.CurrentTokenType}"),
+                };
                 tokens.Add(token);
             }
 

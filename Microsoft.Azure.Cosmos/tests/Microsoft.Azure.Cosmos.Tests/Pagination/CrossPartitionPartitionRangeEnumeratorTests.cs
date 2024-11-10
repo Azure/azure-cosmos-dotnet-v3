@@ -71,9 +71,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             Mock<IFeedRangeProvider> feedRangeProvider = new Mock<IFeedRangeProvider>();
             feedRangeProvider.Setup(p => p.GetChildRangeAsync(
                 It.Is<FeedRangeInternal>(splitRange => ((FeedRangeEpk)splitRange).Range.Min == "" && ((FeedRangeEpk)splitRange).Range.Max == "A"),
-                It.IsAny<ITrace>(), 
+                It.IsAny<ITrace>(),
                 It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new List<FeedRangeEpk>() { 
+                .ReturnsAsync(new List<FeedRangeEpk>() {
                     FeedRangeEpk.FullRange});
 
             CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> enumerator = new CrossPartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>(
@@ -260,12 +260,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
         }
 
-        private class EnumeratorThatSplits : PartitionRangePageAsyncEnumerator<ReadFeedPage,ReadFeedState>
+        private class EnumeratorThatSplits : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
         {
             private readonly bool throwError;
 
             public EnumeratorThatSplits(
-                FeedRangeState<ReadFeedState> feedRangeState, 
+                FeedRangeState<ReadFeedState> feedRangeState,
                 bool throwError = true)
                 : base(feedRangeState)
             {
@@ -474,10 +474,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 CrossFeedRangeState<ReadFeedState> state = null)
             {
                 PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
-                    FeedRangeState<ReadFeedState> feedRangeState) => new ReadFeedPartitionRangeEnumerator(
+                    FeedRangeState<ReadFeedState> feedRangeState)
+                {
+                    return new ReadFeedPartitionRangeEnumerator(
                         inMemoryCollection,
                         feedRangeState: feedRangeState,
                         readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: 10));
+                }
 
                 return new CrossPartitionRangePageAsyncEnumerable<ReadFeedPage, ReadFeedState>(
                     feedRangeProvider: inMemoryCollection,
@@ -498,7 +501,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 bool aggressivePrefetch = false,
                 bool exercisePrefetch = false,
                 CrossFeedRangeState<ReadFeedState> state = null,
-                CancellationToken cancellationToken  = default)
+                CancellationToken cancellationToken = default)
             {
                 PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState> createEnumerator(
                     FeedRangeState<ReadFeedState> feedRangeState)

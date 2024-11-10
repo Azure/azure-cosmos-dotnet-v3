@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.Tests.ChangeFeed
             client.Verify(c => c.TryGetOverlappingRangesAsync(resourceId, FeedRangeEpk.FullRange.Range, true), Times.Once);
         }
 
-            [TestMethod]
+        [TestMethod]
         public async Task MonadicChangeFeedAsync_ChangeFeedMode_Incremental()
         {
             Mock<ContainerInternal> container = new Mock<ContainerInternal>();

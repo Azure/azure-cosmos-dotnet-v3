@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 new SqlQuerySpec("selectttttt * from c"),
                 ResourceType.Document,
                 new Documents.PartitionKeyDefinition() { Paths = new Collection<string>() { "/id" } },
-                vectorEmbeddingPolicy:null,
+                vectorEmbeddingPolicy: null,
                 hasLogicalPartitionKey: false,
                 geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,

@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
                 trace: NoOpTrace.Singleton,
-                cancellationToken: default(CancellationToken));
+                cancellationToken: default);
 
             TransactionalBatchResponse batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                 new ResponseMessage(HttpStatusCode.OK) { Content = responseContent },
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 operations: new ArraySegment<ItemBatchOperation>(arrayOperations),
                 serializerCore: MockCosmosUtil.Serializer,
                 trace: NoOpTrace.Singleton,
-                cancellationToken: default(CancellationToken));
+                cancellationToken: default);
 
             ResponseMessage responseMessage = new ResponseMessage(HttpStatusCode.OK)
             {
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (responseMessage.Trace = Trace.GetRootTrace("test trace"))
             {
                 responseMessage.Trace.AddDatum("Point Operation Statistics", diagnostics);
-                
+
                 batchresponse = await TransactionalBatchResponse.FromResponseMessageAsync(
                     responseMessage,
                     batchRequest,

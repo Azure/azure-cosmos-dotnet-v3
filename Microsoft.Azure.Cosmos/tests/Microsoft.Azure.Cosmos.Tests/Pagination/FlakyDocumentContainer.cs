@@ -192,8 +192,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
-            FeedRangeState<ChangeFeedState> feedRangeState, 
-            ChangeFeedExecutionOptions changeFeedPaginationOptions, 
+            FeedRangeState<ChangeFeedState> feedRangeState,
+            ChangeFeedExecutionOptions changeFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
@@ -234,47 +234,71 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch> MonadicSplitAsync(
             FeedRangeInternal feedRange,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicSplitAsync(
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicSplitAsync(
                 feedRange,
                 cancellationToken);
+        }
 
         public Task<TryCatch> MonadicMergeAsync(
             FeedRangeInternal feedRange1,
             FeedRangeInternal feedRange2,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicMergeAsync(
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicMergeAsync(
                 feedRange1,
                 feedRange2,
                 cancellationToken);
+        }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
             ITrace trace,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetChildRangeAsync(
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicGetChildRangeAsync(
                 feedRange,
                 trace,
                 cancellationToken);
+        }
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             ITrace trace,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetFeedRangesAsync(
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicGetFeedRangesAsync(
                 trace,
                 cancellationToken);
+        }
 
         public Task<TryCatch> MonadicRefreshProviderAsync(
             ITrace trace,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicRefreshProviderAsync(trace, cancellationToken);
+        }
 
         public Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(
             ITrace trace,
-            CancellationToken cancellationToken) => this.documentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
+            CancellationToken cancellationToken)
+        {
+            return this.documentContainer.MonadicGetResourceIdentifierAsync(trace, cancellationToken);
+        }
 
-        private bool ShouldReturn429() => (this.failureConfigs != null)
+        private bool ShouldReturn429()
+        {
+            return (this.failureConfigs != null)
             && this.failureConfigs.Inject429s
             && ((this.random.Next() % 2) == 0);
+        }
 
-        private bool ShouldReturnEmptyPage() => (this.failureConfigs != null)
+        private bool ShouldReturnEmptyPage()
+        {
+            return (this.failureConfigs != null)
             && this.failureConfigs.InjectEmptyPages
             && ((this.random.Next() % 2) == 0);
+        }
 
         private bool ShouldThrowException(out Exception exception)
         {
@@ -292,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             public delegate Task<Exception> ShouldReturnFailure();
 
             public FailureConfigs(
-                bool inject429s, 
+                bool inject429s,
                 bool injectEmptyPages,
                 Exception throwException = null,
                 Exception returnFailure = null)

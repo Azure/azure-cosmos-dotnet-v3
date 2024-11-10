@@ -5,7 +5,7 @@
     using System.IO;
     using System.Xml;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    
+
     [TestCategory("Windows")]
     [TestCategory("UpdateContract")]
     [TestClass]
@@ -79,8 +79,8 @@
         [DataRow("4.0.0", "4.0.0", "preview.0", true)]
         [DataRow("4.0.0", "4.1.0", "preview.1", true)]
         [DataRow("4.2.0", "4.1.0", "preview.0", true)]
-        public void ValdateSDKVersions(string officialVersionText, 
-            string previewVersionText, 
+        public void ValdateSDKVersions(string officialVersionText,
+            string previewVersionText,
             string previewSuffixText,
             bool failureExpected)
         {

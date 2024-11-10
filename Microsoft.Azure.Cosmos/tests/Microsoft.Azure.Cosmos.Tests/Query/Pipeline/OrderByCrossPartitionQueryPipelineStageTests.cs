@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 nonStreamingOrderBy: false,
                 continuationToken: CosmosArray.Create(new List<CosmosElement>() { CosmosString.Create("asdf") }),
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                emitRawOrderByPayload: false); 
+                emitRawOrderByPayload: false);
             Assert.IsTrue(monadicCreate.Failed);
             Assert.IsTrue(monadicCreate.InnerMostException is MalformedContinuationTokenException);
         }
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
-                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element} })) },
+                    new List<OrderByItem>() { new OrderByItem(CosmosObject.Create(new Dictionary<string, CosmosElement>() { { "item", element } })) },
                     resumeValues: null,
                     rid: "rid",
                     skipCount: 42,
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             Mock<IDocumentContainer> mockDocumentContainer = new Mock<IDocumentContainer>();
             IReadOnlyList<(string serializedToken, CosmosElement element)> tokens = TokenTestData();
 
-            foreach((string token1, CosmosElement element1) in tokens)
+            foreach ((string token1, CosmosElement element1) in tokens)
             {
                 foreach ((string token2, CosmosElement element2) in tokens)
                 {
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 OrderByContinuationToken orderByContinuationToken = new OrderByContinuationToken(
                     parallelContinuationToken,
                     orderByItems: null,
-                    resumeValues: new List<SqlQueryResumeValue>() { resumeValue},
+                    resumeValues: new List<SqlQueryResumeValue>() { resumeValue },
                     rid: "rid",
                     skipCount: 42,
                     filter: null);

@@ -387,25 +387,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (overshootLsnDuringBarrier)
                 {
-                    if (overshootGlobalCommittedLsnDuringBarrier)
-                    {
-                        finalResponse = mockStoreResponse5;
-                    }
-                    else
-                    {
-                        finalResponse = mockStoreResponse3;
-                    }
+                    finalResponse = overshootGlobalCommittedLsnDuringBarrier ? mockStoreResponse5 : mockStoreResponse3;
                 }
                 else
                 {
-                    if (overshootGlobalCommittedLsnDuringBarrier)
-                    {
-                        finalResponse = mockStoreResponse4;
-                    }
-                    else
-                    {
-                        finalResponse = mockStoreResponse2;
-                    }
+                    finalResponse = overshootGlobalCommittedLsnDuringBarrier ? mockStoreResponse4 : mockStoreResponse2;
                 }
             }
 

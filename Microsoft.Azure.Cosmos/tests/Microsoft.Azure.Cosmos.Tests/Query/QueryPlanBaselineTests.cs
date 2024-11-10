@@ -3,19 +3,19 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Xml;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
+    using System.Xml;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
+    using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1453,88 +1453,121 @@
             -0.012471556663513184 };
 
         private static PartitionKeyDefinition CreateHashPartitionKey(
-            params string[] partitionKeys) => new PartitionKeyDefinition()
+            params string[] partitionKeys)
+        {
+            return new PartitionKeyDefinition()
             {
                 Paths = new Collection<string>(partitionKeys),
                 Kind = Microsoft.Azure.Documents.PartitionKind.Hash
             };
+        }
 
         private static PartitionKeyDefinition CreateRangePartitionKey(
-            params string[] partitionKeys) => new PartitionKeyDefinition()
+            params string[] partitionKeys)
+        {
+            return new PartitionKeyDefinition()
             {
                 Paths = new Collection<string>(partitionKeys),
                 Kind = PartitionKind.Range
             };
+        }
 
         private static PartitionKeyDefinition CreateMultiHashPartitionKey(
-            params string[] partitionkeys) => new PartitionKeyDefinition()
+            params string[] partitionkeys)
+        {
+            return new PartitionKeyDefinition()
             {
                 Paths = new Collection<string>(partitionkeys),
                 Kind = PartitionKind.MultiHash,
                 Version = PartitionKeyDefinitionVersion.V2
             };
+        }
 
         private static QueryPlanBaselineTestInput None(
             string description,
-            string query) => new QueryPlanBaselineTestInput(
+            string query)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 partitionKeyDefinition: null,
                 new SqlQuerySpec(query));
+        }
 
         private static QueryPlanBaselineTestInput None(
             string description,
-            SqlQuerySpec query) => new QueryPlanBaselineTestInput(
+            SqlQuerySpec query)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 partitionKeyDefinition: null,
                 query);
+        }
 
         private static QueryPlanBaselineTestInput Hash(
             string description,
             string query,
-            params string[] partitionkeys) => new QueryPlanBaselineTestInput(
+            params string[] partitionkeys)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 CreateHashPartitionKey(partitionkeys),
                 new SqlQuerySpec(query));
+        }
 
         private static QueryPlanBaselineTestInput Hash(
             string description,
             SqlQuerySpec query,
-            params string[] partitionkeys) => new QueryPlanBaselineTestInput(
+            params string[] partitionkeys)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 CreateHashPartitionKey(partitionkeys),
                 query);
+        }
 
         private static QueryPlanBaselineTestInput MultiHash(
             string description,
             string query,
-            params string[] partitionKeys) => new QueryPlanBaselineTestInput(
+            params string[] partitionKeys)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 CreateMultiHashPartitionKey(partitionKeys),
                 new SqlQuerySpec(query));
+        }
 
         private static QueryPlanBaselineTestInput MultiHash(
             string description,
             SqlQuerySpec query,
-            params string[] partitionKeys) => new QueryPlanBaselineTestInput(
+            params string[] partitionKeys)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 CreateMultiHashPartitionKey(partitionKeys),
                 query);
+        }
 
         private static QueryPlanBaselineTestInput Range(
             string description,
             string query,
-            params string[] partitionkeys) => new QueryPlanBaselineTestInput(
+            params string[] partitionkeys)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 CreateRangePartitionKey(partitionkeys),
                 new SqlQuerySpec(query));
+        }
 
         private static QueryPlanBaselineTestInput Range(
             string description,
             SqlQuerySpec query,
-            params string[] partitionkeys) => new QueryPlanBaselineTestInput(
+            params string[] partitionkeys)
+        {
+            return new QueryPlanBaselineTestInput(
                 description,
                 CreateRangePartitionKey(partitionkeys),
                 query);
+        }
 
         public override QueryPlanBaselineTestOutput ExecuteTest(QueryPlanBaselineTestInput input)
         {
