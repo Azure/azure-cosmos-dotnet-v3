@@ -365,7 +365,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
-            
+
             // Existing for only one partition
             List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
             {
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 .ReturnsAsync(resultingRanges);
 
             Mock<DocumentServiceLeaseManager> leaseManager = new Mock<DocumentServiceLeaseManager>();
-    
+
             // Existing for only one partition
             List<DocumentServiceLease> existingLeases = new List<DocumentServiceLease>()
             {

@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             List<RequestInfo> requests = new List<RequestInfo>();
             recorder.GetHighLatencyRequests(requests);
             recorder.GetErroredRequests(requests);
-            
+
             Assert.AreEqual(0, requests.Count);
         }
 

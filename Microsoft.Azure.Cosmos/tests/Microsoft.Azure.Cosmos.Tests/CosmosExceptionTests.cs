@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyNullHeaderLogic()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
-            
+
             CosmosException exception = new CosmosException(
                 statusCode: HttpStatusCode.BadRequest,
                 message: testMessage,
@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
             foreach ((HttpStatusCode statusCode, CosmosException exception) in exceptionsToStatusCodes)
             {
                 this.ValidateExceptionInfo(
-                    exception, 
+                    exception,
                     statusCode,
                     substatus,
                     testMessage,
@@ -479,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(exception.ToString().Contains(message));
             string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: {substatus}; ActivityId: {exception.ActivityId}; Reason: ({message});";
 
-            if(httpStatusCode == HttpStatusCode.RequestTimeout
+            if (httpStatusCode == HttpStatusCode.RequestTimeout
                 || httpStatusCode == HttpStatusCode.InternalServerError
                 || httpStatusCode == HttpStatusCode.ServiceUnavailable
                 || (httpStatusCode == HttpStatusCode.NotFound && exception.Headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))

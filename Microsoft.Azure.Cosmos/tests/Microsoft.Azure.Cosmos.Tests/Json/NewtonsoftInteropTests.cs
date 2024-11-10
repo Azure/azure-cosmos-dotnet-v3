@@ -6,16 +6,16 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
+    using System.Globalization;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
-    using System.Globalization;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Core.Utf8;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class NewtonsoftInteropTests
@@ -275,16 +275,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 serializer.Serialize(writer, expectedDeserializedValue);
 
                 ReadOnlyMemory<byte> result = writer.GetResult();
-                string actualSerializedValue;
-                if (jsonSerializationFormat == JsonSerializationFormat.Binary)
-                {
-                    actualSerializedValue = JsonTestUtils.ConvertBinaryToText(result);
-                }
-                else
-                {
-                    actualSerializedValue = Utf8Span.UnsafeFromUtf8BytesNoValidation(result.Span).ToString();
-                }
-
+                string actualSerializedValue = jsonSerializationFormat == JsonSerializationFormat.Binary
+                    ? JsonTestUtils.ConvertBinaryToText(result)
+                    : Utf8Span.UnsafeFromUtf8BytesNoValidation(result.Span).ToString();
                 actualSerializedValue = NewtonsoftInteropTests.NewtonsoftFormat(actualSerializedValue);
                 string expectedSerializedValue = NewtonsoftInteropTests.NewtonsoftFormat(
                     JsonConvert.SerializeObject(
