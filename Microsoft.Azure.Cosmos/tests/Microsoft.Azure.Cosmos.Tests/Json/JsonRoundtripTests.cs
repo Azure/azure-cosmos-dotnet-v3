@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     JsonWriter.Create(inputSpec.SerializationFormat, inputSpec.WriteOptions);
 
                 JsonTestUtils.WriteTokens(inputTokens, inputWriter, writeAsUtf8String: true);
-                ReadOnlyMemory<byte>  inputResult = inputWriter.GetResult();
+                ReadOnlyMemory<byte> inputResult = inputWriter.GetResult();
 
                 timer.Stop();
 

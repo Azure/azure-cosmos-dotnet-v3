@@ -1629,10 +1629,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-                MaxBufferedItemCount = 10,
-                ResponseContinuationTokenLimitInKb = 500,
                 MaxItemCount = 1,
-                MaxConcurrency = 1,
+                MaxConcurrency = -1,
             };
 
             FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
@@ -1655,6 +1653,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 if (metrics != null)
                 {
+                    // This assumes that we are using parallel prefetch to hit multiple partitions concurrently
                     Assert.IsTrue(metrics.PartitionedMetrics.Count == 3);
                     Assert.IsTrue(metrics.CumulativeMetrics.TotalTime > TimeSpan.Zero);
                     Assert.IsTrue(metrics.CumulativeMetrics.QueryPreparationTime > TimeSpan.Zero);
@@ -2350,7 +2349,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             catch (CosmosException ex)
             {
                 Assert.AreEqual(HttpStatusCode.BadRequest, ex.StatusCode);
-                Assert.IsTrue(ex.Message.Contains(@"For Operation(1): Add Operation can only create a child object of an existing node(array or object) and cannot create path recursively, no path found beyond: 'nonExistentParent'. Learn more: https:\/\/aka.ms\/cosmosdbpatchdocs"), ex.Message);
+                Assert.IsTrue(ex.Message.Contains(@"For Operation(1): Add Operation can only create a child object of an existing node(array or object) and cannot create path recursively, no path found beyond: 'nonExistentParent'. Learn more: https://aka.ms/cosmosdbpatchdocs"), ex.Message);
                 CosmosItemTests.ValidateCosmosException(ex);
             }
 
@@ -2561,7 +2560,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             await this.Container.ReadItemAsync<ToDoActivity>("id2002", new Cosmos.PartitionKey("pk2002"));
         }
 
-        [Ignore]
         [TestMethod]
         public async Task BatchPatchConditionTest()
         {
@@ -2653,7 +2651,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task PatchConditionTest()
         {
@@ -2744,7 +2741,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
         [TestMethod]
         public async Task ItemPatchViaGatewayTest()
         {

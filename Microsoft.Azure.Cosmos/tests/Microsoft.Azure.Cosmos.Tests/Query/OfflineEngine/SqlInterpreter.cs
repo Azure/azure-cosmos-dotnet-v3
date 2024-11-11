@@ -44,22 +44,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             PerformStaticAnalysis(sqlQuery);
 
-            if (ridToPartitionKeyRange == null)
-            {
-                ridToPartitionKeyRange = SinglePartitionRidToPartitionKeyRange.Value;
-            }
+            ridToPartitionKeyRange ??= SinglePartitionRidToPartitionKeyRange.Value;
 
             // From clause binds the data for the rest of the pipeline
-            if (sqlQuery.FromClause != null)
-            {
-                dataSource = ExecuteFromClause(
+            dataSource = sqlQuery.FromClause != null
+                ? ExecuteFromClause(
                     dataSource,
-                    sqlQuery.FromClause);
-            }
-            else
-            {
-                dataSource = NoFromClauseDataSource;
-            }
+                    sqlQuery.FromClause)
+                : NoFromClauseDataSource;
 
             // We execute the filter here to reduce the data set as soon as possible.
             if (sqlQuery.WhereClause != null)
@@ -97,14 +89,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             }
             else
             {
-                if (AggregateProjectionDector.HasAggregate(sqlQuery.SelectClause.SelectSpec))
-                {
-                    groupings = CreateOneGroupingForWholeCollection(dataSource);
-                }
-                else
-                {
-                    groupings = CreateOneGroupingForEachDocument(dataSource);
-                }
+                groupings = AggregateProjectionDector.HasAggregate(sqlQuery.SelectClause.SelectSpec)
+                    ? CreateOneGroupingForWholeCollection(dataSource)
+                    : CreateOneGroupingForEachDocument(dataSource);
             }
 
             // We finally project out the needed columns and remove all binding artifacts
@@ -180,14 +167,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     CosmosElement aggregationResult = transformedSpec.Accept(
                         Projector.Singleton,
                         dataSource.FirstOrDefault());
-                    if (aggregationResult is not CosmosUndefined)
-                    {
-                        dataSource = new CosmosElement[] { aggregationResult };
-                    }
-                    else
-                    {
-                        dataSource = Array.Empty<CosmosElement>();
-                    }
+                    dataSource = aggregationResult is not CosmosUndefined ? (new CosmosElement[] { aggregationResult }) : (IEnumerable<CosmosElement>)Array.Empty<CosmosElement>();
                 }
                 else
                 {
@@ -234,12 +214,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
             SqlGroupByClause sqlGroupByClause)
         {
             return dataSource.GroupBy(
-                keySelector: (document) =>
-                {
-                    return GetGroupByKey(
+                keySelector: (document) => GetGroupByKey(
                         document,
-                        sqlGroupByClause.Expressions);
-                },
+                        sqlGroupByClause.Expressions),
                 comparer: GroupByKeyEqualityComparer.Singleton);
         }
 
@@ -309,38 +286,26 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     element) is not CosmosUndefined);
             }
 
-            IOrderedEnumerable<CosmosElement> orderedDataSource;
-            if (firstItem.IsDescending)
-            {
-                orderedDataSource = dataSource.OrderByDescending(
+            IOrderedEnumerable<CosmosElement> orderedDataSource = firstItem.IsDescending
+                ? dataSource.OrderByDescending(
+                    element => firstItem.Expression.Accept(
+                        ScalarExpressionEvaluator.Singleton,
+                        element))
+                : dataSource.OrderBy(
                     element => firstItem.Expression.Accept(
                         ScalarExpressionEvaluator.Singleton,
                         element));
-            }
-            else
-            {
-                orderedDataSource = dataSource.OrderBy(
-                    element => firstItem.Expression.Accept(
-                        ScalarExpressionEvaluator.Singleton,
-                        element));
-            }
-
             foreach (SqlOrderByItem sqlOrderByItem in sqlOrderByClause.OrderByItems.Skip(1))
             {
-                if (sqlOrderByItem.IsDescending)
-                {
-                    orderedDataSource = orderedDataSource.ThenByDescending(
+                orderedDataSource = sqlOrderByItem.IsDescending
+                    ? orderedDataSource.ThenByDescending(
+                        element => sqlOrderByItem.Expression.Accept(
+                            ScalarExpressionEvaluator.Singleton,
+                            element))
+                    : orderedDataSource.ThenBy(
                         element => sqlOrderByItem.Expression.Accept(
                             ScalarExpressionEvaluator.Singleton,
                             element));
-                }
-                else
-                {
-                    orderedDataSource = orderedDataSource.ThenBy(
-                        element => sqlOrderByItem.Expression.Accept(
-                            ScalarExpressionEvaluator.Singleton,
-                            element));
-                }
             }
 
             // Grab from the left most partition first
@@ -354,16 +319,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 StringComparer.Ordinal);
 
             // Break all final ties within partition by document id
-            if (firstItem.IsDescending)
-            {
-                orderedDataSource = orderedDataSource
-                    .ThenByDescending(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document);
-            }
-            else
-            {
-                orderedDataSource = orderedDataSource
+            orderedDataSource = firstItem.IsDescending
+                ? orderedDataSource
+                    .ThenByDescending(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document)
+                : orderedDataSource
                     .ThenBy(element => ResourceId.Parse(((CosmosString)((CosmosObject)element)["_rid"]).Value).Document);
-            }
 
             return orderedDataSource;
         }
@@ -450,12 +410,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
             public WholeCollectionGrouping(IEnumerable<CosmosElement> collection)
             {
-                if (collection == null)
-                {
-                    throw new ArgumentNullException(nameof(collection));
-                }
-
-                this.collection = collection;
+                this.collection = collection ?? throw new ArgumentNullException(nameof(collection));
                 this.Key = null;
             }
 
@@ -960,7 +915,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                 foreach (KeyValuePair<string, CosmosElement> property in cosmosObject)
                 {
                     CosmosElement value = property.Value.Accept(this);
-                    if(value is not CosmosUndefined)
+                    if (value is not CosmosUndefined)
                     {
                         properties.Add(property.Key, value);
                     }
