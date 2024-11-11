@@ -677,7 +677,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
         internal bool skipVerification;
 
         // Ignore Ordering for AnonymousType object
-        internal readonly bool ignoreOrder;
+        internal bool ignoreOrder;
 
         internal LinqTestInput(
             string description, 
