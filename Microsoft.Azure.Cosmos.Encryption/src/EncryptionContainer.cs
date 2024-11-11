@@ -762,7 +762,16 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             throw new NotImplementedException();
         }
+
+        public override Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
+            CancellationToken cancellationToken = default)
+        {
+            throw new NotImplementedException();
+        }
 #endif
+
         /// <summary>
         /// This function handles the scenario where a container is deleted(say from different Client) and recreated with same Id but with different client encryption policy.
         /// The idea is to have the container Rid cached and sent out as part of RequestOptions with Container Rid set in "x-ms-cosmos-intended-collection-rid" header.
@@ -973,10 +982,11 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 {
                     throw new NotSupportedException($"The number of partition keys passed in the query exceeds the number of keys initialized on the container. Container Id : {this.Id}");
                 }
+
                 bool isPkEncrypted = false;
 
                 // partitionKeyBuilder expects the paths and values to be in same order.
-                for(counter = 0; counter < jArray.Count(); counter++)
+                for (counter = 0; counter < jArray.Count(); counter++)
                 {
                     string path = encryptionSettings.PartitionKeyPaths[counter];
 

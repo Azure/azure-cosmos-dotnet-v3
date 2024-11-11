@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
     internal class BatchResponsePayloadWriter
     {
-        private List<TransactionalBatchOperationResult> results;
+        private readonly List<TransactionalBatchOperationResult> results;
 
         public BatchResponsePayloadWriter(List<TransactionalBatchOperationResult> results)
         {
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         internal async Task<MemoryStream> GeneratePayloadAsync()
         {
             MemoryStream responseStream = new MemoryStream();
-            Assert.AreEqual(Result.Success, await responseStream.WriteRecordIOAsync(default(Segment), this.WriteOperationResult));
+            Assert.AreEqual(Result.Success, await responseStream.WriteRecordIOAsync(default, this.WriteOperationResult));
             responseStream.Position = 0;
             return responseStream;
         }

@@ -185,30 +185,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             return cosmosElement.Accept(IsPrimitiveCosmosElementVisitor.Singleton);
         }
 
-        public CosmosElement GetCosmosElementContinuationToken()
-        {
-            MinMaxContinuationToken minMaxContinuationToken;
-            if (this.globalMinMax == ItemComparer.MinValue)
-            {
-                minMaxContinuationToken = MinMaxContinuationToken.CreateMinValueContinuationToken();
-            }
-            else if (this.globalMinMax == ItemComparer.MaxValue)
-            {
-                minMaxContinuationToken = MinMaxContinuationToken.CreateMaxValueContinuationToken();
-            }
-            else if (this.globalMinMax is CosmosUndefined)
-            {
-                minMaxContinuationToken = MinMaxContinuationToken.CreateUndefinedValueContinuationToken();
-            }
-            else
-            {
-                minMaxContinuationToken = MinMaxContinuationToken.CreateValueContinuationToken(this.globalMinMax);
-            }
-
-            CosmosElement minMaxContinuationTokenAsCosmosElement = MinMaxContinuationToken.ToCosmosElement(minMaxContinuationToken);
-            return minMaxContinuationTokenAsCosmosElement;
-        }
-
         private sealed class IsPrimitiveCosmosElementVisitor : ICosmosElementVisitor<bool>
         {
             public static readonly IsPrimitiveCosmosElementVisitor Singleton = new IsPrimitiveCosmosElementVisitor();
@@ -303,48 +279,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             public MinMaxContinuationTokenType Type { get; }
             public CosmosElement Value { get; }
-
-            public static MinMaxContinuationToken CreateMinValueContinuationToken()
-            {
-                return new MinMaxContinuationToken(type: MinMaxContinuationTokenType.MinValue, value: null);
-            }
-
-            public static MinMaxContinuationToken CreateMaxValueContinuationToken()
-            {
-                return new MinMaxContinuationToken(type: MinMaxContinuationTokenType.MaxValue, value: null);
-            }
-
-            public static MinMaxContinuationToken CreateUndefinedValueContinuationToken()
-            {
-                return new MinMaxContinuationToken(type: MinMaxContinuationTokenType.Undefined, value: null);
-            }
-
-            public static MinMaxContinuationToken CreateValueContinuationToken(CosmosElement value)
-            {
-                return new MinMaxContinuationToken(type: MinMaxContinuationTokenType.Value, value: value);
-            }
-
-            public static CosmosElement ToCosmosElement(MinMaxContinuationToken minMaxContinuationToken)
-            {
-                if (minMaxContinuationToken == null)
-                {
-                    throw new ArgumentNullException(nameof(minMaxContinuationToken));
-                }
-
-                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>
-                {
-                    {
-                        MinMaxContinuationToken.PropertyNames.Type,
-                        EnumToCosmosString.ConvertEnumToCosmosString(minMaxContinuationToken.Type)
-                    }
-                };
-                if (minMaxContinuationToken.Value != null)
-                {
-                    dictionary.Add(MinMaxContinuationToken.PropertyNames.Value, minMaxContinuationToken.Value);
-                }
-
-                return CosmosObject.Create(dictionary);
-            }
 
             public static TryCatch<MinMaxContinuationToken> TryCreateFromCosmosElement(CosmosElement cosmosElement)
             {

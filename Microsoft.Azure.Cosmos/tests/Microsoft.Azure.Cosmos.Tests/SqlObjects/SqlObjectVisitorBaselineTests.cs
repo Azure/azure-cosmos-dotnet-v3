@@ -120,50 +120,45 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("path")),
                 SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)));
 
-            List<SqlObjectVisitorInput> inputs = new List<SqlObjectVisitorInput>();
-
-            inputs.Add(new SqlObjectVisitorInput(
+            List<SqlObjectVisitorInput> inputs = new List<SqlObjectVisitorInput>
+            {
+                new SqlObjectVisitorInput(
                 nameof(SqlArrayCreateScalarExpression) + "Empty",
-                SqlArrayCreateScalarExpression.Create()));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                SqlArrayCreateScalarExpression.Create()),
+                new SqlObjectVisitorInput(
                 nameof(SqlArrayCreateScalarExpression) + "OneItem",
-                SqlArrayCreateScalarExpression.Create(SqlLiteralScalarExpression.SqlNullLiteralScalarExpression)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                SqlArrayCreateScalarExpression.Create(SqlLiteralScalarExpression.SqlNullLiteralScalarExpression)),
+                new SqlObjectVisitorInput(
                 nameof(SqlArrayCreateScalarExpression) + "MultItems",
                 SqlArrayCreateScalarExpression.Create(
                     SqlLiteralScalarExpression.SqlNullLiteralScalarExpression,
                     SqlLiteralScalarExpression.SqlNullLiteralScalarExpression,
-                    SqlLiteralScalarExpression.SqlNullLiteralScalarExpression)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.SqlNullLiteralScalarExpression)),
+                new SqlObjectVisitorInput(
                 nameof(SqlBetweenScalarExpression),
                 SqlBetweenScalarExpression.Create(
                     somePath,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)),
-                    not: false)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    not: false)),
+                new SqlObjectVisitorInput(
                 nameof(SqlBinaryScalarExpression),
                 SqlBinaryScalarExpression.Create(
                     SqlBinaryScalarOperatorKind.Add,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3)))),
+                new SqlObjectVisitorInput(
                 nameof(SqlCoalesceScalarExpression),
                 SqlCoalesceScalarExpression.Create(
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("if this is null")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("then return this")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("then return this")))),
+                new SqlObjectVisitorInput(
                 nameof(SqlConditionalScalarExpression),
                 SqlConditionalScalarExpression.Create(
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("if true")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("then this")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("else this")))));
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("else this"))))
+            };
 
             foreach (bool not in new bool[] { true, false })
             {
@@ -271,44 +266,39 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
         [Owner("brchon")]
         public void SqlFunctionCalls()
         {
-            List<SqlObjectVisitorInput> inputs = new List<SqlObjectVisitorInput>();
-
-            inputs.Add(new SqlObjectVisitorInput(
+            List<SqlObjectVisitorInput> inputs = new List<SqlObjectVisitorInput>
+            {
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalCompareBsonBinaryData,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalCompareBsonBinaryData,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalCompareObjects,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalCompareObjects,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalEq,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalEq,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("field")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalGt,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalGt,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("field")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalGte,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalGte,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("field")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalIn,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalIn,
@@ -316,30 +306,26 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalLt,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalLt,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("field")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalLte,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalLte,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("field")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalNeq,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalNeq,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("field")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalEvalNin,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalEvalNin,
@@ -347,88 +333,75 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalObjectToArray,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalObjectToArray,
-                    SqlLiteralScalarExpression.Create(SqlNullLiteral.Singleton))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNullLiteral.Singleton))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalProxyProjection,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalProxyProjection,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1234)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1234)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalRegexMatch,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalRegexMatch,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalStDistance,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalStDistance,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalStIntersects,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalStIntersects,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalStWithin,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalStWithin,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.InternalTryArrayContains,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.InternalTryArrayContains,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Abs,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Abs,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Acos,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Acos,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.All,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.All,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Any,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Any,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Array,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Array,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ArrayConcat,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ArrayConcat,
@@ -439,9 +412,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(6))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(6))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ArrayContains,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ArrayContains,
@@ -450,18 +422,16 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ArrayLength,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ArrayLength,
                      SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ArraySlice,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ArraySlice,
@@ -470,90 +440,76 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Asin,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Asin,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Atan,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Atan,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Atn2,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Atn2,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Avg,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Avg,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Binary,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Binary,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Float32,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Float32,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4.08)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4.08)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Float64,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Float64,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4.08)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4.08)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Guid,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Guid,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(12345)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(12345)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Int16,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Int16,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Int32,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Int32,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Int64,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Int64,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Int8,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Int8,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(4)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.List,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.List,
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ListContains,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ListContains,
@@ -561,18 +517,16 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Map,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Map,
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hi:1")),
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello:2")),
-                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("sup:3"))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("sup:3"))))),
+                new SqlObjectVisitorInput(
                SqlFunctionCallScalarExpression.Names.MapContains,
                SqlFunctionCallScalarExpression.CreateBuiltin(
                    SqlFunctionCallScalarExpression.Identifiers.MapContains,
@@ -581,9 +535,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello:2")),
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("sup:3"))),
                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("key")),
-                   SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Value")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                   SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Value")))),
+                new SqlObjectVisitorInput(
                SqlFunctionCallScalarExpression.Names.MapContainsKey,
                SqlFunctionCallScalarExpression.CreateBuiltin(
                    SqlFunctionCallScalarExpression.Identifiers.MapContainsKey,
@@ -591,9 +544,8 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hi:1")),
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello:2")),
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("sup:3"))),
-                   SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("key")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                   SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("key")))),
+                new SqlObjectVisitorInput(
                SqlFunctionCallScalarExpression.Names.MapContainsValue,
                SqlFunctionCallScalarExpression.CreateBuiltin(
                    SqlFunctionCallScalarExpression.Identifiers.MapContainsValue,
@@ -601,18 +553,16 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hi:1")),
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello:2")),
                        SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("sup:3"))),
-                   SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("value")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                   SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("value")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Set,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Set,
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.SetContains,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.SetContains,
@@ -620,502 +570,425 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Tuple,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Tuple,
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
                         SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Udt,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Udt,
                     SqlArrayCreateScalarExpression.Create(
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("random")),
                         SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("type")),
-                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                        SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(3))))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.UInt32,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.UInt32,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Ceiling,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Ceiling,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Concat,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Concat,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("World")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("World")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Contains,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Contains,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("strstr")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("str")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("str")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Cos,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Cos,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Cot,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Cot,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Count,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Count,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimeAdd,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeAdd,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Year")),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2020)),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("YYYY")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("YYYY")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimeDiff,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeAdd,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Year")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimeFromParts,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeFromParts,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2020)),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(08)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(06)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(06)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimePart,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimePart,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Year")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimeToTicks,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeToTicks,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.DateTimeToTimestamp,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.DateTimeToTimestamp,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Degrees,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Degrees,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Documentid,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Documentid,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Endswith,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Endswith,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Does this string endswith endswith")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("endswith")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("endswith")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Exp,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Exp,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Floor,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Floor,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                SqlFunctionCallScalarExpression.Names.GetCurrentDateTime,
                SqlFunctionCallScalarExpression.CreateBuiltin(
-                   SqlFunctionCallScalarExpression.Identifiers.GetCurrentDateTime)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                   SqlFunctionCallScalarExpression.Identifiers.GetCurrentDateTime)),
+                new SqlObjectVisitorInput(
                SqlFunctionCallScalarExpression.Names.GetCurrentTicks,
                SqlFunctionCallScalarExpression.CreateBuiltin(
-                   SqlFunctionCallScalarExpression.Identifiers.GetCurrentTicks)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                   SqlFunctionCallScalarExpression.Identifiers.GetCurrentTicks)),
+                new SqlObjectVisitorInput(
                SqlFunctionCallScalarExpression.Names.GetCurrentTimestamp,
                SqlFunctionCallScalarExpression.CreateBuiltin(
-                   SqlFunctionCallScalarExpression.Identifiers.GetCurrentTimestamp)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                   SqlFunctionCallScalarExpression.Identifiers.GetCurrentTimestamp)),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IndexOf,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IndexOf,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("banana")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ana")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ana")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsArray,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsArray,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsBool,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsBool,
-                    SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlBooleanLiteral.Create(true)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsDefined,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsDefined,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsFiniteNumber,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsFiniteNumber,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsNull,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsNull,
-                    SqlLiteralScalarExpression.SqlNullLiteralScalarExpression)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.SqlNullLiteralScalarExpression)),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsNumber,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsNumber,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsObject,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsObject,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsPrimitive,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsPrimitive,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.IsString,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.IsString,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Left,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Left,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Length,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Length,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Like,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Like,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("blah")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("blah")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("blah")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("blah")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Log,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Log,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Log10,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Log10,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Lower,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Lower,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Ltrim,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Ltrim,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Max,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Max,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Min,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Min,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ObjectToArray,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ObjectToArray,
-                    SqlLiteralScalarExpression.Create(SqlNullLiteral.Singleton))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNullLiteral.Singleton))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Pi,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
-                    SqlFunctionCallScalarExpression.Identifiers.Pi)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlFunctionCallScalarExpression.Identifiers.Pi)),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Power,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Power,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1337)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Radians,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Radians,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Rand,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
-                    SqlFunctionCallScalarExpression.Identifiers.Rand)));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlFunctionCallScalarExpression.Identifiers.Rand)),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Replace,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Replace,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("banana")),
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("ana")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("banana")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("banana")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Replicate,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Replicate,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(5)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Reverse,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Reverse,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Right,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Right,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Round,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Round,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Rtrim,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Rtrim,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sign,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Sign,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sin,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Sin,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sqrt,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Sqrt,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Square,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Square,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Startswith,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Startswith,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("does this string startswith does")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("does")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("does")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StDistance,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StDistance,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StIntersects,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StIntersects,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StIsvalid,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StIsvalid,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StIsvaliddetailed,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StIsvaliddetailed,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StWithin,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StWithin,
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringEquals,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StringEquals,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hi")),
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("hello")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringToArray,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StringToArray,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("[1, 2, 3]")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("[1, 2, 3]")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringToBoolean,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StringToBoolean,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("true")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("true")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringToNull,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StringToNull,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("null")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("null")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringToNumber,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StringToNumber,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("420")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("420")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.StringToObject,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.StringToObject,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("object")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("object")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Substring,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Substring,
                     SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("Hello")),
                     SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(1)),
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(2)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Sum,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Sum,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Tan,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Tan,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.TicksToDateTime,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.TicksToDateTime,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(123456)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(123456)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.TimestampToDateTime,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.TimestampToDateTime,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("2020-08-06T20:45:22.1234567Z")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.ToString,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.ToString,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(123456)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(123456)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Trim,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Trim,
-                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("    hair     ")))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlStringLiteral.Create("    hair     ")))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Trunc,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Trunc,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
-
-            inputs.Add(new SqlObjectVisitorInput(
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))),
+                new SqlObjectVisitorInput(
                 SqlFunctionCallScalarExpression.Names.Upper,
                 SqlFunctionCallScalarExpression.CreateBuiltin(
                     SqlFunctionCallScalarExpression.Identifiers.Upper,
-                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42)))));
+                    SqlLiteralScalarExpression.Create(SqlNumberLiteral.Create(42))))
+            };
 
             this.ExecuteTestSuite(inputs);
 
@@ -1140,19 +1013,12 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
                 {
                     foreach (bool hasDistinct in new bool[] { true, false })
                     {
-                        SqlSelectSpec selectSpec;
-                        if (useStar)
-                        {
-                            selectSpec = SqlSelectStarSpec.Singleton;
-                        }
-                        else
-                        {
-                            selectSpec = SqlSelectListSpec.Create(
+                        SqlSelectSpec selectSpec = useStar
+                            ? SqlSelectStarSpec.Singleton
+                            : SqlSelectListSpec.Create(
                                 SqlSelectItem.Create(
                                     somePath,
                                     SqlIdentifier.Create("some alias")));
-                        }
-
                         SqlTopSpec topSpec = useTop ? topSpec = SqlTopSpec.Create(
                             SqlNumberLiteral.Create(42)) : null;
 
@@ -1370,12 +1236,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             SqlObject sqlObject)
             : base(description)
         {
-            if (sqlObject == null)
-            {
-                throw new ArgumentNullException($"{nameof(sqlObject)} must not be null.");
-            }
-
-            this.SqlObject = sqlObject;
+            this.SqlObject = sqlObject ?? throw new ArgumentNullException($"{nameof(sqlObject)} must not be null.");
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -1400,25 +1261,10 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
             string obfuscatedQuery,
             int hashCode)
         {
-            if (textOutput == null)
-            {
-                throw new ArgumentNullException(nameof(textOutput));
-            }
-
-            if (prettyPrint == null)
-            {
-                throw new ArgumentNullException(nameof(prettyPrint));
-            }
-
-            if (obfuscatedQuery == null)
-            {
-                throw new ArgumentNullException(nameof(obfuscatedQuery));
-            }
-
-            this.TextOutput = textOutput;
-            this.PrettyPrint = prettyPrint;
+            this.TextOutput = textOutput ?? throw new ArgumentNullException(nameof(textOutput));
+            this.PrettyPrint = prettyPrint ?? throw new ArgumentNullException(nameof(prettyPrint));
             this.HashCode = hashCode;
-            this.ObfusctedQuery = obfuscatedQuery;
+            this.ObfusctedQuery = obfuscatedQuery ?? throw new ArgumentNullException(nameof(obfuscatedQuery));
         }
 
         public string TextOutput { get; }

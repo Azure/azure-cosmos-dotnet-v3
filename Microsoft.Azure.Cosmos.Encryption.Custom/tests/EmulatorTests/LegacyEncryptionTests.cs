@@ -2,7 +2,7 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -15,20 +15,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
     using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.EmulatorTests.Utils;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
-    using EncryptionKeyWrapMetadata = Custom.EncryptionKeyWrapMetadata;
+    using EncryptionKeyWrapMetadata = EncryptionKeyWrapMetadata;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 
     [TestClass]
     public class LegacyEncryptionTests
     {
-        private static readonly EncryptionKeyWrapMetadata metadata1 = new EncryptionKeyWrapMetadata("metadata1");
-        private static readonly EncryptionKeyWrapMetadata metadata2 = new EncryptionKeyWrapMetadata("metadata2");
+        private static readonly EncryptionKeyWrapMetadata metadata1 = new("metadata1");
+        private static readonly EncryptionKeyWrapMetadata metadata2 = new("metadata2");
         private const string metadataUpdateSuffix = "updated";
-        private static TimeSpan cacheTTL = TimeSpan.FromDays(1);
+        private static readonly TimeSpan cacheTTL = TimeSpan.FromDays(1);
         private const string dekId = "mydek";
         private static CosmosClient client;
         private static Database database;
@@ -41,51 +42,47 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         private static TestEncryptor encryptor;
 
         [ClassInitialize]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
         public static async Task ClassInitialize(TestContext context)
         {
             _ = context;
-            LegacyEncryptionTests.testKeyWrapProvider = new TestKeyWrapProvider();
-            LegacyEncryptionTests.dekProvider = new CosmosDataEncryptionKeyProvider(LegacyEncryptionTests.testKeyWrapProvider);
-            LegacyEncryptionTests.encryptor = new TestEncryptor(LegacyEncryptionTests.dekProvider);
+            testKeyWrapProvider = new TestKeyWrapProvider();
+            dekProvider = new CosmosDataEncryptionKeyProvider(testKeyWrapProvider);
+            encryptor = new TestEncryptor(dekProvider);
 
-            LegacyEncryptionTests.client = TestCommon.CreateCosmosClient();
-            LegacyEncryptionTests.database = await LegacyEncryptionTests.client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            client = TestCommon.CreateCosmosClient();
+            database = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
 
-            LegacyEncryptionTests.keyContainer = await LegacyEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
-            await LegacyEncryptionTests.dekProvider.InitializeAsync(LegacyEncryptionTests.database, LegacyEncryptionTests.keyContainer.Id);
+            keyContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            await dekProvider.InitializeAsync(database, keyContainer.Id);
 
-            LegacyEncryptionTests.itemContainer = await LegacyEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
-            LegacyEncryptionTests.encryptionContainer = LegacyEncryptionTests.itemContainer.WithEncryptor(encryptor);
-            LegacyEncryptionTests.dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, LegacyEncryptionTests.dekId);
+            itemContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/PK", 400);
+            encryptionContainer = itemContainer.WithEncryptor(encryptor);
+            dekProperties = await CreateDekAsync(dekProvider, dekId);
         }
 
         [ClassCleanup]
         public static async Task ClassCleanup()
         {
-            if (LegacyEncryptionTests.database != null)
+            if (database != null)
             {
-                using (await LegacyEncryptionTests.database.DeleteStreamAsync()) { }
+                using (await database.DeleteStreamAsync()) { }
             }
 
-            if (LegacyEncryptionTests.client != null)
-            {
-                LegacyEncryptionTests.client.Dispose();
-            }
+            client?.Dispose();
         }
 
         [TestMethod]
         public async Task EncryptionCreateDek()
         {
             string dekId = "anotherDek";
-            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(metadata1.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            await dekProvider.InitializeAsync(LegacyEncryptionTests.database, LegacyEncryptionTests.keyContainer.Id);
+            CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
+            await dekProvider.InitializeAsync(database, keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
         }
@@ -96,39 +93,39 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             string dekId = "mdeDek";
             try
             {
-                await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
+                await CreateDekAsync(dekProvider, dekId, CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized);
                 Assert.Fail();
             }
             catch (InvalidOperationException ex)
             {
                 Assert.AreEqual("For use of 'MdeAeadAes256CbcHmac256Randomized' algorithm, Encryptor or CosmosDataEncryptionKeyProvider needs to be initialized with EncryptionKeyStoreProvider.", ex.Message);
             }
-       }
+        }
 
         [TestMethod]
         public async Task EncryptionRewrapDek()
         {
             string dekId = "randomDek";
-            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(metadata1.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await LegacyEncryptionTests.dekProvider.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                 dekId,
-                LegacyEncryptionTests.metadata2);
+                metadata2);
 
             Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-            dekProperties = LegacyEncryptionTests.VerifyDekResponse(
+            dekProperties = VerifyDekResponse(
                 dekResponse,
                 dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata2.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(metadata2.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            await dekProvider.InitializeAsync(LegacyEncryptionTests.database, LegacyEncryptionTests.keyContainer.Id);
+            CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
+            await dekProvider.InitializeAsync(database, keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
         }
@@ -137,21 +134,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionRewrapDekEtagMismatch()
         {
             string dekId = "dummyDek";
-            EncryptionKeyWrapMetadata newMetadata = new EncryptionKeyWrapMetadata("newMetadata");
+            EncryptionKeyWrapMetadata newMetadata = new("newMetadata");
 
-            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(LegacyEncryptionTests.dekProvider, dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(metadata1.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // modify dekProperties directly, which would lead to etag change
-            DataEncryptionKeyProperties updatedDekProperties = new DataEncryptionKeyProperties(
+            DataEncryptionKeyProperties updatedDekProperties = new(
                 dekProperties.Id,
                 dekProperties.EncryptionAlgorithm,
                 dekProperties.WrappedDataEncryptionKey,
                 dekProperties.EncryptionKeyWrapMetadata,
                 DateTime.UtcNow);
-            await LegacyEncryptionTests.keyContainer.ReplaceItemAsync<DataEncryptionKeyProperties>(
+            await keyContainer.ReplaceItemAsync(
                 updatedDekProperties,
                 dekProperties.Id,
                 new PartitionKey(dekProperties.Id));
@@ -162,18 +159,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 newMetadata);
 
             Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-            dekProperties = LegacyEncryptionTests.VerifyDekResponse(
+            dekProperties = VerifyDekResponse(
                 dekResponse,
                 dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(newMetadata.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(newMetadata.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
-            Assert.AreEqual(2, LegacyEncryptionTests.testKeyWrapProvider.WrapKeyCallsCount[newMetadata.Value]);
+            Assert.AreEqual(2, testKeyWrapProvider.WrapKeyCallsCount[newMetadata.Value]);
 
             // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            await dekProvider.InitializeAsync(LegacyEncryptionTests.database, LegacyEncryptionTests.keyContainer.Id);
+            CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
+            await dekProvider.InitializeAsync(database, keyContainer.Id);
             DataEncryptionKeyProperties readProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
         }
@@ -181,24 +178,24 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionDekReadFeed()
         {
-            Container newKeyContainer = await LegacyEncryptionTests.database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
+            Container newKeyContainer = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
             try
             {
-                CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-                await dekProvider.InitializeAsync(LegacyEncryptionTests.database, newKeyContainer.Id);
+                CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
+                await dekProvider.InitializeAsync(database, newKeyContainer.Id);
 
                 string contosoV1 = "Contoso_v001";
                 string contosoV2 = "Contoso_v002";
                 string fabrikamV1 = "Fabrikam_v001";
                 string fabrikamV2 = "Fabrikam_v002";
 
-                await LegacyEncryptionTests.CreateDekAsync(dekProvider, contosoV1);
-                await LegacyEncryptionTests.CreateDekAsync(dekProvider, contosoV2);
-                await LegacyEncryptionTests.CreateDekAsync(dekProvider, fabrikamV1);
-                await LegacyEncryptionTests.CreateDekAsync(dekProvider, fabrikamV2);
+                await CreateDekAsync(dekProvider, contosoV1);
+                await CreateDekAsync(dekProvider, contosoV2);
+                await CreateDekAsync(dekProvider, fabrikamV1);
+                await CreateDekAsync(dekProvider, fabrikamV2);
 
                 // Test getting all keys
-                await LegacyEncryptionTests.IterateDekFeedAsync(
+                await IterateDekFeedAsync(
                     dekProvider,
                     new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                     isExpectedDeksCompleteSetForRequest: true,
@@ -206,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     "SELECT * from c");
 
                 // Test getting specific subset of keys
-                await LegacyEncryptionTests.IterateDekFeedAsync(
+                await IterateDekFeedAsync(
                     dekProvider,
                     new List<string> { contosoV2 },
                     isExpectedDeksCompleteSetForRequest: false,
@@ -217,8 +214,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 QueryDefinition queryDefinition = new QueryDefinition("SELECT * from c where c.id >= @startId and c.id <= @endId ORDER BY c.id ASC")
                     .WithParameter("@startId", "Contoso_v000")
                     .WithParameter("@endId", "Contoso_v999");
-                
-                await LegacyEncryptionTests.IterateDekFeedAsync(
+
+                await IterateDekFeedAsync(
                     dekProvider,
                     new List<string> { contosoV1, contosoV2 },
                     isExpectedDeksCompleteSetForRequest: true,
@@ -227,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     queryDefinition: queryDefinition);
 
                 // Test pagination
-                await LegacyEncryptionTests.IterateDekFeedAsync(
+                await IterateDekFeedAsync(
                     dekProvider,
                     new List<string> { contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                     isExpectedDeksCompleteSetForRequest: true,
@@ -245,7 +242,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateItemWithoutEncryptionOptions()
         {
             TestDoc testDoc = TestDoc.Create();
-            ItemResponse<TestDoc> createResponse = await LegacyEncryptionTests.encryptionContainer.CreateItemAsync(
+            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
@@ -256,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateItemWithNullEncryptionOptions()
         {
             TestDoc testDoc = TestDoc.Create();
-            ItemResponse<TestDoc> createResponse = await LegacyEncryptionTests.encryptionContainer.CreateItemAsync(
+            ItemResponse<TestDoc> createResponse = await encryptionContainer.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
                 new EncryptionItemRequestOptions());
@@ -270,9 +267,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TestDoc testDoc = TestDoc.Create();
             try
             {
-                await LegacyEncryptionTests.encryptionContainer.CreateItemAsync(
+                await encryptionContainer.CreateItemAsync(
                     testDoc,
-                    requestOptions: LegacyEncryptionTests.GetRequestOptions(LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt));
+                    requestOptions: GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
                 Assert.Fail("CreateItem should've failed because PartitionKey was not provided.");
             }
             catch (NotSupportedException ex)
@@ -288,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             try
             {
-                await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, unknownDek, TestDoc.PathsToEncrypt);
+                await CreateItemAsync(encryptionContainer, unknownDek, TestDoc.PathsToEncrypt);
             }
             catch (ArgumentException ex)
             {
@@ -300,13 +297,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionCreateItem()
         {
-            TestDoc testDoc = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
-            await LegacyEncryptionTests.VerifyItemByReadStreamAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await VerifyItemByReadStreamAsync(encryptionContainer, testDoc);
 
-            TestDoc expectedDoc = new TestDoc(testDoc);
+            TestDoc expectedDoc = new(testDoc);
 
 #if SDKPROJECTREF
             // FIXME Remove the above once the binary encoding issue is fixed.
@@ -317,13 +314,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 expectedDoc);
 #endif
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 "SELECT * FROM c",
                 expectedDoc);
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 string.Format(
                     "SELECT * FROM c where c.PK = '{0}' and c.id = '{1}' and c.NonSensitive = '{2}'",
                     expectedDoc.PK,
@@ -331,13 +328,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     expectedDoc.NonSensitive),
                 expectedDoc);
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 string.Format("SELECT * FROM c where c.Sensitive = '{0}'", testDoc.Sensitive),
                 expectedDoc: null);
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 queryDefinition: new QueryDefinition(
                     "select * from c where c.id = @theId and c.PK = @thePK")
                          .WithParameter("@theId", expectedDoc.Id)
@@ -346,18 +343,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             expectedDoc.Sensitive = null;
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 "SELECT c.id, c.PK, c.Sensitive, c.NonSensitive FROM c",
                 expectedDoc);
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 "SELECT c.id, c.PK, c.NonSensitive FROM c",
                 expectedDoc);
 
-            await LegacyEncryptionTests.ValidateSprocResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateSprocResultsAsync(
+                encryptionContainer,
                 expectedDoc);
         }
 
@@ -366,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public void ValidateDecryptableContent()
         {
             TestDoc testDoc = TestDoc.Create();
-            EncryptableItem<TestDoc> encryptableItem = new EncryptableItem<TestDoc>(testDoc);
+            EncryptableItem<TestDoc> encryptableItem = new(testDoc);
             encryptableItem.DecryptableItem.GetItemAsync<TestDoc>();
         }
 
@@ -374,69 +371,69 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionCreateItemWithLazyDecryption()
         {
             TestDoc testDoc = TestDoc.Create();
-            ItemResponse<EncryptableItem<TestDoc>> createResponse = await LegacyEncryptionTests.encryptionContainer.CreateItemAsync(
+            ItemResponse<EncryptableItem<TestDoc>> createResponse = await encryptionContainer.CreateItemAsync(
                 new EncryptableItem<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.IsNotNull(createResponse.Resource);
 
-            await LegacyEncryptionTests.ValidateDecryptableItem(createResponse.Resource.DecryptableItem, testDoc);
+            await ValidateDecryptableItem(createResponse.Resource.DecryptableItem, testDoc);
 
             // stream
             TestDoc testDoc1 = TestDoc.Create();
-            ItemResponse<EncryptableItemStream> createResponseStream = await LegacyEncryptionTests.encryptionContainer.CreateItemAsync(
+            ItemResponse<EncryptableItemStream> createResponseStream = await encryptionContainer.CreateItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc1)),
                 new PartitionKey(testDoc1.PK),
-                LegacyEncryptionTests.GetRequestOptions(LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
 
             Assert.AreEqual(HttpStatusCode.Created, createResponseStream.StatusCode);
             Assert.IsNotNull(createResponseStream.Resource);
 
-            await LegacyEncryptionTests.ValidateDecryptableItem(createResponseStream.Resource.DecryptableItem, testDoc1);
+            await ValidateDecryptableItem(createResponseStream.Resource.DecryptableItem, testDoc1);
         }
 
         [TestMethod]
         public async Task EncryptionChangeFeedDecryptionSuccessful()
         {
             string dek2 = "dek2ForChangeFeed";
-            await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dek2);
+            await CreateDekAsync(dekProvider, dek2);
 
-            TestDoc testDoc1 = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
-            TestDoc testDoc2 = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek2, TestDoc.PathsToEncrypt);
-            
+            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt);
+
             // change feed iterator
-            await this.ValidateChangeFeedIteratorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await ValidateChangeFeedIteratorResponse(encryptionContainer, testDoc1, testDoc2);
 
             // change feed processor
-            await this.ValidateChangeFeedProcessorResponse(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2);
+            await ValidateChangeFeedProcessorResponse(encryptionContainer, testDoc1, testDoc2);
         }
 
         [TestMethod]
         public async Task EncryptionHandleDecryptionFailure()
         {
             string dek2 = "failDek";
-            await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dek2);
+            await CreateDekAsync(dekProvider, dek2);
 
-            TestDoc testDoc1 = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek2, TestDoc.PathsToEncrypt);
-            TestDoc testDoc2 = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
 
             // success
-            await LegacyEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2, query);
+            await ValidateQueryResultsMultipleDocumentsAsync(encryptionContainer, testDoc1, testDoc2, query);
 
             // induce failure for one document
-            LegacyEncryptionTests.encryptor.FailDecryption = true;
+            encryptor.FailDecryption = true;
             testDoc1.Sensitive = null;
 
-            FeedIterator<DecryptableItem> queryResponseIterator = LegacyEncryptionTests.encryptionContainer.GetItemQueryIterator<DecryptableItem>(query);
+            FeedIterator<DecryptableItem> queryResponseIterator = encryptionContainer.GetItemQueryIterator<DecryptableItem>(query);
             FeedResponse<DecryptableItem> readDocsLazily = await queryResponseIterator.ReadNextAsync();
-            await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
+            await ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
 
             // validate changeFeed handling
-            FeedIterator<DecryptableItem> changeIterator = LegacyEncryptionTests.encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
+            FeedIterator<DecryptableItem> changeIterator = encryptionContainer.GetChangeFeedIterator<DecryptableItem>(
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
 
@@ -450,16 +447,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
                 if (readDocsLazily.Resource != null)
                 {
-                    await this.ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
+                    await ValidateLazyDecryptionResponse(readDocsLazily.GetEnumerator(), dek2);
                 }
             }
 
             // validate changeFeedProcessor handling
-            Container leaseContainer = await LegacyEncryptionTests.database.CreateContainerIfNotExistsAsync(
+            Container leaseContainer = await database.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(id: "leasesContainer", partitionKeyPath: "/id"));
 
-            List<DecryptableItem> changeFeedReturnedDocs = new List<DecryptableItem>();
-            ChangeFeedProcessor cfp = LegacyEncryptionTests.encryptionContainer.GetChangeFeedProcessorBuilder(
+            List<DecryptableItem> changeFeedReturnedDocs = new();
+            ChangeFeedProcessor cfp = encryptionContainer.GetChangeFeedProcessorBuilder(
                 "testCFPFailure",
                 (IReadOnlyCollection<DecryptableItem> changes, CancellationToken cancellationToken) =>
                 {
@@ -476,42 +473,42 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             await cfp.StopAsync();
 
             Assert.IsTrue(changeFeedReturnedDocs.Count >= 2);
-            await this.ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
+            await ValidateLazyDecryptionResponse(changeFeedReturnedDocs.GetEnumerator(), dek2);
 
-            LegacyEncryptionTests.encryptor.FailDecryption = false;
+            encryptor.FailDecryption = false;
         }
 
         [TestMethod]
         public async Task EncryptionDecryptQueryResultMultipleDocs()
         {
-            TestDoc testDoc1 = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
-            TestDoc testDoc2 = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc1 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc2 = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             // test GetItemLinqQueryable
-            await LegacyEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2, null);
+            await ValidateQueryResultsMultipleDocumentsAsync(encryptionContainer, testDoc1, testDoc2, null);
 
             string query = $"SELECT * FROM c WHERE c.PK in ('{testDoc1.PK}', '{testDoc2.PK}')";
-            await LegacyEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2, query);
+            await ValidateQueryResultsMultipleDocumentsAsync(encryptionContainer, testDoc1, testDoc2, query);
 
             // ORDER BY query
             query += " ORDER BY c._ts";
 
-            await LegacyEncryptionTests.ValidateQueryResultsMultipleDocumentsAsync(LegacyEncryptionTests.encryptionContainer, testDoc1, testDoc2, query);
+            await ValidateQueryResultsMultipleDocumentsAsync(encryptionContainer, testDoc1, testDoc2, query);
         }
 
         [TestMethod]
         public async Task EncryptionDecryptQueryResultMultipleEncryptedProperties()
         {
-            List<string> pathsEncrypted = new List<string>() { "/Sensitive", "/NonSensitive" };
-            TestDoc testDoc = await LegacyEncryptionTests.CreateItemAsync(
-                LegacyEncryptionTests.encryptionContainer,
-                LegacyEncryptionTests.dekId,
+            List<string> pathsEncrypted = new() { "/Sensitive", "/NonSensitive" };
+            TestDoc testDoc = await CreateItemAsync(
+                encryptionContainer,
+                dekId,
                 pathsEncrypted);
 
-            TestDoc expectedDoc = new TestDoc(testDoc);
+            TestDoc expectedDoc = new(testDoc);
 
-            await LegacyEncryptionTests.ValidateQueryResultsAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            await ValidateQueryResultsAsync(
+                encryptionContainer,
                 "SELECT * FROM c",
                 expectedDoc,
                 pathsEncrypted: pathsEncrypted);
@@ -520,11 +517,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionDecryptQueryValueResponse()
         {
-            await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
             string query = "SELECT VALUE COUNT(1) FROM c";
 
-            await LegacyEncryptionTests.ValidateQueryResponseAsync(LegacyEncryptionTests.encryptionContainer, query);
-            await LegacyEncryptionTests.ValidateQueryResponseWithLazyDecryptionAsync(LegacyEncryptionTests.encryptionContainer, query);
+            await ValidateQueryResponseAsync(encryptionContainer, query);
+            await ValidateQueryResponseWithLazyDecryptionAsync(encryptionContainer, query);
         }
 
         [TestMethod]
@@ -532,64 +529,64 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             string partitionKey = Guid.NewGuid().ToString();
 
-            await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt, partitionKey);
-            await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt, partitionKey);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, partitionKey);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt, partitionKey);
 
             string query = $"SELECT COUNT(c.Id), c.PK " +
                            $"FROM c WHERE c.PK = '{partitionKey}' " +
                            $"GROUP BY c.PK ";
 
-            await LegacyEncryptionTests.ValidateQueryResponseAsync(LegacyEncryptionTests.encryptionContainer, query);
+            await ValidateQueryResponseAsync(encryptionContainer, query);
         }
 
         [TestMethod]
         public async Task EncryptionStreamIteratorValidation()
         {
-            await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
-            await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
+            await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             // test GetItemLinqQueryable with ToEncryptionStreamIterator extension
-            await LegacyEncryptionTests.ValidateQueryResponseAsync(LegacyEncryptionTests.encryptionContainer);
+            await ValidateQueryResponseAsync(encryptionContainer);
         }
 
         [TestMethod]
         public async Task EncryptionRudItem()
         {
-            TestDoc testDoc = await LegacyEncryptionTests.UpsertItemAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            TestDoc testDoc = await UpsertItemAsync(
+                encryptionContainer,
                 TestDoc.Create(),
-                LegacyEncryptionTests.dekId,
+                dekId,
                 TestDoc.PathsToEncrypt,
                 HttpStatusCode.Created);
 
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive = Guid.NewGuid().ToString();
 
-            ItemResponse<TestDoc> upsertResponse = await LegacyEncryptionTests.UpsertItemAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            ItemResponse<TestDoc> upsertResponse = await UpsertItemAsync(
+                encryptionContainer,
                 testDoc,
-                LegacyEncryptionTests.dekId,
+                dekId,
                 TestDoc.PathsToEncrypt,
                 HttpStatusCode.OK);
             TestDoc updatedDoc = upsertResponse.Resource;
 
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, updatedDoc);
+            await VerifyItemByReadAsync(encryptionContainer, updatedDoc);
 
             updatedDoc.NonSensitive = Guid.NewGuid().ToString();
             updatedDoc.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc replacedDoc = await LegacyEncryptionTests.ReplaceItemAsync(
-                LegacyEncryptionTests.encryptionContainer,
+            TestDoc replacedDoc = await ReplaceItemAsync(
+                encryptionContainer,
                 updatedDoc,
-                LegacyEncryptionTests.dekId,
+                dekId,
                 TestDoc.PathsToEncrypt,
                 upsertResponse.ETag);
 
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, replacedDoc);
+            await VerifyItemByReadAsync(encryptionContainer, replacedDoc);
 
-            await LegacyEncryptionTests.DeleteItemAsync(LegacyEncryptionTests.encryptionContainer, replacedDoc);
+            await DeleteItemAsync(encryptionContainer, replacedDoc);
         }
 
         [TestMethod]
@@ -597,77 +594,77 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             TestDoc testDoc = TestDoc.Create();
             // Upsert (item doesn't exist)
-            ItemResponse <EncryptableItem<TestDoc>> upsertResponse = await LegacyEncryptionTests.encryptionContainer.UpsertItemAsync(
+            ItemResponse<EncryptableItem<TestDoc>> upsertResponse = await encryptionContainer.UpsertItemAsync(
                 new EncryptableItem<TestDoc>(testDoc),
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
 
             Assert.AreEqual(HttpStatusCode.Created, upsertResponse.StatusCode);
             Assert.IsNotNull(upsertResponse.Resource);
 
-            await LegacyEncryptionTests.ValidateDecryptableItem(upsertResponse.Resource.DecryptableItem, testDoc);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await ValidateDecryptableItem(upsertResponse.Resource.DecryptableItem, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
             // Upsert with stream (item exists)
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive = Guid.NewGuid().ToString();
 
-            ItemResponse<EncryptableItemStream> upsertResponseStream = await LegacyEncryptionTests.encryptionContainer.UpsertItemAsync(
+            ItemResponse<EncryptableItemStream> upsertResponseStream = await encryptionContainer.UpsertItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc)),
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt));
 
             Assert.AreEqual(HttpStatusCode.OK, upsertResponseStream.StatusCode);
             Assert.IsNotNull(upsertResponseStream.Resource);
 
-            await LegacyEncryptionTests.ValidateDecryptableItem(upsertResponseStream.Resource.DecryptableItem, testDoc);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await ValidateDecryptableItem(upsertResponseStream.Resource.DecryptableItem, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
             // replace
             testDoc.NonSensitive = Guid.NewGuid().ToString();
             testDoc.Sensitive = Guid.NewGuid().ToString();
 
-            ItemResponse<EncryptableItemStream> replaceResponseStream = await LegacyEncryptionTests.encryptionContainer.ReplaceItemAsync(
+            ItemResponse<EncryptableItemStream> replaceResponseStream = await encryptionContainer.ReplaceItemAsync(
                 new EncryptableItemStream(TestCommon.ToStream(testDoc)),
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt, upsertResponseStream.ETag));
+                GetRequestOptions(dekId, TestDoc.PathsToEncrypt, upsertResponseStream.ETag));
 
             Assert.AreEqual(HttpStatusCode.OK, replaceResponseStream.StatusCode);
             Assert.IsNotNull(replaceResponseStream.Resource);
 
-            await LegacyEncryptionTests.ValidateDecryptableItem(replaceResponseStream.Resource.DecryptableItem, testDoc);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await ValidateDecryptableItem(replaceResponseStream.Resource.DecryptableItem, testDoc);
+            await VerifyItemByReadAsync(encryptionContainer, testDoc);
 
-            await LegacyEncryptionTests.DeleteItemAsync(LegacyEncryptionTests.encryptionContainer, testDoc);
+            await DeleteItemAsync(encryptionContainer, testDoc);
         }
 
         [TestMethod]
         public async Task EncryptionResourceTokenAuthRestricted()
         {
-            TestDoc testDoc = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc testDoc = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
-            User restrictedUser = LegacyEncryptionTests.database.GetUser(Guid.NewGuid().ToString());
-            await LegacyEncryptionTests.database.CreateUserAsync(restrictedUser.Id);
+            User restrictedUser = database.GetUser(Guid.NewGuid().ToString());
+            await database.CreateUserAsync(restrictedUser.Id);
 
             PermissionProperties restrictedUserPermission = await restrictedUser.CreatePermissionAsync(
-                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, LegacyEncryptionTests.itemContainer));
+                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, itemContainer));
 
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            TestEncryptor encryptor = new TestEncryptor(dekProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
+            TestEncryptor encryptor = new(dekProvider);
 
             CosmosClient clientForRestrictedUser = TestCommon.CreateCosmosClient(
                 restrictedUserPermission.Token);
 
-            Database databaseForRestrictedUser = clientForRestrictedUser.GetDatabase(LegacyEncryptionTests.database.Id);
-            Container containerForRestrictedUser = databaseForRestrictedUser.GetContainer(LegacyEncryptionTests.itemContainer.Id);			
+            Database databaseForRestrictedUser = clientForRestrictedUser.GetDatabase(database.Id);
+            Container containerForRestrictedUser = databaseForRestrictedUser.GetContainer(itemContainer.Id);
             Container encryptionContainerForRestrictedUser = containerForRestrictedUser.WithEncryptor(encryptor);
 
-            await LegacyEncryptionTests.PerformForbiddenOperationAsync(() =>
-                dekProvider.InitializeAsync(databaseForRestrictedUser, LegacyEncryptionTests.keyContainer.Id), "CosmosDekProvider.InitializeAsync");
+            await PerformForbiddenOperationAsync(() =>
+                dekProvider.InitializeAsync(databaseForRestrictedUser, keyContainer.Id), "CosmosDekProvider.InitializeAsync");
 
-            await LegacyEncryptionTests.PerformOperationOnUninitializedDekProviderAsync(() =>
-                dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(LegacyEncryptionTests.dekId), "DEK.ReadAsync");
+            await PerformOperationOnUninitializedDekProviderAsync(() =>
+                dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId), "DEK.ReadAsync");
 
             try
             {
@@ -691,22 +688,22 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionResourceTokenAuthAllowed()
         {
-            User keyManagerUser = LegacyEncryptionTests.database.GetUser(Guid.NewGuid().ToString());
-            await LegacyEncryptionTests.database.CreateUserAsync(keyManagerUser.Id);
+            User keyManagerUser = database.GetUser(Guid.NewGuid().ToString());
+            await database.CreateUserAsync(keyManagerUser.Id);
 
             PermissionProperties keyManagerUserPermission = await keyManagerUser.CreatePermissionAsync(
-                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, LegacyEncryptionTests.keyContainer));
+                new PermissionProperties(Guid.NewGuid().ToString(), PermissionMode.All, keyContainer));
 
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
-            TestEncryptor encryptor = new TestEncryptor(dekProvider);
+            CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
+            TestEncryptor encryptor = new(dekProvider);
             CosmosClient clientForKeyManagerUser = TestCommon.CreateCosmosClient(keyManagerUserPermission.Token);
 
-            Database databaseForKeyManagerUser = clientForKeyManagerUser.GetDatabase(LegacyEncryptionTests.database.Id);
+            Database databaseForKeyManagerUser = clientForKeyManagerUser.GetDatabase(database.Id);
 
-            await dekProvider.InitializeAsync(databaseForKeyManagerUser, LegacyEncryptionTests.keyContainer.Id);
+            await dekProvider.InitializeAsync(databaseForKeyManagerUser, keyContainer.Id);
 
-            DataEncryptionKeyProperties readDekProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(LegacyEncryptionTests.dekId);
-            Assert.AreEqual(LegacyEncryptionTests.dekProperties, readDekProperties);
+            DataEncryptionKeyProperties readDekProperties = await dekProvider.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
+            Assert.AreEqual(dekProperties, readDekProperties);
         }
 
         [TestMethod]
@@ -714,7 +711,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             try
             {
-                await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, new List<string>() { "/id" });
+                await CreateItemAsync(encryptionContainer, dekId, new List<string>() { "/id" });
                 Assert.Fail("Expected item creation with id specified to be encrypted to fail.");
             }
             catch (InvalidOperationException ex)
@@ -725,7 +722,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             try
             {
-                await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, new List<string>() { "/PK" });
+                await CreateItemAsync(encryptionContainer, dekId, new List<string>() { "/PK" });
                 Assert.Fail("Expected item creation with PK specified to be encrypted to fail.");
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.BadRequest)
@@ -736,31 +733,31 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         [TestMethod]
         public async Task EncryptionBulkCrud()
         {
-            TestDoc docToReplace = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc docToReplace = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
             docToReplace.NonSensitive = Guid.NewGuid().ToString();
             docToReplace.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc docToUpsert = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc docToUpsert = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
             docToUpsert.NonSensitive = Guid.NewGuid().ToString();
             docToUpsert.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc docToDelete = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt);
+            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dekId, TestDoc.PathsToEncrypt);
 
             CosmosClient clientWithBulk = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
                 .Build());
 
-            Database databaseWithBulk = clientWithBulk.GetDatabase(LegacyEncryptionTests.database.Id);
-            Container containerWithBulk = databaseWithBulk.GetContainer(LegacyEncryptionTests.itemContainer.Id);
-            Container encryptionContainerWithBulk = containerWithBulk.WithEncryptor(LegacyEncryptionTests.encryptor);
+            Database databaseWithBulk = clientWithBulk.GetDatabase(database.Id);
+            Container containerWithBulk = databaseWithBulk.GetContainer(itemContainer.Id);
+            Container encryptionContainerWithBulk = containerWithBulk.WithEncryptor(encryptor);
 
-            List<Task> tasks = new List<Task>()
+            List<Task> tasks = new()
             {
-                LegacyEncryptionTests.CreateItemAsync(encryptionContainerWithBulk, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt),
-                LegacyEncryptionTests.UpsertItemAsync(encryptionContainerWithBulk, TestDoc.Create(), LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt, HttpStatusCode.Created),
-                LegacyEncryptionTests.ReplaceItemAsync(encryptionContainerWithBulk, docToReplace, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt),
-                LegacyEncryptionTests.UpsertItemAsync(encryptionContainerWithBulk, docToUpsert, LegacyEncryptionTests.dekId, TestDoc.PathsToEncrypt, HttpStatusCode.OK),
-                LegacyEncryptionTests.DeleteItemAsync(encryptionContainerWithBulk, docToDelete)
+                CreateItemAsync(encryptionContainerWithBulk, dekId, TestDoc.PathsToEncrypt),
+                UpsertItemAsync(encryptionContainerWithBulk, TestDoc.Create(), dekId, TestDoc.PathsToEncrypt, HttpStatusCode.Created),
+                ReplaceItemAsync(encryptionContainerWithBulk, docToReplace, dekId, TestDoc.PathsToEncrypt),
+                UpsertItemAsync(encryptionContainerWithBulk, docToUpsert, dekId, TestDoc.PathsToEncrypt, HttpStatusCode.OK),
+                DeleteItemAsync(encryptionContainerWithBulk, docToDelete)
             };
 
             await Task.WhenAll(tasks);
@@ -770,44 +767,44 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         public async Task EncryptionTransactionalBatchCrud()
         {
             string partitionKey = "thePK";
-            string dek1 = LegacyEncryptionTests.dekId;
+            string dek1 = dekId;
             string dek2 = "dek2Forbatch";
-            await LegacyEncryptionTests.CreateDekAsync(LegacyEncryptionTests.dekProvider, dek2);
+            await CreateDekAsync(dekProvider, dek2);
 
             TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc2ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc3ToCreate = TestDoc.Create(partitionKey);
             TestDoc doc4ToCreate = TestDoc.Create(partitionKey);
 
-            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
             doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc1ToReplace.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc doc2ToReplace = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc2ToReplace = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
             doc2ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc2ToReplace.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc doc1ToUpsert = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc1ToUpsert = await CreateItemAsync(encryptionContainer, dek2, TestDoc.PathsToEncrypt, partitionKey);
             doc1ToUpsert.NonSensitive = Guid.NewGuid().ToString();
             doc1ToUpsert.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc doc2ToUpsert = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc doc2ToUpsert = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             doc2ToUpsert.NonSensitive = Guid.NewGuid().ToString();
             doc2ToUpsert.Sensitive = Guid.NewGuid().ToString();
 
-            TestDoc docToDelete = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            TestDoc docToDelete = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
 
-            TransactionalBatchResponse batchResponse = await LegacyEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreate, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
-                .CreateItemStream(doc2ToCreate.ToStream(), LegacyEncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, LegacyEncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+            TransactionalBatchResponse batchResponse = await encryptionContainer.CreateTransactionalBatch(new PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .CreateItemStream(doc2ToCreate.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
                 .CreateItem(doc3ToCreate)
-                .CreateItem(doc4ToCreate, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, new List<string>())) // empty PathsToEncrypt list
-                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), LegacyEncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
-                .UpsertItem(doc1ToUpsert, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .CreateItem(doc4ToCreate, GetBatchItemRequestOptions(dek1, new List<string>())) // empty PathsToEncrypt list
+                .ReplaceItemStream(doc2ToReplace.Id, doc2ToReplace.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
+                .UpsertItem(doc1ToUpsert, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
                 .DeleteItem(docToDelete.Id)
-                .UpsertItemStream(doc2ToUpsert.ToStream(), LegacyEncryptionTests.GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
+                .UpsertItemStream(doc2ToUpsert.ToStream(), GetBatchItemRequestOptions(dek2, TestDoc.PathsToEncrypt))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -836,67 +833,67 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             TransactionalBatchOperationResult<TestDoc> doc8 = batchResponse.GetOperationResultAtIndex<TestDoc>(8);
             Assert.AreEqual(doc2ToUpsert, doc8.Resource);
 
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc1ToCreate);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc2ToCreate, dekId: dek2);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc3ToCreate, isDocDecrypted: false);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc4ToCreate, isDocDecrypted: false);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc1ToReplace, dekId: dek2);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc2ToReplace, dekId: dek2);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc1ToUpsert);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.encryptionContainer, doc2ToUpsert, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc1ToCreate);
+            await VerifyItemByReadAsync(encryptionContainer, doc2ToCreate, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc3ToCreate, isDocDecrypted: false);
+            await VerifyItemByReadAsync(encryptionContainer, doc4ToCreate, isDocDecrypted: false);
+            await VerifyItemByReadAsync(encryptionContainer, doc1ToReplace, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc2ToReplace, dekId: dek2);
+            await VerifyItemByReadAsync(encryptionContainer, doc1ToUpsert);
+            await VerifyItemByReadAsync(encryptionContainer, doc2ToUpsert, dekId: dek2);
 
-            ResponseMessage readResponseMessage = await LegacyEncryptionTests.encryptionContainer.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
+            ResponseMessage readResponseMessage = await encryptionContainer.ReadItemStreamAsync(docToDelete.Id, new PartitionKey(docToDelete.PK));
             Assert.AreEqual(HttpStatusCode.NotFound, readResponseMessage.StatusCode);
 
             // Validate that the documents are encrypted as expected by trying to retrieve through regular (non-encryption) container
             doc1ToCreate.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToCreate);
+            await VerifyItemByReadAsync(itemContainer, doc1ToCreate);
 
             doc2ToCreate.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc2ToCreate);
+            await VerifyItemByReadAsync(itemContainer, doc2ToCreate);
 
             // doc3ToCreate, doc4ToCreate wasn't encrypted
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc3ToCreate);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc4ToCreate);
+            await VerifyItemByReadAsync(itemContainer, doc3ToCreate);
+            await VerifyItemByReadAsync(itemContainer, doc4ToCreate);
 
             doc1ToReplace.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
+            await VerifyItemByReadAsync(itemContainer, doc1ToReplace);
 
             doc2ToReplace.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc2ToReplace);
+            await VerifyItemByReadAsync(itemContainer, doc2ToReplace);
 
             doc1ToUpsert.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToUpsert);
+            await VerifyItemByReadAsync(itemContainer, doc1ToUpsert);
 
             doc2ToUpsert.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc2ToUpsert);
+            await VerifyItemByReadAsync(itemContainer, doc2ToUpsert);
         }
 
         [TestMethod]
         public async Task EncryptionTransactionalBatchWithCustomSerializer()
         {
-            CustomSerializer customSerializer = new CustomSerializer();
+            CustomSerializer customSerializer = new();
             CosmosClient clientWithCustomSerializer = TestCommon.CreateCosmosClient(builder => builder
                 .WithCustomSerializer(customSerializer)
                 .Build());
 
-            Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(LegacyEncryptionTests.database.Id);
-            Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(LegacyEncryptionTests.itemContainer.Id);
-            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(LegacyEncryptionTests.encryptor);
+            Database databaseWithCustomSerializer = clientWithCustomSerializer.GetDatabase(database.Id);
+            Container containerWithCustomSerializer = databaseWithCustomSerializer.GetContainer(itemContainer.Id);
+            Container encryptionContainerWithCustomSerializer = containerWithCustomSerializer.WithEncryptor(encryptor);
 
             string partitionKey = "thePK";
-            string dek1 = LegacyEncryptionTests.dekId;
+            string dek1 = dekId;
 
             TestDoc doc1ToCreate = TestDoc.Create(partitionKey);
 
-            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await LegacyEncryptionTests.CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1ToReplaceCreateResponse = await CreateItemAsync(encryptionContainerWithCustomSerializer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             TestDoc doc1ToReplace = doc1ToReplaceCreateResponse.Resource;
             doc1ToReplace.NonSensitive = Guid.NewGuid().ToString();
             doc1ToReplace.Sensitive = Guid.NewGuid().ToString();
 
-            TransactionalBatchResponse batchResponse = await encryptionContainerWithCustomSerializer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreate, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
-                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
+            TransactionalBatchResponse batchResponse = await encryptionContainerWithCustomSerializer.CreateTransactionalBatch(new PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreate, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+                .ReplaceItem(doc1ToReplace.Id, doc1ToReplace, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt, doc1ToReplaceCreateResponse.ETag))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
@@ -911,54 +908,54 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(doc1ToReplace, doc2.Resource);
             Assert.AreEqual(3, customSerializer.FromStreamCalled);
 
-            await LegacyEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
-            await LegacyEncryptionTests.VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
+            await VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToCreate);
+            await VerifyItemByReadAsync(encryptionContainerWithCustomSerializer, doc1ToReplace);
 
             // Validate that the documents are encrypted as expected by trying to retrieve through regular (non-encryption) container
             doc1ToCreate.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToCreate);
+            await VerifyItemByReadAsync(itemContainer, doc1ToCreate);
 
             doc1ToReplace.Sensitive = null;
-            await LegacyEncryptionTests.VerifyItemByReadAsync(LegacyEncryptionTests.itemContainer, doc1ToReplace);
+            await VerifyItemByReadAsync(itemContainer, doc1ToReplace);
         }
 
-         [TestMethod]
+        [TestMethod]
         public async Task VerifyDekOperationWithSystemTextSerializer()
         {
-            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new System.Text.Json.JsonSerializerOptions()
+            System.Text.Json.JsonSerializerOptions jsonSerializerOptions = new()
             {
                 DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
             };
 
-            CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+            CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer = new(jsonSerializerOptions);
 
             CosmosClient clientWithCosmosSystemTextJsonSerializer = TestCommon.CreateCosmosClient(builder => builder
                 .WithCustomSerializer(cosmosSystemTextJsonSerializer)
                 .Build());
 
             // get database and container
-            Database databaseWithCosmosSystemTextJsonSerializer = clientWithCosmosSystemTextJsonSerializer.GetDatabase(LegacyEncryptionTests.database.Id);
-            Container containerWithCosmosSystemTextJsonSerializer = databaseWithCosmosSystemTextJsonSerializer.GetContainer(LegacyEncryptionTests.itemContainer.Id);
-                        
+            Database databaseWithCosmosSystemTextJsonSerializer = clientWithCosmosSystemTextJsonSerializer.GetDatabase(database.Id);
+            Container containerWithCosmosSystemTextJsonSerializer = databaseWithCosmosSystemTextJsonSerializer.GetContainer(itemContainer.Id);
+
             // create the Dek container
             Container dekContainerWithCosmosSystemTextJsonSerializer = await databaseWithCosmosSystemTextJsonSerializer.CreateContainerAsync(Guid.NewGuid().ToString(), "/id", 400);
-            
-            CosmosDataEncryptionKeyProvider dekProviderWithCosmosSystemTextJsonSerializer = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+
+            CosmosDataEncryptionKeyProvider dekProviderWithCosmosSystemTextJsonSerializer = new(new TestKeyWrapProvider());
             await dekProviderWithCosmosSystemTextJsonSerializer.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
-            
-            TestEncryptor encryptorWithCosmosSystemTextJsonSerializer =  new TestEncryptor(dekProviderWithCosmosSystemTextJsonSerializer);
-            
+
+            TestEncryptor encryptorWithCosmosSystemTextJsonSerializer = new(dekProviderWithCosmosSystemTextJsonSerializer);
+
             // enable encryption on container
             Container encryptionContainerWithCosmosSystemTextJsonSerializer = containerWithCosmosSystemTextJsonSerializer.WithEncryptor(encryptorWithCosmosSystemTextJsonSerializer);
 
             string dekId = "dekWithSystemTextJson";
-            DataEncryptionKeyProperties dekProperties = await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, dekId);
+            DataEncryptionKeyProperties dekProperties = await CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(metadata1.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             // Use different DEK provider to avoid (unintentional) cache impact
-            CosmosDataEncryptionKeyProvider dekProvider = new CosmosDataEncryptionKeyProvider(new TestKeyWrapProvider());
+            CosmosDataEncryptionKeyProvider dekProvider = new(new TestKeyWrapProvider());
             await dekProvider.InitializeAsync(databaseWithCosmosSystemTextJsonSerializer, dekContainerWithCosmosSystemTextJsonSerializer.Id);
             DataEncryptionKeyProperties readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
@@ -966,20 +963,20 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             // rewrap
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.RewrapDataEncryptionKeyAsync(
                dekId,
-               LegacyEncryptionTests.metadata2);
+               metadata2);
 
             Assert.AreEqual(HttpStatusCode.OK, dekResponse.StatusCode);
-            dekProperties = LegacyEncryptionTests.VerifyDekResponse(
+            dekProperties = VerifyDekResponse(
                 dekResponse,
                 dekId);
             Assert.AreEqual(
-                new EncryptionKeyWrapMetadata(LegacyEncryptionTests.metadata2.Value + LegacyEncryptionTests.metadataUpdateSuffix),
+                new EncryptionKeyWrapMetadata(metadata2.Value + metadataUpdateSuffix),
                 dekProperties.EncryptionKeyWrapMetadata);
 
             readProperties = await dekProviderWithCosmosSystemTextJsonSerializer.DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync(dekId);
             Assert.AreEqual(dekProperties, readProperties);
 
-            TestDocSystemText testDocSystemText = new TestDocSystemText()
+            TestDocSystemText testDocSystemText = new()
             {
                 Id = Guid.NewGuid().ToString(),
                 ActivityId = Guid.NewGuid().ToString(),
@@ -991,7 +988,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ItemResponse<TestDocSystemText> createTestDoc = await encryptionContainerWithCosmosSystemTextJsonSerializer.CreateItemAsync(
                 testDocSystemText,
                 new PartitionKey(testDocSystemText.PartitionKey),
-                LegacyEncryptionTests.GetRequestOptions(dekId, new List<string>() { "/status"}));
+                GetRequestOptions(dekId, new List<string>() { "/status" }));
 
             Assert.AreEqual(HttpStatusCode.Created, createTestDoc.StatusCode);
 
@@ -1000,13 +997,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             string fabrikamV1 = "Fabrikam_v001";
             string fabrikamV2 = "Fabrikam_v002";
 
-            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV1);
-            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV2);
-            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV1);
-            await LegacyEncryptionTests.CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV2);
+            await CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV1);
+            await CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, contosoV2);
+            await CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV1);
+            await CreateDekAsync(dekProviderWithCosmosSystemTextJsonSerializer, fabrikamV2);
 
             // Test getting all keys
-            await LegacyEncryptionTests.IterateDekFeedAsync(
+            await IterateDekFeedAsync(
                 dekProviderWithCosmosSystemTextJsonSerializer,
                 new List<string> { dekId, contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                 isExpectedDeksCompleteSetForRequest: true,
@@ -1014,7 +1011,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 "SELECT * from c");
 
             // Test getting specific subset of keys
-            await LegacyEncryptionTests.IterateDekFeedAsync(
+            await IterateDekFeedAsync(
                 dekProviderWithCosmosSystemTextJsonSerializer,
                 new List<string> { contosoV2 },
                 isExpectedDeksCompleteSetForRequest: false,
@@ -1022,7 +1019,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 "SELECT TOP 1 * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id DESC");
 
             // Ensure only required results are returned
-            await LegacyEncryptionTests.IterateDekFeedAsync(
+            await IterateDekFeedAsync(
                 dekProviderWithCosmosSystemTextJsonSerializer,
                 new List<string> { contosoV1, contosoV2 },
                 isExpectedDeksCompleteSetForRequest: true,
@@ -1030,34 +1027,51 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 "SELECT * from c where c.id >= 'Contoso_v000' and c.id <= 'Contoso_v999' ORDER BY c.id ASC");
 
             // Test pagination
-            await LegacyEncryptionTests.IterateDekFeedAsync(
+            await IterateDekFeedAsync(
                 dekProviderWithCosmosSystemTextJsonSerializer,
                 new List<string> { dekId, contosoV1, contosoV2, fabrikamV1, fabrikamV2 },
                 isExpectedDeksCompleteSetForRequest: true,
                 isResultOrderExpected: false,
                 "SELECT * from c",
                 itemCountInPage: 3);
+
+
+            //clean up
+            FeedIterator<TestDocSystemText> iterator = containerWithCosmosSystemTextJsonSerializer.GetItemQueryIterator<TestDocSystemText>();
+
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<TestDocSystemText> feedResponse = await iterator.ReadNextAsync();
+                foreach (TestDocSystemText testDoc in feedResponse)
+                {
+                    if (testDoc.Id == null)
+                    {
+                        continue;
+                    }
+                    await containerWithCosmosSystemTextJsonSerializer.DeleteItemAsync<TestDocSystemText>(testDoc.Id, new PartitionKey(testDoc.PartitionKey));
+                }
+            }
         }
 
         [TestMethod]
         public async Task EncryptionTransactionalBatchConflictResponse()
         {
             string partitionKey = "thePK";
-            string dek1 = LegacyEncryptionTests.dekId;
+            string dek1 = dekId;
 
-            ItemResponse<TestDoc> doc1CreatedResponse = await LegacyEncryptionTests.CreateItemAsync(LegacyEncryptionTests.encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
+            ItemResponse<TestDoc> doc1CreatedResponse = await CreateItemAsync(encryptionContainer, dek1, TestDoc.PathsToEncrypt, partitionKey);
             TestDoc doc1ToCreateAgain = doc1CreatedResponse.Resource;
             doc1ToCreateAgain.NonSensitive = Guid.NewGuid().ToString();
             doc1ToCreateAgain.Sensitive = Guid.NewGuid().ToString();
 
-            TransactionalBatchResponse batchResponse = await LegacyEncryptionTests.encryptionContainer.CreateTransactionalBatch(new Cosmos.PartitionKey(partitionKey))
-                .CreateItem(doc1ToCreateAgain, LegacyEncryptionTests.GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
+            TransactionalBatchResponse batchResponse = await encryptionContainer.CreateTransactionalBatch(new PartitionKey(partitionKey))
+                .CreateItem(doc1ToCreateAgain, GetBatchItemRequestOptions(dek1, TestDoc.PathsToEncrypt))
                 .ExecuteAsync();
 
             Assert.AreEqual(HttpStatusCode.Conflict, batchResponse.StatusCode);
             Assert.AreEqual(1, batchResponse.Count);
         }
-        
+
         private static async Task ValidateSprocResultsAsync(Container container, TestDoc expectedDoc)
         {
             string sprocId = Guid.NewGuid().ToString();
@@ -1112,7 +1126,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 queryResponseIterator = container.GetItemQueryIterator<TestDoc>(queryDefinition, requestOptions: requestOptions);
                 queryResponseIteratorForLazyDecryption = container.GetItemQueryIterator<DecryptableItem>(queryDefinition, requestOptions: requestOptions);
             }
-			
+
             FeedResponse<TestDoc> readDocs = await queryResponseIterator.ReadNextAsync();
             Assert.AreEqual(null, readDocs.ContinuationToken);
 
@@ -1126,7 +1140,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 Assert.AreEqual(expectedDoc, readDoc);
 
                 Assert.AreEqual(1, readDocsLazily.Count);
-                await LegacyEncryptionTests.ValidateDecryptableItem(readDocsLazily.First(), expectedDoc, pathsEncrypted: pathsEncrypted);
+                await ValidateDecryptableItem(readDocsLazily.First(), expectedDoc, pathsEncrypted: pathsEncrypted);
             }
             else
             {
@@ -1146,10 +1160,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             if (query == null)
             {
                 IOrderedQueryable<TestDoc> linqQueryable = container.GetItemLinqQueryable<TestDoc>();
-                queryResponseIterator = container.ToEncryptionFeedIterator<TestDoc>(linqQueryable);
+                queryResponseIterator = container.ToEncryptionFeedIterator(linqQueryable);
 
                 IOrderedQueryable<DecryptableItem> linqQueryableDecryptableItem = container.GetItemLinqQueryable<DecryptableItem>();
-                queryResponseIteratorForLazyDecryption = container.ToEncryptionFeedIterator<DecryptableItem>(linqQueryableDecryptableItem);
+                queryResponseIteratorForLazyDecryption = container.ToEncryptionFeedIterator(linqQueryableDecryptableItem);
             }
             else
             {
@@ -1221,7 +1235,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.IsNull(decryptionContext);
         }
 
-        private async Task ValidateChangeFeedIteratorResponse(
+        private static async Task ValidateChangeFeedIteratorResponse(
             Container container,
             TestDoc testDoc1,
             TestDoc testDoc2)
@@ -1230,7 +1244,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 ChangeFeedStartFrom.Beginning(),
                 ChangeFeedMode.Incremental);
 
-            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            List<TestDoc> changeFeedReturnedDocs = new();
             while (changeIterator.HasMoreResults)
             {
                 FeedResponse<TestDoc> testDocs = await changeIterator.ReadNextAsync();
@@ -1249,19 +1263,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
 
             Assert.AreEqual(changeFeedReturnedDocs.Count, 2);
-            Assert.AreEqual(testDoc1, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 2]);
-            Assert.AreEqual(testDoc2, changeFeedReturnedDocs[changeFeedReturnedDocs.Count - 1]);
+            Assert.AreEqual(testDoc1, changeFeedReturnedDocs[^2]);
+            Assert.AreEqual(testDoc2, changeFeedReturnedDocs[^1]);
         }
 
-        private async Task ValidateChangeFeedProcessorResponse(
+        private static async Task ValidateChangeFeedProcessorResponse(
             Container container,
             TestDoc testDoc1,
             TestDoc testDoc2)
         {
-            Container leaseContainer = await LegacyEncryptionTests.database.CreateContainerIfNotExistsAsync(
+            Container leaseContainer = await database.CreateContainerIfNotExistsAsync(
                 new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
 
-            List<TestDoc> changeFeedReturnedDocs = new List<TestDoc>();
+            List<TestDoc> changeFeedReturnedDocs = new();
             ChangeFeedProcessor cfp = container.GetChangeFeedProcessorBuilder(
                 "testCFP",
                 (IReadOnlyCollection<TestDoc> changes, CancellationToken cancellationToken)
@@ -1294,7 +1308,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             }
         }
 
-        private async Task ValidateLazyDecryptionResponse(
+        private static async Task ValidateLazyDecryptionResponse(
             IEnumerator<DecryptableItem> readDocsLazily,
             string failureDek)
         {
@@ -1311,7 +1325,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 catch (EncryptionException encryptionException)
                 {
                     failedDoc++;
-                    this.ValidateEncryptionException(encryptionException, failureDek);
+                    ValidateEncryptionException(encryptionException, failureDek);
                 }
             }
 
@@ -1319,7 +1333,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(1, failedDoc);
         }
 
-        private void ValidateEncryptionException(
+        private static void ValidateEncryptionException(
             EncryptionException encryptionException,
             string failureDek)
         {
@@ -1356,10 +1370,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 : dekProvider.DataEncryptionKeyContainer.GetDataEncryptionKeyQueryIterator<DataEncryptionKeyProperties>(
                     query,
                     requestOptions: requestOptions);
-					
+
             Assert.IsTrue(dekIterator.HasMoreResults);
 
-            List<string> readDekIds = new List<string>();
+            List<string> readDekIds = new();
             while (remainingItemCount > 0)
             {
                 FeedResponse<DataEncryptionKeyProperties> page = await dekIterator.ReadNextAsync();
@@ -1412,7 +1426,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ItemResponse<TestDoc> upsertResponse = await container.UpsertItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt));
+                GetRequestOptions(dekId, pathsToEncrypt));
             Assert.AreEqual(expectedStatusCode, upsertResponse.StatusCode);
             Assert.AreEqual(testDoc, upsertResponse.Resource);
             return upsertResponse;
@@ -1428,7 +1442,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ItemResponse<TestDoc> createResponse = await container.CreateItemAsync(
                 testDoc,
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt));
+                GetRequestOptions(dekId, pathsToEncrypt));
             Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
             Assert.AreEqual(testDoc, createResponse.Resource);
             return createResponse;
@@ -1445,7 +1459,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 testDoc,
                 testDoc.Id,
                 new PartitionKey(testDoc.PK),
-                LegacyEncryptionTests.GetRequestOptions(dekId, pathsToEncrypt, etag));
+                GetRequestOptions(dekId, pathsToEncrypt, etag));
 
             Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
             Assert.AreEqual(testDoc, replaceResponse.Resource);
@@ -1472,19 +1486,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             return new EncryptionItemRequestOptions
             {
-                EncryptionOptions = LegacyEncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
+                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
                 IfMatchEtag = ifMatchEtag
             };
         }
 
-        private static TransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
+        private static EncryptionTransactionalBatchItemRequestOptions GetBatchItemRequestOptions(
             string dekId,
             List<string> pathsToEncrypt,
             string ifMatchEtag = null)
         {
             return new EncryptionTransactionalBatchItemRequestOptions
             {
-                EncryptionOptions = LegacyEncryptionTests.GetEncryptionOptions(dekId, pathsToEncrypt),
+                EncryptionOptions = GetEncryptionOptions(dekId, pathsToEncrypt),
                 IfMatchEtag = ifMatchEtag
             };
         }
@@ -1512,7 +1526,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readDoc);
             if (isDocDecrypted && testDoc.Sensitive != null)
             {
-                LegacyEncryptionTests.ValidateDecryptionContext(decryptionContext, dekId, pathsEncrypted);
+                ValidateDecryptionContext(decryptionContext, dekId, pathsEncrypted);
             }
             else
             {
@@ -1527,13 +1541,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
         {
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
             Assert.AreEqual(1, decryptionContext.DecryptionInfoList.Count);
-            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
+            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList[0];
             Assert.AreEqual(dekId ?? LegacyEncryptionTests.dekId, decryptionInfo.DataEncryptionKeyId);
 
-            if (pathsEncrypted == null)
-            {
-                pathsEncrypted = TestDoc.PathsToEncrypt;
-            }
+            pathsEncrypted ??= TestDoc.PathsToEncrypt;
 
             Assert.AreEqual(pathsEncrypted.Count, decryptionInfo.PathsDecrypted.Count);
             Assert.IsFalse(pathsEncrypted.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
@@ -1555,11 +1566,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.AreEqual(testDoc, readResponse.Resource);
 
             // ignore for reads via regular container..
-            if (container == LegacyEncryptionTests.encryptionContainer)
+            if (container == encryptionContainer)
             {
                 ItemResponse<DecryptableItem> readResponseDecryptableItem = await container.ReadItemAsync<DecryptableItem>(testDoc.Id, new PartitionKey(testDoc.PK), requestOptions);
                 Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
-                await LegacyEncryptionTests.ValidateDecryptableItem(readResponseDecryptableItem.Resource, testDoc, dekId, isDocDecrypted: isDocDecrypted);
+                await ValidateDecryptableItem(readResponseDecryptableItem.Resource, testDoc, dekId, isDocDecrypted: isDocDecrypted);
             }
         }
 
@@ -1568,10 +1579,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             ItemResponse<DataEncryptionKeyProperties> dekResponse = await dekProvider.DataEncryptionKeyContainer.CreateDataEncryptionKeyAsync(
                 dekId,
                 algorithm ?? CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
-                LegacyEncryptionTests.metadata1);
+                metadata1);
 
             Assert.AreEqual(HttpStatusCode.Created, dekResponse.StatusCode);
-            
+
             return VerifyDekResponse(dekResponse,
                 dekId);
         }
@@ -1590,7 +1601,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
             Assert.IsNotNull(dekProperties.SelfLink);
             Assert.IsNotNull(dekProperties.CreatedTime);
             Assert.IsNotNull(dekProperties.LastModified);
-            
+
             return dekProperties;
         }
 
@@ -1706,8 +1717,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public override Task<EncryptionKeyUnwrapResult> UnwrapKeyAsync(byte[] wrappedKey, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
             {
-                int moveBy = metadata.Value == LegacyEncryptionTests.metadata1.Value + LegacyEncryptionTests.metadataUpdateSuffix ? 1 : 2;
-                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), LegacyEncryptionTests.cacheTTL));
+                int moveBy = metadata.Value == metadata1.Value + metadataUpdateSuffix ? 1 : 2;
+                return Task.FromResult(new EncryptionKeyUnwrapResult(wrappedKey.Select(b => (byte)(b - moveBy)).ToArray(), cacheTTL));
             }
 
             public override Task<EncryptionKeyWrapResult> WrapKeyAsync(byte[] key, EncryptionKeyWrapMetadata metadata, CancellationToken cancellationToken)
@@ -1720,9 +1731,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 {
                     this.WrapKeyCallsCount[metadata.Value]++;
                 }
-                
-                EncryptionKeyWrapMetadata responseMetadata = new EncryptionKeyWrapMetadata(metadata.Value + LegacyEncryptionTests.metadataUpdateSuffix);
-                int moveBy = metadata.Value == LegacyEncryptionTests.metadata1.Value ? 1 : 2;
+
+                EncryptionKeyWrapMetadata responseMetadata = new(metadata.Value + metadataUpdateSuffix);
+                int moveBy = metadata.Value == metadata1.Value ? 1 : 2;
                 return Task.FromResult(new EncryptionKeyWrapResult(key.Select(b => (byte)(b + moveBy)).ToArray(), responseMetadata));
             }
         }
@@ -1750,16 +1761,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                     throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned.");
                 }
 
-                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                DataEncryptionKey dek = await this.GetEncryptionKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
-                    cancellationToken);
-
-                if (dek == null)
-                {
-                    throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
-                }
-
+                    cancellationToken) ?? throw new InvalidOperationException($"Null {nameof(DataEncryptionKey)} returned from {nameof(this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync)}.");
                 return dek.DecryptData(cipherText);
             }
 
@@ -1769,43 +1774,49 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
                 string encryptionAlgorithm,
                 CancellationToken cancellationToken = default)
             {
-                DataEncryptionKey dek = await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                DataEncryptionKey dek = await this.GetEncryptionKeyAsync(
                     dataEncryptionKeyId,
                     encryptionAlgorithm,
                     cancellationToken);
 
                 return dek.EncryptData(plainText);
             }
-        }        
+
+            public override async Task<DataEncryptionKey> GetEncryptionKeyAsync(string dataEncryptionKeyId, string encryptionAlgorithm, CancellationToken cancellationToken = default)
+            {
+                return await this.DataEncryptionKeyProvider.FetchDataEncryptionKeyWithoutRawKeyAsync(
+                    dataEncryptionKeyId,
+                    encryptionAlgorithm,
+                    cancellationToken);
+            }
+        }
 
         internal class CustomSerializer : CosmosSerializer
         {
-            private readonly JsonSerializer serializer = new JsonSerializer();
+            private readonly JsonSerializer serializer = new();
             public int FromStreamCalled = 0;
 
             public override T FromStream<T>(Stream stream)
             {
                 this.FromStreamCalled++;
-                using (StreamReader sr = new StreamReader(stream))
+                using (StreamReader sr = new(stream))
                 using (JsonReader reader = new JsonTextReader(sr))
                 {
-                    JsonSerializer serializer = new JsonSerializer();
+                    JsonSerializer serializer = new();
                     return this.serializer.Deserialize<T>(reader);
                 }
             }
 
             public override Stream ToStream<T>(T input)
             {
-                MemoryStream streamPayload = new MemoryStream();
-                using (StreamWriter streamWriter = new StreamWriter(streamPayload, encoding: UTF8Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
+                MemoryStream streamPayload = new();
+                using (StreamWriter streamWriter = new(streamPayload, encoding: Encoding.UTF8, bufferSize: 1024, leaveOpen: true))
                 {
-                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                    {
-                        writer.Formatting = Newtonsoft.Json.Formatting.None;
-                        this.serializer.Serialize(writer, input);
-                        writer.Flush();
-                        streamWriter.Flush();
-                    }
+                    using JsonTextWriter writer = new (streamWriter);
+                    writer.Formatting = Formatting.None;
+                    this.serializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
                 }
 
                 streamPayload.Position = 0;
@@ -1843,7 +1854,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.EmulatorTests
 
             public override Stream ToStream<T>(T input)
             {
-                MemoryStream streamPayload = new MemoryStream();
+                MemoryStream streamPayload = new();
                 this.systemTextJsonSerializer.Serialize(streamPayload, input, typeof(T), default);
                 streamPayload.Position = 0;
                 return streamPayload;

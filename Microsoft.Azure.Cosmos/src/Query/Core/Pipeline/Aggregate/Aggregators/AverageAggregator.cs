@@ -80,11 +80,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             return TryCatch<IAggregator>.FromResult(new AverageAggregator(averageInfo));
         }
 
-        public CosmosElement GetCosmosElementContinuationToken()
-        {
-            return AverageInfo.ToCosmosElement(this.globalAverage);
-        }
-
         /// <summary>
         /// Struct that stores a weighted average as a sum and count so they that average across different partitions with different numbers of documents can be taken.
         /// </summary>
@@ -102,19 +97,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
             {
                 this.Sum = sum;
                 this.Count = count;
-            }
-
-            public static CosmosElement ToCosmosElement(AverageInfo averageInfo)
-            {
-                Dictionary<string, CosmosElement> dictionary = new Dictionary<string, CosmosElement>();
-                if (averageInfo.Sum.HasValue)
-                {
-                    dictionary.Add(AverageInfo.SumName, CosmosNumber64.Create(averageInfo.Sum.Value));
-                }
-
-                dictionary.Add(AverageInfo.CountName, CosmosNumber64.Create(averageInfo.Count));
-
-                return CosmosObject.Create(dictionary);
             }
 
             /// <summary>

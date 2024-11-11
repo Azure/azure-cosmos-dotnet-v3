@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                    ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}
                   }";
 
-            var geometryCollection = JsonConvert.DeserializeObject<GeometryCollection>(json);
+            GeometryCollection geometryCollection = JsonConvert.DeserializeObject<GeometryCollection>(json);
 
             Assert.AreEqual(1, geometryCollection.Geometries.Count);
             Assert.IsInstanceOfType(geometryCollection.Geometries[0], typeof(Point));
@@ -41,13 +41,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, geometryCollection.AdditionalProperties.Count);
             Assert.AreEqual(1L, geometryCollection.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.GeometryCollection, geom.Type);
 
             Assert.AreEqual(geom, geometryCollection);
 
             string json1 = JsonConvert.SerializeObject(geometryCollection);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestGeometryCollectionEqualsHashCode()
         {
-            var geometryCollection1 = new GeometryCollection(
+            GeometryCollection geometryCollection1 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var geometryCollection2 = new GeometryCollection(
+            GeometryCollection geometryCollection2 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var geometryCollection3 = new GeometryCollection(
+            GeometryCollection geometryCollection3 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 41) },
                 new GeometryParams
                 {
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var geometryCollection4 = new GeometryCollection(
+            GeometryCollection geometryCollection4 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var geometryCollection5 = new GeometryCollection(
+            GeometryCollection geometryCollection5 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var geometryCollection6 = new GeometryCollection(
+            GeometryCollection geometryCollection6 = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestGeometryCollectionConstructors()
         {
-            var geometryCollection = new GeometryCollection(
+            GeometryCollection geometryCollection = new GeometryCollection(
                 new[] { new Point(20, 30), new Point(30, 40) },
                 new GeometryParams
                 {

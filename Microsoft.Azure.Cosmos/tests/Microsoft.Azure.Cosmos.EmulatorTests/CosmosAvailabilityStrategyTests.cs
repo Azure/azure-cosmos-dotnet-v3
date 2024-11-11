@@ -5,7 +5,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Collections.Generic;
     using System.Data;
     using System.IO;
-    using System.Net.Http;
+    using System.Linq;
+    using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -14,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
-    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Database = Database;
     using PartitionKey = PartitionKey;
@@ -22,6 +22,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class CosmosAvailabilityStrategyTests
     {
+        private const string centralUS = "Central US";
+        private const string northCentralUS = "North Central US";
+        private const string eastUs = "East US";
+        private const string dbName = "availabilityStrategyTestDb";
+        private const string containerName = "availabilityStrategyTestContainer";
+        private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
 
         private CosmosClient client;
         private Database database;
@@ -29,14 +35,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Container changeFeedContainer;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private string connectionString;
-        private string dbName;
-        private string containerName;
-        private string changeFeedContainerName;
+        
 
         [TestCleanup]
-        public async Task TestCleanup()
+        public void TestCleanup()
         {
-            await this.database?.DeleteAsync();
+            //Do not delete the resources, georeplication is slow and we want to reuse the resources
             this.client?.Dispose();
         }
 
@@ -150,25 +154,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Serializer = this.cosmosSystemTextJsonSerializer,
                 });
 
-            this.dbName = Guid.NewGuid().ToString();
-            this.containerName = Guid.NewGuid().ToString();
-            this.changeFeedContainerName = Guid.NewGuid().ToString();
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.dbName);
-            this.container = await this.database.CreateContainerIfNotExistsAsync(this.containerName, "/pk");
-            this.changeFeedContainer = await this.database.CreateContainerIfNotExistsAsync(this.changeFeedContainerName, "/partitionKey");
-
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId", Pk = "pk" });
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId2", Pk = "pk2" });
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId3", Pk = "pk3" });
-            await this.container.CreateItemAsync<AvailabilityStrategyTestObject>(new AvailabilityStrategyTestObject { Id = "testId4", Pk = "pk4" });
-
-            //Must Ensure the data is replicated to all regions
-            await Task.Delay(60000);
+            (this.database, this.container, this.changeFeedContainer) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyNoTriggerTest()
+        public async Task AvailabilityStrategyNoTriggerTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
@@ -184,7 +177,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .WithDuration(TimeSpan.FromMinutes(90))
                 .Build();
 
-            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjectionRule responseDelay2 = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion("North Central US")
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay, responseDelay2 };
             FaultInjector faultInjector = new FaultInjector(rules);
 
             responseDelay.Disable();
@@ -192,35 +199,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                        threshold: TimeSpan.FromMilliseconds(1500),
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US" },
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                        threshold: TimeSpan.FromMilliseconds(300),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
+                responseDelay.Enable();
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
 
-            responseDelay.Enable();
-            ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
+                Assert.IsNotNull(responseRegion);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.centralUS, (string)responseRegion);
 
-            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-            Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual("Original Request", (string)hedgeContext);
+                //Should send out hedge request but original should be returned
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                IReadOnlyCollection<string> hedgeContextList;
+                hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
 
-            faultInjectionClient.Dispose();
+                if (isPreferredLocationsEmpty)
+                {
+                    Assert.AreEqual(3, hedgeContextList.Count);
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.eastUs));
+                }
+                else
+                {
+                    Assert.AreEqual(2, hedgeContextList.Count);
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
+                    Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
+                }
+            };
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyRequestOptionsTriggerTest()
+        public async Task AvailabilityStrategyRequestOptionsTriggerTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
@@ -244,45 +272,43 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty? new List<string>() : new List<string>() { "Central US", "North Central US" },
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            responseDelay.Enable();
-
-            ItemRequestOptions requestOptions = new ItemRequestOptions
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
-                    threshold: TimeSpan.FromMilliseconds(100),
-                    thresholdStep: TimeSpan.FromMilliseconds(50))
-            };
-            ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                "testId",
-                new PartitionKey("pk"),
-                requestOptions);
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
-            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-            Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual("Hedged Request", (string)hedgeContext);
-            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-            Assert.IsNotNull(excludeRegionsObject);
-            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-            faultInjectionClient.Dispose();
+                responseDelay.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50))
+                };
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                    "testId",
+                    new PartitionKey("pk"),
+                    requestOptions);
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+            }
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyDisableOverideTest()
+        public async Task AvailabilityStrategyDisableOverideTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
@@ -307,86 +333,131 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US" },
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            responseDelay.Enable();
-            ItemRequestOptions requestOptions = new ItemRequestOptions
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                AvailabilityStrategy = new DisabledAvailabilityStrategy()
-            };
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
-            ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                "testId",
-                new PartitionKey("pk"),
-                requestOptions);
+                responseDelay.Enable();
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new DisabledAvailabilityStrategy()
+                };
 
-            CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-            Assert.IsNotNull(traceDiagnostic);
-            Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out _));
+                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                    "testId",
+                    new PartitionKey("pk"),
+                    requestOptions);
 
-            faultInjectionClient.Dispose();
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _));
+            }
         }
 
         [DataTestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("Read", "Read", "Gone", DisplayName = "Read | Gone")]
-        [DataRow("Read", "Read", "RetryWith", DisplayName = "Read | RetryWith")]
-        [DataRow("Read", "Read", "InternalServerError", DisplayName = "Read | InternalServerError")]
-        [DataRow("Read", "Read", "ReadSessionNotAvailable", DisplayName = "Read | ReadSessionNotAvailable")]
-        [DataRow("Read", "Read", "Timeout", DisplayName = "Read | Timeout")]
-        [DataRow("Read", "Read", "PartitionIsSplitting", DisplayName = "Read | PartitionIsSplitting")]
-        [DataRow("Read", "Read", "PartitionIsMigrating", DisplayName = "Read | PartitionIsMigrating")]
-        [DataRow("Read", "Read", "ServiceUnavailable", DisplayName = "Read | ServiceUnavailable")]
-        [DataRow("Read", "Read", "ResponseDelay", DisplayName = "Read | ResponseDelay")]
-        [DataRow("SinglePartitionQuery", "Query", "Gone", DisplayName = "SinglePartitionQuery | Gone")]
-        [DataRow("SinglePartitionQuery", "Query", "RetryWith", DisplayName = "SinglePartitionQuery | RetryWith")]
-        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", DisplayName = "SinglePartitionQuery | InternalServerError")]
-        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable")]
-        [DataRow("SinglePartitionQuery", "Query", "Timeout", DisplayName = "SinglePartitionQuery | Timeout")]
-        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "SinglePartitionQuery | PartitionIsSplitting")]
-        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", DisplayName = "SinglePartitionQuery | PartitionIsMigrating")]
-        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", DisplayName = "SinglePartitionQuery | ServiceUnavailable")]
-        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", DisplayName = "SinglePartitionQuery | ResponseDelay")]
-        [DataRow("CrossPartitionQuery", "Query", "Gone", DisplayName = "CrossPartitionQuery | Gone")]
-        [DataRow("CrossPartitionQuery", "Query", "RetryWith", DisplayName = "CrossPartitionQuery | RetryWith")]
-        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", DisplayName = "CrossPartitionQuery | InternalServerError")]
-        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable")]
-        [DataRow("CrossPartitionQuery", "Query", "Timeout", DisplayName = "CrossPartitionQuery | Timeout")]
-        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "CrossPartitionQuery | PartitionIsSplitting")]
-        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", DisplayName = "CrossPartitionQuery | PartitionIsMigrating")]
-        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", DisplayName = "CrossPartitionQuery | ServiceUnavailable")]
-        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", DisplayName = "CrossPartitionQuery | ResponseDelay")]
-        [DataRow("ReadMany", "ReadMany", "Gone", DisplayName = "ReadMany | Gone")]
-        [DataRow("ReadMany", "ReadMany", "RetryWith", DisplayName = "ReadMany | RetryWith")]
-        [DataRow("ReadMany", "ReadMany", "InternalServerError", DisplayName = "ReadMany | InternalServerError")]
-        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", DisplayName = "ReadMany | ReadSessionNotAvailable")]
-        [DataRow("ReadMany", "ReadMany", "Timeout", DisplayName = "ReadMany | Timeout")]
-        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", DisplayName = "ReadMany | PartitionIsSplitting")]
-        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", DisplayName = "ReadMany | PartitionIsMigrating")]
-        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", DisplayName = "ReadMany | ServiceUnavailable")]
-        [DataRow("ReadMany", "ReadMany", "ResponseDelay", DisplayName = "ReadMany | ResponseDelay")]
-        [DataRow("ChangeFeed", "ChangeFeed", "Gone", DisplayName = "ChangeFeed | Gone")]
-        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", DisplayName = "ChangeFeed | RetryWith")]
-        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", DisplayName = "ChangeFeed | InternalServerError")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", DisplayName = "ChangeFeed | ReadSessionNotAvailable")]
-        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", DisplayName = "ChangeFeed | Timeout")]
-        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", DisplayName = "ChangeFeed | PartitionIsSplitting")]
-        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", DisplayName = "ChangeFeed | PartitionIsMigrating")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", DisplayName = "ChangeFeed | ServiceUnavailable")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", DisplayName = "ChangeFeed | ResponseDelay")]
-        public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName)
+        [DataRow("Read", "Read", "Gone", false, DisplayName = "Read | Gone | With Preferred Regions")]
+        [DataRow("Read", "Read", "RetryWith", false, DisplayName = "Read | RetryWith | With Preferred Regions")]
+        [DataRow("Read", "Read", "InternalServerError", false, DisplayName = "Read | InternalServerError | With Preferred Regions")]
+        [DataRow("Read", "Read", "ReadSessionNotAvailable", false, DisplayName = "Read | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("Read", "Read", "Timeout", false, DisplayName = "Read | Timeout | With Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsSplitting", false, DisplayName = "Read | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsMigrating", false, DisplayName = "Read | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("Read", "Read", "ServiceUnavailable", false, DisplayName = "Read | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("Read", "Read", "ResponseDelay", false, DisplayName = "Read | ResponseDelay | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query",  "Gone", false, DisplayName = "SinglePartitionQuery | Gone | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "RetryWith", false, DisplayName = "SinglePartitionQuery | RetryWith | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", false, DisplayName = "SinglePartitionQuery | InternalServerError | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Timeout", false, DisplayName = "SinglePartitionQuery | Timeout | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", false, DisplayName = "SinglePartitionQuery | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "SinglePartitionQuery | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", false, DisplayName = "SinglePartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Gone", false, DisplayName = "CrossPartitionQuery | Gone | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "RetryWith", false, DisplayName = "CrossPartitionQuery | RetryWith | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", false, DisplayName = "CrossPartitionQuery | InternalServerError | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Timeout", false, DisplayName = "CrossPartitionQuery | Timeout | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", false, DisplayName = "CrossPartitionQuery | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "CrossPartitionQuery | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", false, DisplayName = "CrossPartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Gone", false, DisplayName = "ReadMany | Gone | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "RetryWith", false, DisplayName = "ReadMany | RetryWith | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "InternalServerError", false, DisplayName = "ReadMany | InternalServerError | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", false, DisplayName = "ReadMany | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Timeout", false, DisplayName = "ReadMany | Timeout | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", false, DisplayName = "ReadMany | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", false, DisplayName = "ReadMany | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", false, DisplayName = "ReadMany | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ResponseDelay", false, DisplayName = "ReadMany | ResponseDelay | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Gone", false, DisplayName = "ChangeFeed | Gone | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", false, DisplayName = "ChangeFeed | RetryWith | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", false, DisplayName = "ChangeFeed | InternalServerError | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", false, DisplayName = "ChangeFeed | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", false, DisplayName = "ChangeFeed | Timeout | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", false, DisplayName = "ChangeFeed | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", false, DisplayName = "ChangeFeed | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", false, DisplayName = "ChangeFeed | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", false, DisplayName = "ChangeFeed | ResponseDelay | With Preferred Regions")]
+        [DataRow("Read", "Read", "Gone", true, DisplayName = "Read | Gone | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "RetryWith", true, DisplayName = "Read | RetryWith | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "InternalServerError", true, DisplayName = "Read | InternalServerError | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ReadSessionNotAvailable", true, DisplayName = "Read | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "Timeout", true, DisplayName = "Read | Timeout | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsSplitting", true, DisplayName = "Read | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsMigrating", true, DisplayName = "Read | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ServiceUnavailable", true, DisplayName = "Read | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ResponseDelay", true, DisplayName = "Read | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query",  "Gone", true, DisplayName = "SinglePartitionQuery | Gone | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "RetryWith", true, DisplayName = "SinglePartitionQuery | RetryWith | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", true, DisplayName = "SinglePartitionQuery | InternalServerError | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Timeout", true, DisplayName = "SinglePartitionQuery | Timeout | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", true, DisplayName = "SinglePartitionQuery | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "SinglePartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", true, DisplayName = "SinglePartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Gone", true, DisplayName = "CrossPartitionQuery | Gone | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "RetryWith", true, DisplayName = "CrossPartitionQuery | RetryWith | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", true, DisplayName = "CrossPartitionQuery | InternalServerError | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Timeout", true, DisplayName = "CrossPartitionQuery | Timeout | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", true, DisplayName = "CrossPartitionQuery | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "CrossPartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", true, DisplayName = "CrossPartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Gone", true, DisplayName = "ReadMany | Gone | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "RetryWith", true, DisplayName = "ReadMany | RetryWith | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "InternalServerError", true, DisplayName = "ReadMany | InternalServerError | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", true, DisplayName = "ReadMany | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Timeout", true, DisplayName = "ReadMany | Timeout | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", true, DisplayName = "ReadMany | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", true, DisplayName = "ReadMany | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", true, DisplayName = "ReadMany | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ResponseDelay", true, DisplayName = "ReadMany | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Gone", true, DisplayName = "ChangeFeed | Gone | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", true, DisplayName = "ChangeFeed | RetryWith | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", true, DisplayName = "ChangeFeed | InternalServerError | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", true, DisplayName = "ChangeFeed | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", true, DisplayName = "ChangeFeed | Timeout | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", true, DisplayName = "ChangeFeed | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", true, DisplayName = "ChangeFeed | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", true, DisplayName = "ChangeFeed | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", true, DisplayName = "ChangeFeed | ResponseDelay | W/O Preferred Regions")]
+        public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName, bool isPreferredLocationsEmpty)
         {
             FaultInjectionCondition conditon = this.conditions[conditonName];
             IFaultInjectionResult result = this.results[resultName];
@@ -406,168 +477,195 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US" },
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            CosmosTraceDiagnostics traceDiagnostic;
-            object hedgeContext;
-            List<string> excludeRegionsList;
-            switch (operation)
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                case "Read":
-                    rule.Enable();
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
-                    ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                        "testId", 
-                        new PartitionKey("pk"));
+                CosmosTraceDiagnostics traceDiagnostic;
+                object hedgeContext;
 
-                    Assert.IsTrue(rule.GetHitCount() > 0);
-                    traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-                    excludeRegionsList = excludeRegionsObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                switch (operation)
+                {
+                    case "Read":
+                        rule.Enable();
 
-                    break;
+                        ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
 
-                case "SinglePartitionQuery":
-                    string queryString = "SELECT * FROM c";
-
-                    QueryRequestOptions requestOptions = new QueryRequestOptions()
-                    {
-                        PartitionKey = new PartitionKey("pk"),
-                    };
-
-                    FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(queryString),
-                        requestOptions: requestOptions);
-
-                    rule.Enable();
-
-                    while (queryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
-
-                        Assert.IsTrue(rule.GetHitCount() > 0);
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
-                        Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    }
-
-                    break;
-
-                case "CrossPartitionQuery":
-                    string crossPartitionQueryString = "SELECT * FROM c";
-                    FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(crossPartitionQueryString));
-
-                    rule.Enable();
-
-                    while (crossPartitionQueryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
-
-                        Assert.IsTrue(rule.GetHitCount() > 0);
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
-                        Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    }
-
-                    break;
-
-                case "ReadMany":
-                    rule.Enable();
-
-                    FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
-                        new List<(string, PartitionKey)>()
+                        if (isPreferredLocationsEmpty)
                         {
+                            itemRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
+                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                            "testId",
+                            new PartitionKey("pk"),
+                            itemRequestOptions);
+
+                        Assert.IsTrue(rule.GetHitCount() > 0);
+                        traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                        Assert.IsNotNull(traceDiagnostic);
+                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        Assert.IsNotNull(hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+
+                        break;
+
+                    case "SinglePartitionQuery":
+                        string queryString = "SELECT * FROM c";
+
+                        QueryRequestOptions requestOptions = new QueryRequestOptions()
+                        {
+                            PartitionKey = new PartitionKey("pk"),
+                        };
+
+                        if (isPreferredLocationsEmpty)
+                        {
+                            requestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
+                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(queryString),
+                            requestOptions: requestOptions);
+
+                        rule.Enable();
+
+                        while (queryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+
+                            Assert.IsTrue(rule.GetHitCount() > 0);
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "CrossPartitionQuery":
+                        string crossPartitionQueryString = "SELECT * FROM c";
+
+                        QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+                        
+                        if (isPreferredLocationsEmpty)
+                        {
+                            queryRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+                        
+                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(crossPartitionQueryString),
+                            null,
+                            queryRequestOptions);
+
+                        rule.Enable();
+
+                        while (crossPartitionQueryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+
+                            Assert.IsTrue(rule.GetHitCount() > 0);
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "ReadMany":
+                        rule.Enable();
+
+                        ReadManyRequestOptions readManyRequestOptions = new ReadManyRequestOptions();
+                        
+                        if (isPreferredLocationsEmpty)
+                        {
+                            readManyRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
+                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                            new List<(string, PartitionKey)>()
+                            {
                             ("testId", new PartitionKey("pk")),
                             ("testId2", new PartitionKey("pk2")),
                             ("testId3", new PartitionKey("pk3")),
                             ("testId4", new PartitionKey("pk4"))
-                        });
+                            },
+                            readManyRequestOptions);
 
-                    Assert.IsTrue(rule.GetHitCount() > 0);
-                    traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsReadManyObject);
-                    excludeRegionsList = excludeRegionsReadManyObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+                        Assert.IsTrue(rule.GetHitCount() > 0);
+                        traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
+                        Assert.IsNotNull(traceDiagnostic);
+                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        Assert.IsNotNull(hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
 
-                    break;
+                        break;
 
-                case "ChangeFeed":
-                    Container leaseContainer = database.GetContainer(this.changeFeedContainerName);
-                    ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
-                        processorName: "AvialabilityStrategyTest",
-                        onChangesDelegate: HandleChangesAsync)
-                        .WithInstanceName("test")
-                        .WithLeaseContainer(leaseContainer)
-                        .Build();
-                    await changeFeedProcessor.StartAsync();
-                    await Task.Delay(1000);
-                    AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
-                    {
-                        Id = "testId5",
-                        Pk = "pk5",
-                        Other = "other"
-                    };
-                    await container.CreateItemAsync<AvailabilityStrategyTestObject>(testObject);
+                    case "ChangeFeed":
+                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                            processorName: "AvialabilityStrategyTest",
+                            onChangesDelegate: HandleChangesAsync)
+                            .WithInstanceName("test")
+                            .WithLeaseContainer(leaseContainer)
+                            .Build();
+                        await changeFeedProcessor.StartAsync();
+                        await Task.Delay(1000);
 
-                    rule.Enable();
+                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        {
+                            Id = "item4",
+                            Pk = "pk4",
+                            Other = Guid.NewGuid().ToString()
+                        };
+                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
 
-                    await Task.Delay(5000);
+                        rule.Enable();
 
-                    Assert.IsTrue(rule.GetHitCount() > 0);
+                        await Task.Delay(15000);
 
-                    break;
+                        Assert.IsTrue(rule.GetHitCount() > 0);
 
-                default:
+                        rule.Disable();
+                        await changeFeedProcessor.StopAsync();
 
-                    Assert.Fail("Invalid operation");
-                    break;
+                        break;
+
+                    default:
+
+                        Assert.Fail("Invalid operation");
+                        break;
+                }
+
+                rule.Disable();
             }
-
-            rule.Disable();
-
-            faultInjectionClient.Dispose();
         }
 
         [DataTestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("Read", "Read", "ReadStep", DisplayName = "Read | ReadStep")]
-        [DataRow("SinglePartitionQuery", "Query", "QueryStep", DisplayName = "Query | SinglePartitionQueryStep")]
-        [DataRow("CrossPartitionQuery", "Query", "QueryStep", DisplayName = "Query | CrossPartitionQueryStep")]
-        [DataRow("ReadMany", "ReadMany", "ReadManyStep", DisplayName = "ReadMany | ReadManyStep")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", DisplayName = "ChangeFeed | ChangeFeedStep")]
-        public async Task AvailabilityStrategyStepTests(string operation, string conditonName1, string conditionName2)
+        [DataRow("Read", "Read", "ReadStep", false, DisplayName = "Read | ReadStep | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "QueryStep", false, DisplayName = "Query | SinglePartitionQueryStep | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "QueryStep", false, DisplayName = "Query | CrossPartitionQueryStep | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadManyStep", false, DisplayName = "ReadMany | ReadManyStep | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", false, DisplayName = "ChangeFeed | ChangeFeedStep | With Preferred Regions")]
+        [DataRow("Read", "Read", "ReadStep", true, DisplayName = "Read | ReadStep | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "QueryStep", true, DisplayName = "Query | SinglePartitionQueryStep | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "QueryStep", true, DisplayName = "Query | CrossPartitionQueryStep | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadManyStep", true, DisplayName = "ReadMany | ReadManyStep | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", true, DisplayName = "ChangeFeed | ChangeFeedStep | W/O Preferred Regions")]
+        public async Task AvailabilityStrategyStepTests(string operation, string conditonName1, string conditionName2, bool isPreferredRegionsEmpty)
         {
             FaultInjectionCondition conditon1 = this.conditions[conditonName1];
             FaultInjectionCondition conditon2 = this.conditions[conditionName2];
@@ -596,202 +694,149 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US", "East US" },
-                AvailabilityStrategy = new CrossRegionParallelHedgingAvailabilityStrategy(
+                ApplicationPreferredRegions = isPreferredRegionsEmpty ? new List<string>() : new List<string>() { "Central US", "North Central US", "East US" },
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
-            CosmosClient faultInjectionClient = new CosmosClient(
+            using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions));
-
-            Database database = faultInjectionClient.GetDatabase(this.dbName);
-            Container container = database.GetContainer(this.containerName);
-
-            CosmosTraceDiagnostics traceDiagnostic;
-            object hedgeContext;
-            List<string> excludeRegionsList;
-            switch (operation)
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                case "Read":
-                    rule1.Enable();
-                    rule2.Enable();
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
-                    ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
-                        "testId", 
-                        new PartitionKey("pk"));
+                CosmosTraceDiagnostics traceDiagnostic;
+                object hedgeContext;
 
-                    traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-                    excludeRegionsList = excludeRegionsObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
+                switch (operation)
+                {
+                    case "Read":
+                        rule1.Enable();
+                        rule2.Enable();
 
-                    break;
+                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                            "testId",
+                            new PartitionKey("pk"));
 
-                case "SinglePartitionQuery":
-                    string queryString = "SELECT * FROM c";
-
-                    QueryRequestOptions requestOptions = new QueryRequestOptions()
-                    {
-                        PartitionKey = new PartitionKey("pk"),
-                    };
-
-                    FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(queryString),
-                        requestOptions: requestOptions);
-
-                    rule1.Enable();
-                    rule2.Enable();
-
-                    while (queryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
-
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                        traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
+                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    }
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
 
-                    break;
+                        break;
 
-                case "CrossPartitionQuery":
-                    string crossPartitionQueryString = "SELECT * FROM c";
-                    FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                        new QueryDefinition(crossPartitionQueryString));
+                    case "SinglePartitionQuery":
+                        string queryString = "SELECT * FROM c";
 
-                    rule1.Enable();
-                    rule2.Enable();
-
-                    while (crossPartitionQueryIterator.HasMoreResults)
-                    {
-                        FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
-
-                        traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
-                        Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                        traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsQueryObject);
-                        excludeRegionsList = excludeRegionsQueryObject as List<string>;
-                        Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    }
-
-                    break;
-
-                case "ReadMany":
-                    rule1.Enable();
-                    rule2.Enable();
-
-                    FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
-                        new List<(string, PartitionKey)>()
+                        QueryRequestOptions requestOptions = new QueryRequestOptions()
                         {
+                            PartitionKey = new PartitionKey("pk"),
+                        };
+
+                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(queryString),
+                            requestOptions: requestOptions);
+
+                        rule1.Enable();
+                        rule2.Enable();
+
+                        while (queryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "CrossPartitionQuery":
+                        string crossPartitionQueryString = "SELECT * FROM c";
+                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                            new QueryDefinition(crossPartitionQueryString));
+
+                        rule1.Enable();
+                        rule2.Enable();
+
+                        while (crossPartitionQueryIterator.HasMoreResults)
+                        {
+                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+
+                            traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
+                            Assert.IsNotNull(traceDiagnostic);
+                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            Assert.IsNotNull(hedgeContext);
+                            Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+                        }
+
+                        break;
+
+                    case "ReadMany":
+                        rule1.Enable();
+                        rule2.Enable();
+
+                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                            new List<(string, PartitionKey)>()
+                            {
                             ("testId", new PartitionKey("pk")),
                             ("testId2", new PartitionKey("pk2")),
                             ("testId3", new PartitionKey("pk3")),
                             ("testId4", new PartitionKey("pk4"))
-                        });
+                            });
 
-                    traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
-                    Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual("Hedged Request", (string)hedgeContext);
-                    traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsReadManyObject);
-                    excludeRegionsList = excludeRegionsReadManyObject as List<string>;
-                    Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-                    Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
+                        traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
+                        Assert.IsNotNull(traceDiagnostic);
+                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        Assert.IsNotNull(hedgeContext);
+                        Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
 
-                    break;
+                        break;
 
-                case "ChangeFeed":
-                    Container leaseContainer = database.GetContainer(this.changeFeedContainerName);
-                    ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
-                        processorName: "AvialabilityStrategyTest",
-                        onChangesDelegate: HandleChangesStepAsync)
-                        .WithInstanceName("test")
-                        .WithLeaseContainer(leaseContainer)
-                        .Build();
-                    await changeFeedProcessor.StartAsync();
-                    await Task.Delay(1000);
-                    AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
-                    {
-                        Id = "testId5",
-                        Pk = "pk5",
-                        Other = "other"
-                    };
-                    await container.CreateItemAsync<AvailabilityStrategyTestObject>(testObject);
+                    case "ChangeFeed":
+                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                            processorName: "AvialabilityStrategyTest",
+                            onChangesDelegate: HandleChangesStepAsync)
+                            .WithInstanceName("test")
+                            .WithLeaseContainer(leaseContainer)
+                            .Build();
+                        await changeFeedProcessor.StartAsync();
+                        await Task.Delay(1000);
 
-                    rule1.Enable();
-                    rule2.Enable();
+                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        {
+                            Id = "item4",
+                            Pk = "pk4",
+                            Other = Guid.NewGuid().ToString()
+                        };
+                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
 
-                    await Task.Delay(5000);
+                        rule1.Enable();
+                        rule2.Enable();
 
-                    break;
+                        await Task.Delay(5000);
 
-                default: 
-                    Assert.Fail("Invalid operation");
-                    break;
-            }
+                        rule1.Disable();
+                        rule2.Disable();
 
-            rule1.Disable();
-            rule2.Disable();
+                        await changeFeedProcessor.StopAsync();
 
-            faultInjectionClient.Dispose();
-        }
+                        break;
 
-        [TestMethod]
-        [TestCategory("MultiRegion")]
-        public async Task RequestMessageCloneTests()
-        {
-            RequestMessage httpRequest = new RequestMessage(
-                HttpMethod.Get,
-                new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
+                    default:
+                        Assert.Fail("Invalid operation");
+                        break;
+                }
 
-            string key = Guid.NewGuid().ToString();
-            Dictionary<string, object> properties = new Dictionary<string, object>()
-            {
-                { key, Guid.NewGuid() }
-            };
-
-            RequestOptions requestOptions = new RequestOptions()
-            {
-                Properties = properties
-            };
-           
-            httpRequest.RequestOptions = requestOptions;
-            httpRequest.ResourceType = ResourceType.Document;
-            httpRequest.OperationType = OperationType.Read;
-            httpRequest.Headers.CorrelatedActivityId = Guid.NewGuid().ToString();
-            httpRequest.PartitionKeyRangeId = new PartitionKeyRangeIdentity("0", "1");
-            httpRequest.UseGatewayMode = true;
-            httpRequest.ContainerId = "testcontainer";
-            httpRequest.DatabaseId = "testdb";
-            httpRequest.Content = Stream.Null;
-
-            using (CloneableStream clonedBody = await StreamExtension.AsClonableStreamAsync(httpRequest.Content))
-            {
-                RequestMessage clone = httpRequest.Clone(httpRequest.Trace, clonedBody);
-
-                Assert.AreEqual(httpRequest.RequestOptions.Properties, clone.RequestOptions.Properties);
-                Assert.AreEqual(httpRequest.ResourceType, clone.ResourceType);
-                Assert.AreEqual(httpRequest.OperationType, clone.OperationType);
-                Assert.AreEqual(httpRequest.Headers.CorrelatedActivityId, clone.Headers.CorrelatedActivityId);
-                Assert.AreEqual(httpRequest.PartitionKeyRangeId, clone.PartitionKeyRangeId);
-                Assert.AreEqual(httpRequest.UseGatewayMode, clone.UseGatewayMode);
-                Assert.AreEqual(httpRequest.ContainerId, clone.ContainerId);
-                Assert.AreEqual(httpRequest.DatabaseId, clone.DatabaseId);
+                rule1.Disable();
+                rule2.Disable();
             }
         }
 
@@ -807,12 +852,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual("Hedged Request", (string)hedgeContext);
-            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
+            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.centralUS, (string)hedgeContext);
             await Task.Delay(1);
         }
 
@@ -825,20 +867,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Assert.Fail("Change Feed Processor took too long");
             }
-
+            
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreEqual("Hedged Request", (string)hedgeContext);
-            traceDiagnostic.Value.Data.TryGetValue("ExcludedRegions", out object excludeRegionsObject);
-            List<string> excludeRegionsList = excludeRegionsObject as List<string>;
-            Assert.IsTrue(excludeRegionsList.Contains("Central US"));
-            Assert.IsTrue(excludeRegionsList.Contains("North Central US"));
+            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.centralUS, (string)hedgeContext);
+            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
             await Task.Delay(1);
         }
 
-        private class AvailabilityStrategyTestObject
+        internal class AvailabilityStrategyTestObject
         {
 
             [JsonPropertyName("id")]

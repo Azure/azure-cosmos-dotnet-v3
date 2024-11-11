@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Error while collecting cache {0} telemetry. Exception : {1}", cacheName, ex);
+                DefaultTrace.TraceError("Error while collecting cache {0} telemetry. Exception : {1}", cacheName, ex);
             }
         }
 
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError($"Error while collecting operation telemetry. Exception : {1}", ex);
+                DefaultTrace.TraceError("Error while collecting operation telemetry. Exception : {0}", ex);
             }
         }
 

@@ -58,35 +58,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         private JsonNodeType JTokenToJsonNodeType(JToken jToken)
         {
-            switch (jToken.Type)
+            return jToken.Type switch
             {
-                case JTokenType.Object:
-                    return JsonNodeType.Object;
-                case JTokenType.Array:
-                    return JsonNodeType.Array;
-                case JTokenType.Integer:
-                case JTokenType.Float:
-                    return JsonNodeType.Number64;
-                case JTokenType.String:
-                    return JsonNodeType.String;
-                case JTokenType.Boolean:
-                    return ((bool)jToken) ? JsonNodeType.True : JsonNodeType.False;
-                case JTokenType.Null:
-                case JTokenType.Undefined:
-                    return JsonNodeType.Null;
-                case JTokenType.Constructor:
-                case JTokenType.Property:
-                case JTokenType.Comment:
-                case JTokenType.Date:
-                case JTokenType.Raw:
-                case JTokenType.Bytes:
-                case JTokenType.Guid:
-                case JTokenType.Uri:
-                case JTokenType.TimeSpan:
-                    return JsonNodeType.String;
-                default:
-                    throw new InvalidOperationException();
-            }
+                JTokenType.Object => JsonNodeType.Object,
+                JTokenType.Array => JsonNodeType.Array,
+                JTokenType.Integer or JTokenType.Float => JsonNodeType.Number64,
+                JTokenType.String => JsonNodeType.String,
+                JTokenType.Boolean => ((bool)jToken) ? JsonNodeType.True : JsonNodeType.False,
+                JTokenType.Null or JTokenType.Undefined => JsonNodeType.Null,
+                JTokenType.Constructor or JTokenType.Property or JTokenType.Comment or JTokenType.Date or JTokenType.Raw or JTokenType.Bytes or JTokenType.Guid or JTokenType.Uri or JTokenType.TimeSpan => JsonNodeType.String,
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         public override JsonNodeType GetNodeType(IJsonNavigatorNode node)

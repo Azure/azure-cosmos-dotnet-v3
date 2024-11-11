@@ -14,7 +14,7 @@
 
     public class ContractEnforcement
     {
-        private static readonly InvariantComparer invariantComparer = new InvariantComparer();
+        private static readonly InvariantComparer invariantComparer = new();
 
         private static Assembly GetAssemblyLocally(string name)
         {
@@ -71,7 +71,7 @@
             // FullName contains unwanted assembly artifacts like version when it has a generic type
             Type baseType = type.BaseType;
             string baseTypeString = string.Empty;
-            if(baseType != null)
+            if (baseType != null)
             {
                 // Remove assembly info to avoid breaking the contract just from version change
                 baseTypeString = baseType.FullName;
@@ -91,7 +91,10 @@
                 $"{nameof(type.IsValueType)}:{(type.IsValueType ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsNested)}:{(type.IsNested ? bool.TrueString : bool.FalseString)};" +
                 $"{nameof(type.IsGenericType)}:{(type.IsGenericType ? bool.TrueString : bool.FalseString)};" +
+#pragma warning disable SYSLIB0050 // 'Type.IsSerializable' is obsolete: 'Formatter-based serialization is obsolete and should not be used.
                 $"{nameof(type.IsSerializable)}:{(type.IsSerializable ? bool.TrueString : bool.FalseString)}";
+#pragma warning restore SYSLIB0050 // 'Type.IsSerializable' is obsolete: 'Formatter-based serialization is obsolete and should not be used.
+
         }
 
         private static string GenerateNameWithMethodAttributes(MethodInfo methodInfo)
@@ -110,7 +113,7 @@
                 $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
 
             MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
-            if(getMethodInfo != null)
+            if (getMethodInfo != null)
             {
                 name += ContractEnforcement.GenerateNameWithMethodAttributes(getMethodInfo);
             }
@@ -151,12 +154,12 @@
 
                 string methodSignature = null;
 
-                if(memberInfo.Value.MemberType == MemberTypes.Method)
+                if (memberInfo.Value.MemberType == MemberTypes.Method)
                 {
                     MethodInfo methodInfo = (MethodInfo)memberInfo.Value;
                     methodSignature = ContractEnforcement.GenerateNameWithMethodAttributes(methodInfo);
                 }
-                else if(memberInfo.Value.MemberType == MemberTypes.Property)
+                else if (memberInfo.Value.MemberType == MemberTypes.Property)
                 {
                     PropertyInfo propertyInfo = (PropertyInfo)memberInfo.Value;
                     methodSignature = ContractEnforcement.GenerateNameWithPropertyAttributes(propertyInfo);
@@ -200,7 +203,7 @@
             File.WriteAllText($"Contracts/{breakingChangesPath}", localJson);
 
             string baselineJson = GetBaselineContract(baselinePath);
-            ContractEnforcement.ValidateJsonAreSame(localJson, baselineJson);
+            ContractEnforcement.ValidateJsonAreSame(baselineJson, localJson);
         }
 
         public static void ValidateTelemetryContractContainBreakingChanges(
@@ -241,7 +244,7 @@
 
         public static string GetCurrentContract(string dllName)
         {
-            TypeTree locally = new TypeTree(typeof(object));
+            TypeTree locally = new(typeof(object));
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
             Type[] exportedTypes = assembly.GetExportedTypes();
             ContractEnforcement.BuildTypeTree(locally, exportedTypes);
@@ -252,17 +255,17 @@
 
         public static string GetCurrentTelemetryContract(string dllName)
         {
-            List<string> nonTelemetryModels = new List<string>
+            List<string> nonTelemetryModels = new()
             {
                 "AzureVMMetadata",
                 "Compute"
             };
 
-            TypeTree locally = new TypeTree(typeof(object));
+            TypeTree locally = new(typeof(object));
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
-            Type[] exportedTypes = assembly.GetTypes().Where(t => 
-                                                                t!= null && 
-                                                                t.Namespace != null && 
+            Type[] exportedTypes = assembly.GetTypes().Where(t =>
+                                                                t != null &&
+                                                                t.Namespace != null &&
                                                                 t.Namespace.Contains("Microsoft.Azure.Cosmos.Telemetry.Models") &&
                                                                 !nonTelemetryModels.Contains(t.Name))
                                                        .ToArray();
@@ -328,7 +331,10 @@
 
         private class InvariantComparer : IComparer<string>
         {
-            public int Compare(string a, string b) => Comparer.DefaultInvariant.Compare(a, b);
+            public int Compare(string a, string b)
+            {
+                return Comparer.DefaultInvariant.Compare(a, b);
+            }
         }
     }
 }

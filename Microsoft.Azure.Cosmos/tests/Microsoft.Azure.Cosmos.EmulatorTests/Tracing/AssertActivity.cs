@@ -38,28 +38,39 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "az.schema_url",
                      "kind",
                      "db.system",
-                     "db.name",
-                     "db.operation",
+                     "db.namespace",
+                     "db.operation.name",
                      "server.address",
                      "db.cosmosdb.client_id",
-                     "db.cosmosdb.machine_id",
                      "user_agent.original",
                      "db.cosmosdb.connection_mode",
-                     "db.cosmosdb.operation_type",
-                     "db.cosmosdb.container",
-                     "db.cosmosdb.request_content_length_bytes",
-                     "db.cosmosdb.response_content_length_bytes",
-                     "db.cosmosdb.status_code",
+                     "db.collection.name",
+                     "db.cosmosdb.request_content_length",
+                     "db.cosmosdb.response_content_length",
+                     "db.response.status_code",
                      "db.cosmosdb.sub_status_code",
                      "db.cosmosdb.request_charge",
                      "db.cosmosdb.regions_contacted",
                      "db.cosmosdb.item_count",
+                     "db.operation.batch_size",
+                     "db.cosmosdb.activity_id",
+                     "db.cosmosdb.correlated_activity_id",
+                     "db.cosmosdb.consistency_level",
                      "exception.type",
                      "exception.message",
                      "exception.stacktrace",
-                     "db.cosmosdb.activity_id",
-                     "db.cosmosdb.correlated_activity_id",
-                     "error.type"
+                     "db.query.text",
+                     "error.type",
+                     AppInsightClassicAttributeKeys.DbName,
+                     AppInsightClassicAttributeKeys.ContainerName,
+                     AppInsightClassicAttributeKeys.DbOperation,
+                     AppInsightClassicAttributeKeys.ServerAddress,
+                     AppInsightClassicAttributeKeys.StatusCode,
+                     AppInsightClassicAttributeKeys.UserAgent,
+                     AppInsightClassicAttributeKeys.MachineId,
+                     AppInsightClassicAttributeKeys.OperationType,
+                     AppInsightClassicAttributeKeys.ResponseContentLength,
+                     AppInsightClassicAttributeKeys.RequestContentLength
                 };
 
                 foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
@@ -69,7 +80,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
                 }
 
-                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(activity.GetTagItem("db.cosmosdb.status_code"));
+                object statusCodeFromTraces = activity.GetTagItem("db.response.status_code") ?? 
+                                                activity.GetTagItem(AppInsightClassicAttributeKeys.StatusCode);
+                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(statusCodeFromTraces);
                 int subStatusCode = Convert.ToInt32(activity.GetTagItem("db.cosmosdb.sub_status_code"));
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(statusCode, subStatusCode))
                 {
