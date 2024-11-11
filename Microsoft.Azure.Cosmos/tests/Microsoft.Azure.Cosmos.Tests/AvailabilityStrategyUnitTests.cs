@@ -77,7 +77,6 @@
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
             
-            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
             AccountProperties databaseAccount = new AccountProperties()
             {
                 ReadLocationsInternal = new Collection<AccountRegion>()
