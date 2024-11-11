@@ -95,8 +95,8 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual string QueryAdvice
         {
-            get => this.GetValueOrDefault(WFConstants.BackendHeaders.QueryAdvice);
-            set => this.SetProperty(WFConstants.BackendHeaders.QueryAdvice, value);
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.QueryAdvice);
+            set => this.SetProperty(HttpConstants.HttpHeaders.QueryAdvice, value);
         }
 
         public virtual string BackendRequestDurationMilliseconds

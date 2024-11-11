@@ -158,6 +158,9 @@
 			<Generator>TextTemplatingFileGenerator</Generator>
 			<LastGenOutput>JsonBinaryEncoding.SystemStrings.cs</LastGenOutput>
 		</None>
+		<None Update="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 	</ItemGroup>
 
 	<ItemGroup>

@@ -23,25 +23,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 #endif
     sealed class QueryAdvice
     {
-        /// <summary>
-        /// Initializes a new instance of the Query Advice class. 
-        /// </summary>
-        /// <param name="id">The rule id</param>
-        /// <param name="parameters">The parameters associated with the rule id</param>
         [JsonConstructor]
-        public QueryAdvice(
-             string id,
-             IReadOnlyList<string> parameters)
+        public QueryAdvice(IReadOnlyList<SingleQueryAdvice> queryAdvices)
         {
-            this.Id = id;
-            this.Parameters = parameters;
+            this.QueryAdvices = (queryAdvices ?? Enumerable.Empty<SingleQueryAdvice>()).Where(item => item != null).ToList();
         }
 
-        [JsonPropertyAttribute("Id")]
-        public string Id { get; }
-
-        [JsonPropertyAttribute("Params")]
-        public IReadOnlyList<string> Parameters { get; }
+        public IReadOnlyList<SingleQueryAdvice> QueryAdvices { get; }
 
         public static bool TryCreateFromString(string responseHeader, out QueryAdvice result)
         {
@@ -56,16 +44,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
                 // Decode and deserialize the response string
                 string decodedString = System.Web.HttpUtility.UrlDecode(responseHeader, Encoding.UTF8);
 
-                result = JsonConvert.DeserializeObject<QueryAdvice>(decodedString, new JsonSerializerSettings()
+                List<SingleQueryAdvice> queryAdvices = JsonConvert.DeserializeObject<List<SingleQueryAdvice>>(decodedString, new JsonSerializerSettings()
                 {
                     // Allowing null values to be resilient to Json structure change
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     NullValueHandling = NullValueHandling.Ignore,
 
                     // Ignore parsing error encountered in deserialization
-                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
+                    //Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
                 }) ?? null;
 
+                result = new QueryAdvice(queryAdvices);
                 return true;
             }
             catch (JsonException)
@@ -79,35 +68,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
         {
             if (advice == null)
             {
-                return string.Empty;
+                return String.Empty;
             }
 
-            // Load the rule document
-            XDocument ruleDocument = XDocument.Load("QueryAdviceRuleDocumentation.xml");
-
-            // Find the corresponding rule in the document
-            XElement rule = ruleDocument.Descendants("Rule")
-                .Where(r => r.Attribute("Id").Value == advice.Id)
-                .FirstOrDefault();
-
-            if (rule == null)
+            string result = String.Empty;
+            foreach (SingleQueryAdvice singleQueryAdvice in advice.QueryAdvices)
             {
-                return string.Empty;
+                string singleQueryAdviceString = SingleQueryAdvice.ToString(singleQueryAdvice);
+                result += singleQueryAdviceString + "\n";
             }
 
-            // Generate the help link
-            string helpLink = " For more information, please visit " + ruleDocument.Element("UrlPrefix").Value + advice.Id;
-
-            // Format message with parameters if available
-            string message = rule.Element("Message").Value;
-            if (advice.Parameters == null || advice.Parameters.Count == 0)
-            {
-                return message + helpLink;
-            }
-            else
-            {
-                return string.Format(message, advice.Parameters.ToArray()) + helpLink;
-            }
+            return result;
         }
     }
 }

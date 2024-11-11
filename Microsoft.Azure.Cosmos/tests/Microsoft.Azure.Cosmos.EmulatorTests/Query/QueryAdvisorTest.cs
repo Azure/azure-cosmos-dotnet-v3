@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 string query = string.Format("SELECT VALUE r.id FROM root r WHERE CONTAINS(r.name, \"Abc\") ");
 
                 // Test using GetItemQueryIterator
-                QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateQueryAdvice = true };
+                QueryRequestOptions requestOptions = new QueryRequestOptions() { PopulateQueryAdvice = true, PopulateIndexMetrics = true};
 
                 FeedIterator<CosmosElement> itemQuery = container.GetItemQueryIterator<CosmosElement>(
                     query,
@@ -50,10 +50,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 while (itemQuery.HasMoreResults)
                 {
                     FeedResponse<CosmosElement> page = await itemQuery.ReadNextAsync();
-                    Assert.IsTrue(page.Headers.AllKeys().Length > 1);
-                    Assert.IsNotNull(page.Headers.QueryAdvice, "Expected query advice header for query");
+                    
+                    Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.QueryAdvice), "Expected query advice header for query");
                     Assert.IsNotNull(page.QueryAdvice, "Expected query advice text for query");
-                    Console.WriteLine(page.QueryAdvice);
                 }
 
                 // Test using Stream API
