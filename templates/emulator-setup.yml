@@ -1,16 +1,69 @@
-parameters:
-  EmulatorInstallPath: "$(Agent.HomeDirectory)/../../Program Files/Azure Cosmos DB Emulator/Microsoft.Azure.Cosmos.Emulator.exe"
-  EmulatorMsiUrl: "https://aka.ms/cosmosdb-emulator"
-  StartParameters: ''
+# File: templates/emulator-setup.yml
 
 steps:
-  - task: Powershell@2
-    inputs:
-      filePath: $(Build.SourcesDirectory)/templates/Cosmos-Emulator.ps1
-      arguments: >
-        -EmulatorMsiUrl "${{ parameters.EmulatorMsiUrl }}"
-        -StartParameters "${{ parameters.StartParameters }}"
-        -Emulator "${{ parameters.EmulatorInstallPath }}"
-        -Stage "Launch"
-      pwsh: true
-    displayName: Launch Public Cosmos DB Emulator
+  - pwsh: |
+      Write-Host "Downloading Cosmos Emulator - https://aka.ms/cosmosdbemulator-internal" -ForegroundColor green 
+      Invoke-WebRequest https://aka.ms/cosmosdbemulator-internal -OutFile "$env:temp\azure-cosmosdb-emulator.msi"
+      Write-Host "Finished Downloading Cosmos Emulator - $env:temp\azure-cosmosdb-emulator.msi" -ForegroundColor green 
+      dir "$env:temp" 
+
+      function Remove-DirectoryIfExists {
+          param ([string]$Path)
+
+          if (Test-Path -Path $Path -PathType Container) {
+            Remove-Item -Path $Path -Recurse -Force
+            Write-Output "Folder deleted: $Path"
+          } else {
+            Write-Output "Folder does not exist: $Path"
+          }
+      }
+
+      $lessMsiDir="$env:temp\lessmsi"
+      $emulatorDir="$env:temp\Azure Cosmos DB Emulator\"
+
+      Remove-DirectoryIfExists -Path $lessMsiDir
+      Remove-DirectoryIfExists -Path $emulatorDir
+
+      Expand-Archive -LiteralPath 'tools\lessmsi-v2.1.1.zip' -DestinationPath $lessMsiDir
+      &"$env:temp\lessmsi\lessmsi.exe" x "$env:temp\azure-cosmosdb-emulator.msi" "$emulatorDir"
+
+      Add-MpPreference -ExclusionPath "$emulatorDir\SourceDir\Azure Cosmos DB Emulator"
+      Add-MpPreference -ExclusionPath "$env:localappdata\CosmosDBEmulator"
+    displayName: Downloading and Installing Cosmos DB Emulator
+    failOnStderr: true
+    errorActionPreference: stop
+  - pwsh: |
+      Write-Host "Starting Cosmos DB Emulator" -ForegroundColor green 
+      Import-Module "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\PSModules\Microsoft.Azure.CosmosDB.Emulator"
+      Get-Item env:* | Sort-Object -Property Name
+
+      for ($j=0; $j -lt 3; $j++) {
+        Write-Host "Attempt $j"
+        Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/NoExplorer /NoUI /DisableRateLimiting /PartitionCount=10 /Consistency=Strong /EnablePreview /EnableSqlComputeEndpoint /overrides=enablePreviousImageForDeleteInFFCF:true;queryEnableFullText:true;" -Verb RunAs
+        for ($i=0; $i -lt (3+2*$j); $i++) {
+          $status = Get-CosmosDbEmulatorStatus
+          Write-Host "Cosmos DB Emulator Status: $status"
+          if ($status -ne "Running") {
+            sleep 30;
+          }
+          else {
+            break;
+          }
+        }
+        if ($status -ne "Running") {
+          Write-Host "Shutting down and restarting"
+          Start-Process "$env:temp\Azure Cosmos DB Emulator\SourceDir\Azure Cosmos DB Emulator\CosmosDB.Emulator.exe" "/Shutdown" -Verb RunAs
+          sleep 30;
+        }
+        else {
+          break;
+        }
+      }
+
+      if ($status -ne "Running") {
+        Write-Error "Emulator failed to start"
+      }
+
+    displayName: Waiting for Cosmos DB Emulator status
+    failOnStderr: true
+    errorActionPreference: stop
