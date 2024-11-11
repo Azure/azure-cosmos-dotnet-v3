@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     continue;
                 }
-                
+
                 foreach (KeyValuePair<Documents.OperationType, bool> entry in ValidationHelpersTest.GetPerOperationExpectations())
                 {
                     bool result = ValidationHelpers.IsValidConsistencyLevelOverwrite(backendConsistencyLevel,

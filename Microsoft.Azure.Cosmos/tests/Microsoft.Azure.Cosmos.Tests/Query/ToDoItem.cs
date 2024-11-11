@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Text;
-using Microsoft.Azure.Documents;
-
-namespace Microsoft.Azure.Cosmos.Tests
+﻿namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.Text;
+    using Microsoft.Azure.Documents;
+
     internal class ToDoItem
     {
         public string id { get; set; }
@@ -18,10 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         public static ToDoItem Create(string idPrefix, ResourceId itemRid = null)
         {
-            if(idPrefix == null)
-            {
-                idPrefix = string.Empty;
-            }
+            idPrefix ??= string.Empty;
 
             string id = idPrefix + Guid.NewGuid().ToString();
 
@@ -37,20 +34,20 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         public static IList<ToDoItem> CreateItems(
-            int count, 
-            string idPrefix, 
+            int count,
+            string idPrefix,
             string containerRid = null)
         {
             List<ToDoItem> items = new List<ToDoItem>();
             for (uint i = 0; i < count; i++)
             {
                 ResourceId rid = null;
-                if(containerRid != null)
+                if (containerRid != null)
                 {
                     // id 0 returns null for resource id
-                    rid = ToDoItem.NewDocumentId(containerRid, i+1);
+                    rid = ToDoItem.NewDocumentId(containerRid, i + 1);
                 }
-                
+
                 items.Add(ToDoItem.Create(idPrefix, rid));
             }
 
@@ -83,15 +80,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 return 0;
             }
 
-            ToDoItem a = x as ToDoItem;
-            ToDoItem b = y as ToDoItem;
-
-            if(a == null || b == null)
+            if (x is not ToDoItem a || y is not ToDoItem b)
             {
                 throw new ArgumentException("Invalid type");
             }
 
-            if(a.isDone != b.isDone
+            if (a.isDone != b.isDone
                 || a.count != b.count
                 || a.cost != b.cost
                 || !string.Equals(a.id, b.id)

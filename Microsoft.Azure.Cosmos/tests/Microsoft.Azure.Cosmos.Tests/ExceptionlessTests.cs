@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private static readonly Uri resourceUri = new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute);
 
-        [TestMethod]        
+        [TestMethod]
         [ExpectedException(typeof(NotFoundException))]
         public void TransportClient_DoesThrowFor404WithReadSessionNotAvailable_WithUseStatusCodeForFailures()
         {
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]        
+        [TestMethod]
         [DataRow((int)HttpStatusCode.NotFound)]
         [DataRow((int)HttpStatusCode.PreconditionFailed)]
         [DataRow((int)HttpStatusCode.Conflict)]
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]        
+        [TestMethod]
         public void TransportClient_DoesNotThrowFor429_WithUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =
@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]        
+        [TestMethod]
         public async Task GatewayStoreClient_DoesNotThrowFor429_WithUseStatusCodeFor429()
         {
             using (DocumentServiceRequest request =
@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private static ServerStoreModel MockServerStoreModel(
-            object sessionContainer, 
+            object sessionContainer,
             Func<TransportAddressUri, DocumentServiceRequest, StoreResponse> sendDirectFunc)
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// Sends a request with a particular response status code through the GatewayStoreModel
         /// </summary>
         private static async Task GatewayStoreClientRunScenario(
-            DocumentServiceRequest request, 
+            DocumentServiceRequest request,
             int responseStatusCode)
         {
             async Task<HttpResponseMessage> sendFunc(HttpRequestMessage httpRequest)
@@ -376,12 +376,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// <summary>
         /// This TransportHandler sends the request and watches for DocumentClientExceptions and set a readable flag.
         /// </summary>
-        private class MockTransportHandler: TransportHandler
+        private class MockTransportHandler : TransportHandler
         {
             public bool ProcessMessagesAsyncThrew { get; private set; }
             public int SendAsyncCalls { get; private set; }
 
-            public MockTransportHandler(CosmosClient client): base(client)
+            public MockTransportHandler(CosmosClient client) : base(client)
             {
             }
 

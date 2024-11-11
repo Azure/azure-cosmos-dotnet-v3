@@ -142,7 +142,7 @@
 
                     await Task.Delay(TimeSpan.FromMilliseconds(50));
                 }
-                
+
                 Assert.IsTrue(getList(datum).Count() > count, "Background task never updated the list.");
             }
 

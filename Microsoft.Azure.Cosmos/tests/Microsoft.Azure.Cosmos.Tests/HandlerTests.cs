@@ -515,7 +515,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
                 .Add(item.city)
                 .Build();
-            
+
             await HandlerTests.TestResolveFeedRangeBasedOnPrefixAsync<FeedRangePartitionKey>(
                 partitionKeyDefinition: new PartitionKeyDefinition()
                 {
@@ -622,7 +622,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockContainer.Verify(x => x.GetPartitionKeyDefinitionAsync(Moq.It.IsAny<CancellationToken>()), getPartitionKeyDefinitionAsyncExecutions);
 
             Assert.IsNotNull(feedRange, "FeedRange did not initialize");
-            
+
             Assert.IsInstanceOfType(
                 value: feedRange,
                 expectedType: typeof(TFeedRange));

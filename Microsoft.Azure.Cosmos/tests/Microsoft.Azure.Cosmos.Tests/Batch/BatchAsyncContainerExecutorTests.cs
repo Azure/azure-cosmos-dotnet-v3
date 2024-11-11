@@ -258,8 +258,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private static async Task<ResponseMessage> GenerateResponseAsync(
-            ItemBatchOperation itemBatchOperation, 
-            HttpStatusCode httpStatusCode, 
+            ItemBatchOperation itemBatchOperation,
+            HttpStatusCode httpStatusCode,
             SubStatusCodes subStatusCode)
         {
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>();
@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
                .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, Tuple<string, Func<object, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
-                (operationName,containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             mockContext.Setup(x => x.Client).Returns(MockCosmosUtil.CreateMockCosmosClient());
 

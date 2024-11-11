@@ -24,9 +24,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void BaselineTest()
         {
-            foreach (byte[] test in new[] 
-            { 
-                Properties.Resources.BaselineTest_PathParser, 
+            foreach (byte[] test in new[]
+            {
+                Properties.Resources.BaselineTest_PathParser,
                 Properties.Resources.BaselineTest_PathParser_Extra,
             })
             {
