@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0"                    , token);
+                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
                 Assert.IsNull(payload);
             }
 
@@ -342,8 +342,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 try
                 {
                     await semaphoreSlim.WaitAsync();
-                
-                    Assert.AreEqual(semaphoreCount-1, semaphoreSlim.CurrentCount, "Only a single refresh should occur at a time.");
+
+                    Assert.AreEqual(semaphoreCount - 1, semaphoreSlim.CurrentCount, "Only a single refresh should occur at a time.");
                     if (throwExceptionOnGetToken)
                     {
                         throw exception;
@@ -409,7 +409,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     });
                     tasks.Add(task);
                 }
-                
+
                 await Task.WhenAll(tasks);
 
                 this.ValidateSemaphoreIsReleased(tokenCredentialCache);

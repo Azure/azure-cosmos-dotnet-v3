@@ -59,7 +59,7 @@
         {
             // Arrange and Act.
             Stream serializedStream = this.stjSerializer.ToStream<bool>(booleanValue);
-            bool deserializedValue= this.stjSerializer.FromStream<bool>(serializedStream);
+            bool deserializedValue = this.stjSerializer.FromStream<bool>(serializedStream);
 
             // Assert.
             if (booleanValue)

@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                             .ReadItem("someId");
 
                 await BatchUnitTests.VerifyExceptionThrownOnExecuteAsync(
-                    batch, 
+                    batch,
                     typeof(ArgumentException),
                     ClientResources.BatchRequestOptionNotSupported,
                     batchOptions);
@@ -400,11 +400,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void FromItemRequestOptions_WithCustomValues()
         {
-            ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
-            itemRequestOptions.IfMatchEtag = Guid.NewGuid().ToString();
-            itemRequestOptions.IfNoneMatchEtag = Guid.NewGuid().ToString();
-            itemRequestOptions.IndexingDirective = Cosmos.IndexingDirective.Exclude;
-            itemRequestOptions.Properties = new Dictionary<string, object>() { { "test", "test" } };
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions
+            {
+                IfMatchEtag = Guid.NewGuid().ToString(),
+                IfNoneMatchEtag = Guid.NewGuid().ToString(),
+                IndexingDirective = Cosmos.IndexingDirective.Exclude,
+                Properties = new Dictionary<string, object>() { { "test", "test" } }
+            };
 
             TransactionalBatchItemRequestOptions batchItemRequestOptions = TransactionalBatchItemRequestOptions.FromItemRequestOptions(itemRequestOptions);
             Assert.AreEqual(itemRequestOptions.IfMatchEtag, batchItemRequestOptions.IfMatchEtag);
@@ -509,16 +511,9 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static Container GetContainer(TestHandler testHandler = null)
         {
-            CosmosClient client;
-            if (testHandler != null)
-            {
-                client = MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler));
-            }
-            else
-            {
-                client = MockCosmosUtil.CreateMockCosmosClient();
-            }
-
+            CosmosClient client = testHandler != null
+                ? MockCosmosUtil.CreateMockCosmosClient((builder) => builder.AddCustomHandlers(testHandler))
+                : MockCosmosUtil.CreateMockCosmosClient();
             DatabaseInternal database = new DatabaseInlineCore(client.ClientContext, BatchUnitTests.DatabaseId);
             ContainerInternal container = new ContainerInlineCore(client.ClientContext, database, BatchUnitTests.ContainerId);
             return container;
@@ -564,7 +559,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     UriKind.Relative);
                 Assert.AreEqual(expectedRequestUri, request.RequestUri);
             }
-       }
+        }
 
         private class TestItem
         {

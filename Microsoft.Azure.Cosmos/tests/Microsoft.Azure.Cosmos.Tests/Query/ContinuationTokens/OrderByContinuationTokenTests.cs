@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos.Query
         [TestMethod]
         public void TestSqlQueryResumeValueRoundTrip()
         {
-            (CosmosElement orderByValue, string resumeValueString)[] testValues = new(CosmosElement orderByValue, string resumeValueString)[] {
+            (CosmosElement orderByValue, string resumeValueString)[] testValues = new (CosmosElement orderByValue, string resumeValueString)[] {
                 (CosmosUndefined.Create(), "[]"),
                 (CosmosNull.Create(), "null"),
                 (CosmosBoolean.Create(true), "true"),
@@ -266,11 +266,11 @@ namespace Microsoft.Azure.Cosmos.Query
                 CosmosObject.Parse("{\"num1\":100, \"num2\":2000, \"str\":\"asdf\"}")
             };
 
-            for(int i = 0; i < orderedValues.Length; i++)
+            for (int i = 0; i < orderedValues.Length; i++)
             {
                 SqlQueryResumeValue resumeValue = SqlQueryResumeValue.FromOrderByValue(orderedValues[i]);
 
-                for(int j = 0; j < orderedValues.Length; j++)
+                for (int j = 0; j < orderedValues.Length; j++)
                 {
                     int cosmosElementCompareResult = orderedValues[i].CompareTo(orderedValues[j]);
                     int resumeValueCompareResult = resumeValue.CompareTo(orderedValues[j]);

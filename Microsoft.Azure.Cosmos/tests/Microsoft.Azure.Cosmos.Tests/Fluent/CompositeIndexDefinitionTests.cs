@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                 Assert.AreEqual(2, paths.Count);
                 Assert.AreEqual("/path1", paths[0].Path);
                 Assert.AreEqual("/path2", paths[1].Path);
-                Assert.AreEqual(CompositePathSortOrder.Descending, paths[1].Order);                
+                Assert.AreEqual(CompositePathSortOrder.Descending, paths[1].Order);
             };
 
             CompositeIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>> compositeIndexFluentDefinitionCore = new CompositeIndexDefinition<IndexingPolicyDefinition<ContainerBuilder>>(

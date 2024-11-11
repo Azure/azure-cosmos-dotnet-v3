@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string itemId = "1";
             string partitionKey = "1";
-            
+
             List<KeyValuePair<string, DocumentServiceLease>> state = new List<KeyValuePair<string, DocumentServiceLease>>();
 
             DocumentServiceLeaseCore leaseToUpdate = new DocumentServiceLeaseCore();
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         {
             string itemId = "1";
             string partitionKey = "1";
-            
+
             List<KeyValuePair<string, DocumentServiceLease>> state = new List<KeyValuePair<string, DocumentServiceLease>>()
             {
                 new KeyValuePair<string, DocumentServiceLease>( itemId, new DocumentServiceLeaseCore() )

@@ -7,14 +7,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Text;
-    using System.Globalization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements;
 
     [TestClass]
     public class JsonNavigatorTests
@@ -341,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             Guid[] values = new Guid[] { Guid.Empty, Guid.NewGuid() };
             foreach (Guid value in values)
             {
-                string input = $"G{value.ToString()}";
+                string input = $"G{value}";
                 JsonNavigatorTests.VerifyNavigator(input);
             }
         }
@@ -567,62 +567,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private static JsonToken[] GetTokensFromNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
         {
             JsonNodeType nodeType = navigator.GetNodeType(node);
-            switch (nodeType)
+            return nodeType switch
             {
-                case JsonNodeType.Null:
-                    return new JsonToken[] { JsonToken.Null() };
-
-                case JsonNodeType.False:
-                    return new JsonToken[] { JsonToken.Boolean(false) };
-
-                case JsonNodeType.True:
-                    return new JsonToken[] { JsonToken.Boolean(true) };
-
-                case JsonNodeType.Number64:
-                    return new JsonToken[] { JsonToken.Number(navigator.GetNumber64Value(node)) };
-
-                case JsonNodeType.String:
-                    return new JsonToken[] { JsonToken.String(navigator.GetStringValue(node)) };
-
-                case JsonNodeType.Array:
-                    return JsonNavigatorTests.GetTokensFromArrayNode(node, navigator, performCorrectnessCheck);
-
-                case JsonNodeType.Object:
-                    return JsonNavigatorTests.GetTokensFromObjectNode(node, navigator, performCorrectnessCheck);
-
-                case JsonNodeType.FieldName:
-                    return new JsonToken[] { JsonToken.FieldName(navigator.GetStringValue(node)) };
-
-                case JsonNodeType.Int8:
-                    return new JsonToken[] { JsonToken.Int8(navigator.GetInt8Value(node)) };
-
-                case JsonNodeType.Int16:
-                    return new JsonToken[] { JsonToken.Int16(navigator.GetInt16Value(node)) };
-
-                case JsonNodeType.Int32:
-                    return new JsonToken[] { JsonToken.Int32(navigator.GetInt32Value(node)) };
-
-                case JsonNodeType.Int64:
-                    return new JsonToken[] { JsonToken.Int64(navigator.GetInt64Value(node)) };
-
-                case JsonNodeType.UInt32:
-                    return new JsonToken[] { JsonToken.UInt32(navigator.GetUInt32Value(node)) };
-
-                case JsonNodeType.Float32:
-                    return new JsonToken[] { JsonToken.Float32(navigator.GetFloat32Value(node)) };
-
-                case JsonNodeType.Float64:
-                    return new JsonToken[] { JsonToken.Float64(navigator.GetFloat64Value(node)) };
-
-                case JsonNodeType.Guid:
-                    return new JsonToken[] { JsonToken.Guid(navigator.GetGuidValue(node)) };
-
-                case JsonNodeType.Binary:
-                    return new JsonToken[] { JsonToken.Binary(navigator.GetBinaryValue(node)) };
-
-                default:
-                    throw new InvalidOperationException();
-            }
+                JsonNodeType.Null => new JsonToken[] { JsonToken.Null() },
+                JsonNodeType.False => new JsonToken[] { JsonToken.Boolean(false) },
+                JsonNodeType.True => new JsonToken[] { JsonToken.Boolean(true) },
+                JsonNodeType.Number64 => new JsonToken[] { JsonToken.Number(navigator.GetNumber64Value(node)) },
+                JsonNodeType.String => new JsonToken[] { JsonToken.String(navigator.GetStringValue(node)) },
+                JsonNodeType.Array => JsonNavigatorTests.GetTokensFromArrayNode(node, navigator, performCorrectnessCheck),
+                JsonNodeType.Object => JsonNavigatorTests.GetTokensFromObjectNode(node, navigator, performCorrectnessCheck),
+                JsonNodeType.FieldName => new JsonToken[] { JsonToken.FieldName(navigator.GetStringValue(node)) },
+                JsonNodeType.Int8 => new JsonToken[] { JsonToken.Int8(navigator.GetInt8Value(node)) },
+                JsonNodeType.Int16 => new JsonToken[] { JsonToken.Int16(navigator.GetInt16Value(node)) },
+                JsonNodeType.Int32 => new JsonToken[] { JsonToken.Int32(navigator.GetInt32Value(node)) },
+                JsonNodeType.Int64 => new JsonToken[] { JsonToken.Int64(navigator.GetInt64Value(node)) },
+                JsonNodeType.UInt32 => new JsonToken[] { JsonToken.UInt32(navigator.GetUInt32Value(node)) },
+                JsonNodeType.Float32 => new JsonToken[] { JsonToken.Float32(navigator.GetFloat32Value(node)) },
+                JsonNodeType.Float64 => new JsonToken[] { JsonToken.Float64(navigator.GetFloat64Value(node)) },
+                JsonNodeType.Guid => new JsonToken[] { JsonToken.Guid(navigator.GetGuidValue(node)) },
+                JsonNodeType.Binary => new JsonToken[] { JsonToken.Binary(navigator.GetBinaryValue(node)) },
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         private static JsonToken[] GetTokensFromObjectNode(IJsonNavigatorNode node, IJsonNavigator navigator, bool performCorrectnessCheck)
@@ -643,9 +608,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             if (performCorrectnessCheck)
             {
                 // Get the tokens again through .TryGetObjectProperty
-                List<JsonToken> tokensFromTryGetProperty = new List<JsonToken>();
-
-                tokensFromTryGetProperty.Add(JsonToken.ObjectStart());
+                List<JsonToken> tokensFromTryGetProperty = new List<JsonToken>
+                {
+                    JsonToken.ObjectStart()
+                };
                 foreach (ObjectProperty objectProperty in properties)
                 {
                     string fieldname = navigator.GetStringValue(objectProperty.NameNode);
@@ -684,8 +650,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             if (performCorrectnessCheck)
             {
                 // Get tokens once again through indexer
-                List<JsonToken> tokensFromIndexer = new List<JsonToken>();
-                tokensFromIndexer.Add(JsonToken.ArrayStart());
+                List<JsonToken> tokensFromIndexer = new List<JsonToken>
+                {
+                    JsonToken.ArrayStart()
+                };
 
                 int itemCount = navigator.GetArrayItemCount(node);
                 for (int i = 0; i < itemCount; ++i)

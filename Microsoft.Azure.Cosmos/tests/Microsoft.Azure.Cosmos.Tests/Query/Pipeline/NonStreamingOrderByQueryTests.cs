@@ -4,29 +4,29 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Threading.Tasks;
-    using System.Threading;
-    using System;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
 
     [TestClass]
     public class NonStreamingOrderByQueryTests
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const string HitCounts = "hitCounts";
 
-        private static readonly int[] PageSizes = new [] { 1, 10, 100, DocumentCount };
+        private static readonly int[] PageSizes = new[] { 1, 10, 100, DocumentCount };
 
         [TestMethod]
         public async Task InMemoryContainerParityTests()

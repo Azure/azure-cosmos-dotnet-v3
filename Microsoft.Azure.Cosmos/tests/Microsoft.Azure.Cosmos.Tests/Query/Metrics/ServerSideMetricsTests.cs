@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
 {
     using System;
-    using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
+    using VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ServerSideMetricsTests
@@ -72,25 +72,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds}";
 
             ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
-                default(long),
-                default(long),
-                default(long),
-                default(long),
-                default(double),
+                default,
+                default,
+                default,
+                default,
+                default,
                 totalExecutionTime,
                 new QueryPreparationTimesInternal(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan),
-                default(TimeSpan),
-                default(TimeSpan),
+                    default,
+                    default,
+                    default,
+                    default),
+                default,
+                default,
+                default,
                 new RuntimeExecutionTimesInternal(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan));
+                    default,
+                    default,
+                    default),
+                default);
 
             ServerSideMetricsTests.ValidateParse(delimitedString, expected);
         }
@@ -100,25 +100,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         {
             string delimitedString = $"thisIsNotAKnownField=asdf";
             ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
-                default(long),
-                default(long),
-                default(long),
-                default(long),
-                default(double),
-                default(TimeSpan),
+                default,
+                default,
+                default,
+                default,
+                default,
+                default,
                 new QueryPreparationTimesInternal(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan),
-                default(TimeSpan),
-                default(TimeSpan),
+                    default,
+                    default,
+                    default,
+                    default),
+                default,
+                default,
+                default,
                 new RuntimeExecutionTimesInternal(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan));
+                    default,
+                    default,
+                    default),
+                default);
 
             ServerSideMetricsTests.ValidateParse(delimitedString, expected);
         }
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
         [DataRow("totalExecutionTimeInMs=33.6+totalExecutionTimeInMs=33.6", DisplayName = "Wrong Delimiter")]
         public void TestNegativeCases(string delimitedString)
         {
-            Assert.IsFalse(ServerSideMetricsParser.TryParse(delimitedString, out ServerSideMetricsInternal serverSideMetrics));
+            Assert.IsFalse(ServerSideMetricsParser.TryParse(delimitedString, out _));
         }
 
         [TestMethod]
@@ -137,25 +137,25 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
             TimeSpan totalExecutionTime = TimeSpan.FromTicks((long)(TimeSpan.TicksPerMillisecond * 33.67));
             string delimitedString = $"totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds};thisIsNotAKnownField={totalExecutionTime.TotalMilliseconds};totalExecutionTimeInMs={totalExecutionTime.TotalMilliseconds}";
             ServerSideMetricsInternal expected = new ServerSideMetricsInternal(
-                default(long),
-                default(long),
-                default(long),
-                default(long),
-                default(double),
+                default,
+                default,
+                default,
+                default,
+                default,
                 totalExecutionTime,
                 new QueryPreparationTimesInternal(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan),
-                default(TimeSpan),
-                default(TimeSpan),
+                    default,
+                    default,
+                    default,
+                    default),
+                default,
+                default,
+                default,
                 new RuntimeExecutionTimesInternal(
-                    default(TimeSpan),
-                    default(TimeSpan),
-                    default(TimeSpan)),
-                default(TimeSpan));
+                    default,
+                    default,
+                    default),
+                default);
 
             ServerSideMetricsTests.ValidateParse(delimitedString, expected);
         }
