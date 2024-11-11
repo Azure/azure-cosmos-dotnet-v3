@@ -8,18 +8,18 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Text;
-    using System.Linq;
     using System.IO;
+    using System.Linq;
+    using System.Net;
     using System.Net.Http;
+    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Net;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
 
 
     public static class MockSetupsHelper
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     MaxReplicaSetSize = 4
                 }
             };
-            
+
 
             Uri endpointUri = new Uri($"https://{accountName}.documents.azure.com");
             mockHttpHandler.Setup(x => x.SendAsync(
@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int[] ports = new int[replicaIds.Count];
             string basePhysicalUri = "rntbd://cdb-ms-prod-{0}-fd4.documents.azure.com:{1}/apps/9dc0394e-d25f-4c98-baa5-72f1c700bf3e/services/060067c7-a4e9-4465-a412-25cb0104cb58/partitions/2cda760c-f81f-4094-85d0-7bcfb2acc4e6/replicas/{2}";
 
-            for (int i=0; i< replicaIds.Count; i++)
+            for (int i = 0; i < replicaIds.Count; i++)
             {
                 ports[i] = initialPort++;
             }
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Address> addresses = new List<Address>();
             for (int i = 0; i < replicaIds.Count; i++)
             {
-                string repliaId = replicaIds[i] + (i == 0 ? "p":"s") + "/";
+                string repliaId = replicaIds[i] + (i == 0 ? "p" : "s") + "/";
                 addresses.Add(new Address()
                 {
                     IsPrimary = i == 0,
@@ -376,7 +376,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 { "Addresss", JArray.FromObject(addresses) }
             };
 
-            Uri addressUri = new Uri($"{regionEndpoint }//addresses/?$resolveFor=dbs{HttpUtility.UrlEncode($"/{databaseRid}/colls/{containerRid}/docs")}&$filter=protocol eq rntbd&$partitionKeyRangeIds={partitionKeyRangeId}");
+            Uri addressUri = new Uri($"{regionEndpoint}//addresses/?$resolveFor=dbs{HttpUtility.UrlEncode($"/{databaseRid}/colls/{containerRid}/docs")}&$filter=protocol eq rntbd&$partitionKeyRangeIds={partitionKeyRangeId}");
             mockHttpHandler.Setup(x => x.SendAsync(It.Is<HttpRequestMessage>(x => x.RequestUri == addressUri), It.IsAny<CancellationToken>()))
                .Returns(() => Task.FromResult(new HttpResponseMessage()
                {

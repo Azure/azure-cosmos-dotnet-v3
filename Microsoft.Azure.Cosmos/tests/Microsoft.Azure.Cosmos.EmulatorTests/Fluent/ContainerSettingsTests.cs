@@ -683,7 +683,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore("This test will be enabled once the full text search changes are made available into the public emulator.")]
         public async Task TestFullTextSearchPolicy()
         {
             string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
@@ -758,7 +757,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [Ignore("This test will be enabled once the full text search changes are made available into the public emulator.")]
         public async Task TestFullTextSearchPolicyWithDefaultLanguage()
         {
             string fullTextPath1 = "/fts1";
@@ -774,7 +772,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     await databaseForVectorEmbedding.DefineContainer(containerName, partitionKeyPath)
                         .WithFullTextPolicy(
                             defaultLanguage: "en-US",
-                            fullTextPaths: new Collection<FullTextPath>())
+                            fullTextPaths: new Collection<FullTextPath>() {  new FullTextPath()
+                            {
+                                Language = "en-US",
+                                Path = fullTextPath1
+                            }})
                         .Attach()
                         .WithIndexingPolicy()
                             .WithFullTextIndex()
@@ -791,7 +793,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 // Validate FullText Paths.
                 Assert.IsNotNull(containerSettings.FullTextPolicy);
                 Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
-                Assert.AreEqual(0, containerSettings.FullTextPolicy.FullTextPaths.Count());
+                Assert.AreEqual(1, containerSettings.FullTextPolicy.FullTextPaths.Count());
 
                 // Validate Full Text Indexes.
                 Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);

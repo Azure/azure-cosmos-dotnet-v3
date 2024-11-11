@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Documents.ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>,Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
             containerMock.Setup(c => c.Id).Returns("containerId");
             containerMock.Setup(c => c.Database.Id).Returns("databaseId");
-            
+
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 mode: ChangeFeedMode.LatestVersion,
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
             containerMock.Setup(c => c.Id).Returns("containerId");
             containerMock.Setup(c => c.Database.Id).Returns("databaseId");
-            
+
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 mode: ChangeFeedMode.AllVersionsAndDeletes,
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             containerMock.Setup(c => c.LinkUri).Returns("http://localhot");
             containerMock.Setup(c => c.Id).Returns("containerId");
             containerMock.Setup(c => c.Database.Id).Returns("databaseId");
-            
+
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,
                 mode: ChangeFeedMode.LatestVersion,
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             containerMock.Setup(c => c.Database.Id).Returns("databaseId");
 
             MockDocumentClient mockDocumentClient = new MockDocumentClient();
-            mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);          
+            mockContext.Setup(c => c.DocumentClient).Returns(mockDocumentClient);
 
             ChangeFeedPartitionKeyResultSetIteratorCore iterator = ChangeFeedPartitionKeyResultSetIteratorCore.Create(
                 lease: documentServiceLeaseCore,

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using Microsoft.Azure.Cosmos.Core.Utf8;
+    using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     /// <summary>
     /// Partial JsonReader with a private JsonBinaryReader implementation
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.String,       // StrR2 (Reference string of 2-byte offset)
             JsonTokenType.String,       // StrR3 (Reference string of 3-byte offset)
             JsonTokenType.String,       // StrR4 (Reference string of 4-byte offset)
-            JsonTokenType.NotStarted,   // <empty> 0xC7
+            JsonTokenType.Number,       // NumUI64
 
             // Number Values
             JsonTokenType.Number,       // NumUI8
@@ -99,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.Number,       // NumDbl,
             JsonTokenType.Float32,      // Float32
             JsonTokenType.Float64,      // Float64
-            JsonTokenType.NotStarted,   // <empty> 0xCF
+            JsonTokenType.NotStarted,   // Float16
 
             // Other Value Types
             JsonTokenType.Null,         // Null
@@ -109,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.NotStarted,   // <empty> 0xD4
             JsonTokenType.NotStarted,   // <empty> 0xD5
             JsonTokenType.NotStarted,   // <empty> 0xD6
-            JsonTokenType.NotStarted,   // <empty> 0xD7
+            JsonTokenType.UInt8,        // UInt8
 
             JsonTokenType.Int8,         // Int8
             JsonTokenType.Int16,        // Int16
@@ -140,11 +141,11 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonTokenType.BeginObject,  // ObjLC2 (2-byte length and count)
             JsonTokenType.BeginObject,  // ObjLC4 (4-byte length and count)
 
-            // Empty Range
-            JsonTokenType.NotStarted,   // <empty> 0xF0
-            JsonTokenType.NotStarted,   // <empty> 0xF1
-            JsonTokenType.NotStarted,   // <empty> 0xF2
-            JsonTokenType.NotStarted,   // <empty> 0xF3
+            // Array and Object Special Type Markers
+            JsonTokenType.BeginArray,   // ArrNumC1 Uniform number array of 1-byte item count
+            JsonTokenType.BeginArray,   // ArrNumC2 Uniform number array of 2-byte item count
+            JsonTokenType.BeginArray,   // Array of 1-byte item count of Uniform number array of 1-byte item count
+            JsonTokenType.BeginArray,   // Array of 2-byte item count of Uniform number array of 2-byte item count
             JsonTokenType.NotStarted,   // <empty> 0xF4
             JsonTokenType.NotStarted,   // <empty> 0xF5
             JsonTokenType.NotStarted,   // <empty> 0xF7
@@ -162,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Json
         }.ToImmutableArray();
 
         /// <summary>
-        /// JsonReader that can read from a json serialized in binary <see cref="JsonBinaryEncoding"/>.
+        /// JsonReader that can read from a JSON serialized in binary <see cref="JsonBinaryEncoding"/>.
         /// </summary>
         private sealed class JsonBinaryReader : JsonReader, ITypedJsonReader
         {
@@ -176,7 +177,8 @@ namespace Microsoft.Azure.Cosmos.Json
             /// To accommodate for this we have a progress stack to let us know how many bytes there are left to read for all levels of nesting. 
             /// With this information we know that we are at the end of a context and can now surface an end object / array token.
             /// </summary>
-            private readonly Stack<int> arrayAndObjectEndStack;
+            //private readonly Stack<int> arrayAndObjectEndStack;
+            private readonly ArrayAndObjectEndStack arrayAndObjectEndStack;
 
             private readonly ReadOnlyMemory<byte> rootBuffer;
 
@@ -211,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     readerBuffer = readerBuffer.Slice(start: 1);
                 }
 
-                // Only navigate the outer most json value and trim off trailing bytes
+                // Only navigate the outer most JSON value and trim off trailing bytes
                 int jsonValueLength = JsonBinaryEncoding.GetValueLength(readerBuffer.Span);
                 if (readerBuffer.Length < jsonValueLength)
                 {
@@ -222,9 +224,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 // offset for the 0x80 binary type marker
                 this.jsonBinaryBuffer = new JsonBinaryMemoryReader(readerBuffer);
-                this.arrayAndObjectEndStack = new Stack<int>();
+                this.arrayAndObjectEndStack = new ArrayAndObjectEndStack();
             }
 
+            #region IJsonReader
             /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Binary;
 
@@ -272,31 +275,60 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
                 else if (this.JsonObjectState.CurrentDepth == 0 && this.CurrentTokenType != JsonTokenType.NotStarted)
                 {
-                    // There are trailing characters outside of the outter most object or array
+                    // There are trailing characters outside of the outer most object or array
                     throw new JsonUnexpectedTokenException();
                 }
                 else
                 {
                     ReadOnlySpan<byte> readOnlySpan = this.jsonBinaryBuffer.GetBufferedRawJsonToken().Span;
-                    int nextTokenOffset = JsonBinaryEncoding.GetValueLength(readOnlySpan);
 
-                    byte typeMarker = readOnlySpan[0];
-                    JsonTokenType jsonTokenType = JsonBinaryReader.GetJsonTokenType(typeMarker);
-                    switch (jsonTokenType)
+                    byte typeMarker;
+                    int nextTokenOffset;
+
+                    UniformArrayInfo currentArrayInfo = this.arrayAndObjectEndStack.GetUniformArrayInfo();
+                    if (currentArrayInfo != null)
                     {
-                        case JsonTokenType.String when this.JsonObjectState.IsPropertyExpected:
-                            jsonTokenType = JsonTokenType.FieldName;
-                            break;
-                        // If this is begin array/object token then we need to identify where array/object end token is.
-                        // Also the next token offset is just the array type marker + length prefix + count prefix
-                        case JsonTokenType.BeginArray:
-                        case JsonTokenType.BeginObject:
-                            this.arrayAndObjectEndStack.Push(this.jsonBinaryBuffer.Position + nextTokenOffset);
-                            nextTokenOffset = JsonBinaryReader.GetArrayOrObjectPrefixLength(typeMarker);
-                            break;
+                        typeMarker = currentArrayInfo.ItemTypeMarker;
+                        nextTokenOffset = currentArrayInfo.ItemSize;
+                    }
+                    else
+                    {
+                        typeMarker = readOnlySpan[0];
+                        nextTokenOffset = JsonBinaryEncoding.GetValueLength(readOnlySpan);
                     }
 
-                    this.JsonObjectState.RegisterToken(jsonTokenType);
+                    JsonTokenType tokenType = JsonBinaryReader.GetJsonTokenType(typeMarker, currentArrayInfo);
+
+                    if (tokenType == JsonTokenType.String)
+                    {
+                        if (this.JsonObjectState.IsPropertyExpected)
+                        {
+                            tokenType = JsonTokenType.FieldName;
+                        }
+                    }
+                    else if ((tokenType == JsonTokenType.BeginArray) || (tokenType == JsonTokenType.BeginObject))
+                    {
+                        // If we are currently within a nested array, then the BeginArray token must be for
+                        // a uniform number array that is within a uniform array of number arrays.
+                        if (this.arrayAndObjectEndStack.IsWithinUniformArray())
+                        {
+                            // ASSERT(tokenType == JsonTokenType.BeginArray);
+                            this.arrayAndObjectEndStack.PushNestedArray(this.jsonBinaryBuffer.Position);
+
+                            nextTokenOffset = 0;
+                        }
+                        else
+                        {
+                            // If this is begin array/object token then we need to identify where array/object end token is.
+                            // Also the next token offset is just the array type marker + length prefix + count prefix
+                            UniformArrayInfo uniformArrayInfo = JsonBinaryEncoding.GetUniformArrayInfo(readOnlySpan);
+                            this.arrayAndObjectEndStack.Push(this.jsonBinaryBuffer.Position + nextTokenOffset, uniformArrayInfo);
+
+                            nextTokenOffset = JsonBinaryReader.GetArrayOrObjectPrefixLength(typeMarker);
+                        }
+                    }
+
+                    this.JsonObjectState.RegisterToken(tokenType);
                     this.currentTokenPosition = this.jsonBinaryBuffer.Position;
                     this.jsonBinaryBuffer.SkipBytes(nextTokenOffset);
                 }
@@ -313,7 +345,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
 
                 return JsonBinaryEncoding.GetNumberValue(
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span,
+                    this.arrayAndObjectEndStack.GetUniformArrayInfo());
             }
 
             /// <inheritdoc />
@@ -432,6 +465,30 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
+            public override Guid GetGuidValue()
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Guid)
+                {
+                    throw new JsonNotNumberTokenException();
+                }
+
+                return JsonBinaryEncoding.GetGuidValue(
+                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
+            }
+
+            /// <inheritdoc />
+            public override ReadOnlyMemory<byte> GetBinaryValue()
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Binary)
+                {
+                    throw new JsonNotNumberTokenException();
+                }
+
+                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+#endregion
+
+            /// <inheritdoc />
             public bool TryReadTypedJsonValueWrapper(out int typeCode)
             {
                 const byte dollarTSystemStringSingleByteEncoding = 33;
@@ -470,29 +527,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Guid GetGuidValue()
-            {
-                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Guid)
-                {
-                    throw new JsonNotNumberTokenException();
-                }
-
-                return JsonBinaryEncoding.GetGuidValue(
-                    this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition).Span);
-            }
-
-            /// <inheritdoc />
-            public override ReadOnlyMemory<byte> GetBinaryValue()
-            {
-                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Binary)
-                {
-                    throw new JsonNotNumberTokenException();
-                }
-
-                return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
-            }
-
-            /// <inheritdoc />
             public Utf8Span GetUtf8SpanValue()
             {
                 if (!(
@@ -507,15 +541,39 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
 
-            private static JsonTokenType GetJsonTokenType(byte typeMarker)
+            private static JsonTokenType GetJsonTokenType(byte typeMarker, UniformArrayInfo arrayInfo)
             {
-                JsonTokenType jsonTokenType = JsonBinaryReader.TypeMarkerToTokenType[typeMarker];
-                if (jsonTokenType == JsonTokenType.NotStarted)
+                if (arrayInfo != null)
+                {
+                    switch (arrayInfo.ItemTypeMarker)
+                    {
+                        case TypeMarker.Int8:
+                        case TypeMarker.UInt8:
+                        case TypeMarker.Int16:
+                        case TypeMarker.Int32:
+                        case TypeMarker.Int64:
+                        case TypeMarker.Float32:
+                        case TypeMarker.Float64:
+                            return JsonTokenType.Number;
+
+                        case TypeMarker.ArrNumC1:
+                        case TypeMarker.ArrNumC2:
+                        case TypeMarker.ArrArrNumC1C1:
+                        case TypeMarker.ArrArrNumC2C2:
+                            return JsonTokenType.BeginArray;
+
+                        default:
+                            throw new JsonInvalidTokenException();
+                    }
+                }
+
+                JsonTokenType tokenType = JsonBinaryReader.TypeMarkerToTokenType[typeMarker];
+                if (tokenType == JsonTokenType.NotStarted)
                 {
                     throw new JsonInvalidTokenException();
                 }
 
-                return jsonTokenType;
+                return tokenType;
             }
 
             private static int GetArrayOrObjectPrefixLength(byte typeMarker)
@@ -524,55 +582,68 @@ namespace Microsoft.Azure.Cosmos.Json
                 switch (typeMarker)
                 {
                     // Array Values
-                    case JsonBinaryEncoding.TypeMarker.EmptyArray:
-                    case JsonBinaryEncoding.TypeMarker.SingleItemArray:
+                    case JsonBinaryEncoding.TypeMarker.Arr0:
+                    case JsonBinaryEncoding.TypeMarker.Arr1:
                         prefixLength = 1;
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.Array1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.ArrL1:
                         prefixLength = 1 + 1;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Array2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.ArrL2:
                         prefixLength = 1 + 2;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Array4ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.ArrL4:
                         prefixLength = 1 + 4;
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.Array1ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.ArrLC1:
                         prefixLength = 1 + 1 + 1;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Array2ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.ArrLC2:
                         prefixLength = 1 + 2 + 2;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Array4ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.ArrLC4:
                         prefixLength = 1 + 4 + 4;
                         break;
 
                     // Object Values
-                    case JsonBinaryEncoding.TypeMarker.EmptyObject:
-                    case JsonBinaryEncoding.TypeMarker.SinglePropertyObject:
+                    case JsonBinaryEncoding.TypeMarker.Obj0:
+                    case JsonBinaryEncoding.TypeMarker.Obj1:
                         prefixLength = 1;
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.Object1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.ObjL1:
                         prefixLength = 1 + 1;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Object2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.ObjL2:
                         prefixLength = 1 + 2;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Object4ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.ObjL4:
                         prefixLength = 1 + 4;
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.Object1ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.ObjLC1:
                         prefixLength = 1 + 1 + 1;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Object2ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.ObjLC2:
                         prefixLength = 1 + 2 + 2;
                         break;
-                    case JsonBinaryEncoding.TypeMarker.Object4ByteLengthAndCount:
+                    case JsonBinaryEncoding.TypeMarker.ObjLC4:
                         prefixLength = 1 + 4 + 4;
+                        break;
+
+                    case JsonBinaryEncoding.TypeMarker.ArrNumC1:
+                        prefixLength = 1 + 1 + 1;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.ArrNumC2:
+                        prefixLength = 1 + 1 + 2;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.ArrArrNumC1C1:
+                        prefixLength = 1 + 1 + 1 + 1 + 1;
+                        break;
+                    case JsonBinaryEncoding.TypeMarker.ArrArrNumC2C2:
+                        prefixLength = 1 + 1 + 1 + 2 + 2;
                         break;
 
                     default:
@@ -592,6 +663,81 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void SkipBytes(int offset)
                 {
                     this.position += offset;
+                }
+            }
+
+            private sealed class ArrayAndObjectEndStack
+            {
+                private readonly Stack<int> endOffsets;
+                private JsonBinaryEncoding.UniformArrayInfo arrayInfo;
+                private JsonBinaryEncoding.UniformArrayInfo nestedArrayInfo;
+
+                public ArrayAndObjectEndStack()
+                {
+                    this.endOffsets = new Stack<int>(16);
+                }
+
+                public bool Empty()
+                {
+                    return this.endOffsets.Empty();
+                }
+
+                public int Peek()
+                {
+                    return this.endOffsets.Peek();
+                }
+
+                public void Push(int endOffset, JsonBinaryEncoding.UniformArrayInfo arrayInfo)
+                {
+                    if (this.arrayInfo != null) throw new InvalidOperationException();
+
+                    this.endOffsets.Push(endOffset);
+                    this.arrayInfo = arrayInfo;
+                }
+
+                public void PushNestedArray(int currentOffset)
+                {
+                    if (this.arrayInfo == null) throw new InvalidOperationException();
+                    if (this.arrayInfo.NestedArrayInfo == null) throw new InvalidOperationException();
+                    if (this.nestedArrayInfo != null) throw new InvalidOperationException();
+
+                    this.endOffsets.Push(currentOffset + this.arrayInfo.ItemSize);
+                    this.nestedArrayInfo = this.arrayInfo.NestedArrayInfo;
+                }
+
+                public void Pop()
+                {
+                    this.endOffsets.Pop();
+
+                    if (this.nestedArrayInfo != null)
+                    {
+                        this.nestedArrayInfo = null;
+                    }
+                    else if (this.arrayInfo != null)
+                    {
+                        this.arrayInfo = null;
+                    }
+                }
+
+                public bool IsWithinUniformArray()
+                {
+                    return this.arrayInfo != null;
+                }
+
+                public bool IsWithinNestedUniformArray()
+                {
+                    return this.nestedArrayInfo != null;
+                }
+
+                public UniformArrayInfo GetUniformArrayInfo()
+                {
+                    return this.nestedArrayInfo ?? this.arrayInfo;
+                }
+
+                public byte GetUniformArrayItemTypeMarkerOrDefault(byte defaultValue = default)
+                {
+                    UniformArrayInfo arrayInfo = this.GetUniformArrayInfo();
+                    return arrayInfo != null ? arrayInfo.ItemTypeMarker : defaultValue;
                 }
             }
         }

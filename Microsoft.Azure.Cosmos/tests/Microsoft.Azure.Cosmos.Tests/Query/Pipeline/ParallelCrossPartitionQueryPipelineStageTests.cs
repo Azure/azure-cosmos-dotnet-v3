@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             ParallelContinuationToken token1 = new ParallelContinuationToken(
                 token: "asdf",
-                range: new Documents.Routing.Range<string>("A", "B", true, false)); 
+                range: new Documents.Routing.Range<string>("A", "B", true, false));
 
             ParallelContinuationToken token2 = new ParallelContinuationToken(
                 token: "asdf",
@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             TryCatch<IQueryPipelineStage> monadicCreate = ParallelCrossPartitionQueryPipelineStage.MonadicCreate(
                 documentContainer: mockDocumentContainer.Object,
                 sqlQuerySpec: new SqlQuerySpec("SELECT * FROM c"),
-                targetRanges: new List<FeedRangeEpk>() 
+                targetRanges: new List<FeedRangeEpk>()
                 {
                     new FeedRangeEpk(new Documents.Routing.Range<string>(min: "A", max: "B", isMinInclusive: true, isMaxInclusive: false)),
                     new FeedRangeEpk(new Documents.Routing.Range<string>(min: "B", max: "C", isMinInclusive: true, isMaxInclusive: false)),
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             for (int i = 0; i < 3; i++)
             {
                 IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 foreach (FeedRangeInternal range in ranges)
                 {

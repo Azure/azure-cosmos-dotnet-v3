@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
         private const string partitionKey = "pk";
         private const int throughput = 2400;
         private const string path = "/path";
-        private static TimeSpan timeToLive = TimeSpan.FromSeconds(25);
+        private static readonly TimeSpan timeToLive = TimeSpan.FromSeconds(25);
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
@@ -58,9 +58,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
             mockContainers.Setup(m => m.Client).Returns(mockClient.Object);
             mockContainers
                 .Setup(c => c.CreateContainerAsync(
-                    It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)), 
-                    It.IsAny<int?>(), 
-                    It.IsAny<RequestOptions>(), 
+                    It.Is<ContainerProperties>((settings) => settings.PartitionKeyPath.Equals(partitionKey)),
+                    It.IsAny<int?>(),
+                    It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
                 .ReturnsAsync(mockContainerResponse.Object);
 
