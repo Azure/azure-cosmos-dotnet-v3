@@ -98,29 +98,28 @@ namespace Microsoft.Azure.Cosmos
 
                 JsonSerializer jsonSerializer = this.GetSerializer();
 
-                if (stream is CloneableStream cloneableStream)
+                using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: false))
                 {
-                    using (CosmosBufferedStreamWrapper bufferedStream = new (cloneableStream, shouldDisposeInnerStream: false))
+                    if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
                     {
-                        if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
-                        {
-                            byte[] content = bufferedStream.ReadAll();
+                        byte[] content = bufferedStream.ReadAll();
 
-                            using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
-                                jsonReader: Json.JsonReader.Create(
-                                    jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
-                                    buffer: content));
+                        using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
+                            jsonReader: Json.JsonReader.Create(
+                                jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
+                                buffer: content));
 
-                            return jsonSerializer.Deserialize<T>(reader);
-                        }
+                        return jsonSerializer.Deserialize<T>(reader);
                     }
-                }
-
-                using (StreamReader sr = new (stream))
-                {
-                    using (JsonTextReader jsonTextReader = new (sr))
+                    else
                     {
-                        return jsonSerializer.Deserialize<T>(jsonTextReader);
+                        using (StreamReader sr = new (bufferedStream))
+                        {
+                            using (JsonTextReader jsonTextReader = new (sr))
+                            {
+                                return jsonSerializer.Deserialize<T>(jsonTextReader);
+                            }
+                        }
                     }
                 }
             }

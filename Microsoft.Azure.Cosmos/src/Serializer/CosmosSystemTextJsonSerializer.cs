@@ -52,28 +52,25 @@ namespace Microsoft.Azure.Cosmos
 
             using (stream)
             {
-                if (stream is Documents.CloneableStream cloneableStream)
+                using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: false))
                 {
-                    using (CosmosBufferedStreamWrapper bufferedStream = new (cloneableStream, shouldDisposeInnerStream: false))
+                    if (bufferedStream.GetJsonSerializationFormat() == JsonSerializationFormat.Binary)
                     {
-                        if (bufferedStream.GetJsonSerializationFormat() == JsonSerializationFormat.Binary)
-                        {
-                            byte[] content = bufferedStream.ReadAll();
+                        byte[] content = bufferedStream.ReadAll();
 
-                            if (CosmosObject.TryCreateFromBuffer(content, out CosmosObject cosmosObject))
-                            {
-                                return System.Text.Json.JsonSerializer.Deserialize<T>(cosmosObject.ToString(), this.jsonSerializerOptions);
-                            }
-                            else
-                            {
-                                using Stream textStream = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(content, JsonSerializationFormat.Text);
-                                return this.DeserializeStream<T>(textStream);
-                            }
+                        if (CosmosObject.TryCreateFromBuffer(content, out CosmosObject cosmosObject))
+                        {
+                            return System.Text.Json.JsonSerializer.Deserialize<T>(cosmosObject.ToString(), this.jsonSerializerOptions);
+                        }
+                        else
+                        {
+                            using Stream textStream = CosmosSerializationUtil.ConvertToStreamUsingJsonSerializationFormat(content, JsonSerializationFormat.Text);
+                            return this.DeserializeStream<T>(textStream);
                         }
                     }
-                }
 
-                return this.DeserializeStream<T>(stream);
+                    return this.DeserializeStream<T>(bufferedStream);
+                }
             }
         }
 
