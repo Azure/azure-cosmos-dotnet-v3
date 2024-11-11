@@ -8,14 +8,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
     using OfflineEngine;
     using VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
 
     /// <summary>
     /// CosmosElementEqualityComparerUnitTests Class.
@@ -713,12 +713,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
                 { ((CosmosString)rid2["_rid"]).Value, pk2 },
                 { ((CosmosString)rid1["_rid"]).Value, pk2 },
             };
-
-            SqlQuery partitionAndRidTieBreakAsc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+            _ = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: false)));
             AssertEvaluation(new CosmosElement[] { rid3, rid1, rid2 }, ridTieBreakAsc, ridTieBreakData, ridToPartitionKeyRange);
-
-            SqlQuery partitionAndRidTieBreakDesc = CreateQueryWithOrderBy(SqlOrderByClause.Create(
+            _ = CreateQueryWithOrderBy(SqlOrderByClause.Create(
                 SqlOrderByItem.Create(cDotId, isDescending: true)));
             AssertEvaluation(new CosmosElement[] { rid3, rid2, rid1 }, ridTieBreakDesc, ridTieBreakData, ridToPartitionKeyRange);
 

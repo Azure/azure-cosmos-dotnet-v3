@@ -10,8 +10,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Net;
     using System.Net.Mail;
     using System.Threading.Tasks;
-    using global::Azure.Core;
     using global::Azure;
+    using global::Azure.Core;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

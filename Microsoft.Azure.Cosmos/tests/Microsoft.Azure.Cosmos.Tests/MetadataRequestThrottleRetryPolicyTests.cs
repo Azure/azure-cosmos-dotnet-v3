@@ -5,15 +5,15 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
-    using Microsoft.Azure.Cosmos.Tracing;
     using System.Net;
     using System.Reflection;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using static Microsoft.Azure.Cosmos.MetadataRequestThrottleRetryPolicy;
 
     /// <summary>
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Arrange.
             ShouldRetryResult retryResult;
             string collectionRid = "test-collection";
-            Uri primaryServiceEndpoint = new ("https://default-endpoint-region1.net/");
+            Uri primaryServiceEndpoint = new("https://default-endpoint-region1.net/");
             Uri routedServiceEndpoint = new("https://default-endpoint-region2.net/");
 
             Documents.Collections.INameValueCollection headers = new Documents.Collections.RequestNameValueCollection();
@@ -50,13 +50,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey,
                     headers);
 
-            Mock<IGlobalEndpointManager> mockedGlobalEndpointManager = new ();
+            Mock<IGlobalEndpointManager> mockedGlobalEndpointManager = new();
             mockedGlobalEndpointManager
                 .SetupSequence(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
                 .Returns(primaryServiceEndpoint)
                 .Returns(isValidSubStatusCode ? routedServiceEndpoint : primaryServiceEndpoint);
 
-            MetadataRequestThrottleRetryPolicy policy = new (mockedGlobalEndpointManager.Object, 0);
+            MetadataRequestThrottleRetryPolicy policy = new(mockedGlobalEndpointManager.Object, 0);
             policy.OnBeforeSendRequest(request);
 
             Assert.AreEqual(primaryServiceEndpoint, request.RequestContext.LocationEndpointToRoute);

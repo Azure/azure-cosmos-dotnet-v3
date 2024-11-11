@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             Assert.IsNotNull(changeFeedObserver);
 
-            
+
             ChangeFeedObserverContextCore context = new ChangeFeedObserverContextCore(this.leaseToken, responseMessage, Mock.Of<PartitionCheckpointer>(), FeedRangeEpk.FullRange);
 
             await changeFeedObserver.ProcessChangesAsync(context, responseMessage.Content, CancellationToken.None);
