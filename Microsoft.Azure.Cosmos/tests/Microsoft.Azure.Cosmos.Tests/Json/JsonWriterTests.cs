@@ -8,6 +8,7 @@
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Tests.Json.JsonTestUtils;
 
     [TestClass]
@@ -329,6 +330,212 @@
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
+        }
+
+        [TestMethod]
+        [Owner("sboshra")]
+        public void UInt64Test()
+        {
+            // -------------------------
+            // Max UINT64 value
+            // -------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.Number(ulong.MaxValue),
+                };
+
+                string[] expectedText =
+                {
+                    @"18446744073709551615"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 CC 00 00 00 00 00 00  F0 43"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 C7 FF FF FF FF FF FF  FF FF"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableUInt64Values);
+            }
+
+            // -------------------------
+            // Signed integer max values
+            // -------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.Number(0),
+                        JsonToken.Number(sbyte.MaxValue),
+                        JsonToken.Number(short.MaxValue),
+                        JsonToken.Number(int.MaxValue),
+                        JsonToken.Number(long.MaxValue),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[0,127,32767,2147483647,9223372036854775807]"
+                };
+
+                string[] expectedBinary =
+                {
+                    "00000000  80 E2 14 00 C8 7F C9 FF  7F CA FF FF FF 7F CB FF",
+                    "00000010  FF FF FF FF FF FF 7F"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary, JsonWriteOptions.EnableUInt64Values);
+            }
+
+            // -------------------------
+            // Unsigned integer max values
+            // -------------------------
+            {
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.Number(0),
+                        JsonToken.Number(byte.MaxValue),
+                        JsonToken.Number(ushort.MaxValue),
+                        JsonToken.Number(uint.MaxValue),
+                        JsonToken.Number(ulong.MaxValue),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[0,255,65535,4294967295,18446744073709551615]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E2 1A 00 C8 FF CA FF  FF 00 00 CB FF FF FF FF",
+                    "00000010  00 00 00 00 CC 00 00 00  00 00 00 F0 43"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E2 1A 00 C8 FF CA FF  FF 00 00 CB FF FF FF FF",
+                    "00000010  00 00 00 00 C7 FF FF FF  FF FF FF FF FF"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableUInt64Values);
+            }
+
+            // -------------------------
+            // Unsigned Integer values > INT_MAX
+            // -------------------------
+            {
+                const ulong Int64Max = (ulong)long.MaxValue;
+                const ulong UInt64Max = ulong.MaxValue;
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ArrayStart(),
+                        JsonToken.Number(Int64Max + 1UL),
+                        JsonToken.Number(Int64Max + 100UL),
+                        JsonToken.Number(Int64Max + (Int64Max / 2)),
+                        JsonToken.Number(UInt64Max - 100UL),
+                        JsonToken.Number(UInt64Max - 1UL),
+                    JsonToken.ArrayEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"[9223372036854775808,9223372036854775907,13835058055282163710,18446744073709551515,18446744073709551",
+                    @"614]"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 E2 2D CC 00 00 00 00  00 00 E0 43 CC 00 00 00",
+                    "00000010  00 00 00 E0 43 CC 00 00  00 00 00 00 E8 43 CC 00",
+                    "00000020  00 00 00 00 00 F0 43 CC  00 00 00 00 00 00 F0 43"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 E2 2D C7 00 00 00 00  00 00 00 80 C7 63 00 00",
+                    "00000010  00 00 00 00 80 C7 FE FF  FF FF FF FF FF BF C7 9B",
+                    "00000020  FF FF FF FF FF FF FF C7  FE FF FF FF FF FF FF FF"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableUInt64Values);
+            }
+
+            // -------------------------
+            // Within an object
+            // -------------------------
+            {
+                const ulong Int64Max = long.MaxValue;
+
+                JsonToken[] tokensToWrite =
+                {
+                    JsonToken.ObjectStart(),
+                        JsonToken.FieldName("value1"),
+                        JsonToken.Number(Int64Max + 1UL),
+                        JsonToken.FieldName("value2"),
+                        JsonToken.Number(0UL),
+                        JsonToken.FieldName("value3"),
+                        JsonToken.ObjectStart(),
+                            JsonToken.FieldName("value3.1"),
+                            JsonToken.Number(Int64Max + 1UL),
+                            JsonToken.FieldName("value3.2"),
+                            JsonToken.Number(Int64Max + 1UL),
+                            JsonToken.FieldName("value3.3"),
+                            JsonToken.Number(0UL),
+                            JsonToken.FieldName("value3.4"),
+                            JsonToken.Number(Int64Max + 1UL),
+                        JsonToken.ObjectEnd(),
+                        JsonToken.FieldName("value4"),
+                        JsonToken.Number(0UL),
+                        JsonToken.FieldName("value5"),
+                        JsonToken.Number(Int64Max + 1UL),
+                    JsonToken.ObjectEnd(),
+                };
+
+                string[] expectedText =
+                {
+                    @"{""value1"":9223372036854775808,""value2"":0,""value3"":{""value3.1"":9223372036854775808,""value3.2"":9223372",
+                    @"036854775808,""value3.3"":0,""value3.4"":9223372036854775808},""value4"":0,""value5"":9223372036854775808}"
+                };
+
+                string[] expectedBinary1 =
+                {
+                    "00000000  80 EA 79 86 76 61 6C 75  65 31 CC 00 00 00 00 00",
+                    "00000010  00 E0 43 86 76 61 6C 75  65 32 00 86 76 61 6C 75",
+                    "00000020  65 33 EA 40 88 76 61 6C  75 65 33 2E 31 CC 00 00",
+                    "00000030  00 00 00 00 E0 43 88 76  61 6C 75 65 33 2E 32 CC",
+                    "00000040  00 00 00 00 00 00 E0 43  88 76 61 6C 75 65 33 2E",
+                    "00000050  33 00 88 76 61 6C 75 65  33 2E 34 CC 00 00 00 00",
+                    "00000060  00 00 E0 43 86 76 61 6C  75 65 34 00 86 76 61 6C",
+                    "00000070  75 65 35 CC 00 00 00 00  00 00 E0 43"
+                };
+
+                string[] expectedBinary2 =
+                {
+                    "00000000  80 EA 79 86 76 61 6C 75  65 31 C7 00 00 00 00 00",
+                    "00000010  00 00 80 86 76 61 6C 75  65 32 00 86 76 61 6C 75",
+                    "00000020  65 33 EA 40 88 76 61 6C  75 65 33 2E 31 C7 00 00",
+                    "00000030  00 00 00 00 00 80 88 76  61 6C 75 65 33 2E 32 C7",
+                    "00000040  00 00 00 00 00 00 00 80  88 76 61 6C 75 65 33 2E",
+                    "00000050  33 00 88 76 61 6C 75 65  33 2E 34 C7 00 00 00 00",
+                    "00000060  00 00 00 80 86 76 61 6C  75 65 34 00 86 76 61 6C",
+                    "00000070  75 65 35 C7 00 00 00 00  00 00 00 80"
+                };
+
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary1, JsonWriteOptions.None);
+                ExecuteAndValidate(tokensToWrite, expectedText, expectedBinary2, JsonWriteOptions.EnableUInt64Values);
+            }
         }
         #endregion
 
@@ -1047,7 +1254,7 @@
                     8,
                     (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "hello".Length),
                     (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
-                    JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset,
+                    JsonBinaryEncoding.TypeMarker.StrR1,
                     3,
                 };
 
@@ -8582,7 +8789,7 @@
                     SerializationSpec.Text(JsonWriteOptions.None),
                     SerializationSpec.Binary(JsonWriteOptions.None),
                     SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays),
-                    SerializationSpec.Binary(JsonWriteOptions.EnableUInt64),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableUInt64Values),
                 };
 
                 RewriteScenario[] rewriteScenarios = new RewriteScenario[]

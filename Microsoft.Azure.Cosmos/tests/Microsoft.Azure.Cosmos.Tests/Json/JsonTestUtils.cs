@@ -276,8 +276,15 @@
                             break;
 
                         case JsonTokenType.Number:
-                            Number64 numberValue = (token as JsonNumberToken).Value;
-                            jsonWriter.WriteNumber64Value(numberValue);
+                            if(token is JsonUInt64NumberToken uint64Token)
+                            {
+                                jsonWriter.WriteNumberValue(uint64Token.Value);
+                            }
+                            else
+                            {
+                                Number64 numberValue = (token as JsonNumberToken).Value;
+                                jsonWriter.WriteNumberValue(numberValue);
+                            }
                             break;
 
                         case JsonTokenType.True:

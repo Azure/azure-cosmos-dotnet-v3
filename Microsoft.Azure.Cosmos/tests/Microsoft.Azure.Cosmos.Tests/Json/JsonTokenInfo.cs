@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             return new JsonNumberToken(number);
         }
 
+        public static JsonToken Number(ulong value)
+        {
+            return new JsonUInt64NumberToken(value);
+        }
+
         public static JsonToken Boolean(bool value)
         {
             return value ? (JsonToken)new JsonTrueToken() : (JsonToken)new JsonFalseToken();
@@ -248,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
     }
 
-    internal sealed class JsonNumberToken : JsonToken
+    internal class JsonNumberToken : JsonToken
     {
         public JsonNumberToken(Number64 value)
             : base(JsonTokenType.Number)
@@ -269,6 +274,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
 
             return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
+    }
+
+    internal sealed class JsonUInt64NumberToken : JsonNumberToken
+    {
+        public JsonUInt64NumberToken(ulong value)
+            : base(value <= long.MaxValue ? (Number64)(long)value : (Number64)(double)value)
+        {
+            this.Value = value;
+        }
+
+        public new ulong Value
+        {
+            get;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonUInt64NumberToken other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return base.Equals(obj);
         }
 
         public override int GetHashCode()

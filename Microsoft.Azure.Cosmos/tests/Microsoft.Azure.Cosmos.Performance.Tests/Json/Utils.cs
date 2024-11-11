@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         break;
                     case JsonTokenType.Number:
                         Number64 numberValue = (token as JsonNumberToken).Value;
-                        jsonWriter.WriteNumber64Value(numberValue);
+                        jsonWriter.WriteNumberValue(numberValue);
                         break;
                     case JsonTokenType.True:
                         jsonWriter.WriteBoolValue(true);

@@ -700,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 writer.WriteObjectStart();
 
                 writer.WriteFieldName(nameof(this.Index));
-                writer.WriteNumber64Value(this.Index);
+                writer.WriteNumberValue(this.Index);
 
                 if (this.MixedTypeField is not CosmosUndefined)
                 {

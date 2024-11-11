@@ -480,7 +480,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                 buffer.Span,
                                 binaryNavigatorNode.ExternalArrayInfo);
 
-                            jsonWriter.WriteNumber64Value(value);
+                            jsonWriter.WriteNumberValue(value);
                         }
                         break;
 

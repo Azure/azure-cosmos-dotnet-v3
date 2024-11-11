@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonTokenType.Number:
                     {
                         Number64 value = this.GetNumberValue();
-                        writer.WriteNumber64Value(value);
+                        writer.WriteNumberValue(value);
                     }
                     break;
 

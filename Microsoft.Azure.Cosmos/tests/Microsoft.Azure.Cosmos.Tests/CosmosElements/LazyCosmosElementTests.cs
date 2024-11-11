@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
 
         private static void VisitCosmosNumber(CosmosNumber cosmosNumber, IJsonWriter jsonWriter)
         {
-            jsonWriter.WriteNumber64Value(cosmosNumber.Value);
+            jsonWriter.WriteNumberValue(cosmosNumber.Value);
         }
 
         private static void VisitCosmosObjectIndexer(CosmosObject cosmosObject, IJsonWriter jsonWriter)

@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonNodeType.Number64:
                     {
                         Number64 value = this.GetNumber64Value(jsonNavigatorNode);
-                        jsonWriter.WriteNumber64Value(value);
+                        jsonWriter.WriteNumberValue(value);
                     }
                     break;
 

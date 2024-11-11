@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     /// <summary>
@@ -39,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonBinaryWriter jsonBinaryWriter = new JsonBinaryWriter(
                 initialCapacity: 256,
                 enableNumberArrays: false,
+                enableUint64Values: false,
                 enableEncodedStrings: false);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InArrayContext);
             Contract.Requires(!jsonBinaryWriter.JsonObjectState.InObjectContext);
@@ -78,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 Obj,
                 ArrNum,
                 ArrArrNum,
-                UInt64,
+                NumUI64,
             }
 
             private const int MaxStackAllocSize = 4 * 1024;
@@ -156,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 RawValueType.StrR2,      // RawValueType.StrR2 (Reference string of 2-byte offset)
                 RawValueType.StrR3,      // RawValueType.StrR3 (Reference string of 3-byte offset)
                 RawValueType.StrR4,      // RawValueType.StrR4 (Reference string of 4-byte offset)
-                RawValueType.Token,      // <empty> 0xC7
+                RawValueType.NumUI64,    // NumUI64
 
                 // Number Values
                 RawValueType.Token,      // NumUI8
@@ -248,9 +250,14 @@ namespace Microsoft.Azure.Cosmos.Json
             private readonly bool enableEncodedStrings;
 
             /// <summary>
-            /// Determines whether to allow writing of uniform number arrays.
+            /// Determines whether to enable writing of uniform number arrays.
             /// </summary>
             private readonly bool enableNumberArrays;
+
+            /// <summary>
+            /// Determines whether to enable writing of full-precision unsigned 64-bit integer values.
+            /// </summary>
+            private readonly bool enableUInt64Values;
 
             /// <summary>
             /// Writer used to write fully materialized context to the internal stream.
@@ -287,13 +294,16 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="enableNumberArrays">Determines whether to enable writing of uniform number arrays.</param>
+            /// <param name="enableUint64Values">Determines whether to enable writing of full-precision unsigned 64-bit integer values</param>
             /// <param name="enableEncodedStrings">Determines whether to enable reference string encoding.</param>
             public JsonBinaryWriter(
                 int initialCapacity,
                 bool enableNumberArrays,
+                bool enableUint64Values,
                 bool enableEncodedStrings = true)
             {
                 this.enableNumberArrays = enableNumberArrays;
+                this.enableUInt64Values = enableUint64Values;
                 this.enableEncodedStrings = enableEncodedStrings;
                 this.binaryWriter = new JsonBinaryMemoryWriter(initialCapacity);
                 this.bufferedContexts = new Stack<ArrayAndObjectInfo>();
@@ -335,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Json
             public override void WriteStringValue(Utf8Span value) => this.WriteFieldNameOrString(isFieldName: false, value);
 
             /// <inheritdoc />
-            public override void WriteNumber64Value(Number64 value)
+            public override void WriteNumberValue(Number64 value)
             {
                 if (value.IsInteger)
                 {
@@ -345,6 +355,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.WriteDoubleInternal(Number64.ToDouble(value));
                 }
+
+                this.bufferedContexts.Peek().Count++;
+            }
+
+            /// <inheritdoc />
+            public override void WriteNumberValue(ulong value)
+            {
+                this.WriteIntegerInternal(value);
 
                 this.bufferedContexts.Peek().Count++;
             }
@@ -1308,7 +1326,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             Span<byte> offsetBuffer = binaryWriterRawBuffer.Slice(stringReferenceOffset + 1);
                             switch (typeMarker)
                             {
-                                case TypeMarker.ReferenceString1ByteOffset:
+                                case TypeMarker.StrR1:
                                 {
                                     byte stringIndex = offsetBuffer[0];
                                     SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
@@ -1316,7 +1334,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                     break;
                                 }
 
-                                case TypeMarker.ReferenceString2ByteOffset:
+                                case TypeMarker.StrR2:
                                 {
                                     ushort stringIndex = JsonBinaryEncoding.GetFixedSizedValue<ushort>(offsetBuffer);
                                     SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
@@ -1324,7 +1342,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                     break;
                                 }
 
-                                case TypeMarker.ReferenceString3ByteOffset:
+                                case TypeMarker.StrR3:
                                 {
                                     JsonBinaryEncoding.UInt24 stringIndex =
                                         JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(offsetBuffer);
@@ -1335,7 +1353,7 @@ namespace Microsoft.Azure.Cosmos.Json
                                     break;
                                 }
 
-                                case TypeMarker.ReferenceString4ByteOffset:
+                                case TypeMarker.StrR4:
                                 {
                                     int stringIndex = JsonBinaryEncoding.GetFixedSizedValue<int>(offsetBuffer);
                                     SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
@@ -1427,20 +1445,20 @@ namespace Microsoft.Azure.Cosmos.Json
                 // Just write it out as a regular string with type marker and length prefix
                 else if (utf8Span.Length < byte.MaxValue)
                 {
-                    this.binaryWriter.Write(TypeMarker.String1ByteLength);
+                    this.binaryWriter.Write(TypeMarker.StrL1);
                     this.binaryWriter.Write((byte)utf8Span.Length);
                     this.binaryWriter.Write(utf8Span.Span);
                 }
                 else if (utf8Span.Length < ushort.MaxValue)
                 {
-                    this.binaryWriter.Write(TypeMarker.String2ByteLength);
+                    this.binaryWriter.Write(TypeMarker.StrL2);
                     this.binaryWriter.Write((ushort)utf8Span.Length);
                     this.binaryWriter.Write(utf8Span.Span);
                 }
                 else
                 {
                     // (utf8String.Length < uint.MaxValue)
-                    this.binaryWriter.Write(TypeMarker.String4ByteLength);
+                    this.binaryWriter.Write(TypeMarker.StrL4);
                     this.binaryWriter.Write((uint)utf8Span.Length);
                     this.binaryWriter.Write(utf8Span.Span);
                 }
@@ -1482,22 +1500,22 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 if (sharedString.MaxOffset <= byte.MaxValue)
                 {
-                    this.binaryWriter.Write(TypeMarker.ReferenceString1ByteOffset);
+                    this.binaryWriter.Write(TypeMarker.StrR1);
                     this.binaryWriter.Write((byte)hashAndIndex.index);
                 }
                 else if (sharedString.MaxOffset <= ushort.MaxValue)
                 {
-                    this.binaryWriter.Write(TypeMarker.ReferenceString2ByteOffset);
+                    this.binaryWriter.Write(TypeMarker.StrR2);
                     this.binaryWriter.Write((ushort)hashAndIndex.index);
                 }
                 else if (sharedString.MaxOffset <= JsonBinaryEncoding.UInt24.MaxValue)
                 {
-                    this.binaryWriter.Write(TypeMarker.ReferenceString3ByteOffset);
+                    this.binaryWriter.Write(TypeMarker.StrR3);
                     this.binaryWriter.Write((JsonBinaryEncoding.UInt24)(int)hashAndIndex.index);
                 }
                 else if (sharedString.MaxOffset <= int.MaxValue)
                 {
-                    this.binaryWriter.Write(TypeMarker.ReferenceString4ByteOffset);
+                    this.binaryWriter.Write(TypeMarker.StrR4);
                     this.binaryWriter.Write((int)hashAndIndex.index);
                 }
                 else
@@ -1563,6 +1581,24 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
+            private void WriteIntegerInternal(ulong value)
+            {
+                if (value <= long.MaxValue)
+                {
+                    this.WriteIntegerInternal((long)value);
+                }
+                else if (!this.enableUInt64Values)
+                {
+                    this.WriteDoubleInternal(value);
+                }
+                else
+                {
+                    this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                    this.binaryWriter.Write(TypeMarker.NumberUInt64);
+                    this.binaryWriter.Write(value);
+                }
+            }
+
             private void WriteDoubleInternal(double value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
@@ -1596,8 +1632,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     RawValueType rawType = (RawValueType)RawValueTypes[typeMarker];
 
-                    // If the writer supports uniform-number arrays then we treat them as a value token
+                    // Check for uniform number array support
                     if (this.enableEncodedStrings && ((rawType == RawValueType.ArrNum) || (rawType == RawValueType.ArrArrNum)))
+                    {
+                        rawType = RawValueType.Token;
+                    }
+
+                    // Check for unsigned 64-bit integer support
+                    if (this.enableUInt64Values && (rawType == RawValueType.NumUI64))
                     {
                         rawType = RawValueType.Token;
                     }
@@ -1738,6 +1780,10 @@ namespace Microsoft.Azure.Cosmos.Json
                             this.WriteRawNumberArrayArray(rawJsonValue.Span, GetUniformArrayInfo(rawJsonValue.Span));
                             break;
 
+                        case RawValueType.NumUI64:
+                            this.WriteNumberValue(GetFixedSizedValue<ulong>(rawJsonValue.Slice(1).Span));
+                            break;
+
                         default:
                             throw new InvalidOperationException($"Unknown {nameof(RawValueType)} {rawType}.");
                     }
@@ -1806,25 +1852,25 @@ namespace Microsoft.Azure.Cosmos.Json
                 switch (arrayInfo.ItemTypeMarker)
                 {
                     case TypeMarker.Int8:
-                        this.WriteNumber64Value(GetFixedSizedValue<sbyte>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<sbyte>(rawValue));
                         break;
                     case TypeMarker.UInt8:
-                        this.WriteNumber64Value(GetFixedSizedValue<byte>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<byte>(rawValue));
                         break;
                     case TypeMarker.Int16:
-                        this.WriteNumber64Value(GetFixedSizedValue<short>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<short>(rawValue));
                         break;
                     case TypeMarker.Int32:
-                        this.WriteNumber64Value(GetFixedSizedValue<int>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<int>(rawValue));
                         break;
                     case TypeMarker.Int64:
-                        this.WriteNumber64Value(GetFixedSizedValue<long>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<long>(rawValue));
                         break;
                     case TypeMarker.Float32:
-                        this.WriteNumber64Value(GetFixedSizedValue<float>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<float>(rawValue));
                         break;
                     case TypeMarker.Float64:
-                        this.WriteNumber64Value(GetFixedSizedValue<double>(rawValue));
+                        this.WriteNumberValue(GetFixedSizedValue<double>(rawValue));
                         break;
 
                     case TypeMarker.ArrNumC1:
@@ -1851,49 +1897,49 @@ namespace Microsoft.Azure.Cosmos.Json
                     case TypeMarker.Int8:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<sbyte>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<sbyte>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.UInt8:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<byte>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<byte>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Int16:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<short>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<short>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Int32:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<int>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<int>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Int64:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<long>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<long>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Float32:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<float>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<float>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Float64:
                         for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
-                            this.WriteNumber64Value(GetFixedSizedValue<double>(rawValue.Slice(offset)));
+                            this.WriteNumberValue(GetFixedSizedValue<double>(rawValue.Slice(offset)));
                         }
                         break;
 
@@ -1999,6 +2045,13 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.EnsureRemainingBufferSpace(sizeof(long));
                     BinaryPrimitives.WriteInt64LittleEndian(this.Cursor, value);
+                    this.Position += sizeof(long);
+                }
+
+                public void Write(ulong value)
+                {
+                    this.EnsureRemainingBufferSpace(sizeof(ulong));
+                    BinaryPrimitives.WriteUInt64LittleEndian(this.Cursor, value);
                     this.Position += sizeof(long);
                 }
 

@@ -168,6 +168,16 @@ namespace Microsoft.Azure.Cosmos.Json
                             bytesConsumed = 1 + 8;
                             break;
 
+                        case JsonBinaryEncoding.TypeMarker.NumberUInt64:
+                            if (numberToken.Length < (1 + 8))
+                            {
+                                return false;
+                            }
+
+                            number64 = MemoryMarshal.Read<ulong>(numberToken.Slice(1));
+                            bytesConsumed = 1 + 8;
+                            break;
+
                         case JsonBinaryEncoding.TypeMarker.NumberDouble:
                             if (numberToken.Length < (1 + 8))
                             {
