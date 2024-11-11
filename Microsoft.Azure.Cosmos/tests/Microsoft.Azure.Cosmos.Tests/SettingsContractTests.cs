@@ -4,12 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Scripts;
-    using Microsoft.Azure.Documents;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -18,6 +12,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class SettingsContractTests
@@ -245,13 +245,13 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ValidateAdditionalPropertiesAttributeInPropertiesFiles()
         {
             IEnumerable<Type> allClasses = from t in Assembly.GetAssembly(typeof(CosmosClient)).GetTypes()
-                                           where t.IsClass && 
-                                           t.IsPublic && 
+                                           where t.IsClass &&
+                                           t.IsPublic &&
                                            !t.IsAbstract
                                            where t.Name.EndsWith("Properties")
                                            select t;
 
-            foreach(Type className in allClasses)
+            foreach (Type className in allClasses)
             {
                 SettingsContractTests.ValidateAdditionalProperties(className);
             }
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void ContainerPropertiesDeserializeWithAdditionalDataTest()
         {
             string cosmosSerialized = "{\"indexingPolicy\":{\"automatic\":true,\"indexingMode\":\"Consistent\",\"additionalIndexPolicy\":\"indexpolicyvalue\",\"includedPaths\":[{\"path\":\"/included/path\",\"additionalIncludedPath\":\"includedPathValue\",\"indexes\":[]}],\"excludedPaths\":[{\"path\":\"/excluded/path\",\"additionalExcludedPath\":\"excludedPathValue\"}],\"compositeIndexes\":[[{\"path\":\"/composite/path\",\"additionalCompositeIndex\":\"compositeIndexValue\",\"order\":\"ascending\"}]],\"spatialIndexes\":[{\"path\":\"/spatial/path\",\"additionalSpatialIndexes\":\"spatialIndexValue\",\"types\":[]}],\"vectorIndexes\":[{\"path\":\"/vector1\",\"type\":\"flat\",\"additionalVectorIndex\":\"vectorIndexValue1\"},{\"path\":\"/vector2\",\"type\":\"quantizedFlat\",\"additionalVectorIndex\":\"vectorIndexValue2\"},{\"path\":\"/vector3\",\"type\":\"diskANN\"}],\"fullTextIndexes\":[{\"path\":\"/fullTextPath1\",\"additionalFullTextIndex\":\"fullTextIndexValue1\"},{\"path\":\"/fullTextPath2\",\"additionalFullTextIndex\":\"fullTextIndexValue2\"},{\"path\":\"/fullTextPath3\"}]},\"computedProperties\":[{\"name\":\"lowerName\",\"query\":\"SELECT VALUE LOWER(c.name) FROM c\"},{\"name\":\"estimatedTax\",\"query\":\"SELECT VALUE c.salary * 0.2 FROM c\"}],\"geospatialConfig\":{\"type\":\"Geography\",\"additionalGeospatialConfig\":\"geospatialConfigValue\"},\"uniqueKeyPolicy\":{\"additionalUniqueKeyPolicy\":\"uniqueKeyPolicyValue\",\"uniqueKeys\":[{\"paths\":[\"/unique/key/path/1\",\"/unique/key/path/2\"]}]},\"conflictResolutionPolicy\":{\"mode\":\"LastWriterWins\",\"additionalConflictResolutionPolicy\":\"conflictResolutionValue\"},\"clientEncryptionPolicy\":{\"includedPaths\":[{\"path\":\"/path\",\"clientEncryptionKeyId\":\"clientEncryptionKeyId\",\"encryptionType\":\"Randomized\",\"additionalIncludedPath\":\"includedPathValue\",\"encryptionAlgorithm\":\"AEAD_AES_256_CBC_HMAC_SHA256\"}],\"policyFormatVersion\":1,\"additionalEncryptionPolicy\":\"clientEncryptionpolicyValue\"},\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"partitionKey\":{\"paths\":[],\"kind\":\"Hash\"},\"vectorEmbeddingPolicy\":{\"vectorEmbeddings\":[{\"path\":\"/vector1\",\"dataType\":\"float32\",\"dimensions\":1200,\"distanceFunction\":\"cosine\"},{\"path\":\"/vector2\",\"dataType\":\"int8\",\"dimensions\":3,\"distanceFunction\":\"dotproduct\"},{\"path\":\"/vector3\",\"dataType\":\"uint8\",\"dimensions\":400,\"distanceFunction\":\"euclidean\"}]},\"fullTextPolicy\": {\"defaultLanguage\": \"en-US\",\"fullTextPaths\": [{\"path\": \"/fullTextPath1\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath2\",\"language\": \"en-US\"},{\"path\": \"/fullTextPath3\",\"language\": \"en-US\"}]}}";
-            
+
             JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
             // Adding additional information
@@ -535,8 +535,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(1, manualDeserSettings.Content.OfferThroughput);
             Assert.AreEqual(2, manualDeserSettings.AdditionalProperties.Count);
             Assert.AreEqual("policy value", (string)manualDeserSettings.AdditionalProperties["simple string"]);
-            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(manualDeserSettings.AdditionalProperties["complex object"]).ToString()); 
-            
+            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(manualDeserSettings.AdditionalProperties["complex object"]).ToString());
+
             Assert.AreEqual(2, autoscaleDeserSettings.Content.OfferAutoscaleSettings.MaxThroughput);
             Assert.AreEqual(2, autoscaleDeserSettings.AdditionalProperties.Count);
             Assert.AreEqual("policy value", (string)autoscaleDeserSettings.AdditionalProperties["simple string"]);
@@ -680,7 +680,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string directSerialized = SettingsContractTests.DirectSerialize(collection);
 
             // Swap de-serialize and validate 
-            ContainerProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
+            _ = SettingsContractTests.CosmosDeserialize<ContainerProperties>(directSerialized);
             DocumentCollection collectionDeser = SettingsContractTests.DirectDeSerialize<DocumentCollection>(cosmosSerialized);
 
             Assert.AreEqual(cosmosContainerSettings.Id, collectionDeser.Id);
@@ -916,7 +916,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 },
             };
 
-            
+
             string documentJsonString = null;
             using (MemoryStream memoryStream = new MemoryStream())
             {
@@ -1116,7 +1116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Dimensions = 3,
             };
 
-            Collection<Cosmos.Embedding> embeddings = new ()
+            Collection<Cosmos.Embedding> embeddings = new()
             {
                 embedding1,
                 embedding2,
@@ -1286,10 +1286,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             string[] allCosmosEntries = Enum.GetNames(typeof(TFirstEnum));
             string[] allDocumentsEntries = Enum.GetNames(typeof(TSecondEnum));
 
-           foreach(string entry in allDocumentsEntries)
-           {
+            foreach (string entry in allDocumentsEntries)
+            {
                 Assert.IsTrue(allCosmosEntries.Contains(entry));
-           }
+            }
         }
     }
 }

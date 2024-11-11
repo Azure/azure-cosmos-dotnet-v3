@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using System.Collections;
     using System.Collections.Generic;
     using System.Collections.Immutable;
-    using Debug = System.Diagnostics.Debug;
     using System.IO;
     using System.Linq;
     using System.Reflection;
@@ -35,10 +34,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
     using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
+    using Debug = System.Diagnostics.Debug;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
     using UInt128 = UInt128;
-    using Microsoft.Azure.Documents.Routing;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal class InMemoryContainer : IMonadicDocumentContainer
@@ -83,10 +83,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
         public Task<TryCatch<List<FeedRangeEpk>>> MonadicGetFeedRangesAsync(
             ITrace trace,
-            CancellationToken cancellationToken) => this.MonadicGetChildRangeAsync(
+            CancellationToken cancellationToken)
+        {
+            return this.MonadicGetChildRangeAsync(
                 FeedRangeEpk.FullRange,
                 trace,
                 cancellationToken);
+        }
 
         public async Task<TryCatch<List<FeedRangeEpk>>> MonadicGetChildRangeAsync(
             FeedRangeInternal feedRange,
@@ -319,13 +322,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 {
                     partitionKeyMatches = true;
                 }
-                else if ((candidatePartitionKey != null) && (partitionKey != null))
-                {
-                    partitionKeyMatches = candidatePartitionKey.Equals(partitionKey);
-                }
                 else
                 {
-                    partitionKeyMatches = false;
+                    partitionKeyMatches = (candidatePartitionKey != null) && (partitionKey != null) ? candidatePartitionKey.Equals(partitionKey) : false;
                 }
 
                 if (identifierMatches && partitionKeyMatches)
@@ -485,7 +484,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             using (ITrace childTrace = trace.StartChild("Query Transport", TraceComponent.Transport, TraceLevel.Info))
             {
-                FeedRange feedRange = this.resolvePartitionsBasedOnPrefix ? 
+                FeedRange feedRange = this.resolvePartitionsBasedOnPrefix ?
                     ResolveFeedRangeBasedOnPrefixContainer(feedRangeState.FeedRange, this.partitionKeyDefinition) :
                     feedRangeState.FeedRange;
                 TryCatch<int> monadicPartitionKeyRangeId = this.MonadicGetPartitionKeyRangeIdFromFeedRange(feedRange);
@@ -580,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     IEnumerator<CosmosElement> queryResultEnumerator = queryPageResults.GetEnumerator();
 
                     int skipCount = 0;
-                    while(queryResultEnumerator.MoveNext())
+                    while (queryResultEnumerator.MoveNext())
                     {
                         CosmosObject document = (CosmosObject)queryResultEnumerator.Current;
                         CosmosElement orderByValue = ((CosmosObject)((CosmosArray)document["orderByItems"])[0])["item"];
@@ -975,7 +974,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                         NumberPartitionKeyComponent numberPartitionKey => PartitionKeyHash.V2.Hash(Number64.ToDouble(numberPartitionKey.Value)),
                         _ => throw new ArgumentOutOfRangeException(),
                     };
-                    feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min: partitionKeyHash.Value, max: partitionKeyHash.Value + "-FF", isMinInclusive:true, isMaxInclusive: false));
+                    feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(min: partitionKeyHash.Value, max: partitionKeyHash.Value + "-FF", isMinInclusive: true, isMaxInclusive: false));
                 }
             }
 
@@ -1449,7 +1448,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 feedRangeEpk.Range.Min == string.Empty ?
                 (PartitionKeyHash?)null :
                 FromHashString(feedRangeEpk.Range.Min);
-            PartitionKeyHash? end = 
+            PartitionKeyHash? end =
                 feedRangeEpk.Range.Max == string.Empty || feedRangeEpk.Range.Max == "FF" ?
                 (PartitionKeyHash?)null :
                 FromHashString(feedRangeEpk.Range.Max);
@@ -1463,7 +1462,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         private static PartitionKeyHash FromHashString(string rangeHash)
         {
             List<UInt128> hashes = new();
-            foreach(string hashComponent in GetHashComponents(rangeHash))
+            foreach (string hashComponent in GetHashComponents(rangeHash))
             {
                 // Hash FF has a special meaning in CosmosDB stack. It represents the max range which needs to be correctly represented for UInt128 parsing.
                 string value = hashComponent.Equals("FF", StringComparison.OrdinalIgnoreCase) ?
@@ -1501,7 +1500,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             string result;
             if (buffer.Length <= start + 2)
             {
-                result = buffer.Substring(start);
+                result = buffer[start..];
                 start = buffer.Length;
             }
             else
@@ -1543,13 +1542,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     "InMemoryContainer Assert!",
                     "At least 1 byte must be present in hash value");
                 Debug.Assert(
-                    result[0] != '-' && result[result.Length - 1] != '-',
+                    result[0] != '-' && result[^1] != '-',
                     "InMemoryContainer Assert!",
                     "Hyphens should NOT be present at the start of end of the string");
                 Debug.Assert(
                     Enumerable
                         .Range(1, result.Length - 1)
-                        .All(i => (i % 3 == 2) == (result[i] == '-')),
+                        .All(i => i % 3 == 2 == (result[i] == '-')),
                     "InMemoryContainer Assert!",
                     "Hyphens should be (only) present after every subsequent byte value");
             }
@@ -1611,9 +1610,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
             public int Count => this.storage.Count;
 
-            public IEnumerator<Record> GetEnumerator() => this.storage.GetEnumerator();
+            public IEnumerator<Record> GetEnumerator()
+            {
+                return this.storage.GetEnumerator();
+            }
 
-            IEnumerator IEnumerable.GetEnumerator() => this.storage.GetEnumerator();
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return this.storage.GetEnumerator();
+            }
 
             public Record Add(int pkrangeid, CosmosObject payload)
             {
@@ -1635,7 +1640,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 }
                 else
                 {
-                    currentResourceId = this.storage[this.storage.Count - 1].ResourceIdentifier;
+                    currentResourceId = this.storage[^1].ResourceIdentifier;
                 }
 
                 ResourceId nextResourceId = ResourceId.Parse("AYIMAMmFOw8YAAAAAAAAAA==");
@@ -1685,9 +1690,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             {
             }
 
-            public bool Visit(ChangeFeedStateBeginning changeFeedStateBeginning, Change input) => true;
+            public bool Visit(ChangeFeedStateBeginning changeFeedStateBeginning, Change input)
+            {
+                return true;
+            }
 
-            public bool Visit(ChangeFeedStateTime changeFeedStateTime, Change input) => input.Record.Timestamp >= changeFeedStateTime.StartTime;
+            public bool Visit(ChangeFeedStateTime changeFeedStateTime, Change input)
+            {
+                return input.Record.Timestamp >= changeFeedStateTime.StartTime;
+            }
 
             public bool Visit(ChangeFeedStateContinuation changeFeedStateContinuation, Change input)
             {

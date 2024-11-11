@@ -15,28 +15,28 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(InvalidOperationException))]
         public void FromStream_Throws()
         {
-            var handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
-            var retval = handler.FromStream<string>(new MemoryStream());
+            CosmosJsonSerializerWrapper handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
+            _ = handler.FromStream<string>(new MemoryStream());
         }
 
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void ToStream_Throws()
         {
-            var handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
-            var retval = handler.ToStream("testValue");
+            CosmosJsonSerializerWrapper handler = new CosmosJsonSerializerWrapper(new CosmosJsonSerializerFails());
+            _ = handler.ToStream("testValue");
         }
 
         private class CosmosJsonSerializerFails : CosmosSerializer
         {
             public override T FromStream<T>(Stream stream)
             {
-                return default(T);
+                return default;
             }
 
             public override Stream ToStream<T>(T input)
             {
-                var memoryStream = new MemoryStream();
+                MemoryStream memoryStream = new MemoryStream();
                 memoryStream.Close();
                 return memoryStream;
             }

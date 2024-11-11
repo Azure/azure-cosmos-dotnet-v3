@@ -13,57 +13,73 @@ namespace Microsoft.Azure.Cosmos.Json
     {
         public static class Enumerator
         {
-            public static IEnumerable<ReadOnlyMemory<byte>> GetArrayItems(ReadOnlyMemory<byte> buffer)
+            public static IEnumerable<ArrayItem> GetArrayItems(
+                ReadOnlyMemory<byte> rootBuffer,
+                int arrayOffset,
+                UniformArrayInfo externalArrayInfo)
             {
+                ReadOnlyMemory<byte> buffer = rootBuffer.Slice(arrayOffset);
                 byte typeMarker = buffer.Span[0];
-                if (!JsonBinaryEncoding.TypeMarker.IsArray(typeMarker))
+
+                UniformArrayInfo uniformArrayInfo;
+                if (externalArrayInfo != null)
                 {
-                    throw new JsonInvalidTokenException();
+                    uniformArrayInfo = externalArrayInfo.NestedArrayInfo;
+                }
+                else
+                {
+                    uniformArrayInfo = IsUniformArrayTypeMarker(typeMarker) ? GetUniformArrayInfo(buffer.Span) : null;
                 }
 
-                int firstArrayItemOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
-                int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-
-                // Scope to just the array
-                buffer = buffer.Slice(0, arrayLength);
-
-                // Seek to the first array item
-                buffer = buffer.Slice(firstArrayItemOffset);
-
-                while (buffer.Length != 0)
+                if (uniformArrayInfo != null)
                 {
-                    int arrayItemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
-                    if (arrayItemLength > buffer.Length)
+                    int itemStartOffset = arrayOffset + uniformArrayInfo.PrefixSize;
+                    int itemEndOffset = itemStartOffset + (uniformArrayInfo.ItemSize * uniformArrayInfo.ItemCount);
+                    for (int offset = itemStartOffset; offset < itemEndOffset; offset += uniformArrayInfo.ItemSize)
                     {
-                        // Array Item got cut off.
+                        yield return new ArrayItem(offset, uniformArrayInfo);
+                    }
+                }
+                else
+                {
+                    if (!TypeMarker.IsArray(typeMarker))
+                    {
                         throw new JsonInvalidTokenException();
                     }
 
-                    // Create a buffer for that array item
-                    ReadOnlyMemory<byte> arrayItem = buffer.Slice(0, arrayItemLength);
-                    yield return arrayItem;
+                    int firstArrayItemOffset = JsonBinaryEncoding.GetFirstValueOffset(typeMarker);
+                    int arrayLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
-                    // Slice off the array item
-                    buffer = buffer.Slice(arrayItemLength);
-                }
-            }
+                    // Scope to just the array
+                    buffer = buffer.Slice(0, arrayLength);
 
-            public static IEnumerable<Memory<byte>> GetMutableArrayItems(Memory<byte> buffer)
-            {
-                foreach (ReadOnlyMemory<byte> readOnlyArrayItem in Enumerator.GetArrayItems(buffer))
-                {
-                    if (!MemoryMarshal.TryGetArray(readOnlyArrayItem, out ArraySegment<byte> segment))
+                    // Seek to the first array item
+                    buffer = buffer.Slice(firstArrayItemOffset);
+
+                    while (buffer.Length != 0)
                     {
-                        throw new InvalidOperationException("failed to get array segment.");
-                    }
+                        int arrayItemLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
+                        if (arrayItemLength > buffer.Length)
+                        {
+                            // Array Item got cut off.
+                            throw new JsonInvalidTokenException();
+                        }
 
-                    yield return segment;
+                        yield return new ArrayItem(arrayOffset + (arrayLength - buffer.Length), null);
+
+                        // Slice off the array item
+                        buffer = buffer.Slice(arrayItemLength);
+                    }
                 }
             }
 
-            public static IEnumerable<ObjectProperty> GetObjectProperties(ReadOnlyMemory<byte> buffer)
+            public static IEnumerable<ObjectProperty> GetObjectProperties(
+                ReadOnlyMemory<byte> rootBuffer,
+                int objectOffset)
             {
+                ReadOnlyMemory<byte> buffer = rootBuffer.Slice(objectOffset);
                 byte typeMarker = buffer.Span[0];
+
                 if (!JsonBinaryEncoding.TypeMarker.IsObject(typeMarker))
                 {
                     throw new JsonInvalidTokenException();
@@ -73,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 int objectLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
 
                 // Scope to just the array
-                buffer = buffer.Slice(0, (int)objectLength);
+                buffer = buffer.Slice(0, objectLength);
 
                 // Seek to the first object property
                 buffer = buffer.Slice(firstValueOffset);
@@ -85,7 +101,8 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new JsonInvalidTokenException();
                     }
 
-                    ReadOnlyMemory<byte> name = buffer.Slice(0, nameNodeLength);
+                    int nameOffset = objectOffset + (objectLength - buffer.Length);
+
                     buffer = buffer.Slice(nameNodeLength);
 
                     int valueNodeLength = JsonBinaryEncoding.GetValueLength(buffer.Span);
@@ -94,57 +111,36 @@ namespace Microsoft.Azure.Cosmos.Json
                         throw new JsonInvalidTokenException();
                     }
 
-                    ReadOnlyMemory<byte> value = buffer.Slice(0, valueNodeLength);
+                    int valueOffset = objectOffset + (objectLength - buffer.Length);
+
                     buffer = buffer.Slice(valueNodeLength);
 
-                    yield return new ObjectProperty(name, value);
+                    yield return new ObjectProperty(nameOffset, valueOffset);
                 }
             }
 
-            public static IEnumerable<MutableObjectProperty> GetMutableObjectProperties(Memory<byte> buffer)
+            public readonly struct ArrayItem
             {
-                foreach (ObjectProperty objectProperty in GetObjectProperties(buffer))
+                public ArrayItem(int offset, UniformArrayInfo externalArrayInfo)
                 {
-                    if (!MemoryMarshal.TryGetArray(objectProperty.Name, out ArraySegment<byte> nameSegment))
-                    {
-                        throw new InvalidOperationException("failed to get array segment.");
-                    }
-
-                    if (!MemoryMarshal.TryGetArray(objectProperty.Value, out ArraySegment<byte> valueSegment))
-                    {
-                        throw new InvalidOperationException("failed to get array segment.");
-                    }
-
-                    yield return new MutableObjectProperty(nameSegment, valueSegment);
+                    this.Offset = offset;
+                    this.ExternalArrayInfo = externalArrayInfo;
                 }
+
+                public int Offset { get; }
+                public UniformArrayInfo ExternalArrayInfo { get; }
             }
 
             public readonly struct ObjectProperty
             {
-                public ObjectProperty(
-                    ReadOnlyMemory<byte> name,
-                    ReadOnlyMemory<byte> value)
+                public ObjectProperty(int nameOffset, int valueOffset)
                 {
-                    this.Name = name;
-                    this.Value = value;
+                    this.NameOffset = nameOffset;
+                    this.ValueOffset = valueOffset;
                 }
 
-                public ReadOnlyMemory<byte> Name { get; }
-                public ReadOnlyMemory<byte> Value { get; }
-            }
-
-            public readonly struct MutableObjectProperty
-            {
-                public MutableObjectProperty(
-                    Memory<byte> name,
-                    Memory<byte> value)
-                {
-                    this.Name = name;
-                    this.Value = value;
-                }
-
-                public Memory<byte> Name { get; }
-                public Memory<byte> Value { get; }
+                public int NameOffset { get; }
+                public int ValueOffset { get; }
             }
         }
     }
