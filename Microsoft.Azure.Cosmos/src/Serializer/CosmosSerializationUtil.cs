@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>Returns true if the input stream is successfully serialized to the target format, otherwise false.</returns>
         internal static Stream TrySerializeStreamToTargetFormat(
             JsonSerializationFormat targetSerializationFormat,
-            CloneableStream inputStream)
+            Stream inputStream)
         {
             if (inputStream == null)
             {

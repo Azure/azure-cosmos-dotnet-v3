@@ -926,7 +926,7 @@ namespace Microsoft.Azure.Cosmos
             // Convert Text to Binary Stream.
             streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
                 targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
-                inputStream: streamPayload == null ? null : await StreamExtension.AsClonableStreamAsync(streamPayload));
+                inputStream: streamPayload ?? null);
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -943,12 +943,11 @@ namespace Microsoft.Azure.Cosmos
 
             // Convert Binary Stream to Text.
             if (targetResponseSerializationFormat.HasValue
-                && (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
-                && responseMessage?.Content is CloneableStream outputCloneableStream)
+                && (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations))
             {
                 responseMessage.Content = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
                     targetSerializationFormat: targetResponseSerializationFormat.Value,
-                    inputStream: outputCloneableStream);
+                    inputStream: responseMessage?.Content);
             }
 
             return responseMessage;
