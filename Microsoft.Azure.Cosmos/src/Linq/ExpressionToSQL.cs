@@ -1346,8 +1346,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="inputExpression">Method to translate.</param>
         /// <param name="context">Query translation context.</param>
-        /// <param name="keySelectorLambdaExpression">The lambda expression for the key selector.</param>
-        private static SqlSelectClause VisitGroupByAggregateMethodCall(MethodCallExpression inputExpression, TranslationContext context, LambdaExpression keySelectorLambdaExpression)
+        private static SqlSelectClause VisitGroupByAggregateMethodCall(MethodCallExpression inputExpression, TranslationContext context)
         {
             context.PushMethod(inputExpression);
 
@@ -1924,7 +1923,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         // Single Value Selector
                         MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
-                        SqlSelectClause select = ExpressionToSql.VisitGroupByAggregateMethodCall(methodCallExpression, context, keySelectorLambda);
+                        SqlSelectClause select = ExpressionToSql.VisitGroupByAggregateMethodCall(methodCallExpression, context);
                         context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
                         break;
                     }
@@ -1970,7 +1969,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                                     }
                                 case ExpressionType.Call:
                                     {
-                                        SqlSelectClause selectClause = ExpressionToSql.VisitGroupByAggregateMethodCall((MethodCallExpression)arg, context, keySelectorLambda);
+                                        SqlSelectClause selectClause = ExpressionToSql.VisitGroupByAggregateMethodCall((MethodCallExpression)arg, context);
                                         SqlScalarExpression selectExpression = ((SqlSelectValueSpec)selectClause.SelectSpec).Expression;
 
                                         SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
@@ -2344,12 +2343,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                 SqlScalarExpression parent = memberIndexerExpression.Member;
                 if (parent == null)
                 {
-                    break;
-                }
-
-                if (parent is SqlObject sqlObject)
-                {
-                    literals.Add(SqlStringLiteral.Create(sqlObject.ToString()));
                     break;
                 }
 
