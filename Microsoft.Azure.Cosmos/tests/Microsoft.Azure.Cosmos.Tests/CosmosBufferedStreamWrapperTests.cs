@@ -176,19 +176,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        internal class NonSeekableMemoryStream : Stream
+        internal class NonSeekableMemoryStream : Stream, IDisposable
         {
             private readonly byte[] buffer;
             private int position;
+            private bool writable;    // Can user write to this stream?
+            private bool isOpen;      // Is this stream open or closed?
 
             public NonSeekableMemoryStream(byte[] data)
             {
                 this.buffer = data;
+                this.isOpen = true;
+                this.writable = false;
             }
 
-            public override bool CanRead => true;
+            public override bool CanRead => this.isOpen;
             public override bool CanSeek => false;
-            public override bool CanWrite => false;
+            public override bool CanWrite => this.writable;
 
             public override long Length => this.buffer.Length;
 
@@ -224,6 +228,18 @@ namespace Microsoft.Azure.Cosmos.Tests
             public override void Write(byte[] buffer, int offset, int count)
             {
                 throw new NotImplementedException();
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    this.isOpen = false;
+                    this.writable = false;
+                    this.Flush();
+                }
+
+                base.Dispose(disposing);
             }
         }
     }

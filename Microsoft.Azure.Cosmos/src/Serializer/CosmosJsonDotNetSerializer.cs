@@ -91,15 +91,15 @@ namespace Microsoft.Azure.Cosmos
         {
             using (stream)
             {
-                if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: true))
                 {
-                    return (T)(object)stream;
-                }
+                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    {
+                        return (T)(object)stream;
+                    }
 
-                JsonSerializer jsonSerializer = this.GetSerializer();
+                    JsonSerializer jsonSerializer = this.GetSerializer();
 
-                using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: false))
-                {
                     if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
                     {
                         byte[] content = bufferedStream.ReadAll();

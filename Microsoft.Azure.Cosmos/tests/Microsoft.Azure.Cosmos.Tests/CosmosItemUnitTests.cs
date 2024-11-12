@@ -152,7 +152,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
-        public async Task CreateItemAsync_WithNonSeekableStream_ShouldConvertToClonnableStream(bool binaryEncodingEnabledInClient)
+        public async Task CreateItemAsync_WithNonSeekableStream_ShouldCreateSuccessfully(
+            bool binaryEncodingEnabledInClient)
         {
             try
             {
@@ -183,7 +184,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.AreEqual(options, request.RequestOptions);
                     Assert.AreEqual(ResourceType.Document, request.ResourceType);
                     Assert.IsNotNull(request.Headers.PartitionKey);
-                    // Assert.AreEqual("\"[4567.1234]\"", request.Headers.PartitionKey);
                     testHandlerHitCount++;
 
                     bool shouldReturnBinaryResponse = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] != null
