@@ -89,36 +89,33 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The object representing the deserialized stream</returns>
         public override T FromStream<T>(Stream stream)
         {
-            using (stream)
+            using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: true))
             {
-                using (CosmosBufferedStreamWrapper bufferedStream = new (stream, shouldDisposeInnerStream: true))
+                if (typeof(Stream).IsAssignableFrom(typeof(T)))
                 {
-                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
+                    return (T)(object)stream;
+                }
+
+                JsonSerializer jsonSerializer = this.GetSerializer();
+
+                if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
+                {
+                    byte[] content = bufferedStream.ReadAll();
+
+                    using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
+                        jsonReader: Json.JsonReader.Create(
+                            jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
+                            buffer: content));
+
+                    return jsonSerializer.Deserialize<T>(reader);
+                }
+                else
+                {
+                    using (StreamReader sr = new (bufferedStream))
                     {
-                        return (T)(object)stream;
-                    }
-
-                    JsonSerializer jsonSerializer = this.GetSerializer();
-
-                    if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
-                    {
-                        byte[] content = bufferedStream.ReadAll();
-
-                        using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
-                            jsonReader: Json.JsonReader.Create(
-                                jsonSerializationFormat: Json.JsonSerializationFormat.Binary,
-                                buffer: content));
-
-                        return jsonSerializer.Deserialize<T>(reader);
-                    }
-                    else
-                    {
-                        using (StreamReader sr = new (bufferedStream))
+                        using (JsonTextReader jsonTextReader = new (sr))
                         {
-                            using (JsonTextReader jsonTextReader = new (sr))
-                            {
-                                return jsonSerializer.Deserialize<T>(jsonTextReader);
-                            }
+                            return jsonSerializer.Deserialize<T>(jsonTextReader);
                         }
                     }
                 }
