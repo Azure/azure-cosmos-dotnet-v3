@@ -483,7 +483,7 @@ namespace Microsoft.Azure.Cosmos.NetFramework.Tests.CosmosElements
             }
             catch (Exception ex)
             {
-                Assert.Fail($"Failed to get JSON payload: {json.Substring(0, 128)} {ex}");
+                Assert.Fail($"Failed to get JSON payload: {json[..128]} {ex}");
             }
 
             documents = documents.OrderBy(x => Guid.NewGuid()).Take(100);

@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="GlobalEndpointManager"/>
@@ -36,24 +36,32 @@ namespace Microsoft.Azure.Cosmos
                 // Setup dummpy read locations for the database account
                 Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-                AccountRegion writeLocation = new AccountRegion();
-                writeLocation.Name = "WriteLocation";
-                writeLocation.Endpoint = "https://writeendpoint.net/";
+                AccountRegion writeLocation = new AccountRegion
+                {
+                    Name = "WriteLocation",
+                    Endpoint = "https://writeendpoint.net/"
+                };
 
-                AccountRegion readLocation1 = new AccountRegion();
-                readLocation1.Name = "ReadLocation1";
-                readLocation1.Endpoint = "https://readendpoint1.net/";
+                AccountRegion readLocation1 = new AccountRegion
+                {
+                    Name = "ReadLocation1",
+                    Endpoint = "https://readendpoint1.net/"
+                };
 
-                AccountRegion readLocation2 = new AccountRegion();
-                readLocation2.Name = "ReadLocation2";
-                readLocation2.Endpoint = "https://readendpoint2.net/";
+                AccountRegion readLocation2 = new AccountRegion
+                {
+                    Name = "ReadLocation2",
+                    Endpoint = "https://readendpoint2.net/"
+                };
 
                 readableLocations.Add(writeLocation);
                 readableLocations.Add(readLocation1);
                 readableLocations.Add(readLocation2);
 
-                AccountProperties databaseAccount = new AccountProperties();
-                databaseAccount.ReadLocationsInternal = readableLocations;
+                AccountProperties databaseAccount = new AccountProperties
+                {
+                    ReadLocationsInternal = readableLocations
+                };
 
                 //Setup mock owner "document client"
                 Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
@@ -261,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(4, count, "All endpoints should have been tried. 1 global, 3 regional endpoints");
                 Assert.AreEqual(4, exceptions.Count, "Some exceptions were not logged");
                 Assert.AreEqual(4, aggregateException.InnerExceptions.Count, "aggregateException should have 4 inner exceptions");
-                foreach(Exception exception in aggregateException.InnerExceptions)
+                foreach (Exception exception in aggregateException.InnerExceptions)
                 {
                     Assert.IsTrue(exceptions.Contains(exception));
                 }
@@ -463,7 +471,7 @@ namespace Microsoft.Azure.Cosmos
             mockOwner.Setup(owner =>
                     owner.GetDatabaseAccountInternalAsync(effectivePreferredRegion1SuffixedUri, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(databaseAccount);
-            
+
             // Create connection policy with no preferred locations
             ConnectionPolicy connectionPolicy = new ConnectionPolicy();
 
@@ -473,7 +481,7 @@ namespace Microsoft.Azure.Cosmos
 
             await Task.Delay(TimeSpan.FromSeconds(5));
             await globalEndpointManager.RefreshLocationAsync(forceRefresh: true);
-            
+
             mockOwner.Verify(
                 owner => owner.GetDatabaseAccountInternalAsync(defaultEndpoint, It.IsAny<CancellationToken>()),
                 Times.Exactly(2));
@@ -512,7 +520,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
             DefaultTrace.InitEventListener();
 
-            using GlobalEndpointManager globalEndpointManager = new (mockOwner.Object, connectionPolicy);
+            using GlobalEndpointManager globalEndpointManager = new(mockOwner.Object, connectionPolicy);
 
             // Act.
             await globalEndpointManager.RefreshLocationAsync(forceRefresh: false);

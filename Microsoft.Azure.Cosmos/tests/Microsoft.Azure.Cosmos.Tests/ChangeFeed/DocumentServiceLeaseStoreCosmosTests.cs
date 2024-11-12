@@ -102,8 +102,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
             dynamic lockDocument = new { id = Guid.NewGuid().ToString() };
 
-            ResponseMessage response = new ResponseMessage(System.Net.HttpStatusCode.OK) 
-            { 
+            ResponseMessage response = new ResponseMessage(System.Net.HttpStatusCode.OK)
+            {
                 Content = new CosmosJsonDotNetSerializer().ToStream(lockDocument)
             };
 

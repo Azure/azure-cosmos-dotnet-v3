@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task NotDisposedAfterUsing()
         {
             SemaphoreSlim semaphore = new SemaphoreSlim(1, 1);
-            using(await semaphore.UsingWaitAsync(NoOpTrace.Singleton, default))
+            using (await semaphore.UsingWaitAsync(NoOpTrace.Singleton, default))
             {
                 ;
             }

@@ -66,11 +66,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                Container monitoredContainer) =>
-                {
-                    Assert.AreEqual(leaseContainerForBuilder.Id, leaseContainer.Id);
-                };
-            
+                Container monitoredContainer) => Assert.AreEqual(leaseContainerForBuilder.Id, leaseContainer.Id);
+
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
                 ChangeFeedProcessorBuilderTests.GetMockedProcessor(),
@@ -94,10 +91,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                Container monitoredContainer) =>
-                {
-                    Assert.IsInstanceOfType(leaseStoreManager, typeof(DocumentServiceLeaseStoreManagerInMemory));
-                };
+                Container monitoredContainer) => Assert.IsInstanceOfType(leaseStoreManager, typeof(DocumentServiceLeaseStoreManagerInMemory));
 
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -123,10 +117,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                Container monitoredContainer) =>
-                {
-                    Assert.AreEqual(myInstance, instanceName);
-                };
+                Container monitoredContainer) => Assert.AreEqual(myInstance, instanceName);
 
             ChangeFeedProcessorBuilder builder = new ChangeFeedProcessorBuilder("workflowName",
                 ChangeFeedProcessorBuilderTests.GetMockedContainer(),
@@ -269,12 +260,13 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
 
         private static Action<DocumentServiceLeaseStoreManager, Container, string, ChangeFeedLeaseOptions, ChangeFeedProcessorOptions, Container> GetEmptyInitialization()
         {
-            return (DocumentServiceLeaseStoreManager leaseStoreManager, 
-                Container leaseContainer, 
-                string instanceName, 
+            return (DocumentServiceLeaseStoreManager leaseStoreManager,
+                Container leaseContainer,
+                string instanceName,
                 ChangeFeedLeaseOptions changeFeedLeaseOptions,
                 ChangeFeedProcessorOptions changeFeedProcessorOptions,
-                Container monitoredContainer) => { };
+                Container monitoredContainer) =>
+            { };
         }
     }
 }

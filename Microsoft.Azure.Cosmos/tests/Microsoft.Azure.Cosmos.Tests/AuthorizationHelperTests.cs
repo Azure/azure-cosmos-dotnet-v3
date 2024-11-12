@@ -150,19 +150,20 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     foreach (string resourceName in this.ResourceNameValues)
                     {
-                        RequestNameValueCollection nvc = new();
-                        nvc.Add(HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r"));
+                        RequestNameValueCollection nvc = new()
+                        {
+                            { HttpConstants.HttpHeaders.XDate, new DateTime(2020, 02, 01, 10, 00, 00).ToString("r") }
+                        };
                         string authorizationKey = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                             method,
                             resourceName,
                             resourceType,
                             nvc,
                             new StringHMACSHA256Hash(key),
-                            out string payload);
-
+                            out string _);
                         AuthorizationHelper.ParseAuthorizationToken(authorizationKey,
                             out ReadOnlyMemory<char> typeOutput,
-                            out ReadOnlyMemory<char> versionOutput,
+                            out _,
                             out ReadOnlyMemory<char> tokenOutput);
                         Assert.AreEqual("master", typeOutput.ToString());
 
@@ -183,12 +184,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string key = "VGhpcyBpcyBhIHNhbXBsZSBzdHJpbmc=";
 
-            for(int i = 0; i < this.AuthorizationBaseline.Length; i++)
+            for (int i = 0; i < this.AuthorizationBaseline.Length; i++)
             {
                 string[] baseline = this.AuthorizationBaseline[i];
                 string[] baselineResults = this.AuthorizationBaselineResults[i];
-                RequestNameValueCollection nvc = new();
-                nvc.Add(HttpConstants.HttpHeaders.XDate, baseline[4]);
+                RequestNameValueCollection nvc = new()
+                {
+                    { HttpConstants.HttpHeaders.XDate, baseline[4] }
+                };
                 Uri uri = new Uri(baseline[0]);
                 string authorization = AuthorizationHelper.GenerateKeyAuthorizationSignature(
                     verb: baseline[2],
@@ -215,12 +218,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(authorization2, baselineResults[0]);
                 Assert.AreEqual(authorization3, baselineResults[0]);
                 Assert.AreEqual(payload2.Replace("\n", "[n]"), baselineResults[1]);
-
-                AuthorizationHelper.ParseAuthorizationToken(authorization, out ReadOnlyMemory<char> typeOutput1, out ReadOnlyMemory<char> versionoutput1, out ReadOnlyMemory<char> tokenOutput1);
+                AuthorizationHelper.ParseAuthorizationToken(authorization, out ReadOnlyMemory<char> typeOutput1, out _, out ReadOnlyMemory<char> tokenOutput1);
                 Assert.AreEqual("master", typeOutput1.ToString());
-                AuthorizationHelper.ParseAuthorizationToken(authorization2, out ReadOnlyMemory<char> typeOutput2, out ReadOnlyMemory<char> versionoutput2, out ReadOnlyMemory<char> tokenOutput2);
+                AuthorizationHelper.ParseAuthorizationToken(authorization2, out ReadOnlyMemory<char> typeOutput2, out _, out ReadOnlyMemory<char> tokenOutput2);
                 Assert.AreEqual("master", typeOutput2.ToString());
-                AuthorizationHelper.ParseAuthorizationToken(authorization3, out ReadOnlyMemory<char> typeOutput3, out ReadOnlyMemory<char> versionoutput3, out ReadOnlyMemory<char> tokenOutput3);
+                AuthorizationHelper.ParseAuthorizationToken(authorization3, out ReadOnlyMemory<char> typeOutput3, out _, out ReadOnlyMemory<char> tokenOutput3);
                 Assert.AreEqual("master", typeOutput3.ToString());
 
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(tokenOutput1, baseline[2], baseline[1], baseline[3], nvc, key));
@@ -233,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void Base64UrlEncoderFuzzTest()
         {
             Random random = new Random();
-            for(int i = 0; i < 2000; i++)
+            for (int i = 0; i < 2000; i++)
             {
                 Span<byte> randomBytes = new byte[random.Next(1, 500)];
                 random.NextBytes(randomBytes);
@@ -249,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     baseline = HttpUtility.UrlEncode(randomBase64Bytes);
                     newResults = AuthorizationHelper.UrlEncodeBase64SpanInPlace(buffered, randomBase64Bytes.Length);
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     Assert.Fail($"Url encode failed with string {randomBase64String} ; Exception:{e}");
                 }
@@ -313,10 +315,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.ValidateTokenParsing(Constants.Properties.MasterToken, 100, shouldParse: true);
             this.ValidateTokenParsing(Constants.Properties.MasterToken, 1024, shouldParse: true);
             this.ValidateTokenParsing(Constants.Properties.MasterToken, 1024 + 1, shouldParse: false);
-            this.ValidateTokenParsing(Constants.Properties.MasterToken, 8*1024, shouldParse: false);
-            this.ValidateTokenParsing(Constants.Properties.MasterToken, (8*1024) + 1, shouldParse: false);
-            this.ValidateTokenParsing(Constants.Properties.MasterToken, 16*1024, shouldParse: false);
-            this.ValidateTokenParsing(Constants.Properties.MasterToken, (16*1024) + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 8 * 1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, (8 * 1024) + 1, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, 16 * 1024, shouldParse: false);
+            this.ValidateTokenParsing(Constants.Properties.MasterToken, (16 * 1024) + 1, shouldParse: false);
 
             // Resource Token (limit 8*1024)
             this.ValidateTokenParsing(Constants.Properties.ResourceToken, 100, shouldParse: true);

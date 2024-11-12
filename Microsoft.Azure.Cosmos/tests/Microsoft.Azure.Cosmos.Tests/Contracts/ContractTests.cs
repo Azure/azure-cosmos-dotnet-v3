@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 new CosmosClient((string)null);
                 Assert.Fail();
             }
-            catch(ArgumentNullException)
+            catch (ArgumentNullException)
             { }
 
             Assert.AreEqual(HttpConstants.Versions.v2020_07_15, HttpConstants.Versions.CurrentVersion);
@@ -78,11 +78,11 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 AuthorizationHelper.ParseAuthorizationToken(keyAuthorizationSignature, out ReadOnlyMemory<char> typeOutput1, out ReadOnlyMemory<char> versionoutput1, out ReadOnlyMemory<char> tokenOutput1);
                 Assert.AreEqual("master", typeOutput1.ToString());
                 Assert.IsTrue(AuthorizationHelper.CheckPayloadUsingKey(
-                    tokenOutput1, 
-                    generateKeyAuthorizationSignatureArgs[2], 
-                    generateKeyAuthorizationSignatureArgs[1], 
-                    generateKeyAuthorizationSignatureArgs[3], 
-                    headers, 
+                    tokenOutput1,
+                    generateKeyAuthorizationSignatureArgs[2],
+                    generateKeyAuthorizationSignatureArgs[1],
+                    generateKeyAuthorizationSignatureArgs[3],
+                    headers,
                     key));
             }
         }

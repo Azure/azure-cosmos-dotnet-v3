@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
-                this.MockClientContext(), 
+                this.MockClientContext(),
                 container: null);
 
             int count = 0;
@@ -219,9 +219,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             CosmosException exception = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
-                numItems:0,
+                numItems: 0,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
-                    inject429s: false, 
+                    inject429s: false,
                     injectEmptyPages: false,
                     returnFailure: exception));
 

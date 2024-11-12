@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
                 "get_PartitionResolvers", "get_ResourceTokens", // Obsolete getters.
                 "ToString", "Equals", "GetHashCode", "GetType", "get_httpClient"
             };
-            
+
             // Get all public methods declared in DocumentClient and verify that they are a part of Interfaces implemented.
             MethodInfo[] existingDocClientMethods = typeof(DocumentClient).GetMethods(BindingFlags.Public | BindingFlags.Instance);
 
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                if(!skipValidationForCurrentMethod)
+                if (!skipValidationForCurrentMethod)
                 {
                     bool isObsoleteMethod = false;
                     IEnumerable<Attribute> attribs = info.GetCustomAttributes();
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
 
-                    if(!isObsoleteMethod)
+                    if (!isObsoleteMethod)
                     {
                         bool belongsToAnInterface = false;
                         for (int i = 0; i < interfaces.Length; i++)
