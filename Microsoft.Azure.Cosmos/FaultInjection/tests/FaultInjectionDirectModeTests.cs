@@ -519,10 +519,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serverErrorFeedRangeRule };
                 FaultInjector faultInjector = new FaultInjector(rules);
                 await this.Initialize(faultInjector, true);
-                if (this.client != null)
-                {
-                    await this.client.InitilizeFaultInjectionAsync();
-                }
 
                 GlobalEndpointManager? globalEndpointManager = this.client?.ClientContext.DocumentClient.GlobalEndpointManager;
                 List<Uri> readRegions = new List<Uri>();
@@ -956,7 +952,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Owner("nalutripician")]
         [Description("Tests injecting a server error response")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.Gone, 410, 21005, DisplayName = "Gone")]
-        [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.InternalServerEror, 500, 0, DisplayName = "InternalServerError")]
+        [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.InternalServerError, 500, 0, DisplayName = "InternalServerError")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.RetryWith, 449, 0, DisplayName = "RetryWith")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.TooManyRequests, 429, 0, DisplayName = "TooManyRequests")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.ReadSessionNotAvailable, 404, 1002, DisplayName = "ReadSessionNotAvailable")]
@@ -964,7 +960,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsMigrating, 410, 1008, DisplayName = "PartitionIsMigrating")]
         [DataRow(FaultInjectionOperationType.ReadItem, FaultInjectionServerErrorType.PartitionIsSplitting, 410, 1007, DisplayName = "PartitionIsSplitting")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Gone, 410, 21005, DisplayName = "Gone Write")]
-        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerEror, 500, 0, DisplayName = "InternalServerError Write")]
+        [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.InternalServerError, 500, 0, DisplayName = "InternalServerError Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.RetryWith, 449, 0, DisplayName = "RetryWith Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.TooManyRequests, 429, 0, DisplayName = "TooManyRequests Write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.ReadSessionNotAvailable, 404, 1002, DisplayName = "ReadSessionNotAvailable Write")]

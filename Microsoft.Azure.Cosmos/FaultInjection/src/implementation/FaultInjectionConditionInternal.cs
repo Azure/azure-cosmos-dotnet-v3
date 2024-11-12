@@ -57,12 +57,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds)
         {
-            if (partitionKeyRangeIds != null && partitionKeyRangeIds.Count() > 0)
+            if (partitionKeyRangeIds != null && partitionKeyRangeIds.Any())
             {
                 this.validators.Add(new PartitionKeyRangeIdValidator(partitionKeyRangeIds));
             }
         }
-
 
         public void SetResourceType(ResourceType resourceType)
         {

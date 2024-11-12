@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             .GetResultBuilder(FaultInjectionServerErrorType.RetryWith)
             .Build();
         private static readonly IFaultInjectionResult internalServerErrorResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.InternalServerEror)
+            .GetResultBuilder(FaultInjectionServerErrorType.InternalServerError)
             .Build();
         private static readonly IFaultInjectionResult readSessionNotAvailableResult = FaultInjectionResultBuilder
             .GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
@@ -218,8 +218,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                await faultInjectionClient.InitilizeFaultInjectionAsync();
-
                 Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
                 Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
@@ -290,9 +288,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-
-                await faultInjectionClient.InitilizeFaultInjectionAsync();
-
                 Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
                 Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
@@ -357,8 +352,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                await faultInjectionClient.InitilizeFaultInjectionAsync();
-
                 Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
                 Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
@@ -503,8 +496,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                await faultInjectionClient.InitilizeFaultInjectionAsync();
-
                 Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
                 Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 
@@ -722,8 +713,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                await faultInjectionClient.InitilizeFaultInjectionAsync();
-
                 Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
                 Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
 

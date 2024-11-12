@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return storeResponse;
 
-                case FaultInjectionServerErrorType.InternalServerEror:
+                case FaultInjectionServerErrorType.InternalServerError:
                     INameValueCollection internalServerErrorHeaders = args.RequestHeaders;
                     internalServerErrorHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
@@ -354,7 +354,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return httpResponse;
 
-                case FaultInjectionServerErrorType.InternalServerEror:
+                case FaultInjectionServerErrorType.InternalServerError:
                     
                     httpResponse = new HttpResponseMessage
                     {
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
-                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;

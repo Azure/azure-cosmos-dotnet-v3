@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
-    using Antlr4.Runtime.Misc;
 
     internal class ChaosInterceptorFactory : IChaosInterceptorFactory
     {

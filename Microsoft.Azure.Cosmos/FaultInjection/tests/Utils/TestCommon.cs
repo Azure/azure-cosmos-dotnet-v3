@@ -78,7 +78,7 @@
             return clientBuilder;
         }
 
-        internal static async Task<(Database, Container)> GetOrCreateMultiRegionFIDatabaseAndContainers(CosmosClient client)
+        internal static async Task<(Database, Container)> GetOrCreateMultiRegionFIDatabaseAndContainersAsync(CosmosClient client)
         {
             Database database;
             Container container;

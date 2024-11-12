@@ -1604,11 +1604,7 @@ namespace Microsoft.Azure.Cosmos
                     throw;
                 }
 
-                //if (this.chaosInterceptorFactory != null && !this.isChaosInterceptorInititalized)
-                //{
-                //    this.isChaosInterceptorInititalized = true;
-                //    await this.chaosInterceptorFactory.ConfigureChaosInterceptorAsync();
-                //}
+                await this.InitilizeFaultInjectionAsync();
             }
         }
 
