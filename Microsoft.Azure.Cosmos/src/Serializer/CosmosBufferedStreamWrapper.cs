@@ -138,7 +138,6 @@ namespace Microsoft.Azure.Cosmos.Serializer
                 this.Flush();
                 if (this.shouldDisposeInnerStream)
                 {
-                    Console.WriteLine($"Dispose inner stream called: {this.innerStream.GetType()}");
                     this.innerStream.Dispose();
                 }
                 else
