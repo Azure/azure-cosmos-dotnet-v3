@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             Mock.Get(this.observer.Object)
                 .SetupSequence(feedObserver => feedObserver
                     .ProcessChangesAsync(It.IsAny<ChangeFeedObserverContextCore>(), It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Throws(new CosmosException("Some message", (HttpStatusCode) 429, (int)Documents.SubStatusCodes.Unknown, Guid.NewGuid().ToString(), 0));
+                .Throws(new CosmosException("Some message", (HttpStatusCode)429, (int)Documents.SubStatusCodes.Unknown, Guid.NewGuid().ToString(), 0));
 
             try
             {

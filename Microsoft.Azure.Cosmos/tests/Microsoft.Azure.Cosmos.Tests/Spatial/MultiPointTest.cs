@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     ""bbox"":[20, 20, 30, 30],
                     ""extra"":1,
                     ""crs"":{""type"":""name"", ""properties"":{""name"":""hello""}}}";
-            var multiPoint = JsonConvert.DeserializeObject<MultiPoint>(json);
+            MultiPoint multiPoint = JsonConvert.DeserializeObject<MultiPoint>(json);
 
             Assert.AreEqual(new Position(20, 30), multiPoint.Points[0]);
             Assert.AreEqual(new Position(30, 40), multiPoint.Points[1]);
@@ -43,13 +43,13 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
             Assert.AreEqual(1, multiPoint.AdditionalProperties.Count);
             Assert.AreEqual(1L, multiPoint.AdditionalProperties["extra"]);
 
-            var geom = JsonConvert.DeserializeObject<Geometry>(json);
+            Geometry geom = JsonConvert.DeserializeObject<Geometry>(json);
             Assert.AreEqual(GeometryType.MultiPoint, geom.Type);
 
             Assert.AreEqual(geom, multiPoint);
 
             string json1 = JsonConvert.SerializeObject(multiPoint);
-            var geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
+            Geometry geom1 = JsonConvert.DeserializeObject<Geometry>(json1);
             Assert.AreEqual(geom1, geom);
         }
 
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPointEqualsHashCode()
         {
-            var multiPoint1 = new MultiPoint(
+            MultiPoint multiPoint1 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint2 = new MultiPoint(
+            MultiPoint multiPoint2 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint3 = new MultiPoint(
+            MultiPoint multiPoint3 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(31, 40) },
                 new GeometryParams
                 {
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint4 = new MultiPoint(
+            MultiPoint multiPoint4 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint5 = new MultiPoint(
+            MultiPoint multiPoint5 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
                     Crs = Crs.Named("SomeCrs")
                 });
 
-            var multiPoint6 = new MultiPoint(
+            MultiPoint multiPoint6 = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos.Test.Spatial
         [TestMethod]
         public void TestMultiPointConstructors()
         {
-            var multiPoint = new MultiPoint(
+            MultiPoint multiPoint = new MultiPoint(
                 new[] { new Position(20, 30), new Position(30, 40) },
                 new GeometryParams
                 {

@@ -19,7 +19,7 @@
         }
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request, 
+            HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             return this.MockHttpHandler.SendAsync(request, cancellationToken);
