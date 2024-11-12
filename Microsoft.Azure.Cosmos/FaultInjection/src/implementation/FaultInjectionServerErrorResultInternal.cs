@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = goneHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 449,
                         Headers = retryWithHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 429,
                         Headers = tooManyRequestsHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Too Many Requests, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Too Many Requests, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -190,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 408,
                         Headers = timeoutHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 500,
                         Headers = internalServerErrorHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 404,
                         Headers = readSessionHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = partitionMigrationHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Migrating, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Partition Migrating, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = partitionSplitting,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Splitting, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Partition Splitting, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 503,
                         Headers = serviceUnavailableHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -294,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.Gone,
                         Content = new FauntInjectionHttpContent(
                         new MemoryStream(
-                            Encoding.UTF8.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))),
+                            FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.TooManyRequests,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: TooManyRequests, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: TooManyRequests, rule: {ruleId}"))),
                     };
 
 
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.RequestTimeout,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -361,7 +361,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.InternalServerError,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.NotFound,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -407,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.Gone,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: PartitionIsMigrating, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsMigrating, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -429,7 +429,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.Gone,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: PartitionIsSplitting, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsSplitting, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -451,7 +451,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         StatusCode = HttpStatusCode.ServiceUnavailable,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
-                                Encoding.UTF8.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))),
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))),
                     };
 
                     foreach (string header in headers.AllKeys())
@@ -489,6 +489,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 length = this.content.Length;
                 return true;
+            }
+        }
+
+        internal static class  FaultInjectionResponseEncoding
+        {
+            private static readonly UTF8Encoding Encoding = new UTF8Encoding(false);
+
+            public static byte[] GetBytes(string value)
+            {
+                return Encoding.GetBytes(value);
             }
         }
     }

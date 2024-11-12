@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
     internal class ChaosInterceptor : IChaosInterceptor
     {
-        private const string FautInjecitonId = "FaultInjectionId";
+        private const string FaultInjectionId = "FaultInjectionId";
 
         private FaultInjectionRuleStore? ruleStore;
         private RntbdConnectionErrorInjector? connectionErrorInjector;
@@ -248,14 +248,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.applicationContext.AddRuleExecution(
                     serverResponseErrorRule.GetId(), 
-                    new Guid(request.Headers.Get(ChaosInterceptor.FautInjecitonId)));
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
 
                 faultyResponse = serverResponseErrorRule.GetInjectedServerError(request);
 
                 DefaultTrace.TraceInformation(
                     "FaultInjection: FaultInjection Rule {0} Inserted error for request with faultInjection request id{1}",
                     serverResponseErrorRule.GetId(),
-                    request.Headers.Get(ChaosInterceptor.FautInjecitonId));
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
 
                 if (serverResponseErrorRule.GetInjectedServerErrorType() == FaultInjectionServerErrorType.Timeout)
                 {
@@ -276,14 +276,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.applicationContext.AddRuleExecution(
                     serverSendDelayRule.GetId(),
-                    new Guid(request.Headers.Get(ChaosInterceptor.FautInjecitonId)));
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
                 TimeSpan delay = serverSendDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation(
                     "FaultInjection: FaultInjection Rule {0} Inserted {1} duration send delay for request with fault injection id {2}",
                     serverSendDelayRule.GetId(),
                     delay,
-                    request.Headers.Get(ChaosInterceptor.FautInjecitonId));
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
 
                 await Task.Delay(delay);
             }
@@ -297,14 +297,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 this.applicationContext.AddRuleExecution(
                     serverResponseDelayRule.GetId(),
-                    new Guid(request.Headers.Get(ChaosInterceptor.FautInjecitonId)));
+                    new Guid(request.Headers.Get(ChaosInterceptor.FaultInjectionId)));
                 TimeSpan delay = serverResponseDelayRule.GetDelay();
 
                 DefaultTrace.TraceInformation(
                     "FaultInjection: FaultInjection Rule {0} Inserted {1} duration response delay for request with fault injection id {2}",
                     serverResponseDelayRule.GetId(),
                     delay,
-                    request.Headers.Get(ChaosInterceptor.FautInjecitonId));
+                    request.Headers.Get(ChaosInterceptor.FaultInjectionId));
 
                 await Task.Delay(delay);
             }

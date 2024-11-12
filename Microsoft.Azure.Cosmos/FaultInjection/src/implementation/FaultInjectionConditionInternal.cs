@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         //Used for connection delay
-        public bool IsApplicable(Uri callUri, DocumentServiceRequest request)
+        public bool IsApplicable(string ruleId, Uri callUri, DocumentServiceRequest request)
         {
             foreach (IFaultInjectionConditionValidator validator in this.validators)
             {
@@ -155,6 +155,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         return false;
                     }
                 }
+                else if (validator.GetType() == typeof(ResourceTypeValidator))
+                {
+                    ResourceTypeValidator resourceTypeValidator = (ResourceTypeValidator)validator;
+                    if (!resourceTypeValidator.IsApplicable(ruleId, request))
+                    {
+                        return false;
+                    }
+                }
                 else
                 {
                     throw new ArgumentException($"Unknown validator type {validator.GetType()}");
@@ -177,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public RegionEndpointValidator(List<Uri> regionEndpoints)
             {
-                this.regionEndpoints = regionEndpoints;
+                this.regionEndpoints = regionEndpoints ?? throw new ArgumentNullException(nameof(regionEndpoints));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
@@ -237,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public ContainerValidator(string containerResourceId)
             {
-                this.containerResourceId = containerResourceId;
+                this.containerResourceId = containerResourceId ?? throw new ArgumentNullException(nameof(containerResourceId));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
@@ -264,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public AddressValidator(List<Uri> addresses)
             {
-                this.addresses = addresses;
+                this.addresses = addresses ?? throw new ArgumentNullException(nameof(addresses));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
@@ -297,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds)
             {
-                this.pkRangeIds = pkRangeIds;
+                this.pkRangeIds = pkRangeIds ?? throw new ArgumentNullException(nameof(pkRangeIds));
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)

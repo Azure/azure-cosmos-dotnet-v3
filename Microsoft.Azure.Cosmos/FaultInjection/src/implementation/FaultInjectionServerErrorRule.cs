@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
 
             // the failure reason will be populated during condition evaluation
-            if (!this.condition.IsApplicable(callUri, request))
+            if (!this.condition.IsApplicable(this.id, callUri, request))
             {
                 return false;
             }
