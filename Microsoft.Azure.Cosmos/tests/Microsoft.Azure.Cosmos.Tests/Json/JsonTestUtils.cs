@@ -309,7 +309,7 @@
             SerializationSpec inputSpec,
             SerializationSpec outputSpec,
             RewriteScenario rewriteScenario,
-            ReadOnlyMemory<byte> expectedOutputResult = default,
+            RoundTripBaseline roundTripBaseline = null,
             Func<string, IJsonNavigator> newtonsoftNavigatorCreate = default)
         {
             Func<SerializationSpec, IJsonReader> createReader = (SerializationSpec spec) => spec.IsNewtonsoft ?
@@ -401,11 +401,15 @@
 
             byte[] inputBytes = inputResult.ToArray();
             byte[] outputBytes = outputResult.ToArray();
-            byte[] expectedOutputBytes = expectedOutputResult.ToArray();
+            byte[] expectedBytes = roundTripBaseline?.ExpectedResult.ToArray();
+
+            bool strictComparison = (roundTripBaseline != null) && roundTripBaseline.StrictComparison;
+
+            bool identical = (expectedBytes != null) && outputBytes.SequenceEqual(expectedBytes);
 
             StringBuilder verboseOutput = new StringBuilder();
-            if (!outputBytes.SequenceEqual(expectedOutputBytes) &&
-                !CompareResults(inputBytes, outputBytes, verboseWriter: new StringWriter(verboseOutput)))
+            if (!identical &&
+                (strictComparison || !CompareResults(inputBytes, outputBytes, verboseWriter: new StringWriter(verboseOutput))))
             {
                 string[] inputTextLines = SerializeResultBuffer(inputBytes, inputSpec.SerializationFormat);
                 string[] outputTextLines = SerializeResultBuffer(outputBytes, outputSpec.SerializationFormat);
@@ -427,6 +431,18 @@
                 Console.WriteLine();
                 Console.WriteLine("Output Result:");
                 foreach (string line in outputTextLines) Console.WriteLine(line);
+
+                Console.WriteLine();
+                Console.WriteLine("Expected Result:");
+                if(expectedBytes != null)
+                {
+                    string[] expectedTextLines = SerializeResultBuffer(expectedBytes, outputSpec.SerializationFormat);
+                    foreach (string line in expectedTextLines) Console.WriteLine(line);
+                }
+                else
+                {
+                    Console.WriteLine("<None>");
+                }
 
                 Assert.Fail();
             }
@@ -811,6 +827,18 @@
             public JsonSerializationFormat SerializationFormat { get; }
             public JsonWriteOptions WriteOptions { get; }
             public bool IsNewtonsoft { get; }
+        }
+
+        public class RoundTripBaseline
+        {
+            public RoundTripBaseline(ReadOnlyMemory<byte> expectedResult, bool strictComparison)
+            {
+                this.ExpectedResult = expectedResult;
+                this.StrictComparison = strictComparison;
+            }
+
+            public ReadOnlyMemory<byte> ExpectedResult { get; }
+            public bool StrictComparison { get; }
         }
 
         public class RoundTripResult

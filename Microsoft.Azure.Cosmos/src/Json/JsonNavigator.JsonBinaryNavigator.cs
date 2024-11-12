@@ -83,9 +83,9 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override Number64 GetNumber64Value(IJsonNavigatorNode numberNode)
+            public override Number64 GetNumberValue(IJsonNavigatorNode numberNode)
             {
-                BinaryNavigatorNode binaryNavigatorNode = this.GetNodeOfType(JsonNodeType.Number64, numberNode);
+                BinaryNavigatorNode binaryNavigatorNode = this.GetNodeOfType(JsonNodeType.Number, numberNode);
                 return JsonBinaryEncoding.GetNumberValue(
                     this.GetBufferAt(binaryNavigatorNode.Offset),
                     binaryNavigatorNode.ExternalArrayInfo);
@@ -432,6 +432,15 @@ namespace Microsoft.Azure.Cosmos.Json
             }
             #endregion
 
+            protected override bool TryGetUInt64Value(IJsonNavigatorNode numberNode, out ulong value)
+            {
+                BinaryNavigatorNode binaryNavigatorNode = this.GetNodeOfType(JsonNodeType.Number, numberNode);
+                return JsonBinaryEncoding.TryGetUInt64Value(
+                    this.GetBufferAt(binaryNavigatorNode.Offset),
+                    binaryNavigatorNode.ExternalArrayInfo,
+                    out value);
+            }
+
             private IEnumerable<BinaryNavigatorNode> GetArrayItemsInternal(BinaryNavigatorNode arrayNode)
             {
                 return Enumerator
@@ -474,12 +483,14 @@ namespace Microsoft.Azure.Cosmos.Json
                         jsonWriter.WriteBoolValue(true);
                         break;
 
-                    case JsonNodeType.Number64:
+                    case JsonNodeType.Number:
+                        if (JsonBinaryEncoding.TryGetUInt64Value(buffer.Span, binaryNavigatorNode.ExternalArrayInfo, out ulong uint64Value))
                         {
-                            Number64 value = JsonBinaryEncoding.GetNumberValue(
-                                buffer.Span,
-                                binaryNavigatorNode.ExternalArrayInfo);
-
+                            jsonWriter.WriteNumberValue(uint64Value);
+                        }
+                        else
+                        {
+                            Number64 value = JsonBinaryEncoding.GetNumberValue(buffer.Span, binaryNavigatorNode.ExternalArrayInfo);
                             jsonWriter.WriteNumberValue(value);
                         }
                         break;
@@ -668,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         case TypeMarker.Float16:
                         case TypeMarker.Float32:
                         case TypeMarker.Float64:
-                            nodeType = JsonNodeType.Number64;
+                            nodeType = JsonNodeType.Number;
                             break;
 
                         case TypeMarker.ArrNumC1:

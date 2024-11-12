@@ -197,6 +197,20 @@ namespace Microsoft.Azure.Cosmos.Json
             return true;
         }
 
+        public static bool TryGetUInt64Value(ReadOnlySpan<byte> numberToken, UniformArrayInfo uniformArrayInfo, out ulong value)
+        {
+            const int RequiredLength = 1 + sizeof(ulong);
+
+            if ((numberToken.Length >= RequiredLength) && (uniformArrayInfo == null) && (numberToken[0] == TypeMarker.NumberUInt64))
+            {
+                value = MemoryMarshal.Read<ulong>(numberToken.Slice(1));
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
         public static sbyte GetInt8Value(ReadOnlySpan<byte> int8Token)
         {
             if (!JsonBinaryEncoding.TryGetInt8Value(int8Token, out sbyte int8Value))

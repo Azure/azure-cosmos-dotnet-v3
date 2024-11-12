@@ -1633,7 +1633,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     RawValueType rawType = (RawValueType)RawValueTypes[typeMarker];
 
                     // Check for uniform number array support
-                    if (this.enableEncodedStrings && ((rawType == RawValueType.ArrNum) || (rawType == RawValueType.ArrArrNum)))
+                    if (this.enableNumberArrays && ((rawType == RawValueType.ArrNum) || (rawType == RawValueType.ArrArrNum)))
                     {
                         rawType = RawValueType.Token;
                     }
@@ -1891,53 +1891,54 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.WriteArrayStart();
 
-                int endOffset = arrayInfo.ItemCount * arrayInfo.ItemSize;
+                int startOffset = arrayInfo.PrefixSize;
+                int endOffset = startOffset + (arrayInfo.ItemCount * arrayInfo.ItemSize);
                 switch (arrayInfo.ItemTypeMarker)
                 {
                     case TypeMarker.Int8:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<sbyte>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.UInt8:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<byte>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Int16:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<short>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Int32:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<int>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Int64:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<long>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Float32:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<float>(rawValue.Slice(offset)));
                         }
                         break;
 
                     case TypeMarker.Float64:
-                        for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                        for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                         {
                             this.WriteNumberValue(GetFixedSizedValue<double>(rawValue.Slice(offset)));
                         }
@@ -1958,8 +1959,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 this.WriteArrayStart();
 
-                int endOffset = arrayInfo.ItemCount * arrayInfo.ItemSize;
-                for (int offset = 0; offset < endOffset; offset += arrayInfo.ItemSize)
+                int startOffset = arrayInfo.PrefixSize;
+                int endOffset = startOffset + (arrayInfo.ItemCount * arrayInfo.ItemSize);
+                for (int offset = startOffset; offset < endOffset; offset += arrayInfo.ItemSize)
                 {
                     this.WriteRawNumberArray(rawValue.Slice(offset), arrayInfo.NestedArrayInfo);
                 }

@@ -8808,14 +8808,25 @@
 
                     foreach (SerializationSpec outputSpec in serializationSpecs)
                     {
+                        RoundTripResult roundTripResult = null;
                         foreach (RewriteScenario rewriteScenario in rewriteScenarios)
                         {
-                            VerifyJsonRoundTrip(
+                            // For Binary(EnableNumberArrays) to Binary(EnableNumberArrays) we need
+                            // to relax the strict comparison since the logic of converting a regular
+                            // array into a uniform number array might be different from the input.
+                            bool strictComparison = !object.ReferenceEquals(inputSpec, outputSpec) ||
+                                (inputSpec.SerializationFormat != JsonSerializationFormat.Binary) ||
+                                (inputSpec.WriteOptions != JsonWriteOptions.EnableNumberArrays);
+
+                            RoundTripBaseline roundTripBaseline = roundTripResult != null ? new RoundTripBaseline(roundTripResult.OutputResult, strictComparison) : null;
+
+                            roundTripResult = VerifyJsonRoundTrip(
                                 inputResult,
                                 inputJson: null,
                                 inputSpec,
                                 outputSpec,
-                                rewriteScenario);
+                                rewriteScenario,
+                                roundTripBaseline);
                         }
                     }
                 }

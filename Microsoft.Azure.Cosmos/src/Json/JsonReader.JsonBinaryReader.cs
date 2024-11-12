@@ -486,8 +486,9 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 return JsonBinaryEncoding.GetBinaryValue(this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
             }
-#endregion
+            #endregion
 
+            #region ITypedJsonReader
             /// <inheritdoc />
             public bool TryReadTypedJsonValueWrapper(out int typeCode)
             {
@@ -539,6 +540,29 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.GetUtf8SpanValue(
                     this.rootBuffer,
                     this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition));
+            }
+            #endregion
+
+            protected override bool TryGetUInt64NumberValue(out ulong value)
+            {
+                if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Number)
+                {
+                    throw new JsonNotNumberTokenException();
+                }
+
+                // Check if we are within a uniform array info
+                if (this.arrayAndObjectEndStack.GetUniformArrayInfo() == null)
+                {
+                    ReadOnlyMemory<byte> currentValue = this.jsonBinaryBuffer.GetBufferedRawJsonToken(this.currentTokenPosition);
+                    if (currentValue.Span[0] == TypeMarker.NumberUInt64)
+                    {
+                        value = JsonBinaryEncoding.GetFixedSizedValue<ulong>(currentValue.Slice(1).Span);
+                        return true;
+                    }
+                }
+
+                value = 0;
+                return false;
             }
 
             private static JsonTokenType GetJsonTokenType(byte typeMarker, UniformArrayInfo arrayInfo)

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// The <see cref="JsonObjectState"/>
         /// </summary>
-        internal readonly JsonObjectState JsonObjectState;
+        protected readonly JsonObjectState JsonObjectState;
 
         /// <summary>
         /// Initializes a new instance of the JsonReader class.
@@ -87,6 +87,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlyMemory<byte> buffer,
             int offset) => new JsonBinaryReader(buffer, offset);
 
+        #region IJsonReader
         /// <inheritdoc />
         public abstract bool Read();
 
@@ -188,6 +189,11 @@ namespace Microsoft.Azure.Cosmos.Json
                     break;
 
                 case JsonTokenType.Number:
+                    if (this.TryGetUInt64NumberValue(out ulong uint64Value))
+                    {
+                        writer.WriteNumberValue(uint64Value);
+                    }
+                    else
                     {
                         Number64 value = this.GetNumberValue();
                         writer.WriteNumberValue(value);
@@ -282,5 +288,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.WriteCurrentToken(writer);
             }
         }
+        #endregion
+
+        protected abstract bool TryGetUInt64NumberValue(out ulong value);
     }
 }
