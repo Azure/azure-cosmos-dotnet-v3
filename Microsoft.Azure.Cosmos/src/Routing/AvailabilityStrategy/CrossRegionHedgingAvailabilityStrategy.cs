@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
                 if (this.EnableMultiWriteRegionHedge
-                    && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request))
+                    && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType))
                 {
                     return true;
                 }
