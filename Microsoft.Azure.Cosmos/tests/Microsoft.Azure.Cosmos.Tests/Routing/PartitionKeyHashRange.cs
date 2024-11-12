@@ -54,13 +54,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 maxOfStarts = this.StartInclusive.Value;
             }
-            else if (!this.StartInclusive.HasValue && rangeToOverlapWith.StartInclusive.HasValue)
-            {
-                maxOfStarts = rangeToOverlapWith.StartInclusive.Value;
-            }
             else
             {
-                maxOfStarts = null;
+                maxOfStarts = !this.StartInclusive.HasValue && rangeToOverlapWith.StartInclusive.HasValue ? rangeToOverlapWith.StartInclusive.Value : null;
             }
 
             PartitionKeyHash? minOfEnds;
@@ -72,13 +68,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 minOfEnds = this.EndExclusive.Value;
             }
-            else if (!this.EndExclusive.HasValue && rangeToOverlapWith.EndExclusive.HasValue)
-            {
-                minOfEnds = rangeToOverlapWith.EndExclusive.Value;
-            }
             else
             {
-                minOfEnds = null;
+                minOfEnds = !this.EndExclusive.HasValue && rangeToOverlapWith.EndExclusive.HasValue ? rangeToOverlapWith.EndExclusive.Value : null;
             }
 
             if (maxOfStarts.HasValue && minOfEnds.HasValue && (maxOfStarts >= minOfEnds))
@@ -103,13 +95,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 cmp = 1;
             }
-            else if (!this.StartInclusive.HasValue && other.StartInclusive.HasValue)
-            {
-                cmp = -1;
-            }
             else
             {
-                cmp = 0;
+                cmp = !this.StartInclusive.HasValue && other.StartInclusive.HasValue ? -1 : 0;
             }
 
             if (cmp != 0)
@@ -125,13 +113,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 cmp = -1;
             }
-            else if (!this.EndExclusive.HasValue && other.EndExclusive.HasValue)
-            {
-                cmp = 1;
-            }
             else
             {
-                cmp = 0;
+                cmp = !this.EndExclusive.HasValue && other.EndExclusive.HasValue ? 1 : 0;
             }
 
             return cmp;

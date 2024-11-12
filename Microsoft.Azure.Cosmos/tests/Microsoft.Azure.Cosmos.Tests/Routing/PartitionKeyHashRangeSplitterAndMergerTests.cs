@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     CreateRange(null, UInt128.MaxValue / 2), CreateRange(UInt128.MaxValue / 2, null));
             }
 
-            void VerifySplit(
+            static void VerifySplit(
                 PartitionKeyHashRangeSplitterAndMerger.SplitOutcome splitOutcome,
                 PartitionKeyHashRange range,
                 int numRanges = 1,
@@ -134,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 // Complex Merge
                 VerifyMerge(
                     expectedMergedRange: CreateRange(1, 15),
-                    CreateRange(1, 3), CreateRange(3, 9), CreateRange(9, 15) );
+                    CreateRange(1, 3), CreateRange(3, 9), CreateRange(9, 15));
             }
 
             {
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     CreateRange(null, 3), CreateRange(3, 9), CreateRange(9, null));
             }
 
-            void VerifyMerge(
+            static void VerifyMerge(
                 PartitionKeyHashRange expectedMergedRange,
                 params PartitionKeyHashRange[] rangesToMerge)
             {

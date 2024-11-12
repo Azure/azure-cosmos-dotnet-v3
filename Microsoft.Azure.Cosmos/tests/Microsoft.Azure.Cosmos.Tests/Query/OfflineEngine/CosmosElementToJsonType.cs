@@ -11,22 +11,49 @@
         {
         }
 
-        public JsonType Visit(CosmosArray cosmosArray) => JsonType.Array;
+        public JsonType Visit(CosmosArray cosmosArray)
+        {
+            return JsonType.Array;
+        }
 
-        public JsonType Visit(CosmosBinary cosmosBinary) => throw new NotSupportedException("Binary is not a json type.");
+        public JsonType Visit(CosmosBinary cosmosBinary)
+        {
+            throw new NotSupportedException("Binary is not a json type.");
+        }
 
-        public JsonType Visit(CosmosBoolean cosmosBoolean) => JsonType.Boolean;
+        public JsonType Visit(CosmosBoolean cosmosBoolean)
+        {
+            return JsonType.Boolean;
+        }
 
-        public JsonType Visit(CosmosGuid cosmosGuid) => throw new NotSupportedException("Guid is not a json type.");
+        public JsonType Visit(CosmosGuid cosmosGuid)
+        {
+            throw new NotSupportedException("Guid is not a json type.");
+        }
 
-        public JsonType Visit(CosmosNull cosmosNull) => JsonType.Null;
+        public JsonType Visit(CosmosNull cosmosNull)
+        {
+            return JsonType.Null;
+        }
 
-        public JsonType Visit(CosmosNumber cosmosNumber) => JsonType.Number;
+        public JsonType Visit(CosmosNumber cosmosNumber)
+        {
+            return JsonType.Number;
+        }
 
-        public JsonType Visit(CosmosObject cosmosObject) => JsonType.Object;
+        public JsonType Visit(CosmosObject cosmosObject)
+        {
+            return JsonType.Object;
+        }
 
-        public JsonType Visit(CosmosString cosmosString) => JsonType.String;
+        public JsonType Visit(CosmosString cosmosString)
+        {
+            return JsonType.String;
+        }
 
-        public JsonType Visit(CosmosUndefined cosmosUndefined) => JsonType.Undefined;
+        public JsonType Visit(CosmosUndefined cosmosUndefined)
+        {
+            return JsonType.Undefined;
+        }
     }
 }

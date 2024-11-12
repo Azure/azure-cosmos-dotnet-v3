@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
     [TestCategory("ChangeFeed")]
     public class FeedProcessorCoreTests
     {
-        private static ProcessorOptions DefaultSettings = new ProcessorOptions() {
+        private static readonly ProcessorOptions DefaultSettings = new ProcessorOptions()
+        {
             FeedPollDelay = TimeSpan.FromSeconds(0)
         };
 
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 RequestTimeout = TimeSpan.FromMilliseconds(100)
             };
             FeedProcessorCore processor = new FeedProcessorCore(factory.CreateObserver(), mockIterator.Object, options, mockCheckpointer.Object);
-            
+
             try
             {
                 Task runTask = processor.RunAsync(default);
@@ -229,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
             }
         }
 
-        private class CustomSerializerFails: CosmosSerializer
+        private class CustomSerializerFails : CosmosSerializer
         {
             private readonly CosmosSerializer cosmosSerializer = new CosmosJsonDotNetSerializer();
             public override T FromStream<T>(Stream stream)

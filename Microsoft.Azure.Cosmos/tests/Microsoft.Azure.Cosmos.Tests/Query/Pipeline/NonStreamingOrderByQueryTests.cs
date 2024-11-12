@@ -4,29 +4,29 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
     using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Threading.Tasks;
-    using System.Threading;
-    using System;
-    using System.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
 
     [TestClass]
     public class NonStreamingOrderByQueryTests
@@ -42,6 +42,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private const string ActivityId = "ActivityId";
 
         private const int QueryCharge = 42;
+
+        private const int GlobalStatisticsQueryCharge = 3032;
 
         private const string CollectionRid = "1HNeAM-TiQY=";
 
@@ -61,7 +63,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private const string IndexString = "indexString";
 
-        private static readonly int[] PageSizes = new [] { 1, 10, 100, DocumentCount };
+        private const string DocumentCountPropertyName = "documentCount";
+
+        private const string FullTextStatistics = "fullTextStatistics";
+
+        private const string TotalWordCount = "totalWordCount";
+
+        private const string HitCounts = "hitCounts";
+
+        private static readonly int[] PageSizes = new[] { 1, 10, 100, DocumentCount };
 
         [TestMethod]
         public async Task InMemoryContainerParityTests()
@@ -251,6 +261,60 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         [TestMethod]
         public async Task HybridSearchTests()
         {
+            IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
+            {
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 1000),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchTest(
+                    leafPageCount: 10,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 20,
+                    take: 100,
+                    pageSize: 10),
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 100,
+                    requiresGlobalStatistics: true,
+                    skip: 7,
+                    take: 10,
+                    pageSize: 1),
+            };
+
+            foreach (HybridSearchTest testCase in testCases)
+            {
+                await RunHybridSearchTest(testCase);
+            }
+        }
+
+        private static async Task RunHybridSearchTest(HybridSearchTest testCase)
+        {
             IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
             {
                 new FeedRangeEpk(new Documents.Routing.Range<string>(string.Empty, "AA", true, false)),
@@ -261,39 +325,37 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 new FeedRangeEpk(new Documents.Routing.Range<string>("EE", "FF", true, false)),
             };
 
-            // TODO: parameterize this test by pulling out the constants as parameters
-            // e.g. leafPageCount, backendPageSize, pageSize, take
-            // we can easily add a skip parameter to simulate offset/limit
-            // Similarly, we can increase/decrease the number of component queries
-            // Only marginally more involved is to add validation for the global statistics query:
-            // Make the MockDocumentContainer recognize when it receives the statistics query and return a simple hard coded result
-            // Finally, it would be cool if we could make the scores independent of each other
-
             int feedRangeCount = ranges.Count;
-            int leafPageCount = 4;
-            int backendPageSize = 10;
-
-            int documentCount = feedRangeCount * leafPageCount * backendPageSize;
-
-            int take = 100;
+            int documentCount = feedRangeCount * testCase.LeafPageCount * testCase.BackendPageSize;
 
             IEnumerable<int> expectedIndices = Enumerable
                 .Range(0, documentCount)
-                .Reverse()
-                .Take(take);
+                .Reverse();
+
+            if (testCase.Skip.HasValue)
+            {
+                expectedIndices = expectedIndices.Skip(testCase.Skip.Value);
+            }
+
+            if (testCase.Take.HasValue)
+            {
+                expectedIndices = expectedIndices.Take(testCase.Take.Value);
+            }
 
             MockDocumentContainer nonStreamingDocumentContainer = MockDocumentContainer.Create(
                 ranges,
                 PartitionedFeedMode.NonStreamingReversed,
                 componentCount: 2,
-                leafPageCount: leafPageCount,
-                backendPageSize: backendPageSize);
+                leafPageCount: testCase.LeafPageCount,
+                backendPageSize: testCase.BackendPageSize);
 
             (IReadOnlyList<CosmosElement> results, double requestCharge) = await CreateAndRunHybridSearchQueryPipelineStage(
                 documentContainer: nonStreamingDocumentContainer,
                 ranges: ranges,
-                pageSize: 1000,
-                take: take);
+                requiresGlobalStatistics: testCase.RequiresGlobalStatistics,
+                pageSize: testCase.PageSize,
+                skip: testCase.Skip,
+                take: testCase.Take);
 
             Assert.AreEqual(expectedIndices.Count(), results.Count);
 
@@ -374,8 +436,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static Task<(IReadOnlyList<CosmosElement>, double)> CreateAndRunHybridSearchQueryPipelineStage(
             IDocumentContainer documentContainer,
             IReadOnlyList<FeedRangeEpk> ranges,
+            bool requiresGlobalStatistics,
             int pageSize,
-            int take)
+            int? skip,
+            int? take)
         {
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
                 documentContainer,
@@ -383,7 +447,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ranges,
                 partitionKey: null,
                 queryInfo: null,
-                Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics: false, take),
+                Create2ItemHybridSearchQueryInfo(requiresGlobalStatistics, skip, take),
                 maxItemCount: pageSize,
                 new ContainerQueryProperties(),
                 ranges,
@@ -551,6 +615,36 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 this.OrderByColumns = orderByColumns;
                 this.PageSizes = pageSizes;
                 this.Validate = validate;
+            }
+        }
+
+        private static HybridSearchTest MakeHybridSearchTest(int leafPageCount, int backendPageSize, bool requiresGlobalStatistics, int? skip, int? take, int pageSize)
+        {
+            return new HybridSearchTest(leafPageCount, backendPageSize, requiresGlobalStatistics, skip, take, pageSize);
+        }
+
+        private class HybridSearchTest
+        {
+            public int LeafPageCount { get; }
+
+            public int BackendPageSize { get; }
+
+            public bool RequiresGlobalStatistics { get; }
+
+            public int? Skip { get; }
+
+            public int? Take { get; }
+
+            public int PageSize { get; }
+
+            public HybridSearchTest(int leafPageCount, int backendPageSize, bool requiresGlobalStatistics, int? skip, int? take, int pageSize)
+            {
+                this.LeafPageCount = leafPageCount;
+                this.BackendPageSize = backendPageSize;
+                this.RequiresGlobalStatistics = requiresGlobalStatistics;
+                this.Skip = skip;
+                this.Take = take;
+                this.PageSize = pageSize;
             }
         }
 
@@ -916,7 +1010,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             private readonly Func<SqlQuerySpec, int> componentSelector;
 
+            private readonly Func<SqlQuerySpec, bool> isGlobalStatisticsQuery;
+
             private readonly double totalRequestCharge;
+
+            private int statisticsQueryCount;
 
             private int queryCount;
 
@@ -931,7 +1029,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     else
                     {
                         int queryCount = Interlocked.CompareExchange(ref this.queryCount, 0, 0);
-                        return queryCount * QueryCharge;
+                        int statisticsQueryCount = Interlocked.CompareExchange(ref this.statisticsQueryCount, 0, 0);
+                        double requestCharge = (queryCount * QueryCharge) + (statisticsQueryCount * GlobalStatisticsQueryCharge);
+                        return requestCharge;
                     }
                 }
             }
@@ -949,7 +1049,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     feedMode,
                     leafPageCount,
                     backendPageSize);
-                return new MockDocumentContainer(pages, !feedMode.HasFlag(PartitionedFeedMode.NonStreaming), GetOrderByScoreKind, 0);
+
+                return new MockDocumentContainer(
+                    pages,
+                    streaming: !feedMode.HasFlag(PartitionedFeedMode.NonStreaming),
+                    componentSelector: GetOrderByScoreKind,
+                    isGlobalStatisticsQuery: IsGlobalStatisticsQuery,
+                    totalRequestCharge: 0);
             }
 
             public static MockDocumentContainer Create(IReadOnlyList<FeedRangeEpk> feedRanges, PartitionedFeedMode feedMode, DocumentCreationMode documentCreationMode)
@@ -964,8 +1070,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
                 return new MockDocumentContainer(
                     pages,
-                    !feedMode.HasFlag(PartitionedFeedMode.NonStreaming),
-                    _ => 0,
+                    streaming: !feedMode.HasFlag(PartitionedFeedMode.NonStreaming),
+                    componentSelector: _ => 0,
+                    isGlobalStatisticsQuery: _ => false,
                     totalRequestCharge);
             }
 
@@ -973,11 +1080,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> pages,
                 bool streaming,
                 Func<SqlQuerySpec, int> componentSelector,
+                Func<SqlQuerySpec, bool> isGlobalStatisticsQuery,
                 double totalRequestCharge)
             {
                 this.pages = pages ?? throw new ArgumentNullException(nameof(pages));
                 this.streaming = streaming;
                 this.componentSelector = componentSelector;
+                this.isGlobalStatisticsQuery = isGlobalStatisticsQuery;
                 this.totalRequestCharge = totalRequestCharge;
             }
 
@@ -1043,6 +1152,23 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             public Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
+                if (this.isGlobalStatisticsQuery(sqlQuerySpec))
+                {
+                    QueryPage globalStatisticsPage = new QueryPage(
+                        documents: new List<CosmosElement> { CreateHybridSearchGlobalStatistics() },
+                        requestCharge: GlobalStatisticsQueryCharge,
+                        activityId: ActivityId,
+                        cosmosQueryExecutionInfo: null,
+                        distributionPlanSpec: null,
+                        disallowContinuationTokenMessage: null,
+                        additionalHeaders: null,
+                        state: null,
+                        streaming: false);
+
+                    Interlocked.Increment(ref this.statisticsQueryCount);
+                    return Task.FromResult(TryCatch<QueryPage>.FromResult(globalStatisticsPage));
+                }
+
                 int componentIndex = this.componentSelector(sqlQuerySpec);
                 IReadOnlyList<IReadOnlyList<CosmosElement>> feedRangePages = this.pages[componentIndex][feedRangeState.FeedRange];
                 int index = feedRangeState.State == null ? 0 : int.Parse(((CosmosString)feedRangeState.State.Value).Value);
@@ -1143,6 +1269,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 throw new ArgumentException("Unknown query text");
             }
+        }
+
+        private static bool IsGlobalStatisticsQuery(SqlQuerySpec sqlQuerySpec)
+        {
+            return sqlQuerySpec.QueryText.Contains("COUNT(1) AS documentCount") && sqlQuerySpec.QueryText.Contains("] AS fullTextStatistics");
         }
 
         private static IReadOnlyList<IReadOnlyDictionary<FeedRange, IReadOnlyList<IReadOnlyList<CosmosElement>>>> CreatePartitionedFeed(
@@ -1248,11 +1379,42 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             MultiItemSwapped = MultiItem | Swapped,
         }
 
+        private static CosmosElement CreateHybridSearchGlobalStatistics()
+        {
+            List<CosmosElement> statistics = new List<CosmosElement>
+            {
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [TotalWordCount] = CosmosNumber64.Create(10124),
+                    [HitCounts] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosNumber64.Create(100),
+                        CosmosNumber64.Create(200),
+                    }),
+                }),
+                CosmosObject.Create(new Dictionary<string, CosmosElement>
+                {
+                    [TotalWordCount] = CosmosNumber64.Create(1024),
+                    [HitCounts] = CosmosArray.Create(new List<CosmosElement>
+                    {
+                        CosmosNumber64.Create(300),
+                    }),
+                }),
+            };
+
+            CosmosObject globalStatistics = CosmosObject.Create(new Dictionary<string, CosmosElement>
+            {
+                [DocumentCountPropertyName] = CosmosNumber64.Create(DocumentCount),
+                [FullTextStatistics] = CosmosArray.Create(statistics),
+            });
+
+            return globalStatistics;
+        }
+
         private static CosmosElement CreateHybridSearchDocument(int componentCount, int index, int componentIndex)
         {
             CosmosElement indexElement = CosmosNumber64.Create(index);
             CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
-
             double[] scores = new double[componentCount];
             double delta = 0.1;
             for (int scoreIndex = 0; scoreIndex < componentCount; ++scoreIndex)
@@ -1356,7 +1518,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
-        private static HybridSearchQueryInfo Create2ItemHybridSearchQueryInfo(bool requiresGlobalStatistics, int? take)
+        private static HybridSearchQueryInfo Create2ItemHybridSearchQueryInfo(bool requiresGlobalStatistics, int? skip, int? take)
         {
             return new HybridSearchQueryInfo
             {
@@ -1451,6 +1613,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     },
                 },
 
+                Skip = skip,
                 Take = take,
                 RequiresGlobalStatistics = requiresGlobalStatistics,
             };

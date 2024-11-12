@@ -4,11 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
-    using System.IO;
-    using Microsoft.Azure.Cosmos.Json.Interop;
-    using Microsoft.Azure.Cosmos.Json;
-    using System.Text;
     using System;
+    using System.IO;
+    using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
 
     /// <summary>
     /// Utility class for performing different operation on a given serializer.
