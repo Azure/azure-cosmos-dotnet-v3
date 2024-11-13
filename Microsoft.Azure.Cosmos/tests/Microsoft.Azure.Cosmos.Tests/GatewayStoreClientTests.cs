@@ -201,7 +201,7 @@ namespace Microsoft.Azure.Cosmos
                     encoding: Encoding.UTF8,
                     content: contentMessage),
             };
-            
+
             DocumentClientException documentClientException = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
                 responseMessage: responseMessage,
                 requestStatistics: GatewayStoreClientTests.CreateClientSideRequestStatistics());
@@ -229,7 +229,7 @@ namespace Microsoft.Azure.Cosmos
                     requestUri: @"https://pt_ac_test_uri.com/"),
                 Content = new StringContent(
                     mediaType: mediaType,
-                    encoding: Encoding.UTF8, 
+                    encoding: Encoding.UTF8,
                     content: contentMessage),
             };
 

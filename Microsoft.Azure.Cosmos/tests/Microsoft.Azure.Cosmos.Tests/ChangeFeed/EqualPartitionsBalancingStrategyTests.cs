@@ -87,8 +87,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_ExpiredAndOtherSingleOwner_ReturnsHalfOfExpiredRoundedUp()
         {
             EqualPartitionsBalancingStrategy strategy = this.CreateStrategy();
-            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>();
-            allLeases1.Add(this.CreateLease(owner1, "0"));
+            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>
+            {
+                this.CreateLease(owner1, "0")
+            };
             allLeases1.AddRange(Enumerable.Range(1, 10).Select(index => this.CreateExpiredLease(owner1, index.ToString())));
             List<DocumentServiceLease> allLeases = allLeases1;
             List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
@@ -99,8 +101,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_MinPartitionsSet_ReturnsMinCountOfPartitions()
         {
             EqualPartitionsBalancingStrategy strategy = this.CreateStrategy(minPartitionCount: 7);
-            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>();
-            allLeases1.Add(this.CreateLease(owner1, "0"));
+            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>
+            {
+                this.CreateLease(owner1, "0")
+            };
             allLeases1.AddRange(Enumerable.Range(1, 10).Select(index => this.CreateExpiredLease(owner1, index.ToString())));
             List<DocumentServiceLease> allLeases = allLeases1;
             List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();
@@ -111,8 +115,10 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
         public void CalculateLeasesToTake_MaxPartitionsSet_ReturnsMaxCountOfPartitions()
         {
             EqualPartitionsBalancingStrategy strategy = this.CreateStrategy(maxPartitionCount: 3);
-            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>();
-            allLeases1.Add(this.CreateLease(owner1, "0"));
+            List<DocumentServiceLease> allLeases1 = new List<DocumentServiceLease>
+            {
+                this.CreateLease(owner1, "0")
+            };
             allLeases1.AddRange(Enumerable.Range(1, 10).Select(index => this.CreateExpiredLease(owner1, index.ToString())));
             List<DocumentServiceLease> allLeases = allLeases1;
             List<DocumentServiceLease> leasesToTake = strategy.SelectLeasesToTake(allLeases).ToList();

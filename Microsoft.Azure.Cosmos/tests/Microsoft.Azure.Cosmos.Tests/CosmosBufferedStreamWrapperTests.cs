@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.IO;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosBufferedStreamWrapperTests
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
             using (MemoryStream memoryStream = new(data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 byte[] buffer = new byte[1];
                 int bytesRead = bufferedStream.Read(buffer, 0, 1);
@@ -35,8 +35,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestReadAll()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
+            using (MemoryStream memoryStream = new(data))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 byte[] result = bufferedStream.ReadAll();
 
@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestGetJsonSerializationFormat()
         {
             byte[] data = new byte[] { (byte)JsonSerializationFormat.Binary };
-            using (MemoryStream memoryStream = new (data))
-            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
+            using (MemoryStream memoryStream = new(data))
+            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using NonSeekableMemoryStream memoryStream = new(data);
             using CloneableStream clonableStream = await StreamExtension.AsClonableStreamAsync(memoryStream);
             using CosmosBufferedStreamWrapper bufferedStream = new(clonableStream, true);
-            
+
             Assert.IsTrue(bufferedStream.CanSeek);
             JsonSerializationFormat format = bufferedStream.GetJsonSerializationFormat();
 
@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 totalBytes += count;
             }
 
-            int count2 = 0, chunk2 = 3, offset2 = 0, length2 = (int)bufferedStream.Length-1, totalBytes2 = 0;
+            int count2 = 0, chunk2 = 3, offset2 = 0, length2 = (int)bufferedStream.Length - 1, totalBytes2 = 0;
             byte[] result2 = new byte[bufferedStream.Length];
             while ((count2 = bufferedStream.Read(result2, offset2, chunk2)) > 0)
             {
@@ -162,8 +162,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestWriteAndRead()
         {
             byte[] data = Encoding.UTF8.GetBytes("Hello, World!");
-            using (MemoryStream memoryStream = new ())
-            using (CosmosBufferedStreamWrapper bufferedStream = new (await StreamExtension.AsClonableStreamAsync(memoryStream), true))
+            using (MemoryStream memoryStream = new())
+            using (CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true))
             {
                 bufferedStream.Write(data, 0, data.Length);
                 bufferedStream.Position = 0;

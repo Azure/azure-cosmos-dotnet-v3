@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             TransactionalBatchOperationResult result = new TransactionalBatchOperationResult(HttpStatusCode.OK);
             ShouldRetryResult shouldRetryResult = await retryPolicy.ShouldRetryAsync(result.ToResponseMessage(), default);
-            Assert.IsFalse(shouldRetryResult.ShouldRetry);            
+            Assert.IsFalse(shouldRetryResult.ShouldRetry);
         }
 
         [TestMethod]

@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 String,     // StrR2 (Reference string of 2-byte offset)
                 String,     // StrR3 (Reference string of 3-byte offset)
                 String,     // StrR4 (Reference string of 4-byte offset)
-                Unknown,    // <empty> 0xC7
+                Number,     // NumUI64
 
                 // Number Values
                 Number,     // NumUI8
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 Number,     // NumDbl,
                 Float32,    // Float32
                 Float64,    // Float64
-                Unknown,    // <empty> 0xCF
+                Unknown,    // Float16 (No corresponding JsonNodeType at the moment)
 
                 // Other Value Types
                 Null,       // Null
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 Unknown,    // <empty> 0xD4
                 Unknown,    // <empty> 0xD5
                 Unknown,    // <empty> 0xD6
-                Unknown,    // <empty> 0xD7
+                Unknown,    // UInt8 (No corresponding JsonNodeType at the moment)
 
                 Int8,       // Int8
                 Int16,      // Int16
@@ -150,11 +150,11 @@ namespace Microsoft.Azure.Cosmos.Json
                 Object,     // ObjLC2 (2-byte length and count)
                 Object,     // ObjLC4 (4-byte length and count)
 
-                // Empty Range
-                Unknown,    // <empty> 0xF0
-                Unknown,    // <empty> 0xF1
-                Unknown,    // <empty> 0xF2
-                Unknown,    // <empty> 0xF3
+                // Array and Object Special Type Markers
+                Array,      // ArrNumC1 Uniform number array of 1-byte item count
+                Array,      // ArrNumC2 Uniform number array of 2-byte item count
+                Array,      // Array of 1-byte item count of Uniform number array of 1-byte item count
+                Array,      // Array of 2-byte item count of Uniform number array of 2-byte item count
                 Unknown,    // <empty> 0xF4
                 Unknown,    // <empty> 0xF5
                 Unknown,    // <empty> 0xF6

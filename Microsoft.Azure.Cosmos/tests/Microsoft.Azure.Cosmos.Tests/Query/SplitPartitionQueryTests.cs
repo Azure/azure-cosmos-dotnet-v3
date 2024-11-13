@@ -2,14 +2,14 @@
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Pagination;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Cosmos.Tests.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Tests.Pagination;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class SplitPartitionQueryTests
@@ -21,7 +21,7 @@
             IDocumentContainer documentContainer = await CreateSplitDocumentContainerAsync(numItems);
 
             string query = "SELECT * FROM c";
-            for(int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 Cosmos.PartitionKey partitionKey = new PartitionKeyBuilder()
                     .Add(i.ToString())
@@ -47,18 +47,18 @@
                     "/id",
                     "/value1",
                     "/value2"
-                }, 
+                },
                 Kind = PartitionKind.MultiHash,
                 Version = PartitionKeyDefinitionVersion.V2,
             };
 
             IMonadicDocumentContainer monadicDocumentContainer = new InMemoryContainer(partitionKeyDefinition);
-            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);            
+            DocumentContainer documentContainer = new DocumentContainer(monadicDocumentContainer);
 
             for (int i = 0; i < numItems; i++)
             {
                 // Insert an item
-                CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i%5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\" }}");
+                CosmosObject item = CosmosObject.Parse($"{{\"id\" : \"{i % 5}\", \"value1\" : \"{Guid.NewGuid()}\", \"value2\" : \"{i}\" }}");
                 while (true)
                 {
                     TryCatch<Record> monadicCreateRecord = await documentContainer.MonadicCreateItemAsync(item, cancellationToken: default);
