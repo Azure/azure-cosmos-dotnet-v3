@@ -432,6 +432,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
             #endregion
 
+            /// <inheritdoc />
             protected override bool TryGetUInt64Value(IJsonNavigatorNode numberNode, out ulong value)
             {
                 BinaryNavigatorNode binaryNavigatorNode = this.GetNodeOfType(JsonNodeType.Number, numberNode);

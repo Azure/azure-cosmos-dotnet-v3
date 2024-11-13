@@ -172,6 +172,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
         #endregion
 
+        /// <inheritdoc />
         protected override bool TryGetUInt64Value(IJsonNavigatorNode numberNode, out ulong value)
         {
             value = 0;

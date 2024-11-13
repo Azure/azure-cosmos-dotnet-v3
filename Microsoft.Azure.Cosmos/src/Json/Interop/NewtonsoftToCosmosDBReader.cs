@@ -195,6 +195,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
             return false;
         }
 
+        /// <inheritdoc />
         protected override bool TryGetUInt64NumberValue(out ulong value)
         {
             value = 0;

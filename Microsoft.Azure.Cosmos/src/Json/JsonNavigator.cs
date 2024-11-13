@@ -275,6 +275,12 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract IJsonReader CreateReader(IJsonNavigatorNode node);
         #endregion
 
+        /// <summary>
+        /// Attempts to read the specified number node as an unsigned 64-bit integer.
+        /// </summary>
+        /// <param name="numberNode">The number <see cref="IJsonNavigatorNode"/> to retrieve its value.</param>
+        /// <param name="value">When this method returns, contains the value of the specified number node if it was an unsigned 64-bit integer; otherwise, the default value of <c>ulong</c>.</param>
+        /// <returns><c>true</c> if the number node value is an unsigned 64-bit integer; otherwise, <c>false</c>.</returns>
         protected abstract bool TryGetUInt64Value(IJsonNavigatorNode numberNode, out ulong value);
     }
 }

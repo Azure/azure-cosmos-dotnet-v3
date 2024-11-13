@@ -290,6 +290,11 @@ namespace Microsoft.Azure.Cosmos.Json
         }
         #endregion
 
+        /// <summary>
+        /// Attempts to read the current number token as an unsigned 64-bit integer.
+        /// </summary>
+        /// <param name="value">When this method returns, contains the value of the current number token if it was an unsigned 64-bit integer; otherwise, the default value of <c>ulong</c>.</param>
+        /// <returns><c>true</c> if the number token value is an unsigned 64-bit integer; otherwise, <c>false</c>.</returns>
         protected abstract bool TryGetUInt64NumberValue(out ulong value);
     }
 }

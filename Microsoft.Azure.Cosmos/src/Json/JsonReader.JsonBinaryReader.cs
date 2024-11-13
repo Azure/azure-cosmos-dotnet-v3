@@ -543,6 +543,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
             #endregion
 
+            /// <inheritdoc />
             protected override bool TryGetUInt64NumberValue(out ulong value)
             {
                 if (this.JsonObjectState.CurrentTokenType != JsonTokenType.Number)
