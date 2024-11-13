@@ -40,8 +40,6 @@ flowchart TD
 
 ```
 
-### Attribute Versioning
-
 ### OpenTelemetry Versioning and Stability Modes
 
 Our SDK follows the versioning guidelines outlined in the [OpenTelemetry Semantic Conventions documentation](https://opentelemetry.io/docs/specs/semconv/database/).
