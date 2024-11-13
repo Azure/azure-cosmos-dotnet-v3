@@ -42,14 +42,29 @@ flowchart TD
 
 ### Attribute Versioning
 
-We follow versioning as mentioned in open telemetry [doc](https://opentelemetry.io/docs/specs/semconv/database/).
+### OpenTelemetry Versioning and Stability Modes
 
-If `OTEL_SEMCONV_STABILITY_OPT_IN` environment variable is set as:
+Our SDK follows the versioning guidelines outlined in the [OpenTelemetry Semantic Conventions documentation](https://opentelemetry.io/docs/specs/semconv/database/).
 
-1. `database`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs)
-2. `database/dup`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs) ahd [here] )https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs)
-3. `default`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs)
-4. `appinsightssdk`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs)
+When configuring the `OTEL_SEMCONV_STABILITY_OPT_IN` environment variable, the following options determine the attributes emitted by the SDK:
+
+1. **`database`**: 
+   - The SDK emits all attributes as per the OpenTelemetry database semantic conventions outlined [here](https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/).
+   - Refer to the [list of OpenTelemetry attributes emitted by the SDK](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs).
+
+2. **`database/dup`**: 
+   - The SDK emits attributes that follow both OpenTelemetry database semantic conventions, available [here](https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/), and additional attributes supported by the Classic Application Insights SDK.
+   - For a complete attribute list, refer to the OpenTelemetry attributes [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs) and Classic Application Insights attributes [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs).
+
+3. **`default`**: 
+   - This mode functions similarly to `database`, emitting attributes that adhere to the OpenTelemetry database semantic conventions. 
+   - View the full [attribute list emitted by the SDK](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs).
+
+4. **`appinsightssdk`**: 
+   - The SDK emits only those attributes supported by the Classic Application Insights SDK.
+   - For a comprehensive list of attributes, refer [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs). 
+
+Choose the appropriate mode to align with your telemetry requirements.
 
 ## Send telemetry from SDK to service (Private Preview)
 
