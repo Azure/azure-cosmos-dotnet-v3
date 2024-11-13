@@ -73,7 +73,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 }
             }
 
-            TracesStabilityFactory.SetAttributes(
+            IActivityAttributePopulator  populator = TracesStabilityFactory.GetAttributePopulator();
+            populator.PopulateAttributes(
                 scope: scope,
                 operationName: OperationName,
                 databaseName: "databaseName",
@@ -84,11 +85,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 clientId: "clientId",
                 connectionMode: "gateway");
 
-            TracesStabilityFactory.SetAttributes(
+            populator.PopulateAttributes(
                 scope: scope,
                 exception: new Exception());
 
-            TracesStabilityFactory.SetAttributes(
+            populator.PopulateAttributes(
                 scope: scope,
                 operationType: "operationType",
                 queryTextMode: QueryTextMode.All,

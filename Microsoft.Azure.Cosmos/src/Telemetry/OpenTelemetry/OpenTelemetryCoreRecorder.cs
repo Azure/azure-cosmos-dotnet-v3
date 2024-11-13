@@ -28,6 +28,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly string connectionModeCache = null;
 
         private readonly QueryTextMode? queryTextMode = null;
+
+        private readonly IActivityAttributePopulator activityAttributePopulator = TracesStabilityFactory.GetAttributePopulator();
+
         private OpenTelemetryAttributes response = null;
 
         /// <summary>
@@ -158,7 +161,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                TracesStabilityFactory.SetAttributes(this.scope,
+                TracesStabilityFactory.GetAttributePopulator().PopulateAttributes(this.scope,
                     operationName,
                     databaseName,
                     containerName,
@@ -190,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             if (this.IsEnabled)
             {
-                TracesStabilityFactory.SetAttributes(this.scope, exception);
+                TracesStabilityFactory.GetAttributePopulator().PopulateAttributes(this.scope, exception);
 
                 if (exception is not CosmosException || (exception is CosmosException cosmosException
                             && !DiagnosticsFilterHelper
@@ -233,7 +236,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 if (this.response != null)
                 {
-                    TracesStabilityFactory.SetAttributes(this.scope, operationTypeName, this.queryTextMode, this.response);
+                    TracesStabilityFactory.GetAttributePopulator().PopulateAttributes(this.scope, this.queryTextMode, operationTypeName, this.response);
 
                     CosmosDbEventSource.RecordDiagnosticsForRequests(this.config, operationType, this.response);
 

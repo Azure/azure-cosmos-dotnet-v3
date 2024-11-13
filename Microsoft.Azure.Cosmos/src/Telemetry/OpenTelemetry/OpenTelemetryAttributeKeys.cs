@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// For more details on the semantic conventions, refer to the OpenTelemetry documentation at:
     /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/> OpenTelemetry Semantic Conventions 1.28.0 conventions are followed.
     /// </remarks>
-    internal sealed class OpenTelemetryAttributeKeys
+    internal sealed class OpenTelemetryAttributeKeys : IActivityAttributePopulator
     {
         // Azure defaults
 
@@ -167,13 +167,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
 
-        public static void PopulateAttributes(DiagnosticScope scope,
-            string operationName,
-            string databaseName,
-            string containerName,
-            Uri accountName,
-            string userAgent,
-            string clientId,
+        public void PopulateAttributes(DiagnosticScope scope, 
+            string operationName, 
+            string databaseName, 
+            string containerName, 
+            Uri accountName, 
+            string userAgent, 
+            string machineId, 
+            string clientId, 
             string connectionMode)
         {
             scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
@@ -189,7 +190,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, connectionMode);
         }
 
-        public static void PopulateAttributes(DiagnosticScope scope, Exception exception)
+        public void PopulateAttributes(DiagnosticScope scope, Exception exception)
         {
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
@@ -201,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        public static void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, OpenTelemetryAttributes response)
+        public void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, string operationType, OpenTelemetryAttributes response)
         {
             if (response == null)
             {

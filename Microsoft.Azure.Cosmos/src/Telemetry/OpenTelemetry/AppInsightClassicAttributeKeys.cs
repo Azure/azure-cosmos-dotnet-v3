@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using global::Azure.Core;
 
-    internal sealed class AppInsightClassicAttributeKeys
+    internal sealed class AppInsightClassicAttributeKeys : IActivityAttributePopulator
     {
         /// <summary>
         /// Represents the diagnostic namespace for Azure Cosmos.
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
 
-        public static void PopulateAttributes(DiagnosticScope scope,
+        public void PopulateAttributes(DiagnosticScope scope,
             string operationName,
             string databaseName,
             string containerName,
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             scope.AddAttribute(AppInsightClassicAttributeKeys.ConnectionMode, connectionMode);
         }
 
-        public static void PopulateAttributes(DiagnosticScope scope, Exception exception)
+        public void PopulateAttributes(DiagnosticScope scope, Exception exception)
         {
             scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionStacktrace, exception.StackTrace);
             scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionType, exception.GetType().Name);
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        public static void PopulateAttributes(DiagnosticScope scope, string operationType, OpenTelemetryAttributes response)
+        public void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, string operationType, OpenTelemetryAttributes response)
         {
             scope.AddAttribute(AppInsightClassicAttributeKeys.OperationType, operationType);
             if (response != null)
