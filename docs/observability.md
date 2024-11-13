@@ -40,6 +40,17 @@ flowchart TD
 
 ```
 
+### Attribute Versioning
+
+We follow versioning as mentioned in open telemetry [doc](https://opentelemetry.io/docs/specs/semconv/database/).
+
+If `OTEL_SEMCONV_STABILITY_OPT_IN` environment variable is set as:
+
+1. `database`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs)
+2. `database/dup`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs) ahd [here] )https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs)
+3. `default`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/OpenTelemetryAttributeKeys.cs)
+4. `appinsightssdk`: SDK would emit all the open telemetry attributes mentioned [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/src/Telemetry/OpenTelemetry/AppInsightClassicAttributeKeys.cs)
+
 ## Send telemetry from SDK to service (Private Preview)
 
 ### Introduction
