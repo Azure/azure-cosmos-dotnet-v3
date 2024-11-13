@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             List<QueryInfo> rewrittenQueryInfos = new List<QueryInfo>(queryInfos.Count);
             foreach (QueryInfo queryInfo in queryInfos)
             {
-                QueryInfo rewrittenQueryInfo = RewriteOrderByQueryInfo(queryInfo, statistics);
+                QueryInfo rewrittenQueryInfo = RewriteOrderByQueryInfo(queryInfo, statistics, queryInfos.Count);
                 rewrittenQueryInfos.Add(rewrittenQueryInfo);
             }
 
@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             }
         }
 
-        private static QueryInfo RewriteOrderByQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics)
+        private static QueryInfo RewriteOrderByQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics, int componentCount)
         {
             Debug.Assert(queryInfo.HasOrderBy, "The component query should have an order by");
             Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
@@ -616,11 +616,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             List<string> rewrittenOrderByExpressions = new List<string>(queryInfo.OrderByExpressions.Count);
             foreach (string orderByExpression in queryInfo.OrderByExpressions)
             {
-                string rewrittenOrderByExpression = FormatComponentQueryText(orderByExpression, statistics);
+                string rewrittenOrderByExpression = FormatComponentQueryTextWorkaround(orderByExpression, statistics, componentCount);
                 rewrittenOrderByExpressions.Add(rewrittenOrderByExpression);
             }
 
-            string rewrittenQuery = FormatComponentQueryText(queryInfo.RewrittenQuery, statistics);
+            string rewrittenQuery = FormatComponentQueryTextWorkaround(queryInfo.RewrittenQuery, statistics, componentCount);
 
             QueryInfo result = new QueryInfo()
             {
@@ -648,6 +648,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return result;
         }
 
+        // This method is unused currently, but we will switch back to using this
+        // once the gateway has been redeployed with the fix for placeholder indexes
         private static string FormatComponentQueryText(string format, GlobalFullTextSearchStatistics statistics)
         {
             string query = format.Replace(Placeholders.TotalDocumentCount, statistics.DocumentCount.ToString());
@@ -660,6 +662,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
                 string hitCountsArray = string.Format("[{0}]", string.Join(",", fullTextStatistics.HitCounts.ToArray())); // ReadOnlyMemory<long> does not implement IEnumerable<long>
                 query = query.Replace(string.Format(Placeholders.FormattableHitCountsArray, index), hitCountsArray);
+            }
+
+            return query;
+        }
+
+        private static string FormatComponentQueryTextWorkaround(string format, GlobalFullTextSearchStatistics statistics, int componentCount)
+        {
+            string query = format.Replace(Placeholders.TotalDocumentCount, statistics.DocumentCount.ToString());
+
+            int statisticsIndex = 0;
+            for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
+            {
+                string totalWordCountPlaceholder = string.Format(Placeholders.FormattableTotalWordCount, componentIndex);
+                string hitCountsArrayPlaceholder = string.Format(Placeholders.FormattableHitCountsArray, componentIndex);
+
+                if (query.IndexOf(totalWordCountPlaceholder) == -1)
+                {
+                    continue;
+                }
+
+                FullTextStatistics fullTextStatistics = statistics.FullTextStatistics[statisticsIndex];
+                query = query.Replace(totalWordCountPlaceholder, fullTextStatistics.TotalWordCount.ToString());
+
+                string hitCountsArray = string.Format("[{0}]", string.Join(",", fullTextStatistics.HitCounts.ToArray()));
+                query = query.Replace(hitCountsArrayPlaceholder, hitCountsArray);
+
+                ++statisticsIndex;
             }
 
             return query;
