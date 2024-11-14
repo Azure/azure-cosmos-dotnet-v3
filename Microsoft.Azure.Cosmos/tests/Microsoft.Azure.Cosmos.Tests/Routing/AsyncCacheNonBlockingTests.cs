@@ -4,8 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Routing
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
@@ -16,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
 
     [TestClass]

@@ -5,21 +5,21 @@
 namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 {
     using System;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using HdrHistogram;
-    using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Telemetry;
-    using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Telemetry.Models;
-    using System.Text;
-    using System.IO;
-    using System.Net.Http;
-    using Moq;
-    using System.Threading.Tasks;
-    using System.Threading;
-    using System.Net;
     using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net;
+    using System.Net.Http;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using HdrHistogram;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="ClientTelemetry"/>.
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 aggregationIntervalInSec: 1), ClientTelemetryOptions.JsonSerializerSettings);
             Assert.AreEqual("{\"clientId\":\"clientId\",\"processId\":\"\",\"connectionMode\":\"DIRECT\",\"preferredRegions\":[\"region1\"],\"aggregationIntervalInSec\":1,\"systemInfo\":[]}", json);
         }
-        
+
         [TestMethod]
         [DataRow(150, 50, 200)] // When operation, cacherefresh and request info is there in payload
         [DataRow(0, 50, 0)] // When only cacherefresh info is there in payload
@@ -124,13 +124,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
             string data = File.ReadAllText("Telemetry/ClientTelemetryPayloadWithoutMetrics.json", Encoding.UTF8);
             ClientTelemetryProperties clientTelemetryProperties = JsonConvert.DeserializeObject<ClientTelemetryProperties>(data);
-            
+
             int totalPayloadSizeInBytes = data.Length;
 
             int actualOperationInfoSize = 0;
             int actualCacheRefreshInfoSize = 0;
             int actualRequestInfoSize = 0;
-            
+
             Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>();
             _ = mockHttpHandler.Setup(x => x.SendAsync(
                 It.IsAny<HttpRequestMessage>(),
@@ -150,16 +150,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                     actualRequestInfoSize += propertiesToSend.RequestInfo?.Count ?? 0;
                 })
                 .Returns(Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)));
-            
+
             ClientTelemetryProcessor processor = new ClientTelemetryProcessor(
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object))),
                 Mock.Of<AuthorizationTokenProvider>());
 
-            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot 
-                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> ();
+            ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)> operationInfoSnapshot
+                = new ConcurrentDictionary<OperationInfo, (LongConcurrentHistogram latency, LongConcurrentHistogram requestcharge)>();
 
             int numberOfMetricsInOperationSection = 2;
-            for (int i = 0; i < (expectedOperationInfoSize/ numberOfMetricsInOperationSection); i++)
+            for (int i = 0; i < (expectedOperationInfoSize / numberOfMetricsInOperationSection); i++)
             {
                 OperationInfo opeInfo = new OperationInfo(Regions.WestUS,
                                                         0,
@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 operationInfoSnapshot.TryAdd(opeInfo, (latency, requestcharge));
             }
 
-            ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot 
+            ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram> cacheRefreshInfoSnapshot
                 = new ConcurrentDictionary<CacheRefreshInfo, LongConcurrentHistogram>();
             for (int i = 0; i < expectedCacheRefreshInfoSize; i++)
             {
@@ -197,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                         Documents.ResourceType.Document,
                                                         (int)HttpStatusCode.OK,
                                                         (int)SubStatusCodes.PartitionKeyRangeGone,
-                                                        "dummycache") ;
+                                                        "dummycache");
 
                 LongConcurrentHistogram latency = new LongConcurrentHistogram(ClientTelemetryOptions.RequestLatencyMin,
                                                             ClientTelemetryOptions.RequestLatencyMax,
@@ -227,13 +227,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                                                         ClientTelemetryOptions.RequestLatencyMax,
                                                         ClientTelemetryOptions.RequestLatencyPrecision);
                 histogram.RecordValue(TimeSpan.FromMinutes(1).Ticks);
-                
+
                 metricInfo.SetAggregators(histogram, ClientTelemetryOptions.TicksToMsFactor);
                 reqInfo.Metrics.Add(metricInfo);
 
                 requestInfoList.Add(reqInfo); ;
             }
-            
+
             await processor.ProcessAndSendAsync(
                 clientTelemetryProperties,
                 operationInfoSnapshot,
@@ -350,8 +350,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             catch (Exception ex)
             {
                 Assert.Fail("Exception should not be thrown. Exception: " + ex);
-            }   
-            
+            }
+
         }
     }
 }

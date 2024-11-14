@@ -79,10 +79,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             row.InitLayout(HybridRowVersion.V1, BatchSchemaProvider.BatchOperationLayout, BatchSchemaProvider.BatchLayoutResolver);
 
             byte[] testBinaryId = new byte[] { 1, 2, 3, 4, };
-            ItemRequestOptions requestOptions = new();
-            requestOptions.Properties = new Dictionary<string, object>()
+            ItemRequestOptions requestOptions = new()
+            {
+                Properties = new Dictionary<string, object>()
             {
                 { WFConstants.BackendHeaders.BinaryId, testBinaryId },
+            }
             };
             TransactionalBatchItemRequestOptions transactionalBatchItemRequestOptions =
                 TransactionalBatchItemRequestOptions.FromItemRequestOptions(requestOptions);

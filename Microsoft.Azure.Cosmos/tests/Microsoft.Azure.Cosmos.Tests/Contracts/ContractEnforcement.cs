@@ -14,7 +14,7 @@
 
     public class ContractEnforcement
     {
-        private static readonly InvariantComparer invariantComparer = new ();
+        private static readonly InvariantComparer invariantComparer = new();
 
         private static Assembly GetAssemblyLocally(string name)
         {
@@ -71,7 +71,7 @@
             // FullName contains unwanted assembly artifacts like version when it has a generic type
             Type baseType = type.BaseType;
             string baseTypeString = string.Empty;
-            if(baseType != null)
+            if (baseType != null)
             {
                 // Remove assembly info to avoid breaking the contract just from version change
                 baseTypeString = baseType.FullName;
@@ -113,7 +113,7 @@
                 $"{nameof(propertyInfo.CanWrite)}:{(propertyInfo.CanWrite ? bool.TrueString : bool.FalseString)};";
 
             MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
-            if(getMethodInfo != null)
+            if (getMethodInfo != null)
             {
                 name += ContractEnforcement.GenerateNameWithMethodAttributes(getMethodInfo);
             }
@@ -154,12 +154,12 @@
 
                 string methodSignature = null;
 
-                if(memberInfo.Value.MemberType == MemberTypes.Method)
+                if (memberInfo.Value.MemberType == MemberTypes.Method)
                 {
                     MethodInfo methodInfo = (MethodInfo)memberInfo.Value;
                     methodSignature = ContractEnforcement.GenerateNameWithMethodAttributes(methodInfo);
                 }
-                else if(memberInfo.Value.MemberType == MemberTypes.Property)
+                else if (memberInfo.Value.MemberType == MemberTypes.Property)
                 {
                     PropertyInfo propertyInfo = (PropertyInfo)memberInfo.Value;
                     methodSignature = ContractEnforcement.GenerateNameWithPropertyAttributes(propertyInfo);
@@ -244,7 +244,7 @@
 
         public static string GetCurrentContract(string dllName)
         {
-            TypeTree locally = new (typeof(object));
+            TypeTree locally = new(typeof(object));
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
             Type[] exportedTypes = assembly.GetExportedTypes();
             ContractEnforcement.BuildTypeTree(locally, exportedTypes);
@@ -261,11 +261,11 @@
                 "Compute"
             };
 
-            TypeTree locally = new (typeof(object));
+            TypeTree locally = new(typeof(object));
             Assembly assembly = ContractEnforcement.GetAssemblyLocally(dllName);
-            Type[] exportedTypes = assembly.GetTypes().Where(t => 
-                                                                t!= null && 
-                                                                t.Namespace != null && 
+            Type[] exportedTypes = assembly.GetTypes().Where(t =>
+                                                                t != null &&
+                                                                t.Namespace != null &&
                                                                 t.Namespace.Contains("Microsoft.Azure.Cosmos.Telemetry.Models") &&
                                                                 !nonTelemetryModels.Contains(t.Name))
                                                        .ToArray();

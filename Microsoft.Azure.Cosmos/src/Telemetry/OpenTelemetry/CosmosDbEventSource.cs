@@ -35,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
+            if (response.Diagnostics == null)
+            {
+                return;
+            }
+
             if (CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(

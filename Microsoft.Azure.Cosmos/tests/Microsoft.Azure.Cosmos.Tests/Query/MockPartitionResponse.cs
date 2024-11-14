@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public int GetTotalItemCount()
         {
             int totalItemCount = 0;
-            if(this.MessagesWithItemIndex != null)
+            if (this.MessagesWithItemIndex != null)
             {
                 foreach (int[] message in this.MessagesWithItemIndex)
                 {
@@ -58,9 +58,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 }
             }
 
-            if(this.Split != null)
+            if (this.Split != null)
             {
-                foreach(MockPartitionResponse partitionResponse in this.Split)
+                foreach (MockPartitionResponse partitionResponse in this.Split)
                 {
                     totalItemCount += partitionResponse.GetTotalItemCount();
                 }
