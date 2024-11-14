@@ -4,15 +4,18 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
+    using System;
+    using global::Azure.Core;
+
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
     /// These keys follow the OpenTelemetry conventions and the Cosmos DB semantic conventions as outlined in the OpenTelemetry specification.
     /// </summary>
     /// <remarks>
     /// For more details on the semantic conventions, refer to the OpenTelemetry documentation at:
-    /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/>
+    /// <see href="https://opentelemetry.io/docs/specs/semconv/database/cosmosdb/"/> OpenTelemetry Semantic Conventions 1.28.0 conventions are followed.
     /// </remarks>
-    internal sealed class OpenTelemetryAttributeKeys
+    internal sealed class OpenTelemetryAttributeKeys : IActivityAttributePopulator
     {
         // Azure defaults
 
@@ -57,6 +60,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the server address.
         /// </summary>
         public const string ServerAddress = "server.address";
+
+        /// <summary>
+        /// Represents the server address.
+        /// </summary>
+        public const string ServerPort = "server.port";
 
         // Cosmos DB specific attributes
 
@@ -115,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the item count in the operation.
         /// </summary>
-        public const string ItemCount = "db.cosmosdb.item_count";
+        public const string ItemCount = "db.cosmosdb.row_count";
 
         /// <summary>
         /// Represents the activity ID for the operation.
@@ -135,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the size of the batch operation.
         /// </summary>
-        public const string BatchSize = "db.operation.batch_size";
+        public const string BatchSize = "db.operation.batch.size";
 
         /// <summary>
         /// Consistency Level
@@ -158,5 +166,78 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Represents the stack trace of the exception.
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
+
+        public void PopulateAttributes(DiagnosticScope scope, 
+            string operationName, 
+            string databaseName, 
+            string containerName, 
+            Uri accountName, 
+            string userAgent, 
+            string machineId, 
+            string clientId, 
+            string connectionMode)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.DbOperation, operationName);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.DbName, databaseName);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ContainerName, containerName);
+            if (accountName != null)
+            {
+                scope.AddAttribute(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host);
+                scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.ServerPort, accountName.Port);
+            }
+            scope.AddAttribute(OpenTelemetryAttributeKeys.UserAgent, userAgent);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ClientId, clientId);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ConnectionMode, connectionMode);
+        }
+
+        public void PopulateAttributes(DiagnosticScope scope, Exception exception)
+        {
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
+
+            // If Exception is not registered with open Telemetry
+            if (!OpenTelemetryCoreRecorder.IsExceptionRegistered(exception, scope))
+            {
+                scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
+            }
+        }
+
+        public void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, string operationType, OpenTelemetryAttributes response)
+        {
+            if (response == null)
+            {
+                return;
+            }
+
+            if (response.BatchSize is not null)
+            {
+                scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.BatchSize, Convert.ToInt32(response.BatchSize));
+            }
+
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.StatusCode, Convert.ToInt32(response.StatusCode));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.RequestContentLength, response.RequestContentLength);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ResponseContentLength, response.ResponseContentLength);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.SubStatusCode, response.SubStatusCode);
+            scope.AddIntegerAttribute(OpenTelemetryAttributeKeys.RequestCharge, Convert.ToInt32(response.RequestCharge));
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ItemCount, response.ItemCount);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ActivityId, response.ActivityId);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.CorrelatedActivityId, response.CorrelatedActivityId);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ConsistencyLevel, response.ConsistencyLevel);
+
+            if (response.QuerySpec is not null)
+            {
+                if (queryTextMode == QueryTextMode.All ||
+                    (queryTextMode == QueryTextMode.ParameterizedOnly && response.QuerySpec.ShouldSerializeParameters()))
+                {
+                    scope.AddAttribute(OpenTelemetryAttributeKeys.QueryText, response.QuerySpec?.QueryText);
+                }
+            }
+
+            if (response.Diagnostics != null)
+            {
+                scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+            }
+            
+        }
     }
 }

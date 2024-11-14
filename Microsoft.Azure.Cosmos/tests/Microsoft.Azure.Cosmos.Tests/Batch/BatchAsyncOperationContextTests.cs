@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Trace rootTrace = Trace.GetRootTrace(name: "RootTrace");
 
             ItemBatchOperation operation = new ItemBatchOperation(OperationType.Create, 0, Cosmos.PartitionKey.Null);
-            
+
             // Start with the base trace
             ItemBatchOperationContext batchAsyncOperationContext = new ItemBatchOperationContext(Guid.NewGuid().ToString(), rootTrace, retryPolicy);
             operation.AttachContext(batchAsyncOperationContext);

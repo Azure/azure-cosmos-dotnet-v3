@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     }
                 }
             };
-            Documents.IndexingPolicy ip = dc.IndexingPolicy;
+            _ = dc.IndexingPolicy;
 
             CosmosContainerSettingsTests.AssertSerializedPayloads(containerSettings, dc);
         }
@@ -156,8 +156,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string includedPaths = match.Groups[1].Value;
                 string delimiter = "},{";
                 int position = includedPaths.IndexOf(delimiter);
-                string textPropIncludedPath = includedPaths.Substring(0, position + 1);
-                string listPropIncludedPath = includedPaths.Substring(position + delimiter.Length - 1);
+                string textPropIncludedPath = includedPaths[..(position + 1)];
+                string listPropIncludedPath = includedPaths[(position + delimiter.Length - 1)..];
 
                 Assert.AreEqual("{\"path\":\"/textprop/?\",\"indexes\":[]}", textPropIncludedPath);
                 Assert.AreEqual("{\"path\":\"/listprop/?\",\"indexes\":[],\"isFullIndex\":true}", listPropIncludedPath);
@@ -173,10 +173,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void SettingPKShouldNotResetVersion()
         {
-            ContainerProperties containerProperties = new();
-            containerProperties.Id = "test";
-            containerProperties.PartitionKeyDefinitionVersion = Cosmos.PartitionKeyDefinitionVersion.V2;
-            containerProperties.PartitionKeyPath = "/id";
+            ContainerProperties containerProperties = new()
+            {
+                Id = "test",
+                PartitionKeyDefinitionVersion = Cosmos.PartitionKeyDefinitionVersion.V2,
+                PartitionKeyPath = "/id"
+            };
 
             Assert.AreEqual(Cosmos.PartitionKeyDefinitionVersion.V2, containerProperties.PartitionKeyDefinitionVersion);
         }
@@ -184,7 +186,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         public void ValidateVectorEmbeddingsAndIndexes()
         {
-            Cosmos.Embedding embedding1 = new ()
+            Cosmos.Embedding embedding1 = new()
             {
                 Path = "/vector1",
                 DataType = Cosmos.VectorDataType.Int8,
@@ -192,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Dimensions = 1200,
             };
 
-            Cosmos.Embedding embedding2 = new ()
+            Cosmos.Embedding embedding2 = new()
             {
                 Path = "/vector2",
                 DataType = Cosmos.VectorDataType.Uint8,
@@ -200,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Dimensions = 3,
             };
 
-            Cosmos.Embedding embedding3 = new ()
+            Cosmos.Embedding embedding3 = new()
             {
                 Path = "/vector3",
                 DataType = Cosmos.VectorDataType.Float32,
@@ -217,7 +219,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
             {
-                VectorEmbeddingPolicy = new (embeddings),
+                VectorEmbeddingPolicy = new(embeddings),
                 IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
                     VectorIndexes = new()

@@ -621,9 +621,9 @@
                 CosmosQueryClientCore.ParseRestStream(
                     memoryStream,
                     Documents.ResourceType.Document,
-                    out CosmosArray documents,
+                    out _,
                     out CosmosObject distributionPlan,
-                    out bool? ignored);
+                    out _);
 
                 if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                     distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
@@ -652,9 +652,9 @@
             CosmosQueryClientCore.ParseRestStream(
                 memoryStream,
                 Documents.ResourceType.Document,
-                out CosmosArray documents,
+                out _,
                 out CosmosObject distributionPlan,
-                out bool? streaming);
+                out _);
 
             if (distributionPlan.TryGetValue("backendDistributionPlan", out CosmosElement backendDistributionPlan) &&
                 distributionPlan.TryGetValue("clientDistributionPlan", out CosmosElement clientDistributionPlan))
