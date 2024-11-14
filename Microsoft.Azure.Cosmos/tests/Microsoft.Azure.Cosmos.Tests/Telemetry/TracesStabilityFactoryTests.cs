@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         [TestMethod]
         [DataRow(OpenTelemetryStablityModes.Database, DisplayName = "Only NEW attributes when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database'")]
         [DataRow(OpenTelemetryStablityModes.DatabaseDupe, DisplayName = "NEW and OLD attributes when OTEL_SEMCONV_STABILITY_OPT_IN is 'database/dup'")]
+        [DataRow(OpenTelemetryStablityModes.ClassicAppInsights, DisplayName = "NEW and OLD attributes when OTEL_SEMCONV_STABILITY_OPT_IN is 'appinsightssdk'")]
         [DataRow(null, DisplayName = "Default Scenario when OTEL_SEMCONV_STABILITY_OPT_IN is not set")]
         public void SetAttributeBasedOnStabilityModeTest(string stabilityMode)
         {
@@ -142,10 +143,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 Assert.AreEqual(34, tagCollection.Count);
                 VerifyNewAndOldAttributes(tagCollection);
             }
-            else
+            else if (stabilityMode == OpenTelemetryStablityModes.ClassicAppInsights)
             {
                 Assert.AreEqual(20, tagCollection.Count);
-                VerifyDefaultAttributes(tagCollection);
+                VerifyOldAttributes(tagCollection);
+            }
+            else
+            {
+                Assert.AreEqual(23, tagCollection.Count);
+                VerifyNewAttributesOnly(tagCollection);
             }
         }
 
@@ -189,10 +195,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         private static void VerifyNewAndOldAttributes(ActivityTagsCollection tagCollection)
         {
             VerifyNewAttributesOnly(tagCollection);
-            VerifyDefaultAttributes(tagCollection);
+            VerifyOldAttributes(tagCollection);
         }
 
-        private static void VerifyDefaultAttributes(ActivityTagsCollection tagCollection)
+        private static void VerifyOldAttributes(ActivityTagsCollection tagCollection)
         {
             Assert.AreEqual("Microsoft.DocumentDB", tagCollection["az.namespace"]);
             Assert.AreEqual("operationName", tagCollection[AppInsightClassicAttributeKeys.DbOperation]);
