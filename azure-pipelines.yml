@@ -51,7 +51,7 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
-    IncludePerformance: false
+    IncludePerformance: true
     IncludeCoverage: false
 
 - template:  templates/build-internal.yml
