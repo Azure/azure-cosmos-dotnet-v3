@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Whether hedging for write requests on accounts with multi-region writes are enabled
-        /// Note that this does come with the caveat that there will be more 409 errors thrown by the SDK.
+        /// Note that this does come with the caveat that there will be more 409 / 412 errors thrown by the SDK.
         /// This is expected and applications that adapt this feature should be prepared to handle these exceptions.
         /// Application might not be able to be deterministic on Create vs Replace in the case of Upsert Operations
         /// </summary>
