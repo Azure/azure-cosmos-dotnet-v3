@@ -134,6 +134,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     FROM c
                     ORDER BY RANK RRF(FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']), VectorDistance(c.vector, {SampleVector}))",
                     new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                MakeSanityTest($@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, ['John']), FullTextScore(c.text, ['United States']))",
+                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
+                MakeSanityTest($@"
+                    SELECT TOP 10 c.index AS Index, c.title AS Title, c.text AS Text
+                    FROM c
+                    ORDER BY RANK RRF(VectorDistance(c.vector, {SampleVector}), FullTextScore(c.title, ['John']), VectorDistance(c.image, {SampleVector}), VectorDistance(c.backup_image, {SampleVector}), FullTextScore(c.text, ['United States']))",
+                    new List<List<int>>{new List<int>{ 21, 75, 37, 24, 26, 35, 49, 87, 55, 9 } }),
             };
 
             foreach (SanityTestCase testCase in testCases)
