@@ -177,7 +177,7 @@ namespace Microsoft.Azure.Cosmos
                 ? new Lazy<string>(() =>
                 {
                     QueryAdvice advice = Query.Core.QueryAdvisor.QueryAdvice.TryCreateFromString(this.Headers.QueryAdvice, out QueryAdvice queryAdvice) ? queryAdvice : null;
-                    return Query.Core.QueryAdvisor.QueryAdvice.ToString(advice);
+                    return advice.ToString();
                 })
                 : null;
 

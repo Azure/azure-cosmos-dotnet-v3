@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 
             // Find the corresponding rule in the document
             XElement rule = ruleDocument.Descendants("Rule")
-                .Where(r => r.Attribute("Id").Value == advice.Id)
+                .Where(r => r.Attribute("Id").Value == this.Id)
                 .FirstOrDefault();
 
             if (rule == null)
