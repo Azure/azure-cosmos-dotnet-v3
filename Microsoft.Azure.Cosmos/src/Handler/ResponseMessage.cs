@@ -160,7 +160,7 @@ namespace Microsoft.Azure.Cosmos
         /// This result is only available if QueryRequestOptions.PopulateQueryAdvice is set to true.
         /// </summary>
         /// <value>
-        /// The index utilization metrics.
+        /// The query advice.
         /// </value>
         public string QueryAdvice => this.QueryAdviceText?.Value;
 

@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 #else
     internal
 #endif
-    class SingleQueryAdvice
+    class QueryAdviceEntry
     {
         /// <summary>
         /// Initializes a new instance of the Query Advice class. 
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
         /// <param name="id">The rule id</param>
         /// <param name="parameters">The parameters associated with the rule id</param>
         [JsonConstructor]
-        public SingleQueryAdvice(
+        public QueryAdviceEntry(
              string id,
              IReadOnlyList<string> parameters)
         {
@@ -43,11 +43,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
         [JsonProperty("Params")]
         public IReadOnlyList<string> Parameters { get; }
 
-        public static string ToString(SingleQueryAdvice advice)
+        public override string ToString()
         {
-            if (advice == null)
+            if (this.Id == null)
             {
-                return string.Empty;
+                return null;
             }
 
             // Load the rule document
@@ -60,22 +60,35 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 
             if (rule == null)
             {
-                return string.Empty;
+                return null;
             }
 
-            // Generate the help link
-            string helpLink = " For more information, please visit " + ruleDocument.Descendants("UrlPrefix").First().Value + advice.Id;
+            StringBuilder stringBuilder = new StringBuilder();
+
+            // Message format is as follow
+            // <id>>: <message>. For more information, please visit <urlprefix><id>
+
+            stringBuilder.Append(this.Id);
+            stringBuilder.Append(": ");
+
+            string message = rule.Element("Message").Value.Replace("[CDATA[\"", String.Empty).Replace("\"]]", String.Empty); // removing the CDATA tags
 
             // Format message with parameters if available
-            string message = advice.Id + ": " + rule.Element("Message").Value.Replace("[CDATA[\"", String.Empty).Replace("\"]]", String.Empty); 
-            if (advice.Parameters == null || advice.Parameters.Count == 0)
+            if (this.Parameters == null || this.Parameters.Count == 0)
             {
-                return message + helpLink;
+                stringBuilder.Append(message);
             }
             else
             {
-                return string.Format(message, advice.Parameters.ToArray()) + helpLink;
+                stringBuilder.AppendFormat(message, this.Parameters);
             }
+
+            // Generate the help link
+            stringBuilder.Append(" For more information, please visit ");
+            stringBuilder.Append(ruleDocument.Descendants("UrlPrefix").First().Value);
+            stringBuilder.Append(this.Id);
+
+            return stringBuilder.ToString();
         }
     }
 }
