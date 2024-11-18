@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private const JsonNodeType Int64 = JsonNodeType.Int64;
             private const JsonNodeType Int8 = JsonNodeType.Int8;
             private const JsonNodeType Null = JsonNodeType.Null;
-            private const JsonNodeType Number = JsonNodeType.Number64;
+            private const JsonNodeType Number = JsonNodeType.Number;
             private const JsonNodeType Object = JsonNodeType.Object;
             private const JsonNodeType String = JsonNodeType.String;
             private const JsonNodeType True = JsonNodeType.True;

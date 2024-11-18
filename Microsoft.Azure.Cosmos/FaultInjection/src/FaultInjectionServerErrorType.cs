@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// 500: Internal Server Error from server
         /// </summary>
-        InternalServerEror,
+        InternalServerError,
 
         /// <summary>
         /// 429:Too Many Requests from server
