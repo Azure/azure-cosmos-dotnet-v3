@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     /// <summary>
     /// CosmosOperationMeter is a utility class responsible for collecting and recording telemetry metrics related to Cosmos DB operations.
@@ -44,6 +45,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private static bool IsEnabled = false;
 
+        private static IActivityAttributePopulator activityAttributePopulator;
+
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
@@ -54,6 +57,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 return;
             }
+
+            activityAttributePopulator = TracesStabilityFactory.GetAttributePopulator();
 
             CosmosOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.OperationMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.OperationMetrics.Unit.Sec,
@@ -95,21 +100,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            Func<KeyValuePair<string, object>[]> dimensionsFunc = () => new KeyValuePair<string, object>[]
-            {
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName.Port),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, getOperationName()),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, string.Join(",", attributes.Diagnostics.GetContactedRegions())),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
-            };
-
+            Func<KeyValuePair<string, object>[]> dimensionsFunc = () => activityAttributePopulator.PopulateOperationMeterDimensions(getOperationName(), containerName, databaseName, accountName, attributes, ex);
+            
             CosmosOperationMeter.RecordActualItemCount(attributes?.ItemCount ?? ex?.Headers?.ItemCount, dimensionsFunc);
             CosmosOperationMeter.RecordRequestUnit(attributes?.RequestCharge ?? ex?.Headers?.RequestCharge, dimensionsFunc);
             CosmosOperationMeter.RecordRequestLatency(attributes?.Diagnostics?.GetClientElapsedTime() ?? ex?.Diagnostics?.GetClientElapsedTime(), dimensionsFunc);
@@ -182,7 +174,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
             };
 
-            Console.WriteLine("active instance metriuc collected");
             CosmosOperationMeter.ActiveInstanceCounter.Add(1, dimensions);
         }
 

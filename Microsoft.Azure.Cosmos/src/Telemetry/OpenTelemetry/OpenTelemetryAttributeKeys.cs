@@ -4,7 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
+    using System; 
+    using System.Collections.Generic;
     using global::Azure.Core;
 
     /// <summary>
@@ -243,6 +244,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
             }
             
+        }
+
+        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
+            string containerName, string databaseName, Uri accountName, OpenTelemetryAttributes attributes, CosmosException ex)
+        {
+            return new KeyValuePair<string, object>[]
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName.Port),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, string.Join(",", attributes.Diagnostics.GetContactedRegions())),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
+            };
         }
     }
 }
