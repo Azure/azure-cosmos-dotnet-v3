@@ -30,7 +30,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken);
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null);
 
         protected abstract void Dispose(bool disposing);
 
