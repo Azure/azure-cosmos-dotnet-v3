@@ -51,6 +51,11 @@ namespace Microsoft.Azure.Cosmos.Json
             return numberValue;
         }
 
+        public static bool TryGetUInt64Value(ReadOnlySpan<byte> token, out ulong value)
+        {
+            return Utf8Parser.TryParse(token, out value, out int bytesConsumed1) && (bytesConsumed1 == token.Length);
+        }
+
         public static Utf8String GetStringValue(Utf8Memory token)
         {
             // Offsetting by an additional character and removing 2 from the length since we want to skip the quotes.

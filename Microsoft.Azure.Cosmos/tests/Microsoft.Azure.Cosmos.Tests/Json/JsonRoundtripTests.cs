@@ -497,7 +497,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         [Owner("mayapainter")]
         public void MsnCollectionTest()
         {
-            this.VerifyCuratedJsonRoundTripTest("MsnCollection.json");
+            this.VerifyCuratedJsonRoundTripTest("MsnCollection.json", expectRefStringDiffs: true);
         }
 
         [TestMethod]
@@ -595,19 +595,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         {
             // Do the actual roundtrips
             JsonToken[] inputTokens = JsonTestUtils.ReadJsonDocument(inputJson);
-            JsonRoundTripsTests.MultiSerializationRoundTrip(inputTokens, inputJson);
+            JsonRoundTripsTests.MultiSerializationRoundTrip(inputTokens, inputJson, expectRefStringDiffs: false);
         }
 
         // Checks to see if we can go from a JsonReader to a NewtonsoftWriter and get back the original document and visa versa
-        private void VerifyCuratedJsonRoundTripTest(string filename, int maxNumberOfItems = 100)
+        private void VerifyCuratedJsonRoundTripTest(string filename, int maxNumberOfItems = 100, bool expectRefStringDiffs = false)
         {
             string inputJson = JsonTestUtils.LoadJsonCuratedDocument(filename);
             inputJson = JsonTestUtils.RandomSampleJson(inputJson, maxNumberOfItems, seed: 42);
             JsonToken[] inputTokens = JsonTestUtils.ReadJsonDocument(inputJson);
-            MultiSerializationRoundTrip(inputTokens, inputJson);
+            MultiSerializationRoundTrip(inputTokens, inputJson, expectRefStringDiffs);
         }
 
-        private static void MultiSerializationRoundTrip(JsonToken[] inputTokens, string inputJson)
+        private static void MultiSerializationRoundTrip(JsonToken[] inputTokens, string inputJson, bool expectRefStringDiffs)
         {
             {
                 // Verify native Cosmos formats and write options round-trips
@@ -615,7 +615,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     SerializationSpec.Text(JsonWriteOptions.None),
                     SerializationSpec.Binary(JsonWriteOptions.None),
-                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays),
+                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays | JsonWriteOptions.EnableUInt64Values)
                 };
 
                 RewriteScenario[] rewriteScenarios =
@@ -626,7 +626,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     RewriteScenario.ReaderToken,
                 };
 
-                MultiSerializationRoundTrip(inputTokens, inputJson, serializationSpecs, rewriteScenarios);
+                MultiSerializationRoundTrip(inputTokens, inputJson, serializationSpecs, rewriteScenarios, expectRefStringDiffs);
             }
 
             {
@@ -643,7 +643,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     RewriteScenario.ReaderToken,
                 };
 
-                MultiSerializationRoundTrip(inputTokens, inputJson, serializationSpecs, rewriteScenarios);
+                MultiSerializationRoundTrip(inputTokens, inputJson, serializationSpecs, rewriteScenarios, expectRefStringDiffs);
             }
         }
 
@@ -651,7 +651,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             JsonToken[] inputTokens,
             string inputJson,
             SerializationSpec[] serializationSpecs,
-            RewriteScenario[] rewriteScenarios)
+            RewriteScenario[] rewriteScenarios,
+            bool expectRefStringDiffs)
         {
             Console.WriteLine();
             Console.WriteLine($"Input JSON Length: {inputJson.Length}");
@@ -683,6 +684,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                     Console.WriteLine($"    -- Output Format '{outputSpec.SerializationFormatToString()}'");
 
+                    bool strictComparison = false;
                     RoundTripResult roundTripResult = null;
                     foreach (RewriteScenario scenario in rewriteScenarios)
                     {
@@ -692,7 +694,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                             inputSpec,
                             outputSpec,
                             scenario,
-                            expectedOutputResults[i],
+                            new RoundTripBaseline(expectedOutputResults[i], strictComparison),
                             (string _) => new JsonNewtonsoftNavigator(_));
 
                         expectedOutputResults[i] = roundTripResult.OutputResult;
@@ -700,6 +702,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         Console.WriteLine($"      Scenario '{scenario}'");
                         Console.WriteLine($"        Execution Time    (ms): {roundTripResult.ExecutionTime,5}");
                         Console.WriteLine($"        Verification Time (ms): {roundTripResult.VerificationTime,5}");
+
+                        strictComparison = !expectRefStringDiffs || (outputSpec.SerializationFormat != JsonSerializationFormat.Binary);
                     }
                 }
             }
