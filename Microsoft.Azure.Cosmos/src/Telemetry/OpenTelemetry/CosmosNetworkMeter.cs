@@ -7,8 +7,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
-    using System.Linq;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static class CosmosNetworkMeter
@@ -34,6 +34,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static bool IsEnabled = false;
 
+        private static IActivityAttributePopulator activityAttributePopulator;
+
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
@@ -44,6 +46,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 return;
             }
+
+            activityAttributePopulator = TracesStabilityFactory.GetAttributePopulator();
 
             CosmosNetworkMeter.RequestLatencyHistogram ??= NetworkMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.NetworkMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.NetworkMetrics.Unit.Sec,
@@ -97,8 +101,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     return;
                 }
 
-                KeyValuePair<string, object>[] dimension = GetDimensions(
-                    getOperationName, accountName, containerName, databaseName, attributes, ex, tcpStats: stat);
+                KeyValuePair<string, object>[] dimension = activityAttributePopulator.PopulateNetworkMeterDimensions(
+                    getOperationName(), accountName, containerName, databaseName, attributes, ex, tcpStats: stat);
 
                 CosmosNetworkMeter.RecordRequestLatency(stat.RequestLatency.TotalSeconds, dimension);
                 CosmosNetworkMeter.RecordRequestBodySize(stat?.StoreResult?.TransportRequestStats?.RequestBodySizeInBytes, dimension);
@@ -108,80 +112,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             summaryDiagnostics.HttpResponseStatistics.Value.ForEach(stat =>
             {
-                KeyValuePair<string, object>[] dimension = GetDimensions(
-                    getOperationName, accountName, containerName, databaseName, attributes, ex, httpStats: stat);
+                KeyValuePair<string, object>[] dimension = activityAttributePopulator.PopulateNetworkMeterDimensions(
+                    getOperationName(), accountName, containerName, databaseName, attributes, ex, httpStats: stat);
 
                 CosmosNetworkMeter.RecordRequestLatency(stat.Duration.TotalSeconds, dimension);
                 CosmosNetworkMeter.RecordRequestBodySize(stat.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength, dimension);
                 CosmosNetworkMeter.RecordResponseBodySize(stat.ResponseContentLength, dimension);
             });
-        }
-
-        private static KeyValuePair<string, object>[] GetDimensions(Func<string> getOperationName, 
-            Uri accountName, 
-            string containerName, 
-            string databaseName, 
-            OpenTelemetryAttributes attributes, 
-            CosmosException ex, 
-            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
-            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
-        {
-            return new KeyValuePair<string, object>[]
-            {
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, getOperationName()),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, GetEndpoint(tcpStats, httpStats).Scheme),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, GetEndpoint(tcpStats, httpStats).Host),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndPointPort, GetEndpoint(tcpStats, httpStats).Port),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointResourceId, GetEndpoint(tcpStats, httpStats).PathAndQuery),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, GetStatusCode(tcpStats, httpStats)),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, GetSubStatusCode(tcpStats, httpStats)),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRegion, GetRegion(tcpStats, httpStats)),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetException(tcpStats, httpStats))
-            };
-        }
-
-        private static string GetRegion(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
-        {
-            return httpStats?.Region ?? tcpStats.Region;
-        }
-
-        private static string GetException(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
-        {
-            return httpStats?.Exception?.Message ?? tcpStats?.StoreResult?.Exception?.Message;
-        }
-
-        private static int GetSubStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
-        {
-            int? subStatuscode = null;
-            if (httpStats.HasValue &&
-                httpStats.Value.HttpResponseMessage?.Headers != null &&
-                httpStats.Value
-                    .HttpResponseMessage
-                    .Headers
-                    .TryGetValues(Documents.WFConstants.BackendHeaders.SubStatus, out IEnumerable<string> statuscodes))
-            {
-                subStatuscode = Convert.ToInt32(statuscodes.FirstOrDefault<string>());
-            }
-
-            return subStatuscode ?? Convert.ToInt32(tcpStats?.StoreResult?.SubStatusCode);
-        }
-
-        private static int? GetStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
-        {
-            return (int?)httpStats?.HttpResponseMessage?.StatusCode ?? (int?)tcpStats?.StoreResult?.StatusCode;
-        }
-
-        private static Uri GetEndpoint(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
-        {
-            return httpStats?.RequestUri ?? tcpStats?.LocationEndpoint;
         }
 
         internal static void RecordRequestLatency(double latency, KeyValuePair<string, object>[] dimension)

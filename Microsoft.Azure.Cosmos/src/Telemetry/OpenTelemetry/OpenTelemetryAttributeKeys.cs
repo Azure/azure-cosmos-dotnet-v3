@@ -4,11 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System; 
+    using System;
     using System.Collections.Generic;
     using System.Linq;
     using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
@@ -261,6 +261,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             
         }
 
+        public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName,
+            Uri accountName,
+            string containerName,
+            string databaseName,
+            OpenTelemetryAttributes attributes,
+            CosmosException ex,
+            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
+            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
+        {
+            return new KeyValuePair<string, object>[]
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, GetEndpoint(tcpStats, httpStats).Scheme),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, GetEndpoint(tcpStats, httpStats).Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndPointPort, GetEndpoint(tcpStats, httpStats).Port),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointResourceId, GetEndpoint(tcpStats, httpStats).PathAndQuery),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, GetStatusCode(tcpStats, httpStats)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, GetSubStatusCode(tcpStats, httpStats)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRegion, GetRegion(tcpStats, httpStats)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetException(tcpStats, httpStats))
+            };
+        }
+
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
             string containerName, string databaseName, Uri accountName, OpenTelemetryAttributes attributes, CosmosException ex)
         {
@@ -291,6 +322,42 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 .Select(region => region.regionName)
                 .Distinct()
                 .ToArray();
+        }
+
+        private static int? GetStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return (int?)httpStats?.HttpResponseMessage?.StatusCode ?? (int?)tcpStats?.StoreResult?.StatusCode;
+        }
+
+        private static Uri GetEndpoint(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return httpStats?.RequestUri ?? tcpStats?.LocationEndpoint;
+        }
+
+        private static string GetRegion(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return httpStats?.Region ?? tcpStats.Region;
+        }
+
+        private static string GetException(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return httpStats?.Exception?.Message ?? tcpStats?.StoreResult?.Exception?.Message;
+        }
+
+        private static int GetSubStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            int? subStatuscode = null;
+            if (httpStats.HasValue &&
+                httpStats.Value.HttpResponseMessage?.Headers != null &&
+                httpStats.Value
+                    .HttpResponseMessage
+                    .Headers
+                    .TryGetValues(Documents.WFConstants.BackendHeaders.SubStatus, out IEnumerable<string> statuscodes))
+            {
+                subStatuscode = Convert.ToInt32(statuscodes.FirstOrDefault<string>());
+            }
+
+            return subStatuscode ?? Convert.ToInt32(tcpStats?.StoreResult?.SubStatusCode);
         }
     }
 }

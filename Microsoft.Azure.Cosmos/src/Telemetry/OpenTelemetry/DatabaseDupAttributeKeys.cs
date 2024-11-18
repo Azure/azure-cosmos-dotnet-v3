@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Linq;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal class DatabaseDupAttributeKeys : IActivityAttributePopulator
     {
@@ -36,6 +37,30 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.appInsightPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
             this.otelPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
+        }
+
+        public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName, 
+            Uri accountName, 
+            string containerName, 
+            string databaseName, 
+            OpenTelemetryAttributes attributes, 
+            CosmosException ex, 
+            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
+            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
+        {
+            KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
+               .PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats)
+               .ToArray();
+            KeyValuePair<string, object>[] otelDimensions = this.otelPopulator
+                .PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats)
+                .ToArray();
+
+            KeyValuePair<string, object>[] dimensions
+                = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
+            dimensions
+                .Concat(appInsightDimensions)
+                .Concat(otelDimensions);
+            return dimensions;
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
