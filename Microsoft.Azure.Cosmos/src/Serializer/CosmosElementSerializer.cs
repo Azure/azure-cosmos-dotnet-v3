@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Serializer
 
             // Write the count field and value
             jsonWriter.WriteFieldName("_count");
-            jsonWriter.WriteNumber64Value(count);
+            jsonWriter.WriteNumberValue(count);
 
             jsonWriter.WriteObjectEnd();
 
