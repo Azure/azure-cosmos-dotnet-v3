@@ -75,7 +75,13 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Writes a number to the internal buffer.
         /// </summary>
         /// <param name="value">The value of the number to write.</param>
-        void WriteNumber64Value(Number64 value);
+        void WriteNumberValue(Number64 value);
+
+        /// <summary>
+        /// Writes an unsigned 64-bit integer to the internal buffer.
+        /// </summary>
+        /// <param name="value">The unsigned 64-bit integer value to write.</param>
+        void WriteNumberValue(ulong value);
 
         /// <summary>
         /// Writes a boolean to the internal buffer.

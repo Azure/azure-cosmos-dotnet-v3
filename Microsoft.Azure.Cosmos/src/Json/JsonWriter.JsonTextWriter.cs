@@ -176,7 +176,7 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             /// <inheritdoc />
-            public override void WriteNumber64Value(Number64 value)
+            public override void WriteNumberValue(Number64 value)
             {
                 if (value.IsInteger)
                 {
@@ -186,6 +186,12 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     this.WriteDoubleInternal(Number64.ToDouble(value));
                 }
+            }
+
+            /// <inheritdoc />
+            public override void WriteNumberValue(ulong value)
+            {
+                this.WriteIntegerInternal(value);
             }
 
             /// <inheritdoc />
@@ -323,6 +329,13 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             private void WriteIntegerInternal(long value)
+            {
+                this.JsonObjectState.RegisterToken(JsonTokenType.Number);
+                this.PrefixMemberSeparator();
+                this.jsonTextMemoryWriter.Write(value);
+            }
+
+            private void WriteIntegerInternal(ulong value)
             {
                 this.JsonObjectState.RegisterToken(JsonTokenType.Number);
                 this.PrefixMemberSeparator();
@@ -606,6 +619,18 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     const int MaxInt64Length = 20;
                     this.EnsureRemainingBufferSpace(MaxInt64Length);
+                    if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
+                    {
+                        throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(long).FullName}{value})");
+                    }
+
+                    this.Position += bytesWritten;
+                }
+
+                public void Write(ulong value)
+                {
+                    const int MaxUInt64Length = 20;
+                    this.EnsureRemainingBufferSpace(MaxUInt64Length);
                     if (!Utf8Formatter.TryFormat(value, this.Cursor, out int bytesWritten))
                     {
                         throw new InvalidOperationException($"Failed to {nameof(this.Write)}({typeof(long).FullName}{value})");

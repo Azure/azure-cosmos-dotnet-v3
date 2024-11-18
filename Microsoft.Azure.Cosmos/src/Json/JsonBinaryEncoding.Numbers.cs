@@ -168,6 +168,16 @@ namespace Microsoft.Azure.Cosmos.Json
                             bytesConsumed = 1 + 8;
                             break;
 
+                        case JsonBinaryEncoding.TypeMarker.NumberUInt64:
+                            if (numberToken.Length < (1 + 8))
+                            {
+                                return false;
+                            }
+
+                            number64 = MemoryMarshal.Read<ulong>(numberToken.Slice(1));
+                            bytesConsumed = 1 + 8;
+                            break;
+
                         case JsonBinaryEncoding.TypeMarker.NumberDouble:
                             if (numberToken.Length < (1 + 8))
                             {
@@ -185,6 +195,20 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             return true;
+        }
+
+        public static bool TryGetUInt64Value(ReadOnlySpan<byte> numberToken, UniformArrayInfo uniformArrayInfo, out ulong value)
+        {
+            const int RequiredLength = 1 + sizeof(ulong);
+
+            if ((numberToken.Length >= RequiredLength) && (uniformArrayInfo == null) && (numberToken[0] == TypeMarker.NumberUInt64))
+            {
+                value = MemoryMarshal.Read<ulong>(numberToken.Slice(1));
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         public static sbyte GetInt8Value(ReadOnlySpan<byte> int8Token)
