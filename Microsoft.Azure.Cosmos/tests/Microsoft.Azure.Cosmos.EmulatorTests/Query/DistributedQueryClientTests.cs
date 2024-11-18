@@ -328,9 +328,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                             IEnumerable<IJsonNavigatorNode> arrayItems = navigator.GetArrayItems(documentsProperty.ValueNode);
                             foreach (IJsonNavigatorNode node in arrayItems)
                             {
-                                Assert.AreEqual(JsonNodeType.Number64, navigator.GetNodeType(node));
+                                Assert.AreEqual(JsonNodeType.Number, navigator.GetNodeType(node));
 
-                                extractedResults.Add((int)Number64.ToLong(navigator.GetNumber64Value(node)));
+                                extractedResults.Add((int)Number64.ToLong(navigator.GetNumberValue(node)));
                             }
                         }
                     }
