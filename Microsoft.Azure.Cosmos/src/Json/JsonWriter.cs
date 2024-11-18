@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 JsonSerializationFormat.Text => new JsonTextWriter(initialCapacity),
                 JsonSerializationFormat.Binary => new JsonBinaryWriter(
                     enableNumberArrays: writeOptions.HasFlag(JsonWriteOptions.EnableNumberArrays),
+                    enableUint64Values: writeOptions.HasFlag(JsonWriteOptions.EnableUInt64Values),
                     initialCapacity: initialCapacity),
                 _ => throw new ArgumentException(
                         string.Format(
@@ -110,7 +111,10 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract void WriteStringValue(Utf8Span value);
 
         /// <inheritdoc />
-        public abstract void WriteNumber64Value(Number64 value);
+        public abstract void WriteNumberValue(Number64 value);
+
+        /// <inheritdoc />
+        public abstract void WriteNumberValue(ulong value);
 
         /// <inheritdoc />
         public abstract void WriteBoolValue(bool value);
@@ -153,7 +157,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (byte value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();
@@ -167,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (sbyte value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();
@@ -181,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (short value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();
@@ -195,7 +199,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (int value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();
@@ -209,7 +213,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (long value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();
@@ -223,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (float value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();
@@ -237,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Json
             foreach (double value in values)
             {
                 Number64 number64 = value;
-                this.WriteNumber64Value(number64);
+                this.WriteNumberValue(number64);
             }
 
             this.WriteArrayEnd();

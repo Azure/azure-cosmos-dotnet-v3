@@ -572,7 +572,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 JsonNodeType.Null => new JsonToken[] { JsonToken.Null() },
                 JsonNodeType.False => new JsonToken[] { JsonToken.Boolean(false) },
                 JsonNodeType.True => new JsonToken[] { JsonToken.Boolean(true) },
-                JsonNodeType.Number64 => new JsonToken[] { JsonToken.Number(navigator.GetNumber64Value(node)) },
+                JsonNodeType.Number => new JsonToken[] { JsonToken.Number(navigator.GetNumberValue(node)) },
                 JsonNodeType.String => new JsonToken[] { JsonToken.String(navigator.GetStringValue(node)) },
                 JsonNodeType.Array => JsonNavigatorTests.GetTokensFromArrayNode(node, navigator, performCorrectnessCheck),
                 JsonNodeType.Object => JsonNavigatorTests.GetTokensFromObjectNode(node, navigator, performCorrectnessCheck),

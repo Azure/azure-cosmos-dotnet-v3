@@ -60,6 +60,109 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private Dictionary<string, FaultInjectionCondition> conditions;
         private Dictionary<string, IFaultInjectionResult> results;
 
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            //Do not delete the resources, georeplication is slow and we want to reuse the resources
+            this.client?.Dispose();
+        }
+
+        private static readonly FaultInjectionCondition readConditon = new FaultInjectionConditionBuilder()
+            .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.ReadItem)
+            .Build();
+        private static readonly FaultInjectionCondition queryConditon = new FaultInjectionConditionBuilder()
+            .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.QueryItem)
+            .Build();
+        private static readonly FaultInjectionCondition readManyCondition = new FaultInjectionConditionBuilder()
+            .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.QueryItem)
+            .Build();
+        private static readonly FaultInjectionCondition changeFeedCondtion = new FaultInjectionConditionBuilder()
+            .WithRegion("Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.All)
+            .Build();
+
+        private static readonly FaultInjectionCondition readConditonStep = new FaultInjectionConditionBuilder()
+            .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.ReadItem)
+            .Build();
+        private static readonly FaultInjectionCondition queryConditonStep = new FaultInjectionConditionBuilder()
+            .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.QueryItem)
+            .Build();
+        private static readonly FaultInjectionCondition readManyConditionStep = new FaultInjectionConditionBuilder()
+            .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.QueryItem)
+            .Build();
+        private static readonly FaultInjectionCondition changeFeedCondtionStep = new FaultInjectionConditionBuilder()
+            .WithRegion("North Central US")
+            .WithConnectionType(FaultInjectionConnectionType.Direct)
+            .WithOperationType(FaultInjectionOperationType.ReadFeed)
+            .Build();
+
+        private static readonly IFaultInjectionResult goneResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.Gone)
+            .Build();
+        private static readonly IFaultInjectionResult retryWithResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.RetryWith)
+            .Build();
+        private static readonly IFaultInjectionResult internalServerErrorResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.InternalServerError)
+            .Build();
+        private static readonly IFaultInjectionResult readSessionNotAvailableResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+            .Build();
+        private static readonly IFaultInjectionResult timeoutResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.Timeout)
+            .Build();
+        private static readonly IFaultInjectionResult partitionIsSplittingResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.PartitionIsSplitting)
+            .Build();
+        private static readonly IFaultInjectionResult partitionIsMigratingResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.PartitionIsMigrating)
+            .Build();
+        private static readonly IFaultInjectionResult serviceUnavailableResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+            .Build();
+        private static readonly IFaultInjectionResult responseDelayResult = FaultInjectionResultBuilder
+            .GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+            .WithDelay(TimeSpan.FromMilliseconds(4000))
+            .Build();
+
+        private readonly Dictionary<string, FaultInjectionCondition> conditions = new Dictionary<string, FaultInjectionCondition>()
+        {
+            { "Read", readConditon },
+            { "Query", queryConditon },
+            { "ReadMany", readManyCondition },
+            { "ChangeFeed", changeFeedCondtion },
+            { "ReadStep", readConditonStep },
+            { "QueryStep", queryConditonStep },
+            { "ReadManyStep", readManyConditionStep },
+            { "ChangeFeedStep", changeFeedCondtionStep}
+        };
+
+        private readonly Dictionary<string, IFaultInjectionResult> results = new Dictionary<string, IFaultInjectionResult>()
+        {
+            { "Gone", goneResult },
+            { "RetryWith", retryWithResult },
+            { "InternalServerError", internalServerErrorResult },
+            { "ReadSessionNotAvailable", readSessionNotAvailableResult },
+            { "Timeout", timeoutResult },
+            { "PartitionIsSplitting", partitionIsSplittingResult },
+            { "PartitionIsMigrating", partitionIsMigratingResult },
+            { "ServiceUnavailable", serviceUnavailableResult },
+            { "ResponseDelay", responseDelayResult }
+        };
+
         [TestInitialize]
         public async Task TestInitAsync()
         {
@@ -422,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "PartitionIsMigrating", false, DisplayName = "Read | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("Read", "Read", "ServiceUnavailable", false, DisplayName = "Read | ServiceUnavailable | With Preferred Regions")]
         [DataRow("Read", "Read", "ResponseDelay", false, DisplayName = "Read | ResponseDelay | With Preferred Regions")]
-        [DataRow("SinglePartitionQuery", "Query",  "Gone", false, DisplayName = "SinglePartitionQuery | Gone | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Gone", false, DisplayName = "SinglePartitionQuery | Gone | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", false, DisplayName = "SinglePartitionQuery | RetryWith | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", false, DisplayName = "SinglePartitionQuery | InternalServerError | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
@@ -467,7 +570,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "PartitionIsMigrating", true, DisplayName = "Read | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ServiceUnavailable", true, DisplayName = "Read | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ResponseDelay", true, DisplayName = "Read | ResponseDelay | W/O Preferred Regions")]
-        [DataRow("SinglePartitionQuery", "Query",  "Gone", true, DisplayName = "SinglePartitionQuery | Gone | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Gone", true, DisplayName = "SinglePartitionQuery | Gone | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", true, DisplayName = "SinglePartitionQuery | RetryWith | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", true, DisplayName = "SinglePartitionQuery | InternalServerError | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
