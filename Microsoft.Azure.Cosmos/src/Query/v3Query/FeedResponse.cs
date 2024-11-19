@@ -55,12 +55,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the query advice to be used for debugging purposes. 
         /// It's applicable to query response only. Other feed response will return null for this field.
-        /// This result is only available if QueryRequestOptions.PopulateQueryAdvice is set to true.
+        /// This result is only available if QueryRequestOptions.PopulateQueryAdvice is set to true, otherwise null.
         /// </summary>
         /// <value>
         /// The query advice.
         /// </value>
-        public abstract string QueryAdvice { get; }
+        internal abstract string QueryAdvice { get; }
 
         /// <summary>
         /// Request Message for this feed response

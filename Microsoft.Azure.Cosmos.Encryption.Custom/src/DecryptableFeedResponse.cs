@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public override string IndexMetrics => null;
 
 #if SDKPROJECTREF
-        public override string QueryAdvice => null;
+        internal override string QueryAdvice => null;
 #endif
 
         public override IEnumerator<T> GetEnumerator()

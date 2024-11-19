@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
 
         private Lazy<string> QueryAdviceText { get; }
 
-        public override string QueryAdvice => this.QueryAdviceText?.Value;
+        internal override string QueryAdvice => this.QueryAdviceText?.Value;
 
         public override IEnumerator<T> GetEnumerator()
         {

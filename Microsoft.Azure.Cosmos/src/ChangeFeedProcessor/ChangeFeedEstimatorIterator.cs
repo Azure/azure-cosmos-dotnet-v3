@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => null;
 
-            public override string QueryAdvice => null;
+            internal override string QueryAdvice => null;
 
             internal override RequestMessage RequestMessage => null;
 
@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => null;
 
-            public override string QueryAdvice => null;
+            internal override string QueryAdvice => null;
 
             internal override RequestMessage RequestMessage => null;
 

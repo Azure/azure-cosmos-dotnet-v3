@@ -3,13 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 {
-    using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
     using System.Text;
-    using System.Xml.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Newtonsoft.Json;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Query advice in the Azure Cosmos database service.
@@ -48,14 +47,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
                 // Decode and deserialize the response string
                 string decodedString = System.Web.HttpUtility.UrlDecode(responseHeader, Encoding.UTF8);
 
-                List<QueryAdviceEntry> queryAdviceEntries = JsonConvert.DeserializeObject<List<QueryAdviceEntry>>(decodedString, new JsonSerializerSettings()
+                List<QueryAdviceEntry> queryAdviceEntries = JsonSerializer.Deserialize<List<QueryAdviceEntry>>(decodedString, new JsonSerializerOptions()
                 {
-                    // Allowing null values to be resilient to Json structure change
-                    MissingMemberHandling = MissingMemberHandling.Ignore,
-                    NullValueHandling = NullValueHandling.Ignore,
-
-                    // Ignore parsing error encountered in deserialization
-                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
+                    // By default, Json.Text ignore unmapped/missing properties
+                    // Allowing null values to be resilient to Json structure change 
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 }) ?? null;
 
                 result = new QueryAdvice(queryAdviceEntries);

@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Xml.Linq;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Query advice in the Azure Cosmos database service.
@@ -37,10 +37,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
             this.Parameters = parameters;
         }
 
-        [JsonProperty("Id")]
+        [JsonPropertyName("Id")]
         public string Id { get; }
 
-        [JsonProperty("Params")]
+        [JsonPropertyName("Params")]
         public IReadOnlyList<string> Parameters { get; }
 
         public override string ToString()

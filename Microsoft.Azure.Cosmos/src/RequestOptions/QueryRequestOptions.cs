@@ -106,9 +106,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para> 
-        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes 
+        /// <c>PopulateIndexMetrics</c> is used to obtain the index metrics to understand how the query engine used existing indexes 
         /// and how it could use potential new indexes.
-        /// The results will be displayed in FeedResponse.IndexMetrics. Please note that this options will incur overhead, so it should be 
+        /// The results will be displayed in <c>FeedResponse.IndexMetrics</c>. Please note that this options will incur overhead, so it should be 
         /// enabled only when debugging slow queries.
         /// </para>
         /// </remarks>
@@ -119,8 +119,8 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para> 
-        /// PopulateQueryAdvice is used to obtain the query advice to understand aspect of the query that can be optimized.
-        /// The results will be displayed in FeedResponse.QueryAdvice. Please note that this options will incur overhead, so it should be 
+        /// <c>PopulateQueryAdvice</c> is used to obtain the query advice to understand aspect of the query that can be optimized.
+        /// The results will be displayed in <c>FeedResponse.QueryAdvice</c>. Please note that this options will incur overhead, so it should be 
         /// enabled only when debugging queries.
         /// </para>
         /// </remarks>
