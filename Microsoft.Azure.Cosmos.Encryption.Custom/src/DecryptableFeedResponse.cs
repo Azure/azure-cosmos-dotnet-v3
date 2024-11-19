@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 #if SDKPROJECTREF
         public override string QueryAdvice => null;
 #endif
+
         public override IEnumerator<T> GetEnumerator()
         {
             return this.Resource.GetEnumerator();

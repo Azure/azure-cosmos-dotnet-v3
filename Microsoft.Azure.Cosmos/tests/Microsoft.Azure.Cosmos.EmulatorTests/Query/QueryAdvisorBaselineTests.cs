@@ -6,15 +6,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System;
     using System.Collections.Generic;
     using System.Threading.Tasks;
+    using System.Xml;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
-    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests;
+    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
-    using System.Xml;
-    using static Microsoft.Azure.Cosmos.EmulatorTests.Query.QueryTestsBase;
 
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public sealed class QueryAdvisorBaselineTest : BaselineTests<QueryAdvisorBaselineTestInput, QueryAdvisorBaselineTestOutput>
@@ -131,6 +128,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     break;
                 }
+
                 FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
                 Assert.IsTrue(page.Headers.AllKeys().Length > 1);
                 Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.QueryAdvice), "Expected query advice header for query");
@@ -158,6 +156,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 {
                     break;
                 }
+
                 ResponseMessage page = itemQuery.ReadNextAsync().Result;
                 Assert.IsTrue(page.Headers.AllKeys().Length > 1);
                 Assert.IsNotNull(page.Headers.Get(HttpConstants.HttpHeaders.QueryAdvice), "Expected query advice header for query");
@@ -209,6 +208,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             xmlWriter.WriteStartElement(nameof(this.QueryAdvice));
             xmlWriter.WriteCData(this.QueryAdvice);
             xmlWriter.WriteEndElement();
+
             if (this.ErrorMessage != null)
             {
                 xmlWriter.WriteStartElement(nameof(this.ErrorMessage));

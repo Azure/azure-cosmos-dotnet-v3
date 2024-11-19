@@ -30,10 +30,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
         [JsonConstructor]
         public QueryAdvice(IReadOnlyList<QueryAdviceEntry> queryAdviceEntries)
         {
-            this.QueryAdvices = (queryAdviceEntries ?? Enumerable.Empty<QueryAdviceEntry>()).Where(item => item != null).ToList();
+            this.QueryAdviceEntries = (queryAdviceEntries ?? Enumerable.Empty<QueryAdviceEntry>()).Where(item => item != null).ToList();
         }
 
-        public IReadOnlyList<QueryAdviceEntry> QueryAdvices { get; }
+        public IReadOnlyList<QueryAdviceEntry> QueryAdviceEntries { get; }
 
         public static bool TryCreateFromString(string responseHeader, out QueryAdvice result)
         {
@@ -48,17 +48,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
                 // Decode and deserialize the response string
                 string decodedString = System.Web.HttpUtility.UrlDecode(responseHeader, Encoding.UTF8);
 
-                List<QueryAdviceEntry> queryAdvices = JsonConvert.DeserializeObject<List<QueryAdviceEntry>>(decodedString, new JsonSerializerSettings()
+                List<QueryAdviceEntry> queryAdviceEntries = JsonConvert.DeserializeObject<List<QueryAdviceEntry>>(decodedString, new JsonSerializerSettings()
                 {
                     // Allowing null values to be resilient to Json structure change
                     MissingMemberHandling = MissingMemberHandling.Ignore,
                     NullValueHandling = NullValueHandling.Ignore,
 
                     // Ignore parsing error encountered in deserialization
-                    //Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
+                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
                 }) ?? null;
 
-                result = new QueryAdvice(queryAdvices);
+                result = new QueryAdvice(queryAdviceEntries);
                 return true;
             }
             catch (JsonException)
@@ -70,15 +70,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
 
         public override string ToString()
         {
-            if (this.QueryAdvices == null)
+            if (this.QueryAdviceEntries == null)
             {
                 return null;
             }
 
             StringBuilder stringBuilder = new StringBuilder();
-            foreach (QueryAdviceEntry queryAdviceEntry in this.QueryAdvices)
+            foreach (QueryAdviceEntry entry in this.QueryAdviceEntries)
             {
-                stringBuilder.AppendLine(queryAdviceEntry.ToString());
+                stringBuilder.AppendLine(entry.ToString());
             }
 
             return stringBuilder.ToString();
