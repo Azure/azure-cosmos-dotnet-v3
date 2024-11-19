@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Json
             {
                 switch (typeMarker)
                 {
-                    case JsonBinaryEncoding.TypeMarker.String1ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.StrL1:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.OneByteLength)
                         {
                             value = default;
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         length = stringTokenSpan[0];
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.String2ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.StrL2:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.TwoByteLength)
                         {
                             value = default;
@@ -455,7 +455,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         length = MemoryMarshal.Read<ushort>(stringTokenSpan);
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.String4ByteLength:
+                    case JsonBinaryEncoding.TypeMarker.StrL4:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.FourByteLength)
                         {
                             value = default;
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         length = MemoryMarshal.Read<uint>(stringTokenSpan);
                         break;
 
-                    case JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset:
+                    case JsonBinaryEncoding.TypeMarker.StrR1:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.OneByteOffset)
                         {
                             value = default;
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             buffer.Slice(start: stringTokenSpan[0]),
                             out value);
 
-                    case JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset:
+                    case JsonBinaryEncoding.TypeMarker.StrR2:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.TwoByteOffset)
                         {
                             value = default;
@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             buffer.Slice(start: MemoryMarshal.Read<ushort>(stringTokenSpan)),
                             out value);
 
-                    case JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset:
+                    case JsonBinaryEncoding.TypeMarker.StrR3:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.ThreeByteOffset)
                         {
                             value = default;
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos.Json
                             buffer.Slice(start: MemoryMarshal.Read<UInt24>(stringTokenSpan)),
                             out value);
 
-                    case JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset:
+                    case JsonBinaryEncoding.TypeMarker.StrR4:
                         if (stringTokenSpan.Length < JsonBinaryEncoding.FourByteOffset)
                         {
                             value = default;

@@ -28,6 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.root = new NewtonsoftNode(rootJToken, this.JTokenToJsonNodeType(rootJToken));
         }
 
+        #region IJsonNavigator
         public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
         public override IJsonNavigatorNode GetArrayItemAt(IJsonNavigatorNode arrayNode, int index)
@@ -56,27 +57,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
         }
 
-        private JsonNodeType JTokenToJsonNodeType(JToken jToken)
-        {
-            return jToken.Type switch
-            {
-                JTokenType.Object => JsonNodeType.Object,
-                JTokenType.Array => JsonNodeType.Array,
-                JTokenType.Integer or JTokenType.Float => JsonNodeType.Number64,
-                JTokenType.String => JsonNodeType.String,
-                JTokenType.Boolean => ((bool)jToken) ? JsonNodeType.True : JsonNodeType.False,
-                JTokenType.Null or JTokenType.Undefined => JsonNodeType.Null,
-                JTokenType.Constructor or JTokenType.Property or JTokenType.Comment or JTokenType.Date or JTokenType.Raw or JTokenType.Bytes or JTokenType.Guid or JTokenType.Uri or JTokenType.TimeSpan => JsonNodeType.String,
-                _ => throw new InvalidOperationException(),
-            };
-        }
-
         public override JsonNodeType GetNodeType(IJsonNavigatorNode node)
         {
             return ((NewtonsoftNode)node).JsonNodeType;
         }
 
-        public override Number64 GetNumber64Value(IJsonNavigatorNode numberNode)
+        public override Number64 GetNumberValue(IJsonNavigatorNode numberNode)
         {
             return (double)((NewtonsoftNode)numberNode).JToken;
         }
@@ -183,6 +169,29 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public override IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode)
         {
             throw new NotImplementedException();
+        }
+        #endregion
+
+        /// <inheritdoc />
+        protected override bool TryGetUInt64Value(IJsonNavigatorNode numberNode, out ulong value)
+        {
+            value = 0;
+            return false;
+        }
+
+        private JsonNodeType JTokenToJsonNodeType(JToken jToken)
+        {
+            return jToken.Type switch
+            {
+                JTokenType.Object => JsonNodeType.Object,
+                JTokenType.Array => JsonNodeType.Array,
+                JTokenType.Integer or JTokenType.Float => JsonNodeType.Number,
+                JTokenType.String => JsonNodeType.String,
+                JTokenType.Boolean => ((bool)jToken) ? JsonNodeType.True : JsonNodeType.False,
+                JTokenType.Null or JTokenType.Undefined => JsonNodeType.Null,
+                JTokenType.Constructor or JTokenType.Property or JTokenType.Comment or JTokenType.Date or JTokenType.Raw or JTokenType.Bytes or JTokenType.Guid or JTokenType.Uri or JTokenType.TimeSpan => JsonNodeType.String,
+                _ => throw new InvalidOperationException(),
+            };
         }
 
         private readonly struct NewtonsoftNode : IJsonNavigatorNode
