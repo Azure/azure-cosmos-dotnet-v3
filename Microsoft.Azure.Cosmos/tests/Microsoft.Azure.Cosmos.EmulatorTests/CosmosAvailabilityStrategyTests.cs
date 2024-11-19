@@ -57,8 +57,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static IFaultInjectionResult serviceUnavailableResult;
         private static IFaultInjectionResult responseDelayResult;
 
-        private readonly Dictionary<string, FaultInjectionCondition> conditions;
-        private readonly Dictionary<string, IFaultInjectionResult> results;
+        private Dictionary<string, FaultInjectionCondition> conditions;
+        private Dictionary<string, IFaultInjectionResult> results;
 
         [TestInitialize]
         public async Task TestInitAsync()
@@ -155,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetResultBuilder(FaultInjectionServerErrorType.RetryWith)
                 .Build();
             internalServerErrorResult = FaultInjectionResultBuilder
-                .GetResultBuilder(FaultInjectionServerErrorType.InternalServerEror)
+                .GetResultBuilder(FaultInjectionServerErrorType.InternalServerError)
                 .Build();
             readSessionNotAvailableResult = FaultInjectionResultBuilder
                 .GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
