@@ -901,8 +901,32 @@ namespace Microsoft.Azure.Cosmos
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
         /// <summary>
-        /// Create a client with Fault Injection capabilities.
+        /// Create a client with Fault Injection capabilities using the Cosmos DB Fault Injection Library.
         /// </summary>
+        /// <example>
+        /// How to create a CosmosClient with Fault Injection capabilities.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+        ///     id: "ruleId",
+        ///     condition: new FaultInjectionConditionBuilder()
+        ///         .WithRegion("East US")
+        ///         .Build(),
+        ///     result: new FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+        ///         .Build())
+        ///     .Build();
+        ///     
+        /// FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule>() { rule });
+        /// 
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     FaultInjector = faultInjector
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("connection string", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example> 
         public IFaultInjector FaultInjector
         {
             get => this.faultInjector;
