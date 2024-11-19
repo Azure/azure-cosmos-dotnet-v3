@@ -560,7 +560,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary1ByteLengthInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                JsonBinaryEncoding.TypeMarker.StrL1,
                 (byte)"Hello World".Length,
                 // Hello World as a utf8 string
                 72, 101, 108, 108, 111, 32, 87, 111, 114, 108, 100
@@ -569,7 +569,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary2ByteLengthInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.String2ByteLength,
+                JsonBinaryEncoding.TypeMarker.StrL2,
                 // (ushort)"Hello World".Length,
                 0x0B, 0x00,
                 // Hello World as a utf8 string
@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             byte[] binary4ByteLengthInput =
             {
                 BinaryFormat,
-                JsonBinaryEncoding.TypeMarker.String4ByteLength,
+                JsonBinaryEncoding.TypeMarker.StrL4,
                 // (uint)"Hello World".Length,
                 0x0B, 0x00, 0x00, 0x00,
                 // Hello World as a utf8 string
@@ -702,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -732,7 +732,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -762,7 +762,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -792,7 +792,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -822,7 +822,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -852,7 +852,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -912,7 +912,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -933,7 +933,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -963,7 +963,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)guidString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(guidString)).ToArray();
@@ -997,7 +997,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1025,7 +1025,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1053,7 +1053,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1081,7 +1081,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1109,7 +1109,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1137,7 +1137,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1165,7 +1165,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)dateTimeString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(dateTimeString)).ToArray();
@@ -1198,7 +1198,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)hexString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(hexString)).ToArray();
@@ -1226,7 +1226,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 byte[] binaryPayload =
                 {
                     BinaryFormat,
-                    JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                    JsonBinaryEncoding.TypeMarker.StrL1,
                     (byte)hexString.Length,
                 };
                 binaryPayload = binaryPayload.Concat(Encoding.UTF8.GetBytes(hexString)).ToArray();
@@ -1291,11 +1291,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         BinaryFormat,
                         JsonBinaryEncoding.TypeMarker.ArrL1,
                         9,
-                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.StrL1,
                         (byte)"hello".Length,
                         (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
 
-                        JsonBinaryEncoding.TypeMarker.ReferenceString1ByteOffset,
+                        JsonBinaryEncoding.TypeMarker.StrR1,
                         3,
                 };
 
@@ -1309,11 +1309,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         BinaryFormat,
                         JsonBinaryEncoding.TypeMarker.ArrL1,
                         10,
-                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.StrL1,
                         (byte)"hello".Length,
                         (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
 
-                        JsonBinaryEncoding.TypeMarker.ReferenceString2ByteOffset,
+                        JsonBinaryEncoding.TypeMarker.StrR2,
                         3, 0,
                 };
 
@@ -1327,11 +1327,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         BinaryFormat,
                         JsonBinaryEncoding.TypeMarker.ArrL1,
                         11,
-                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.StrL1,
                         (byte)"hello".Length,
                         (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
 
-                        JsonBinaryEncoding.TypeMarker.ReferenceString3ByteOffset,
+                        JsonBinaryEncoding.TypeMarker.StrR3,
                         3, 0, 0
                 };
 
@@ -1345,11 +1345,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                         BinaryFormat,
                         JsonBinaryEncoding.TypeMarker.ArrL1,
                         12,
-                        JsonBinaryEncoding.TypeMarker.String1ByteLength,
+                        JsonBinaryEncoding.TypeMarker.StrL1,
                         (byte)"hello".Length,
                         (byte)'h', (byte)'e', (byte)'l', (byte)'l', (byte)'o',
 
-                        JsonBinaryEncoding.TypeMarker.ReferenceString4ByteOffset,
+                        JsonBinaryEncoding.TypeMarker.StrR4,
                         3, 0, 0, 0
                 };
 
@@ -1739,7 +1739,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             {
                 new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "Hello".Length) },
                 Encoding.UTF8.GetBytes("Hello"),
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1 },
                 new byte[] { (byte)"World".Length },
                 Encoding.UTF8.GetBytes("World"),
                 new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "Bye".Length) },
@@ -1867,7 +1867,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 new byte[] { JsonBinaryEncoding.TypeMarker.NumberDouble, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xBF },
                 new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 1 },
                 new byte[] { JsonBinaryEncoding.TypeMarker.LiteralIntMin + 2 },
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"hello".Length, 104, 101, 108, 108, 111 },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"hello".Length, 104, 101, 108, 108, 111 },
                 new byte[] { JsonBinaryEncoding.TypeMarker.Null },
                 new byte[] { JsonBinaryEncoding.TypeMarker.True },
                 new byte[] { JsonBinaryEncoding.TypeMarker.False }
@@ -2384,7 +2384,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 elements.Add(innerObjectElementsBytes);
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "text".Length), 116, 101, 120, 116 });
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
 
                 byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
 
@@ -2448,7 +2448,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 elements.Add(innerObjectElementsBytes);
 
                 elements.Add(new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + 7) });
-                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
+                elements.Add(new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby".Length, 116, 105, 103, 101, 114, 32, 100, 105, 97, 109, 111, 110, 100, 32, 110, 101, 119, 98, 114, 117, 110, 115, 119, 105, 99, 107, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 100, 111, 103, 32, 115, 110, 111, 119, 108, 101, 111, 112, 97, 114, 100, 32, 116, 117, 114, 116, 108, 101, 32, 99, 97, 116, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 112, 101, 97, 99, 104, 32, 115, 97, 112, 112, 104, 105, 114, 101, 32, 118, 97, 110, 99, 111, 117, 118, 101, 114, 32, 119, 104, 105, 116, 101, 32, 99, 104, 111, 99, 111, 108, 97, 116, 101, 32, 104, 111, 114, 115, 101, 32, 100, 105, 97, 109, 111, 110, 100, 32, 108, 105, 111, 110, 32, 115, 117, 112, 101, 114, 108, 111, 110, 103, 99, 111, 108, 111, 117, 114, 110, 97, 109, 101, 32, 114, 117, 98, 121 });
 
                 byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
 
@@ -2516,20 +2516,20 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             List<byte[]> elements = new List<byte[]>
             {
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"name".Length, 110, 97, 109, 101 },
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"477cecf7-5547-4f87-81c2-72ee2c7d6179".Length, 52, 55, 55, 99, 101, 99, 102, 55, 45, 53, 53, 52, 55, 45, 52, 102, 56, 55, 45, 56, 49, 99, 50, 45, 55, 50, 101, 101, 50, 99, 55, 100, 54, 49, 55, 57 },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"name".Length, 110, 97, 109, 101 },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"477cecf7-5547-4f87-81c2-72ee2c7d6179".Length, 52, 55, 55, 99, 101, 99, 102, 55, 45, 53, 53, 52, 55, 45, 52, 102, 56, 55, 45, 56, 49, 99, 50, 45, 55, 50, 101, 101, 50, 99, 55, 100, 54, 49, 55, 57 },
 
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"permissionMode".Length, 112, 101, 114, 109, 105, 115, 115, 105, 111, 110, 77, 111, 100, 101 },
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"Read".Length, 82, 101, 97, 100 },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"permissionMode".Length, 112, 101, 114, 109, 105, 115, 115, 105, 111, 110, 77, 111, 100, 101 },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"Read".Length, 82, 101, 97, 100 },
 
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"resource".Length, 114, 101, 115, 111, 117, 114, 99, 101 },
-                new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"-iQET8M3A0c=".Length, 45, 105, 81, 69, 84, 56, 77, 51, 65, 48, 99, 61 }
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"resource".Length, 114, 101, 115, 111, 117, 114, 99, 101 },
+                new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"-iQET8M3A0c=".Length, 45, 105, 81, 69, 84, 56, 77, 51, 65, 48, 99, 61 }
             };
             byte[] elementsBytes = elements.SelectMany(x => x).ToArray();
 
             binaryInputBuilder.Add(BitConverter.GetBytes(elementsBytes.Length));
             binaryInputBuilder.Add(elementsBytes);
-            binaryInputBuilder.Add(new byte[] { JsonBinaryEncoding.TypeMarker.String1ByteLength, (byte)"..garbage..".Length, 46, 46, 103, 97, 114, 98, 97, 103, 101, 46, 46 });
+            binaryInputBuilder.Add(new byte[] { JsonBinaryEncoding.TypeMarker.StrL1, (byte)"..garbage..".Length, 46, 46, 103, 97, 114, 98, 97, 103, 101, 46, 46 });
             byte[] binaryInput = binaryInputBuilder.SelectMany(x => x).ToArray();
 
             JsonToken[] expectedTokens =
