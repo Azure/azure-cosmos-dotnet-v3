@@ -21,6 +21,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private static readonly Meter OperationMeter = new Meter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.OperationMetrics.Version);
 
+        /// <summary>
+        /// Populator Used for Dimension Attributes
+        /// </summary>
         private static readonly IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
 
         /// <summary>
@@ -74,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             CosmosOperationMeter.ActiveInstanceCounter ??= OperationMeter.CreateUpDownCounter<int>(name: CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances,
                 unit: CosmosDbClientMetrics.OperationMetrics.Unit.Count,
                 description: CosmosDbClientMetrics.OperationMetrics.Description.ActiveInstances);
-            Console.WriteLine("initiized successfully");
+
             IsEnabled = true;
         }
 
@@ -109,7 +112,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.ToString());
                 DefaultTrace.TraceWarning($"Failed to record telemetry data for Cosmos DB operation. {exception.StackTrace}");
             }
         }
@@ -187,7 +189,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.ToString());
                 DefaultTrace.TraceWarning($"Failed to record InstanceCount telemetry data for Cosmos DB operation. {exception.StackTrace}");
             }
         }
@@ -217,7 +218,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception exception)
             {
-                Console.WriteLine(exception.ToString());
                 DefaultTrace.TraceWarning($"Failed to record InstanceCount telemetry data for Cosmos DB operation. {exception.StackTrace}");
             }
         }

@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [TestInitialize]
         public async Task Init()
         {
-            Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
-
             // Initialize OpenTelemetry MeterProvider
             this.meterProvider = Sdk
                 .CreateMeterProviderBuilder()
