@@ -539,7 +539,7 @@ namespace Microsoft.Azure.Cosmos
                         recorder.Record(response);
 
                         // Records metrics such as request units, latency, and item count for the operation.
-                        CosmosOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                        CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,
@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos
                     if (openTelemetry != null && ex is CosmosException cosmosException)
                     {
                         // Records telemetry data related to the exception.
-                        CosmosOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                        CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,
