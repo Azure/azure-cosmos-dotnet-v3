@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Newtonsoft.Json;
 
     internal static class CosmosNetworkMeter
     {
@@ -108,6 +109,29 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 CosmosNetworkMeter.RecordRequestBodySize(stat?.StoreResult?.TransportRequestStats?.RequestBodySizeInBytes, dimension);
                 CosmosNetworkMeter.RecordResponseBodySize(stat?.StoreResult?.TransportRequestStats?.ResponseBodySizeInBytes, dimension);
                 CosmosNetworkMeter.RecordBackendLatency(stat?.StoreResult?.BackendRequestDurationInMs, dimension);
+
+                dynamic parsedData = JsonConvert.DeserializeObject(stat?.StoreResult?.TransportRequestStats.ToString());
+                
+                var requestTimeline = parsedData.requestTimeline;
+                // Extract specific events
+                foreach (var timelineEvent in requestTimeline)
+                {
+                    string eventName = timelineEvent["event"];
+                    if (eventName == "ChannelAcquisitionStarted")
+                    {
+                        CosmosNetworkMeter.RecordChannelAquisitionLatency(Convert.ToDouble(timelineEvent.durationInMs), dimension);
+                    }
+
+                    if (eventName == "Transit Time")
+                    {
+                        CosmosNetworkMeter.RecordTransitTimeLatency(Convert.ToDouble(timelineEvent.durationInMs), dimension);
+                    }
+
+                    if (eventName == "Received")
+                    {
+                        CosmosNetworkMeter.RecordReceivedLatency(Convert.ToDouble(timelineEvent.durationInMs), dimension);
+                    }
+                }
             });
 
             summaryDiagnostics.HttpResponseStatistics.Value.ForEach(stat =>
@@ -119,6 +143,39 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 CosmosNetworkMeter.RecordRequestBodySize(stat.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength, dimension);
                 CosmosNetworkMeter.RecordResponseBodySize(stat.ResponseContentLength, dimension);
             });
+        }
+
+        internal static void RecordChannelAquisitionLatency(double latency, KeyValuePair<string, object>[] dimension)
+        {
+            if (!IsEnabled || CosmosNetworkMeter.ChannelAquisitionLatencyHistogram == null ||
+                !CosmosNetworkMeter.ChannelAquisitionLatencyHistogram.Enabled)
+            {
+                return;
+            }
+
+            CosmosNetworkMeter.ChannelAquisitionLatencyHistogram.Record(latency, dimension);
+        }
+
+        internal static void RecordTransitTimeLatency(double latency, KeyValuePair<string, object>[] dimension)
+        {
+            if (!IsEnabled || CosmosNetworkMeter.TransitLatencyHistogram == null ||
+                !CosmosNetworkMeter.TransitLatencyHistogram.Enabled)
+            {
+                return;
+            }
+
+            CosmosNetworkMeter.TransitLatencyHistogram.Record(latency, dimension);
+        }
+
+        internal static void RecordReceivedLatency(double latency, KeyValuePair<string, object>[] dimension)
+        {
+            if (!IsEnabled || CosmosNetworkMeter.ReceivedLatencyHistogram == null ||
+                !CosmosNetworkMeter.ReceivedLatencyHistogram.Enabled)
+            {
+                return;
+            }
+
+            CosmosNetworkMeter.ReceivedLatencyHistogram.Record(latency, dimension);
         }
 
         internal static void RecordRequestLatency(double latency, KeyValuePair<string, object>[] dimension)
