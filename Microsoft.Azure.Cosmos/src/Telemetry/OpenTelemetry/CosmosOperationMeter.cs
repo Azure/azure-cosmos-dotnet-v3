@@ -21,6 +21,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private static readonly Meter OperationMeter = new Meter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.OperationMetrics.Version);
 
+        private static readonly IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+
         /// <summary>
         /// Histogram to record request latency (in seconds) for Cosmos DB operations.
         /// </summary>
@@ -46,8 +48,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         private static bool IsEnabled = false;
 
-        private static IActivityAttributePopulator activityAttributePopulator;
-
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
@@ -58,8 +58,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 return;
             }
-
-            activityAttributePopulator = TracesStabilityFactory.GetAttributePopulator();
 
             CosmosOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.OperationMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.OperationMetrics.Unit.Sec,
@@ -103,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             try
             {
-                Func<KeyValuePair<string, object>[]> dimensionsFunc = () => activityAttributePopulator.PopulateOperationMeterDimensions(getOperationName(), containerName, databaseName, accountName, attributes, ex);
+                Func<KeyValuePair<string, object>[]> dimensionsFunc = () => DimensionPopulator.PopulateOperationMeterDimensions(getOperationName(), containerName, databaseName, accountName, attributes, ex);
 
                 CosmosOperationMeter.RecordActualItemCount(attributes?.ItemCount ?? ex?.Headers?.ItemCount, dimensionsFunc);
                 CosmosOperationMeter.RecordRequestUnit(attributes?.RequestCharge ?? ex?.Headers?.RequestCharge, dimensionsFunc);

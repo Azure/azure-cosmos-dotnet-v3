@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
     {
         private const int AggregatingInterval = 500;
+
         private readonly ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim(false);
         private static readonly Dictionary<string, MetricType> expectedMetrics = new Dictionary<string, MetricType>()
         {
@@ -31,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [TestInitialize]
         public async Task Init()
         {
+            Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
+
             // Initialize OpenTelemetry MeterProvider
             this.meterProvider = Sdk
                 .CreateMeterProviderBuilder()
@@ -99,22 +102,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             {
             }
 
-            Assert.IsTrue(IsEqual(expectedMetrics, CustomMetricExporter.ActualMetrics), string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
-        }
-
-        public static bool IsEqual<TKey, TValue>(Dictionary<TKey, TValue> expected, Dictionary<TKey, TValue> actual)
-        {
-            if (expected.Count != actual.Count)
-                return false;
-
-            // Compare both keys and values
-            foreach (KeyValuePair<TKey, TValue> pair in expected)
-            {
-                if (!actual.TryGetValue(pair.Key, out TValue value) || !EqualityComparer<TValue>.Default.Equals(pair.Value, value))
-                    return false;
-            }
-
-            return true;
+            CollectionAssert.AreEquivalent(expectedMetrics, CustomMetricExporter.ActualMetrics, string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
         }
     }
 }
