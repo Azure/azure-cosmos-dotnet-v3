@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Linq;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
@@ -242,7 +243,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (response.Diagnostics != null)
             {
-                scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+                scope.AddAttribute<string[]>(
+                    OpenTelemetryAttributeKeys.Region, 
+                    GetRegions(response.Diagnostics), (input) => string.Join(",", input));
             }
             
         }
@@ -261,9 +264,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, attributes?.Diagnostics?.GetContactedRegions()?.ToArray()),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, GetRegions(attributes?.Diagnostics)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
             };
+        }
+
+        private static string[] GetRegions(CosmosDiagnostics diagnostics)
+        {
+            if (diagnostics?.GetContactedRegions() is not IReadOnlyList<(string regionName, Uri uri)> contactedRegions)
+            {
+                return null;
+            }
+
+            return contactedRegions
+                .Select(region => region.regionName)
+                .Distinct()
+                .ToArray();
         }
     }
 }
