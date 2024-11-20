@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The query advice.
         /// </value>
-        public string QueryAdvice => this.QueryAdviceText?.Value;
+        internal string QueryAdvice => this.QueryAdviceText?.Value;
 
         /// <summary>
         /// Gets the original request message

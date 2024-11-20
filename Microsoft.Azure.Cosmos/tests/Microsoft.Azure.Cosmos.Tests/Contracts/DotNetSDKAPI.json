@@ -8882,20 +8882,10 @@
           "Attributes": [],
           "MethodInfo": "System.String get_IndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_QueryAdvice()": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.String get_QueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
         "System.String IndexMetrics": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.String IndexMetrics;CanRead:True;CanWrite:False;System.String get_IndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String QueryAdvice": {
-          "Type": "Property",
-          "Attributes": [],
-          "MethodInfo": "System.String QueryAdvice;CanRead:True;CanWrite:False;System.String get_QueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
