@@ -35,13 +35,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             Kind = PartitionKind.Hash,
             Paths = new Collection<string>()
-            {
-                "/id"
-            }
+        {
+            "/id"
+        }
         };
 
         string[] dummyHeaderNames;
-        private IComputeHash authKeyHashFunction;
+        private readonly IComputeHash authKeyHashFunction;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.globalEndpointManager.Object,
-            new ConnectionPolicy(), 
+            new ConnectionPolicy(),
             new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
@@ -204,13 +204,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
             containerProperties.PartitionKey = partitionKeyDefinition;
             this.collectionCache.Setup
-                    (m =>
-                        m.ResolveCollectionAsync(
-                        It.IsAny<DocumentServiceRequest>(),
-                        It.IsAny<CancellationToken>(),
-                        It.IsAny<ITrace>()
-                    )
-                ).Returns(Task.FromResult(containerProperties));
+                (m => 
+                    m.ResolveCollectionAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<ITrace>()
+                )
+            ).Returns(Task.FromResult(containerProperties));
 
             this.collectionCache.Setup(x =>
                 x.ResolveByNameAsync(
@@ -224,29 +224,29 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                 new[]
                     {
-                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
+                    Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "FF"}, (ServiceIdentity)null)
                     },
                 string.Empty);
 
             this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
             this.partitionKeyRangeCache.Setup(
-                        m => m.TryLookupAsync(
-                            It.IsAny<string>(),
-                            It.IsAny<CollectionRoutingMap>(),
-                            It.IsAny<DocumentServiceRequest>(),
-                            It.IsAny<ITrace>()
-                        )
-                ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
+                m => m.TryLookupAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<CollectionRoutingMap>(),
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<ITrace>()
+                )
+            ).Returns(Task.FromResult<CollectionRoutingMap>(routingMap));
 
             List<PartitionKeyRange> result = new List<PartitionKeyRange>
+        {
+            new PartitionKeyRange()
             {
-                new PartitionKeyRange()
-                {
-                    MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
-                    MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
-                    Id = "0"
-                }
-            };
+                MinInclusive = Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey,
+                MaxExclusive = Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey,
+                Id = "0"
+            }
+        };
 
             this.partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
@@ -259,12 +259,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
 
             this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
-                                                                this.ConnectionPolicy,
-                                                                new Mock<AuthorizationTokenProvider>().Object,
-                                                                new Mock<CosmosHttpClient>().Object,
-                                                                this.ServiceEndpoint,
-                                                                this.GlobalEndpointManager,
-                                                                default);
+                                                                    this.ConnectionPolicy,
+                                                                    new Mock<AuthorizationTokenProvider>().Object,
+                                                                    new Mock<CosmosHttpClient>().Object,
+                                                                    this.ServiceEndpoint,
+                                                                    this.GlobalEndpointManager,
+                                                                    default);
             this.InitStoreModels();
         }
 
@@ -290,13 +290,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             mockServiceConfigReader.SetupGet(x => x.DefaultConsistencyLevel).Returns(Documents.ConsistencyLevel.Eventual);
 
             this.StoreModel = new ServerStoreModel(new StoreClient(
-                        mockAddressCache.Object,
-                        sessionContainer,
-                        mockServiceConfigReader.Object,
-                        mockAuthorizationTokenProvider.Object,
-                        Protocol.Tcp,
-                        this.GetMockTransportClient(addressInformation),
-                        enableRequestDiagnostics: true));
+                mockAddressCache.Object,
+                sessionContainer,
+                mockServiceConfigReader.Object,
+                mockAuthorizationTokenProvider.Object,
+                Protocol.Tcp,
+                this.GetMockTransportClient(),
+                enableRequestDiagnostics: true));
         }
 
         private Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)
@@ -310,7 +310,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<DocumentServiceRequest>(),
                     false /*forceRefresh*/,
                     new CancellationToken()))
-                    .ReturnsAsync(new PartitionAddressInformation(addressInformation));
+                .ReturnsAsync(new PartitionAddressInformation(addressInformation));
 
             return mockAddressCache;
         }
@@ -334,7 +334,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return addressInformation;
         }
 
-        private TransportClient GetMockTransportClient(AddressInformation[] addressInformation)
+        private TransportClient GetMockTransportClient()
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
@@ -342,7 +342,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 client => client.InvokeResourceOperationAsync(
                     It.IsAny<TransportAddressUri>(),
                     It.Is<DocumentServiceRequest>(e => this.IsValidDsr(e))))
-                    .Returns((TransportAddressUri uri, DocumentServiceRequest documentServiceRequest) => Task.FromResult(MockRequestHelper.GetStoreResponse(documentServiceRequest)));
+                .Returns((TransportAddressUri uri, DocumentServiceRequest request) =>
+                    // Let MockRequestHelper handle the response, including binary encoding if requested
+                    Task.FromResult(MockRequestHelper.GetStoreResponse(request)));
 
             return mockTransportClient.Object;
         }
@@ -364,8 +366,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             gatewayStoreModel.Setup(
                 storeModel => storeModel.ProcessMessageAsync(
                     It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
-                    .Returns((DocumentServiceRequest documentServiceRequest, CancellationToken cancellationToken) =>
-                        Task.FromResult(MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest)));
+                .Returns((DocumentServiceRequest documentServiceRequest, CancellationToken cancellationToken) =>
+                    Task.FromResult(MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest)));
 
             return gatewayStoreModel.Object;
         }

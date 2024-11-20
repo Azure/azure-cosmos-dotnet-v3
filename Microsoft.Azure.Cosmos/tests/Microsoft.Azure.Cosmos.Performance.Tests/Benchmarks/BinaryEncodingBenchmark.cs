@@ -18,7 +18,7 @@
     using BenchmarkDotNet.Diagnosers;
 
     [MemoryDiagnoser]
-    [BenchmarkCategory("NewGateBenchmark")]
+   // [BenchmarkCategory("NewGateBenchmark")]
     [Config(typeof(CustomBenchmarkConfig))]
     public class BinaryEncodingBenchmark
     {
