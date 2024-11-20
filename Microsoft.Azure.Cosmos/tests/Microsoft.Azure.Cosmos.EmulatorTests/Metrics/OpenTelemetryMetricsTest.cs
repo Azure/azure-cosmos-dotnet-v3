@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     [TestClass]
     public class OpenTelemetryMetricsTest : BaseCosmosClientHelper
     {
-        private const int AggregatingInterval = 1000;
+        private const int AggregatingInterval = 500;
         private readonly ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim(false);
         private static readonly Dictionary<string, MetricType> expectedMetrics = new Dictionary<string, MetricType>()
         {
