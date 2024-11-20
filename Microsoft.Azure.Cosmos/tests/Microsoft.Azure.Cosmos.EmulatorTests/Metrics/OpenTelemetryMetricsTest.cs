@@ -54,7 +54,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     {
                         Boundaries = CosmosDbClientMetrics.HistogramBuckets.RowCountBuckets
                     })
-                .AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(this.manualResetEventSlim), exportIntervalMilliseconds: AggregatingInterval))
+                .AddReader(new PeriodicExportingMetricReader(
+                    exporter: new CustomMetricExporter(this.manualResetEventSlim), 
+                    exportIntervalMilliseconds: AggregatingInterval))
                 .Build();
 
             await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
@@ -66,9 +68,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [TestCleanup]
         public async Task Cleanup()
         {
-            this.meterProvider.Dispose();
-
             await base.TestCleanup();
+
+            this.meterProvider.Dispose();
         }
 
         [TestMethod]

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     /// <summary>
@@ -18,27 +19,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Meter instance for capturing various metrics related to Cosmos DB operations.
         /// </summary>
-        internal static Meter OperationMeter = new Meter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.OperationMetrics.Version);
+        private static readonly Meter OperationMeter = new Meter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.OperationMetrics.Version);
 
         /// <summary>
         /// Histogram to record request latency (in seconds) for Cosmos DB operations.
         /// </summary>
-        internal static Histogram<double> RequestLatencyHistogram = null;
+        private static Histogram<double> RequestLatencyHistogram = null;
 
         /// <summary>
         /// Histogram to record request units consumed during Cosmos DB operations.
         /// </summary>
-        internal static Histogram<double> RequestUnitsHistogram = null;
+        private static Histogram<double> RequestUnitsHistogram = null;
 
         /// <summary>
         /// Histogram to record the actual number of items involved in the operation.
         /// </summary>
-        internal static Histogram<int> ActualItemHistogram = null;
+        private static Histogram<int> ActualItemHistogram = null;
 
         /// <summary>
         /// UpDownCounter to track the number of active instances interacting with Cosmos DB.
         /// </summary>
-        internal static UpDownCounter<int> ActiveInstanceCounter = null;
+        private static UpDownCounter<int> ActiveInstanceCounter = null;
 
         /// <summary>
         /// Flag to check if metrics is enabled
@@ -100,11 +101,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            Func<KeyValuePair<string, object>[]> dimensionsFunc = () => activityAttributePopulator.PopulateOperationMeterDimensions(getOperationName(), containerName, databaseName, accountName, attributes, ex);
-            
-            CosmosOperationMeter.RecordActualItemCount(attributes?.ItemCount ?? ex?.Headers?.ItemCount, dimensionsFunc);
-            CosmosOperationMeter.RecordRequestUnit(attributes?.RequestCharge ?? ex?.Headers?.RequestCharge, dimensionsFunc);
-            CosmosOperationMeter.RecordRequestLatency(attributes?.Diagnostics?.GetClientElapsedTime() ?? ex?.Diagnostics?.GetClientElapsedTime(), dimensionsFunc);
+            try
+            {
+                Func<KeyValuePair<string, object>[]> dimensionsFunc = () => activityAttributePopulator.PopulateOperationMeterDimensions(getOperationName(), containerName, databaseName, accountName, attributes, ex);
+
+                CosmosOperationMeter.RecordActualItemCount(attributes?.ItemCount ?? ex?.Headers?.ItemCount, dimensionsFunc);
+                CosmosOperationMeter.RecordRequestUnit(attributes?.RequestCharge ?? ex?.Headers?.RequestCharge, dimensionsFunc);
+                CosmosOperationMeter.RecordRequestLatency(attributes?.Diagnostics?.GetClientElapsedTime() ?? ex?.Diagnostics?.GetClientElapsedTime(), dimensionsFunc);
+            }
+            catch (Exception exception)
+            {
+                DefaultTrace.TraceWarning($"Failed to record telemetry data for Cosmos DB operation. {exception.StackTrace}");
+            }
         }
 
         /// <summary>
@@ -112,7 +120,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="actualItemCount">The number of items returned or affected by the operation.</param>
         /// <param name="dimensionsFunc">A function providing telemetry dimensions for the metric.</param>
-        internal static void RecordActualItemCount(string actualItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
+        private static void RecordActualItemCount(string actualItemCount, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
             if (!IsEnabled || CosmosOperationMeter.ActualItemHistogram == null || 
                 !CosmosOperationMeter.ActualItemHistogram.Enabled || string.IsNullOrEmpty(actualItemCount))
@@ -128,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="requestCharge">The RU/s value for the operation.</param>
         /// <param name="dimensionsFunc">A function providing telemetry dimensions for the metric.</param>
-        internal static void RecordRequestUnit(double? requestCharge, Func<KeyValuePair<string, object>[]> dimensionsFunc)
+        private static void RecordRequestUnit(double? requestCharge, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
             if (!IsEnabled || CosmosOperationMeter.RequestUnitsHistogram == null || 
                 !CosmosOperationMeter.RequestUnitsHistogram.Enabled || !requestCharge.HasValue)
@@ -144,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         /// <param name="requestLatency">The latency of the operation.</param>
         /// <param name="dimensionsFunc">A function providing telemetry dimensions for the metric.</param>
-        internal static void RecordRequestLatency(TimeSpan? requestLatency, Func<KeyValuePair<string, object>[]> dimensionsFunc)
+        private static void RecordRequestLatency(TimeSpan? requestLatency, Func<KeyValuePair<string, object>[]> dimensionsFunc)
         {
             if (!IsEnabled || CosmosOperationMeter.ActiveInstanceCounter == null || 
                 !CosmosOperationMeter.ActiveInstanceCounter.Enabled || !requestLatency.HasValue)
@@ -167,14 +175,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            KeyValuePair<string, object>[] dimensions = new[]
+            try
             {
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
-            };
+                KeyValuePair<string, object>[] dimensions = new[]
+                {
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
+                };
 
-            CosmosOperationMeter.ActiveInstanceCounter.Add(1, dimensions);
+                CosmosOperationMeter.ActiveInstanceCounter.Add(1, dimensions);
+            }
+            catch (Exception exception)
+            {
+                DefaultTrace.TraceWarning($"Failed to record InstanceCount telemetry data for Cosmos DB operation. {exception.StackTrace}");
+            }
         }
 
         /// <summary>
@@ -189,14 +204,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            KeyValuePair<string, object>[] dimensions = new[]
+            try
             {
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
-            };
+                KeyValuePair<string, object>[] dimensions = new[]
+                {
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
+                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
+                };
 
-            CosmosOperationMeter.ActiveInstanceCounter.Add(-1, dimensions);
+                CosmosOperationMeter.ActiveInstanceCounter.Add(-1, dimensions);
+            }
+            catch (Exception exception)
+            {
+                DefaultTrace.TraceWarning($"Failed to record InstanceCount telemetry data for Cosmos DB operation. {exception.StackTrace}");
+            }
         }
     }
 }
