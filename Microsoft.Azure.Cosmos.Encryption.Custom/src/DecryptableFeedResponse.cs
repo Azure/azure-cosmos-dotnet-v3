@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         // TODO: https://github.com/Azure/azure-cosmos-dotnet-v3/issues/2750
         public override string IndexMetrics => null;
 
-#if SDKPROJECTREF && ENCRYPTION_CUSTOM_PREVIEW
+#if SDKPROJECTREF || ENCRYPTION_CUSTOM_PREVIEW
         internal override string QueryAdvice => null;
 #endif
 
