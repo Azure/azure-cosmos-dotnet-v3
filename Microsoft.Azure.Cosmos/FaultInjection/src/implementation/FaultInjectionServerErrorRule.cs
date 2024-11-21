@@ -6,11 +6,14 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using Antlr4.Runtime.Misc;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal class FaultInjectionServerErrorRule : IFaultInjectionRuleInternal
     {
+        private const string FautInjecitonId = "FaultInjectionId";
+
         private readonly string id;
         private readonly DateTime startTime;
         private readonly DateTime expireTime;
@@ -91,6 +94,53 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
+        //Used for Gateway requests
+        public bool IsApplicable(DocumentServiceRequest dsr)
+        {
+            if(!this.IsValid())
+            {
+                return false;
+            }
+
+            // the failure reason will be populated during condition evaluation
+            if (!this.condition.IsApplicable(this.id, dsr))
+            {
+                return false;
+            }
+
+            if (!this.result.IsApplicable(
+                this.id, 
+                new Guid(dsr.Headers.Get(FaultInjectionServerErrorRule.FautInjecitonId))))
+            {
+                return false;
+            }
+
+            long evaluationCount = this.evaluationCount + 1;
+            Interlocked.Increment(ref this.evaluationCount);
+            bool withinHitLimit = this.hitLimit == 0 || evaluationCount <= this.hitLimit;
+            if (!withinHitLimit)
+            {
+                return false;
+            }
+            else if (Random.Shared.NextDouble() > this.result.GetInjectionRate())
+            {
+                return false;
+            }
+            else
+            {
+                Interlocked.Increment(ref this.hitCount);
+
+                // track hit count details, keay is operationType-ResourceType
+                String key = dsr.OperationType.ToString() + "-" + dsr.ResourceType.ToString();
+                this.hitCountDetails.AddOrUpdate(
+                    key,
+                    1L,
+                    (k, v) => v++);
+
+                return true;
+            }
+        }
+
         //Used for Connection Delay
         public bool IsApplicable(
             Uri callUri, 
@@ -103,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
 
             // the failure reason will be populated during condition evaluation
-            if (!this.condition.IsApplicable(callUri, request))
+            if (!this.condition.IsApplicable(this.id, callUri, request))
             {
                 return false;
             }
@@ -138,6 +188,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public StoreResponse GetInjectedServerError(ChannelCallArguments args)
         {
             return this.result.GetInjectedServerError(args, this.id);
+        }
+
+        public HttpResponseMessage GetInjectedServerError(DocumentServiceRequest request)
+        {
+
+           return this.result.GetInjectedServerError(request, this.id);
         }
 
         public FaultInjectionServerErrorType GetInjectedServerErrorType()

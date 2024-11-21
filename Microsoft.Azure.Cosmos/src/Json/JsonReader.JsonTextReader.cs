@@ -143,6 +143,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 Binary = JsonTokenType.Binary,
             }
 
+            #region IJsonReader
             /// <inheritdoc />
             public override JsonSerializationFormat SerializationFormat => JsonSerializationFormat.Text;
 
@@ -396,6 +397,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.token.End).Span;
                 return JsonTextParser.GetBinaryValue(binaryToken);
             }
+            #endregion
 
             Utf8Memory IJsonTextReaderPrivateImplementation.GetBufferedJsonToken()
             {
@@ -403,6 +405,12 @@ namespace Microsoft.Azure.Cosmos.Json
                     this.token.Start,
                     this.token.End);
                 return Utf8Memory.UnsafeCreateNoValidation(bufferedRawJson);
+            }
+
+            protected override bool TryGetUInt64NumberValue(out ulong value)
+            {
+                ReadOnlySpan<byte> numberToken = this.jsonTextBuffer.GetBufferedRawJsonToken(this.token.Start, this.token.End).Span;
+                return JsonTextParser.TryGetUInt64Value(numberToken, out value);
             }
 
             private static JsonTokenType JsonTextToJsonTokenType(JsonTextTokenType jsonTextTokenType)

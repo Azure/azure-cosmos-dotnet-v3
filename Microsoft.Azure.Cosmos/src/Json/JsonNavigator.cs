@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos.Json
             };
         }
 
+        #region IJsonNavigator
         /// <inheritdoc />
         public abstract IJsonNavigatorNode GetRootNode();
 
@@ -61,7 +62,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract JsonNodeType GetNodeType(IJsonNavigatorNode node);
 
         /// <inheritdoc />
-        public abstract Number64 GetNumber64Value(IJsonNavigatorNode numberNode);
+        public abstract Number64 GetNumberValue(IJsonNavigatorNode numberNode);
 
         /// <inheritdoc />
         public abstract bool TryGetBufferedStringValue(IJsonNavigatorNode stringNode, out Utf8Memory bufferedStringValue);
@@ -118,9 +119,9 @@ namespace Microsoft.Azure.Cosmos.Json
         public abstract IEnumerable<ObjectProperty> GetObjectProperties(IJsonNavigatorNode objectNode);
 
         /// <inheritdoc />
-        public virtual void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
+        public virtual void WriteNode(IJsonNavigatorNode node, IJsonWriter jsonWriter)
         {
-            JsonNodeType nodeType = this.GetNodeType(jsonNavigatorNode);
+            JsonNodeType nodeType = this.GetNodeType(node);
             switch (nodeType)
             {
                 case JsonNodeType.Null:
@@ -134,17 +135,23 @@ namespace Microsoft.Azure.Cosmos.Json
                 case JsonNodeType.True:
                     jsonWriter.WriteBoolValue(true);
                     return;
-                case JsonNodeType.Number64:
+
+                case JsonNodeType.Number:
+                    if (this.TryGetUInt64Value(node, out ulong uint64Value))
                     {
-                        Number64 value = this.GetNumber64Value(jsonNavigatorNode);
-                        jsonWriter.WriteNumber64Value(value);
+                        jsonWriter.WriteNumberValue(uint64Value);
+                    }
+                    else
+                    {
+                        Number64 value = this.GetNumberValue(node);
+                        jsonWriter.WriteNumberValue(value);
                     }
                     break;
 
                 case JsonNodeType.String:
                 case JsonNodeType.FieldName:
                     bool fieldName = nodeType == JsonNodeType.FieldName;
-                    if (this.TryGetBufferedStringValue(jsonNavigatorNode, out Utf8Memory bufferedStringValue))
+                    if (this.TryGetBufferedStringValue(node, out Utf8Memory bufferedStringValue))
                     {
                         if (fieldName)
                         {
@@ -157,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                     else
                     {
-                        string value = this.GetStringValue(jsonNavigatorNode);
+                        string value = this.GetStringValue(node);
                         if (fieldName)
                         {
                             jsonWriter.WriteFieldName(value);
@@ -173,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         jsonWriter.WriteArrayStart();
 
-                        foreach (IJsonNavigatorNode arrayItem in this.GetArrayItems(jsonNavigatorNode))
+                        foreach (IJsonNavigatorNode arrayItem in this.GetArrayItems(node))
                         {
                             this.WriteNode(arrayItem, jsonWriter);
                         }
@@ -186,7 +193,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         jsonWriter.WriteObjectStart();
 
-                        foreach (ObjectProperty objectProperty in this.GetObjectProperties(jsonNavigatorNode))
+                        foreach (ObjectProperty objectProperty in this.GetObjectProperties(node))
                         {
                             this.WriteNode(objectProperty.NameNode, jsonWriter);
                             this.WriteNode(objectProperty.ValueNode, jsonWriter);
@@ -198,63 +205,63 @@ namespace Microsoft.Azure.Cosmos.Json
 
                 case JsonNodeType.Int8:
                     {
-                        sbyte value = this.GetInt8Value(jsonNavigatorNode);
+                        sbyte value = this.GetInt8Value(node);
                         jsonWriter.WriteInt8Value(value);
                     }
                     break;
 
                 case JsonNodeType.Int16:
                     {
-                        short value = this.GetInt16Value(jsonNavigatorNode);
+                        short value = this.GetInt16Value(node);
                         jsonWriter.WriteInt16Value(value);
                     }
                     break;
 
                 case JsonNodeType.Int32:
                     {
-                        int value = this.GetInt32Value(jsonNavigatorNode);
+                        int value = this.GetInt32Value(node);
                         jsonWriter.WriteInt32Value(value);
                     }
                     break;
 
                 case JsonNodeType.Int64:
                     {
-                        long value = this.GetInt64Value(jsonNavigatorNode);
+                        long value = this.GetInt64Value(node);
                         jsonWriter.WriteInt64Value(value);
                     }
                     break;
 
                 case JsonNodeType.UInt32:
                     {
-                        uint value = this.GetUInt32Value(jsonNavigatorNode);
+                        uint value = this.GetUInt32Value(node);
                         jsonWriter.WriteUInt32Value(value);
                     }
                     break;
 
                 case JsonNodeType.Float32:
                     {
-                        float value = this.GetFloat32Value(jsonNavigatorNode);
+                        float value = this.GetFloat32Value(node);
                         jsonWriter.WriteFloat32Value(value);
                     }
                     break;
 
                 case JsonNodeType.Float64:
                     {
-                        double value = this.GetFloat64Value(jsonNavigatorNode);
+                        double value = this.GetFloat64Value(node);
                         jsonWriter.WriteFloat64Value(value);
                     }
                     break;
 
                 case JsonNodeType.Binary:
                     {
-                        ReadOnlyMemory<byte> value = this.GetBinaryValue(jsonNavigatorNode);
+                        ReadOnlyMemory<byte> value = this.GetBinaryValue(node);
                         jsonWriter.WriteBinaryValue(value.Span);
                     }
                     break;
 
                 case JsonNodeType.Guid:
                     {
-                        Guid value = this.GetGuidValue(jsonNavigatorNode);
+                        Guid value = this.GetGuidValue(node);
                         jsonWriter.WriteGuidValue(value);
                     }
                     break;
@@ -265,6 +272,15 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <inheritdoc />
-        public abstract IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
+        public abstract IJsonReader CreateReader(IJsonNavigatorNode node);
+        #endregion
+
+        /// <summary>
+        /// Attempts to read the specified number node as an unsigned 64-bit integer.
+        /// </summary>
+        /// <param name="numberNode">The number <see cref="IJsonNavigatorNode"/> to retrieve its value.</param>
+        /// <param name="value">When this method returns, contains the value of the specified number node if it was an unsigned 64-bit integer; otherwise, the default value of <c>ulong</c>.</param>
+        /// <returns><c>true</c> if the number node value is an unsigned 64-bit integer; otherwise, <c>false</c>.</returns>
+        protected abstract bool TryGetUInt64Value(IJsonNavigatorNode numberNode, out ulong value);
     }
 }
