@@ -959,7 +959,7 @@ namespace Microsoft.Azure.Cosmos
             if (this.cosmosClientTelemetryOptions.IsClientMetricsEnabled)
             {
                 CosmosDbOperationMeter.Initialize();
-                CosmosNetworkMeter.Initialize();
+                CosmosDbNetworkMeter.Initialize();
 
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }

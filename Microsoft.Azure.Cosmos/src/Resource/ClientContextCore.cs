@@ -545,7 +545,7 @@ namespace Microsoft.Azure.Cosmos
                                                              databaseName: databaseName,
                                                              attributes: otelAttributes);
 
-                        CosmosNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
+                        CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos
                                                              databaseName: databaseName,
                                                              ex: cosmosException);
 
-                        CosmosNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
+                        CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,
