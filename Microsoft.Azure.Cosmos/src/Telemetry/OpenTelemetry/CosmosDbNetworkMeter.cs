@@ -108,38 +108,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(stat?.StoreResult?.TransportRequestStats?.RequestBodySizeInBytes, dimensionsFunc, RequestBodySizeHistogram);
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(stat?.StoreResult?.TransportRequestStats?.ResponseBodySizeInBytes, dimensionsFunc, ResponseBodySizeHistogram);
                 CosmosDbMeterUtil.RecordHistogramMetric<double>(stat?.StoreResult?.BackendRequestDurationInMs, dimensionsFunc, BackendLatencyHistogram, (value) => Convert.ToDouble(value) / 1000);
-
-                DateTime? requestCreatedTime = stat?.StoreResult?.TransportRequestStats?.requestCreatedTime;
-                TimeSpan? channelAcquisitionStartedTime = stat?.StoreResult?.TransportRequestStats?.channelAcquisitionStartedTime;
-                TimeSpan? requestPipelinedTime = stat?.StoreResult?.TransportRequestStats?.requestPipelinedTime;
-                TimeSpan? transitTime = stat?.StoreResult?.TransportRequestStats?.requestSentTime;
-                TimeSpan? requestReceivedTime = stat?.StoreResult?.TransportRequestStats?.requestReceivedTime;
-                TimeSpan? requestFailedTime = stat?.StoreResult?.TransportRequestStats?.requestFailedTime;
-                TimeSpan? requestCompletedTime = stat?.StoreResult?.TransportRequestStats?.requestCompletedTime;
-
-                TimeSpan? channelAquisitionLatency = null;
-                TimeSpan? caDiffTimeSpan = requestPipelinedTime ?? requestFailedTime;
-                if (caDiffTimeSpan.HasValue)
-                {
-                    channelAquisitionLatency = caDiffTimeSpan.Value.Subtract(channelAcquisitionStartedTime.Value);
-                }
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(channelAquisitionLatency, dimensionsFunc, ChannelAquisitionLatencyHistogram);
-
-                TimeSpan? transitLatency = null;
-                TimeSpan? rrDiffTimeSpan = requestReceivedTime ?? requestFailedTime;
-                if (rrDiffTimeSpan.HasValue)
-                {
-                    transitLatency = rrDiffTimeSpan.Value.Subtract(transitTime.Value);
-                }
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(transitLatency, dimensionsFunc, TransitLatencyHistogram);
-
-                TimeSpan? receivedLatency = null;
-                TimeSpan? rcDiffTimeSpan = requestCompletedTime ?? requestFailedTime;
-                if (rrDiffTimeSpan.HasValue)
-                {
-                    receivedLatency = rcDiffTimeSpan.Value.Subtract(requestReceivedTime.Value);
-                }
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(receivedLatency, dimensionsFunc, ReceivedLatencyHistogram);     
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(CalculateLatency(
+                                                                    stat?.StoreResult?.TransportRequestStats?.channelAcquisitionStartedTime,
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestPipelinedTime,
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestFailedTime), 
+                                                                dimensionsFunc, ChannelAquisitionLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(CalculateLatency(
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestSentTime,
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestReceivedTime, 
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestFailedTime), 
+                                                                dimensionsFunc, TransitLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(CalculateLatency(
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestReceivedTime,
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestCompletedTime,
+                                                                    stat?.StoreResult?.TransportRequestStats?.requestFailedTime),
+                                                                 dimensionsFunc, ReceivedLatencyHistogram);
             });
 
             summaryDiagnostics.HttpResponseStatistics.Value.ForEach(stat =>
@@ -151,6 +134,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength, dimensionsFunc, RequestBodySizeHistogram);
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.ResponseContentLength, dimensionsFunc, ResponseBodySizeHistogram);
             });
+        }
+
+        private static double? CalculateLatency(
+            TimeSpan? start,
+            TimeSpan? end,
+            TimeSpan? failed)
+        {
+            TimeSpan? requestend = end ?? failed;
+            return start.HasValue && requestend.HasValue ? (requestend.Value - start.Value).TotalSeconds : (double?)null;
         }
     }
 }

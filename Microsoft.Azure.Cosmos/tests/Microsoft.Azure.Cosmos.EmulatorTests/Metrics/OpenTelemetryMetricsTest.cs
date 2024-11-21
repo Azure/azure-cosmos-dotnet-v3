@@ -20,20 +20,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         private const int AggregatingInterval = 500;
 
         private readonly ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim(false);
-        private static readonly Dictionary<string, MetricType> expectedMetrics = new Dictionary<string, MetricType>()
-        {
-            { "db.client.operation.duration", MetricType.Histogram },
-            { "db.client.response.row_count", MetricType.Histogram},
-            { "db.client.cosmosdb.operation.request_charge", MetricType.Histogram },
-            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic },
-            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
-            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
-            { "db.server.cosmosdb.request.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.channel_aquisition.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}
-        };
+        private static readonly Dictionary<string, MetricType> expectedMetrics = CustomMetricExporter.expectedOperationMetrics
+                                                                                    .Concat(CustomMetricExporter.expectedNetworkMetrics)
+                                                                                    .ToDictionary(kv => kv.Key, kv => kv.Value);
 
         private MeterProvider meterProvider;
         [TestInitialize]

@@ -16,7 +16,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     public class CustomMetricExporter : BaseExporter<Metric>
     {
         private readonly ManualResetEventSlim manualResetEventSlim = null;
-        private readonly static List<string> expectedDimensions = new()
+
+        internal static readonly Dictionary<string, MetricType> expectedOperationMetrics = new Dictionary<string, MetricType>()
+        {
+            { "db.client.operation.duration", MetricType.Histogram },
+            { "db.client.response.row_count", MetricType.Histogram},
+            { "db.client.cosmosdb.operation.request_charge", MetricType.Histogram },
+            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic }
+        };
+
+        internal static readonly Dictionary<string, MetricType> expectedNetworkMetrics = new Dictionary<string, MetricType>()
+        {
+            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
+            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
+            { "db.server.cosmosdb.request.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.channel_aquisition.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}
+        };
+        private readonly static List<string> expectedOperationDimensions = new()
         {
             OpenTelemetryAttributeKeys.DbSystemName,
             OpenTelemetryAttributeKeys.ContainerName,
@@ -28,6 +47,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             OpenTelemetryAttributeKeys.SubStatusCode,
             OpenTelemetryAttributeKeys.ConsistencyLevel,
             OpenTelemetryAttributeKeys.Region,
+            OpenTelemetryAttributeKeys.ErrorType
+        };
+
+        private readonly static List<string> expectedNetworkDimensions = new()
+        {
+            OpenTelemetryAttributeKeys.DbSystemName,
+            OpenTelemetryAttributeKeys.ContainerName,
+            OpenTelemetryAttributeKeys.DbName,
+            OpenTelemetryAttributeKeys.ServerAddress,
+            OpenTelemetryAttributeKeys.ServerPort,
+            OpenTelemetryAttributeKeys.DbOperation,
+            OpenTelemetryAttributeKeys.StatusCode,
+            OpenTelemetryAttributeKeys.SubStatusCode,
+            OpenTelemetryAttributeKeys.ConsistencyLevel,
+            OpenTelemetryAttributeKeys.NetworkProtocolName,
+            OpenTelemetryAttributeKeys.ServiceEndpointHost,
+            OpenTelemetryAttributeKeys.ServiceEndPointPort,
+            OpenTelemetryAttributeKeys.ServiceEndpointResourceId,
+            OpenTelemetryAttributeKeys.ServiceEndpointStatusCode,
+            OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode,
+            OpenTelemetryAttributeKeys.ServiceEndpointRegion,
             OpenTelemetryAttributeKeys.ErrorType
         };
 
@@ -66,9 +106,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     {
                         CollectionAssert.AreEquivalent(expectedDimensionsForInstanceCountMetrics, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
                     }
-                    else
+                    else if (expectedOperationMetrics.ContainsKey(metric.Name))
                     {
-                        CollectionAssert.AreEquivalent(expectedDimensions, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
+                        CollectionAssert.AreEquivalent(expectedOperationDimensions, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
+                    }
+                    else if (expectedNetworkMetrics.ContainsKey(metric.Name))
+                    {
+                        CollectionAssert.AreEquivalent(expectedNetworkDimensions, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
                     }
                 }
 
