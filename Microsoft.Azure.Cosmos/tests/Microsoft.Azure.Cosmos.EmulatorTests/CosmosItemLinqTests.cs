@@ -8,12 +8,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Linq.Dynamic;
     using System.Linq.Expressions;
+    using System.Text.Json.Nodes;
     using System.Threading.Tasks;
 
     [TestClass]
@@ -947,6 +949,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                  .ToQueryDefinition();
 
             Assert.AreEqual(2, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
+        }
+
+        [TestMethod]
+        public async Task LinqJsonObjectTest()
+        {
+            await ToDoActivity.CreateRandomItems(this.Container, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
+
+            IOrderedQueryable<JObject> queryableJObject = this.Container.GetItemLinqQueryable<JObject>();
+            IQueryable<JObject> queryJObject = queryableJObject.Where(f => (string)f["id"] == "fooBar");
+            string queryTextJObject = queryJObject.ToString();
+
+            IOrderedQueryable<JsonObject> queryableJsonObject = this.Container.GetItemLinqQueryable<JsonObject>();
+            IQueryable<JsonObject> queryJsonObject = queryableJsonObject.Where(f => (string)f["id"] == "fooBar");
+            string queryTextJsonObject = queryJsonObject.ToString();
+
+            Assert.AreEqual(queryTextJObject, queryTextJsonObject);
         }
 
         private class NumberLinqItem
