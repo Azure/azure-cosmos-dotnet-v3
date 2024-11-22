@@ -157,37 +157,37 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Type marker for a String of 1-byte length
             /// </summary>
-            public const byte String1ByteLength = 0xC0;
+            public const byte StrL1 = 0xC0;
 
             /// <summary>
             /// Type marker for a String of 2-byte length
             /// </summary>
-            public const byte String2ByteLength = 0xC1;
+            public const byte StrL2 = 0xC1;
 
             /// <summary>
             /// Type marker for a String of 4-byte length
             /// </summary>
-            public const byte String4ByteLength = 0xC2;
+            public const byte StrL4 = 0xC2;
 
             /// <summary>
             /// Reference string of 1-byte offset
             /// </summary>
-            public const byte ReferenceString1ByteOffset = 0xC3;
+            public const byte StrR1 = 0xC3;
 
             /// <summary>
             /// Reference string of 2-byte offset
             /// </summary>
-            public const byte ReferenceString2ByteOffset = 0xC4;
+            public const byte StrR2 = 0xC4;
 
             /// <summary>
             /// Reference string of 3-byte offset
             /// </summary>
-            public const byte ReferenceString3ByteOffset = 0xC5;
+            public const byte StrR3 = 0xC5;
 
             /// <summary>
             /// Reference string of 4-byte offset
             /// </summary>
-            public const byte ReferenceString4ByteOffset = 0xC6;
+            public const byte StrR4 = 0xC6;
 
             /// <summary>
             /// Type marker for a 8-byte unsigned integer
@@ -583,7 +583,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a variable length string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsVariableLengthString(byte typeMarker) => IsEncodedLengthString(typeMarker) || InRange(typeMarker, String1ByteLength, String4ByteLength + 1);
+            public static bool IsVariableLengthString(byte typeMarker) => IsEncodedLengthString(typeMarker) || InRange(typeMarker, StrL1, StrL4 + 1);
 
             /// <summary>
             /// Gets whether a typeMarker is for a reference string.
@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="typeMarker">The input type marker.</param>
             /// <returns>Whether the typeMarker is for a reference string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsReferenceString(byte typeMarker) => InRange(typeMarker, ReferenceString1ByteOffset, ReferenceString4ByteOffset + 1);
+            public static bool IsReferenceString(byte typeMarker) => InRange(typeMarker, StrR1, StrR4 + 1);
 
             /// <summary>
             /// Gets whether a typeMarker is for a GUID string.
@@ -624,7 +624,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <returns>Whether the typeMarker is for a string.</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsString(byte typeMarker) => InRange(typeMarker, SystemString1ByteLengthMin, UserString2ByteLengthMax)
-                || InRange(typeMarker, LowercaseGuidString, ReferenceString4ByteOffset + 1);
+                || InRange(typeMarker, LowercaseGuidString, StrR4 + 1);
 
             /// <summary>
             /// Gets the length of a encoded string type marker.

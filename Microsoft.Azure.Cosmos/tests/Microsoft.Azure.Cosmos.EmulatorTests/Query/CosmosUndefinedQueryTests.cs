@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         IJsonNavigatorNode rootNode = navigator.GetRootNode();
                         Assert.IsTrue(navigator.TryGetObjectProperty(rootNode, "_count", out ObjectProperty countProperty));
 
-                        long count = Number64.ToLong(navigator.GetNumber64Value(countProperty.ValueNode));
+                        long count = Number64.ToLong(navigator.GetNumberValue(countProperty.ValueNode));
                         actualCount += count;
 
                         Assert.IsTrue(navigator.TryGetObjectProperty(rootNode, "Documents", out ObjectProperty documentsProperty));
@@ -700,7 +700,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 writer.WriteObjectStart();
 
                 writer.WriteFieldName(nameof(this.Index));
-                writer.WriteNumber64Value(this.Index);
+                writer.WriteNumberValue(this.Index);
 
                 if (this.MixedTypeField is not CosmosUndefined)
                 {

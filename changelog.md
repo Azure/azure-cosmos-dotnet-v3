@@ -15,6 +15,31 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.47.0-preview.0"/> [3.47.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.0-preview.0) - 2024-11-15
+
+### <a name="3.46.0"/> [3.46.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.46.0) - 2024-11-15
+
+#### Added
+- [4839](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4839) Dependencies: Removes direct reference to the Newtonsoft.Json package, marks it as a private asset, and adds a build target to enforce explicit consumer references.
+
+> **NOTE**: This is a **breaking change**. Consumer applications must explicitly reference the Newtonsoft.Json package with a version >= 10.0.2 or opt-out of the check by setting `<DisableNewtonsoftJsonCheck>true</DisableNewtonsoftJsonCheck>` in their project file.
+
+- [4854](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4854) Open Telemetry: Adds open telemetry based versioning.
+
+#### Fixed
+- [4860](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4860) Open telemetry: Fixes Populating Query text for non-stream Iterator.
+- [4649](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4649) Query: Fixes prefetching to be disabled when MaxConcurrency is less than or equal to one.
+- [4878](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4878) Tests: Fixes Assert proper way.
+- [4885](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4885) Query: Fixes (workaround) for query plan issue where placeholder index does not start at zero.
+
+### <a name="3.46.0-preview.2"/> [3.46.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.46.0-preview.2) - 2024-11-12
+
+### <a name="3.45.2"/> [3.45.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.45.2) - 2024-11-12
+
+#### Added
+
+- [4866](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4866) JSON Binary Encoding: Adds support for encoding uniform arrays.
+
 ### <a name="3.46.0-preview.1"/> [3.46.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.46.0-preview.1) - 2024-11-06
 
 ### <a name="3.45.1"/> [3.45.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.45.1) - 2024-11-06
