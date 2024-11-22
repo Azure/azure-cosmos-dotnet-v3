@@ -168,6 +168,49 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         }
 
+        public override void TryAddCurrentLocationForPartitionKeyRange(
+             DocumentServiceRequest request,
+             Uri currentLocation)
+        {
+            if (request == null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
+            // Only do partition level failover if it is a write operation.
+            // Write operation will throw a write forbidden if it is not the primary
+            // region.
+            if (request.IsReadOnlyRequest)
+            {
+                return;
+            }
+
+            if (request.RequestContext == null)
+            {
+                return;
+            }
+
+            if (!this.CanUsePartitionLevelFailoverLocations(request))
+            {
+                return;
+            }
+
+            PartitionKeyRange? partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+            if (partitionKeyRange == null)
+            {
+                return;
+            }
+
+            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocation.Value.GetOrAdd(
+                partitionKeyRange,
+                (_) => new PartitionKeyRangeFailoverInfo(currentLocation));
+
+            // All the locations have been tried. Remove the override information
+            DefaultTrace.TraceInformation("Partition level override added. PartitionKeyRange: {0}, currentLocation: {1}",
+                   partitionKeyRange,
+                   currentLocation);
+        }
+
         internal sealed class PartitionKeyRangeFailoverInfo
         {
             // HashSet is not thread safe and should only accessed in the lock

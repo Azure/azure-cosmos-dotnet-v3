@@ -43,15 +43,9 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                if (object.ReferenceEquals(resourceMan, null))
-                {
-#if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
-#else
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
-#endif
-                    resourceMan = temp;
-                }
+                global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
+
+                resourceMan = temp;
                 return resourceMan;
             }
         }
@@ -311,7 +305,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ChannelMultiplexerClosedTransportError", resourceCulture);
+                return "The channel multiplexer has shut down.";
             }
         }
 
@@ -322,7 +316,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ChannelOpenFailedTransportError", resourceCulture);
+                return "The transport client failed to open a connection. See the inner exception for details.";
             }
         }
 
@@ -333,7 +327,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ChannelOpenTimeoutTransportError", resourceCulture);
+                return "The transport client timed out when opening a connection. See the inner exception for details.";
             }
         }
 
@@ -432,7 +426,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ConnectFailedTransportError", resourceCulture);
+                return "Failed to connect to the remote endpoint.";
             }
         }
 
@@ -443,7 +437,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ConnectionBrokenTransportError", resourceCulture);
+                return "The connection failed.";
             }
         }
 
@@ -454,7 +448,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ConnectTimeoutTransportError", resourceCulture);
+                return "The connection attempt timed out.";
             }
         }
 
@@ -685,7 +679,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("DnsResolutionFailedTransportError", resourceCulture);
+                return "DNS resolution failed.";
             }
         }
 
@@ -696,7 +690,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("DnsResolutionTimeoutTransportError", resourceCulture);
+                return "DNS resolution timed out.";
             }
         }
 
@@ -1015,7 +1009,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ExceptionMessage", resourceCulture);
+                return "Message: {0}";
             }
         }
 
@@ -1196,7 +1190,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("Gone", resourceCulture);
+                return "The requested resource is no longer available at the server.";
             }
         }
 
@@ -1251,7 +1245,8 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("InternalServerError", resourceCulture);
+                return "Unknown server error occurred when processing this request.";
+                //return ResourceManager.GetString("InternalServerError", resourceCulture);
             }
         }
 
@@ -2953,7 +2948,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ReceiveFailedTransportError", resourceCulture);
+                return "Failed to read the server response.";
             }
         }
 
@@ -2964,7 +2959,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ReceiveStreamClosedTransportError", resourceCulture);
+                return "The remote system closed the connection.";
             }
         }
 
@@ -2975,7 +2970,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ReceiveTimeoutTransportError", resourceCulture);
+                return "The request timed out while waiting for a server response.";
             }
         }
 
@@ -3041,7 +3036,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("RequestTimeoutTransportError", resourceCulture);
+                return "The request timed out. See the inner exception for details.";
             }
         }
 
@@ -3140,7 +3135,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("SendFailedTransportError", resourceCulture);
+                return "Sending the request failed.";
             }
         }
 
@@ -3151,7 +3146,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("SendLockTimeoutTransportError", resourceCulture);
+                return "Acquiring the send stream lock timed out.";
             }
         }
 
@@ -3162,7 +3157,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("SendTimeoutTransportError", resourceCulture);
+                return "Sending the request timed out.";
             }
         }
 
@@ -3426,7 +3421,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("SslNegotiationFailedTransportError", resourceCulture);
+                return "SSL negotiation failed.";
             }
         }
 
@@ -3437,7 +3432,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("SslNegotiationTimeoutTransportError", resourceCulture);
+                return "SSL negotiation failed.";
             }
         }
 
@@ -3701,7 +3696,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("TransportExceptionMessage", resourceCulture);
+                return "A client transport error occurred: {0}";
             }
         }
 
@@ -3734,7 +3729,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("TransportNegotiationTimeoutTransportError", resourceCulture);
+                return "The transport protocol negotiation timed out. See the inner exception for details.";
             }
         }
 
@@ -3745,7 +3740,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("ChannelWaitingToOpenTimeoutException", resourceCulture);
+                return "The TCP channel timed out on waiting to open.";
             }
         }
 
@@ -3932,7 +3927,7 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
-                return ResourceManager.GetString("UnknownTransportError", resourceCulture);
+                return "An unknown client transport error has occurred.";
             }
         }
 

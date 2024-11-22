@@ -37,13 +37,23 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan ThresholdStep { get; private set; }
 
         /// <summary>
+        /// Whether hedging for write requests on accounts with multi-region writes are enabled
+        /// Note that this does come with the caveat that there will be more 409 / 412 errors thrown by the SDK.
+        /// This is expected and applications that adapt this feature should be prepared to handle these exceptions.
+        /// Application might not be able to be deterministic on Create vs Replace in the case of Upsert Operations
+        /// </summary>
+        public bool EnableMultiWriteRegionHedge { get; private set; }
+
+        /// <summary>
         /// Constructor for hedging availability strategy
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
+        /// <param name="enableMultiWriteRegionHedge"></param>
         public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
-            TimeSpan? thresholdStep)
+            TimeSpan? thresholdStep,
+            bool enableMultiWriteRegionHedge = false)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -57,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
+            this.EnableMultiWriteRegionHedge = enableMultiWriteRegionHedge;
         }
 
         /// <inheritdoc/>
@@ -70,8 +81,9 @@ namespace Microsoft.Azure.Cosmos
         /// This availability strategy can only be used if the request is a read-only request on a document request.
         /// </summary>
         /// <param name="request"></param>
+        /// <param name="client"></param>
         /// <returns>whether the request should be a hedging request.</returns>
-        internal bool ShouldHedge(RequestMessage request)
+        internal bool ShouldHedge(RequestMessage request, CosmosClient client)
         {
             //Only use availability strategy for document point operations
             if (request.ResourceType != ResourceType.Document)
@@ -79,9 +91,14 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            //check to see if it is a not a read-only request
+            //check to see if it is a not a read-only request/ if multimaster writes are enabled
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
+                if (this.EnableMultiWriteRegionHedge
+                    && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType))
+                {
+                    return true;
+                }
                 return false;
             }
 
@@ -102,7 +119,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!this.ShouldHedge(request)
+            if (!this.ShouldHedge(request, client)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
                 return await sender(request, cancellationToken);
@@ -110,126 +127,261 @@ namespace Microsoft.Azure.Cosmos
             
             ITrace trace = request.Trace;
 
-            using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+            if (client.ClientOptions.EnablePartitionLevelFailover)
             {
-                using (CloneableStream clonedBody = (CloneableStream)(request.Content == null
-                    ? null//new CloneableStream(new MemoryStream())
-                    : await StreamExtension.AsClonableStreamAsync(request.Content)))
+                using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
-                    IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
-                    .GetApplicableRegions(
-                        request.RequestOptions?.ExcludeRegions,
-                        OperationTypeExtensions.IsReadOperation(request.OperationType));
-
-                    List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
-
-                    Task<HedgingResponse> primaryRequest = null;
-                    HedgingResponse hedgeResponse = null;
-
-                    //Send out hedged requests
-                    for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
+                    using (CloneableStream clonedBody = (CloneableStream)(request.Content == null
+                        ? null
+                        : await StreamExtension.AsClonableStreamAsync(request.Content)))
                     {
-                        TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
+                        IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
+                        .GetApplicableRegions(
+                            request.RequestOptions?.ExcludeRegions,
+                            OperationTypeExtensions.IsReadOperation(request.OperationType));
 
-                        using (CancellationTokenSource timerTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                        List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
+
+                        Task<HedgingResponse> primaryRequest = null;
+                        HedgingResponse hedgeResponse = null;
+
+                        //Send out hedged requests
+                        for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
                         {
-                            CancellationToken timerToken = timerTokenSource.Token;
-                            using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))
+                            TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
+
+                            using (CancellationTokenSource timerTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                             {
-                                if (requestNumber == 0)
+                                CancellationToken timerToken = timerTokenSource.Token;
+                                using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))
                                 {
-                                    primaryRequest = this.RequestSenderAndResultCheckAsync(
-                                        sender,
-                                        request,
-                                        hedgeRegions.ElementAt(requestNumber),
-                                        cancellationToken,
-                                        cancellationTokenSource);
+                                    if (requestNumber == 0)
+                                    {
+                                        primaryRequest = this.RequestSenderAndResultCheckAsync(
+                                            sender,
+                                            request,
+                                            hedgeRegions.ElementAt(requestNumber),
+                                            cancellationToken,
+                                            cancellationTokenSource);
 
-                                    requestTasks.Add(primaryRequest);
-                                }
-                                else
-                                {
-                                    Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
-                                    sender: sender,
-                                    request: request,
-                                    clonedBody: clonedBody,
-                                    hedgeRegions: hedgeRegions,
-                                    requestNumber: requestNumber,
-                                    trace: trace,
-                                    cancellationToken: cancellationToken,
-                                    cancellationTokenSource: cancellationTokenSource);
+                                        requestTasks.Add(primaryRequest);
+                                    }
+                                    else
+                                    {
+                                        Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
+                                        sender: sender,
+                                        request: request,
+                                        clonedBody: clonedBody,
+                                        hedgeRegions: hedgeRegions,
+                                        requestNumber: requestNumber,
+                                        trace: trace,
+                                        cancellationToken: cancellationToken,
+                                        cancellationTokenSource: cancellationTokenSource);
 
-                                    requestTasks.Add(requestTask);
-                                }
+                                        requestTasks.Add(requestTask);
+                                    }
 
-                                requestTasks.Add(hedgeTimer);
+                                    requestTasks.Add(hedgeTimer);
 
-                                Task completedTask = await Task.WhenAny(requestTasks);
-                                requestTasks.Remove(completedTask);
+                                    Task completedTask = await Task.WhenAny(requestTasks);
+                                    requestTasks.Remove(completedTask);
 
-                                if (completedTask == hedgeTimer)
-                                {
-                                    continue;
-                                }
+                                    if (completedTask == hedgeTimer)
+                                    {
+                                        continue;
+                                    }
 
-                                timerTokenSource.Cancel();
-                                requestTasks.Remove(hedgeTimer);
+                                    timerTokenSource.Cancel();
+                                    requestTasks.Remove(hedgeTimer);
 
-                                if (completedTask.IsFaulted)
-                                {
-                                    AggregateException innerExceptions = completedTask.Exception.Flatten();
-                                }
+                                    if (completedTask.IsFaulted)
+                                    {
+                                        AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                    }
 
-                                hedgeResponse = await (Task<HedgingResponse>)completedTask;
-                                if (hedgeResponse.IsNonTransient)
-                                {
-                                    cancellationTokenSource.Cancel();
-                                    //Take is not inclusive, so we need to add 1 to the request number which starts at 0
-                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        HedgeContext,
-                                        hedgeRegions.Take(requestNumber + 1));
-                                    ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        ResponseRegion,
-                                        hedgeResponse.ResponseRegion);
-                                    return hedgeResponse.ResponseMessage;
+                                    hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                                    if (hedgeResponse.IsNonTransient)
+                                    {
+                                        cancellationTokenSource.Cancel();
+                                        //Take is not inclusive, so we need to add 1 to the request number which starts at 0
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            HedgeContext,
+                                            hedgeRegions.Take(requestNumber + 1));
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            ResponseRegion,
+                                            hedgeResponse.ResponseRegion);
+                                        return hedgeResponse.ResponseMessage;
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    //Wait for a good response from the hedged requests/primary request
-                    Exception lastException = null;
-                    while (requestTasks.Any())
-                    {
-                        Task completedTask = await Task.WhenAny(requestTasks);
-                        requestTasks.Remove(completedTask);
-                        if (completedTask.IsFaulted)
+                        //Wait for a good response from the hedged requests/primary request
+                        Exception lastException = null;
+                        while (requestTasks.Any())
                         {
-                            AggregateException innerExceptions = completedTask.Exception.Flatten();
-                            lastException = innerExceptions.InnerExceptions.FirstOrDefault();
+                            Task completedTask = await Task.WhenAny(requestTasks);
+                            requestTasks.Remove(completedTask);
+                            if (completedTask.IsFaulted)
+                            {
+                                AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                lastException = innerExceptions.InnerExceptions.FirstOrDefault();
+                            }
+
+                            hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                            if (hedgeResponse.IsNonTransient || requestTasks.Count == 0)
+                            {
+                                cancellationTokenSource.Cancel();
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                    HedgeContext,
+                                    hedgeRegions);
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            ResponseRegion,
+                                            hedgeResponse.ResponseRegion);
+
+                                Uri regionEndpoint = client.DocumentClient.GlobalEndpointManager
+                                .GetAvailableReadEndpointsByLocation()[hedgeResponse.ResponseRegion];
+
+                                DocumentServiceRequest serviceRequest = request.GetDocumentServiceRequest();
+                                client.DocumentClient.PartitionKeyRangeLocation.TryAddCurrentLocationForPartitionKeyRange(serviceRequest, regionEndpoint);
+
+                                return hedgeResponse.ResponseMessage;
+                            }
                         }
 
-                        hedgeResponse = await (Task<HedgingResponse>)completedTask;
-                        if (hedgeResponse.IsNonTransient || requestTasks.Count == 0)
+                        if (lastException != null)
                         {
-                            cancellationTokenSource.Cancel();
-                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                HedgeContext,
-                                hedgeRegions);
-                            ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
-                                        ResponseRegion,
-                                        hedgeResponse.ResponseRegion);
-                            return hedgeResponse.ResponseMessage;
+                            throw lastException;
                         }
-                    }
 
-                    if (lastException != null)
+                        Debug.Assert(hedgeResponse != null);
+                        return hedgeResponse.ResponseMessage;
+                    }
+                }
+            }
+            else
+            {
+                using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                {
+                    using (CloneableStream clonedBody = (CloneableStream)(request.Content == null
+                        ? null
+                        : await StreamExtension.AsClonableStreamAsync(request.Content)))
                     {
-                        throw lastException;
-                    }
+                        IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
+                        .GetApplicableRegions(
+                            request.RequestOptions?.ExcludeRegions,
+                            OperationTypeExtensions.IsReadOperation(request.OperationType));
 
-                    Debug.Assert(hedgeResponse != null);
-                    return hedgeResponse.ResponseMessage;
+                        List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
+
+                        Task<HedgingResponse> primaryRequest = null;
+                        HedgingResponse hedgeResponse = null;
+
+                        //Send out hedged requests
+                        for (int requestNumber = 0; requestNumber < hedgeRegions.Count; requestNumber++)
+                        {
+                            TimeSpan awaitTime = requestNumber == 0 ? this.Threshold : this.ThresholdStep;
+
+                            using (CancellationTokenSource timerTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                            {
+                                CancellationToken timerToken = timerTokenSource.Token;
+                                using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))
+                                {
+                                    if (requestNumber == 0)
+                                    {
+                                        primaryRequest = this.RequestSenderAndResultCheckAsync(
+                                            sender,
+                                            request,
+                                            hedgeRegions.ElementAt(requestNumber),
+                                            cancellationToken,
+                                            cancellationTokenSource);
+
+                                        requestTasks.Add(primaryRequest);
+                                    }
+                                    else
+                                    {
+                                        Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
+                                        sender: sender,
+                                        request: request,
+                                        clonedBody: clonedBody,
+                                        hedgeRegions: hedgeRegions,
+                                        requestNumber: requestNumber,
+                                        trace: trace,
+                                        cancellationToken: cancellationToken,
+                                        cancellationTokenSource: cancellationTokenSource);
+
+                                        requestTasks.Add(requestTask);
+                                    }
+
+                                    requestTasks.Add(hedgeTimer);
+
+                                    Task completedTask = await Task.WhenAny(requestTasks);
+                                    requestTasks.Remove(completedTask);
+
+                                    if (completedTask == hedgeTimer)
+                                    {
+                                        continue;
+                                    }
+
+                                    timerTokenSource.Cancel();
+                                    requestTasks.Remove(hedgeTimer);
+
+                                    if (completedTask.IsFaulted)
+                                    {
+                                        AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                    }
+
+                                    hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                                    if (hedgeResponse.IsNonTransient)
+                                    {
+                                        cancellationTokenSource.Cancel();
+                                        //Take is not inclusive, so we need to add 1 to the request number which starts at 0
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            HedgeContext,
+                                            hedgeRegions.Take(requestNumber + 1));
+                                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            ResponseRegion,
+                                            hedgeResponse.ResponseRegion);
+                                        return hedgeResponse.ResponseMessage;
+                                    }
+                                }
+                            }
+                        }
+
+                        //Wait for a good response from the hedged requests/primary request
+                        Exception lastException = null;
+                        while (requestTasks.Any())
+                        {
+                            Task completedTask = await Task.WhenAny(requestTasks);
+                            requestTasks.Remove(completedTask);
+                            if (completedTask.IsFaulted)
+                            {
+                                AggregateException innerExceptions = completedTask.Exception.Flatten();
+                                lastException = innerExceptions.InnerExceptions.FirstOrDefault();
+                            }
+
+                            hedgeResponse = await (Task<HedgingResponse>)completedTask;
+                            if (hedgeResponse.IsNonTransient || requestTasks.Count == 0)
+                            {
+                                cancellationTokenSource.Cancel();
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                    HedgeContext,
+                                    hedgeRegions);
+                                ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                            ResponseRegion,
+                                            hedgeResponse.ResponseRegion);
+                                return hedgeResponse.ResponseMessage;
+                            }
+                        }
+
+                        if (lastException != null)
+                        {
+                            throw lastException;
+                        }
+
+                        Debug.Assert(hedgeResponse != null);
+                        return hedgeResponse.ResponseMessage;
+                    }
                 }
             }
         }

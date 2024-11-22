@@ -943,6 +943,11 @@ namespace Microsoft.Azure.Cosmos
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
             };
 
+            if (this.EnablePartitionLevelFailover)
+            {
+                this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(1), true);
+            }
+
             if (this.CosmosClientTelemetryOptions != null)
             {
                 connectionPolicy.CosmosClientTelemetryOptions = this.CosmosClientTelemetryOptions;

@@ -8,6 +8,7 @@
     using System.Net.Http;
     using System.Reflection;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,7 +21,7 @@
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
 
-        [TestInitialize]
+        //[TestInitialize]
         public async Task TestInitialize()
         {
             await this.TestInit();
@@ -364,5 +365,96 @@
             Assert.IsNotNull(ce);
             Assert.AreEqual(HttpStatusCode.NotFound, ce.StatusCode);
         }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task CreateAndInitializeAsync_LocalTest()
+        {
+            try
+            {
+                Random random = new();
+                string databaseName = "binary_encoding_test_db_2";
+                string containerName = "test_binary_container_3";
+
+                CosmosClientOptions clientOptions = new CosmosClientOptions
+                {
+                    ApplicationName = "dkunda-binary-encoding-app",
+                    EnableContentResponseOnWrite = true,
+                    ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2, Regions.UKSouth },
+                    RequestTimeout = TimeSpan.FromSeconds(10),
+                    EnablePartitionLevelFailover = true,
+                    //AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(1), true),
+                };
+                string binaryConnectionString = "sample_str";
+                using CosmosClient binaryClient = new CosmosClient(binaryConnectionString, clientOptions);
+
+                //DatabaseResponse dbResponse = await binaryClient.CreateDatabaseIfNotExistsAsync(databaseName);
+                //Console.WriteLine(dbResponse.Diagnostics);
+
+                //ContainerProperties properties = new ContainerProperties(id: containerName, partitionKeyPath: PartitionKey);
+
+                //try
+                //{
+                //    ContainerResponse containerResponse = await dbResponse.Database.CreateContainerIfNotExistsAsync(properties);
+                //    Console.WriteLine(containerResponse.Diagnostics);
+                //}
+                //catch (CosmosException ce)
+                //{
+                //    Console.WriteLine(ce.Diagnostics);
+                //}
+
+                Cosmos.Database database = binaryClient.GetDatabase(databaseName);
+                Container container = database.GetContainer(containerName);
+
+                ItemRequestOptions requestOptions = new()
+                {
+                    //AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(3)),
+                };
+
+                Comment comment = new Comment(Guid.NewGuid().ToString(), "pk", random.Next().ToString(), "dkunda@test.com", "This document is intended for binary encoding demo.");
+
+                DefaultTrace.TraceInformation("Trying to insert the item into db: " + comment.id);
+                ItemResponse<Comment> writeResponse = await container.CreateItemAsync<Comment>(
+                    item: comment,
+                    partitionKey: new Cosmos.PartitionKey(comment.pk),
+                    requestOptions: requestOptions
+                );
+
+                DefaultTrace.TraceInformation("Comment ID: " + comment.id);
+                Console.WriteLine(writeResponse.Diagnostics);
+
+                //for (int i = 0; i < 5; i++)
+                //{
+                //    try
+                //    {
+                //        ItemResponse<Comment> readResponse = await container.ReadItemAsync<Comment>(
+                //            id: comment.id,
+                //            partitionKey: new Cosmos.PartitionKey(comment.pk),
+                //            requestOptions: requestOptions
+                //            );
+                //        Console.WriteLine(readResponse.Diagnostics);
+                //    }
+                //    catch (CosmosException ce)
+                //    {
+                //        Console.WriteLine(ce.Diagnostics);
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        Console.WriteLine("Exception Occurred: " + ex.StackTrace);
+                //    }
+                //}
+            }
+            finally
+            {
+            }
+        }
+
+        public record Comment(
+            string id,
+            string pk,
+            string name,
+            string email,
+            string body
+        );
     }
 }

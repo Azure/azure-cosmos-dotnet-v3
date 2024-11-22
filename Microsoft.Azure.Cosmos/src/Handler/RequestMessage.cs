@@ -310,6 +310,11 @@ namespace Microsoft.Azure.Cosmos
             return this.DocumentServiceRequest;
         }
 
+        internal DocumentServiceRequest GetDocumentServiceRequest()
+        {
+            return this.DocumentServiceRequest;
+        }
+
         /// <summary>
         /// Clone the request message
         /// </summary>

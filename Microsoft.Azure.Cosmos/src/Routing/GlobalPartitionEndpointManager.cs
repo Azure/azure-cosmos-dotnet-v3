@@ -22,5 +22,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public abstract bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request);
+
+        /// <summary>
+        /// Marks the current location unavailable for write. Future 
+        /// requests will be routed to the next location if available
+        /// </summary>
+        public abstract void TryAddCurrentLocationForPartitionKeyRange(
+             DocumentServiceRequest request,
+             Uri currentLocation);
     }
 }
