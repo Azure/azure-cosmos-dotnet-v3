@@ -928,7 +928,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
                     targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
-                    inputStream: streamPayload == null ? null : await StreamExtension.AsClonableStreamAsync(streamPayload));
+                    inputStream: streamPayload == null ? null : await StreamExtension.AsClonableStreamAsync(
+                        mediaStream: streamPayload,
+                        allowUnsafeDataAccess: true));
             }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
