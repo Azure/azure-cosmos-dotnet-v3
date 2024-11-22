@@ -683,14 +683,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             string description, 
             Expression<Func<bool, IQueryable>> expr, 
             bool skipVerification = false, 
-            bool ignoreOrderingForAnonymousTypeObject = false,
+            bool ignoreOrder = false,
             string expressionStr = null, 
             string inputData = null)
             : base(description)
         {
             this.Expression = expr ?? throw new ArgumentNullException($"{nameof(expr)} must not be null.");
             this.skipVerification = skipVerification;
-            this.ignoreOrder = ignoreOrderingForAnonymousTypeObject;
+            this.ignoreOrder = ignoreOrder;
             this.expressionStr = expressionStr;
             this.inputData = inputData;
         }

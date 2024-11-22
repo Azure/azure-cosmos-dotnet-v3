@@ -1789,10 +1789,12 @@ namespace Microsoft.Azure.Cosmos.Linq
             // First argument is input, second is key selector and third is value selector
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
 
-            //// Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
-            //SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
             Collection collection = new Collection("Group By");
             context.CurrentQuery.GroupByParameter = new FromParameterBindings();
+
+            SqlGroupByClause groupby;
+            ParameterExpression parameterExpression;
+            Binding binding;
             switch (keySelectorLambda.Body.NodeType)
             {
                 case ExpressionType.Parameter:
@@ -1809,22 +1811,19 @@ namespace Microsoft.Azure.Cosmos.Linq
                         SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
 
                         // The group by clause don't need to handle the value selector, so adding the clause to the uery now.
-                        SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc);
-
-                        context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
-
-                        ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
-                        Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
-
-                        context.CurrentQuery.GroupByParameter.Add(binding);
-                        // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
-                        ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
-                        context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression/*Utilities.GetLambda(arguments[1]).Body*/);
+                        groupby = SqlGroupByClause.Create(keySelectorFunc);
+                        parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
 
                         break;
                     }
                 case ExpressionType.New:
                     {
+                        // bind the parameters in the key selector to the current input - in this case, the value selector key is being substituted by the key selector
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[1]).Parameters)
+                        {
+                            context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+                        }
+
                         NewExpression newExpression = (NewExpression)keySelectorLambda.Body;
 
                         if (newExpression.Members == null)
@@ -1832,16 +1831,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
                         }
 
-                        //bind the parameters in the value selector to the current input
-                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[1]).Parameters)
-                        {
-                            context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-                        }
-
                         ReadOnlyCollection<Expression> newExpressionArguments = newExpression.Arguments;
 
                         List<SqlScalarExpression> keySelectorFunctions = new List<SqlScalarExpression>();
-
                         for (int i = 0; i < newExpressionArguments.Count; i++)
                         {
                             //Current GroupBy doesn't allow subquery, so we need to visit non subquery scalara
@@ -1849,19 +1841,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                             keySelectorFunctions.Add(keySelectorFunc);
                         }
 
-                        // The group by clause don't need to handle the value selector, so adding the clause to the qery now.
-                        SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunctions.ToImmutableArray());
-
-                        context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
-
-                        // Bind the alias
-                        ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunctions.ToString(), includeSuffix: false);
-                        Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
-
-                        context.CurrentQuery.GroupByParameter.Add(binding);
-                        // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
-                        ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
-                        context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression/*Utilities.GetLambda(arguments[1]).Body*/);
+                        groupby = SqlGroupByClause.Create(keySelectorFunctions.ToImmutableArray());
+                        parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunctions.ToString(), includeSuffix: false);
 
                         break;
                     }
@@ -1869,8 +1850,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, keySelectorLambda.Body.NodeType));
             }
 
-            // Value Selector Handingling
+            // The group by clause don't need to handle the value selector, so adding the clause to the qery now.
+            context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
 
+            // Bind the alias
+            binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
+            context.CurrentQuery.GroupByParameter.Add(binding);
+
+            // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
+            ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
+            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression);
+
+            // Value Selector Handingling
             // Translate the body of the value selector lambda
             Expression valueSelectorExpression = Utilities.GetLambda(arguments[2]).Body;
 

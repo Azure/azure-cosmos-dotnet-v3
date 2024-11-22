@@ -350,4 +350,36 @@ FROM (
       <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant 2]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(NumValue = 10, StringValue = "abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expression with NodeType 'Constant' is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant 2]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new AnonymousType(Id = k.Id), (key, values) => new AnonymousType(NumValue = 10, StringValue = "abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NumValue": 10, "StringValue": "abc"} 
+FROM root 
+GROUP BY root["id"] ]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[GroupBy Multi Key Multi Value Constant No Member expression]]></Description>
+      <Expression><![CDATA[query.GroupBy(k => new NoMemberExampleClass(k.Id), (key, values) => new AnonymousType(NumValue = 10, StringValue = "abc"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Constructor invocation is not supported.]]></ErrorMessage>
+    </Output>
+  </Result>
 </Results>
