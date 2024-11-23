@@ -37,6 +37,7 @@ jobs:
   # Analyze source and build output text files for credentials
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
     displayName: 'CredScan'
+    condition: eq(1,2) #disablng as nuget repo failing
     inputs:
       toolMajorVersion: V2
       scanFolder: $(Build.SourcesDirectory)
