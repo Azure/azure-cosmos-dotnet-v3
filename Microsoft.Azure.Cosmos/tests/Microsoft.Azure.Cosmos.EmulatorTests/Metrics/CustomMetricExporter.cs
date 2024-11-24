@@ -35,6 +35,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
             { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}
         };
+        
         private readonly static List<string> expectedOperationDimensions = new()
         {
             OpenTelemetryAttributeKeys.DbSystemName,

@@ -170,8 +170,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
 
-        public const string ErrorType = "error.type";
-
         public const string NetworkProtocolName = "network.protocol.name";
 
         public const string ServiceEndpointHost = "network.protocol.host";
@@ -185,6 +183,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ServiceEndpointRegion = "cloud.region";
         
         public const string ServiceEndpointResourceId = "db.cosmosdb.network.routing_id ";
+
+        /// <summary>
+        /// Represents the type of error.
+        /// </summary>
+        public const string ErrorType = "error.type";
 
         public void PopulateAttributes(DiagnosticScope scope, 
             string operationName, 
@@ -258,7 +261,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     OpenTelemetryAttributeKeys.Region, 
                     GetRegions(response.Diagnostics), (input) => string.Join(",", input));
             }
-            
+         
         }
 
         public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName,

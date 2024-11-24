@@ -550,6 +550,7 @@ namespace Microsoft.Azure.Cosmos
                                                              containerName: containerName,
                                                              databaseName: databaseName,
                                                              attributes: otelAttributes);
+                                                             attributes: response);
                     }
                     return result;
                 }
@@ -590,12 +591,12 @@ namespace Microsoft.Azure.Cosmos
                                                              containerName: containerName,
                                                              databaseName: databaseName,
                                                              ex: cosmosException);
-
                         CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
                                                              accountName: this.client.Endpoint,
                                                              containerName: containerName,
                                                              databaseName: databaseName,
                                                              ex: cosmosException);
+
                     }
                  
                     throw;

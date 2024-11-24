@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         private const int AggregatingInterval = 500;
 
         private readonly ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim(false);
+
         private static readonly Dictionary<string, MetricType> expectedMetrics = CustomMetricExporter.expectedOperationMetrics
                                                                                     .Concat(CustomMetricExporter.expectedNetworkMetrics)
                                                                                     .ToDictionary(kv => kv.Key, kv => kv.Value);
@@ -71,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         }
 
         [TestMethod]
-        public async Task MetricsGenerationTest()
+        public async Task OperationLevelMetricsGenerationTest()
         {
             Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
             for (int count = 0; count < 10; count++)

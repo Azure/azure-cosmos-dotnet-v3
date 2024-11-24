@@ -960,7 +960,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDbOperationMeter.Initialize();
                 CosmosDbNetworkMeter.Initialize();
-
+                
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
