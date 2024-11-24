@@ -139,6 +139,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_database" displayName="create_database ">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -162,6 +163,7 @@
     <ATTRIBUTE key="db.cosmosdb.request_charge">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
@@ -293,6 +295,7 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.consistency_level">Session</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
   <ACTIVITY source="Azure.Cosmos.Operation" operationName="Operation.create_database" displayName="create_database ">
     <ATTRIBUTE key="az.namespace">Microsoft.DocumentDB</ATTRIBUTE>
@@ -317,6 +320,7 @@
     <ATTRIBUTE key="db.cosmosdb.activity_id">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.response.status_code">Some Value</ATTRIBUTE>
     <ATTRIBUTE key="db.cosmosdb.consistency_level">Session</ATTRIBUTE>
+    <ATTRIBUTE key="db.cosmosdb.regions_contacted"></ATTRIBUTE>
   </ACTIVITY>
   <EVENT name="ThresholdViolation" />
   <EVENT name="ThresholdViolation" />
