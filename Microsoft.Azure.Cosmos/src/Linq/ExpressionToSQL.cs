@@ -1794,7 +1794,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             SqlGroupByClause groupby;
             ParameterExpression parameterExpression;
-            Binding binding;
             switch (keySelectorLambda.Body.NodeType)
             {
                 case ExpressionType.Parameter:
@@ -1854,7 +1853,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
 
             // Bind the alias
-            binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
+            Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
             context.CurrentQuery.GroupByParameter.Add(binding);
 
             // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
