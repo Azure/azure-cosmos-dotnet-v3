@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Xml.Linq;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
