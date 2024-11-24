@@ -1879,7 +1879,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             if (subst != null)
                             {
                                 // If  there is a match, we construct a new Member Access expression with the substituted expression and visit it to create a select clause
-                                MemberExpression newMemberAccessExpression = memberAccessExpression.Update(keySelectorLambda.Body); /*System.Linq.Expressions.Expression.Field(subst, memberAccessExpression.Member.Name);*/
+                                MemberExpression newMemberAccessExpression = memberAccessExpression.Update(keySelectorLambda.Body); 
                                 SqlScalarExpression selectExpression = ExpressionToSql.VisitMemberAccess(newMemberAccessExpression, context);
 
                                 SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
