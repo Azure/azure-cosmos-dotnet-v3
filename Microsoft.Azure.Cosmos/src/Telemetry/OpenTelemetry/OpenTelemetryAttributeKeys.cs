@@ -4,8 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
-    using System;
+    using System; 
+    using System.Collections.Generic;
+    using System.Linq;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Diagnostics;
 
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
@@ -62,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         public const string ServerAddress = "server.address";
 
         /// <summary>
-        /// Represents the server address.
+        /// Represents the server port.
         /// </summary>
         public const string ServerPort = "server.port";
 
@@ -167,6 +170,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ExceptionStacktrace = "exception.stacktrace";
 
+        /// <summary>
+        /// Represents the type of error.
+        /// </summary>
+        public const string ErrorType = "error.type";
+
         public void PopulateAttributes(DiagnosticScope scope, 
             string operationName, 
             string databaseName, 
@@ -235,9 +243,43 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (response.Diagnostics != null)
             {
-                scope.AddAttribute(OpenTelemetryAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
+                scope.AddAttribute<string[]>(
+                    OpenTelemetryAttributeKeys.Region, 
+                    GetRegions(response.Diagnostics), (input) => string.Join(",", input));
             }
             
+        }
+
+        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
+            string containerName, string databaseName, Uri accountName, OpenTelemetryAttributes attributes, CosmosException ex)
+        {
+            return new KeyValuePair<string, object>[]
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbName, databaseName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, GetRegions(attributes?.Diagnostics)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
+            };
+        }
+
+        private static string[] GetRegions(CosmosDiagnostics diagnostics)
+        {
+            if (diagnostics?.GetContactedRegions() is not IReadOnlyList<(string regionName, Uri uri)> contactedRegions)
+            {
+                return null;
+            }
+
+            return contactedRegions
+                .Select(region => region.regionName)
+                .Distinct()
+                .ToArray();
         }
     }
 }

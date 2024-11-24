@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
 {
     using System;
-    using global::Azure.Core;
 
     /// <summary>
     /// Factory for handling telemetry trace stability modes, allowing attribute settings
@@ -20,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry
         {
             return otelStabilityMode switch
             {
-                OpenTelemetryStablityModes.Database => new OpenTelemetryAttributeKeys(),
+                OpenTelemetryStablityModes.Database or null => new OpenTelemetryAttributeKeys(),
                 OpenTelemetryStablityModes.DatabaseDupe => new DatabaseDupAttributeKeys(),
                 OpenTelemetryStablityModes.ClassicAppInsights => new AppInsightClassicAttributeKeys(),
                 _ => new OpenTelemetryAttributeKeys()
