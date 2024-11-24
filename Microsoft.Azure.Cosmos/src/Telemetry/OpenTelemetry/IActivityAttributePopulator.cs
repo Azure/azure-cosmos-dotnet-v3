@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
+    using System.Xml.Linq;
     using global::Azure.Core;
 
     internal interface IActivityAttributePopulator
@@ -25,5 +27,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             QueryTextMode? queryTextMode, 
             string operationType, 
             OpenTelemetryAttributes response);
-     }
+
+        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
+            string containerName, 
+            string databaseName, 
+            Uri accountName,
+            OpenTelemetryAttributes attributes, CosmosException ex);
+    }
 }
