@@ -50,28 +50,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
                 return null;
             }
 
-            // Load the rule document
-            XDocument ruleDocument = XDocument.Load("Query\\Core\\QueryAdvisor\\QueryAdviceRuleDocumentation.xml");
+            // Message format is as follow
+            // <id>>: <message>. For more information, please visit <urlprefix><id>
+            string message = RuleDirectory.Instance.GetRuleMessage(this.Id)?.ToString();
 
-            // Find the corresponding rule in the document
-            XElement rule = ruleDocument.Descendants("Rule")
-                .Where(r => r.Attribute("Id").Value == this.Id)
-                .FirstOrDefault();
-
-            if (rule == null)
+            if (message == null)
             {
                 return null;
             }
 
             StringBuilder stringBuilder = new StringBuilder();
-
-            // Message format is as follow
-            // <id>>: <message>. For more information, please visit <urlprefix><id>
-
             stringBuilder.Append(this.Id);
             stringBuilder.Append(": ");
-
-            string message = rule.Element("Message").Value.Replace("[CDATA[\"", String.Empty).Replace("\"]]", String.Empty); // removing the CDATA tags
 
             // Format message with parameters if available
             if (this.Parameters == null || this.Parameters.Count == 0)
@@ -84,8 +74,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
             }
 
             // Generate the help link
-            stringBuilder.Append(" For more information, please visit ");
-            stringBuilder.Append(ruleDocument.Descendants("UrlPrefix").First().Value);
+            stringBuilder.Append(RuleDirectory.Instance.UrlMessagePrefix);
             stringBuilder.Append(this.Id);
 
             return stringBuilder.ToString();
