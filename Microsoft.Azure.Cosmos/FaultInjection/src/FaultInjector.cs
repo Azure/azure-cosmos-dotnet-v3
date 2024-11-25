@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System.Collections.Generic;
     using Microsoft.Azure.Documents.FaultInjection;
 
-    public class FaultInjector
+    public class FaultInjector : IFaultInjector
     {
         private readonly ChaosInterceptorFactory chaosInterceptorFactory;
 
@@ -45,6 +45,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         internal IChaosInterceptorFactory GetChaosInterceptorFactory()
+        {
+            return this.chaosInterceptorFactory;
+        }
+
+        IChaosInterceptorFactory IFaultInjector.GetChaosInterceptorFactory()
         {
             return this.chaosInterceptorFactory;
         }
