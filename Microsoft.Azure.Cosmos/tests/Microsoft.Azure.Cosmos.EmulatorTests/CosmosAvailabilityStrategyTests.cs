@@ -872,7 +872,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion-MultiMaster")]
+        [TestCategory("MultiMaster")]
         public async Task AvailabilityStrategyMultiMasterWriteBeforeTest()
         {
             FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
@@ -940,7 +940,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion-MultiMaster")]
+        [TestCategory("MultiMaster")]
         public async Task AvailabilityStrategyMultiMasterWriteAfterTest()
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
@@ -1017,7 +1017,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion-MultiMaster")]
+        [TestCategory("MultiMaster")]
         public async Task AvailabilityStrategyMultiMasterWriteBeforeStepTest()
         {
             FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
@@ -1115,7 +1115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion-MultiMaster")]
+        [TestCategory("MultiMaster")]
         public async Task AvailabilityStrategyMultiMasterWriteAfterStepTest()
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(

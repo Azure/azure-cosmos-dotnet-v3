@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan ThresholdStep { get; private set; }
 
         /// <summary>
-        /// Whether hedging for write requests on accounts with multi-region writes are enabled
+        /// Whether hedging for write requests on accounts with multi-region writes is enabled.
         /// Note that this does come with the caveat that there will be more 409 / 412 errors thrown by the SDK.
-        /// This is expected and applications that adapt this feature should be prepared to handle these exceptions.
+        /// This is expected and applications that adopt this feature should be prepared to handle these exceptions.
         /// Application might not be able to be deterministic on Create vs Replace in the case of Upsert Operations
         /// </summary>
         public bool EnableMultiWriteRegionHedge { get; private set; }
