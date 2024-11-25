@@ -250,8 +250,8 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
                 }
 
-                // In case of Select -> Group by cases, the Select query should not be flattened and kept as a subquery
-                if ((query.inputQuery?.selectClause != null) && (query.groupByClause != null))
+                // In case of Select/Order By -> Group by cases, the Select/Order By query should not be flattened and kept as a subquery
+                if (((query.inputQuery?.selectClause != null) || (query.inputQuery?.orderByClause != null)) && (query.groupByClause != null))
                 {
                     flattenQuery = this;
                     break;
@@ -564,11 +564,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     break;
 
                 case LinqMethods.GroupBy:
-                    // New query is needed when there is already a Take or a Select or a Group by clause
+                    // New query is needed when there is already a Take or a Select or a Group by clause or an Order By clause
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null) || 
-                        (this.groupByClause != null);
+                        (this.groupByClause != null) || 
+                        (this.orderByClause != null);
                     break;
 
                 case LinqMethods.Skip:

@@ -232,12 +232,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new ArgumentNullException("collection");
             }
 
-            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.Add(collection);
+            this.collectionStack.Add(collection);
         }
 
         public void PopCollection()
         {
-            if (this.CurrentQuery.GroupByParameter == null) this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
+            this.collectionStack.RemoveAt(this.collectionStack.Count - 1);
         }
 
         /// <summary>
