@@ -145,7 +145,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
 
                     effectiveCondition.SetContainerResourceId(collection.ResourceId);
-
                 }
 
                 List<Uri> effectiveAddresses = await BackoffRetryUtility<List<Uri>>.ExecuteAsync(
@@ -370,17 +369,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     if (isWriteOnly)
                     {
                         TransportAddressUri primary = await this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true);
-                        return new List<Uri> { primary.Uri };
+                        resolvedPhysicalAddresses.Add(primary.Uri);
                     }
-
-                    // Make sure Primary URI is the first one in the list
-                    IEnumerable<Uri> resolvedEndpoints = (await this.ResolveAllTransportAddressUriAsync(
-                            fauntInjectionAddressRequest,
-                            addressEndpoints.IsIncludePrimary(),
-                            true))
-                            .Take(addressEndpoints.GetReplicaCount())
-                            .Select(address => address.Uri);
-                    resolvedPhysicalAddresses.AddRange(resolvedEndpoints);
+                    else
+                    {
+                        // Make sure Primary URI is the first one in the list
+                        IEnumerable<Uri> resolvedEndpoints = (await this.ResolveAllTransportAddressUriAsync(
+                                fauntInjectionAddressRequest,
+                                addressEndpoints.IsIncludePrimary(),
+                                true))
+                                .Take(addressEndpoints.GetReplicaCount())
+                                .Select(address => address.Uri);
+                        resolvedPhysicalAddresses.AddRange(resolvedEndpoints);
+                    }
                 }
             }
 
