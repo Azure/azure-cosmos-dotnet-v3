@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
     using global::Azure.Core;
 
     internal sealed class AppInsightClassicAttributeKeys : IActivityAttributePopulator
@@ -159,6 +160,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     scope.AddAttribute(AppInsightClassicAttributeKeys.Region, ClientTelemetryHelper.GetContactedRegions(response.Diagnostics.GetContactedRegions()));
                 }
             }
+        }
+
+        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, string containerName, string databaseName, Uri accountName, OpenTelemetryAttributes attributes, CosmosException ex)
+        {
+            return new KeyValuePair<string, object>[]
+            {
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName.Host),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.Region, string.Join(",", attributes.Diagnostics.GetContactedRegions()))
+            };
         }
     }
 }
