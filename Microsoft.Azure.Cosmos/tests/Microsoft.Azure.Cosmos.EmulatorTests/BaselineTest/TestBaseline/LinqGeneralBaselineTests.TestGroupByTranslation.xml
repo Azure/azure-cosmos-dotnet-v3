@@ -304,11 +304,14 @@ GROUP BY root["id"] ]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["id"] 
-FROM root 
-GROUP BY root["id"]  
-ORDER BY root["Int"] ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":64,"end":75},"code":"SC2103","message":"Property reference 'root[\"Int\"]' is invalid in the ORDER BY clause because it is not contained in either an aggregate function or the GROUP BY clause."}]},0x800A0B00]]></ErrorMessage>
+SELECT VALUE r0["id"] 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    ORDER BY root["Int"] ASC) AS r0 
+    GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":80},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -318,11 +321,14 @@ ORDER BY root["Int"] ASC]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["id"] 
-FROM root 
-GROUP BY root["id"]  
-ORDER BY root["id"] DESC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+SELECT VALUE r0["id"] 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    ORDER BY root["id"] DESC) AS r0 
+    GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":80},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -332,12 +338,15 @@ ORDER BY root["id"] DESC]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE root["id"] 
-FROM root 
-WHERE (root["id"] != "a") 
-GROUP BY root["id"]  
-ORDER BY root["id"] ASC]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+SELECT VALUE r0["id"] 
+FROM (
+    SELECT VALUE root 
+    FROM root 
+    WHERE (root["id"] != "a") 
+    ORDER BY root["id"] ASC) AS r0 
+    GROUP BY r0["id"] 
+]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":82,"end":105},"code":"SC2202","message":"'ORDER BY' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>

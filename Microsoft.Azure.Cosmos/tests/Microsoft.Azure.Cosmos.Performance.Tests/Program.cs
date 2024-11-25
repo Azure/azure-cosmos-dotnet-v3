@@ -7,6 +7,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.Generic;
     using BenchmarkDotNet.Reports;
     using BenchmarkDotNet.Running;
+    using Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using OpenTelemetry;
+    using OpenTelemetry.Metrics;
+    using OpenTelemetry.Trace;
 
     class Program
     {
@@ -21,6 +26,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             List<string> argsList = args != null ? new List<string>(args) : new List<string>();
             bool validateBaseline = argsList.Remove("--BaselineValidation");
             string[] updatedArgs = argsList.ToArray();
+
+            using TracerProvider tracebuilder = Sdk.CreateTracerProviderBuilder()
+                .AddSource("Azure.Cosmos.*")
+                .AddCustomOtelExporter()
+                .Build();
+
+            using MeterProvider metricsBuilder = Sdk.CreateMeterProviderBuilder()
+                .AddMeter("Azure.Cosmos.Client.*")
+                .AddReader(new PeriodicExportingMetricReader(exporter: new CustomMetricExporter(), 10000))
+                .Build();
 
             if (validateBaseline)
             {
