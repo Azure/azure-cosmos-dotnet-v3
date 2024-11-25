@@ -224,7 +224,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
-        public void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, string operationType, OpenTelemetryAttributes response)
+        public void PopulateAttributes(DiagnosticScope scope, 
+            QueryTextMode? queryTextMode, 
+            string operationType, 
+            OpenTelemetryAttributes response)
         {
             if (response == null)
             {
@@ -269,7 +272,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName,
             string databaseName,
             OpenTelemetryAttributes attributes,
-            CosmosException ex,
+            Exception ex,
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
@@ -281,9 +284,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, GetSubStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, GetConsistencyLevel(attributes, ex)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, GetEndpoint(tcpStats, httpStats).Scheme),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, GetEndpoint(tcpStats, httpStats).Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndPointPort, GetEndpoint(tcpStats, httpStats).Port),
@@ -296,7 +299,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
-            string containerName, string databaseName, Uri accountName, OpenTelemetryAttributes attributes, CosmosException ex)
+            string containerName, 
+            string databaseName, 
+            Uri accountName, 
+            OpenTelemetryAttributes attributes, 
+            Exception ex)
         {
             return new KeyValuePair<string, object>[]
             {
@@ -306,9 +313,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, attributes?.ConsistencyLevel ?? ex?.Headers?.ConsistencyLevel),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, GetSubStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, GetConsistencyLevel(attributes, ex)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, GetRegions(attributes?.Diagnostics)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
             };
@@ -330,6 +337,39 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private static int? GetStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
         {
             return (int?)httpStats?.HttpResponseMessage?.StatusCode ?? (int?)tcpStats?.StoreResult?.StatusCode;
+        }
+
+        private static int? GetStatusCode(OpenTelemetryAttributes attributes,
+            Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException => (int)cosmosException.StatusCode,
+                _ when attributes != null => (int)attributes.StatusCode,
+                _ => null
+            };
+        }
+
+        private static int? GetSubStatusCode(OpenTelemetryAttributes attributes,
+            Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException => (int)cosmosException.SubStatusCode,
+                _ when attributes != null => (int)attributes.SubStatusCode,
+                _ => null
+            };
+        }
+
+        private static string GetConsistencyLevel(OpenTelemetryAttributes attributes,
+           Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException => cosmosException.Headers.ConsistencyLevel,
+                _ when attributes != null => attributes.ConsistencyLevel,
+                _ => null
+            };
         }
 
         private static Uri GetEndpoint(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)

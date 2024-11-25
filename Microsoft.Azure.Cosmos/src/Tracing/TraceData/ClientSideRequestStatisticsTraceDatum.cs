@@ -6,13 +6,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
     using Microsoft.Azure.Cosmos.Handler;
     using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
 

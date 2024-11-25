@@ -21,7 +21,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.appInsightPopulator = new AppInsightClassicAttributeKeys();
         }
 
-        public void PopulateAttributes(DiagnosticScope scope, string operationName, string databaseName, string containerName, Uri accountName, string userAgent, string machineId, string clientId, string connectionMode)
+        public void PopulateAttributes(DiagnosticScope scope, 
+            string operationName, 
+            string databaseName, 
+            string containerName, 
+            Uri accountName, 
+            string userAgent, 
+            string machineId, 
+            string clientId, 
+            string connectionMode)
         {
             this.appInsightPopulator.PopulateAttributes(scope, operationName, databaseName, containerName, accountName, userAgent, machineId, clientId, connectionMode);
             this.otelPopulator.PopulateAttributes(scope, operationName, databaseName, containerName, accountName, userAgent, machineId, clientId, connectionMode);
@@ -33,7 +41,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             this.otelPopulator.PopulateAttributes(scope, exception);
         }
 
-        public void PopulateAttributes(DiagnosticScope scope, QueryTextMode? queryTextMode, string operationType, OpenTelemetryAttributes response)
+        public void PopulateAttributes(DiagnosticScope scope, 
+            QueryTextMode? queryTextMode, 
+            string operationType, 
+            OpenTelemetryAttributes response)
         {
             this.appInsightPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
             this.otelPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
@@ -44,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName, 
             string databaseName, 
             OpenTelemetryAttributes attributes, 
-            CosmosException ex, 
+            Exception ex, 
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
@@ -68,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName, 
             Uri accountName, 
             OpenTelemetryAttributes attributes, 
-            CosmosException ex)
+            Exception ex)
         {
             KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
                 .PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex)

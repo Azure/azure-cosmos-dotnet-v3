@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System.Net;
-    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core;
 
     internal class OpenTelemetryAttributes

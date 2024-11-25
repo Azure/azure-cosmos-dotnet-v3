@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -499,10 +498,11 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ResourceType? resourceType = null)
         {
+            bool isOtelCompatibleOperation = openTelemetry != null;
             Func<string> getOperationName = () =>
             {
                 // If opentelemetry is not enabled then return null operation name, so that no activity is created.
-                if (openTelemetry == null)
+                if (!isOtelCompatibleOperation)
                 {
                     return null;
                 }
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
                 return openTelemetry.Item1;
             };
 
-            using (OpenTelemetryCoreRecorder recorder =
+            using (OpenTelemetryCoreRecorder recorder = isOtelCompatibleOperation ? 
                                 OpenTelemetryRecorderFactory.CreateRecorder(
                                     getOperationName: getOperationName,
                                     containerName: containerName,
@@ -522,85 +522,97 @@ namespace Microsoft.Azure.Cosmos
                                     operationType: operationType,
                                     requestOptions: requestOptions,
                                     trace: trace,
-                                    clientContext: this.isDisposed ? null : this))
+                                    clientContext: this.isDisposed ? null : this) : default)
             using (new ActivityScope(Guid.NewGuid()))
             {
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
                     // Checks if OpenTelemetry is configured for this operation and either Trace or Metrics are enabled by customer
-                    if (openTelemetry != null 
-                        && (!this.ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing || this.ClientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled))
+                    if (isOtelCompatibleOperation && this.ShouldRecordTelemetry())
                     {
                         // Extracts and records telemetry data from the result of the operation.
                         OpenTelemetryAttributes otelAttributes = openTelemetry?.Item2(result);
 
-                        // Records the telemetry attributes for Distributed Tracing (if enabled)
+                        // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
                         recorder.Record(otelAttributes);
-
-                        // Records metrics such as request units, latency, and item count for the operation.
-                        CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                             accountName: this.client.Endpoint,
-                                                             containerName: containerName,
-                                                             databaseName: databaseName,
-                                                             attributes: otelAttributes);
-
-                        CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                             accountName: this.client.Endpoint,
-                                                             containerName: containerName,
-                                                             databaseName: databaseName,
-                                                             attributes: otelAttributes);
+                        RecordTelemetry(getOperationName,
+                            this.client.Endpoint,
+                            containerName,
+                            databaseName,
+                            attributes: otelAttributes);
                     }
                     return result;
                 }
-                catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
+                catch (Exception ex) when (this.HandleException(ex, 
+                                                                trace, 
+                                                                getOperationName, 
+                                                                recorder, 
+                                                                containerName, 
+                                                                databaseName))
                 {
-                    CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
-                    recorder.MarkFailed(operationCancelledException);
- 
-                    throw operationCancelledException;
-                }
-                catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
-                {
-                    CosmosObjectDisposedException objectDisposedException = new CosmosObjectDisposedException(
-                        objectDisposed,
-                        this.client,
-                        trace);
-                    recorder.MarkFailed(objectDisposedException);
-
-                    throw objectDisposedException;
-                }
-                catch (NullReferenceException nullRefException) when (!(nullRefException is CosmosNullReferenceException))
-                {
-                    CosmosNullReferenceException nullException = new CosmosNullReferenceException(
-                        nullRefException,
-                        trace);
-                    recorder.MarkFailed(nullException);
-
-                    throw nullException;
-                }
-                catch (Exception ex)
-                {
-                    recorder.MarkFailed(ex);
-                    if (openTelemetry != null && ex is CosmosException cosmosException)
-                    {
-                        // Records telemetry data related to the exception.
-                        CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                             accountName: this.client.Endpoint,
-                                                             containerName: containerName,
-                                                             databaseName: databaseName,
-                                                             ex: cosmosException);
-                        CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                             accountName: this.client.Endpoint,
-                                                             containerName: containerName,
-                                                             databaseName: databaseName,
-                                                             ex: cosmosException);
-
-                    }
-                 
-                    throw;
+                    throw; // Rethrow after recording telemetry
                 }
             }
+        }
+
+        // Checks if telemetry is enabled
+        private bool ShouldRecordTelemetry()
+        {
+            var telemetryOptions = this.ClientOptions.CosmosClientTelemetryOptions;
+            return !telemetryOptions.DisableDistributedTracing || telemetryOptions.IsClientMetricsEnabled;
+        }
+
+        // Handles exceptions and records telemetry
+        private bool HandleException(
+            Exception ex,
+            ITrace trace,
+            Func<string> getOperationName,
+            OpenTelemetryCoreRecorder recorder,
+            string containerName,
+            string databaseName)
+        {
+            Exception cosmosException = ex switch
+            {
+                OperationCanceledException oe when oe is not CosmosOperationCanceledException =>
+                    new CosmosOperationCanceledException(oe, trace),
+                ObjectDisposedException od when od is not CosmosObjectDisposedException =>
+                    new CosmosObjectDisposedException(od, this.client, trace),
+                NullReferenceException nr when nr is not CosmosNullReferenceException =>
+                    new CosmosNullReferenceException(nr, trace),
+                _ => ex
+            };
+
+            recorder.MarkFailed(cosmosException);
+            RecordTelemetry(getOperationName, 
+                this.client.Endpoint, 
+                containerName, 
+                databaseName, 
+                cosmosException: cosmosException);
+
+            return true; // Exception is handled
+        }
+
+        private static void RecordTelemetry(Func<string> getOperationName,
+            Uri accountName,
+            string containerName,
+            string databaseName,
+            OpenTelemetryAttributes attributes = null,
+            Exception cosmosException = null)
+        {
+            // Records telemetry data related to the exception.
+            CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                 accountName: accountName,
+                                                 containerName: containerName,
+                                                 databaseName: databaseName,
+                                                 attributes: attributes,
+                                                 ex: cosmosException);
+            CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                 accountName: accountName,
+                                                 containerName: containerName,
+                                                 databaseName: databaseName,
+                                                 attributes: attributes,
+                                                 ex: cosmosException);
         }
 
         private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(

@@ -34,5 +34,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
         }
 
+        internal static double? CalculateLatency(
+          TimeSpan? start,
+          TimeSpan? end,
+          TimeSpan? failed)
+        {
+            TimeSpan? requestend = end ?? failed;
+            return start.HasValue && requestend.HasValue ? (requestend.Value - start.Value).TotalSeconds : (double?)null;
+        }
     }
 }
