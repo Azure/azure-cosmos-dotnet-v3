@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     /// </summary>
     internal struct OpenTelemetryCoreRecorder : IDisposable
     {
-        private const string CosmosDb = "cosmosdb";
+        internal const string CosmosDb = "cosmosdb";
 
         private readonly DiagnosticScope scope = default;
         private readonly CosmosThresholdOptions config = null;
