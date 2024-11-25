@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor
         private RuleDirectory()
         {
             // Load the rule document
-            this.RuleDocument = XDocument.Load(Assembly.GetExecutingAssembly().GetManifestResourceStream("Query\\Core\\QueryAdvisor\\QueryAdviceRuleDocumentation.xml"));
+            this.RuleDocument = XDocument.Load(Assembly.GetExecutingAssembly().GetManifestResourceStream("Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor.QueryAdviceRuleDocumentation.xml"));
             this.UrlMessagePrefix = " For more information, please visit " + this.RuleDocument.Descendants("UrlPrefix").First().Value;
         }
 
