@@ -2802,6 +2802,16 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosSerializer Serializer;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.CosmosSerializer get_Serializer();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Serializer(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector FaultInjector": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector FaultInjector;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector get_FaultInjector();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FaultInjector(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector get_FaultInjector()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector get_FaultInjector();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.Generic.IEnumerable`1[System.Uri] AccountInitializationCustomEndpoints": {
           "Type": "Property",
           "Attributes": [],
@@ -3112,6 +3122,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_EnableTcpConnectionEndpointRediscovery(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FaultInjector(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_FaultInjector(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_GatewayModeMaxConnectionLimit(Int32)": {
           "Type": "Method",
@@ -4903,6 +4918,11 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector;;IsAbstract:True;IsSealed:False;IsInterface:True;IsEnum:False;IsClass:False;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {},
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.FeedIterator;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -5287,6 +5307,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Microsoft.Azure.Cosmos.CosmosSerializer);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithFaultInjection(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithFaultInjection(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHttpClientFactory(System.Func`1[System.Net.Http.HttpClient])": {
           "Type": "Method",
