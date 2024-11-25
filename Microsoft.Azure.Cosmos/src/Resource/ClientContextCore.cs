@@ -550,7 +550,6 @@ namespace Microsoft.Azure.Cosmos
                                                              containerName: containerName,
                                                              databaseName: databaseName,
                                                              attributes: otelAttributes);
-                                                             attributes: response);
                     }
                     return result;
                 }

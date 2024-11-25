@@ -185,7 +185,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode)
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, attributes?.SubStatusCode ?? ex?.SubStatusCode),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName.Host),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, (int)(attributes?.StatusCode ?? ex?.StatusCode)),
