@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
 
     /// <summary>
     /// CosmosOperationMeter is a utility class responsible for collecting and recording telemetry metrics related to Cosmos DB operations.
@@ -104,14 +104,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     DimensionPopulator.PopulateOperationMeterDimensions(
                         getOperationName(), containerName, databaseName, accountName, attributes, ex);
 
-                CosmosException cosmosException = ex is CosmosException exception ? exception : null;
-                CosmosDbMeterUtil.RecordHistogramMetric<int>(value: attributes?.ItemCount ?? cosmosException?.Headers?.ItemCount, 
-                    dimensionsFunc, 
-                    ActualItemHistogram, 
-                    Convert.ToInt32);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(value: attributes?.RequestCharge ?? cosmosException?.Headers?.RequestCharge, 
-                    dimensionsFunc, 
-                    RequestUnitsHistogram);
+                if (CosmosDbMeterUtil.TryOperationMetricsValues(attributes, ex, out OperationMetricData value))
+                {
+                    CosmosDbMeterUtil.RecordHistogramMetric<int>(value.ItemCount, dimensionsFunc, ActualItemHistogram, Convert.ToInt32);
+                    CosmosDbMeterUtil.RecordHistogramMetric<double>(value.RequestCharge, dimensionsFunc, RequestUnitsHistogram);
+                }
 
                 if (CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
                 {
@@ -138,12 +135,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             try
             {
-                KeyValuePair<string, object>[] dimensions = new[]
-                {
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
-                };
+                KeyValuePair<string, object>[] dimensions = DimensionPopulator.PopulateInstanceCountDimensions(accountEndpoint);
 
                 ActiveInstanceCounter.Add(adjustment, dimensions);
             }

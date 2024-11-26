@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net.NetworkInformation;
+    using System.Xml.Linq;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
@@ -48,6 +50,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.appInsightPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
             this.otelPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
+        }
+
+        public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountName)
+        {
+            KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
+            .PopulateInstanceCountDimensions(accountName)
+              .ToArray();
+            KeyValuePair<string, object>[] otelDimensions = this.otelPopulator
+            .PopulateInstanceCountDimensions(accountName)
+            .ToArray();
+
+            KeyValuePair<string, object>[] dimensions
+                = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
+            dimensions
+                .Concat(appInsightDimensions)
+                .Concat(otelDimensions);
+            return dimensions;
         }
 
         public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName, 

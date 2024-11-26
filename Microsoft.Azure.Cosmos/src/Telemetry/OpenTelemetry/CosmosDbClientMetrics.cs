@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// Backend Server Latency
                 /// </summary>
-                public const string BackendLatency = "db.server.cosmosdb.request.duration";
+                public const string BackendLatency = "db.client.cosmosdb.request.service_duration";
 
                 /// <summary>
                 /// Transit Time Latency

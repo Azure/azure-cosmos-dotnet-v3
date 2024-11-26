@@ -43,5 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Exception ex,
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null);
+
+        public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountName);
     }
 }

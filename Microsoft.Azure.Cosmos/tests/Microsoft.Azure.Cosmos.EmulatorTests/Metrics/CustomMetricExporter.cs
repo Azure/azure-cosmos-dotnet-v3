@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             { "db.client.cosmosdb.request.duration", MetricType.Histogram},
             { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
             { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
-            { "db.server.cosmosdb.request.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.service_duration", MetricType.Histogram},
             { "db.client.cosmosdb.request.channel_aquisition.duration", MetricType.Histogram},
             { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
             { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}

@@ -402,5 +402,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             return subStatuscode ?? Convert.ToInt32(tcpStats?.StoreResult?.SubStatusCode);
         }
+
+        public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountEndpoint)
+        {
+            return new[]
+            {
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
+            };
+        }
     }
 }

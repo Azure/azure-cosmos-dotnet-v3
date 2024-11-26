@@ -228,5 +228,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 _ => null
             };
         }
+
+        public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountEndpoint)
+        {
+            return new[]
+            {
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountEndpoint.Host)
+            };
+        }
     }
 }

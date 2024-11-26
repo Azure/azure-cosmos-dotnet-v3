@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal static class CosmosDbNetworkMeter
@@ -113,34 +113,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                                     ex,
                                                                                     tcpStats: stat);
 
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(stat.RequestLatency.TotalSeconds,
-                                                                dimensionsFunc,
-                                                                RequestLatencyHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat?.StoreResult?.TransportRequestStats?.RequestBodySizeInBytes,
-                                                                dimensionsFunc,
-                                                                RequestBodySizeHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat?.StoreResult?.TransportRequestStats?.ResponseBodySizeInBytes,
-                                                                dimensionsFunc,
-                                                                ResponseBodySizeHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(stat?.StoreResult?.BackendRequestDurationInMs,
-                                                                dimensionsFunc,
-                                                                BackendLatencyHistogram,
-                                                                (value) => Convert.ToDouble(value) / 1000);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(CosmosDbMeterUtil.CalculateLatency(
-                                                                    stat?.StoreResult?.TransportRequestStats?.channelAcquisitionStartedTime,
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestPipelinedTime,
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestFailedTime),
-                                                                dimensionsFunc, ChannelAquisitionLatencyHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(CosmosDbMeterUtil.CalculateLatency(
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestSentTime,
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestReceivedTime,
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestFailedTime),
-                                                                dimensionsFunc, TransitLatencyHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(CosmosDbMeterUtil.CalculateLatency(
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestReceivedTime,
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestCompletedTime,
-                                                                    stat?.StoreResult?.TransportRequestStats?.requestFailedTime),
-                                                                 dimensionsFunc, ReceivedLatencyHistogram);
+                CosmosDbMeterUtil.TryNetworkMetricsValues(stat, out NetworkMetricData metricData);
+
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.Latency, dimensionsFunc, RequestLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.RequestBodySize, dimensionsFunc, RequestBodySizeHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.ResponseBodySize, dimensionsFunc, ResponseBodySizeHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.BackendLatency, dimensionsFunc, BackendLatencyHistogram, (value) => Convert.ToDouble(value) / 1000);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.ChannelAcquisitionLatency, dimensionsFunc, ChannelAquisitionLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.TransitTimeLatency, dimensionsFunc, TransitLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.ReceivedLatency, dimensionsFunc, ReceivedLatencyHistogram);
             });
 
             summaryDiagnostics.HttpResponseStatistics.Value.ForEach(stat =>
@@ -154,15 +135,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                                     ex, 
                                                                                     httpStats: stat);
 
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(stat.Duration.TotalSeconds, 
-                                                                dimensionsFunc, 
-                                                                RequestLatencyHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength, 
-                                                              dimensionsFunc, 
-                                                              RequestBodySizeHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.ResponseContentLength, 
-                                                              dimensionsFunc, 
-                                                              ResponseBodySizeHistogram);
+                CosmosDbMeterUtil.TryNetworkMetricsValues(stat, out NetworkMetricData metricData);
+
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.Latency, dimensionsFunc, RequestLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.RequestBodySize, dimensionsFunc, RequestBodySizeHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.ResponseBodySize, dimensionsFunc, ResponseBodySizeHistogram);
             });
         }
     }

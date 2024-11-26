@@ -9,7 +9,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
-    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     internal static class CosmosDbMeterUtil
     {
@@ -70,6 +71,70 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
 
             return false;
+        }
+
+        internal static bool TryOperationMetricsValues(
+             OpenTelemetryAttributes attributes,
+             Exception ex,
+             out OperationMetricData values)
+        {
+            // Attempt to cast the exception to CosmosException
+            CosmosException cosmosException = ex as CosmosException;
+
+            // Retrieve item count and request charge, prioritizing attributes if available
+            string itemCount = attributes?.ItemCount ?? cosmosException?.Headers?.ItemCount;
+            double? requestCharge = attributes?.RequestCharge ?? cosmosException?.Headers?.RequestCharge;
+
+            // If neither value is available, return false
+            if (itemCount == null && requestCharge == null)
+            {
+                values = null;
+                return false;
+            }
+
+            // Create the OperationMetricValue instance
+            values = new OperationMetricData(itemCount, requestCharge);
+
+            return true;
+        }
+
+        internal static bool TryNetworkMetricsValues(
+            StoreResponseStatistics stats,
+            out NetworkMetricData values)
+        {
+            double latency = stats.RequestLatency.TotalSeconds;
+            long? requestBodySize = stats?.StoreResult?.TransportRequestStats?.RequestBodySizeInBytes;
+            long? responseBodySize = stats?.StoreResult?.TransportRequestStats?.ResponseBodySizeInBytes;
+            double backendLatency = Convert.ToDouble(stats?.StoreResult?.BackendRequestDurationInMs);
+            double? channelAcquisitionLatency = CosmosDbMeterUtil.CalculateLatency(
+                                                stats?.StoreResult?.TransportRequestStats?.channelAcquisitionStartedTime,
+                                                stats?.StoreResult?.TransportRequestStats?.requestPipelinedTime,
+                                                stats?.StoreResult?.TransportRequestStats?.requestFailedTime);
+            double? transitTimeLatency = CosmosDbMeterUtil.CalculateLatency(
+                                                stats?.StoreResult?.TransportRequestStats?.requestSentTime,
+                                                stats?.StoreResult?.TransportRequestStats?.requestReceivedTime,
+                                                stats?.StoreResult?.TransportRequestStats?.requestFailedTime);
+            double? receivedLatency = CosmosDbMeterUtil.CalculateLatency(
+                                                stats?.StoreResult?.TransportRequestStats?.requestReceivedTime,
+                                                stats?.StoreResult?.TransportRequestStats?.requestCompletedTime,
+                                                stats?.StoreResult?.TransportRequestStats?.requestFailedTime);
+
+            values = new NetworkMetricData(latency, requestBodySize, responseBodySize, backendLatency, channelAcquisitionLatency, transitTimeLatency, receivedLatency);
+            
+            return true;
+        }
+
+        internal static bool TryNetworkMetricsValues(
+            HttpResponseStatistics stats,
+            out NetworkMetricData values)
+        {
+            double latency = stats.Duration.TotalSeconds;
+            long? requestBodySize = stats.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength;
+            long? responseBodySize = stats.ResponseContentLength;
+
+            values = new NetworkMetricData(latency, requestBodySize, responseBodySize);
+
+            return true;
         }
     }
 }
