@@ -106,7 +106,9 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 && response.Content != null
                 && response.Content is not CloneableStream)
             {
-                response.Content = await StreamExtension.AsClonableStreamAsync(response.Content, default);
+                response.Content = await StreamExtension.AsClonableStreamAsync(
+                    mediaStream: response.Content,
+                    allowUnsafeDataAccess: true);
             }
 
             return response;

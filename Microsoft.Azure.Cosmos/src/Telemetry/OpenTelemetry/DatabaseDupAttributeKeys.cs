@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using global::Azure.Core;
 
     internal class DatabaseDupAttributeKeys : IActivityAttributePopulator
@@ -34,6 +36,28 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             this.appInsightPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
             this.otelPopulator.PopulateAttributes(scope, queryTextMode, operationType, response);
+        }
+
+        public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
+            string containerName, 
+            string databaseName, 
+            Uri accountName, 
+            OpenTelemetryAttributes attributes, 
+            CosmosException ex)
+        {
+            KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
+                .PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex)
+                .ToArray();
+            KeyValuePair<string, object>[] otelDimensions = this.otelPopulator
+                .PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex)
+                .ToArray();
+
+            KeyValuePair<string, object>[] dimensions 
+                = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
+            dimensions
+                .Concat(appInsightDimensions)
+                .Concat(otelDimensions);
+            return dimensions;
         }
     }
 }
