@@ -549,9 +549,10 @@ namespace Microsoft.Azure.Cosmos
                                                                 getOperationName, 
                                                                 recorder, 
                                                                 containerName, 
-                                                                databaseName))
+                                                                databaseName,
+                                                                out Exception cosmosException))
                 {
-                    throw; // Rethrow after recording telemetry
+                    throw cosmosException; // Rethrow after recording telemetry
                 }
             }
         }
@@ -570,9 +571,10 @@ namespace Microsoft.Azure.Cosmos
             Func<string> getOperationName,
             OpenTelemetryCoreRecorder recorder,
             string containerName,
-            string databaseName)
+            string databaseName,
+            out Exception cosmosException)
         {
-            Exception cosmosException = ex switch
+            cosmosException = ex switch
             {
                 OperationCanceledException oe when oe is not CosmosOperationCanceledException =>
                     new CosmosOperationCanceledException(oe, trace),
