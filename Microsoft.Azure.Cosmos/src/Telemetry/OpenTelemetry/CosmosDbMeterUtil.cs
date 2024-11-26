@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     internal static class CosmosDbMeterUtil
     {
@@ -41,6 +43,33 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             TimeSpan? requestend = end ?? failed;
             return start.HasValue && requestend.HasValue ? (requestend.Value - start.Value).TotalSeconds : (double?)null;
+        }
+
+        internal static bool TryGetDiagnostics(OpenTelemetryAttributes attributes,
+          Exception ex,
+          out CosmosTraceDiagnostics traces)
+        {
+            traces = null;
+
+            // Retrieve diagnostics from the exception if applicable
+            CosmosDiagnostics diagnostics = ex switch
+            {
+                CosmosOperationCanceledException cancelEx => cancelEx.Diagnostics,
+                CosmosObjectDisposedException disposedEx => disposedEx.Diagnostics,
+                CosmosNullReferenceException nullRefEx => nullRefEx.Diagnostics,
+                CosmosException cosmosException => cosmosException.Diagnostics,
+                _ when attributes != null => attributes.Diagnostics,
+                _ => null
+            };
+
+            // Ensure diagnostics is not null and cast is valid
+            if (diagnostics is CosmosTraceDiagnostics traceDiagnostics)
+            {
+                traces = traceDiagnostics;
+                return true;
+            }
+
+            return false;
         }
     }
 }

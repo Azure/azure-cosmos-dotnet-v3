@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
     /// CosmosOperationMeter is a utility class responsible for collecting and recording telemetry metrics related to Cosmos DB operations.
@@ -104,23 +106,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
                 CosmosException cosmosException = ex is CosmosException exception ? exception : null;
                 CosmosDbMeterUtil.RecordHistogramMetric<int>(value: attributes?.ItemCount ?? cosmosException?.Headers?.ItemCount, 
-                    dimensionsFunc, ActualItemHistogram, 
+                    dimensionsFunc, 
+                    ActualItemHistogram, 
                     Convert.ToInt32);
                 CosmosDbMeterUtil.RecordHistogramMetric<double>(value: attributes?.RequestCharge ?? cosmosException?.Headers?.RequestCharge, 
-                    dimensionsFunc, RequestUnitsHistogram);
+                    dimensionsFunc, 
+                    RequestUnitsHistogram);
 
-                CosmosDiagnostics diagnostics = ex switch
+                if (CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
                 {
-                    CosmosOperationCanceledException cancelEx => cancelEx.Diagnostics,
-                    CosmosObjectDisposedException disposedEx => disposedEx.Diagnostics,
-                    CosmosNullReferenceException nullRefEx => nullRefEx.Diagnostics,
-                    CosmosException cosmosEx => cosmosEx.Diagnostics,
-                    _ when attributes != null => attributes.Diagnostics,
-                    _ => null
-                };
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(value: diagnostics.GetClientElapsedTime(),
-                    dimensionsFunc, RequestLatencyHistogram, 
-                    t => ((TimeSpan)t).TotalSeconds);
+                    CosmosDbMeterUtil.RecordHistogramMetric<double>(value: diagnostics.GetClientElapsedTime(),
+                                                                    dimensionsFunc, RequestLatencyHistogram,
+                                                                    t => ((TimeSpan)t).TotalSeconds);
+                }
             }
             catch (Exception exception)
             {

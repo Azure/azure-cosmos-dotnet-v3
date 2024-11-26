@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         }
 
         [TestMethod]
-        public async Task OperationLevelMetricsGenerationTest()
+        public async Task MetricsGenerationTest()
         {
             Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
             for (int count = 0; count < 10; count++)

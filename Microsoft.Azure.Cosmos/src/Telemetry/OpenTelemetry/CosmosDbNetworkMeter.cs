@@ -89,13 +89,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes = null,
             Exception ex = null)
         {
-            if (!IsEnabled || !TryGetDiagnostics(attributes, ex, out ITrace diagnostics))
+            if (!IsEnabled || !CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
             {
-                DefaultTrace.TraceWarning("NetworkMeter is not enabled or Diagnostics is not available.");
+                DefaultTrace.TraceWarning("Network Meter is not enabled or Diagnostics is not available.");
                 return;
             }
 
-            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(diagnostics);
+            SummaryDiagnostics summaryDiagnostics = new SummaryDiagnostics(diagnostics.Value);
 
             summaryDiagnostics.StoreResponseStatistics.Value.ForEach(stat =>
             {
@@ -154,37 +154,16 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                                     ex, 
                                                                                     httpStats: stat);
 
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(stat.Duration.TotalSeconds, dimensionsFunc, RequestLatencyHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength, dimensionsFunc, RequestBodySizeHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.ResponseContentLength, dimensionsFunc, ResponseBodySizeHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(stat.Duration.TotalSeconds, 
+                                                                dimensionsFunc, 
+                                                                RequestLatencyHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength, 
+                                                              dimensionsFunc, 
+                                                              RequestBodySizeHistogram);
+                CosmosDbMeterUtil.RecordHistogramMetric<long>(stat.ResponseContentLength, 
+                                                              dimensionsFunc, 
+                                                              ResponseBodySizeHistogram);
             });
-        }
-
-        private static bool TryGetDiagnostics(OpenTelemetryAttributes attributes, 
-            Exception ex,
-            out ITrace traces)
-        {
-            traces = null;
-
-            // Retrieve diagnostics from the exception if applicable
-            CosmosDiagnostics diagnostics = ex switch
-            {
-                CosmosOperationCanceledException cancelEx => cancelEx.Diagnostics,
-                CosmosObjectDisposedException disposedEx => disposedEx.Diagnostics,
-                CosmosNullReferenceException nullRefEx => nullRefEx.Diagnostics,
-                CosmosException cosmosException => cosmosException.Diagnostics,
-                _ when attributes != null => attributes.Diagnostics,
-                _ => null
-            };
-
-            // Ensure diagnostics is not null and cast is valid
-            if (diagnostics is CosmosTraceDiagnostics traceDiagnostics)
-            {
-                traces = traceDiagnostics.Value;
-                return true;
-            }
-
-            return false;
         }
     }
 }
