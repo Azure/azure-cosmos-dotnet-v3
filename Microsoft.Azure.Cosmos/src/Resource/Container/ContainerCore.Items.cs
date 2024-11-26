@@ -924,9 +924,14 @@ namespace Microsoft.Azure.Cosmos
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             // Convert Text to Binary Stream.
-            streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
-                targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
-                inputStream: streamPayload == null ? null : await StreamExtension.AsClonableStreamAsync(streamPayload));
+            if (ConfigurationManager.IsBinaryEncodingEnabled())
+            {
+                streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
+                    targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
+                    inputStream: streamPayload == null ? null : await StreamExtension.AsClonableStreamAsync(
+                        mediaStream: streamPayload,
+                        allowUnsafeDataAccess: true));
+            }
 
             ResponseMessage responseMessage = await this.ClientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,

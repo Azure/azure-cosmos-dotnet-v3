@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -754,6 +755,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithFaultInjection(IChaosInterceptorFactory chaosInterceptorFactory)
         {
             this.clientOptions.ChaosInterceptorFactory = chaosInterceptorFactory;
+            return this;
+        }
+
+        /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="faultInjector"></param>
+        /// <returns>>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithFaultInjection(IFaultInjector faultInjector)
+        {
+            this.clientOptions.ChaosInterceptorFactory = faultInjector.GetChaosInterceptorFactory();
             return this;
         }
 
