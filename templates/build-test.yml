@@ -14,7 +14,7 @@ parameters:
   EmulatorPipeline3CategoryListName: ' MultiRegion '
   EmulatorPipeline4CategoryListName: ' MultiMaster '
   MultiRegionConnectionString : ''
-  MultiMasterConnectionString : ''
+  MultiRegionMultiMasterConnectionString : ''
   IncludeEncryption: true
   IncludePerformance: true
   IncludeCoverage: true
@@ -449,5 +449,5 @@ jobs:
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
     env: 
-      COSMOSDB_MULTI_REGION: ${{ parameters.MultiMasterConnectionString }}
+      COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionMultiMasterConnectionString }}
       AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
