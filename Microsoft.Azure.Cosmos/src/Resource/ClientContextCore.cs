@@ -535,7 +535,7 @@ namespace Microsoft.Azure.Cosmos
 
                         // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
                         recorder.Record(otelAttributes);
-                        RecordTelemetry(getOperationName,
+                        RecordMetrics(getOperationName,
                             this.client.Endpoint,
                             containerName,
                             databaseName,
@@ -562,7 +562,6 @@ namespace Microsoft.Azure.Cosmos
         private bool ShouldRecordTelemetry()
         {
             CosmosClientTelemetryOptions telemetryOptions = this.ClientOptions.CosmosClientTelemetryOptions;
-
             return !telemetryOptions.DisableDistributedTracing || telemetryOptions.IsClientMetricsEnabled;
         }
 
@@ -587,11 +586,10 @@ namespace Microsoft.Azure.Cosmos
                 _ => ex
             };
 
-            if (isOtelCompatibleOperation)
+            if (isOtelCompatibleOperation && this.ShouldRecordTelemetry())
             {
                 recorder.MarkFailed(cosmosException);
-
-                RecordTelemetry(getOperationName,
+                RecordMetrics(getOperationName,
                     this.client.Endpoint,
                     containerName,
                     databaseName,
@@ -601,7 +599,7 @@ namespace Microsoft.Azure.Cosmos
             return true;
         }
 
-        private static void RecordTelemetry(Func<string> getOperationName,
+        private static void RecordMetrics(Func<string> getOperationName,
             Uri accountName,
             string containerName,
             string databaseName,

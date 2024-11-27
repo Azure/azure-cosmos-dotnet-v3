@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task InvalidKey_ExceptionFullStacktrace(string endpoint, string key)
         {
             CosmosClient client = new CosmosClient(endpoint, key);
+            Console.WriteLine("Client Initialized");
 
             string sqlQueryText = "SELECT * FROM c";
             try
@@ -131,13 +132,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 QueryDefinition queryDefinition = new QueryDefinition(sqlQueryText);
                 FeedIterator<object> queryResultSetIterator = client.GetContainer(new Guid().ToString(), new Guid().ToString()).GetItemQueryIterator<object>(queryDefinition);
 
+                Console.WriteLine("queryResultSetIterator");
                 while (queryResultSetIterator.HasMoreResults)
                 {
                     await queryResultSetIterator.ReadNextAsync();
                 }
+
+                Console.WriteLine("read success");
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.GetType().Name);
+                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.StackTrace);
                 Assert.IsTrue(ex.StackTrace.Contains("GatewayAccountReader.InitializeReaderAsync"), ex.StackTrace);
             }
         }
