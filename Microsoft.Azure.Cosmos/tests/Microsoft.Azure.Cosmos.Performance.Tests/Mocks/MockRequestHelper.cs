@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -18,40 +20,71 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
     internal static class MockRequestHelper
     {
-        internal static readonly byte[] testItemResponsePayload;
-        internal static readonly byte[] testItemFeedResponsePayload;
+        internal static readonly byte[] testItemResponsePayloadText;
+        internal static readonly byte[] testItemResponsePayloadBinary;
+        internal static readonly byte[] testItemFeedResponsePayloadText;
+        internal static readonly byte[] testItemFeedResponsePayloadBinary;
         internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
         internal static int pagenumber;
 
-        internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}");
-
+        internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https://aka.ms/cosmosdb-tsg-not-found\"]}");
 
         static MockRequestHelper()
         {
-            MemoryStream ms = new MemoryStream();
-            using (FileStream fs = File.OpenRead("samplepayload.json"))
+            // Load the test item
+            string payloadContent = File.ReadAllText("samplepayload.json");
+            ToDoActivity testItem = JsonConvert.DeserializeObject<ToDoActivity>(payloadContent);
+
+            // Generate text format payload
+            using (MemoryStream ms = new MemoryStream())
+            using (StreamWriter sw = new StreamWriter(ms, new UTF8Encoding(false, true), 1024, true))
+            using (Newtonsoft.Json.JsonWriter writer = new Newtonsoft.Json.JsonTextWriter(sw))
             {
-                fs.CopyTo(ms);
-                MockRequestHelper.testItemResponsePayload = ms.ToArray();
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                serializer.Serialize(writer, testItem);
+                writer.Flush();
+                sw.Flush();
+                testItemResponsePayloadText = ms.ToArray();
             }
 
-            ms = new MemoryStream();
-            using (FileStream fs = File.OpenRead("samplefeedpayload.json"))
+            // Generate binary format payload
+            using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
             {
-                fs.CopyTo(ms);
-                MockRequestHelper.testItemFeedResponsePayload = ms.ToArray();
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                serializer.Serialize(writer, testItem);
+                testItemResponsePayloadBinary = writer.GetResult().ToArray();
             }
 
-            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
-            {
-                new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
-                {
-                    ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
-                    ETag = Guid.NewGuid().ToString()
-                }
-            };
+            // For testItemFeedResponsePayload
+            // Create a feed response with multiple items
+            List<ToDoActivity> items = new List<ToDoActivity> { testItem };
 
-            batchResponsePayloadWriter = new BatchResponsePayloadWriter(results);
+            // Generate text format feed payload
+            using (MemoryStream ms = new MemoryStream())
+            using (StreamWriter sw = new StreamWriter(ms, new UTF8Encoding(false, true), 1024, true))
+            using (Newtonsoft.Json.JsonWriter writer = new Newtonsoft.Json.JsonTextWriter(sw))
+            {
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                serializer.Serialize(writer, items);
+                writer.Flush();
+                sw.Flush();
+                testItemFeedResponsePayloadText = ms.ToArray();
+            }
+
+            // Generate binary format feed payload
+            using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
+            {
+                writer.Formatting = Newtonsoft.Json.Formatting.None;
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                serializer.Serialize(writer, items);
+                testItemFeedResponsePayloadBinary = writer.GetResult().ToArray();
+            }
+
+            // Initialize the batch response payload writer with an empty list
+            batchResponsePayloadWriter = new BatchResponsePayloadWriter(new List<TransactionalBatchOperationResult>());
             batchResponsePayloadWriter.PrepareAsync().GetAwaiter().GetResult();
 
             pagenumber = 0;
@@ -66,12 +99,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
 
+            // Determine response serialization format
+            JsonSerializationFormat responseSerializationFormat = GetResponseSerializationFormat(request);
+
+            byte[] responsePayload;
+            byte[] feedResponsePayload;
+
+            if (responseSerializationFormat == JsonSerializationFormat.Binary)
+            {
+                responsePayload = testItemResponsePayloadBinary;
+                feedResponsePayload = testItemFeedResponsePayloadBinary;
+                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Binary).ToString();
+            }
+            else
+            {
+                responsePayload = testItemResponsePayloadText;
+                feedResponsePayload = testItemFeedResponsePayloadText;
+                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Text).ToString();
+            }
+
             if (request.OperationType == OperationType.Read)
             {
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        new MemoryStream(responsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
@@ -89,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
                     return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        new MemoryStream(responsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
@@ -108,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 || request.OperationType == OperationType.Patch)
             {
                 return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
+                        new MemoryStream(responsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
@@ -117,25 +169,60 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.ReadFeed)
             {
+                headers.ItemCount = "1";
+
                 return new DocumentServiceResponse(
-                        new MemoryStream(MockRequestHelper.testItemFeedResponsePayload),
-                        headers,
-                        System.Net.HttpStatusCode.OK
-                    );
+                    new MemoryStream(feedResponsePayload),
+                    headers,
+                    System.Net.HttpStatusCode.OK
+                );
             }
 
-            return null;
+            if (request.OperationType == OperationType.Batch)
+            {
+                MemoryStream responseContent = batchResponsePayloadWriter.GeneratePayload();
+
+                return new DocumentServiceResponse(
+                    responseContent,
+                    headers,
+                    System.Net.HttpStatusCode.OK
+                );
+            }
+
+            // Return a default response if none of the conditions match
+            return new DocumentServiceResponse(
+                new MemoryStream(responsePayload),
+                headers,
+                System.Net.HttpStatusCode.OK
+            );
         }
 
         /// <summary>
-        /// For mocking a TransportClient response/
+        /// For mocking a TransportClient response
         /// </summary>
         /// <param name="request">The <see cref="DocumentServiceRequest"/> instance.</param>
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
+            // Determine response serialization format
+            JsonSerializationFormat responseSerializationFormat = GetResponseSerializationFormat(request);
+
+            byte[] responsePayload;
+            byte[] feedResponsePayload;
+
+            if (responseSerializationFormat == JsonSerializationFormat.Binary)
+            {
+                responsePayload = testItemResponsePayloadBinary;
+                feedResponsePayload = testItemFeedResponsePayloadBinary;
+            }
+            else
+            {
+                responsePayload = testItemResponsePayloadText;
+                feedResponsePayload = testItemFeedResponsePayloadText;
+            }
+
             if (request.ResourceType == ResourceType.Document &&
-               request.OperationType == OperationType.Query)
+                request.OperationType == OperationType.Query)
             {
                 StoreResponseNameValueCollection queryHeaders = new StoreResponseNameValueCollection()
                 {
@@ -167,6 +254,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     XPRole = "0"
                 };
 
+                queryHeaders.ItemCount = "1";
+
                 // Multipage Scenario
                 if (!request.Headers.Get(HttpConstants.HttpHeaders.PageSize).Equals("1000"))
                 {
@@ -182,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                     return new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                        ResponseBody = new MemoryStream(feedResponsePayload, 0, feedResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = queryHeaders,
                     };
@@ -190,13 +279,24 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                 return new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ResponseBody = new MemoryStream(feedResponsePayload, 0, feedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = queryHeaders,
                 };
             }
 
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
+
+#pragma warning disable IDE0045 // Convert to conditional expression
+            if (responseSerializationFormat == JsonSerializationFormat.Binary)
+            {
+                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Binary).ToString();
+            }
+            else
+            {
+                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Text).ToString();
+            }
+#pragma warning restore IDE0045 // Convert to conditional expression
 
             if (request.OperationType == OperationType.Read)
             {
@@ -205,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     return new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                        ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
@@ -225,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 {
                     return new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                        ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
@@ -246,7 +346,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             {
                 return new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
@@ -258,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 headers.ItemCount = "1";
                 return new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ResponseBody = new MemoryStream(feedResponsePayload, 0, feedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
@@ -276,7 +376,27 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 };
             }
 
-            return null;
+            // Return a default response if none of the conditions match
+            return new StoreResponse()
+            {
+                ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
+                Status = (int)System.Net.HttpStatusCode.OK,
+                Headers = headers,
+            };
+        }
+
+        private static JsonSerializationFormat GetResponseSerializationFormat(DocumentServiceRequest request)
+        {
+            string supportedSerializationFormats = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats];
+
+            JsonSerializationFormat responseSerializationFormat = JsonSerializationFormat.Text;
+
+            if (!string.IsNullOrEmpty(supportedSerializationFormats) && supportedSerializationFormats.Contains(SupportedSerializationFormats.CosmosBinary.ToString()))
+            {
+                responseSerializationFormat = JsonSerializationFormat.Binary;
+            }
+
+            return responseSerializationFormat;
         }
 
         private static StoreResponseNameValueCollection GenerateTestHeaders()
