@@ -541,15 +541,17 @@ namespace Microsoft.Azure.Cosmos
                             databaseName,
                             attributes: otelAttributes);
                     }
+
                     return result;
                 }
-                catch (Exception ex) when (this.HandleException(ex, 
-                                                                trace, 
-                                                                getOperationName, 
-                                                                recorder, 
-                                                                containerName, 
-                                                                databaseName,
-                                                                out Exception cosmosException))
+                catch (Exception ex) when (this.TryHandleException(isOtelCompatibleOperation,
+                                                                   ex, 
+                                                                   trace, 
+                                                                   getOperationName, 
+                                                                   recorder, 
+                                                                   containerName, 
+                                                                   databaseName,
+                                                                   out Exception cosmosException))
                 {
                     throw cosmosException; // Rethrow after recording telemetry
                 }
@@ -559,12 +561,13 @@ namespace Microsoft.Azure.Cosmos
         // Checks if telemetry is enabled
         private bool ShouldRecordTelemetry()
         {
-            var telemetryOptions = this.ClientOptions.CosmosClientTelemetryOptions;
+            CosmosClientTelemetryOptions telemetryOptions = this.ClientOptions.CosmosClientTelemetryOptions;
+
             return !telemetryOptions.DisableDistributedTracing || telemetryOptions.IsClientMetricsEnabled;
         }
 
         // Handles exceptions and records telemetry
-        private bool HandleException(
+        private bool TryHandleException(bool isOtelCompatibleOperation,
             Exception ex,
             ITrace trace,
             Func<string> getOperationName,
@@ -584,14 +587,18 @@ namespace Microsoft.Azure.Cosmos
                 _ => ex
             };
 
-            recorder.MarkFailed(cosmosException);
-            RecordTelemetry(getOperationName, 
-                this.client.Endpoint, 
-                containerName, 
-                databaseName, 
-                cosmosException: cosmosException);
+            if (isOtelCompatibleOperation)
+            {
+                recorder.MarkFailed(cosmosException);
 
-            return true; // Exception is handled
+                RecordTelemetry(getOperationName,
+                    this.client.Endpoint,
+                    containerName,
+                    databaseName,
+                    cosmosException: cosmosException);
+            }
+
+            return true;
         }
 
         private static void RecordTelemetry(Func<string> getOperationName,
@@ -601,13 +608,14 @@ namespace Microsoft.Azure.Cosmos
             OpenTelemetryAttributes attributes = null,
             Exception cosmosException = null)
         {
-            // Records telemetry data related to the exception.
+            // Records telemetry data
             CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
                                                  accountName: accountName,
                                                  containerName: containerName,
                                                  databaseName: databaseName,
                                                  attributes: attributes,
                                                  ex: cosmosException);
+
             CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
                                                  accountName: accountName,
                                                  containerName: containerName,
