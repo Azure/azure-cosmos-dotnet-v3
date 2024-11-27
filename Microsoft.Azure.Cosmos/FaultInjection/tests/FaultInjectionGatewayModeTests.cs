@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils.TestCommon;
+    using ConsistencyLevel = ConsistencyLevel;
     using CosmosSystemTextJsonSerializer = Utils.TestCommon.CosmosSystemTextJsonSerializer;
     using Database = Database;
     using PartitionKey = PartitionKey;
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                ConsistencyLevel = ConsistencyLevel.Session,
                 ConnectionMode = ConnectionMode.Gateway,
                 Serializer = this.serializer,
             };
@@ -79,8 +81,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             {
                 await this.highThroughputContainer.DeleteContainerAsync();
             }
-            this.client.Dispose();
-            this.fiClient.Dispose();
+            this.client?.Dispose();
+            this.fiClient?.Dispose();
         }
 
         //<summary>
@@ -150,6 +152,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -256,6 +259,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                ConsistencyLevel = ConsistencyLevel.Session,
                 ConnectionMode = ConnectionMode.Gateway,
                 Serializer = this.serializer,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
@@ -392,6 +396,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -486,6 +491,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -596,6 +602,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     MaxRetryAttemptsOnRateLimitedRequests = 0,
@@ -722,6 +729,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -798,6 +806,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
@@ -867,6 +876,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Direct,
                     Serializer = this.serializer
                 };
@@ -893,6 +903,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 //Test on gateway mode client
                 cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer
                 };
