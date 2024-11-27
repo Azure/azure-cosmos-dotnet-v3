@@ -10,7 +10,7 @@ variables:
 
 stages:
 - stage:
-  displayName: Gate 
+  displayName: Fault Injection Release Gates
   jobs:
     - template:  templates/static-tools.yml
       parameters:
@@ -25,7 +25,7 @@ stages:
         MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
         
     - job:
-      displayName: TelemetryToService ${{ variables.BuildConfiguration }}
+      displayName: FaultInjection Integration Tests ${{ variables.BuildConfiguration }}
       timeoutInMinutes: 120
       pool:
         name: 'OneES'
