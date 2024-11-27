@@ -17,12 +17,12 @@ stages:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         VmImage: '${{ variables.VmImage }}'
 
-    - template:  templates/build-fault-injection-test.yml
-      parameters:
-        BuildConfiguration: '${{ variables.BuildConfiguration }}'
-        Arguments: '${{ variables.ReleaseArguments }}'
-        VmImage: '${{ variables.VmImage }}'
-        MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    # - template:  templates/build-fault-injection-test.yml
+    #   parameters:
+    #     BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    #     Arguments: '${{ variables.ReleaseArguments }}'
+    #     VmImage: '${{ variables.VmImage }}'
+    #     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
         
     - job:
       displayName: FaultInjection Integration Tests ${{ variables.BuildConfiguration }}
