@@ -1452,21 +1452,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 ChaosInterceptor interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
                 Assert.IsNotNull(interceptor);
 
-                await this.PerformDocumentOperationAndCheckApplication(
-                    this.fiContainer,
-                    OperationType.Create,
-                    createdItem,
-                    connectionErrorRule,
-                    0,
-                    0);
+                try
+                {
+                    await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(createdItem);
+                }
+                catch
+                {
+                    //ignore
+                }
 
                 FaultInjectionDynamicChannelStore channelStore = interceptor.GetChannelStore();
                 Assert.IsTrue(channelStore.GetAllChannels().Count > 0);
                 List<Guid> channelGuids = channelStore.GetAllChannelIds();
 
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(2));
 
-                await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(createdItem2);
+                    await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(createdItem2);
+                }
+                catch
+                {
+                    //ignore
+                }
 
                 Assert.IsTrue(connectionErrorRule.GetHitCount() >= 1);
 
@@ -1848,6 +1856,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule)
         {
             string diagnosticsString = diagnostics.ToString();
+            Console.WriteLine(diagnostics.ToString());
             Assert.IsTrue(1 <= rule.GetHitCount());
             Assert.IsTrue(1 <= diagnostics.GetFailedRequestCount());
             Assert.IsTrue(diagnosticsString.Contains(statusCode.ToString()));

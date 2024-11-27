@@ -185,6 +185,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                         (int)HttpStatusCode.Gone,
                         localRegionRule);
                 }
+                catch (CosmosException ex)
+                {
+                    this.ValidateHitCount(localRegionRule, 1);
+                    this.ValidateHitCount(remoteRegionRule, 0);
+                    this.ValidateFaultInjectionRuleApplication(
+                        ex,
+                        (int)HttpStatusCode.Gone,
+                        localRegionRule);
+                }
             }
             finally
             {
