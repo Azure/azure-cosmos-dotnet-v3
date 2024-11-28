@@ -51,11 +51,15 @@
 	
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
-		<None Include="..\..\Icon.png" Pack="true" PackagePath=""/>
+		<None Include="..\..\Icon.png" Pack="true" PackagePath="" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Compile Remove="RuntimePerfCounters.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -65,6 +69,9 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Batch\HybridRowBatchSchemas.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</EmbeddedResource>
+		<EmbeddedResource Include="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
 	</ItemGroup>
 
