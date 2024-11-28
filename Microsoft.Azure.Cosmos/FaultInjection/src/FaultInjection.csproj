@@ -42,6 +42,11 @@
 		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<AdditionalFiles Include="stylecop.json" />
+		<None Include="..\..\Icon.png" Pack="true" PackagePath=""/>
+	</ItemGroup>
+
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
 	</ItemGroup>
