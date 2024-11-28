@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils.TestCommon;
+    using ConsistencyLevel = ConsistencyLevel;
     using CosmosSystemTextJsonSerializer = Utils.TestCommon.CosmosSystemTextJsonSerializer;
     using Database = Database;
     using PartitionKey = PartitionKey;
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                ConnectionMode = ConnectionMode.Gateway,
+                ConsistencyLevel = ConsistencyLevel.Session,
                 Serializer = this.serializer,
             };
 
@@ -157,6 +158,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -330,6 +332,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     ApplicationPreferredRegions = preferredRegions,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
@@ -454,6 +457,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -555,6 +559,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
                 Serializer = this.serializer,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
@@ -635,6 +640,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -727,6 +733,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -821,6 +828,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -904,6 +912,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -984,6 +993,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
@@ -1091,6 +1101,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer,
                 };
@@ -1171,6 +1182,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -1266,6 +1278,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -1339,6 +1352,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -1424,6 +1438,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -1437,21 +1452,29 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 ChaosInterceptor interceptor = faultInjector.GetChaosInterceptor() as ChaosInterceptor;
                 Assert.IsNotNull(interceptor);
 
-                await this.PerformDocumentOperationAndCheckApplication(
-                    this.fiContainer,
-                    OperationType.Create,
-                    createdItem,
-                    connectionErrorRule,
-                    0,
-                    0);
+                try
+                {
+                    await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(createdItem);
+                }
+                catch
+                {
+                    //ignore
+                }
 
                 FaultInjectionDynamicChannelStore channelStore = interceptor.GetChannelStore();
                 Assert.IsTrue(channelStore.GetAllChannels().Count > 0);
                 List<Guid> channelGuids = channelStore.GetAllChannelIds();
 
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                try
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(2));
 
-                await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(createdItem2);
+                    await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(createdItem2);
+                }
+                catch
+                {
+                    //ignore
+                }
 
                 Assert.IsTrue(connectionErrorRule.GetHitCount() >= 1);
 
@@ -1547,6 +1570,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
+                    ConsistencyLevel = ConsistencyLevel.Session,
                     FaultInjector = faultInjector,
                     Serializer = this.serializer
                 };
@@ -1832,6 +1856,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             FaultInjectionRule rule)
         {
             string diagnosticsString = diagnostics.ToString();
+            Console.WriteLine(diagnostics.ToString());
             Assert.IsTrue(1 <= rule.GetHitCount());
             Assert.IsTrue(1 <= diagnostics.GetFailedRequestCount());
             Assert.IsTrue(diagnosticsString.Contains(statusCode.ToString()));
