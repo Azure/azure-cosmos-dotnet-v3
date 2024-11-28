@@ -497,7 +497,9 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ResourceType? resourceType = null)
         {
-            bool isOtelCompatibleOperation = openTelemetry != null;
+            bool isOtelCompatibleOperation = openTelemetry != null && this.ShouldRecordTelemetry();
+            Uri gatewayEndpoint = this.client.Endpoint;
+
             Func<string> getOperationName = () =>
             {
                 // If opentelemetry is not enabled then return null operation name, so that no activity is created.
@@ -528,7 +530,7 @@ namespace Microsoft.Azure.Cosmos
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
                     // Checks if OpenTelemetry is configured for this operation and either Trace or Metrics are enabled by customer
-                    if (isOtelCompatibleOperation && this.ShouldRecordTelemetry())
+                    if (isOtelCompatibleOperation)
                     {
                         // Extracts and records telemetry data from the result of the operation.
                         OpenTelemetryAttributes otelAttributes = openTelemetry?.Item2(result);
@@ -544,15 +546,18 @@ namespace Microsoft.Azure.Cosmos
 
                     return result;
                 }
-                catch (Exception ex) when (this.TryHandleException(isOtelCompatibleOperation,
-                                                                   ex, 
-                                                                   trace, 
-                                                                   getOperationName, 
-                                                                   recorder, 
-                                                                   containerName, 
-                                                                   databaseName,
-                                                                   out Exception cosmosException))
+                catch (Exception ex) when (TryHandleException(isOtelCompatibleOperation,
+                                                              gatewayEndpoint,
+                                                              ex, 
+                                                              trace, 
+                                                              getOperationName, 
+                                                              recorder, 
+                                                              containerName, 
+                                                              databaseName,
+                                                              this.client,
+                                                              out Exception cosmosException))
                 {
+                    Console.WriteLine(" ====> 2 " + cosmosException.GetType().Name);
                     throw cosmosException; // Rethrow after recording telemetry
                 }
             }
@@ -561,18 +566,20 @@ namespace Microsoft.Azure.Cosmos
         // Checks if telemetry is enabled
         private bool ShouldRecordTelemetry()
         {
-            CosmosClientTelemetryOptions telemetryOptions = this.ClientOptions.CosmosClientTelemetryOptions;
+            CosmosClientTelemetryOptions telemetryOptions = this.clientOptions.CosmosClientTelemetryOptions;
             return !telemetryOptions.DisableDistributedTracing || telemetryOptions.IsClientMetricsEnabled;
         }
 
         // Handles exceptions and records telemetry
-        private bool TryHandleException(bool isOtelCompatibleOperation,
+        private static bool TryHandleException(bool isOtelCompatibleOperation,
+            Uri gatewayEndpoint,
             Exception ex,
             ITrace trace,
             Func<string> getOperationName,
             OpenTelemetryCoreRecorder recorder,
             string containerName,
             string databaseName,
+            CosmosClient cosmosClient,
             out Exception cosmosException)
         {
             cosmosException = ex switch
@@ -580,17 +587,18 @@ namespace Microsoft.Azure.Cosmos
                 OperationCanceledException oe when oe is not CosmosOperationCanceledException =>
                     new CosmosOperationCanceledException(oe, trace),
                 ObjectDisposedException od when od is not CosmosObjectDisposedException =>
-                    new CosmosObjectDisposedException(od, this.client, trace),
+                    new CosmosObjectDisposedException(od, cosmosClient, trace),
                 NullReferenceException nr when nr is not CosmosNullReferenceException =>
                     new CosmosNullReferenceException(nr, trace),
                 _ => ex
             };
 
-            if (isOtelCompatibleOperation && this.ShouldRecordTelemetry())
+            Console.WriteLine(" ====> 1 " + cosmosException.GetType().Name);
+            if (isOtelCompatibleOperation)
             {
                 recorder.MarkFailed(cosmosException);
                 RecordMetrics(getOperationName,
-                    this.client.Endpoint,
+                    gatewayEndpoint,
                     containerName,
                     databaseName,
                     cosmosException: cosmosException);
