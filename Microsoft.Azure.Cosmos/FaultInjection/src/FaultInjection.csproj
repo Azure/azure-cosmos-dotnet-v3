@@ -35,8 +35,12 @@
 		<DebugType>portable</DebugType>
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
-		<PackageLicenseFile>..\LICENSE</PackageLicenseFile>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
+	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
