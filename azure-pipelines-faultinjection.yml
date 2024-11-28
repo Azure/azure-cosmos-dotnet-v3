@@ -17,12 +17,12 @@ stages:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         VmImage: '${{ variables.VmImage }}'
 
-    - template:  templates/build-fault-injection-test.yml
-      parameters:
-        BuildConfiguration: '${{ variables.BuildConfiguration }}'
-        Arguments: '${{ variables.ReleaseArguments }}'
-        VmImage: '${{ variables.VmImage }}'
-        MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    # - template:  templates/build-fault-injection-test.yml
+    #   parameters:
+    #     BuildConfiguration: '${{ variables.BuildConfiguration }}'
+    #     Arguments: '${{ variables.ReleaseArguments }}'
+    #     VmImage: '${{ variables.VmImage }}'
+    #     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
         
     - job:
       displayName: FaultInjection Integration Tests ${{ variables.BuildConfiguration }}
@@ -58,7 +58,7 @@ stages:
           publishTestResults: true
           testRunTitle: FaultInjectionTests
         env:
-          COSMOSDB_ACCOUNT_CONNECTION_STRING: $(COSMOSDB_ACCOUNT_CONNECTION_STRING) # Real Account Connection String used by Integration Tests while running as part of release pipeline
+          COSMOSDB_MULTI_REGION: $(COSMOSDB_MULTI_REGION) # Real Account Connection String used by Integration Tests while running as part of release pipeline
 
 - stage:
   displayName: Publish 

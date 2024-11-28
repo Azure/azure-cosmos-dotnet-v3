@@ -31,7 +31,7 @@ jobs:
 
   steps:
   - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos
+    displayName: Build Microsoft.Azure.Cosmos.FaultInjection
     inputs: 
       command: build  
       configuration: $(BuildConfiguration)
@@ -41,7 +41,7 @@ jobs:
       versioningScheme: OFF
 
   - task: DotNetCoreCLI@2
-    displayName: 'Create SDK NuGet Package'
+    displayName: 'Create FaultInjection NuGet Package'
     inputs:
       command: custom
       projects: 'Microsoft.Azure.Cosmos/FaultInjection/src/FaultInjection.csproj'
@@ -50,7 +50,7 @@ jobs:
 
   - ${{ if eq(parameters.ReleasePackage, true) }}:
     - task: DotNetCoreCLI@2
-      displayName: 'Create SDK NuGet Symbols Package'
+      displayName: 'Create FaultInjection NuGet Symbols Package'
       inputs: 
         command: custom
         projects: 'Microsoft.Azure.Cosmos/FaultInjection/src/FaultInjection.csproj'
@@ -70,7 +70,7 @@ jobs:
           Destination: AzureBlob
           storage: azuresdkpartnerdrops
           ContainerName: 'drops'
-          BlobPrefix: 'cosmosdb/csharp/${{ parameters.BlobVersion }}'
+          BlobPrefix: 'cosmosdb/faultInjection/${{ parameters.BlobVersion }}'
           CleanTargetBeforeCopy: ${{ parameters.CleanupFolder }}
 
   - task: PublishBuildArtifacts@1
