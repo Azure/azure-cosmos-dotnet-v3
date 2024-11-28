@@ -35,6 +35,7 @@
 		<DebugType>portable</DebugType>
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
