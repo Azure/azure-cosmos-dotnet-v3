@@ -44,7 +44,7 @@
 
 	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
-		<None Include="..\..\Icon.png" Pack="true" PackagePath=""/>
+		<None Include="..\..\..\Icon.png" Pack="true" PackagePath=""/>
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
