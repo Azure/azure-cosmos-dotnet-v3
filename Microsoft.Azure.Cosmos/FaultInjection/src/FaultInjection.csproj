@@ -10,6 +10,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6</TargetFramework>
 		<TargetType>library</TargetType>
+		<Authors>Microsoft</Authors>
 		<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection</RootNamespace>
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
