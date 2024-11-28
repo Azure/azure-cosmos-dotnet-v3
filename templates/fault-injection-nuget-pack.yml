@@ -70,7 +70,7 @@ jobs:
           Destination: AzureBlob
           storage: azuresdkpartnerdrops
           ContainerName: 'drops'
-          BlobPrefix: 'cosmosdb/csharp/${{ parameters.BlobVersion }}'
+          BlobPrefix: 'cosmosdb/faultInjection/${{ parameters.BlobVersion }}'
           CleanTargetBeforeCopy: ${{ parameters.CleanupFolder }}
 
   - task: PublishBuildArtifacts@1
