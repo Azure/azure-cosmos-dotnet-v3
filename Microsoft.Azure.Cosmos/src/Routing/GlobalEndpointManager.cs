@@ -546,14 +546,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Determines whether the current configuration and state of the service allow for supporting multiple write locations.
         /// This method returns True is the AvailableWriteLocations in LocationCache is more than 1. Otherwise, it returns False.
         /// </summary>
-        /// <param name="request">The document service request for which the write location support is being evaluated.</param>
+        /// <param name="resourceType"> resource type of the request</param>
+        /// <param name="operationType"> operation type of the request</param>
         /// <returns>A boolean flag indicating if the available write locations are more than one.</returns>
-        public bool CanSupportMultipleWriteLocations(DocumentServiceRequest request)
+        public bool CanSupportMultipleWriteLocations(
+            ResourceType resourceType,
+            OperationType operationType)
         {
             return this.locationCache.CanUseMultipleWriteLocations()
                 && this.locationCache.GetAvailableAccountLevelWriteLocations()?.Count > 1
-                && (request.ResourceType == ResourceType.Document ||
-                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
+                && (resourceType == ResourceType.Document ||
+                (resourceType == ResourceType.StoredProcedure && operationType == OperationType.Execute));
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods

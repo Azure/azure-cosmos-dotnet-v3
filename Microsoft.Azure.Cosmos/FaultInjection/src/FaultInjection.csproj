@@ -16,6 +16,8 @@
 		<Nullable>enable</Nullable>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<SdkProjectRef>True</SdkProjectRef>
+		<ClientVersion>$(FaultInjectionVersion)</ClientVersion>
+		<VersionSuffix>$(FaultInjectionSuffixVersion)</VersionSuffix>
 	</PropertyGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
