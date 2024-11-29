@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net.Http;
     using System.Net.Security;
+    using System.Runtime.CompilerServices;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
@@ -557,9 +558,17 @@ namespace Microsoft.Azure.Cosmos
                                                               this.client,
                                                               out Exception cosmosException))
                 {
-                    Console.WriteLine(" ====> 2 " + cosmosException.GetType().Name);
                     throw cosmosException; // Rethrow after recording telemetry
                 }
+                catch (Exception ex)
+                {
+                    // Fallback handling for exceptions not covered by the 'when' filter
+                    recorder.MarkFailed(ex); // Record the exception using the telemetry recorder
+
+                    // Optionally rethrow or handle the exception gracefully
+                    throw; // Re-throwing to ensure the caller is aware of the unhandled exception
+                }
+
             }
         }
 
@@ -590,10 +599,15 @@ namespace Microsoft.Azure.Cosmos
                     new CosmosObjectDisposedException(od, cosmosClient, trace),
                 NullReferenceException nr when nr is not CosmosNullReferenceException =>
                     new CosmosNullReferenceException(nr, trace),
-                _ => ex
+                Exception ce when ce is CosmosException => ex,
+                _ => null
             };
 
-            Console.WriteLine(" ====> 1 " + cosmosException.GetType().Name);
+            if (cosmosException is null)
+            {
+                return false;
+            }
+
             if (isOtelCompatibleOperation)
             {
                 recorder.MarkFailed(cosmosException);
