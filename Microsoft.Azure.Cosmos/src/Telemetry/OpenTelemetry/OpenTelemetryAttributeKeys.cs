@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         
         public const string ServiceEndpointRegion = "cloud.region";
         
-        public const string ServiceEndpointResourceId = "db.cosmosdb.network.routing_id ";
+        public const string ServiceEndpointRoutingId = "db.cosmosdb.network.routing_id ";
 
         /// <summary>
         /// Represents the type of error.
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, GetEndpoint(tcpStats, httpStats).Scheme),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, GetEndpoint(tcpStats, httpStats).Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndPointPort, GetEndpoint(tcpStats, httpStats).Port),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointResourceId, GetEndpoint(tcpStats, httpStats).PathAndQuery),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, GetStatusCode(tcpStats, httpStats)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, GetSubStatusCode(tcpStats, httpStats)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRegion, GetRegion(tcpStats, httpStats)),
@@ -339,7 +339,42 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private static Uri GetEndpoint(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
         {
-            return httpStats?.RequestUri ?? tcpStats?.LocationEndpoint;
+            return httpStats?.RequestUri ?? tcpStats?.StoreResult?.StorePhysicalAddress;
+        }
+
+        /// <returns>
+        ///  Direct Mode: partitions/{partitionId}/replicas/{replicaId}
+        ///  Gateway Mode:
+        ///     a) If Partition Key Range Id is available, then it is the value of x-ms-documentdb-partitionkeyrangeid header
+        ///     b) otherwise, it is the path of the request URI
+        ///  </returns>
+        private static string GetRoutingId(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            if (tcpStats != null)
+            {
+                string path = tcpStats?.StoreResult?.StorePhysicalAddress?.AbsolutePath;
+                if (path == null)
+                {
+                    return string.Empty;
+                }
+
+                int startIndex = path.IndexOf("/partitions/");
+                return startIndex >= 0 ? path.Substring(startIndex) : string.Empty;
+            }
+
+            if (httpStats.HasValue && httpStats.Value.HttpResponseMessage != null && httpStats.Value.HttpResponseMessage.Headers != null)
+            {
+                if (httpStats.Value.HttpResponseMessage.Headers.TryGetValues("x-ms-documentdb-partitionkeyrangeid", out IEnumerable<string> pkrangeid))
+                {
+                    return string.Join(",", pkrangeid);
+                }
+                else
+                {
+                    return httpStats.Value.RequestUri?.AbsolutePath;
+                }
+            }
+
+            return string.Empty;
         }
 
         private static string GetRegion(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)

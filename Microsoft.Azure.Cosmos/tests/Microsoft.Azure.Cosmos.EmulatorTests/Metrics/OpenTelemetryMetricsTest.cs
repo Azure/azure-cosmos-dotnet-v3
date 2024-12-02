@@ -43,9 +43,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}
         };
 
+        private static readonly Dictionary<string, MetricType> expectedGatewayModeNetworkMetrics = new()
+        {
+            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
+            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
+            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
+        };
+
         private static readonly Dictionary<string, MetricType> expectedMetrics = expectedOperationMetrics
                                                                                     .Concat(expectedNetworkMetrics)
                                                                                     .ToDictionary(kv => kv.Key, kv => kv.Value);
+        private static readonly Dictionary<string, MetricType> expectedGatewayModeMetrics = expectedOperationMetrics
+                                                                                   .Concat(expectedGatewayModeNetworkMetrics)
+                                                                                   .ToDictionary(kv => kv.Key, kv => kv.Value);
 
         private MeterProvider meterProvider;
 
@@ -68,11 +78,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         }
 
         [TestMethod]
-        [DataRow(OpenTelemetryStablityModes.DatabaseDupe, DisplayName = "Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database/dup'")]
-        [DataRow(OpenTelemetryStablityModes.Database, DisplayName = "Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database'")]
-        [DataRow(OpenTelemetryStablityModes.ClassicAppInsights, DisplayName = "Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'appinsightssdk'")]
-        [DataRow(null, DisplayName = "Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is not set")]
-        public async Task MetricsGenerationTest(string stabilityMode)
+        [DataRow(OpenTelemetryStablityModes.DatabaseDupe, ConnectionMode.Direct, DisplayName = "Direct Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database/dup'")]
+        [DataRow(OpenTelemetryStablityModes.Database, ConnectionMode.Direct, DisplayName = "Direct Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database'")]
+        [DataRow(OpenTelemetryStablityModes.ClassicAppInsights, ConnectionMode.Direct, DisplayName = "Direct Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'appinsightssdk'")]
+        [DataRow(null, ConnectionMode.Direct, DisplayName = "Direct Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is not set")]
+        [DataRow(OpenTelemetryStablityModes.DatabaseDupe, ConnectionMode.Gateway, DisplayName = "Gateway Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database/dup'")]
+        [DataRow(OpenTelemetryStablityModes.Database, ConnectionMode.Gateway, DisplayName = "Gateway Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'database'")]
+        [DataRow(OpenTelemetryStablityModes.ClassicAppInsights, ConnectionMode.Gateway, DisplayName = "Gateway Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is set to 'appinsightssdk'")]
+        [DataRow(null, ConnectionMode.Gateway, DisplayName = "Gateway Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is not set")]
+        public async Task MetricsGenerationTest(string stabilityMode, ConnectionMode connectionMode)
         {
             Environment.SetEnvironmentVariable(StabilityEnvVariableName, stabilityMode);
 
@@ -91,13 +105,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     exportIntervalMilliseconds: AggregatingInterval))
                 .Build();
 
-            await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+            if (connectionMode == ConnectionMode.Direct)
             {
-                IsClientMetricsEnabled = true
-            }));
+                await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                {
+                    IsClientMetricsEnabled = true
+                })
+                .WithConnectionModeDirect());
 
+            } else if (connectionMode == ConnectionMode.Gateway)
+            {
+                await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                {
+                    IsClientMetricsEnabled = true
+                })
+                .WithConnectionModeGateway());
+            }
+          
             this.timeoutTimer = Stopwatch.StartNew();
 
+            // Cosmos Db operations
             Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
             for (int count = 0; count < 10; count++)
             {
@@ -117,8 +144,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 }
             }
 
+            // Waiting for a notification from the exporter, which means metrics are emitted
             while (!this.manualResetEventSlim.IsSet)
             {
+                // Timing out, if exporter didn't send any signal is 3 seconds
                 if (this.timeoutTimer.Elapsed == TimeSpan.FromSeconds(3))
                 {
                     this.manualResetEventSlim.Set();
@@ -126,8 +155,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 }
             }
 
-            CollectionAssert.AreEquivalent(expectedMetrics, CustomMetricExporter.ActualMetrics, string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
+            // Asserting Metrics
+            CollectionAssert.AreEquivalent(connectionMode == ConnectionMode.Direct? expectedMetrics : expectedGatewayModeMetrics, CustomMetricExporter.ActualMetrics, string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
 
+            // Asserting Dimensions
             foreach (KeyValuePair<string, List<string>> dimension in CustomMetricExporter.Dimensions)
             {
                 if (dimension.Key == CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances)
@@ -207,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     OpenTelemetryAttributeKeys.NetworkProtocolName,
                     OpenTelemetryAttributeKeys.ServiceEndpointHost,
                     OpenTelemetryAttributeKeys.ServiceEndPointPort,
-                    OpenTelemetryAttributeKeys.ServiceEndpointResourceId,
+                    OpenTelemetryAttributeKeys.ServiceEndpointRoutingId,
                     OpenTelemetryAttributeKeys.ServiceEndpointStatusCode,
                     OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode,
                     OpenTelemetryAttributeKeys.ServiceEndpointRegion,

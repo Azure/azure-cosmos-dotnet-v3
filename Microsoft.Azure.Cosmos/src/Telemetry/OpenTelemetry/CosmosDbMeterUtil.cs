@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
     using System.Linq;
+    using System.Net.Http;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
@@ -125,17 +126,37 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return true;
         }
 
-        internal static bool TryNetworkMetricsValues(
-            HttpResponseStatistics stats,
-            out NetworkMetricData values)
+        internal static NetworkMetricData GetNetworkMetricsValues(
+            HttpResponseStatistics stats)
         {
             double latency = stats.Duration.TotalSeconds;
-            long? requestBodySize = stats.HttpResponseMessage?.RequestMessage?.Content?.Headers?.ContentLength;
-            long? responseBodySize = stats.ResponseContentLength;
+            long? requestBodySize = GetPayloadSize(stats.HttpResponseMessage?.RequestMessage?.Content);
+            long? responseBodySize = stats.ResponseContentLength ?? GetPayloadSize(stats.HttpResponseMessage?.Content);
 
-            values = new NetworkMetricData(latency, requestBodySize, responseBodySize);
+            return new NetworkMetricData(latency, requestBodySize, responseBodySize);
+        }
 
-            return true;
+        private static long GetPayloadSize(HttpContent content)
+        {
+            if (content == null)
+            {
+                return 0;
+            }
+
+            long contentLength = 0;
+            try
+            {
+                if (content.Headers != null && content.Headers.ContentLength != null)
+                {
+                    contentLength = content.Headers.ContentLength.Value;
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore and return content length as 0
+            }
+
+            return contentLength;
         }
 
         internal static string[] GetRegions(CosmosDiagnostics diagnostics)

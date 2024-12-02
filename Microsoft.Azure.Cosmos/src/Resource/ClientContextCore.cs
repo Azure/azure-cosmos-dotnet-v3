@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net.Http;
     using System.Net.Security;
-    using System.Runtime.CompilerServices;
     using System.Security.Cryptography.X509Certificates;
     using System.Text;
     using System.Threading;
@@ -547,17 +546,18 @@ namespace Microsoft.Azure.Cosmos
 
                     return result;
                 }
-                catch (Exception ex) when (TryHandleException(isOtelCompatibleOperation,
-                                                              gatewayEndpoint,
-                                                              ex, 
-                                                              trace, 
-                                                              getOperationName, 
-                                                              recorder, 
-                                                              containerName, 
-                                                              databaseName,
-                                                              this.client,
-                                                              out Exception cosmosException))
+                catch (Exception ex) when (TryTransformException(ex, trace, this.client, out Exception cosmosException))
                 {
+                    if (isOtelCompatibleOperation)
+                    {
+                        recorder.MarkFailed(cosmosException);
+                        RecordMetrics(getOperationName,
+                            gatewayEndpoint,
+                            containerName,
+                            databaseName,
+                            cosmosException: cosmosException);
+                    }
+
                     throw cosmosException; // Rethrow after recording telemetry
                 }
                 catch (Exception ex)
@@ -580,14 +580,9 @@ namespace Microsoft.Azure.Cosmos
         }
 
         // Handles exceptions and records telemetry
-        private static bool TryHandleException(bool isOtelCompatibleOperation,
-            Uri gatewayEndpoint,
+        private static bool TryTransformException(
             Exception ex,
             ITrace trace,
-            Func<string> getOperationName,
-            OpenTelemetryCoreRecorder recorder,
-            string containerName,
-            string databaseName,
             CosmosClient cosmosClient,
             out Exception cosmosException)
         {
@@ -607,17 +602,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 return false;
             }
-
-            if (isOtelCompatibleOperation)
-            {
-                recorder.MarkFailed(cosmosException);
-                RecordMetrics(getOperationName,
-                    gatewayEndpoint,
-                    containerName,
-                    databaseName,
-                    cosmosException: cosmosException);
-            }
-
             return true;
         }
 

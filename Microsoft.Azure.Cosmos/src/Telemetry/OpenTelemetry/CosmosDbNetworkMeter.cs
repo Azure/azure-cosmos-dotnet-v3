@@ -126,16 +126,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             summaryDiagnostics.HttpResponseStatistics.Value.ForEach(stat =>
             {
-                Func<KeyValuePair<string, object>[]> dimensionsFunc = 
-                            () => DimensionPopulator.PopulateNetworkMeterDimensions(getOperationName(), 
-                                                                                    accountName, 
-                                                                                    containerName, 
-                                                                                    databaseName, 
-                                                                                    attributes, 
-                                                                                    ex, 
-                                                                                    httpStats: stat);
+                KeyValuePair<string, object>[] dimensionsFunc()
+                {
+                    return DimensionPopulator.PopulateNetworkMeterDimensions(getOperationName(),
+                                                                             accountName,
+                                                                             containerName,
+                                                                             databaseName,
+                                                                             attributes,
+                                                                             ex,
+                                                                             httpStats: stat);
+                }
 
-                CosmosDbMeterUtil.TryNetworkMetricsValues(stat, out NetworkMetricData metricData);
+                NetworkMetricData metricData = CosmosDbMeterUtil.GetNetworkMetricsValues(stat);
 
                 CosmosDbMeterUtil.RecordHistogramMetric<double>(metricData.Latency, dimensionsFunc, RequestLatencyHistogram);
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.RequestBodySize, dimensionsFunc, RequestBodySizeHistogram);
