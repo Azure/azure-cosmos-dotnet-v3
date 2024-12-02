@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Populator Used for Dimension Attributes
         /// </summary>
-        private static readonly IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+        internal static IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
 
         private static Histogram<double> RequestLatencyHistogram = null;
 

@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 scope.AddAttribute<string[]>(
                     OpenTelemetryAttributeKeys.Region, 
-                    GetRegions(response.Diagnostics), (input) => string.Join(",", input));
+                    CosmosDbMeterUtil.GetRegions(response.Diagnostics), (input) => string.Join(",", input));
             }
          
         }
@@ -284,8 +284,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, GetSubStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, GetConsistencyLevel(attributes, ex)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, GetEndpoint(tcpStats, httpStats).Scheme),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, GetEndpoint(tcpStats, httpStats).Host),
@@ -313,52 +313,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, GetSubStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, GetConsistencyLevel(attributes, ex)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, GetRegions(attributes?.Diagnostics)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
             };
-        }
-
-        private static string[] GetRegions(CosmosDiagnostics diagnostics)
-        {
-            if (diagnostics?.GetContactedRegions() is not IReadOnlyList<(string regionName, Uri uri)> contactedRegions)
-            {
-                return null;
-            }
-
-            return contactedRegions
-                .Select(region => region.regionName)
-                .Distinct()
-                .ToArray();
         }
 
         private static int? GetStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
         {
             return (int?)httpStats?.HttpResponseMessage?.StatusCode ?? (int?)tcpStats?.StoreResult?.StatusCode;
-        }
-
-        private static int? GetStatusCode(OpenTelemetryAttributes attributes,
-            Exception ex)
-        {
-            return ex switch
-            {
-                CosmosException cosmosException => (int)cosmosException.StatusCode,
-                _ when attributes != null => (int)attributes.StatusCode,
-                _ => null
-            };
-        }
-
-        private static int? GetSubStatusCode(OpenTelemetryAttributes attributes,
-            Exception ex)
-        {
-            return ex switch
-            {
-                CosmosException cosmosException => (int)cosmosException.SubStatusCode,
-                _ when attributes != null => (int)attributes.SubStatusCode,
-                _ => null
-            };
         }
 
         private static string GetConsistencyLevel(OpenTelemetryAttributes attributes,

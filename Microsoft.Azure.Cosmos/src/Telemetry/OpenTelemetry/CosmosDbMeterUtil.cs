@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
@@ -33,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Failed to record metric. {ex.StackTrace}");
+                DefaultTrace.TraceWarning($"Failed to record metric. {ex}");
             }
         }
 
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             };
 
             // Ensure diagnostics is not null and cast is valid
-            if (diagnostics is CosmosTraceDiagnostics traceDiagnostics)
+            if (diagnostics != null && diagnostics is CosmosTraceDiagnostics traceDiagnostics)
             {
                 traces = traceDiagnostics;
                 return true;
@@ -136,5 +137,41 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             return true;
         }
+
+        internal static string[] GetRegions(CosmosDiagnostics diagnostics)
+        {
+            if (diagnostics?.GetContactedRegions() is not IReadOnlyList<(string regionName, Uri uri)> contactedRegions)
+            {
+                return null;
+            }
+
+            return contactedRegions
+                .Select(region => region.regionName)
+                .Distinct()
+                .ToArray();
+        }
+
+        internal static int? GetStatusCode(OpenTelemetryAttributes attributes,
+          Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException => (int)cosmosException.StatusCode,
+                _ when attributes != null => (int)attributes.StatusCode,
+                _ => null
+            };
+        }
+
+        internal static int? GetSubStatusCode(OpenTelemetryAttributes attributes,
+            Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException => (int)cosmosException.SubStatusCode,
+                _ when attributes != null => (int)attributes.SubStatusCode,
+                _ => null
+            };
+        }
+
     }
 }

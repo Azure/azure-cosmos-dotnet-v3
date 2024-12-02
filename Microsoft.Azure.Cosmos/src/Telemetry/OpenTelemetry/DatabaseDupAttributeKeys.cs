@@ -7,8 +7,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net.NetworkInformation;
-    using System.Xml.Linq;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
@@ -18,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly IActivityAttributePopulator otelPopulator;
 
         public DatabaseDupAttributeKeys() 
-        { 
+        {
             this.otelPopulator = new OpenTelemetryAttributeKeys();
             this.appInsightPopulator = new AppInsightClassicAttributeKeys();
         }
@@ -54,19 +52,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountName)
         {
-            KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
-            .PopulateInstanceCountDimensions(accountName)
-              .ToArray();
-            KeyValuePair<string, object>[] otelDimensions = this.otelPopulator
-            .PopulateInstanceCountDimensions(accountName)
-            .ToArray();
-
-            KeyValuePair<string, object>[] dimensions
-                = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
-            dimensions
-                .Concat(appInsightDimensions)
-                .Concat(otelDimensions);
-            return dimensions;
+            return this.MergeDimensions(
+                () => this.appInsightPopulator.PopulateInstanceCountDimensions(accountName),
+                () => this.otelPopulator.PopulateInstanceCountDimensions(accountName));
         }
 
         public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName, 
@@ -78,19 +66,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
-            KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
-               .PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats)
-               .ToArray();
-            KeyValuePair<string, object>[] otelDimensions = this.otelPopulator
-                .PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats)
-                .ToArray();
-
-            KeyValuePair<string, object>[] dimensions
-                = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
-            dimensions
-                .Concat(appInsightDimensions)
-                .Concat(otelDimensions);
-            return dimensions;
+            return this.MergeDimensions(
+                () => this.appInsightPopulator.PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats),
+                () => this.otelPopulator.PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats));
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
@@ -100,18 +78,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes, 
             Exception ex)
         {
-            KeyValuePair<string, object>[] appInsightDimensions = this.appInsightPopulator
-                .PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex)
-                .ToArray();
-            KeyValuePair<string, object>[] otelDimensions = this.otelPopulator
-                .PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex)
-                .ToArray();
+            return this.MergeDimensions(
+               () => this.appInsightPopulator.PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex),
+               () => this.otelPopulator.PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex));
+        }
 
-            KeyValuePair<string, object>[] dimensions 
-                = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
-            dimensions
-                .Concat(appInsightDimensions)
-                .Concat(otelDimensions);
+        private KeyValuePair<string, object>[] MergeDimensions(
+           Func<IEnumerable<KeyValuePair<string, object>>> appInsightDimensionsProvider,
+           Func<IEnumerable<KeyValuePair<string, object>>> otelDimensionsProvider)
+        {
+            KeyValuePair<string, object>[] appInsightDimensions = appInsightDimensionsProvider().ToArray();
+            KeyValuePair<string, object>[] otelDimensions = otelDimensionsProvider().ToArray();
+
+            KeyValuePair<string, object>[] dimensions = new KeyValuePair<string, object>[appInsightDimensions.Length + otelDimensions.Length];
+
+            Array.Copy(appInsightDimensions, dimensions, appInsightDimensions.Length);
+            Array.Copy(otelDimensions, 0, dimensions, appInsightDimensions.Length, otelDimensions.Length);
+
             return dimensions;
         }
     }

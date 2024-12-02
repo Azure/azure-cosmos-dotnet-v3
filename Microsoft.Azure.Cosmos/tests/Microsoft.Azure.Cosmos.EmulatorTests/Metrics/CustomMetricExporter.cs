@@ -13,76 +13,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using System;
     using System.Linq;
 
-    public class CustomMetricExporter : BaseExporter<Metric>
+    internal class CustomMetricExporter : BaseExporter<Metric>
     {
         private readonly ManualResetEventSlim manualResetEventSlim = null;
 
-        internal static readonly Dictionary<string, MetricType> expectedOperationMetrics = new Dictionary<string, MetricType>()
-        {
-            { "db.client.operation.duration", MetricType.Histogram },
-            { "db.client.response.row_count", MetricType.Histogram},
-            { "db.client.cosmosdb.operation.request_charge", MetricType.Histogram },
-            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic }
-        };
-
-        internal static readonly Dictionary<string, MetricType> expectedNetworkMetrics = new Dictionary<string, MetricType>()
-        {
-            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
-            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
-            { "db.client.cosmosdb.request.service_duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.channel_aquisition.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}
-        };
-        
-        private readonly static List<string> expectedOperationDimensions = new()
-        {
-            OpenTelemetryAttributeKeys.DbSystemName,
-            OpenTelemetryAttributeKeys.ContainerName,
-            OpenTelemetryAttributeKeys.DbName,
-            OpenTelemetryAttributeKeys.ServerAddress,
-            OpenTelemetryAttributeKeys.ServerPort,
-            OpenTelemetryAttributeKeys.DbOperation,
-            OpenTelemetryAttributeKeys.StatusCode,
-            OpenTelemetryAttributeKeys.SubStatusCode,
-            OpenTelemetryAttributeKeys.ConsistencyLevel,
-            OpenTelemetryAttributeKeys.Region,
-            OpenTelemetryAttributeKeys.ErrorType
-        };
-
-        private readonly static List<string> expectedNetworkDimensions = new()
-        {
-            OpenTelemetryAttributeKeys.DbSystemName,
-            OpenTelemetryAttributeKeys.ContainerName,
-            OpenTelemetryAttributeKeys.DbName,
-            OpenTelemetryAttributeKeys.ServerAddress,
-            OpenTelemetryAttributeKeys.ServerPort,
-            OpenTelemetryAttributeKeys.DbOperation,
-            OpenTelemetryAttributeKeys.StatusCode,
-            OpenTelemetryAttributeKeys.SubStatusCode,
-            OpenTelemetryAttributeKeys.ConsistencyLevel,
-            OpenTelemetryAttributeKeys.NetworkProtocolName,
-            OpenTelemetryAttributeKeys.ServiceEndpointHost,
-            OpenTelemetryAttributeKeys.ServiceEndPointPort,
-            OpenTelemetryAttributeKeys.ServiceEndpointResourceId,
-            OpenTelemetryAttributeKeys.ServiceEndpointStatusCode,
-            OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode,
-            OpenTelemetryAttributeKeys.ServiceEndpointRegion,
-            OpenTelemetryAttributeKeys.ErrorType
-        };
-
-        private readonly static List<string> expectedDimensionsForInstanceCountMetrics = new()
-        {
-            OpenTelemetryAttributeKeys.DbSystemName,
-            OpenTelemetryAttributeKeys.ServerAddress,
-            OpenTelemetryAttributeKeys.ServerPort
-        };
-
-        public static Dictionary<string, MetricType> ActualMetrics = new Dictionary<string, MetricType>();
+        internal static Dictionary<string, MetricType> ActualMetrics = new();
+        internal static Dictionary<string, List<string>> Dimensions = new();
 
         public CustomMetricExporter(ManualResetEventSlim manualResetEventSlim)
         {
+            CustomMetricExporter.ActualMetrics = new();
+            CustomMetricExporter.Dimensions = new();
+
             this.manualResetEventSlim = manualResetEventSlim;
         }
 
@@ -103,18 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                         }
                     }
 
-                    if (metric.Name == CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances)
-                    {
-                        CollectionAssert.AreEquivalent(expectedDimensionsForInstanceCountMetrics, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
-                    }
-                    else if (expectedOperationMetrics.ContainsKey(metric.Name))
-                    {
-                        CollectionAssert.AreEquivalent(expectedOperationDimensions, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
-                    }
-                    else if (expectedNetworkMetrics.ContainsKey(metric.Name))
-                    {
-                        CollectionAssert.AreEquivalent(expectedNetworkDimensions, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
-                    }
+                    Dimensions.TryAdd(metric.Name, actualDimensions.ToList());
                 }
 
                 if (ActualMetrics.Count > 0)
@@ -122,10 +53,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     this.manualResetEventSlim.Set();
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine(ex);
-
                 this.manualResetEventSlim.Set();
                 return ExportResult.Failure;
             }

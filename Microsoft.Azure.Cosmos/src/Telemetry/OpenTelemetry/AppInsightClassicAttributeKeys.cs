@@ -181,8 +181,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, GetSubStatusCode(attributes, ex))
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
         }
 
@@ -199,33 +199,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, GetSubStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName.Host),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.Region, string.Join(",", attributes.Diagnostics.GetContactedRegions()))
-            };
-        }
-
-        private static int? GetStatusCode(OpenTelemetryAttributes attributes,
-            Exception ex)
-        {
-            return ex switch
-            {
-                CosmosException cosmosException => (int)cosmosException.StatusCode,
-                _ when attributes != null => (int)attributes.StatusCode,
-                _ => null
-            };
-        }
-
-        private static int? GetSubStatusCode(OpenTelemetryAttributes attributes,
-            Exception ex)
-        {
-            return ex switch
-            {
-                CosmosException cosmosException => (int)cosmosException.SubStatusCode,
-                _ when attributes != null => (int)attributes.SubStatusCode,
-                _ => null
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.Region,  CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics))
             };
         }
 
