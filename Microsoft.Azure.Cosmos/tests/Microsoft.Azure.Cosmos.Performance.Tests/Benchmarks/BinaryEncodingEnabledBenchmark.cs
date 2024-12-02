@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Azure.Cosmos.Benchmarks
+﻿//------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+//------------------------------------------------------------
+namespace Microsoft.Azure.Cosmos.Benchmarks
 {
     using System;
     using System.Collections.Generic;
@@ -20,19 +23,21 @@
 
     [MemoryDiagnoser]
     [BenchmarkCategory("NewGateBenchmark")]
-    [Config(typeof(CustomBenchmarkConfig))]
+    [Config(typeof(BinaryEncodingEnabledBenchmark.CustomBenchmarkConfig))]
     public class BinaryEncodingEnabledBenchmark
     {
         private MockedItemBenchmarkHelper benchmarkHelper;
         private Container container;
 
-        // Parameter to control binary encoding flag
         [Params(true)]
         public bool EnableBinaryResponseOnPointOperations;
 
         [GlobalSetup]
         public async Task GlobalSetupAsync()
         {
+            // Set the environment variable to enable or disable binary encoding
+            Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", this.EnableBinaryResponseOnPointOperations.ToString());
+
             // Initialize the mocked environment
             JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
             this.benchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat);
@@ -250,9 +255,10 @@
         }
 
         [GlobalCleanup]
-        public async Task CleanupAsync()
+        public void Cleanup()
         {
-            await Task.CompletedTask;
+            // Restore the environment variable to its original value
+            Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", "false");
         }
 
         private class CustomBenchmarkConfig : ManualConfig
@@ -267,7 +273,8 @@
                 this.AddColumn(StatisticColumn.P95);
                 this.AddColumn(StatisticColumn.P100);
 
-                this.AddDiagnoser(new IDiagnoser[] { MemoryDiagnoser.Default, ThreadingDiagnoser.Default });
+                this.AddDiagnoser(MemoryDiagnoser.Default);
+                this.AddDiagnoser(ThreadingDiagnoser.Default);
                 this.AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().ToArray());
 
                 // Minimal run to reduce time

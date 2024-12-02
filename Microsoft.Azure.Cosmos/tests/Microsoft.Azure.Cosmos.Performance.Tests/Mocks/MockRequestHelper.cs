@@ -391,7 +391,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             JsonSerializationFormat responseSerializationFormat = JsonSerializationFormat.Text;
 
-            if (!string.IsNullOrEmpty(supportedSerializationFormats) && supportedSerializationFormats.Contains(SupportedSerializationFormats.CosmosBinary.ToString()))
+            if (!string.IsNullOrEmpty(supportedSerializationFormats) 
+                && supportedSerializationFormats.Contains(SupportedSerializationFormats.CosmosBinary.ToString())
+                && request.OperationType.IsPointOperation())
             {
                 responseSerializationFormat = JsonSerializationFormat.Binary;
             }
