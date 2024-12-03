@@ -36,7 +36,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                      resourceType: Documents.ResourceType.Document,
                      operationType: OperationType.Create,
                      requestSessionToken: default,
-                     locationEndpoint: new Uri("https://dummy.url")),
+                     locationEndpoint: new Uri("https://dummy.url"),
+                     "region1"),
 
                  new StoreResponseStatistics(
                      requestStartTime: DateTime.Now,
@@ -48,7 +49,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                      resourceType: Documents.ResourceType.Document,
                      operationType: OperationType.Create,
                      requestSessionToken: default,
-                     locationEndpoint: new Uri("https://dummy.url"))
+                     locationEndpoint: new Uri("https://dummy.url"),
+                     "region1")
             };
 
             recorder.Record(stats, "databaseId", "containerId");

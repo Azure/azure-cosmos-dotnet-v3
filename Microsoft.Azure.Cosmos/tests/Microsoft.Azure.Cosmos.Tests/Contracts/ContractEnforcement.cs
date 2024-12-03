@@ -258,7 +258,9 @@
             List<string> nonTelemetryModels = new()
             {
                 "AzureVMMetadata",
-                "Compute"
+                "Compute",
+                "NetworkMetricData",
+                "OperationMetricData"
             };
 
             TypeTree locally = new(typeof(object));
