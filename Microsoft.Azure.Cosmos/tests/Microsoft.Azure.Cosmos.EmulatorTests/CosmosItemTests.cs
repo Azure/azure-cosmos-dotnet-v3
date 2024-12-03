@@ -671,6 +671,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DataRow(true, DisplayName = "Container creation and deletion with binary encoding enabled.")]
+        [DataRow(false, DisplayName = "Container creation and deletion with binary encoding disabled.")]
+        public async Task ContainerCreationDeletionTest(bool binaryEncodingEnabledInClient)
+        {
+            string containerId = Guid.NewGuid().ToString();
+            try
+            {
+                if (binaryEncodingEnabledInClient)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                }
+
+                // Create the container
+                string partitionKeyPath = "/pk";
+                ContainerProperties containerProperties = new ContainerProperties(containerId, partitionKeyPath);
+                ContainerResponse createResponse = await this.database.CreateContainerAsync(containerProperties);
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                Assert.IsNotNull(createResponse.Container);
+
+                // Perform a read operation to verify the container exists
+                Container readContainer = this.database.GetContainer(containerId);
+                ContainerResponse readResponse = await readContainer.ReadContainerAsync();
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.IsNotNull(readResponse.Resource);
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                Cosmos.PartitionKey? partitionKey = testItem.pk != null ? new Cosmos.PartitionKey(testItem.pk) : (Cosmos.PartitionKey?)null;
+                ItemResponse<ToDoActivity> itemResponse = await readContainer.CreateItemAsync(testItem, partitionKey);
+                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+
+                // Delete the container
+                ContainerResponse deleteResponse = await readContainer.DeleteContainerAsync();
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+                // Attempt to read the container again to ensure it was deleted
+                try
+                {
+                    await readContainer.ReadContainerAsync();
+                    Assert.Fail("Expected a NotFound exception after deleting the container.");
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    Assert.IsNotNull(ex);
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+                try
+                {
+                    Container container = this.database.GetContainer(containerId);
+                    await container.DeleteContainerAsync();
+                }
+                catch
+                {
+                    // Ignore exceptions in cleanup
+                }
+            }
+        }
+
+        [TestMethod]
         [DataRow(true, true, DisplayName = "Test scenario when binary encoding is enabled at client level and expected stream response type is binary.")]
         [DataRow(true, false, DisplayName = "Test scenario when binary encoding is enabled at client level and expected stream response type is text.")]
         [DataRow(false, true, DisplayName = "Test scenario when binary encoding is disabled at client level and expected stream response type is binary.")]
