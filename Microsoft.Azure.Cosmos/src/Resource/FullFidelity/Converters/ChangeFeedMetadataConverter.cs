@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 {
     using System;
+    using System.Collections.Generic;
     using System.Globalization;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -56,6 +57,19 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 {
                     metadata.PreviousLsn = property.Value.GetInt64();
                 }
+                else if (property.NameEquals(ChangeFeedMetadataFields.DeletedItemId))
+                {
+                    metadata.DeletedItemId = property.Value.GetString();
+                }
+                else if (property.NameEquals(ChangeFeedMetadataFields.DeletedItemPartitionKey))
+                {
+                    Dictionary<string, string> partitionKey = new Dictionary<string, string>();
+                    foreach (JsonProperty pk in property.Value.EnumerateObject())
+                    {
+                        partitionKey.Add(pk.Name, pk.Value.GetString());
+                    }
+                    metadata.DeletedItemPartitionKey = partitionKey;
+                }
             }
 
             return metadata;
@@ -75,6 +89,14 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             writer.WriteNumber(ChangeFeedMetadataFields.Lsn, value.Lsn);
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
             writer.WriteNumber(ChangeFeedMetadataFields.PreviousImageLSN, value.PreviousLsn);
+            writer.WriteString(ChangeFeedMetadataFields.DeletedItemId, value.DeletedItemId);
+
+            writer.WriteStartObject("partitionKey");
+            foreach (KeyValuePair<string, string> kvp in value.DeletedItemPartitionKey)
+            {
+                writer.WriteString(kvp.Key, kvp.Value);
+            }
+            writer.WriteEndObject();
 
             writer.WriteEndObject();
         }
