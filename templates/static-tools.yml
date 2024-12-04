@@ -25,7 +25,6 @@ jobs:
 
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
     displayName: 'BinSkim'
-    condition: eq(1,2) #disablng as nuget repo failing
     inputs:
         AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Client.dll
         AnalyzeRecurse:     true
@@ -37,7 +36,6 @@ jobs:
   # Analyze source and build output text files for credentials
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
     displayName: 'CredScan'
-    condition: eq(1,2) #disablng as nuget repo failing
     inputs:
       toolMajorVersion: V2
       scanFolder: $(Build.SourcesDirectory)
@@ -48,7 +46,6 @@ jobs:
   # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
     displayName: 'PoliCheck'
-    condition: eq(1,2) #disablng as nuget repo failing
     inputs:
       targetType: F
       optionsFC: 0
