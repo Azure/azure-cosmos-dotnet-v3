@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Documents
     ///     - Client (for direct mode clients)
     /// StoreClient uses the ReplicatedResourceClient to make requests to the backend.
     /// </summary>
-    internal sealed class StoreClient : IStoreClient
+    internal sealed class StoreClient : IStoreClient, IDisposable
     {
         private readonly ISessionContainer sessionContainer;
         private readonly ReplicatedResourceClient replicatedResourceClient;
@@ -29,9 +29,9 @@ namespace Microsoft.Azure.Documents
         private readonly TransportClient transportClient;
         private readonly IServiceConfigurationReader serviceConfigurationReader;
         private readonly bool enableRequestDiagnostics;
-
-        // TODO: Make store client Disposable?
-        private readonly AddressResolverConnectionStateListener resolverConnectionStateListener;
+        private readonly ConnectionStateListener connectionStateListener;
+        private readonly IAddressResolver addressResolver;
+        private bool addressResolverUnregistered = false;
 
         public StoreClient(
             IAddressResolver addressResolver,
@@ -40,21 +40,22 @@ namespace Microsoft.Azure.Documents
             IAuthorizationTokenProvider userTokenProvider,
             Protocol protocol,
             TransportClient transportClient,
+            ConnectionStateListener connectionStateListener,
             bool enableRequestDiagnostics = false,
             bool enableReadRequestsFallback = false,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
-            RetryWithConfiguration retryWithConfiguration = null,
-            ConnectionStateListener connectionStateListener = null)
+            RetryWithConfiguration retryWithConfiguration = null)
         {
             this.transportClient = transportClient;
             this.serviceConfigurationReader = serviceConfigurationReader;
             this.sessionContainer = sessionContainer;
             this.enableRequestDiagnostics = enableRequestDiagnostics;
-            if (connectionStateListener != null)
-                this.resolverConnectionStateListener = new AddressResolverConnectionStateListener(addressResolver, connectionStateListener);
+            this.addressResolver = addressResolver;
+            this.connectionStateListener = connectionStateListener ?? throw new ArgumentNullException(nameof(connectionStateListener));
+            connectionStateListener.Register(addressResolver);
 
             // Note that, in future, the SetOpenConnectionsHandler() will be moved into IAddressResolver interface
             // thus the if-else condition would not be necessary once the methods are moved.
@@ -320,6 +321,15 @@ namespace Microsoft.Azure.Documents
                 return;
             }
             rntbdTransportClient.OnDisableRntbdChannel += action;
+        }
+
+        public void Dispose()
+        {
+            if (! this.addressResolverUnregistered)
+            {
+                this.connectionStateListener.UnRegister(this.addressResolver);
+                this.addressResolverUnregistered = true;
+            }
         }
 
         #endregion

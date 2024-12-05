@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents.Rntbd;
     using static Microsoft.Azure.Documents.ConnectionStateListener;
 
@@ -20,42 +22,24 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class ConnectionStateListener : IConnectionStateListener
     {
-        readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> serverKeyEventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
+        readonly ConcurrentDictionary<IAddressResolver, IAddressResolver> addressResolvers;
 
         public ConnectionStateListener()
         {
         }
 
-        // TODO: Remove, this is a temporary constructor to make the test pass
-        public ConnectionStateListener(IAddressResolver _)
+        public void Register(IAddressResolver globalAddressResolver)
         {
+            if (globalAddressResolver == null) throw new ArgumentNullException(nameof(globalAddressResolver));
+
+            this.addressResolvers.GetOrAdd(globalAddressResolver, globalAddressResolver);
         }
 
-        public void Register(ServerKey serverKey, 
-            EventHandler<ServerKey> serverKeyEventHandler)
+        public void UnRegister(IAddressResolver globalAddressResolver)
         {
-            if (serverKey == null || serverKeyEventHandler == null) throw new ArgumentNullException(serverKeyEventHandler != null ? nameof(serverKeyEventHandler) : nameof(serverKey));
+            if (globalAddressResolver == null) throw new ArgumentNullException(nameof(globalAddressResolver));
 
-            this.serverKeyEventHandlers.AddOrUpdate(serverKey,
-                addValueFactory: serverKey => new EventHandler<ServerKey>(serverKeyEventHandler),
-                updateValueFactory: (serverKey, value) =>
-                    {
-                        value += serverKeyEventHandler;
-                        return value;
-                    });
-
-            this.serverKeyEventHandlers[serverKey] = serverKeyEventHandler;
-        }
-
-        public void UnRegister(ServerKey serverKey,
-            EventHandler<ServerKey> serverKeyEventHandler)
-        {
-            if (serverKey == null || serverKeyEventHandler == null) throw new ArgumentNullException(serverKeyEventHandler != null ? nameof(serverKeyEventHandler) : nameof(serverKey));
-
-            if (this.serverKeyEventHandlers.TryGetValue(serverKey, out EventHandler<ServerKey> handler))
-            {
-                handler -= serverKeyEventHandler;
-            }
+            this.addressResolvers.TryRemove(globalAddressResolver, out _);
         }
 
         public void OnConnectionEvent(ConnectionEvent connectionEvent, 
@@ -69,60 +53,16 @@ namespace Microsoft.Azure.Documents
 
             if (connectionEvent == ConnectionEvent.ReadEof || connectionEvent == ConnectionEvent.ReadFailure)
             {
-                if (this.serverKeyEventHandlers.TryGetValue(serverKey, out EventHandler<ServerKey> stateHandler))
-                {
-                    Task updateCacheTask = Task.Run(
-                        () => stateHandler.Invoke(this, serverKey));
-                }
-            }
-        }
-
-        internal sealed class AddressResolverConnectionStateListener : IDisposable
-        {
-            private readonly IAddressResolver addressResolver;
-            private readonly ConnectionStateListener connectionStateListener;
-            private readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> eventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
-
-            public AddressResolverConnectionStateListener(IAddressResolver addressResolver,
-                ConnectionStateListener connectionStateListener)
-            {
-                this.addressResolver = addressResolver;
-                this.connectionStateListener = connectionStateListener;
-            }
-
-            public void Register(ServerKey serverKey)
-            {
-#pragma warning disable VSTHRD101 // Avoid unsupported async delegates
-                EventHandler<ServerKey> handler = new EventHandler<ServerKey>(async (sender, args) => await this.OnConnectionEventAsync(sender, args));
-#pragma warning restore VSTHRD101 // Avoid unsupported async delegates
-
-                this.eventHandlers.Add(handler);
-                this.connectionStateListener.Register(serverKey, handler);
-            }
-
-            public void Dispose()
-            {
-                if (this.eventHandlers.Any())
-                {
-                    foreach(KeyValuePair<ServerKey, EventHandler<ServerKey>> entry in this.eventHandlers)
+                Task updateCacheTask = Task.Run(
+                    async () =>
                     {
-                        this.connectionStateListener.UnRegister(entry.Key, entry.Value);
-                    }
-
-                    this.eventHandlers.Clear();
-                }
-            }
-
-            private async Task OnConnectionEventAsync(object? _, ServerKey serverKey)
-            {
-                try
-                {
-                    await this.addressResolver.UpdateAsync(serverKey);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceWarning("AddressCache update failed: {0}", ex.InnerException);
-                }
+                        /// Number of resolvers are #accounts
+                        /// Unless the registration is at the ServerKey level nested loop iteration is not avoidable
+                        foreach (GlobalAddressResolver resolver in this.addressResolvers.Keys)
+                        {
+                            await resolver.UpdateAsync(serverKey, CancellationToken.None);
+                        }
+                    });
             }
         }
     }
