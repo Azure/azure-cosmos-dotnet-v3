@@ -704,6 +704,11 @@
             {
                 throw new NotImplementedException();
             }
+
+            public void Register(IConnectionStateListener connectionStateListener)
+            {
+                throw new NotImplementedException();
+            }
         }
 
         private class MockTransportClient : TransportClient

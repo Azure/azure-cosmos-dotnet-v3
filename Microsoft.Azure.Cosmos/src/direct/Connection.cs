@@ -452,7 +452,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         }
 
         /// <summary>
-        /// Notify the connection health status by updating the transit timeout counters.
+        /// NotifyAsync the connection health status by updating the transit timeout counters.
         /// </summary>
         /// <param name="isCompleted">A boolean flag indicating if the request is completed successfully.</param>
         /// <param name="isReadRequest">An optional boolean flag indicating if the current operation is read-only in nature.</param>

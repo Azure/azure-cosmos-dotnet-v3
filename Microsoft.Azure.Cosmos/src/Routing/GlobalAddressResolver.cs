@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        // Explicit unregistering is not needed
         public void Register(IConnectionStateListener connectionStateListener)
         {
             this.connectionStateListener = connectionStateListener;
@@ -234,19 +235,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             resolver = this.GetAddressResolver(request);
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
-
-        ////public async Task UpdateAsync(
-        ////   ServerKey serverKey,
-        ////   CancellationToken cancellationToken)
-        ////{
-        ////    foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
-        ////    {
-        ////        // since we don't know which address cache contains the pkRanges mapped to this node,
-        ////        // we mark all transport uris that has the same server key to unhealthy status in the
-        ////        // AddressCaches of all regions.
-        ////        await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
-        ////    }
-        ////}
 
         /// <summary>
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.

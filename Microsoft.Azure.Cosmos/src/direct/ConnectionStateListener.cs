@@ -8,10 +8,10 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
-    using static Microsoft.Azure.Documents.ConnectionStateListener;
 
     /// <summary>
     /// ConnectionStateListener listens to the connection reset event notification fired by the transport client
@@ -22,39 +22,44 @@ namespace Microsoft.Azure.Documents
     {
         // Unbounded on number of endpoints
         readonly bool enableTcpConnectionEndpointRediscovery;
-        readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> serverKeyEventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
+        readonly ConcurrentDictionary<ServerKey, ConcurrentDictionary<Func<ServerKey, Task>, object>> serverKeyEventHandlers = new();
+        readonly SemaphoreSlim notificationConcurrency;
 
         public ConnectionStateListener(bool enableTcpConnectionEndpointRediscovery)
         {
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
+
+            // TODO: Control through environment variable 
+            // Default to the processor count 
+            this.notificationConcurrency = new SemaphoreSlim(Environment.ProcessorCount);
         }
 
-        public void Register(ServerKey serverKey, 
-            EventHandler<ServerKey> serverKeyEventHandler)
+        public void Register(ServerKey serverKey,
+            Func<ServerKey, Task> serverKeyEventHandler)
         {
             if (!this.enableTcpConnectionEndpointRediscovery) return;
 
             if (serverKey == null || serverKeyEventHandler == null) throw new ArgumentNullException(serverKeyEventHandler != null ? nameof(serverKeyEventHandler) : nameof(serverKey));
 
             this.serverKeyEventHandlers.AddOrUpdate(serverKey,
-                addValueFactory: serverKey => new EventHandler<ServerKey>(serverKeyEventHandler),
+                addValueFactory: serverKey => new (),
                 updateValueFactory: (serverKey, value) =>
                     {
-                        value += serverKeyEventHandler;
+                        value.GetOrAdd(serverKeyEventHandler, serverKeyEventHandler);
                         return value;
                     });
         }
 
         public void UnRegister(ServerKey serverKey,
-            EventHandler<ServerKey> serverKeyEventHandler)
+            Func<ServerKey, Task> serverKeyEventHandler)
         {
             if (!this.enableTcpConnectionEndpointRediscovery) return;
 
             if (serverKey == null || serverKeyEventHandler == null) throw new ArgumentNullException(serverKeyEventHandler != null ? nameof(serverKeyEventHandler) : nameof(serverKey));
 
-            if (this.serverKeyEventHandlers.TryGetValue(serverKey, out EventHandler<ServerKey> handler))
+            if (this.serverKeyEventHandlers.TryGetValue(serverKey, out ConcurrentDictionary<Func<ServerKey, Task>, object> handler))
             {
-                handler -= serverKeyEventHandler;
+                handler.TryRemove(serverKeyEventHandler, out _);
             }
         }
 
@@ -71,61 +76,30 @@ namespace Microsoft.Azure.Documents
 
             if (connectionEvent == ConnectionEvent.ReadEof || connectionEvent == ConnectionEvent.ReadFailure)
             {
-                if (this.serverKeyEventHandlers.TryGetValue(serverKey, out EventHandler<ServerKey> stateHandler))
+                if (this.serverKeyEventHandlers.TryGetValue(serverKey, out ConcurrentDictionary<Func<ServerKey, Task>, object> handlers))
                 {
+                    // Tasks will be queued async but they will be blocked on the concurrency 
                     Task updateCacheTask = Task.Run(
-                        () => stateHandler.Invoke(this, serverKey));
+                        async () => await this.NotifyAsync(serverKey, handlers));
                 }
             }
         }
 
-////        internal sealed class AddressResolverConnectionStateListener : IDisposable
-////        {
-////            private readonly IAddressResolver addressResolver;
-////            private readonly ConnectionStateListener connectionStateListener;
-////            private readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> eventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
+        private async Task NotifyAsync(ServerKey serverKey, ConcurrentDictionary<Func<ServerKey, Task>, object> allCallback)
+        {
+            this.notificationConcurrency.Wait();
 
-////            public AddressResolverConnectionStateListener(IAddressResolver addressResolver,
-////                ConnectionStateListener connectionStateListener)
-////            {
-////                this.addressResolver = addressResolver;
-////                this.connectionStateListener = connectionStateListener;
-////            }
-
-////            public void Register(ServerKey serverKey)
-////            {
-////#pragma warning disable VSTHRD101 // Avoid unsupported async delegates
-////                EventHandler<ServerKey> handler = new EventHandler<ServerKey>(async (sender, args) => await this.OnConnectionEventAsync(sender, args));
-////#pragma warning restore VSTHRD101 // Avoid unsupported async delegates
-
-////                this.eventHandlers.Add(handler);
-////                this.connectionStateListener.Register(serverKey, handler);
-////            }
-
-////            public void Dispose()
-////            {
-////                if (this.eventHandlers.Any())
-////                {
-////                    foreach(KeyValuePair<ServerKey, EventHandler<ServerKey>> entry in this.eventHandlers)
-////                    {
-////                        this.connectionStateListener.UnRegister(entry.Key, entry.Value);
-////                    }
-
-////                    this.eventHandlers.Clear();
-////                }
-////            }
-
-////            private async Task OnConnectionEventAsync(object? _, ServerKey serverKey)
-////            {
-////                try
-////                {
-////                    await this.addressResolver.UpdateAsync(serverKey);
-////                }
-////                catch (Exception ex)
-////                {
-////                    DefaultTrace.TraceWarning("AddressCache update failed: {0}", ex.InnerException);
-////                }
-////            }
-////        }
+            try
+            {
+                foreach (Func<ServerKey, Task> entry in allCallback.Keys)
+                {
+                    await entry(serverKey);
+                }
+            }
+            finally
+            {
+                this.notificationConcurrency.Release();
+            }
+        }
     }
 }

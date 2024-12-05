@@ -501,8 +501,8 @@ namespace Antlr4.Runtime
             _parseListeners = null;
         }
 
-        /// <summary>Notify any parse listeners of an enter rule event.</summary>
-        /// <remarks>Notify any parse listeners of an enter rule event.</remarks>
+        /// <summary>NotifyAsync any parse listeners of an enter rule event.</summary>
+        /// <remarks>NotifyAsync any parse listeners of an enter rule event.</remarks>
         /// <seealso cref="AddParseListener(Antlr4.Runtime.Tree.IParseTreeListener)"/>
         protected internal virtual void TriggerEnterRuleEvent()
         {
@@ -513,8 +513,8 @@ namespace Antlr4.Runtime
             }
         }
 
-        /// <summary>Notify any parse listeners of an exit rule event.</summary>
-        /// <remarks>Notify any parse listeners of an exit rule event.</remarks>
+        /// <summary>NotifyAsync any parse listeners of an exit rule event.</summary>
+        /// <remarks>NotifyAsync any parse listeners of an exit rule event.</remarks>
         /// <seealso cref="AddParseListener(Antlr4.Runtime.Tree.IParseTreeListener)"/>
         protected internal virtual void TriggerExitRuleEvent()
         {

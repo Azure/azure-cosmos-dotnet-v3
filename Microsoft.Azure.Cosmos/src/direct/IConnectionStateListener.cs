@@ -4,7 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents.Rntbd;
 
     internal interface IConnectionStateListener
@@ -14,14 +14,14 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="serverKey"></param>
         /// <param name="serverKeyEventHandler"></param>
-        void Register(ServerKey serverKey, EventHandler<ServerKey> serverKeyEventHandler);
+        void Register(ServerKey serverKey, Func<ServerKey, Task> serverKeyEventHandler);
 
         /// <summary>
         /// Consumer: upstream caches un-registers
         /// </summary>
         /// <param name="serverKey"></param>
         /// <param name="serverKeyEventHandler"></param>
-        void UnRegister(ServerKey serverKey, EventHandler<ServerKey> serverKeyEventHandler);
+        void UnRegister(ServerKey serverKey, Func<ServerKey, Task> serverKeyEventHandler);
 
         /// <summary>
         /// Producer: Downstram transport initiates

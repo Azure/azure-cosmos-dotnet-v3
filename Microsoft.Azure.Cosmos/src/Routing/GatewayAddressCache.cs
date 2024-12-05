@@ -839,7 +839,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         });
                     lock (pkRangeIdSet)
                     {
-                        if (newlyCreated) this.connectionStateListener.Register(serverKey, this);
+                        if (newlyCreated) this.connectionStateListener.Register(serverKey, this.MarkAddressesToUnhealthyAsync);
                         pkRangeIdSet.Add(partitionKeyRangeIdentity);
                     }
                 }
