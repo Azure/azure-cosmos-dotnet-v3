@@ -77,6 +77,11 @@ namespace Microsoft.Azure.Cosmos
             return result.Addresses;
         }
 
+        public void Register(IConnectionStateListener connectionStateListener)
+        {
+            throw new NotImplementedException();
+        }
+
         private static bool IsSameCollection(PartitionKeyRange initiallyResolved, PartitionKeyRange newlyResolved)
         {
             if (initiallyResolved == null)

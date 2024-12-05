@@ -16,8 +16,8 @@ namespace Microsoft.Azure.Documents
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken);
 
-        Task UpdateAsync(
-           ServerKey serverKey,
-           CancellationToken cancellationToken = default(CancellationToken));
+        // Expected to be called once
+        // Caller can replace the existing instance as idempotency 
+        void Register(IConnectionStateListener connectionStateListener);
     }
 }

@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
-    using static Microsoft.Azure.Documents.ConnectionStateListener;
 
     /// <summary>
     /// Instantiated to issue direct connectivity requests to the backend on:
@@ -30,9 +29,6 @@ namespace Microsoft.Azure.Documents
         private readonly IServiceConfigurationReader serviceConfigurationReader;
         private readonly bool enableRequestDiagnostics;
 
-        // TODO: Make store client Disposable?
-        private readonly AddressResolverConnectionStateListener resolverConnectionStateListener;
-
         public StoreClient(
             IAddressResolver addressResolver,
             ISessionContainer sessionContainer,
@@ -46,15 +42,12 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues = false,
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
-            RetryWithConfiguration retryWithConfiguration = null,
-            ConnectionStateListener connectionStateListener = null)
+            RetryWithConfiguration retryWithConfiguration = null)
         {
             this.transportClient = transportClient;
             this.serviceConfigurationReader = serviceConfigurationReader;
             this.sessionContainer = sessionContainer;
             this.enableRequestDiagnostics = enableRequestDiagnostics;
-            if (connectionStateListener != null)
-                this.resolverConnectionStateListener = new AddressResolverConnectionStateListener(addressResolver, connectionStateListener);
 
             // Note that, in future, the SetOpenConnectionsHandler() will be moved into IAddressResolver interface
             // thus the if-else condition would not be necessary once the methods are moved.

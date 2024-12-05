@@ -20,20 +20,20 @@ namespace Microsoft.Azure.Documents
 
     internal sealed class ConnectionStateListener : IConnectionStateListener
     {
+        // Unbounded on number of endpoints
+        readonly bool enableTcpConnectionEndpointRediscovery;
         readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> serverKeyEventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
 
-        public ConnectionStateListener()
+        public ConnectionStateListener(bool enableTcpConnectionEndpointRediscovery)
         {
-        }
-
-        // TODO: Remove, this is a temporary constructor to make the test pass
-        public ConnectionStateListener(IAddressResolver _)
-        {
+            this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
         }
 
         public void Register(ServerKey serverKey, 
             EventHandler<ServerKey> serverKeyEventHandler)
         {
+            if (!this.enableTcpConnectionEndpointRediscovery) return;
+
             if (serverKey == null || serverKeyEventHandler == null) throw new ArgumentNullException(serverKeyEventHandler != null ? nameof(serverKeyEventHandler) : nameof(serverKey));
 
             this.serverKeyEventHandlers.AddOrUpdate(serverKey,
@@ -43,13 +43,13 @@ namespace Microsoft.Azure.Documents
                         value += serverKeyEventHandler;
                         return value;
                     });
-
-            this.serverKeyEventHandlers[serverKey] = serverKeyEventHandler;
         }
 
         public void UnRegister(ServerKey serverKey,
             EventHandler<ServerKey> serverKeyEventHandler)
         {
+            if (!this.enableTcpConnectionEndpointRediscovery) return;
+
             if (serverKey == null || serverKeyEventHandler == null) throw new ArgumentNullException(serverKeyEventHandler != null ? nameof(serverKeyEventHandler) : nameof(serverKey));
 
             if (this.serverKeyEventHandlers.TryGetValue(serverKey, out EventHandler<ServerKey> handler))
@@ -62,6 +62,8 @@ namespace Microsoft.Azure.Documents
             DateTime eventTime, 
             ServerKey serverKey)
         {
+            if (!this.enableTcpConnectionEndpointRediscovery) return;
+
             DefaultTrace.TraceInformation("OnConnectionEventAsync fired, connectionEvent :{0}, eventTime: {1}, serverKey: {2}",
                 connectionEvent,
                 eventTime,
@@ -77,53 +79,53 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        internal sealed class AddressResolverConnectionStateListener : IDisposable
-        {
-            private readonly IAddressResolver addressResolver;
-            private readonly ConnectionStateListener connectionStateListener;
-            private readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> eventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
+////        internal sealed class AddressResolverConnectionStateListener : IDisposable
+////        {
+////            private readonly IAddressResolver addressResolver;
+////            private readonly ConnectionStateListener connectionStateListener;
+////            private readonly ConcurrentDictionary<ServerKey, EventHandler<ServerKey>> eventHandlers = new ConcurrentDictionary<ServerKey, EventHandler<ServerKey>>();
 
-            public AddressResolverConnectionStateListener(IAddressResolver addressResolver,
-                ConnectionStateListener connectionStateListener)
-            {
-                this.addressResolver = addressResolver;
-                this.connectionStateListener = connectionStateListener;
-            }
+////            public AddressResolverConnectionStateListener(IAddressResolver addressResolver,
+////                ConnectionStateListener connectionStateListener)
+////            {
+////                this.addressResolver = addressResolver;
+////                this.connectionStateListener = connectionStateListener;
+////            }
 
-            public void Register(ServerKey serverKey)
-            {
-#pragma warning disable VSTHRD101 // Avoid unsupported async delegates
-                EventHandler<ServerKey> handler = new EventHandler<ServerKey>(async (sender, args) => await this.OnConnectionEventAsync(sender, args));
-#pragma warning restore VSTHRD101 // Avoid unsupported async delegates
+////            public void Register(ServerKey serverKey)
+////            {
+////#pragma warning disable VSTHRD101 // Avoid unsupported async delegates
+////                EventHandler<ServerKey> handler = new EventHandler<ServerKey>(async (sender, args) => await this.OnConnectionEventAsync(sender, args));
+////#pragma warning restore VSTHRD101 // Avoid unsupported async delegates
 
-                this.eventHandlers.Add(handler);
-                this.connectionStateListener.Register(serverKey, handler);
-            }
+////                this.eventHandlers.Add(handler);
+////                this.connectionStateListener.Register(serverKey, handler);
+////            }
 
-            public void Dispose()
-            {
-                if (this.eventHandlers.Any())
-                {
-                    foreach(KeyValuePair<ServerKey, EventHandler<ServerKey>> entry in this.eventHandlers)
-                    {
-                        this.connectionStateListener.UnRegister(entry.Key, entry.Value);
-                    }
+////            public void Dispose()
+////            {
+////                if (this.eventHandlers.Any())
+////                {
+////                    foreach(KeyValuePair<ServerKey, EventHandler<ServerKey>> entry in this.eventHandlers)
+////                    {
+////                        this.connectionStateListener.UnRegister(entry.Key, entry.Value);
+////                    }
 
-                    this.eventHandlers.Clear();
-                }
-            }
+////                    this.eventHandlers.Clear();
+////                }
+////            }
 
-            private async Task OnConnectionEventAsync(object? _, ServerKey serverKey)
-            {
-                try
-                {
-                    await this.addressResolver.UpdateAsync(serverKey);
-                }
-                catch (Exception ex)
-                {
-                    DefaultTrace.TraceWarning("AddressCache update failed: {0}", ex.InnerException);
-                }
-            }
-        }
+////            private async Task OnConnectionEventAsync(object? _, ServerKey serverKey)
+////            {
+////                try
+////                {
+////                    await this.addressResolver.UpdateAsync(serverKey);
+////                }
+////                catch (Exception ex)
+////                {
+////                    DefaultTrace.TraceWarning("AddressCache update failed: {0}", ex.InnerException);
+////                }
+////            }
+////        }
     }
 }

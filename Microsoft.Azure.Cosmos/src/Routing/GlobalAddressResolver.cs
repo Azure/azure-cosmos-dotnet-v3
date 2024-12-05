@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
         private IOpenConnectionsHandler openConnectionsHandler;
+        private IConnectionStateListener connectionStateListener = null;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
@@ -82,6 +83,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.GetOrAddEndpoint(endpoint);
             }
+        }
+
+        public void Register(IConnectionStateListener connectionStateListener)
+        {
+            this.connectionStateListener = connectionStateListener;
         }
 
         public async Task OpenAsync(
@@ -229,18 +235,18 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
-        public async Task UpdateAsync(
-           ServerKey serverKey,
-           CancellationToken cancellationToken)
-        {
-            foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
-            {
-                // since we don't know which address cache contains the pkRanges mapped to this node,
-                // we mark all transport uris that has the same server key to unhealthy status in the
-                // AddressCaches of all regions.
-                await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
-            }
-        }
+        ////public async Task UpdateAsync(
+        ////   ServerKey serverKey,
+        ////   CancellationToken cancellationToken)
+        ////{
+        ////    foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
+        ////    {
+        ////        // since we don't know which address cache contains the pkRanges mapped to this node,
+        ////        // we mark all transport uris that has the same server key to unhealthy status in the
+        ////        // AddressCaches of all regions.
+        ////        await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
+        ////    }
+        ////}
 
         /// <summary>
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.
@@ -285,6 +291,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.openConnectionsHandler,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
+
+                    gatewayAddressCache.Register(this.connectionStateListener);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

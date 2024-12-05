@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Documents
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
-        private readonly ConnectionStateListener connectionStateListener = null;
+        private readonly ConnectionStateListener connectionStateListener;
 
         public StoreClientFactory(
             Protocol protocol,
@@ -45,7 +45,6 @@ namespace Microsoft.Azure.Documents
             RetryWithConfiguration retryWithConfiguration = null,
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
-            IAddressResolver addressResolver = null, // globalAddressResolver
             TimeSpan localRegionOpenTimeout = default,
             bool enableChannelMultiplexing = false,
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
@@ -194,10 +193,7 @@ namespace Microsoft.Azure.Documents
                     sendHangDetectionTimeSeconds = maxSendHangDetectionTimeSeconds;
                 }
 
-                if (enableTcpConnectionEndpointRediscovery)
-                {
-                    this.connectionStateListener = new ConnectionStateListener();
-                }
+                this.connectionStateListener = new ConnectionStateListener(enableTcpConnectionEndpointRediscovery);
 
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
 
@@ -317,6 +313,8 @@ namespace Microsoft.Azure.Documents
         {
             this.ThrowIfDisposed();
 
+            addressResolver.Register(this.connectionStateListener);
+
             StoreClient storeClient;
             if (useFallbackClient && this.fallbackTransportClient != null)
             {
@@ -334,8 +332,7 @@ namespace Microsoft.Azure.Documents
                     detectClientConnectivityIssues: detectClientConnectivityIssues,
                     disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                     retryWithConfiguration: this.retryWithConfiguration,
-                    enableReplicaValidation: enableReplicaValidation,
-                    connectionStateListener: this.connectionStateListener);
+                    enableReplicaValidation: enableReplicaValidation);
             }
             else
             {
@@ -352,8 +349,7 @@ namespace Microsoft.Azure.Documents
                     detectClientConnectivityIssues: detectClientConnectivityIssues,
                     disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                     retryWithConfiguration: this.retryWithConfiguration,
-                    enableReplicaValidation: enableReplicaValidation,
-                    connectionStateListener: this.connectionStateListener);
+                    enableReplicaValidation: enableReplicaValidation);
             }
 
             return storeClient;

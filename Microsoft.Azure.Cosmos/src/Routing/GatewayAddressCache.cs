@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly Uri serviceEndpoint;
         private readonly Uri addressEndpoint;
+        private IConnectionStateListener connectionStateListener;
 
         private readonly AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation> serverPartitionAddressCache;
         private readonly ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime> suboptimalServerPartitionTimestamps;
@@ -828,11 +829,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                        partitionKeyRangeIdentity.PartitionKeyRangeId,
                        addressInfo.PhysicalUri);
 
+                    bool newlyCreated = false;
+                    ServerKey serverKey = new ServerKey(new Uri(addressInfo.PhysicalUri));
                     HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)),
-                        (_) => new HashSet<PartitionKeyRangeIdentity>());
+                        serverKey,
+                        (_) => {
+                            newlyCreated = true;
+                            return new HashSet<PartitionKeyRangeIdentity>(); 
+                        });
                     lock (pkRangeIdSet)
                     {
+                        if (newlyCreated) this.connectionStateListener.Register(serverKey, this);
                         pkRangeIdSet.Add(partitionKeyRangeIdentity);
                     }
                 }
@@ -1085,6 +1092,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         public void Dispose()
         {
             this.Dispose(disposing: true);
+        }
+
+        internal void Register(IConnectionStateListener connectionStateListener)
+        {
+            this.connectionStateListener = connectionStateListener;
         }
     }
 }
