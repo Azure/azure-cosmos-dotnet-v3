@@ -40,7 +40,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
         private IOpenConnectionsHandler openConnectionsHandler;
-        private IConnectionStateListener connectionStateListener = null;
 
         public GlobalAddressResolver(
             GlobalEndpointManager endpointManager,
