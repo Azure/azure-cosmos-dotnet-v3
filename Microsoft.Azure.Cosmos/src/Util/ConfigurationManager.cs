@@ -147,10 +147,8 @@ namespace Microsoft.Azure.Cosmos
         public static bool IsLiteClientEnabled(
             bool defaultValue)
         {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.LiteClientModeEnabled,
-                        defaultValue: defaultValue);
+            Console.WriteLine(defaultValue);
+            return true;
         }
 
         /// <summary>
@@ -164,10 +162,8 @@ namespace Microsoft.Azure.Cosmos
         public static string GetLiteClientEndpoint(
             string defaultValue)
         {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.LiteClientEndpoint,
-                        defaultValue: defaultValue);
+            Console.WriteLine(defaultValue);
+            return "https://cdb-ms-stage-eastus2-fe2.eastus2.cloudapp.azure.com:10650";
         }
     }
 }

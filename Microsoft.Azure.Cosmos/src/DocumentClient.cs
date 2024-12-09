@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-        private string liteClientTestEndpoint = "https://aavasthy-vmsstest.sql.cosmos.azure.com:10650";
+        private string liteClientTestEndpoint = "https://cdb-ms-stage-eastus2-fe2.eastus2.cloudapp.azure.com:10650";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the

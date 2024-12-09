@@ -389,10 +389,10 @@
             };
 
             CosmosClient client = new CosmosClient(
-                "https://aavasthy-vmsstest.documents.azure.com:443/",
-                "key",
-                clientOptions
-            );
+                 "account",
+                 "key",
+                 clientOptions
+             );
 
             DatabaseResponse dbResponse = await client.CreateDatabaseIfNotExistsAsync(databaseName);
 
