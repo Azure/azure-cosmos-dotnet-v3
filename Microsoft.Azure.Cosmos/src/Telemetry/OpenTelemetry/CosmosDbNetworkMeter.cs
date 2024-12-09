@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Populator Used for Dimension Attributes
         /// </summary>
-        internal static IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+        internal static IActivityAttributePopulator DimensionPopulator;
 
         private static Histogram<double> RequestLatencyHistogram = null;
 
@@ -43,13 +43,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
-        internal static void Initialize()
+        internal static void Initialize(CosmosClientMetricsOptions metricsOptions)
         {
             // If already initialized, do not initialize again
             if (IsEnabled)
             {
                 return;
             }
+
+            DimensionPopulator = TracesStabilityFactory.GetAttributePopulator(metricsOptions);
 
             CosmosDbNetworkMeter.RequestLatencyHistogram ??= NetworkMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.NetworkMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.NetworkMetrics.Unit.Sec,

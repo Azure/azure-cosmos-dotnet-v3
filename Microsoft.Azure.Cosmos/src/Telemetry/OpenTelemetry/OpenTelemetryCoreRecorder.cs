@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         private readonly QueryTextMode? queryTextMode = null;
 
-        private readonly IActivityAttributePopulator activityAttributePopulator = TracesStabilityFactory.GetAttributePopulator();
+        private readonly IActivityAttributePopulator activityAttributePopulator = TracesStabilityFactory.GetAttributePopulator(null);
 
         private OpenTelemetryAttributes response = null;
 

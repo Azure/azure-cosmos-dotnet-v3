@@ -11,6 +11,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal sealed class AppInsightClassicAttributeKeys : IActivityAttributePopulator
     {
+        private readonly OperationMetricsOptions operationMetricsOptions;
+
+        public AppInsightClassicAttributeKeys(CosmosClientMetricsOptions metricsOptions)
+        {
+            this.operationMetricsOptions = metricsOptions.OperationMetricsOption;
+        }
+
         /// <summary>
         /// Represents the diagnostic namespace for Azure Cosmos.
         /// </summary>
@@ -193,16 +200,23 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes, 
             Exception ex)
         {
-            return new KeyValuePair<string, object>[]
+            KeyValuePair<string, object>[] dimensions = new KeyValuePair<string, object>[]
             {
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.Region,  CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics))
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
+
+            if (this.operationMetricsOptions != null && this.operationMetricsOptions.IsRegionIncluded)
+            {
+                Array.Resize(ref dimensions, dimensions.Length + 1);
+                dimensions[dimensions.Length] = new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics));
+            }
+
+            return dimensions;
         }
 
         public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountEndpoint)
