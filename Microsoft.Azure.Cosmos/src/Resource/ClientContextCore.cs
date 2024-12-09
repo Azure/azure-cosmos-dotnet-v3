@@ -210,7 +210,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Tuple<string, Func<TResult, OpenTelemetryAttributes>> openTelemetry,
+            (string OperationName, Func<TResult, OpenTelemetryAttributes> GetAttributes)? openTelemetry,
             ResourceType? resourceType = null,
             TraceComponent traceComponent = TraceComponent.Transport,
             Tracing.TraceLevel traceLevel = Tracing.TraceLevel.Info)
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Tuple<string, Func<TResult, OpenTelemetryAttributes>> openTelemetry,
+            (string OperationName, Func<TResult, OpenTelemetryAttributes> GetAttributes)? openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel,
             ResourceType? resourceType)
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             RequestOptions requestOptions,
             Func<ITrace, Task<TResult>> task,
-            Tuple<string, Func<TResult, OpenTelemetryAttributes>> openTelemetry,
+            (string OperationName, Func<TResult, OpenTelemetryAttributes> GetAttributes)? openTelemetry,
             TraceComponent traceComponent,
             Tracing.TraceLevel traceLevel,
             ResourceType? resourceType)
@@ -493,7 +493,7 @@ namespace Microsoft.Azure.Cosmos
             OperationType operationType,
             ITrace trace,
             Func<ITrace, Task<TResult>> task,
-            Tuple<string, Func<TResult, OpenTelemetryAttributes>> openTelemetry,
+            (string OperationName, Func<TResult, OpenTelemetryAttributes> GetAttributes)? openTelemetry,
             RequestOptions requestOptions,
             ResourceType? resourceType = null)
         {
@@ -510,9 +510,9 @@ namespace Microsoft.Azure.Cosmos
 
                 if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
                 {
-                    return OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
+                    return OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry?.OperationName;
                 }
-                return openTelemetry.Item1;
+                return openTelemetry?.OperationName;
             };
 
             using (OpenTelemetryCoreRecorder recorder = isOtelCompatibleOperation ? 
@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos
                     if (isOtelCompatibleOperation)
                     {
                         // Extracts and records telemetry data from the result of the operation.
-                        OpenTelemetryAttributes otelAttributes = openTelemetry?.Item2(result);
+                        OpenTelemetryAttributes otelAttributes = openTelemetry?.GetAttributes(result);
 
                         // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
                         recorder.Record(otelAttributes);
