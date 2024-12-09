@@ -13,35 +13,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
     using System;
     using System.Linq;
 
-    public class CustomMetricExporter : BaseExporter<Metric>
+    internal class CustomMetricExporter : BaseExporter<Metric>
     {
         private readonly ManualResetEventSlim manualResetEventSlim = null;
-        private readonly static List<string> expectedDimensions = new()
-        {
-            OpenTelemetryAttributeKeys.DbSystemName,
-            OpenTelemetryAttributeKeys.ContainerName,
-            OpenTelemetryAttributeKeys.DbName,
-            OpenTelemetryAttributeKeys.ServerAddress,
-            OpenTelemetryAttributeKeys.ServerPort,
-            OpenTelemetryAttributeKeys.DbOperation,
-            OpenTelemetryAttributeKeys.StatusCode,
-            OpenTelemetryAttributeKeys.SubStatusCode,
-            OpenTelemetryAttributeKeys.ConsistencyLevel,
-            OpenTelemetryAttributeKeys.Region,
-            OpenTelemetryAttributeKeys.ErrorType
-        };
 
-        private readonly static List<string> expectedDimensionsForInstanceCountMetrics = new()
-        {
-            OpenTelemetryAttributeKeys.DbSystemName,
-            OpenTelemetryAttributeKeys.ServerAddress,
-            OpenTelemetryAttributeKeys.ServerPort
-        };
-
-        public static Dictionary<string, MetricType> ActualMetrics = new Dictionary<string, MetricType>();
+        internal static Dictionary<string, MetricType> ActualMetrics = new();
+        internal static Dictionary<string, List<string>> Dimensions = new();
 
         public CustomMetricExporter(ManualResetEventSlim manualResetEventSlim)
         {
+            CustomMetricExporter.ActualMetrics = new();
+            CustomMetricExporter.Dimensions = new();
+
             this.manualResetEventSlim = manualResetEventSlim;
         }
 
@@ -62,14 +45,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                         }
                     }
 
-                    if (metric.Name == CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances)
-                    {
-                        CollectionAssert.AreEquivalent(expectedDimensionsForInstanceCountMetrics, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
-                    }
-                    else
-                    {
-                        CollectionAssert.AreEquivalent(expectedDimensions, actualDimensions.ToList(), $"Dimensions are not matching for {metric.Name}");
-                    }
+                    Dimensions.TryAdd(metric.Name, actualDimensions.ToList());
                 }
 
                 if (ActualMetrics.Count > 0)
@@ -77,10 +53,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     this.manualResetEventSlim.Set();
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine(ex);
-
                 this.manualResetEventSlim.Set();
                 return ExportResult.Failure;
             }

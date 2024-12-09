@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Net;
     using System.Net.Http;
     using System.Text;
@@ -260,7 +259,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 request.ResourceType,
                 request.OperationType,
                 request.Headers[HttpConstants.HttpHeaders.SessionToken],
-                locationEndpoint);
+                locationEndpoint, 
+                regionName);
 
             lock (this.storeResponseStatistics)
             {
@@ -352,8 +352,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             lock (this.httpResponseStatistics)
             {
                 Uri locationEndpoint = request.RequestUri;
+                object regionName = null;
                 if (request.Properties != null && 
-                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
@@ -365,7 +366,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            request.Method,
                                                                            resourceType,
                                                                            response,
-                                                                           exception: null));
+                                                                           exception: null,
+                                                                           region: Convert.ToString(regionName)));
             }
         }
 
@@ -380,8 +382,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             lock (this.httpResponseStatistics)
             {
                 Uri locationEndpoint = request.RequestUri;
+
+                object regionName = null;
                 if (request.Properties != null &&
-                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out object regionName))
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
@@ -393,7 +397,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            request.Method,
                                                                            resourceType,
                                                                            responseMessage: null,
-                                                                           exception: exception));
+                                                                           exception: exception,
+                                                                           region: Convert.ToString(regionName)));
             }
         }
 
@@ -460,7 +465,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 ResourceType resourceType,
                 OperationType operationType,
                 string requestSessionToken,
-                Uri locationEndpoint)
+                Uri locationEndpoint,
+                string region)
             {
                 this.RequestStartTime = requestStartTime;
                 this.RequestResponseTime = requestResponseTime;
@@ -470,8 +476,10 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.RequestSessionToken = requestSessionToken;
                 this.LocationEndpoint = locationEndpoint;
                 this.IsSupplementalResponse = operationType == OperationType.Head || operationType == OperationType.HeadFeed;
+                this.Region = region;
             }
 
+            public string Region { get; }
             public DateTime? RequestStartTime { get; }
             public DateTime RequestResponseTime { get; }
             public StoreResult StoreResult { get; }
@@ -492,7 +500,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 HttpMethod httpMethod,
                 ResourceType resourceType,
                 HttpResponseMessage responseMessage,
-                Exception exception)
+                Exception exception,
+                string region)
             {
                 this.RequestStartTime = requestStartTime;
                 this.Duration = requestEndTime - requestStartTime;
@@ -501,7 +510,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 this.ResourceType = resourceType;
                 this.HttpMethod = httpMethod;
                 this.RequestUri = requestUri;
-
+                this.Region = region;
+                this.ResponseContentLength = responseMessage?.Content?.Headers?.ContentLength;
                 if (responseMessage != null)
                 {
                     Headers headers = new Headers(GatewayStoreClient.ExtractResponseHeaders(responseMessage));
@@ -513,6 +523,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
             }
 
+            public string Region { get; }
             public DateTime RequestStartTime { get; }
             public TimeSpan Duration { get; }
             public HttpResponseMessage HttpResponseMessage { get; }
@@ -521,6 +532,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public HttpMethod HttpMethod { get; }
             public Uri RequestUri { get; }
             public string ActivityId { get; }
+            public long? ResponseContentLength { get; }
         }
     }
 }
