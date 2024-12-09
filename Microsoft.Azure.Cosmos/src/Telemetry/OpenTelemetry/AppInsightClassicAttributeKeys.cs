@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public AppInsightClassicAttributeKeys(CosmosClientMetricsOptions metricsOptions)
         {
-            this.operationMetricsOptions = metricsOptions.OperationMetricsOption;
+            this.operationMetricsOptions = metricsOptions.OperationMetricsOptions;
         }
 
         /// <summary>
@@ -182,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
-            return new KeyValuePair<string, object>[]
+            List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>
             {
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
@@ -191,6 +191,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
+
+            return dimensions.ToArray();
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
@@ -200,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes, 
             Exception ex)
         {
-            KeyValuePair<string, object>[] dimensions = new KeyValuePair<string, object>[]
+            List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>
             {
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
@@ -212,11 +214,18 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (this.operationMetricsOptions != null && this.operationMetricsOptions.IsRegionIncluded)
             {
-                Array.Resize(ref dimensions, dimensions.Length + 1);
-                dimensions[dimensions.Length] = new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics));
+                dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
             }
 
-            return dimensions;
+            if (this.operationMetricsOptions != null && this.operationMetricsOptions.CustomDimensions != null)
+            {
+                foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                }
+            }
+
+            return dimensions.ToArray();
         }
 
         public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountEndpoint)

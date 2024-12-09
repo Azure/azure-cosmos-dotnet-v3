@@ -15,12 +15,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// OperationMetricsOption
         /// </summary>
-        public OperationMetricsOptions OperationMetricsOption { get; set; }
+        public OperationMetricsOptions OperationMetricsOptions { get; set; }
 
         /// <summary>
         /// NetworkMetricsOption
         /// </summary>
-        public NetworkMetricsOptions NetworkMetricsOption { get; set; }
+        public NetworkMetricsOptions NetworkMetricsOptions { get; set; }
     }
 
     /// <summary>
