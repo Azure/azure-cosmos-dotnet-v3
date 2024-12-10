@@ -299,36 +299,58 @@
         [Benchmark]
         public async Task DeleteItemAsync()
         {
-            int index = this.random.Next(this.deleteItems.Count);
-            if (index >= 0 && index < this.deleteItems.Count)
+            if (this.deleteItems.Count == 0)
             {
-                Comment comment = this.deleteItems[index];
-                this.deleteItems.Remove(comment);
+                Console.WriteLine("No items left to delete in DeleteItemAsync.");
+                return;
+            }
 
-                ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(comment.id, new PartitionKey(comment.pk));
+            int index = this.random.Next(this.deleteItems.Count);
+            Comment comment = this.deleteItems[index];
 
-                if (itemResponse.StatusCode == HttpStatusCode.NotFound)
-                {
-                    Console.WriteLine($"Error: Item {comment.id} was not deleted : " + itemResponse.StatusCode);
-                }
+            // Perform the deletion
+            ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(
+                comment.id,
+                new PartitionKey(comment.pk)
+            );
+
+            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not deleted.");
+            }
+            else
+            {
+                // Only remove from list if delete succeeded
+                this.deleteItems.RemoveAt(index);
             }
         }
 
         [Benchmark]
         public async Task DeleteItemStreamAsync()
         {
-            int index = this.random.Next(this.deleteStreamItems.Count);
-            if (index >= 0 && index < this.deleteItems.Count)
+            if (this.deleteStreamItems.Count == 0)
             {
-                Comment comment = this.deleteStreamItems[index];
-                this.deleteStreamItems.Remove(comment);
+                Console.WriteLine("No items left to delete in DeleteItemStreamAsync.");
+                return;
+            }
 
-                ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(comment.id, new PartitionKey(comment.pk));
+            int index = this.random.Next(this.deleteStreamItems.Count);
+            Comment comment = this.deleteStreamItems[index];
 
-                if (itemResponse.StatusCode == HttpStatusCode.NotFound)
-                {
-                    Console.WriteLine($"Error: Item {comment.id} was not deleted stream: " + itemResponse.StatusCode);
-                }
+            // Perform the deletion
+            ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(
+                comment.id,
+                new PartitionKey(comment.pk)
+            );
+
+            if (itemResponse.StatusCode == HttpStatusCode.NotFound)
+            {
+                Console.WriteLine($"Error: Item {comment.id} was not deleted stream.");
+            }
+            else
+            {
+                // Only remove from list if delete succeeded
+                this.deleteStreamItems.RemoveAt(index);
             }
         }
 
