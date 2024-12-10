@@ -35,6 +35,8 @@
         private Database database;
         private Container container;
 
+        private const int DeleteItemsCount = 100;
+
         [GlobalSetup(Targets = new[] { nameof(CreateItemAsync), nameof(CreateItemStreamAsync) })]
         public async Task GlobalSetupCreate()
         {
@@ -45,7 +47,7 @@
         public async Task GlobalSetupRead()
         {
             await this.InitializeDatabaseAndContainers();
-            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.readItems); // Pre-create data for read operations
+            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.readItems);
             Console.WriteLine("Inserted documents for read benchmark.");
         }
 
@@ -53,7 +55,7 @@
         public async Task GlobalSetupUpsert()
         {
             await this.InitializeDatabaseAndContainers();
-            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.upsertItems); // Pre-create data for upsert operations
+            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.upsertItems);
             Console.WriteLine("Inserted documents for upsert benchmark.");
         }
 
@@ -61,7 +63,7 @@
         public async Task GlobalSetupReplace()
         {
             await this.InitializeDatabaseAndContainers();
-            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.replaceItems); // Pre-create data for replace operations
+            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.replaceItems);
             Console.WriteLine("Inserted documents for replace benchmark.");
         }
 
@@ -69,16 +71,33 @@
         public async Task GlobalSetupDelete()
         {
             await this.InitializeDatabaseAndContainers();
-            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.deleteItems); // Pre-create data for delete operations
-            Console.WriteLine("Inserted documents for delete benchmark.");
+            Console.WriteLine("Database and container ready for delete benchmark.");
         }
 
         [GlobalSetup(Targets = new[] { nameof(DeleteItemStreamAsync) })]
         public async Task GlobalSetupDeleteStream()
         {
             await this.InitializeDatabaseAndContainers();
-            await this.InitializeContainerWithPreCreatedItemsAsync(0, 100, this.deleteStreamItems); // Pre-create data for delete stream operations
-            Console.WriteLine("Inserted documents for delete stream benchmark.");
+            Console.WriteLine("Database and container ready for delete stream benchmark.");
+        }
+
+        // Must be synchronous (void) for IterationSetup
+        [IterationSetup(Target = nameof(DeleteItemAsync))]
+        public void IterationSetupDelete()
+        {
+            this.deleteItems.Clear();
+            // Blocking async call
+            this.InitializeContainerWithPreCreatedItemsAsync(0, DeleteItemsCount, this.deleteItems)
+                .GetAwaiter().GetResult();
+        }
+
+        [IterationSetup(Target = nameof(DeleteItemStreamAsync))]
+        public void IterationSetupDeleteStream()
+        {
+            this.deleteStreamItems.Clear();
+            // Blocking async call
+            this.InitializeContainerWithPreCreatedItemsAsync(0, DeleteItemsCount, this.deleteStreamItems)
+                .GetAwaiter().GetResult();
         }
 
         private async Task InitializeDatabaseAndContainers()
@@ -91,11 +110,11 @@
             };
 
             this.client = new CosmosClient(
-             "account",
-             "key",
-             clientOptions
-         );
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.databaseName);
+              "accountenpoint",
+              "key",
+              clientOptions);
+ 
+             this.database = await this.client.CreateDatabaseIfNotExistsAsync(this.databaseName);
 
             ContainerResponse containerResponse = await this.database.CreateContainerIfNotExistsAsync(
                 id: this.containerName,
@@ -113,15 +132,9 @@
             for (int i = start; i < count; i++)
             {
                 Comment comment = this.GetRandomCommentItem();
-
-                ItemRequestOptions requestOptions = new ItemRequestOptions
-                {
-                };
-
                 ItemResponse<Comment> writeResponse = await this.container.CreateItemAsync<Comment>(
                     item: comment,
-                    partitionKey: new PartitionKey(comment.pk),
-                    requestOptions: requestOptions
+                    partitionKey: new PartitionKey(comment.pk)
                 );
 
                 if (writeResponse.StatusCode == HttpStatusCode.Created)
@@ -145,14 +158,9 @@
         {
             Comment comment = this.GetRandomCommentItem();
 
-            ItemRequestOptions requestOptions = new ItemRequestOptions
-            {
-            };
-
             ItemResponse<Comment> itemResponse = await this.container.CreateItemAsync<Comment>(
                 item: comment,
-                partitionKey: new PartitionKey(comment.pk),
-                requestOptions: requestOptions
+                partitionKey: new PartitionKey(comment.pk)
             );
 
             if (itemResponse.StatusCode != HttpStatusCode.Created)
@@ -179,18 +187,12 @@
         public async Task ReadItemAsync()
         {
             int index = this.random.Next(this.readItems.Count);
-
             Comment comment = this.readItems[index];
-
-            ItemRequestOptions requestOptions = new ItemRequestOptions
-            {
-            };
 
             ItemResponse<Comment> itemResponse = await this.container.ReadItemAsync<Comment>(
                 id: comment.id,
-                partitionKey: new PartitionKey(comment.pk),
-                requestOptions: requestOptions
-                );
+                partitionKey: new PartitionKey(comment.pk)
+            );
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
@@ -202,18 +204,12 @@
         public async Task ReadItemStreamAsync()
         {
             int index = this.random.Next(this.readItems.Count);
-
             Comment comment = this.readItems[index];
-
-            ItemRequestOptions requestOptions = new ItemRequestOptions
-            {
-            };
 
             ResponseMessage itemResponse = await this.container.ReadItemStreamAsync(
                 id: comment.id,
-                partitionKey: new PartitionKey(comment.pk),
-                requestOptions: requestOptions
-                );
+                partitionKey: new PartitionKey(comment.pk)
+            );
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
@@ -225,19 +221,13 @@
         public async Task UpsertItemAsync()
         {
             int index = this.random.Next(this.upsertItems.Count);
-
             Comment comment = this.upsertItems[index];
             comment.Name = "UpdatedName";
 
-            ItemRequestOptions requestOptions = new ItemRequestOptions
-            {
-            };
-
             ItemResponse<Comment> itemResponse = await this.container.UpsertItemAsync<Comment>(
                 item: comment,
-                partitionKey: new PartitionKey(comment.pk),
-                requestOptions: requestOptions
-                );
+                partitionKey: new PartitionKey(comment.pk)
+            );
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
@@ -249,13 +239,15 @@
         public async Task UpsertItemStreamAsync()
         {
             int index = this.random.Next(this.upsertItems.Count);
-
             Comment comment = this.upsertItems[index];
             comment.Name = "UpdatedNameStream";
 
             using Stream stream = ToStream(comment);
 
-            ResponseMessage itemResponse = await this.container.UpsertItemStreamAsync(stream, new PartitionKey(comment.pk));
+            ResponseMessage itemResponse = await this.container.UpsertItemStreamAsync(
+                stream,
+                new PartitionKey(comment.pk)
+            );
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
@@ -267,11 +259,14 @@
         public async Task ReplaceItemAsync()
         {
             int index = this.random.Next(this.replaceItems.Count);
-
             Comment comment = this.replaceItems[index];
             comment.Name = "ReplacedName";
 
-            ItemResponse<Comment> itemResponse = await this.container.ReplaceItemAsync(comment, comment.id, new PartitionKey(comment.pk));
+            ItemResponse<Comment> itemResponse = await this.container.ReplaceItemAsync(
+                comment,
+                comment.id,
+                new PartitionKey(comment.pk)
+            );
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
@@ -283,12 +278,15 @@
         public async Task ReplaceItemStreamAsync()
         {
             int index = this.random.Next(this.replaceItems.Count);
-
             Comment comment = this.replaceItems[index];
             comment.Name = "ReplacedNameStream";
 
             using Stream stream = ToStream(comment);
-            ResponseMessage itemResponse = await this.container.ReplaceItemStreamAsync(stream, comment.id, new PartitionKey(comment.pk));
+            ResponseMessage itemResponse = await this.container.ReplaceItemStreamAsync(
+                stream,
+                comment.id,
+                new PartitionKey(comment.pk)
+            );
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
@@ -299,16 +297,10 @@
         [Benchmark]
         public async Task DeleteItemAsync()
         {
-            if (this.deleteItems.Count == 0)
-            {
-                Console.WriteLine("No items left to delete in DeleteItemAsync.");
-                return;
-            }
-
+            // Items are populated in IterationSetupDelete
             int index = this.random.Next(this.deleteItems.Count);
             Comment comment = this.deleteItems[index];
 
-            // Perform the deletion
             ItemResponse<Comment> itemResponse = await this.container.DeleteItemAsync<Comment>(
                 comment.id,
                 new PartitionKey(comment.pk)
@@ -320,7 +312,6 @@
             }
             else
             {
-                // Only remove from list if delete succeeded
                 this.deleteItems.RemoveAt(index);
             }
         }
@@ -328,16 +319,10 @@
         [Benchmark]
         public async Task DeleteItemStreamAsync()
         {
-            if (this.deleteStreamItems.Count == 0)
-            {
-                Console.WriteLine("No items left to delete in DeleteItemStreamAsync.");
-                return;
-            }
-
+            // Items are populated in IterationSetupDeleteStream
             int index = this.random.Next(this.deleteStreamItems.Count);
             Comment comment = this.deleteStreamItems[index];
 
-            // Perform the deletion
             ResponseMessage itemResponse = await this.container.DeleteItemStreamAsync(
                 comment.id,
                 new PartitionKey(comment.pk)
@@ -349,7 +334,6 @@
             }
             else
             {
-                // Only remove from list if delete succeeded
                 this.deleteStreamItems.RemoveAt(index);
             }
         }
