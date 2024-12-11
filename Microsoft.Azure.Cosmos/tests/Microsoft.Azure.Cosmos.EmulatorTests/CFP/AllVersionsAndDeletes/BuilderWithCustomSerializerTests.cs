@@ -92,6 +92,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsTrue(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "Testing TTL on CFP.", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.DeletedItemId.ToString());
+                deletedChange.Metadata.DeletedItemPartitionKey.TryGetValue("pk", out string partitionKey).ToString();
+                Assert.AreEqual(expected: "1", actual: partitionKey);
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 5, actual: deletedChange.Previous.ttl);
             }
@@ -295,6 +298,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 Assert.IsFalse(deletedChange.Metadata.IsTimeToLiveExpired);
                 Assert.IsNotNull(deletedChange.Previous);
                 Assert.AreEqual(expected: "test after replace", actual: deletedChange.Previous.description);
+                Assert.AreEqual(expected: "1", actual: deletedChange.Metadata.DeletedItemId.ToString());
+                deletedChange.Metadata.DeletedItemPartitionKey.TryGetValue("pk", out string partitionKey).ToString();
+                Assert.AreEqual(expected: "1", actual: partitionKey);
                 Assert.AreEqual(expected: "1", actual: deletedChange.Previous.id);
                 Assert.AreEqual(expected: 0, actual: deletedChange.Previous.ttl);
             }
@@ -416,6 +422,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.DeletedItemId.ToString());
+                            change.Metadata.DeletedItemPartitionKey.TryGetValue("pk", out string partitionKey).ToString();
+                            Assert.AreEqual(expected: "1", actual: partitionKey);
                             Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
                             Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
                             Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
@@ -508,6 +517,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                 {
                     Logger.LogLine($"@ {DateTime.Now}, {nameof(docs)} -> {System.Text.Json.JsonSerializer.Serialize(docs)}");
 
+                    string metadataId = default;
+                    string metadataPk = default;
                     string id = default;
                     string pk = default;
                     string description = default;
@@ -522,6 +533,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
                         else
                         {
+                            metadataId = change.Metadata.DeletedItemId.ToString();
+                            change.Metadata.DeletedItemPartitionKey.TryGetValue("pk", out metadataPk).ToString();
                             id = change.Previous.id.ToString();
                             pk = change.Previous.pk.ToString();
                             description = change.Previous.description.ToString();
@@ -565,6 +578,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
                     Assert.IsNotNull(deleteChange.Previous);
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.DeletedItemId.ToString());
+                    deleteChange.Metadata.DeletedItemPartitionKey.TryGetValue("pk", out string partitionKey).ToString();
+                    Assert.AreEqual(expected: "1", actual: partitionKey);
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.id.ToString());
                     Assert.AreEqual(expected: "1", actual: deleteChange.Previous.pk.ToString());
                     Assert.AreEqual(expected: "test after replace", actual: deleteChange.Previous.description.ToString());
