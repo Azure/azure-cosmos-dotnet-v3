@@ -148,6 +148,20 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedOperationType OperationType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.ChangeFeedOperationType get_OperationType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.Generic.Dictionary`2[System.String,System.String] DeletedItemPartitionKey[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"partitionKey\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.String] DeletedItemPartitionKey;CanRead:True;CanWrite:True;System.Collections.Generic.Dictionary`2[System.String,System.String] get_DeletedItemPartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.Dictionary`2[System.String,System.String] get_DeletedItemPartitionKey()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.Dictionary`2[System.String,System.String] get_DeletedItemPartitionKey();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.DateTime ConflictResolutionTimestamp[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"crts\")]-[Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]": {
           "Type": "Property",
           "Attributes": [
@@ -162,6 +176,20 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "System.DateTime get_ConflictResolutionTimestamp();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DeletedItemId[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"id\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String DeletedItemId;CanRead:True;CanWrite:True;System.String get_DeletedItemId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DeletedItemId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DeletedItemId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
