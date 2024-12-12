@@ -699,22 +699,22 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Received);
             transportRequestStats.RecordState(TransportRequestStats.RequestStage.Completed);
 
-            FieldInfo field = transportRequestStats.GetType().GetField("requestCreatedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            PropertyInfo field = transportRequestStats.GetType().GetRuntimeProperty("requestCreatedTime");
             field.SetValue(transportRequestStats, defaultDateTime);
 
-            field = transportRequestStats.GetType().GetField("channelAcquisitionStartedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field = transportRequestStats.GetType().GetRuntimeProperty("channelAcquisitionStartedTime");
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            field = transportRequestStats.GetType().GetField("requestPipelinedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field = transportRequestStats.GetType().GetRuntimeProperty("requestPipelinedTime");
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            field = transportRequestStats.GetType().GetField("requestSentTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field = transportRequestStats.GetType().GetRuntimeProperty("requestSentTime");
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            field = transportRequestStats.GetType().GetField("requestReceivedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field = transportRequestStats.GetType().GetRuntimeProperty("requestReceivedTime");
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
-            field = transportRequestStats.GetType().GetField("requestCompletedTime", BindingFlags.NonPublic | BindingFlags.Instance);
+            field = transportRequestStats.GetType().GetRuntimeProperty("requestCompletedTime");
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
             transportRequestStats.RequestSizeInBytes = 2;
