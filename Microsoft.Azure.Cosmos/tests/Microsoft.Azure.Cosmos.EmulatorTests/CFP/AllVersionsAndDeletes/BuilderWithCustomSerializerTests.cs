@@ -39,7 +39,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                ""crts"": 1722511591,
                ""operationType"": ""delete"",
                ""timeToLiveExpired"": true,
-               ""previousImageLSN"": 16
+               ""previousImageLSN"": 16,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk"": ""1""
+               }
               },
               ""previous"": {
                ""id"": ""1"",
@@ -219,7 +223,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                ""lsn"": 376,
                ""operationType"": ""delete"",
                ""previousImageLSN"": 375,
-               ""timeToLiveExpired"": false
+               ""timeToLiveExpired"": false,
+               ""id"": ""1"",
+               ""partitionKey"": {
+                ""pk"": ""1""
+               }
               },
               ""previous"": {
                ""id"": ""1"",

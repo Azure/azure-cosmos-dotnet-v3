@@ -89,14 +89,21 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             writer.WriteNumber(ChangeFeedMetadataFields.Lsn, value.Lsn);
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
             writer.WriteNumber(ChangeFeedMetadataFields.PreviousImageLSN, value.PreviousLsn);
-            writer.WriteString(ChangeFeedMetadataFields.DeletedItemId, value.DeletedItemId);
 
-            writer.WriteStartObject("partitionKey");
-            foreach (KeyValuePair<string, string> kvp in value.DeletedItemPartitionKey)
+            if (value.DeletedItemId != null)
             {
-                writer.WriteString(kvp.Key, kvp.Value);
+                writer.WriteString(ChangeFeedMetadataFields.DeletedItemId, value.DeletedItemId);
             }
-            writer.WriteEndObject();
+
+            if (value.DeletedItemPartitionKey != null)
+            {
+                writer.WriteStartObject(ChangeFeedMetadataFields.DeletedItemPartitionKey);
+                foreach (KeyValuePair<string, string> kvp in value.DeletedItemPartitionKey)
+                {
+                    writer.WriteString(kvp.Key, kvp.Value);
+                }
+                writer.WriteEndObject();
+            }
 
             writer.WriteEndObject();
         }
