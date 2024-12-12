@@ -390,7 +390,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             Container leaseContainer = await database.CreateContainerIfNotExistsAsync(containerProperties: new ContainerProperties(id: "leases", partitionKeyPath: "/id"));
             ContainerInternal monitoredContainer = await this.CreateMonitoredContainer(ChangeFeedMode.AllVersionsAndDeletes, database);
             Exception exception = default;
-            int ttlInSeconds = 5;
+            int ttlInSeconds = 1;
             Stopwatch stopwatch = new();
             ManualResetEvent allDocsProcessed = new ManualResetEvent(false);
 
@@ -428,11 +428,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
-
-                            // previous
                             Assert.AreEqual(expected: "1", actual: change.Metadata.DeletedItemId.ToString());
                             change.Metadata.DeletedItemPartitionKey.TryGetValue("pk", out string partitionKey).ToString();
                             Assert.AreEqual(expected: "1", actual: partitionKey);
+
+                            // previous
                             Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
                             Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
                             Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
