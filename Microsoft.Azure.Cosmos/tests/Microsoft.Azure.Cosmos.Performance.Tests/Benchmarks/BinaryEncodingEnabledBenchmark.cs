@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
     using Microsoft.Azure.Cosmos.Json;
 
     [MemoryDiagnoser]
-    [BenchmarkCategory("NewGateBenchmark")]
+    [BenchmarkCategory("GateBenchmark")]
     [Config(typeof(BinaryEncodingEnabledBenchmark.CustomBenchmarkConfig))]
     public class BinaryEncodingEnabledBenchmark
     {
@@ -35,15 +35,37 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
         [GlobalSetup]
         public async Task GlobalSetupAsync()
         {
-            // Set the environment variable to enable or disable binary encoding
             Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", this.EnableBinaryResponseOnPointOperations.ToString());
 
-            // Initialize the mocked environment
-            JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
+            JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations
+                ? JsonSerializationFormat.Binary
+                : JsonSerializationFormat.Text;
+
             this.benchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat);
             this.container = this.benchmarkHelper.TestContainer;
 
-            // Create the item in the container
+            await this.CreateTestItemAsync();
+        }
+
+        [IterationSetup(Target = nameof(DeleteItemAsync))]
+        public void IterationSetupDeleteItemAsync()
+        {
+            this.ReCreateTestItem();
+        }
+
+        [IterationSetup(Target = nameof(DeleteItemStreamAsync))]
+        public void IterationSetupDeleteItemStreamAsync()
+        {
+            this.ReCreateTestItem();
+        }
+
+        private void ReCreateTestItem()
+        {
+            this.CreateTestItemAsync().GetAwaiter().GetResult();
+        }
+
+        private async Task CreateTestItemAsync()
+        {
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.container.CreateItemStreamAsync(
                 ms,
@@ -51,7 +73,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
-                    throw new Exception($"Failed to create item with status code {response.StatusCode}");
+                    throw new InvalidOperationException($"Failed to create item with status code {response.StatusCode}");
                 }
             }
         }
@@ -71,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (itemResponse.StatusCode != HttpStatusCode.Created && itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {this.benchmarkHelper.TestItem.id} was not created.");
+                throw new InvalidOperationException($"Item {this.benchmarkHelper.TestItem.id} was not created.");
             }
         }
 
@@ -91,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
-                    Console.WriteLine($"Error: Item {this.benchmarkHelper.TestItem.id} was not created stream.");
+                    throw new InvalidOperationException($"Item {this.benchmarkHelper.TestItem.id} was not created stream.");
                 }
             }
         }
@@ -111,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {MockedItemBenchmarkHelper.ExistingItemId} was not read.");
+                throw new InvalidOperationException($"Item {MockedItemBenchmarkHelper.ExistingItemId} was not read.");
             }
         }
 
@@ -130,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {MockedItemBenchmarkHelper.ExistingItemId} was not read stream.");
+                throw new InvalidOperationException($"Item {MockedItemBenchmarkHelper.ExistingItemId} was not read stream.");
             }
         }
 
@@ -149,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {this.benchmarkHelper.TestItem.id} was not upserted.");
+                throw new InvalidOperationException($"Item {this.benchmarkHelper.TestItem.id} was not upserted.");
             }
         }
 
@@ -169,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             {
                 if ((int)response.StatusCode > 300 || response.Content == null)
                 {
-                    Console.WriteLine($"Error: Item {this.benchmarkHelper.TestItem.id} was not upserted stream.");
+                    throw new InvalidOperationException($"Item {this.benchmarkHelper.TestItem.id} was not upserted stream.");
                 }
             }
         }
@@ -190,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {this.benchmarkHelper.TestItem.id} was not replaced.");
+                throw new InvalidOperationException($"Item {this.benchmarkHelper.TestItem.id} was not replaced.");
             }
         }
 
@@ -211,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             {
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    Console.WriteLine($"Error: Item {this.benchmarkHelper.TestItem.id} was not replaced stream.");
+                    throw new InvalidOperationException($"Item {this.benchmarkHelper.TestItem.id} was not replaced stream.");
                 }
             }
         }
@@ -231,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (itemResponse.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {MockedItemBenchmarkHelper.ExistingItemId} was not deleted: {itemResponse.StatusCode}");
+                throw new InvalidOperationException($"Item {MockedItemBenchmarkHelper.ExistingItemId} was not deleted.");
             }
         }
 
@@ -250,14 +272,13 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                Console.WriteLine($"Error: Item {MockedItemBenchmarkHelper.ExistingItemId} was not deleted stream: {response.StatusCode}");
+                throw new InvalidOperationException($"Item {MockedItemBenchmarkHelper.ExistingItemId} was not deleted stream.");
             }
         }
 
         [GlobalCleanup]
         public void Cleanup()
         {
-            // Restore the environment variable to its original value
             Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", "false");
         }
 

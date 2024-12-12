@@ -20,71 +20,41 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
     internal static class MockRequestHelper
     {
-        internal static readonly byte[] testItemResponsePayloadText;
-        internal static readonly byte[] testItemResponsePayloadBinary;
-        internal static readonly byte[] testItemFeedResponsePayloadText;
-        internal static readonly byte[] testItemFeedResponsePayloadBinary;
+        internal static readonly byte[] testItemResponsePayload;
+        internal static readonly byte[] testItemFeedResponsePayload;
         internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
         internal static int pagenumber;
 
-        internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https://aka.ms/cosmosdb-tsg-not-found\"]}");
+        internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}");
+
+        private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
 
         static MockRequestHelper()
         {
-            // Load the test item
-            string payloadContent = File.ReadAllText("samplepayload.json");
-            ToDoActivity testItem = JsonConvert.DeserializeObject<ToDoActivity>(payloadContent);
-
-            // Generate text format payload
-            using (MemoryStream ms = new MemoryStream())
-            using (StreamWriter sw = new StreamWriter(ms, new UTF8Encoding(false, true), 1024, true))
-            using (Newtonsoft.Json.JsonWriter writer = new Newtonsoft.Json.JsonTextWriter(sw))
+            MemoryStream ms = new MemoryStream();
+            using (FileStream fs = File.OpenRead("samplepayload.json"))
             {
-                writer.Formatting = Newtonsoft.Json.Formatting.None;
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                serializer.Serialize(writer, testItem);
-                writer.Flush();
-                sw.Flush();
-                testItemResponsePayloadText = ms.ToArray();
+                fs.CopyTo(ms);
+                MockRequestHelper.testItemResponsePayload = ms.ToArray();
             }
 
-            // Generate binary format payload
-            using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
+            ms = new MemoryStream();
+            using (FileStream fs = File.OpenRead("samplefeedpayload.json"))
             {
-                writer.Formatting = Newtonsoft.Json.Formatting.None;
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                serializer.Serialize(writer, testItem);
-                testItemResponsePayloadBinary = writer.GetResult().ToArray();
+                fs.CopyTo(ms);
+                MockRequestHelper.testItemFeedResponsePayload = ms.ToArray();
             }
 
-            // For testItemFeedResponsePayload
-            // Create a feed response with multiple items
-            List<ToDoActivity> items = new List<ToDoActivity> { testItem };
-
-            // Generate text format feed payload
-            using (MemoryStream ms = new MemoryStream())
-            using (StreamWriter sw = new StreamWriter(ms, new UTF8Encoding(false, true), 1024, true))
-            using (Newtonsoft.Json.JsonWriter writer = new Newtonsoft.Json.JsonTextWriter(sw))
+            List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
+        {
+            new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
             {
-                writer.Formatting = Newtonsoft.Json.Formatting.None;
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                serializer.Serialize(writer, items);
-                writer.Flush();
-                sw.Flush();
-                testItemFeedResponsePayloadText = ms.ToArray();
+                ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                ETag = Guid.NewGuid().ToString()
             }
+        };
 
-            // Generate binary format feed payload
-            using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
-            {
-                writer.Formatting = Newtonsoft.Json.Formatting.None;
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                serializer.Serialize(writer, items);
-                testItemFeedResponsePayloadBinary = writer.GetResult().ToArray();
-            }
-
-            // Initialize the batch response payload writer with an empty list
-            batchResponsePayloadWriter = new BatchResponsePayloadWriter(new List<TransactionalBatchOperationResult>());
+            batchResponsePayloadWriter = new BatchResponsePayloadWriter(results);
             batchResponsePayloadWriter.PrepareAsync().GetAwaiter().GetResult();
 
             pagenumber = 0;
@@ -99,102 +69,82 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
 
-            // Determine response serialization format
-            JsonSerializationFormat responseSerializationFormat = GetResponseSerializationFormat(request);
-
-            byte[] responsePayload;
-            byte[] feedResponsePayload;
-
-            if (responseSerializationFormat == JsonSerializationFormat.Binary)
-            {
-                responsePayload = testItemResponsePayloadBinary;
-                feedResponsePayload = testItemFeedResponsePayloadBinary;
-                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Binary).ToString();
-            }
-            else
-            {
-                responsePayload = testItemResponsePayloadText;
-                feedResponsePayload = testItemFeedResponsePayloadText;
-                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Text).ToString();
-            }
-
+            DocumentServiceResponse response;
             if (request.OperationType == OperationType.Read)
             {
+#pragma warning disable IDE0045 // Convert to conditional expression
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    return new DocumentServiceResponse(
-                        new MemoryStream(responsePayload),
+                    response = new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
                 }
-
-                return new DocumentServiceResponse(
-                    new MemoryStream(MockRequestHelper.notFoundPayload),
-                    headers,
-                    System.Net.HttpStatusCode.NotFound
-                );
+                else
+                {
+                    response = new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.notFoundPayload),
+                        headers,
+                        System.Net.HttpStatusCode.NotFound
+                    );
+                }
+#pragma warning restore IDE0045 // Convert to conditional expression
             }
-
-            if (request.OperationType == OperationType.Delete)
+            else if (request.OperationType == OperationType.Delete)
             {
+#pragma warning disable IDE0045 // Convert to conditional expression
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    return new DocumentServiceResponse(
-                        new MemoryStream(responsePayload),
+                    response = new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
                 }
-
-                return new DocumentServiceResponse(
-                    new MemoryStream(MockRequestHelper.notFoundPayload),
-                    headers,
-                    System.Net.HttpStatusCode.NotFound
-                );
+                else
+                {
+                    response = new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.notFoundPayload),
+                        headers,
+                        System.Net.HttpStatusCode.NotFound
+                    );
+                }
+#pragma warning restore IDE0045 // Convert to conditional expression
             }
-
-            if (request.OperationType == OperationType.Create
+            else if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Patch)
             {
-                return new DocumentServiceResponse(
-                        new MemoryStream(responsePayload),
+                response = new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
             }
-
-            if (request.ResourceType == ResourceType.Document &&
+            else if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.ReadFeed)
             {
-                headers.ItemCount = "1";
-
-                return new DocumentServiceResponse(
-                    new MemoryStream(feedResponsePayload),
-                    headers,
-                    System.Net.HttpStatusCode.OK
-                );
+                response = new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.testItemFeedResponsePayload),
+                        headers,
+                        System.Net.HttpStatusCode.OK
+                    );
             }
-
-            if (request.OperationType == OperationType.Batch)
+            else
             {
-                MemoryStream responseContent = batchResponsePayloadWriter.GeneratePayload();
-
-                return new DocumentServiceResponse(
-                    responseContent,
-                    headers,
-                    System.Net.HttpStatusCode.OK
-                );
+                // If we reach here, it's an operation we are not explicitly handling
+                return null;
             }
 
-            // Return a default response if none of the conditions match
-            return new DocumentServiceResponse(
-                new MemoryStream(responsePayload),
-                headers,
-                System.Net.HttpStatusCode.OK
-            );
+            // Check if binary encoding is enabled and this is a supported point operation
+            if (ConfigurationManager.IsBinaryEncodingEnabled() && MockRequestHelper.IsPointOperationSupportedForBinaryEncoding(request))
+            {
+                response = ConvertToBinaryIfNeeded(response);
+            }
+
+            return response;
         }
 
         /// <summary>
@@ -204,22 +154,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
-            // Determine response serialization format
-            JsonSerializationFormat responseSerializationFormat = GetResponseSerializationFormat(request);
-
-            byte[] responsePayload;
-            byte[] feedResponsePayload;
-
-            if (responseSerializationFormat == JsonSerializationFormat.Binary)
-            {
-                responsePayload = testItemResponsePayloadBinary;
-                feedResponsePayload = testItemFeedResponsePayloadBinary;
-            }
-            else
-            {
-                responsePayload = testItemResponsePayloadText;
-                feedResponsePayload = testItemFeedResponsePayloadText;
-            }
+            StoreResponse response = null;
 
             if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.Query)
@@ -254,8 +189,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     XPRole = "0"
                 };
 
-                queryHeaders.ItemCount = "1";
-
                 // Multipage Scenario
                 if (!request.Headers.Get(HttpConstants.HttpHeaders.PageSize).Equals("1000"))
                 {
@@ -268,107 +201,94 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         pagenumber = 0;
                     }
-
-                    return new StoreResponse()
-                    {
-                        ResponseBody = new MemoryStream(feedResponsePayload, 0, feedResponsePayload.Length, writable: false, publiclyVisible: true),
-                        Status = (int)System.Net.HttpStatusCode.OK,
-                        Headers = queryHeaders,
-                    };
                 }
 
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(feedResponsePayload, 0, feedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = queryHeaders,
                 };
+
+                // Query isn't a single-point operation like Create/Read/Replace etc., so no binary encoding here
+                return response;
             }
 
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
-
-#pragma warning disable IDE0045 // Convert to conditional expression
-            if (responseSerializationFormat == JsonSerializationFormat.Binary)
-            {
-                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Binary).ToString();
-            }
-            else
-            {
-                headers[HttpConstants.HttpHeaders.ContentSerializationFormat] = ((int)JsonSerializationFormat.Text).ToString();
-            }
-#pragma warning restore IDE0045 // Convert to conditional expression
-
             if (request.OperationType == OperationType.Read)
             {
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
+#pragma warning disable IDE0045 // Convert to conditional expression
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    return new StoreResponse()
+                    response = new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
                 }
-
-                return new StoreResponse()
+                else
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
-                    Status = (int)System.Net.HttpStatusCode.NotFound,
-                    Headers = headers,
-                };
+                    response = new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.NotFound,
+                        Headers = headers,
+                    };
+                }
+#pragma warning restore IDE0045 // Convert to conditional expression
             }
-
-            if (request.OperationType == OperationType.Delete)
+            else if (request.OperationType == OperationType.Delete)
             {
+#pragma warning disable IDE0045 // Convert to conditional expression
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    return new StoreResponse()
+                    response = new StoreResponse()
                     {
-                        ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
+                        ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
                 }
-
-                return new StoreResponse()
+                else
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
-                    Status = (int)System.Net.HttpStatusCode.NotFound,
-                    Headers = headers,
-                };
+                    response = new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.NotFound,
+                        Headers = headers,
+                    };
+                }
+#pragma warning restore IDE0045 // Convert to conditional expression
             }
-
-            if (request.OperationType == OperationType.Create
+            else if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Patch)
             {
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
             }
-
-            if (request.ResourceType == ResourceType.Document &&
+            else if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.ReadFeed)
             {
                 headers.ItemCount = "1";
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
-                    ResponseBody = new MemoryStream(feedResponsePayload, 0, feedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
             }
-
-            if (request.OperationType == OperationType.Batch)
+            else if (request.OperationType == OperationType.Batch)
             {
                 MemoryStream responseContent = batchResponsePayloadWriter.GeneratePayload();
-
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
                     ResponseBody = responseContent,
                     Status = (int)System.Net.HttpStatusCode.OK,
@@ -376,29 +296,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 };
             }
 
-            // Return a default response if none of the conditions match
-            return new StoreResponse()
+            if (response != null && ConfigurationManager.IsBinaryEncodingEnabled() && MockRequestHelper.IsPointOperationSupportedForBinaryEncoding(request))
             {
-                ResponseBody = new MemoryStream(responsePayload, 0, responsePayload.Length, writable: false, publiclyVisible: true),
-                Status = (int)System.Net.HttpStatusCode.OK,
-                Headers = headers,
-            };
-        }
-
-        private static JsonSerializationFormat GetResponseSerializationFormat(DocumentServiceRequest request)
-        {
-            string supportedSerializationFormats = request.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats];
-
-            JsonSerializationFormat responseSerializationFormat = JsonSerializationFormat.Text;
-
-            if (!string.IsNullOrEmpty(supportedSerializationFormats) 
-                && supportedSerializationFormats.Contains(SupportedSerializationFormats.CosmosBinary.ToString())
-                && request.OperationType.IsPointOperation())
-            {
-                responseSerializationFormat = JsonSerializationFormat.Binary;
+                response = ConvertToBinaryIfNeeded(response);
             }
 
-            return responseSerializationFormat;
+            return response;
         }
 
         private static StoreResponseNameValueCollection GenerateTestHeaders()
@@ -411,6 +314,81 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
 
             return headers;
+        }
+
+        // Converts the response payload into binary if needed
+        // This simulates binary serialization using the same approach as in MockedItemBenchmarkHelper.
+        private static DocumentServiceResponse ConvertToBinaryIfNeeded(DocumentServiceResponse response)
+        {
+            byte[] originalPayload = ReadAllBytes(response.ResponseBody);
+            byte[] binaryPayload = ReSerializeToBinary(originalPayload);
+
+            // Replace stream with binary version
+            response.ResponseBody.Dispose();
+            response.ResponseBody = new MemoryStream(binaryPayload, writable: false);
+
+            // Add binary serialization header
+            response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+
+            return response;
+        }
+
+        private static StoreResponse ConvertToBinaryIfNeeded(StoreResponse response)
+        {
+            byte[] originalPayload = ReadAllBytes(response.ResponseBody);
+            byte[] binaryPayload = ReSerializeToBinary(originalPayload);
+
+            // Replace stream with binary version
+            response.ResponseBody.Dispose();
+            response.ResponseBody = new MemoryStream(binaryPayload, writable: false);
+
+            // Add binary serialization header
+            response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+
+            return response;
+        }
+
+        private static byte[] ReSerializeToBinary(byte[] textPayload)
+        {
+            // Deserialize from JSON text
+            using (MemoryStream ms = new MemoryStream(textPayload))
+            using (StreamReader sr = new StreamReader(ms))
+            using (Newtonsoft.Json.JsonReader jr = new JsonTextReader(sr))
+            {
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                // Assuming the payload matches the ToDoActivity schema
+                ToDoActivity deserialized = serializer.Deserialize<ToDoActivity>(jr);
+
+                using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
+                {
+                    serializer.Serialize(writer, deserialized);
+                    return writer.GetResult().ToArray();
+                }
+            }
+        }
+
+        private static byte[] ReadAllBytes(Stream stream)
+        {
+            if (stream is MemoryStream ms && ms.Position == 0)
+            {
+                return ms.ToArray();
+            }
+
+            using (MemoryStream copy = new MemoryStream())
+            {
+                stream.CopyTo(copy);
+                return copy.ToArray();
+            }
+        }
+
+        private static bool IsPointOperationSupportedForBinaryEncoding(DocumentServiceRequest request)
+        {
+            return request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
     }
 }
