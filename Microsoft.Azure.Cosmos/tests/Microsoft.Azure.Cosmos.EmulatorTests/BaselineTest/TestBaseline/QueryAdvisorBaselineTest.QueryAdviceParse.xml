@@ -1,0 +1,49 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Single Advice]]></Description>
+      <Query><![CDATA[ SELECT VALUE r.id 
+ FROM root r 
+ WHERE CONTAINS(r.name, "Abc") ]]></Query>
+    </Input>
+    <Output>
+      <QueryAdvice><![CDATA[QA1002: Instead of CONTAINS, consider using STARTSWTIH or computed properties, which may improve performance. For more information, please visit https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA1002
+]]></QueryAdvice>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Multiple Advice]]></Description>
+      <Query><![CDATA[ SELECT GetCurrentTicks() 
+ FROM root r 
+  WHERE GetCurrentTimestamp() > 10 ]]></Query>
+    </Input>
+    <Output>
+      <QueryAdvice><![CDATA[QA1009: Instead of using GetCurrentTimestamp, consider using GetCurrentTimestampStatic, which may improve performance. For more information, please visit https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA1009
+QA1008: Instead of using GetCurrentTicks, consider using GetCurrentTicksStatic, which may improve performance. For more information, please visit https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA1008
+]]></QueryAdvice>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[No Advice due to optimization]]></Description>
+      <Query><![CDATA[ SELECT VALUE r.id 
+ FROM root r 
+ WHERE StringEquals(r.name, "Abc", false) ]]></Query>
+    </Input>
+    <Output>
+      <QueryAdvice><![CDATA[]]></QueryAdvice>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[No Advice due to no rules matched]]></Description>
+      <Query><![CDATA[ SELECT VALUE r.id 
+ FROM root r 
+ WHERE r.id = "123" ]]></Query>
+    </Input>
+    <Output>
+      <QueryAdvice><![CDATA[]]></QueryAdvice>
+    </Output>
+  </Result>
+</Results>

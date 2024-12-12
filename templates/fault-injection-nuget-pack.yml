@@ -1,0 +1,79 @@
+# File: templates/fault-injection-nuget-pack.yml
+
+parameters:
+  - name: BuildConfiguration
+    type: string
+    default: ''
+  - name: Arguments
+    type: string
+    default: ''
+  - name: VmImage
+    type: string
+    default: ''
+  - name: OutputPath
+    type: string
+    default: ''
+  - name: BlobVersion
+    type: string
+    default: ''
+  - name: ReleasePackage
+    type: boolean
+    default: false
+  - name: CleanupFolder
+    type: boolean
+    default: false
+
+jobs:
+- job: GenerateNugetPackages
+  displayName: Generate Nuget packages
+  pool:
+    name: 'OneES'
+
+  steps:
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.FaultInjection
+    inputs: 
+      command: build  
+      configuration: $(BuildConfiguration)
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos/FaultInjection/src/FaultInjection.csproj 
+      arguments: --configuration ${{ parameters.BuildConfiguration }} -p:Optimize=true ${{ parameters.Arguments }}
+      versioningScheme: OFF
+
+  - task: DotNetCoreCLI@2
+    displayName: 'Create FaultInjection NuGet Package'
+    inputs:
+      command: custom
+      projects: 'Microsoft.Azure.Cosmos/FaultInjection/src/FaultInjection.csproj'
+      custom: pack
+      arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build ${{ parameters.Arguments }} --no-restore -o "${{ parameters.OutputPath }}"'
+
+  - ${{ if eq(parameters.ReleasePackage, true) }}:
+    - task: DotNetCoreCLI@2
+      displayName: 'Create FaultInjection NuGet Symbols Package'
+      inputs: 
+        command: custom
+        projects: 'Microsoft.Azure.Cosmos/FaultInjection/src/FaultInjection.csproj'
+        custom: pack
+        arguments: '-v detailed -c ${{ parameters.BuildConfiguration }} --no-build --include-symbols /p:SymbolPackageFormat=snupkg ${{ parameters.Arguments }} --no-restore -o "${{ parameters.OutputPath }}"'
+    - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+      inputs:
+        BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.FaultInjection'
+
+    - ${{ if ne(parameters.BlobVersion, '') }}:
+      - task: AzureFileCopy@6
+        displayName: 'Copy Artifacts to Azure SDK Release blob storage'
+        condition: succeeded()
+        inputs:
+          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.FaultInjection/**'
+          azureSubscription: azuresdkpartnerdrops
+          Destination: AzureBlob
+          storage: azuresdkpartnerdrops
+          ContainerName: 'drops'
+          BlobPrefix: 'cosmosdb/faultInjection/${{ parameters.BlobVersion }}'
+          CleanTargetBeforeCopy: ${{ parameters.CleanupFolder }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos'
+    inputs:
+      artifactName: Microsoft.Azure.Cosmos.FaultInjection
