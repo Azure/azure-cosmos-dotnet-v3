@@ -35,37 +35,15 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
         [GlobalSetup]
         public async Task GlobalSetupAsync()
         {
+            // Set the environment variable to enable or disable binary encoding
             Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", this.EnableBinaryResponseOnPointOperations.ToString());
 
-            JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations
-                ? JsonSerializationFormat.Binary
-                : JsonSerializationFormat.Text;
-
+            // Initialize the mocked environment
+            JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations ? JsonSerializationFormat.Binary : JsonSerializationFormat.Text;
             this.benchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat);
             this.container = this.benchmarkHelper.TestContainer;
 
-            await this.CreateTestItemAsync();
-        }
-
-        [IterationSetup(Target = nameof(DeleteItemAsync))]
-        public void IterationSetupDeleteItemAsync()
-        {
-            this.ReCreateTestItem();
-        }
-
-        [IterationSetup(Target = nameof(DeleteItemStreamAsync))]
-        public void IterationSetupDeleteItemStreamAsync()
-        {
-            this.ReCreateTestItem();
-        }
-
-        private void ReCreateTestItem()
-        {
-            this.CreateTestItemAsync().GetAwaiter().GetResult();
-        }
-
-        private async Task CreateTestItemAsync()
-        {
+            // Create the item in the container
             using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
             using (ResponseMessage response = await this.container.CreateItemStreamAsync(
                 ms,
@@ -279,6 +257,7 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
         [GlobalCleanup]
         public void Cleanup()
         {
+            // Restore the environment variable to its original value
             Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", "false");
         }
 
