@@ -704,8 +704,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             PropertyInfo field = transportRequestStats.GetType().GetRuntimeProperty("requestCreatedTime");
             field.SetValue(transportRequestStats, defaultDateTime);
+            field = transportRequestStats.GetType().GetRuntimeProperty("channelAcquisitionStartedTime");
 
-            field = transportRequestStats.GetType().GetRuntimeProperty("channelAcquisitionStartedTime"); 
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
             field = transportRequestStats.GetType().GetRuntimeProperty("requestPipelinedTime");
