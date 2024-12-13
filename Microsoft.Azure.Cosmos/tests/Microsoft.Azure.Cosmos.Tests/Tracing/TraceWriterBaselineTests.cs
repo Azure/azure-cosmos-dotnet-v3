@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             operationType: default,
                             requestSessionToken: default,
                             locationEndpoint: default,
-                            "region1");
+                            region: "region1");
 
                         TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats Default", datum);
@@ -428,7 +428,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             ResourceType.Document,
                             new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
                             exception: null,
-                            "region1");
+                            region: "region1");
 
                         TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
 
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             ResourceType.Document,
                             responseMessage: null,
                             exception: new OperationCanceledException(),
-                            "region1");
+                            region: "region1");
                         TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 
                         rootTrace.AddDatum("Client Side Request Stats", datum);
@@ -704,8 +704,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
 
             PropertyInfo field = transportRequestStats.GetType().GetRuntimeProperty("requestCreatedTime");
             field.SetValue(transportRequestStats, defaultDateTime);
-            field = transportRequestStats.GetType().GetRuntimeProperty("channelAcquisitionStartedTime");
 
+            field = transportRequestStats.GetType().GetRuntimeProperty("channelAcquisitionStartedTime");
             field.SetValue(transportRequestStats, TimeSpan.FromMilliseconds(1));
 
             field = transportRequestStats.GetType().GetRuntimeProperty("requestPipelinedTime");
@@ -829,7 +829,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         .Join(
                             Environment.NewLine,
                             codeSnippet
-                                .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
+                                .Select(x => x != string.Empty ? x["            ".Length..] : string.Empty))
                     + Environment.NewLine;
                 }
                 catch(Exception)
