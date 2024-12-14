@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -84,7 +85,6 @@ namespace Microsoft.Azure.Cosmos
                cosmosClientId: cosmosClient.Id,
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.GetServerCertificateCustomValidationCallback()),
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
-               availabilityStrategy: clientOptions.AvailabilityStrategy,
                chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory);
 
             return ClientContextCore.Create(
@@ -498,22 +498,24 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions,
             ResourceType? resourceType = null)
         {
+            Func<string> getOperationName = () =>
+            {
+                // If opentelemetry is not enabled then return null operation name, so that no activity is created.
+                if (openTelemetry == null)
+                {
+                    return null;
+                }
+
+                if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
+                {
+                    return OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
+                }
+                return openTelemetry.Item1;
+            };
+
             using (OpenTelemetryCoreRecorder recorder =
                                 OpenTelemetryRecorderFactory.CreateRecorder(
-                                    getOperationName: () =>
-                                    {
-                                        // If opentelemetry is not enabled then return null operation name, so that no activity is created.
-                                        if (openTelemetry == null)
-                                        {
-                                            return null;
-                                        }
-
-                                        if (resourceType is not null && this.IsBulkOperationSupported(resourceType.Value, operationType))
-                                        {
-                                            return OpenTelemetryConstants.Operations.ExecuteBulkPrefix + openTelemetry.Item1;
-                                        }
-                                        return openTelemetry.Item1;
-                                    },
+                                    getOperationName: getOperationName,
                                     containerName: containerName,
                                     databaseName: databaseName,
                                     operationType: operationType,
@@ -525,20 +527,30 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     TResult result = await task(trace).ConfigureAwait(false);
-                    if (openTelemetry != null && recorder.IsEnabled)
+                    // Checks if OpenTelemetry is configured for this operation and either Trace or Metrics are enabled by customer
+                    if (openTelemetry != null 
+                        && (!this.ClientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing || this.ClientOptions.CosmosClientTelemetryOptions.IsClientMetricsEnabled))
                     {
-                        // Record request response information
+                        // Extracts and records telemetry data from the result of the operation.
                         OpenTelemetryAttributes response = openTelemetry?.Item2(result);
-                        recorder.Record(response);
-                    }
 
+                        // Records the telemetry attributes for Distributed Tracing (if enabled)
+                        recorder.Record(response);
+
+                        // Records metrics such as request units, latency, and item count for the operation.
+                        CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                             accountName: this.client.Endpoint,
+                                                             containerName: containerName,
+                                                             databaseName: databaseName,
+                                                             attributes: response);
+                    }
                     return result;
                 }
                 catch (OperationCanceledException oe) when (!(oe is CosmosOperationCanceledException))
                 {
                     CosmosOperationCanceledException operationCancelledException = new CosmosOperationCanceledException(oe, trace);
                     recorder.MarkFailed(operationCancelledException);
-
+ 
                     throw operationCancelledException;
                 }
                 catch (ObjectDisposedException objectDisposed) when (!(objectDisposed is CosmosObjectDisposedException))
@@ -563,7 +575,16 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception ex)
                 {
                     recorder.MarkFailed(ex);
-
+                    if (openTelemetry != null && ex is CosmosException cosmosException)
+                    {
+                        // Records telemetry data related to the exception.
+                        CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                             accountName: this.client.Endpoint,
+                                                             containerName: containerName,
+                                                             databaseName: databaseName,
+                                                             ex: cosmosException);
+                    }
+                 
                     throw;
                 }
             }

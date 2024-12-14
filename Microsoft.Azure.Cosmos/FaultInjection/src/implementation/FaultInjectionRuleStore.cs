@@ -51,13 +51,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionApplicationContext applicationContext)
         {
             this.ruleProcessor = new FaultInjectionRuleProcessor(
-                connectionMode: connectionMode,
-                collectionCache: collectionCache,
-                globalEndpointManager: globalEndpointManager,
-                addressResolver: addressResolver,
-                retryPolicy: retryPolicy,
-                routingMapProvider: routingMapProvider,
-                applicationContext: applicationContext);
+                    connectionMode: connectionMode,
+                    collectionCache: collectionCache,
+                    globalEndpointManager: globalEndpointManager,
+                    addressResolver: addressResolver,
+                    retryPolicy: retryPolicy,
+                    routingMapProvider: routingMapProvider,
+                    applicationContext: applicationContext);
         }
 
         public async Task<IFaultInjectionRuleInternal> ConfigureFaultInjectionRuleAsync(FaultInjectionRule rule)
@@ -154,6 +154,51 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                         callUri,
                         request,
                         activityId))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionServerErrorRule? FindHttpServerResponseErrorRule(DocumentServiceRequest dsr)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(dsr))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionServerErrorRule? FindHttpServerResponseDelayRule(DocumentServiceRequest dsr)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(dsr))
+                {
+                    return rule;
+                }
+            }
+
+            return null;
+        }
+
+        public FaultInjectionServerErrorRule? FindHttpServerSendDelayRule(DocumentServiceRequest dsr)
+        {
+            foreach (FaultInjectionServerErrorRule rule in this.serverSendDelayRuleSet.Keys)
+            {
+                if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || rule.GetConnectionType() == FaultInjectionConnectionType.All)
+                    && rule.IsApplicable(dsr))
                 {
                     return rule;
                 }

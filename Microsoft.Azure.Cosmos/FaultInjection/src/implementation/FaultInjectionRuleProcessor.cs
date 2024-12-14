@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly ConnectionMode connectionMode;
         private readonly CollectionCache collectionCache;
         private readonly GlobalEndpointManager globalEndpointManager;
-        private readonly GlobalAddressResolver addressResolver;
+        private readonly GlobalAddressResolver? addressResolver;
         private readonly Func<IRetryPolicy> retryPolicy;
         private readonly IRoutingMapProvider routingMapProvider;
         private readonly FaultInjectionApplicationContext applicationContext;
@@ -33,7 +33,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <param name="collectionCache"></param>
         /// <param name="globalEndpointManager"></param>
         /// <param name="addressResolver"></param>
-        /// <param name="retryOptions"></param>
         /// <param name="routingMapProvider"></param>
         /// <param name="applicationContext"></param>
         public FaultInjectionRuleProcessor(
@@ -41,18 +40,22 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             ConnectionMode connectionMode,
             CollectionCache collectionCache,
             GlobalEndpointManager globalEndpointManager,
-            GlobalAddressResolver addressResolver,
             IRoutingMapProvider routingMapProvider,
-            FaultInjectionApplicationContext applicationContext)
+            FaultInjectionApplicationContext applicationContext,
+            GlobalAddressResolver? addressResolver = null)
         {
             this.connectionMode = connectionMode;
             this.collectionCache = collectionCache ?? throw new ArgumentNullException(nameof(collectionCache));
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
-            this.addressResolver = addressResolver ?? throw new ArgumentNullException(nameof(addressResolver));
             this.retryPolicy = retryPolicy ?? throw new ArgumentNullException(nameof(retryPolicy));
             this.routingMapProvider = routingMapProvider ?? throw new ArgumentNullException(nameof(routingMapProvider));
             this.applicationContext = applicationContext ?? throw new ArgumentNullException(nameof(applicationContext));
+            if (connectionMode == ConnectionMode.Direct)
+            {
+                this.addressResolver = addressResolver ?? throw new ArgumentNullException(nameof(addressResolver));
+            }
         }
+
 
         public async Task<IFaultInjectionRuleInternal> ProcessFaultInjectionRule(FaultInjectionRule rule)
         {
@@ -65,8 +68,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private void ValidateRule(FaultInjectionRule rule)
         {
-            if ((rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.Direct
-                || rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.All)
+            if (rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.Direct
                 && this.connectionMode != ConnectionMode.Direct)
             {
                 throw new ArgumentException("Direct connection mode is not supported when client is not in direct mode");
@@ -97,23 +99,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if ((operationType != FaultInjectionOperationType.All) && this.CanErrorLimitToOperation(errorType))
             {
                 effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
-            }
-
-            if (rule.GetCondition().GetEndpoint() != FaultInjectionEndpoint.Empty)
-            {
-                DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
-                   operationType: OperationType.Read,
-                   resourceFullName: rule.GetCondition().GetEndpoint().GetResoureName(),
-                   resourceType: ResourceType.Document,
-                   authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey); ;
-
-                ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
-
-                effectiveCondition.SetContainerResourceId(collection.ResourceId);
+                //Will need to change when introducing metadata operations
+                effectiveCondition.SetResourceType(ResourceType.Document);
             }
 
             List<Uri> regionEndpoints = this.GetRegionEndpoints(rule.GetCondition());
-
             if (!string.IsNullOrEmpty(rule.GetCondition().GetRegion()))
             {
                 effectiveCondition.SetRegionEndpoints(regionEndpoints);
@@ -127,24 +117,55 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 effectiveCondition.SetRegionEndpoints(defaultRegion);
             }
 
-            List<Uri> effectiveAddresses = await BackoffRetryUtility<List<Uri>>.ExecuteAsync(
-                () => this.ResolvePhyicalAddresses(
-                    regionEndpoints,
-                    rule.GetCondition(),
-                    this.IsWriteOnly(rule.GetCondition())),
-                this.retryPolicy());
-
-            if (!this.CanErrorLimitToOperation(errorType))
+            if (rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.Gateway)
             {
-                effectiveAddresses = effectiveAddresses.Select(address => 
-                    new Uri(string.Format(
-                        "{0}://{1}:{2}/",
-                        address.Scheme.ToString(),
-                        address.Host.ToString(),
-                        address.Port.ToString()))).ToList();
-            }
+                if (rule.GetCondition().GetEndpoint() != FaultInjectionEndpoint.Empty 
+                    && this.CanErrorLimitToOperation(errorType) 
+                    && this.CanLimitToPartition(rule.GetCondition()))
+                {
+                    IEnumerable<string> effectivePKRangeId = 
+                        await BackoffRetryUtility<IEnumerable<string>>.ExecuteAsync(
+                            () => this.ResolvePartitionKeyRangeIds(
+                                rule.GetCondition().GetEndpoint()),
+                            this.retryPolicy());
 
-            effectiveCondition.SetAddresses(effectiveAddresses);
+                    effectiveCondition.SetPartitionKeyRangeIds(effectivePKRangeId);
+                }
+            }
+            else
+            {
+                if (rule.GetCondition().GetEndpoint() != FaultInjectionEndpoint.Empty)
+                {
+                    DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+                       operationType: OperationType.Read,
+                       resourceFullName: rule.GetCondition().GetEndpoint().GetResoureName(),
+                       resourceType: ResourceType.Document,
+                       authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+                    ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
+
+                    effectiveCondition.SetContainerResourceId(collection.ResourceId);
+                }
+
+                List<Uri> effectiveAddresses = await BackoffRetryUtility<List<Uri>>.ExecuteAsync(
+                        () => this.ResolvePhyicalAddresses(
+                            regionEndpoints,
+                            rule.GetCondition(),
+                            this.IsWriteOnly(rule.GetCondition())),
+                        this.retryPolicy());
+
+                if (!this.CanErrorLimitToOperation(errorType))
+                {
+                    effectiveAddresses = effectiveAddresses.Select(address =>
+                        new Uri(string.Format(
+                            "{0}://{1}:{2}/",
+                            address.Scheme.ToString(),
+                            address.Host.ToString(),
+                            address.Port.ToString()))).ToList();
+                }
+
+                effectiveCondition.SetAddresses(effectiveAddresses);
+            }
 
             FaultInjectionServerErrorResult result = (FaultInjectionServerErrorResult)rule.GetResult();
 
@@ -200,6 +221,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             // others can be applied to all operations
             return errorType != FaultInjectionServerErrorType.Gone
                 && errorType != FaultInjectionServerErrorType.ConnectionDelay;
+        }
+
+        private bool CanLimitToPartition(FaultInjectionCondition faultInjectionCondition)
+        {
+            // Some operations can be targeted for a certain partition while some can not (for example metadata requests)
+            //TODO: Implement metadata operations
+            if (faultInjectionCondition == null)
+            {
+            }
+            return true;
         }
 
         private OperationType GetEffectiveOperationType(FaultInjectionOperationType faultInjectionOperationType)
@@ -259,6 +290,32 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             throw new ArgumentException($"Cannot find service endpoint for region: {region}");
         }
 
+        private async Task<IEnumerable<string>> ResolvePartitionKeyRangeIds(
+           FaultInjectionEndpoint addressEndpoints)
+        {
+            if (addressEndpoints == null)
+            {
+                return new List<string>();
+            }
+
+            FeedRangeInternal feedRangeInternal = (FeedRangeInternal)addressEndpoints.GetFeedRange();
+            DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+                    operationType: OperationType.Read,
+                    resourceFullName: addressEndpoints.GetResoureName(),
+                    resourceType: ResourceType.Document,
+                    authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, CancellationToken.None, NoOpTrace.Singleton);
+
+            return  await feedRangeInternal.GetPartitionKeyRangesAsync(
+                this.routingMapProvider,
+                collection.ResourceId,
+                collection.PartitionKey,
+                new CancellationToken(),
+                NoOpTrace.Singleton);
+        }
+
+
         private bool IsWriteOnly(FaultInjectionCondition condition)
         {
             return condition.GetOperationType() != FaultInjectionOperationType.All 
@@ -312,17 +369,19 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     if (isWriteOnly)
                     {
                         TransportAddressUri primary = await this.ResolvePrimaryTransportAddressUriAsync(fauntInjectionAddressRequest, true);
-                        return new List<Uri> { primary.Uri };
+                        resolvedPhysicalAddresses.Add(primary.Uri);
                     }
-
-                    // Make sure Primary URI is the first one in the list
-                    IEnumerable<Uri> resolvedEndpoints = (await this.ResolveAllTransportAddressUriAsync(
-                            fauntInjectionAddressRequest,
-                            addressEndpoints.IsIncludePrimary(),
-                            true))
-                            .Take(addressEndpoints.GetReplicaCount())
-                            .Select(address => address.Uri);
-                    resolvedPhysicalAddresses.AddRange(resolvedEndpoints);
+                    else
+                    {
+                        // Make sure Primary URI is the first one in the list
+                        IEnumerable<Uri> resolvedEndpoints = (await this.ResolveAllTransportAddressUriAsync(
+                                fauntInjectionAddressRequest,
+                                addressEndpoints.IsIncludePrimary(),
+                                true))
+                                .Take(addressEndpoints.GetReplicaCount())
+                                .Select(address => address.Uri);
+                        resolvedPhysicalAddresses.AddRange(resolvedEndpoints);
+                    }
                 }
             }
 
@@ -368,10 +427,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             DocumentServiceRequest request,
             bool forceAddressRefresh)
         {
-            PartitionAddressInformation partitionAddressInformation =
+            if (this.addressResolver != null)
+            {
+                PartitionAddressInformation partitionAddressInformation =
                await this.addressResolver.ResolveAsync(request, forceAddressRefresh, CancellationToken.None);
 
-            return partitionAddressInformation.Get(Documents.Client.Protocol.Tcp);
+                return partitionAddressInformation.Get(Documents.Client.Protocol.Tcp);
+            }
+            
+            throw new ArgumentException("AddressResolver is Null");
         }
 
         internal GlobalEndpointManager GetGlobalEndpointManager()
