@@ -193,7 +193,7 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = this.globalEndpointManager.CanUseMultipleWriteLocations(request);
             this.documentServiceRequest = request;
             this.isMultiMasterWriteRequest = !this.isReadRequest
-                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request) ?? false);
+                && (this.globalEndpointManager?.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType) ?? false);
 
             // clear previous location-based routing directive
             request.RequestContext.ClearRouteToLocation();
