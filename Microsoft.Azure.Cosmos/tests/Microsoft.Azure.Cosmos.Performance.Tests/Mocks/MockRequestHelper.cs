@@ -46,13 +46,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
 
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
-        {
-            new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
             {
-                ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
-                ETag = Guid.NewGuid().ToString()
-            }
-        };
+                new TransactionalBatchOperationResult(System.Net.HttpStatusCode.OK)
+                {
+                    ResourceStream = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
+                    ETag = Guid.NewGuid().ToString()
+                }
+            };
 
             batchResponsePayloadWriter = new BatchResponsePayloadWriter(results);
             batchResponsePayloadWriter.PrepareAsync().GetAwaiter().GetResult();
