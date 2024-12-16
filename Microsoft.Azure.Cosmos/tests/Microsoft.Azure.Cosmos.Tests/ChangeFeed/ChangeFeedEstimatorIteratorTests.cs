@@ -391,11 +391,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
-                It.IsAny<Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, (string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
@@ -503,11 +503,11 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<Documents.OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>>(),
-                It.IsAny<Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.Is<TraceComponent>(tc => tc == TraceComponent.ChangeFeed),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, Tuple<string, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, Documents.OperationType, RequestOptions, Func<ITrace, Task<FeedResponse<ChangeFeedProcessorState>>>, (string OperationName, Func<FeedResponse<ChangeFeedProcessorState>, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) =>
                 {
                     using (ITrace trace = Trace.GetRootTrace(operationName, comp, level))
