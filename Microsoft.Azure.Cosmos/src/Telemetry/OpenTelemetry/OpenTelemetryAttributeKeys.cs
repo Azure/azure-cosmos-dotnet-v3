@@ -424,6 +424,67 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return httpStats?.Region ?? tcpStats.Region;
         }
 
+        private static int? GetStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return (int?)httpStats?.HttpResponseMessage?.StatusCode ?? (int?)tcpStats?.StoreResult?.StatusCode;
+        }
+
+        private static string GetConsistencyLevel(OpenTelemetryAttributes attributes,
+           Exception ex)
+        {
+            return ex switch
+            {
+                CosmosException cosmosException => cosmosException.Headers.ConsistencyLevel,
+                _ when attributes != null => attributes.ConsistencyLevel,
+                _ => null
+            };
+        }
+
+        private static Uri GetEndpoint(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return httpStats?.RequestUri ?? tcpStats?.StoreResult?.StorePhysicalAddress;
+        }
+
+        /// <returns>
+        ///  Direct Mode: partitions/{partitionId}/replicas/{replicaId}
+        ///  Gateway Mode:
+        ///     a) If Partition Key Range Id is available, then it is the value of x-ms-documentdb-partitionkeyrangeid header
+        ///     b) otherwise, it is the path of the request URI
+        ///  </returns>
+        private static string GetRoutingId(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            if (tcpStats != null)
+            {
+                string path = tcpStats?.StoreResult?.StorePhysicalAddress?.AbsolutePath;
+                if (path == null)
+                {
+                    return string.Empty;
+                }
+
+                int startIndex = path.IndexOf("/partitions/");
+                return startIndex >= 0 ? path.Substring(startIndex) : string.Empty;
+            }
+
+            if (httpStats.HasValue && httpStats.Value.HttpResponseMessage != null && httpStats.Value.HttpResponseMessage.Headers != null)
+            {
+                if (httpStats.Value.HttpResponseMessage.Headers.TryGetValues("x-ms-documentdb-partitionkeyrangeid", out IEnumerable<string> pkrangeid))
+                {
+                    return string.Join(",", pkrangeid);
+                }
+                else
+                {
+                    return httpStats.Value.RequestUri?.AbsolutePath;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private static string GetRegion(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        {
+            return httpStats?.Region ?? tcpStats.Region;
+        }
+
         private static string GetException(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
         {
             return httpStats?.Exception?.Message ?? tcpStats?.StoreResult?.Exception?.Message;
