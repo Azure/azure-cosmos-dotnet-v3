@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         // Specifies the stability mode for telemetry attributes, configured via the OTEL_SEMCONV_STABILITY_OPT_IN environment variable.
         private static string otelStabilityMode = Environment.GetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN");
 
-        public static IActivityAttributePopulator GetAttributePopulator(CosmosClientMetricsOptions metricsOptions)
+        public static IActivityAttributePopulator GetAttributePopulator(CosmosClientMetricsOptions metricsOptions = null)
         {
             return otelStabilityMode switch
             {

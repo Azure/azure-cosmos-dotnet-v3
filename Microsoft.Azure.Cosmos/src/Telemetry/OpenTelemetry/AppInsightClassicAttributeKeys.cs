@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes, 
             Exception ex)
         {
-            List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>
+            List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
@@ -212,17 +212,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
 
-            if (this.operationMetricsOptions != null && this.operationMetricsOptions.IsRegionIncluded)
+            if (this.operationMetricsOptions != null)
             {
-                dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
-            }
-
-            if (this.operationMetricsOptions != null && this.operationMetricsOptions.CustomDimensions != null)
-            {
-                foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                if (this.operationMetricsOptions.IsRegionIncluded)
                 {
-                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
                 }
+
+                if (this.operationMetricsOptions.CustomDimensions != null)
+                {
+                    foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                    {
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                    }
+                }
+
             }
 
             return dimensions.ToArray();

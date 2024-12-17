@@ -43,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
-        internal static void Initialize(CosmosClientMetricsOptions metricsOptions)
+        internal static void Initialize(CosmosClientMetricsOptions metricsOptions = null)
         {
             // If already initialized, do not initialize again
             if (IsEnabled)

@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 }
             }
 
-            IActivityAttributePopulator  populator = TracesStabilityFactory.GetAttributePopulator(null);
+            IActivityAttributePopulator  populator = TracesStabilityFactory.GetAttributePopulator();
             populator.PopulateAttributes(
                 scope: scope,
                 operationName: OperationName,

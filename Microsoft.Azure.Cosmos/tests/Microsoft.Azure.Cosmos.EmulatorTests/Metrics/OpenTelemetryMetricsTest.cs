@@ -93,8 +93,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             // Refreshing Static variables to reflect the new stability mode
             TracesStabilityFactory.RefreshStabilityMode();
             
-            CosmosDbOperationMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator(null);
-            CosmosDbNetworkMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator(null);
+            CosmosDbOperationMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+            CosmosDbNetworkMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
 
             // Initialize OpenTelemetry MeterProvider
             this.meterProvider = Sdk

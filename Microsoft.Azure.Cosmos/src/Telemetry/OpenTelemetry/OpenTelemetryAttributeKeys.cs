@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly NetworkMetricsOptions networkMetricsOptions;
         private readonly OperationMetricsOptions operationMetricsOptions;
 
-        public OpenTelemetryAttributeKeys(CosmosClientMetricsOptions metricsOptions)
+        public OpenTelemetryAttributeKeys(CosmosClientMetricsOptions metricsOptions = null)
         {
-            this.networkMetricsOptions = metricsOptions.NetworkMetricsOptions;
-            this.operationMetricsOptions = metricsOptions.OperationMetricsOptions;
+            this.networkMetricsOptions = metricsOptions?.NetworkMetricsOptions ?? new NetworkMetricsOptions();
+            this.operationMetricsOptions = metricsOptions?.OperationMetricsOptions ?? new OperationMetricsOptions();
         }
         
         // Azure defaults
@@ -290,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             int? operationLevelStatusCode = CosmosDbMeterUtil.GetStatusCode(attributes, ex);
             int? operationLevelSubStatusCode = CosmosDbMeterUtil.GetSubStatusCode(attributes, ex);
 
-            List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>
+            List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
@@ -310,17 +310,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetException(tcpStats, httpStats))
             };
 
-            if (this.networkMetricsOptions != null && this.networkMetricsOptions.CustomDimensions != null)
+            if (this.networkMetricsOptions != null)
             {
-                foreach (KeyValuePair<string, Func<string>> customDimension in this.networkMetricsOptions.CustomDimensions)
+                if (this.networkMetricsOptions?.CustomDimensions != null)
                 {
-                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
-                }   
-            }
+                    foreach (KeyValuePair<string, Func<string>> customDimension in this.networkMetricsOptions.CustomDimensions)
+                    {
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                    }
+                }
 
-            if (this.networkMetricsOptions != null && this.networkMetricsOptions.IsRoutingIdIncluded)
-            {
-                dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)));
+                if (this.networkMetricsOptions.IsRoutingIdIncluded)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)));
+                }
             }
 
             return dimensions.ToArray();
@@ -333,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes, 
             Exception ex)
         {
-            List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>
+            List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ContainerName, containerName),
@@ -347,17 +350,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
             };
 
-            if (this.operationMetricsOptions != null && this.operationMetricsOptions.CustomDimensions != null)
+            if (this.operationMetricsOptions != null)
             {
-                foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                if (this.operationMetricsOptions.CustomDimensions != null)
                 {
-                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                    foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                    {
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                    }
                 }
-            }
-
-            if (this.operationMetricsOptions != null && this.operationMetricsOptions.IsRegionIncluded)
-            {
-                dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
+                if (this.operationMetricsOptions.IsRegionIncluded)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
+                }
             }
 
             return dimensions.ToArray();
