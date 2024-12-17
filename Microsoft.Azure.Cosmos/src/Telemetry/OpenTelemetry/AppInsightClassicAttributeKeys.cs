@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private readonly OperationMetricsOptions operationMetricsOptions;
 
-        public AppInsightClassicAttributeKeys(CosmosClientMetricsOptions metricsOptions)
+        public AppInsightClassicAttributeKeys(CosmosClientMetricsOptions metricsOptions = null)
         {
-            this.operationMetricsOptions = metricsOptions.OperationMetricsOptions;
+            this.operationMetricsOptions = metricsOptions?.OperationMetricsOptions ?? new OperationMetricsOptions();
         }
 
         /// <summary>
