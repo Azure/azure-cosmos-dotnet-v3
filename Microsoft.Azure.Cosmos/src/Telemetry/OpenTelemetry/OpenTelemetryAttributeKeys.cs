@@ -23,10 +23,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly NetworkMetricsOptions networkMetricsOptions;
         private readonly OperationMetricsOptions operationMetricsOptions;
 
-        public OpenTelemetryAttributeKeys(CosmosClientMetricsOptions metricsOptions = null)
+        public OpenTelemetryAttributeKeys(OperationMetricsOptions operationMetricsOptions = null, NetworkMetricsOptions networkMetricsOptions = null)
         {
-            this.networkMetricsOptions = metricsOptions?.NetworkMetricsOptions ?? new NetworkMetricsOptions();
-            this.operationMetricsOptions = metricsOptions?.OperationMetricsOptions ?? new OperationMetricsOptions();
+            this.networkMetricsOptions = networkMetricsOptions ?? new NetworkMetricsOptions();
+            this.operationMetricsOptions = operationMetricsOptions ?? new OperationMetricsOptions();
         }
         
         // Azure defaults
@@ -320,7 +320,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                 }
 
-                if (this.networkMetricsOptions.IsRoutingIdIncluded)
+                if (this.networkMetricsOptions.ShouldIncludeRoutingId)
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)));
                 }
@@ -359,7 +359,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                         dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
                     }
                 }
-                if (this.operationMetricsOptions.IsRegionIncluded)
+
+                if (this.operationMetricsOptions.ShouldIncludeRegion)
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
                 }

@@ -15,10 +15,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly IActivityAttributePopulator appInsightPopulator;
         private readonly IActivityAttributePopulator otelPopulator;
 
-        public DatabaseDupAttributeKeys(CosmosClientMetricsOptions metricsOptions) 
+        public DatabaseDupAttributeKeys(CosmosClientTelemetryOptions metricsOptions) 
         {
-            this.otelPopulator = new OpenTelemetryAttributeKeys(metricsOptions);
-            this.appInsightPopulator = new AppInsightClassicAttributeKeys(metricsOptions);
+            this.otelPopulator = new OpenTelemetryAttributeKeys(metricsOptions?.OperationMetricsOptions, metricsOptions?.NetworkMetricsOptions);
+            this.appInsightPopulator = new AppInsightClassicAttributeKeys(metricsOptions?.OperationMetricsOptions);
         }
 
         public void PopulateAttributes(DiagnosticScope scope, 

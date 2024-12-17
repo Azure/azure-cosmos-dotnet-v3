@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     {
         private readonly OperationMetricsOptions operationMetricsOptions;
 
-        public AppInsightClassicAttributeKeys(CosmosClientMetricsOptions metricsOptions = null)
+        public AppInsightClassicAttributeKeys(OperationMetricsOptions metricsOptions = null)
         {
-            this.operationMetricsOptions = metricsOptions?.OperationMetricsOptions ?? new OperationMetricsOptions();
+            this.operationMetricsOptions = metricsOptions ?? new OperationMetricsOptions();
         }
 
         /// <summary>
@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (this.operationMetricsOptions != null)
             {
-                if (this.operationMetricsOptions.IsRegionIncluded)
+                if (this.operationMetricsOptions.ShouldIncludeRegion)
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
                 }
