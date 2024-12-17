@@ -100,5 +100,15 @@
   "BinaryEncodingEnabledBenchmark.ReplaceItemAsync;[EnableBinaryResponseOnPointOperations=True]": "38345",
   "BinaryEncodingEnabledBenchmark.ReplaceItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "26924.5",
   "BinaryEncodingEnabledBenchmark.DeleteItemAsync;[EnableBinaryResponseOnPointOperations=True]": "33015.25",
-  "BinaryEncodingEnabledBenchmark.DeleteItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "25829.5"
+  "BinaryEncodingEnabledBenchmark.DeleteItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "25829.5",
+  "BinaryEncodingEnabledBenchmark.CreateItemAsync;[EnableBinaryResponseOnPointOperations=False]": "38127.25",
+  "BinaryEncodingEnabledBenchmark.CreateItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26697.5",
+  "BinaryEncodingEnabledBenchmark.ReadItemAsync;[EnableBinaryResponseOnPointOperations=False]": "34509.75",
+  "BinaryEncodingEnabledBenchmark.ReadItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26752.5",
+  "BinaryEncodingEnabledBenchmark.UpsertItemAsync;[EnableBinaryResponseOnPointOperations=False]": "38337.25",
+  "BinaryEncodingEnabledBenchmark.UpsertItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26919.25",
+  "BinaryEncodingEnabledBenchmark.ReplaceItemAsync;[EnableBinaryResponseOnPointOperations=False]": "38345",
+  "BinaryEncodingEnabledBenchmark.ReplaceItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26924.5",
+  "BinaryEncodingEnabledBenchmark.DeleteItemAsync;[EnableBinaryResponseOnPointOperations=False]": "33015.25",
+  "BinaryEncodingEnabledBenchmark.DeleteItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "25829.5"
 }
