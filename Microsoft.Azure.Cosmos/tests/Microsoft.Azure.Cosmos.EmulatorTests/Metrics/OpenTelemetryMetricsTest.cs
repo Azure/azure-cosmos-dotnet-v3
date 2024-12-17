@@ -72,6 +72,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             this.meterProvider.Dispose();
 
+            CosmosDbOperationMeter.Reset();
+            CosmosDbNetworkMeter.Reset();
+
             Environment.SetEnvironmentVariable(StabilityEnvVariableName, null);
         }
 
@@ -106,8 +109,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 .WithConnectionModeGateway());
             }
 
-            this.timeoutTimer = Stopwatch.StartNew();
-
             await this.ExecuteOperation(manualResetEventSlim);
 
             // Asserting Metrics
@@ -133,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
         [TestMethod]
         [DataRow(true)]
-       // [DataRow(false)]
+        [DataRow(false)]
         public async Task MetricsWithOptionalDimensionTest(bool shouldIncludeOptionalDimensions)
         {
             ManualResetEventSlim manualResetEventSlim = this.SetupOpenTelemetry(null);
@@ -161,8 +162,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 }
             })
             .WithConnectionModeDirect());
-
-            this.timeoutTimer = Stopwatch.StartNew();
 
             // Cosmos Db operations
             await this.ExecuteOperation(manualResetEventSlim);
@@ -196,6 +195,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
         private async Task ExecuteOperation(ManualResetEventSlim manualResetEventSlim)
         {
+            this.timeoutTimer = Stopwatch.StartNew();
+
             // Cosmos Db operations
             Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
             for (int count = 0; count < 10; count++)

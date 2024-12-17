@@ -146,5 +146,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.ResponseBodySize, dimensionsFunc, ResponseBodySizeHistogram);
             });
         }
+
+        /// <summary>
+        /// Resets the histograms and counters for capturing Cosmos DB metrics in Tests.
+        /// </summary>
+        public static void Reset()
+        {
+            if (IsEnabled)
+            {
+                IsEnabled = false;
+
+                RequestLatencyHistogram = null;
+                RequestBodySizeHistogram = null;
+                ResponseBodySizeHistogram = null;
+                ChannelAquisitionLatencyHistogram = null;
+                BackendLatencyHistogram = null;
+                TransitLatencyHistogram = null;
+                ReceivedLatencyHistogram = null;
+            }
+           
+        }
     }
 }

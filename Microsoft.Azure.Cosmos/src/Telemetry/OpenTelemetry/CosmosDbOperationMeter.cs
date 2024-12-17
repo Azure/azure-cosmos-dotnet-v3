@@ -156,5 +156,21 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             AdjustInstanceCount(accountEndpoint, -1);
         }
+
+        /// <summary>
+        /// Resets the histograms and counters for capturing Cosmos DB metrics in Tests
+        /// </summary>
+        internal static void Reset()
+        {
+            if (IsEnabled)
+            {
+                IsEnabled = false;
+
+                RequestLatencyHistogram = null;
+                RequestUnitsHistogram = null;
+                ActualItemHistogram = null;
+                ActiveInstanceCounter = null;
+            }
+        }
     }
 }
