@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         public bool IsClientMetricsEnabled { get; set; }
 
         /// <summary>
-        /// ClientMetricsOptions
+        /// Represents the configuration options for collecting metrics related to Cosmos DB operations and network.
         /// </summary>
         public CosmosClientMetricsOptions ClientMetricsOptions { get; set; } = new CosmosClientMetricsOptions();
 }
