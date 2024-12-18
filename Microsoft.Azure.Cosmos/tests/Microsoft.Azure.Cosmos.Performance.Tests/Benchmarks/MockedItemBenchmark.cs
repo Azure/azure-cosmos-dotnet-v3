@@ -4,10 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
+    using System;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Columns;
     using BenchmarkDotNet.Configs;
+    using Microsoft.Azure.Cosmos.Json;
 
     public enum ScenarioType
     {
@@ -22,43 +24,84 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
-        public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
-            {
-                new MockedItemStreamBenchmark(),
-                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-                new MockedItemOfTBenchmark() { 
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: true) },
-                new MockedItemOfTBenchmark() { 
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: false, 
-                        includeDiagnosticsToString: true) },
-                new MockedItemOfTBenchmark() {
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: false,
-                        includeDiagnosticsToString: false,
-                        isDistributedTracingEnabled: true) },
-                new MockedItemOfTBenchmark() {
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: false,
-                        includeDiagnosticsToString: false,
-                        isClientMetricsEnabled: true) }
-            };
+        // Original IterParameters array definition remains, but we remove 'readonly'
+        // so we can update it in GlobalSetup.
+        public static IItemBenchmark[] IterParameters = new IItemBenchmark[]
+        {
+        new MockedItemStreamBenchmark(),
+        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
+        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: true) },
+        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true) },
+        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: false, isDistributedTracingEnabled: true) },
+        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: false, isClientMetricsEnabled: true) }
+        };
 
         [Params(
-            ScenarioType.Stream, 
-            ScenarioType.OfT, 
-            ScenarioType.OfTWithDiagnosticsToString, 
+            ScenarioType.Stream,
+            ScenarioType.OfT,
             ScenarioType.OfTCustom,
+            ScenarioType.OfTWithDiagnosticsToString,
             ScenarioType.OfTWithDistributedTracingEnabled,
             ScenarioType.OfTWithClientMetricsEnabled)]
-        public ScenarioType Type
-        {
-            get;
-            set;
-        }
+        public ScenarioType Type { get; set; }
+
+        // New parameter to control binary encoding
+        [Params(true, false)]
+        public bool EnableBinaryResponseOnPointOperations { get; set; }
 
         private IItemBenchmark CurrentBenchmark => MockedItemBenchmark.IterParameters[(int)this.Type];
+
+        [GlobalSetup]
+        public void GlobalSetup()
+        {
+            // Set the environment variable based on the parameter
+            Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", this.EnableBinaryResponseOnPointOperations.ToString());
+
+            // Determine the serialization format based on EnableBinaryResponseOnPointOperations
+            JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations
+                ? JsonSerializationFormat.Binary
+                : JsonSerializationFormat.Text;
+
+            // Re-initialize the benchmarks that depend on MockedItemBenchmarkHelper
+            // with the chosen serialization format
+            IterParameters[1] = new MockedItemOfTBenchmark()
+            {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat)
+            };
+
+            IterParameters[2] = new MockedItemOfTBenchmark()
+            {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: true,
+                    serializationFormat: serializationFormat)
+            };
+
+            IterParameters[3] = new MockedItemOfTBenchmark()
+            {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: false,
+                    includeDiagnosticsToString: true,
+                    serializationFormat: serializationFormat)
+            };
+
+            IterParameters[4] = new MockedItemOfTBenchmark()
+            {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: false,
+                    includeDiagnosticsToString: false,
+                    isDistributedTracingEnabled: true,
+                    serializationFormat: serializationFormat)
+            };
+
+            IterParameters[5] = new MockedItemOfTBenchmark()
+            {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: false,
+                    includeDiagnosticsToString: false,
+                    isClientMetricsEnabled: true,
+                    serializationFormat: serializationFormat)
+            };
+        }
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
