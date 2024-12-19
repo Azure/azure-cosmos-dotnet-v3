@@ -61,5 +61,15 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>Metrics data can be published to a monitoring system like Prometheus or Azure Monitor, depending on the configured metrics provider.</remarks>
         /// </summary>
         public bool IsClientMetricsEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configuration for operation-level metrics.
+        /// </summary>
+        public OperationMetricsOptions OperationMetricsOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configuration for network-level metrics.
+        /// </summary>
+        public NetworkMetricsOptions NetworkMetricsOptions { get; set; }
     }
 }

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -11,6 +11,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
     internal sealed class AppInsightClassicAttributeKeys : IActivityAttributePopulator
     {
+        private readonly OperationMetricsOptions operationMetricsOptions;
+
+        public AppInsightClassicAttributeKeys(OperationMetricsOptions metricsOptions = null)
+        {
+            this.operationMetricsOptions = metricsOptions ?? new OperationMetricsOptions();
+        }
+
         /// <summary>
         /// Represents the diagnostic namespace for Azure Cosmos.
         /// </summary>
@@ -175,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
-            return new KeyValuePair<string, object>[]
+            List<KeyValuePair<string, object>> dimensions = new List<KeyValuePair<string, object>>
             {
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
@@ -184,6 +191,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
+
+            return dimensions.ToArray();
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
@@ -193,16 +202,34 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             OpenTelemetryAttributes attributes, 
             Exception ex)
         {
-            return new KeyValuePair<string, object>[]
+            List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ContainerName, containerName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbName, databaseName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.DbOperation, operationName),
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.Region,  CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics))
+                new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
+
+            if (this.operationMetricsOptions != null)
+            {
+                if (this.operationMetricsOptions.IncludeRegion )
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
+                }
+
+                if (this.operationMetricsOptions.CustomDimensions != null)
+                {
+                    foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                    {
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                    }
+                }
+
+            }
+
+            return dimensions.ToArray();
         }
 
         public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountEndpoint)
