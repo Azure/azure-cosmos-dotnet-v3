@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 IsClientMetricsEnabled = true,
                 OperationMetricsOptions = new OperationMetricsOptions()
                 {
-                    ShouldIncludeRegion = shouldIncludeOptionalDimensions,
+                    IncludeRegion  = shouldIncludeOptionalDimensions,
                     CustomDimensions = new Dictionary<string, Func<string>>()
                     {
                         { "custom_dimension1", () => "custom_dimension1_value" },
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 },
                 NetworkMetricsOptions = new NetworkMetricsOptions()
                 {
-                    ShouldIncludeRoutingId = shouldIncludeOptionalDimensions,
+                    IncludeRoutingId = shouldIncludeOptionalDimensions,
                     CustomDimensions = new Dictionary<string, Func<string>>()
                     {
                         { "custom_dimension3", () => "custom_dimension3_value" },

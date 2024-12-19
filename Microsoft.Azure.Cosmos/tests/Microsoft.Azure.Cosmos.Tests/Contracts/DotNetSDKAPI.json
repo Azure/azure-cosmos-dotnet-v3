@@ -6915,17 +6915,17 @@
     "Microsoft.Azure.Cosmos.NetworkMetricsOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_ShouldIncludeRoutingId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Boolean get_IncludeRoutingId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Boolean get_ShouldIncludeRoutingId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Boolean get_IncludeRoutingId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean ShouldIncludeRoutingId": {
+        "Boolean IncludeRoutingId": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Boolean ShouldIncludeRoutingId;CanRead:True;CanWrite:True;Boolean get_ShouldIncludeRoutingId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ShouldIncludeRoutingId(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Boolean IncludeRoutingId;CanRead:True;CanWrite:True;Boolean get_IncludeRoutingId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IncludeRoutingId(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IDictionary`2[System.String,System.Func`1[System.String]] CustomDimensions[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
@@ -6953,12 +6953,12 @@
           ],
           "MethodInfo": "Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.Func`1[System.String]]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_ShouldIncludeRoutingId(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_IncludeRoutingId(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_ShouldIncludeRoutingId(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_IncludeRoutingId(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -7004,17 +7004,17 @@
     "Microsoft.Azure.Cosmos.OperationMetricsOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Boolean get_ShouldIncludeRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Boolean get_IncludeRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Boolean get_ShouldIncludeRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Boolean get_IncludeRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Boolean ShouldIncludeRegion": {
+        "Boolean IncludeRegion": {
           "Type": "Property",
           "Attributes": [],
-          "MethodInfo": "Boolean ShouldIncludeRegion;CanRead:True;CanWrite:True;Boolean get_ShouldIncludeRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_ShouldIncludeRegion(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Boolean IncludeRegion;CanRead:True;CanWrite:True;Boolean get_IncludeRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IncludeRegion(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Collections.Generic.IDictionary`2[System.String,System.Func`1[System.String]] CustomDimensions[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
@@ -7042,12 +7042,12 @@
           ],
           "MethodInfo": "Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.Func`1[System.String]]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_ShouldIncludeRegion(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_IncludeRegion(Boolean)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_ShouldIncludeRegion(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_IncludeRegion(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}

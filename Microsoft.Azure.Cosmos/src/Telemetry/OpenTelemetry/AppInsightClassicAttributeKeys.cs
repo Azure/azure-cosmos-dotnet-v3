@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (this.operationMetricsOptions != null)
             {
-                if (this.operationMetricsOptions.ShouldIncludeRegion)
+                if (this.operationMetricsOptions.IncludeRegion )
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
                 }
