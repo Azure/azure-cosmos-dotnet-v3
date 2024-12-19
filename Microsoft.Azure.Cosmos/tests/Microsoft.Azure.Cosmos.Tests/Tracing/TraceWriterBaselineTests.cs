@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.ReadFeed;
     using Microsoft.Azure.Cosmos.ReadFeed.Pagination;
@@ -367,7 +366,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             ResourceType.Document,
                             OperationType.Query,
                             "42",
-                            uri1.Uri);
+                            uri1.Uri,
+                            "region1");
 
                         TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats", datum);
@@ -401,7 +401,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             resourceType: default,
                             operationType: default,
                             requestSessionToken: default,
-                            locationEndpoint: default);
+                            locationEndpoint: default,
+                            region: "region1");
 
                         TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
                         rootTrace.AddDatum("Client Side Request Stats Default", datum);
@@ -426,7 +427,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             HttpMethod.Get,
                             ResourceType.Document,
                             new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
-                            exception: null);
+                            exception: null,
+                            region: "region1");
 
                         TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
 
@@ -437,7 +439,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                             HttpMethod.Get,
                             ResourceType.Document,
                             responseMessage: null,
-                            exception: new OperationCanceledException());
+                            exception: new OperationCanceledException(),
+                            region: "region1");
                         TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 
                         rootTrace.AddDatum("Client Side Request Stats", datum);
@@ -826,7 +829,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                         .Join(
                             Environment.NewLine,
                             codeSnippet
-                                .Select(x => x != string.Empty ? x.Substring("            ".Length) : string.Empty))
+                                .Select(x => x != string.Empty ? x["            ".Length..] : string.Empty))
                     + Environment.NewLine;
                 }
                 catch(Exception)
@@ -939,7 +942,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
+            public void UpdateRegionContacted(TraceDatum _)
             {
                 //NoImplementation
             }
