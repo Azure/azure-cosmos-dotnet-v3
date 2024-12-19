@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections.Generic;
     using System.Globalization;
     using System.Linq.Expressions;
     using Microsoft.Azure.Cosmos;
@@ -97,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
 
             // Array functions
-            if (declaringType.IsEnumerable())
+            if (declaringType.IsEnumerable() || declaringType == typeof(System.Text.Json.Nodes.JsonNode))
             {
                 return ArrayBuiltinFunctions.Visit(methodCallExpression, context);
             }
