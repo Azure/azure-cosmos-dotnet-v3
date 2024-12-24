@@ -311,32 +311,35 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetException(tcpStats, httpStats))
             };
 
-            if (this.networkMetricsOptions != null)
-            {
-                if (this.networkMetricsOptions?.CustomDimensions != null)
-                {
-                    foreach (KeyValuePair<string, string> customDimension in this.networkMetricsOptions.CustomDimensions)
-                    {
-                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
-                    }
-                }
-
-                if ((optionFromRequest == null && this.networkMetricsOptions.IncludeRoutingId.HasValue && this.networkMetricsOptions.IncludeRoutingId.Value) || 
-                    (optionFromRequest != null && optionFromRequest.IncludeRoutingId.HasValue && optionFromRequest.IncludeRoutingId.Value))
-                {
-                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)));
-                }
-            }
-
-            if (optionFromRequest != null && optionFromRequest.CustomDimensions != null)
-            {
-                foreach (KeyValuePair<string, string> customDimension in optionFromRequest.CustomDimensions)
-                {
-                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
-                }
-            }
+            this.AddOptionalDimensions(optionFromRequest, tcpStats, httpStats, dimensions);
 
             return dimensions.ToArray();
+        }
+
+        private void AddOptionalDimensions(NetworkMetricsOptions optionFromRequest, 
+            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, 
+            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats, 
+            List<KeyValuePair<string, object>> dimensions)
+        {
+            // Add custom dimensions from networkMetricsOptions
+            this.AddCustomDimensions(this.networkMetricsOptions?.CustomDimensions, dimensions);
+
+            // Add custom dimensions from optionFromRequest
+            this.AddCustomDimensions(optionFromRequest?.CustomDimensions, dimensions);
+
+            // If IncludeRoutingId is set to true at either at client options or request options, then add the routing id to the dimensions
+            if (this.ShouldIncludeRoutingId(this.networkMetricsOptions, optionFromRequest))
+            {
+                dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)));
+            }
+        }
+
+        private bool ShouldIncludeRoutingId(
+            NetworkMetricsOptions globalOptions,
+            NetworkMetricsOptions requestOptions)
+        {
+            return (requestOptions == null && globalOptions?.IncludeRoutingId == true) ||
+                   (requestOptions?.IncludeRoutingId == true);
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
@@ -361,32 +364,45 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
             };
 
-            if (this.operationMetricsOptions != null)
-            {
-                if (this.operationMetricsOptions.CustomDimensions != null)
-                {
-                    foreach (KeyValuePair<string, string> customDimension in this.operationMetricsOptions.CustomDimensions)
-                    {
-                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
-                    }
-                }
+            this.AddOptionalDimensions(attributes, optionFromRequest, dimensions);
 
-                if ((optionFromRequest == null && this.operationMetricsOptions.IncludeRegion.HasValue && this.operationMetricsOptions.IncludeRegion.Value) || 
-                    (optionFromRequest != null && optionFromRequest.IncludeRegion.HasValue && optionFromRequest.IncludeRegion.Value))
-                {
-                    dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
-                }
+            return dimensions.ToArray();
+        }
+
+        private void AddOptionalDimensions(OpenTelemetryAttributes attributes, OperationMetricsOptions optionFromRequest, List<KeyValuePair<string, object>> dimensions)
+        {
+            // Add custom dimensions from operationMetricsOptions
+            this.AddCustomDimensions(this.operationMetricsOptions?.CustomDimensions, dimensions);
+
+            // Add custom dimensions from optionFromRequest
+            this.AddCustomDimensions(optionFromRequest?.CustomDimensions, dimensions);
+
+            // If IncludeRegion is set to true at either at client options or request options, then add the Region contacted information to the dimensions
+            if (this.ShouldIncludeRegion(this.operationMetricsOptions, optionFromRequest))
+            {
+                dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
             }
+        }
 
-            if (optionFromRequest != null)
+        private bool ShouldIncludeRegion(
+           OperationMetricsOptions globalOptions,
+           OperationMetricsOptions requestOptions)
+        {
+            return (requestOptions == null && globalOptions?.IncludeRegion == true) ||
+                   (requestOptions?.IncludeRegion == true);
+        }
+
+        private void AddCustomDimensions(
+            IDictionary<string, string> customDimensions,
+            List<KeyValuePair<string, object>> dimensions)
+        {
+            if (customDimensions != null)
             {
-                foreach (KeyValuePair<string, string> customDimension in optionFromRequest.CustomDimensions)
+                foreach (KeyValuePair<string, string> customDimension in customDimensions)
                 {
                     dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
                 }
             }
-
-            return dimensions.ToArray();
         }
 
         private static int? GetStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)

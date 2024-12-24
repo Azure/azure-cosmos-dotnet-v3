@@ -133,11 +133,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         }
 
         [TestMethod]
-        [DataRow(true, true)]
-        [DataRow(false, true)]
-        [DataRow(true, false)]
-        [DataRow(false, false)]
-        public async Task MetricsWithOptionalDimensionTest(bool shouldIncludeOptionalDimensions, bool isCustomDimensionNull)
+        [DataRow(true, true, DisplayName = "Optional and Custom Dimensions are included")]
+        [DataRow(false, true, DisplayName = "Optional Dimension is not included but Custom Dimensions are included")]
+        [DataRow(null, true, DisplayName = "Optional Dimension is not included with null but Custom Dimensions are included")]
+        [DataRow(null, true, DisplayName = "Optional Dimension is not included with null but Custom Dimensions are included")]
+        [DataRow(true, false, DisplayName = "Optional Dimension is included but Custom Dimensions are not included")]
+        [DataRow(false, false, DisplayName = "Optional Dimension is not included but Custom Dimensions are included")]
+        public async Task MetricsWithOptionalDimensionTest(bool? shouldIncludeOptionalDimensions, bool isCustomDimensionNull)
         {
             ManualResetEventSlim manualResetEventSlim = this.SetupOpenTelemetry(null);
 
@@ -197,7 +199,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             // Asserting Dimensions
             foreach (KeyValuePair<string, List<string>> dimension in CustomMetricExporter.Dimensions)
             {
-                Console.WriteLine($"Actual dimensions for {dimension.Key} are {string.Join(", ", dimension.Value.Select(kv => $"{kv}"))}");
                 if (dimension.Key == CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances)
                 {
                     Assert.IsFalse(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region));
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 }
                 else if (expectedOperationMetrics.ContainsKey(dimension.Key))
                 {
-                    Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region), shouldIncludeOptionalDimensions);
+                    Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region), shouldIncludeOptionalDimensions ?? false);
                     Assert.AreEqual(dimension.Value.Contains("custom_dimension1"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
                     Assert.AreEqual(dimension.Value.Contains("custom_dimension2"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
                     Assert.AreEqual(dimension.Value.Contains("custom_dimension5"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
@@ -221,7 +222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 }
                 else if (expectedNetworkMetrics.ContainsKey(dimension.Key))
                 {
-                    Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId), shouldIncludeOptionalDimensions);
+                    Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId), shouldIncludeOptionalDimensions ?? false);
                     Assert.AreEqual(dimension.Value.Contains("custom_dimension3"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
                     Assert.AreEqual(dimension.Value.Contains("custom_dimension4"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
                     Assert.AreEqual(dimension.Value.Contains("custom_dimension7"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
