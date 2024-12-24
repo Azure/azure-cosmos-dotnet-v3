@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using static Microsoft.Azure.Cosmos.Query.Core.Metrics.TextTable;
 
     /// <summary>
     /// Represents the configuration options for collecting metrics related to Cosmos DB operations.

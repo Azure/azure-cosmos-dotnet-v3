@@ -4,10 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos
 {
-    using System;
     using System.Collections.Generic;
-    using Antlr4.Runtime;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the configuration options for collecting metrics related to Cosmos DB network operations.
