@@ -282,6 +282,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             OpenTelemetryAttributes attributes,
             Exception ex,
+            NetworkMetricsOptions optionFromRequest,
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
@@ -314,15 +315,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 if (this.networkMetricsOptions?.CustomDimensions != null)
                 {
-                    foreach (KeyValuePair<string, Func<string>> customDimension in this.networkMetricsOptions.CustomDimensions)
+                    foreach (KeyValuePair<string, string> customDimension in this.networkMetricsOptions.CustomDimensions)
                     {
-                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
                     }
                 }
 
-                if (this.networkMetricsOptions.IncludeRoutingId)
+                if ((optionFromRequest == null && this.networkMetricsOptions.IncludeRoutingId.HasValue && this.networkMetricsOptions.IncludeRoutingId.Value) || 
+                    (optionFromRequest != null && optionFromRequest.IncludeRoutingId.HasValue && optionFromRequest.IncludeRoutingId.Value))
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId, GetRoutingId(tcpStats, httpStats)));
+                }
+            }
+
+            if (optionFromRequest != null && optionFromRequest.CustomDimensions != null)
+            {
+                foreach (KeyValuePair<string, string> customDimension in optionFromRequest.CustomDimensions)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
                 }
             }
 
@@ -334,7 +344,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName, 
             Uri accountName, 
             OpenTelemetryAttributes attributes, 
-            Exception ex)
+            Exception ex,
+            OperationMetricsOptions optionFromRequest)
         {
             List<KeyValuePair<string, object>> dimensions = new ()
             {
@@ -354,15 +365,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 if (this.operationMetricsOptions.CustomDimensions != null)
                 {
-                    foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                    foreach (KeyValuePair<string, string> customDimension in this.operationMetricsOptions.CustomDimensions)
                     {
-                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
                     }
                 }
 
-                if (this.operationMetricsOptions.IncludeRegion )
+                if ((optionFromRequest == null && this.operationMetricsOptions.IncludeRegion.HasValue && this.operationMetricsOptions.IncludeRegion.Value) || 
+                    (optionFromRequest != null && optionFromRequest.IncludeRegion.HasValue && optionFromRequest.IncludeRegion.Value))
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
+                }
+            }
+
+            if (optionFromRequest != null)
+            {
+                foreach (KeyValuePair<string, string> customDimension in optionFromRequest.CustomDimensions)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
                 }
             }
 

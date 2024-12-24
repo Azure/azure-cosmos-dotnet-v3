@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Uri accountName,
             string containerName,
             string databaseName,
+            NetworkMetricsOptions networkMetricsOptions,
             OpenTelemetryAttributes attributes = null,
             Exception ex = null)
         {
@@ -113,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                                     databaseName,
                                                                                     attributes,
                                                                                     ex,
+                                                                                    networkMetricsOptions,
                                                                                     tcpStats: stat);
 
                 CosmosDbMeterUtil.TryNetworkMetricsValues(stat, out NetworkMetricData metricData);
@@ -136,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                              databaseName,
                                                                              attributes,
                                                                              ex,
+                                                                             networkMetricsOptions,
                                                                              httpStats: stat);
                 }
 

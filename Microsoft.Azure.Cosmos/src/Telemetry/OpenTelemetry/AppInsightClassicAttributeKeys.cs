@@ -178,7 +178,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName, 
             string databaseName, 
             OpenTelemetryAttributes attributes, 
-            Exception ex, 
+            Exception ex,
+            NetworkMetricsOptions optionFromRequest, 
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
@@ -192,6 +193,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(AppInsightClassicAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex))
             };
 
+            if (optionFromRequest != null)
+            {
+                foreach (KeyValuePair<string, string> customDimension in optionFromRequest.CustomDimensions)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
+                }
+            }
+
             return dimensions.ToArray();
         }
 
@@ -200,7 +209,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName, 
             Uri accountName, 
             OpenTelemetryAttributes attributes, 
-            Exception ex)
+            Exception ex,
+            OperationMetricsOptions optionFromRequest)
         {
             List<KeyValuePair<string, object>> dimensions = new ()
             {
@@ -214,19 +224,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             if (this.operationMetricsOptions != null)
             {
-                if (this.operationMetricsOptions.IncludeRegion )
+                if (this.operationMetricsOptions.IncludeRegion.HasValue && this.operationMetricsOptions.IncludeRegion.Value)
                 {
                     dimensions.Add(new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.Region, CosmosDbMeterUtil.GetRegions(attributes?.Diagnostics)));
                 }
 
                 if (this.operationMetricsOptions.CustomDimensions != null)
                 {
-                    foreach (KeyValuePair<string, Func<string>> customDimension in this.operationMetricsOptions.CustomDimensions)
+                    foreach (KeyValuePair<string, string> customDimension in this.operationMetricsOptions.CustomDimensions)
                     {
-                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value()));
+                        dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
                     }
                 }
 
+            }
+
+            if (optionFromRequest != null)
+            {
+                foreach (KeyValuePair<string, string> customDimension in optionFromRequest.CustomDimensions)
+                {
+                    dimensions.Add(new KeyValuePair<string, object>(customDimension.Key, customDimension.Value));
+                }
             }
 
             return dimensions.ToArray();

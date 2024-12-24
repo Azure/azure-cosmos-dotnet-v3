@@ -139,5 +139,22 @@ namespace Microsoft.Azure.Cosmos
         /// collect SQL query Specs for tracing
         /// </summary>
         internal SqlQuerySpec querySpec;
+
+        internal OperationMetricsOptions operationMetricsOptions;
+
+        internal NetworkMetricsOptions networkMetricsOptions;
+
+        internal void SetupInfoForTelemetry(FeedIterator<T> feedIteratorInternal)
+        {
+            this.container = feedIteratorInternal.container;
+            this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
+            this.operationType = feedIteratorInternal.operationType;
+
+            this.querySpec = feedIteratorInternal.querySpec;
+            this.operationMetricsOptions = feedIteratorInternal.operationMetricsOptions;
+            this.networkMetricsOptions = feedIteratorInternal.networkMetricsOptions;
+        }
     }
 }

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
@@ -92,6 +93,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Uri accountName,
             string containerName,
             string databaseName,
+            OperationMetricsOptions operationMetricsOptions,
             OpenTelemetryAttributes attributes = null,
             Exception ex = null)
         {
@@ -104,7 +106,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 Func<KeyValuePair<string, object>[]> dimensionsFunc = () =>
                     DimensionPopulator.PopulateOperationMeterDimensions(
-                        getOperationName(), containerName, databaseName, accountName, attributes, ex);
+                        getOperationName(),
+                        containerName, 
+                        databaseName, 
+                        accountName, 
+                        attributes, 
+                        ex,
+                        operationMetricsOptions);
 
                 if (CosmosDbMeterUtil.TryOperationMetricsValues(attributes, ex, out OperationMetricData value))
                 {

@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos
     {
         /// <summary>
         /// Gets or sets a value indicating whether the region information should be included in the operation metrics.
-        /// Default value is <c>false</c>.
         /// </summary>
         /// <remarks>
         /// <para>
@@ -31,51 +30,24 @@ namespace Microsoft.Azure.Cosmos
         /// for your use case, as it may lead to increased resource consumption and complexity.
         /// </para>
         /// </remarks>
-        public bool IncludeRegion { get; set; } = false;
+        public bool? IncludeRegion { get; set; }
 
         /// <summary>
-        /// Gets or sets a collection of custom dimensions to include in the operation metrics.
-        /// Each dimension is defined as a key-value pair, where the key is the dimension name and the value is a function that returns the dimension value.
+        /// Gets or sets a collection of custom dimensions to include in the operation metrics. Each dimension is defined as a key-value pair.
         /// </summary>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
         /// var telemetryOptions = new OperationMetricsOptions
         /// {
-        ///     CustomDimensions = new Dictionary<string, Func<string>>
+        ///     CustomDimensions = new Dictionary<string, string>
         ///     {
-        ///         // Static value
-        ///         { "Region", () => "EastUS" },
-        ///         
-        ///         // Dynamic value based on runtime logic
-        ///         { "RequestId", () => Guid.NewGuid().ToString() },
-        ///         { "Timestamp", () => DateTime.UtcNow.ToString("o") }
-        ///         { "Environment", () => AppSettings.Environment }, // e.g., "Production", "Staging"
-        ///         { "ServiceVersion", () => Assembly.GetExecutingAssembly().GetName().Version.ToString() }
-        ///         
-        ///         // Dynamic value based on user interaction
-        ///         { "CustomerType", () => GetCurrentCustomerType() }, // E.g., "Premium", "Standard"
-        ///         
-        ///         // Dynamic value reflecting the business context of the operation
-        ///         { "OrderStatus", () => GetOrderStatusForCurrentTransaction() } // E.g., "Pending", "Shipped"
-        /// 
+        ///         { "Region", "EastUS" }
         ///     }
         /// };
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>
-        /// <para>
-        /// Enabling this option provides enhanced diagnostic granularity based on the added dimensions. 
-        /// However, it may increase the cardinality of metrics, potentially leading to higher storage costs and generating a large volume of low-sample-count metrics, 
-        /// which can complicate analysis.
-        /// </para>
-        /// <para>
-        /// So, Carefully evaluate whether the additional granularity is necessary 
-        /// for your use case, as it may lead to increased resource consumption and complexity.
-        /// </para>
-        /// </remarks>
-        [JsonIgnore]
-        public IDictionary<string, Func<string>> CustomDimensions { get; set; }
+        public IDictionary<string, string> CustomDimensions { get; set; }
     }
  }

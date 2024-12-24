@@ -133,11 +133,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         }
 
         [TestMethod]
-        [DataRow(true)]
-        [DataRow(false)]
-        public async Task MetricsWithOptionalDimensionTest(bool shouldIncludeOptionalDimensions)
+        [DataRow(true, true)]
+        [DataRow(false, true)]
+        [DataRow(true, false)]
+        [DataRow(false, false)]
+        public async Task MetricsWithOptionalDimensionTest(bool shouldIncludeOptionalDimensions, bool isCustomDimensionNull)
         {
             ManualResetEventSlim manualResetEventSlim = this.SetupOpenTelemetry(null);
+
+            RequestOptions requestOptions = new RequestOptions()
+            {
+                OperationMetricsOptions = isCustomDimensionNull? null : new OperationMetricsOptions()
+                {
+                    CustomDimensions = new Dictionary<string, string>()
+                    {
+                        { "custom_dimension5", "custom_dimension5_value" },
+                        { "custom_dimension6", "custom_dimension6_value" }
+                    },
+                    IncludeRegion = shouldIncludeOptionalDimensions
+                },
+                NetworkMetricsOptions = new NetworkMetricsOptions()
+                {
+                    CustomDimensions = isCustomDimensionNull ? null : new Dictionary<string, string>()
+                    {
+                        { "custom_dimension7", "custom_dimension7_value" },
+                        { "custom_dimension8", "custom_dimension8_value" }
+                    },
+                    IncludeRoutingId = shouldIncludeOptionalDimensions
+                }
+            };
 
             await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
             {
@@ -145,71 +169,93 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 OperationMetricsOptions = new OperationMetricsOptions()
                 {
                     IncludeRegion  = shouldIncludeOptionalDimensions,
-                    CustomDimensions = new Dictionary<string, Func<string>>()
+                    CustomDimensions = isCustomDimensionNull ? null : new Dictionary<string, string>()
                     {
-                        { "custom_dimension1", () => "custom_dimension1_value" },
-                        { "custom_dimension2", () => "custom_dimension2_value" }
+                        { "custom_dimension1", "custom_dimension1_value" },
+                        { "custom_dimension2", "custom_dimension2_value" }
                     }
                 },
                 NetworkMetricsOptions = new NetworkMetricsOptions()
                 {
                     IncludeRoutingId = shouldIncludeOptionalDimensions,
-                    CustomDimensions = new Dictionary<string, Func<string>>()
+                    CustomDimensions = isCustomDimensionNull ? null : new Dictionary<string, string>()
                     {
-                        { "custom_dimension3", () => "custom_dimension3_value" },
-                        { "custom_dimension4", () => "custom_dimension4_value" }
+                        { "custom_dimension3", "custom_dimension3_value" },
+                        { "custom_dimension4", "custom_dimension4_value" }
                     }
                 }
             })
-            .WithConnectionModeDirect());
+            .WithConnectionModeDirect(), new ItemRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions.NetworkMetricsOptions
+            });
 
             // Cosmos Db operations
-            await this.ExecuteOperation(manualResetEventSlim);
+            await this.ExecuteOperation(manualResetEventSlim, requestOptions);
 
             // Asserting Dimensions
             foreach (KeyValuePair<string, List<string>> dimension in CustomMetricExporter.Dimensions)
             {
+                Console.WriteLine($"Actual dimensions for {dimension.Key} are {string.Join(", ", dimension.Value.Select(kv => $"{kv}"))}");
                 if (dimension.Key == CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances)
                 {
                     Assert.IsFalse(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region));
                     Assert.IsFalse(dimension.Value.Contains(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId));
-                    Assert.IsFalse(dimension.Value.Contains("custom_dimension1"));
-                    Assert.IsFalse(dimension.Value.Contains("custom_dimension2"));
-                    Assert.IsFalse(dimension.Value.Contains("custom_dimension3"));
-                    Assert.IsFalse(dimension.Value.Contains("custom_dimension4"));
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension1"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension2"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension3"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension4"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension5"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension6"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension7"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension8"), $"Dimension missing for {dimension.Key}");
                 }
                 else if (expectedOperationMetrics.ContainsKey(dimension.Key))
                 {
                     Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region), shouldIncludeOptionalDimensions);
-                    Assert.IsTrue(dimension.Value.Contains("custom_dimension1"));
-                    Assert.IsTrue(dimension.Value.Contains("custom_dimension2"));
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension1"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension2"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension5"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension6"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
                 }
                 else if (expectedNetworkMetrics.ContainsKey(dimension.Key))
                 {
                     Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId), shouldIncludeOptionalDimensions);
-                    Assert.IsTrue(dimension.Value.Contains("custom_dimension3"));
-                    Assert.IsTrue(dimension.Value.Contains("custom_dimension4"));
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension3"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension4"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension7"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension8"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
                 }
             }
         }
 
-        private async Task ExecuteOperation(ManualResetEventSlim manualResetEventSlim)
+        private async Task ExecuteOperation(ManualResetEventSlim manualResetEventSlim, RequestOptions requestOptions = null)
         {
             this.timeoutTimer = Stopwatch.StartNew();
 
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions?.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions?.NetworkMetricsOptions
+            };
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions?.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions?.NetworkMetricsOptions
+            };
+
             // Cosmos Db operations
-            Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
+            Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000, requestOptions: itemRequestOptions);
             for (int count = 0; count < 10; count++)
             {
                 string randomId = Guid.NewGuid().ToString();
                 string pk = "Status1";
-                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk));
-                await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk));
 
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    MaxItemCount = Random.Shared.Next(1, 100)
-                };
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk), requestOptions: itemRequestOptions);
+                await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk), requestOptions: itemRequestOptions);
+
                 FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryText: "SELECT * FROM c", requestOptions: queryRequestOptions);
                 while (feedIterator.HasMoreResults)
                 {
