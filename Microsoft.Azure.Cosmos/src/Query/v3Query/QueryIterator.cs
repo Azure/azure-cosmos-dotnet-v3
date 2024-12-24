@@ -54,6 +54,8 @@ namespace Microsoft.Azure.Cosmos.Query
             this.hasMoreResults = true;
             this.correlatedActivityId = correlatedActivityId;
 
+            this.container = container;
+
             this.SetupInfoForTelemetry(
                 databaseName: container?.Database?.Id,
                 operationName: OpenTelemetryConstants.Operations.QueryItems,
