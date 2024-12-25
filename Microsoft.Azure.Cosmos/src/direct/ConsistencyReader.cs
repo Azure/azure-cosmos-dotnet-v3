@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
 
@@ -138,6 +139,7 @@ namespace Microsoft.Azure.Documents
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly StoreReader storeReader;
         private readonly QuorumReader quorumReader;
+        private readonly SessionRetryOptions sessionRetryOptions;
 
         public ConsistencyReader(
             AddressSelector addressSelector,
@@ -145,11 +147,13 @@ namespace Microsoft.Azure.Documents
             TransportClient transportClient,
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
-            bool enableReplicaValidation)
+            bool enableReplicaValidation,
+            SessionRetryOptions sessionRetryOptions = null)
         {
             this.addressSelector = addressSelector;
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
+            this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(transportClient, addressSelector, new AddressEnumerator(), sessionContainer, enableReplicaValidation);
             this.quorumReader = new QuorumReader(transportClient, addressSelector, this.storeReader, serviceConfigReader, authorizationTokenProvider);
         }
@@ -233,7 +237,8 @@ namespace Microsoft.Azure.Documents
                     {
                         return BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                             callbackMethod: () => this.ReadSessionAsync(entity, desiredReadMode),
-                            retryPolicy: new SessionTokenMismatchRetryPolicy(),
+                            retryPolicy: new SessionTokenMismatchRetryPolicy(
+                                sessionRetryOptions: this.sessionRetryOptions),
                             cancellationToken: cancellationToken);
                     }
                     else

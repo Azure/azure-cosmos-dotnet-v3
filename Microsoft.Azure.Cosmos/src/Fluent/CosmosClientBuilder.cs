@@ -583,6 +583,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Set a custom serializer option. 
+        /// </summary>
+        /// <param name="sessionRetryOptions">The custom class that implements <see cref="CosmosSerializer"/> </param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        /// <seealso cref="CosmosSerializer"/>
+        /// <seealso cref="CosmosClientOptions.SerializerOptions"/>
+        public CosmosClientBuilder WithSessionRetryOptions(SessionRetryOptions sessionRetryOptions)
+        {
+            this.clientOptions.SessionRetryOptions = sessionRetryOptions;
+            return this;
+        }
+
+
+
+        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Diagnostics;
     using System.Net.Security;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.FaultInjection;
@@ -313,9 +314,12 @@ namespace Microsoft.Azure.Documents
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
-            bool enableReplicaValidation = false)
+            bool enableReplicaValidation = false,
+            SessionRetryOptions sessionRetryOptions = null
+            )
         {
             this.ThrowIfDisposed();
+            this.ValidateSessionRetryOptions(sessionRetryOptions);
             if (useFallbackClient && this.fallbackTransportClient != null)
             {
                 DefaultTrace.TraceInformation("Using fallback TransportClient");
@@ -332,7 +336,8 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                sessionRetryOptions: sessionRetryOptions);
             }
 
             return new StoreClient(
@@ -348,7 +353,8 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                sessionRetryOptions: sessionRetryOptions);
         }
 
         #region IDisposable
@@ -382,6 +388,25 @@ namespace Microsoft.Azure.Documents
             }
         }
         #endregion
+        private void ValidateSessionRetryOptions(SessionRetryOptions sessionRetryOptions)
+        {
+            if (sessionRetryOptions != null)
+            {
+
+                if (sessionRetryOptions.MinInRegionRetryTime < SessionTokenMismatchRetryPolicy.MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS)
+                {
+                    throw new ArgumentException($" Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of " +
+                        $"{SessionTokenMismatchRetryPolicy.MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS} ms");
+                }
+
+                if (sessionRetryOptions.MaxInRegionRetryCount < SessionTokenMismatchRetryPolicy.MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED)
+                {
+                    throw new ArgumentException($" Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of " +
+                        $"{SessionTokenMismatchRetryPolicy.MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED}");
+                }
+
+            }
+        }
 
         private static void ValidatePortPoolReuseThreshold(ref int rntbdPortPoolReuseThreshold)
         {

@@ -316,6 +316,8 @@ namespace Microsoft.Azure.Cosmos
         /// If this is not set the database account consistency level will be used for all requests.
         /// </summary>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
+        
+        
 
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
@@ -461,6 +463,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ValidateDirectTCPSettings();
             }
         }
+
+        
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
@@ -730,6 +734,11 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable partition key level failover
         /// </summary>
+        internal SessionRetryOptions SessionRetryOptions { get; set; }
+
+        /// <summary>
+        /// Enable partition key level failover
+        /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
@@ -930,6 +939,7 @@ namespace Microsoft.Azure.Cosmos
                 UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                SessionRetryOptions = this.SessionRetryOptions,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
@@ -1106,6 +1116,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
             }
         }
+
 
         private void ValidateDirectTCPSettings()
         {

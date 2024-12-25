@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /*
@@ -57,6 +58,7 @@ For globally strong write:
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
+        private readonly SessionRetryOptions sessionRetryOptions;
 
         public ConsistencyWriter(
             AddressSelector addressSelector,
@@ -65,7 +67,8 @@ For globally strong write:
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
-            bool enableReplicaValidation)
+            bool enableReplicaValidation,
+            SessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
@@ -73,6 +76,7 @@ For globally strong write:
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
+            this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(
                                     transportClient,
                                     addressSelector,
@@ -130,7 +134,8 @@ For globally strong write:
             {
                 return await BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                     callbackMethod: () => this.WritePrivateAsync(entity, timeout, forceRefresh),
-                    retryPolicy: new SessionTokenMismatchRetryPolicy(),
+                    retryPolicy: new SessionTokenMismatchRetryPolicy(
+                        sessionRetryOptions: this.sessionRetryOptions),
                     cancellationToken: cancellationToken);
             }
             finally

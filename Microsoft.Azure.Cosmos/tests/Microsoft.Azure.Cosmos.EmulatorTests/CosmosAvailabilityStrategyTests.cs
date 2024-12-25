@@ -25,9 +25,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string centralUS = "Central US";
         private const string northCentralUS = "North Central US";
         private const string eastUs = "East US";
-        private const string dbName = "availabilityStrategyTestDb";
-        private const string containerName = "availabilityStrategyTestContainer";
-        private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
+        //private const string dbName = "availabilityStrategyTestDb";
+        //private const string containerName = "availabilityStrategyTestContainer";
+        //private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
 
         private CosmosClient client;
         private Database database;
@@ -208,8 +208,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
                 ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
@@ -265,8 +265,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
 
@@ -327,8 +327,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -426,8 +426,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
+                        Container leaseContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
                         ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesAsync)
@@ -607,8 +607,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -702,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
+                        Container leaseContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
                         ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesStepAsync)

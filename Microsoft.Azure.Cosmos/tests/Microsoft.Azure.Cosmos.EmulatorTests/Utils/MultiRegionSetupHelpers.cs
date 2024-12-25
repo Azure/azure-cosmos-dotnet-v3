@@ -11,9 +11,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
     public class MultiRegionSetupHelpers
     {
-        private const string dbName = "availabilityStrategyTestDb";
-        private const string containerName = "availabilityStrategyTestContainer";
-        private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
+        public const string dbName = "availabilityStrategyTestDb";
+        public const string containerName = "availabilityStrategyTestContainer";
+        public const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
 
         public static async Task<(Database, Container, Container)> GetOrCreateMultiRegionDatabaseAndContainers(CosmosClient client)
         {

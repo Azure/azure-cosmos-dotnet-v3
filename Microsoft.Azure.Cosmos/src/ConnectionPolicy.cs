@@ -506,6 +506,7 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+
         /// <summary>
         /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
         /// </summary>
@@ -525,6 +526,15 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
         internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
+        /// </summary>
+        internal SessionRetryOptions SessionRetryOptions
         {
             get;
             set;
