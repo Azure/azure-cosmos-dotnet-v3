@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
             private ClientTakeQueryPipelineStage(
                 IQueryPipelineStage source,
-                int takeCount,
+                uint takeCount,
                 TakeEnum takeEnum)
                 : base(source, takeCount)
             {
@@ -32,13 +32,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
-                int limitCount,
+                uint limitCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                if (limitCount < 0)
+                if (limitCount > int.MaxValue)
                 {
-                    throw new ArgumentException($"{nameof(limitCount)}: {limitCount} must be a non negative number.");
+                    throw new ArgumentOutOfRangeException(nameof(limitCount));
                 }
 
                 if (monadicCreatePipelineStage == null)
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
-                int topCount,
+                uint topCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ClientTakeQueryPipelineStage(
                     tryCreateSource.Result,
-                    topContinuationToken.Top,
+                    (uint)topContinuationToken.Top,
                     TakeEnum.Top);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
@@ -205,10 +205,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     string updatedContinuationToken = this.takeEnum switch
                     {
                         TakeEnum.Limit => new LimitContinuationToken(
-                            limit: this.takeCount,
+                            limit: (uint)this.takeCount,
                             sourceToken: sourcePage.State?.Value.ToString()).ToString(),
                         TakeEnum.Top => new TopContinuationToken(
-                            top: this.takeCount,
+                            top: (uint)this.takeCount,
                             sourceToken: sourcePage.State?.Value.ToString()).ToString(),
                         _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}."),
                     };
@@ -255,11 +255,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// </summary>
                 /// <param name="limit">The limit to the number of document drained for the remainder of the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public LimitContinuationToken(int limit, string sourceToken)
+                public LimitContinuationToken(uint limit, string sourceToken)
                 {
-                    if (limit < 0)
+                    if (limit > int.MaxValue)
                     {
-                        throw new ArgumentException($"{nameof(limit)} must be a non negative number.");
+                        throw new ArgumentNullException(nameof(limit));
                     }
 
                     this.Limit = limit;
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
                 [JsonProperty("limit")]
-                public int Limit
+                public uint Limit
                 {
                     get;
                 }
@@ -329,9 +329,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// </summary>
                 /// <param name="top">The limit to the number of document drained for the remainder of the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public TopContinuationToken(int top, string sourceToken)
+                public TopContinuationToken(uint top, string sourceToken)
                 {
-                    this.Top = top;
+                    if (top > int.MaxValue)
+                    {
+                        throw new ArgumentOutOfRangeException(nameof(top));
+                    }
+
+                    this.Top = (int)top;
                     this.SourceToken = sourceToken;
                 }
 

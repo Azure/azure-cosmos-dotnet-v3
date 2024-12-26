@@ -32,7 +32,7 @@
             {
                 (List<CosmosElement> elements, _) = await TakeQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,
-                    takeCount: takeCount,
+                    takeCount: (uint)takeCount,
                     continuationToken: null);
 
                 Assert.AreEqual(Math.Min(takeCount, values.Length), elements.Count);
@@ -70,7 +70,7 @@
             {
                 (List<CosmosElement> elements, long pageIndex) = await TakeQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,
-                    takeCount: takeCount,
+                    takeCount: (uint)takeCount,
                     continuationToken: null);
 
                 Assert.AreEqual(expectedPageIndex, pageIndex);
@@ -80,7 +80,7 @@
 
         private static async Task<(List<CosmosElement>, long)> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            int takeCount,
+            uint takeCount,
             CosmosElement continuationToken)
         {
             MockQueryPipelineStage source = new MockQueryPipelineStage(pages);

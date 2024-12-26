@@ -17,14 +17,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
         protected TakeQueryPipelineStage(
             IQueryPipelineStage source,
-            int takeCount)
+            uint takeCount)
             : base(source)
         {
-            this.takeCount = takeCount;
+            if (takeCount > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(takeCount));
+            }
+
+            this.takeCount = (int)takeCount;
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
-            int limitCount,
+            uint limitCount,
             CosmosElement requestContinuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {
@@ -35,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
-            int limitCount,
+            uint limitCount,
             CosmosElement requestContinuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {

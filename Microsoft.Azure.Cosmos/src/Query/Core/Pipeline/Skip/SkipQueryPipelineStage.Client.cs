@@ -29,10 +29,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreate(
-                int offsetCount,
+                uint offsetCount,
                 CosmosElement continuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
+                if (offsetCount > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(offsetCount));
+                }
+
                 if (monadicCreatePipelineStage == null)
                 {
                     throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
@@ -126,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 if ((sourcePage.State != null) && (sourcePage.DisallowContinuationTokenMessage == null))
                 {
                     string token = new OffsetContinuationToken(
-                        offset: this.skipCount,
+                        offset: (uint)this.skipCount,
                         sourceToken: sourcePage.State?.Value.ToString()).ToString();
                     state = new QueryState(CosmosElement.Parse(token));
                 }
@@ -160,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 /// </summary>
                 /// <param name="offset">The number of items to skip in the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public OffsetContinuationToken(int offset, string sourceToken)
+                public OffsetContinuationToken(uint offset, string sourceToken)
                 {
                     if (offset < 0)
                     {
@@ -175,7 +180,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 /// The number of items to skip in the query.
                 /// </summary>
                 [JsonProperty("offset")]
-                public int Offset { get; }
+                public uint Offset { get; }
 
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.

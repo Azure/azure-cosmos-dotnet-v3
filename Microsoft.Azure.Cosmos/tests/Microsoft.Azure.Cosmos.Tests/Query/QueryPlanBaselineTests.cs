@@ -1144,6 +1144,11 @@
                 Hash(
                 @"TOP with GROUP BY",
                 @"SELECT TOP 5 VALUE c.name FROM c GROUP BY c.name",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond limit",
+                @"SELECT TOP 4294967296 c.name FROM c",
                 @"/key")
             };
 

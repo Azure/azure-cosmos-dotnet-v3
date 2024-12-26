@@ -150,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             long optimalPageSize = maxItemCount;
             if (queryInfo.HasOrderBy)
             {
-                int top;
+                uint top;
                 if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
                 {
                     top = queryInfo.Top.Value;
@@ -162,6 +162,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 else
                 {
                     top = 0;
+                }
+
+                if (top > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
 
                 if (top > 0)
