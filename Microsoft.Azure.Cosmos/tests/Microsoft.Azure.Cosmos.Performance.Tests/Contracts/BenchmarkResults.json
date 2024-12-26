@@ -1,114 +1,274 @@
 ﻿{
   "MasterKeyAuthorizationBenchmark.CreateSignatureGeneration;": "544",
   "MasterKeyAuthorizationBenchmark.ReadSignatureGeneration;": "530",
-  "MockedItemBenchmark.CreateItem;[Type=OfT]": "38127.25",
-  "MockedItemBenchmark.CreateItem;[Type=OfTCustom]": "38132.25",
-  "MockedItemBenchmark.CreateItem;[Type=OfTWithClientMetricsEnabled]": "37751",
-  "MockedItemBenchmark.CreateItem;[Type=OfTWithDiagnosticsToString]": "59899.5",
-  "MockedItemBenchmark.CreateItem;[Type=OfTWithDistributedTracingEnabled]": "38351.5",
-  "MockedItemBenchmark.CreateItem;[Type=Stream]": "26697.5",
-  "MockedItemBenchmark.DeleteItemExists;[Type=OfT]": "33015.25",
-  "MockedItemBenchmark.DeleteItemExists;[Type=OfTCustom]": "33007.75",
-  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithClientMetricsEnabled]": "33730.5",
-  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithDiagnosticsToString]": "55086.5",
-  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithDistributedTracingEnabled]": "34352",
-  "MockedItemBenchmark.DeleteItemExists;[Type=Stream]": "25829.5",
-  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfT]": "43035",
-  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTCustom]": "43030.5",
-  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithClientMetricsEnabled]": "43543.75",
-  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithDiagnosticsToString]": "64886",
-  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithDistributedTracingEnabled]": "44155.75",
-  "MockedItemBenchmark.DeleteItemNotExists;[Type=Stream]": "38373.5",
-  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfT]": "13293777.25",
-  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTCustom]": "13298034.75",
-  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithClientMetricsEnabled]": "13198472.5",
-  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithDiagnosticsToString]": "13517039.75",
-  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithDistributedTracingEnabled]": "13201964",
-  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=Stream]": "5920952",
-  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfT]": "2241814",
-  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTCustom]": "2241810",
-  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithClientMetricsEnabled]": "2216526.75",
-  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithDiagnosticsToString]": "2251235.75",
-  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithDistributedTracingEnabled]": "2217249.25",
-  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=Stream]": "978459.25",
-  "MockedItemBenchmark.ReadFeed;[Type=OfT]": "536077",
-  "MockedItemBenchmark.ReadFeed;[Type=OfTCustom]": "536082.75",
-  "MockedItemBenchmark.ReadFeed;[Type=OfTWithClientMetricsEnabled]": "536267.5",
-  "MockedItemBenchmark.ReadFeed;[Type=OfTWithDiagnosticsToString]": "557967.75",
-  "MockedItemBenchmark.ReadFeed;[Type=OfTWithDistributedTracingEnabled]": "536887.5",
-  "MockedItemBenchmark.ReadFeed;[Type=Stream]": "35859",
-  "MockedItemBenchmark.ReadItemExists;[Type=OfT]": "34509.75",
-  "MockedItemBenchmark.ReadItemExists;[Type=OfTCustom]": "34516",
-  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithClientMetricsEnabled]": "35012.75",
-  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithDiagnosticsToString]": "55978.25",
-  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithDistributedTracingEnabled]": "35629.5",
-  "MockedItemBenchmark.ReadItemExists;[Type=Stream]": "26752.5",
-  "MockedItemBenchmark.ReadItemNotExists;[Type=OfT]": "44817.25",
-  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTCustom]": "44810.75",
-  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithClientMetricsEnabled]": "44819.5",
-  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDiagnosticsToString]": "66800",
-  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDistributedTracingEnabled]": "45423",
-  "MockedItemBenchmark.ReadItemNotExists;[Type=Stream]": "39876",
-  "MockedItemBenchmark.UpdateItem;[Type=OfT]": "38345",
-  "MockedItemBenchmark.UpdateItem;[Type=OfTCustom]": "38347.25",
-  "MockedItemBenchmark.UpdateItem;[Type=OfTWithClientMetricsEnabled]": "37965",
-  "MockedItemBenchmark.UpdateItem;[Type=OfTWithDiagnosticsToString]": "60124",
-  "MockedItemBenchmark.UpdateItem;[Type=OfTWithDistributedTracingEnabled]": "38580",
-  "MockedItemBenchmark.UpdateItem;[Type=Stream]": "26924.5",
-  "MockedItemBenchmark.UpsertItem;[Type=OfT]": "38337.25",
-  "MockedItemBenchmark.UpsertItem;[Type=OfTCustom]": "38346.75",
-  "MockedItemBenchmark.UpsertItem;[Type=OfTWithClientMetricsEnabled]": "37958.75",
-  "MockedItemBenchmark.UpsertItem;[Type=OfTWithDiagnosticsToString]": "60108.75",
-  "MockedItemBenchmark.UpsertItem;[Type=OfTWithDistributedTracingEnabled]": "38568",
-  "MockedItemBenchmark.UpsertItem;[Type=Stream]": "26919.25",
-  "MockedItemBulkBenchmark.CreateItem;[Type=OfT]": "1171140.75",
-  "MockedItemBulkBenchmark.CreateItem;[Type=OfTCustom]": "1170647.75",
-  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithClientMetricsEnabled]": "1207163.5",
-  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithDiagnosticsToString]": "1204316",
-  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithDistributedTracingEnabled]": "1207044",
-  "MockedItemBulkBenchmark.CreateItem;[Type=Stream]": "768930.25",
-  "MockedItemBulkBenchmark.DeleteItem;[Type=OfT]": "1165915.5",
-  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTCustom]": "1165887",
-  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithClientMetricsEnabled]": "1200824.25",
-  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithDiagnosticsToString]": "1199540.25",
-  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithDistributedTracingEnabled]": "1201890.25",
-  "MockedItemBulkBenchmark.DeleteItem;[Type=Stream]": "766362.5",
-  "MockedItemBulkBenchmark.ReadItem;[Type=OfT]": "1165960.25",
-  "MockedItemBulkBenchmark.ReadItem;[Type=OfTCustom]": "1165911.75",
-  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithClientMetricsEnabled]": "1200802.25",
-  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithDiagnosticsToString]": "1199006.5",
-  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithDistributedTracingEnabled]": "1201347.25",
-  "MockedItemBulkBenchmark.ReadItem;[Type=Stream]": "766475.75",
-  "MockedItemBulkBenchmark.UpdateItem;[Type=OfT]": "1171345",
-  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTCustom]": "1170838.5",
-  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithClientMetricsEnabled]": "1206330",
-  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithDiagnosticsToString]": "1204520.75",
-  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithDistributedTracingEnabled]": "1207243.25",
-  "MockedItemBulkBenchmark.UpdateItem;[Type=Stream]": "769129.75",
-  "MockedItemBulkBenchmark.UpsertItem;[Type=OfT]": "1170951.25",
-  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTCustom]": "1170593.75",
-  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithClientMetricsEnabled]": "1206121.5",
-  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithDiagnosticsToString]": "1204822",
-  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithDistributedTracingEnabled]": "1208600.25",
-  "MockedItemBulkBenchmark.UpsertItem;[Type=Stream]": "768928.75",
-  "BinaryEncodingEnabledBenchmark.CreateItemAsync;[EnableBinaryResponseOnPointOperations=True]": "38127.25",
-  "BinaryEncodingEnabledBenchmark.CreateItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "26697.5",
-  "BinaryEncodingEnabledBenchmark.ReadItemAsync;[EnableBinaryResponseOnPointOperations=True]": "34509.75",
-  "BinaryEncodingEnabledBenchmark.ReadItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "26752.5",
-  "BinaryEncodingEnabledBenchmark.UpsertItemAsync;[EnableBinaryResponseOnPointOperations=True]": "38337.25",
-  "BinaryEncodingEnabledBenchmark.UpsertItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "26919.25",
-  "BinaryEncodingEnabledBenchmark.ReplaceItemAsync;[EnableBinaryResponseOnPointOperations=True]": "38345",
-  "BinaryEncodingEnabledBenchmark.ReplaceItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "26924.5",
-  "BinaryEncodingEnabledBenchmark.DeleteItemAsync;[EnableBinaryResponseOnPointOperations=True]": "33015.25",
-  "BinaryEncodingEnabledBenchmark.DeleteItemStreamAsync;[EnableBinaryResponseOnPointOperations=True]": "25829.5",
-  "BinaryEncodingEnabledBenchmark.CreateItemAsync;[EnableBinaryResponseOnPointOperations=False]": "38127.25",
-  "BinaryEncodingEnabledBenchmark.CreateItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26697.5",
-  "BinaryEncodingEnabledBenchmark.ReadItemAsync;[EnableBinaryResponseOnPointOperations=False]": "34509.75",
-  "BinaryEncodingEnabledBenchmark.ReadItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26752.5",
-  "BinaryEncodingEnabledBenchmark.UpsertItemAsync;[EnableBinaryResponseOnPointOperations=False]": "38337.25",
-  "BinaryEncodingEnabledBenchmark.UpsertItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26919.25",
-  "BinaryEncodingEnabledBenchmark.ReplaceItemAsync;[EnableBinaryResponseOnPointOperations=False]": "38345",
-  "BinaryEncodingEnabledBenchmark.ReplaceItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "26924.5",
-  "BinaryEncodingEnabledBenchmark.DeleteItemAsync;[EnableBinaryResponseOnPointOperations=False]": "33015.25",
-  "BinaryEncodingEnabledBenchmark.DeleteItemStreamAsync;[EnableBinaryResponseOnPointOperations=False]": "25829.5"
+
+  "MockedItemBenchmark.CreateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "38127.25",
+  "MockedItemBenchmark.CreateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "38127.25",
+
+  "MockedItemBenchmark.CreateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "38132.25",
+  "MockedItemBenchmark.CreateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "38132.25",
+
+  "MockedItemBenchmark.CreateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "37751",
+  "MockedItemBenchmark.CreateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "37751",
+
+  "MockedItemBenchmark.CreateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "59899.5",
+  "MockedItemBenchmark.CreateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "59899.5",
+
+  "MockedItemBenchmark.CreateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "38351.5",
+  "MockedItemBenchmark.CreateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "38351.5",
+
+  "MockedItemBenchmark.CreateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "26697.5",
+  "MockedItemBenchmark.CreateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "26697.5",
+
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "33015.25",
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "33015.25",
+
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "33007.75",
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "33007.75",
+
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "33730.5",
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "33730.5",
+
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "55086.5",
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "55086.5",
+
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "34352",
+  "MockedItemBenchmark.DeleteItemExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "34352",
+
+  "MockedItemBenchmark.DeleteItemExists;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "25829.5",
+  "MockedItemBenchmark.DeleteItemExists;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "25829.5",
+
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "43035",
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "43035",
+
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "43030.5",
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "43030.5",
+
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "43543.75",
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "43543.75",
+
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "64886",
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "64886",
+
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "44155.75",
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "44155.75",
+
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "38373.5",
+  "MockedItemBenchmark.DeleteItemNotExists;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "38373.5",
+
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "13293777.25",
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "13293777.25",
+
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "13298034.75",
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "13298034.75",
+
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "13198472.5",
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "13198472.5",
+
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "13517039.75",
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "13517039.75",
+
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "13201964",
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "13201964",
+
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "5920952",
+  "MockedItemBenchmark.QuerySinglePartitionMultiplePages;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "5920952",
+
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "2241814",
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "2241814",
+
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "2241810",
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "2241810",
+
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "2216526.75",
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "2216526.75",
+
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "2251235.75",
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "2251235.75",
+
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "2217249.25",
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "2217249.25",
+
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "978459.25",
+  "MockedItemBenchmark.QuerySinglePartitionOnePage;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "978459.25",
+
+  "MockedItemBenchmark.ReadFeed;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "536077",
+  "MockedItemBenchmark.ReadFeed;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "536077",
+
+  "MockedItemBenchmark.ReadFeed;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "536082.75",
+  "MockedItemBenchmark.ReadFeed;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "536082.75",
+
+  "MockedItemBenchmark.ReadFeed;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "536267.5",
+  "MockedItemBenchmark.ReadFeed;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "536267.5",
+
+  "MockedItemBenchmark.ReadFeed;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "557967.75",
+  "MockedItemBenchmark.ReadFeed;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "557967.75",
+
+  "MockedItemBenchmark.ReadFeed;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "536887.5",
+  "MockedItemBenchmark.ReadFeed;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "536887.5",
+
+  "MockedItemBenchmark.ReadFeed;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "35859",
+  "MockedItemBenchmark.ReadFeed;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "35859",
+
+  "MockedItemBenchmark.ReadItemExists;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "34509.75",
+  "MockedItemBenchmark.ReadItemExists;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "34509.75",
+
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "34516",
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "34516",
+
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "35012.75",
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "35012.75",
+
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "55978.25",
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "55978.25",
+
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "35629.5",
+  "MockedItemBenchmark.ReadItemExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "35629.5",
+
+  "MockedItemBenchmark.ReadItemExists;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "26752.5",
+  "MockedItemBenchmark.ReadItemExists;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "26752.5",
+
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "44817.25",
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "44817.25",
+
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "44810.75",
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "44810.75",
+
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "44819.5",
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "44819.5",
+
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "66800",
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "66800",
+
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "45423",
+  "MockedItemBenchmark.ReadItemNotExists;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "45423",
+
+  "MockedItemBenchmark.ReadItemNotExists;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "39876",
+  "MockedItemBenchmark.ReadItemNotExists;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "39876",
+
+  "MockedItemBenchmark.UpdateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "38345",
+  "MockedItemBenchmark.UpdateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "38345",
+
+  "MockedItemBenchmark.UpdateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "38347.25",
+  "MockedItemBenchmark.UpdateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "38347.25",
+
+  "MockedItemBenchmark.UpdateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "37965",
+  "MockedItemBenchmark.UpdateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "37965",
+
+  "MockedItemBenchmark.UpdateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "60124",
+  "MockedItemBenchmark.UpdateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "60124",
+
+  "MockedItemBenchmark.UpdateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "38580",
+  "MockedItemBenchmark.UpdateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "38580",
+
+  "MockedItemBenchmark.UpdateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "26924.5",
+  "MockedItemBenchmark.UpdateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "26924.5",
+
+  "MockedItemBenchmark.UpsertItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "38337.25",
+  "MockedItemBenchmark.UpsertItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "38337.25",
+
+  "MockedItemBenchmark.UpsertItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "38346.75",
+  "MockedItemBenchmark.UpsertItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "38346.75",
+
+  "MockedItemBenchmark.UpsertItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "37958.75",
+  "MockedItemBenchmark.UpsertItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "37958.75",
+
+  "MockedItemBenchmark.UpsertItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "60108.75",
+  "MockedItemBenchmark.UpsertItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "60108.75",
+
+  "MockedItemBenchmark.UpsertItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "38568",
+  "MockedItemBenchmark.UpsertItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "38568",
+
+  "MockedItemBenchmark.UpsertItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "26919.25",
+  "MockedItemBenchmark.UpsertItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "26919.25",
+
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "1171140.75",
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "1171140.75",
+
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "1170647.75",
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "1170647.75",
+
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "1207163.5",
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "1207163.5",
+
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "1204316",
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "1204316",
+
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "1207044",
+  "MockedItemBulkBenchmark.CreateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "1207044",
+
+  "MockedItemBulkBenchmark.CreateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "768930.25",
+  "MockedItemBulkBenchmark.CreateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "768930.25",
+
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "1165915.5",
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "1165915.5",
+
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "1165887",
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "1165887",
+
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "1200824.25",
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "1200824.25",
+
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "1199540.25",
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "1199540.25",
+
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "1201890.25",
+  "MockedItemBulkBenchmark.DeleteItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "1201890.25",
+
+  "MockedItemBulkBenchmark.DeleteItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "766362.5",
+  "MockedItemBulkBenchmark.DeleteItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "766362.5",
+
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "1165960.25",
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "1165960.25",
+
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "1165911.75",
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "1165911.75",
+
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "1200802.25",
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "1200802.25",
+
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "1199006.5",
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "1199006.5",
+
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "1201347.25",
+  "MockedItemBulkBenchmark.ReadItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "1201347.25",
+
+  "MockedItemBulkBenchmark.ReadItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "766475.75",
+  "MockedItemBulkBenchmark.ReadItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "766475.75",
+
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "1171345",
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "1171345",
+
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "1170838.5",
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "1170838.5",
+
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "1206330",
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "1206330",
+
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "1204520.75",
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "1204520.75",
+
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "1207243.25",
+  "MockedItemBulkBenchmark.UpdateItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "1207243.25",
+
+  "MockedItemBulkBenchmark.UpdateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "769129.75",
+  "MockedItemBulkBenchmark.UpdateItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "769129.75",
+
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfT][EnableBinaryResponseOnPointOperations=True]": "1170951.25",
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfT][EnableBinaryResponseOnPointOperations=False]": "1170951.25",
+
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=True]": "1170593.75",
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTCustom][EnableBinaryResponseOnPointOperations=False]": "1170593.75",
+
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=True]": "1206121.5",
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithClientMetricsEnabled][EnableBinaryResponseOnPointOperations=False]": "1206121.5",
+
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=True]": "1204822",
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithDiagnosticsToString][EnableBinaryResponseOnPointOperations=False]": "1204822",
+
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=True]": "1208600.25",
+  "MockedItemBulkBenchmark.UpsertItem;[Type=OfTWithDistributedTracingEnabled][EnableBinaryResponseOnPointOperations=False]": "1208600.25",
+
+  "MockedItemBulkBenchmark.UpsertItem;[Type=Stream][EnableBinaryResponseOnPointOperations=True]": "768928.75",
+  "MockedItemBulkBenchmark.UpsertItem;[Type=Stream][EnableBinaryResponseOnPointOperations=False]": "768928.75"
 }
