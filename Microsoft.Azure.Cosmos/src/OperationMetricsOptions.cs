@@ -12,7 +12,10 @@ namespace Microsoft.Azure.Cosmos
     public class OperationMetricsOptions
     {
         /// <summary>
+        /// <para>
         /// Gets or sets a value indicating whether the region information should be included in the operation metrics.
+        /// </para>
+        /// By default, Region information is not included as a dimension in the operation metrics.
         /// </summary>
         /// <remarks>
         /// <para>

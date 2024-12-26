@@ -12,8 +12,11 @@ namespace Microsoft.Azure.Cosmos
     public class NetworkMetricsOptions
     {
         /// <summary>
+        /// <para>
         /// Gets or sets a value indicating whether the routing ID (e.g., PK Range ID for Gateway Mode or Partition/Replica information for Direct Mode, if available) 
         /// should be included in the network metrics.
+        /// </para>
+        /// By default, Routing Id information is not included as a dimension in the network metrics.
         /// </summary>
         /// <remarks>
         /// <para>
