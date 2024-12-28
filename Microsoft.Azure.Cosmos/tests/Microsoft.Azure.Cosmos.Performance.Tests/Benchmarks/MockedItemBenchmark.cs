@@ -24,16 +24,27 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
-        // Original IterParameters array definition remains, but we remove 'readonly'
-        // so we can update it in GlobalSetup.
         public static IItemBenchmark[] IterParameters = new IItemBenchmark[]
         {
-        new MockedItemStreamBenchmark(),
-        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: true) },
-        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: true) },
-        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: false, isDistributedTracingEnabled: true) },
-        new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper(useCustomSerializer: false, includeDiagnosticsToString: false, isClientMetricsEnabled: true) }
+            new MockedItemStreamBenchmark(),
+            new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
+            new MockedItemOfTBenchmark() {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: true) },
+            new MockedItemOfTBenchmark() {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: false,
+                    includeDiagnosticsToString: true) },
+            new MockedItemOfTBenchmark() {
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: false,
+                    includeDiagnosticsToString: false,
+                    isDistributedTracingEnabled: true) },
+            new MockedItemOfTBenchmark() { 
+                BenchmarkHelper = new MockedItemBenchmarkHelper(
+                    useCustomSerializer: false,
+                    includeDiagnosticsToString: false,
+                    isClientMetricsEnabled: true) }
         };
 
         [Params(
@@ -45,7 +56,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             ScenarioType.OfTWithClientMetricsEnabled)]
         public ScenarioType Type { get; set; }
 
-        // New parameter to control binary encoding
         [Params(true, false)]
         public bool EnableBinaryResponseOnPointOperations { get; set; }
 

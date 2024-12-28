@@ -45,12 +45,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.TestClient = MockDocumentClient.CreateMockCosmosClient(
                 useCustomSerializer,
                 (builder) => builder
-                    .WithBulkExecution(useBulk)
-                    .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
-                    {
-                        DisableDistributedTracing = !isDistributedTracingEnabled,
-                        IsClientMetricsEnabled = isClientMetricsEnabled
-                    }));
+                                .WithBulkExecution(useBulk)
+                                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                {
+                                    DisableDistributedTracing = !isDistributedTracingEnabled,
+                                    IsClientMetricsEnabled = isClientMetricsEnabled
+                                }));
 
             this.TestContainer = this.TestClient.GetDatabase("myDB").GetContainer("myColl");
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             string payloadContent = File.ReadAllText("samplepayload.json");
             this.TestItem = JsonConvert.DeserializeObject<ToDoActivity>(payloadContent);
 
-            // Serialize TestItem into the desired format (Text or Binary)
+            // Serialize TestItem into the requested format (Text or Binary)
             if (this.SerializationFormat == JsonSerializationFormat.Binary)
             {
                 using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             string diagnostics = cosmosDiagnostics.ToString();
             if (string.IsNullOrEmpty(diagnostics))
             {
-                throw new Exception("Diagnostics string is empty.");
+                throw new Exception();
             }
         }
 

@@ -72,45 +72,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             DocumentServiceResponse response;
             if (request.OperationType == OperationType.Read)
             {
-#pragma warning disable IDE0045 // Convert to conditional expression
-                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
-                {
-                    response = new DocumentServiceResponse(
+                response = request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId)
+                    ? new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
-                    );
-                }
-                else
-                {
-                    response = new DocumentServiceResponse(
+                    )
+                    : new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.notFoundPayload),
                         headers,
                         System.Net.HttpStatusCode.NotFound
                     );
-                }
-#pragma warning restore IDE0045 // Convert to conditional expression
             }
             else if (request.OperationType == OperationType.Delete)
             {
-#pragma warning disable IDE0045 // Convert to conditional expression
-                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
-                {
-                    response = new DocumentServiceResponse(
+                response = request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId)
+                    ? new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
-                    );
-                }
-                else
-                {
-                    response = new DocumentServiceResponse(
+                    )
+                    : new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.notFoundPayload),
                         headers,
                         System.Net.HttpStatusCode.NotFound
                     );
-                }
-#pragma warning restore IDE0045 // Convert to conditional expression
             }
             else if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
@@ -134,7 +120,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
             else
             {
-                // If we reach here, it's an operation we are not explicitly handling
                 return null;
             }
 
@@ -148,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         /// <summary>
-        /// For mocking a TransportClient response
+        /// For mocking a TransportClient response/
         /// </summary>
         /// <param name="request">The <see cref="DocumentServiceRequest"/> instance.</param>
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
@@ -210,7 +195,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     Headers = queryHeaders,
                 };
 
-                // Query isn't a single-point operation like Create/Read/Replace etc., so no binary encoding here
                 return response;
             }
 
@@ -218,26 +202,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             if (request.OperationType == OperationType.Read)
             {
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
-#pragma warning disable IDE0045 // Convert to conditional expression
-                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
-                {
-                    response = new StoreResponse()
+                response = request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId)
+                    ? new StoreResponse()
                     {
                         ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
-                    };
-                }
-                else
-                {
-                    response = new StoreResponse()
+                    }
+                    : new StoreResponse()
                     {
                         ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.NotFound,
                         Headers = headers,
                     };
-                }
-#pragma warning restore IDE0045 // Convert to conditional expression
             }
             else if (request.OperationType == OperationType.Delete)
             {
@@ -260,7 +237,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         Headers = headers,
                     };
                 }
-#pragma warning restore IDE0045 // Convert to conditional expression
             }
             else if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
