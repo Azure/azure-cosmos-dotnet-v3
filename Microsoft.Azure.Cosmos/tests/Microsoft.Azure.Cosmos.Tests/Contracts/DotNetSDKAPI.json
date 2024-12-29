@@ -8113,6 +8113,11 @@
           "Attributes": [],
           "MethodInfo": "System.String AustriaEast;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String BelgiumCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BelgiumCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String BleuFranceCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8203,6 +8208,11 @@
           "Attributes": [],
           "MethodInfo": "System.String DelosCloudGermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String DenmarkEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DenmarkEast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String EastAsia": {
           "Type": "Field",
           "Attributes": [],
@@ -8257,6 +8267,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String IsraelCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String IsraelNorthwest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IsraelNorthwest;IsInitOnly:False;IsStatic:True;"
         },
         "System.String ItalyNorth": {
           "Type": "Field",
@@ -8372,6 +8387,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastUS;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastUS3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS3;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastUS5": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS5;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SouthIndia": {
           "Type": "Field",
