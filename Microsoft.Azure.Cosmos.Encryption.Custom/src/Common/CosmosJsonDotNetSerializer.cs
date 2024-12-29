@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System;
     using System.IO;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -40,6 +42,18 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <returns>The object representing the deserialized stream</returns>
         public T FromStream<T>(Stream stream)
         {
+            return this.FromStream<T>(stream, false);
+        }
+
+        /// <summary>
+        /// Convert a Stream to the passed in type.
+        /// </summary>
+        /// <typeparam name="T">The type of object that should be deserialized</typeparam>
+        /// <param name="stream">An open stream that is readable that contains JSON</param>
+        /// <param name="leaveOpen">True if input stream shouldn't be disposed</param>
+        /// <returns>The object representing the deserialized stream</returns>
+        public T FromStream<T>(Stream stream, bool leaveOpen)
+        {
 #if NET8_0_OR_GREATER
             ArgumentNullException.ThrowIfNull(stream);
 #else
@@ -54,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 return (T)(object)stream;
             }
 
-            using (StreamReader sr = new (stream))
+            using (StreamReader sr = new (stream, Encoding.UTF8, true, 1024, leaveOpen))
             using (JsonTextReader jsonTextReader = new (sr))
             {
                 jsonTextReader.ArrayPool = JsonArrayPool.Instance;
@@ -72,7 +86,15 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public MemoryStream ToStream<T>(T input)
         {
             MemoryStream streamPayload = new ();
-            using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+#pragma warning disable VSTHRD002 // Avoid problematic synchronous waits
+            this.ToStreamAsync(input, streamPayload, CancellationToken.None).GetAwaiter().GetResult();
+#pragma warning restore VSTHRD002 // Avoid problematic synchronous waits
+            return streamPayload;
+        }
+
+        public async Task ToStreamAsync<T>(T input, Stream output, CancellationToken cancellationToken)
+        {
+            using (StreamWriter streamWriter = new (output, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
             using (JsonTextWriter writer = new (streamWriter))
             {
                 writer.ArrayPool = JsonArrayPool.Instance;
@@ -80,11 +102,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 JsonSerializer jsonSerializer = this.GetSerializer();
                 jsonSerializer.Serialize(writer, input);
                 writer.Flush();
-                streamWriter.Flush();
+#if NET8_0_OR_GREATER
+                await streamWriter.FlushAsync(cancellationToken);
+#else
+                await streamWriter.FlushAsync();
+#endif
             }
 
-            streamPayload.Position = 0;
-            return streamPayload;
+            output.Position = 0;
         }
 
         /// <summary>
