@@ -37,6 +37,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         ReadOnlyDictionary<string, Uri> GetAvailableReadEndpointsByLocation();
 
-        bool CanSupportMultipleWriteLocations(DocumentServiceRequest request);
+        bool CanSupportMultipleWriteLocations(ResourceType resourceType, OperationType operationType);
     }
 }

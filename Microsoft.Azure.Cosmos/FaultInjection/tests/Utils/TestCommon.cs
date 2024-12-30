@@ -18,6 +18,11 @@
 
         public const string EndpointMultiRegion = "";
         public const string AuthKeyMultiRegion = "";
+
+        internal static string GetConnectionString()
+        {
+            return ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+        }
         
         internal static CosmosClient CreateCosmosClient(
             bool useGateway,

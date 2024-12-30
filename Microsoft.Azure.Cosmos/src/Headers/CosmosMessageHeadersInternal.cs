@@ -93,6 +93,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.SetProperty(HttpConstants.HttpHeaders.IndexUtilization, value);
         }
 
+        public virtual string QueryAdvice
+        {
+            get => this.GetValueOrDefault(HttpConstants.HttpHeaders.QueryAdvice);
+            set => this.SetProperty(HttpConstants.HttpHeaders.QueryAdvice, value);
+        }
+
         public virtual string BackendRequestDurationMilliseconds
         {
             get => this.GetValueOrDefault(HttpConstants.HttpHeaders.BackendRequestDurationMilliseconds);

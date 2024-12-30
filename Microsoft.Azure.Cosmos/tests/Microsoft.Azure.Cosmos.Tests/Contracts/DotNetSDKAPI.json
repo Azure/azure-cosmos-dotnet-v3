@@ -3349,6 +3349,11 @@
           "Attributes": [],
           "MethodInfo": null
         },
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics": {
           "Type": "NestedType",
           "Attributes": [],
@@ -3381,6 +3386,136 @@
             }
           },
           "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Description": {
+              "Type": "NestedType",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Name": {
+              "Type": "NestedType",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Unit": {
+              "Type": "NestedType",
+              "Attributes": [],
+              "MethodInfo": null
+            },
+            "System.String MeterName": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String MeterName;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Version": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Version;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String BackendLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String BackendLatency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String ChannelAquisitionLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ChannelAquisitionLatency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Latency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String ReceivedTimeLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ReceivedTimeLatency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RequestBodySize": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RequestBodySize;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String ResponseBodySize": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ResponseBodySize;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String TransitTimeLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String TransitTimeLatency;IsInitOnly:False;IsStatic:True;"
+                }
+              },
+              "NestedTypes": {}
+            },
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String BackendLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String BackendLatency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String ChannelAquisitionLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ChannelAquisitionLatency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Latency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String ReceivedTimeLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ReceivedTimeLatency;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String RequestBodySize": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String RequestBodySize;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String ResponseBodySize": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String ResponseBodySize;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String TransitTimeLatency": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String TransitTimeLatency;IsInitOnly:False;IsStatic:True;"
+                }
+              },
+              "NestedTypes": {}
+            },
+            "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+              "Subclasses": {},
+              "Members": {
+                "System.String Bytes": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Bytes;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Sec": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Sec;IsInitOnly:False;IsStatic:True;"
+                }
+              },
+              "NestedTypes": {}
+            }
+          }
         },
         "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
@@ -3506,6 +3641,234 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Double[] RowCountBuckets;IsInitOnly:True;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Description": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Name": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Unit": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
+        "System.String MeterName": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String MeterName;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Version": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Version;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String BackendLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String BackendLatency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String ChannelAquisitionLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ChannelAquisitionLatency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Latency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String ReceivedTimeLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ReceivedTimeLatency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RequestBodySize": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RequestBodySize;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String ResponseBodySize": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ResponseBodySize;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String TransitTimeLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String TransitTimeLatency;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String BackendLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String BackendLatency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String ChannelAquisitionLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ChannelAquisitionLatency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Latency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String ReceivedTimeLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ReceivedTimeLatency;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String RequestBodySize": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String RequestBodySize;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String ResponseBodySize": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String ResponseBodySize;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String TransitTimeLatency": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String TransitTimeLatency;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {}
+        },
+        "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.String Bytes": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Bytes;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Sec": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Sec;IsInitOnly:False;IsStatic:True;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      }
+    },
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Description;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String BackendLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BackendLatency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ChannelAquisitionLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChannelAquisitionLatency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Latency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ReceivedTimeLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ReceivedTimeLatency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String RequestBodySize": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RequestBodySize;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ResponseBodySize": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ResponseBodySize;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String TransitTimeLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String TransitTimeLatency;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Name;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String BackendLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BackendLatency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ChannelAquisitionLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ChannelAquisitionLatency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Latency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Latency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ReceivedTimeLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ReceivedTimeLatency;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String RequestBodySize": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String RequestBodySize;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String ResponseBodySize": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String ResponseBodySize;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String TransitTimeLatency": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String TransitTimeLatency;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+NetworkMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String Bytes": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Bytes;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Sec": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Sec;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -7614,6 +7977,11 @@
           "Attributes": [],
           "MethodInfo": "System.String AustriaEast;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String BelgiumCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BelgiumCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String BleuFranceCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -7704,6 +8072,11 @@
           "Attributes": [],
           "MethodInfo": "System.String DelosCloudGermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String DenmarkEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DenmarkEast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String EastAsia": {
           "Type": "Field",
           "Attributes": [],
@@ -7758,6 +8131,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String IsraelCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String IsraelNorthwest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IsraelNorthwest;IsInitOnly:False;IsStatic:True;"
         },
         "System.String ItalyNorth": {
           "Type": "Field",
@@ -7873,6 +8251,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastUS;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastUS3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS3;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastUS5": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS5;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SouthIndia": {
           "Type": "Field",

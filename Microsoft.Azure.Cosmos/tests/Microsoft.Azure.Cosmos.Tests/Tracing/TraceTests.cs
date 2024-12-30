@@ -109,7 +109,8 @@
                             ResourceType.Document,
                             OperationType.Query,
                             "42",
-                            new Uri("http://someUri1.com"));
+                            new Uri("http://someUri1.com"),
+                            "region1");
 
             ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
 
