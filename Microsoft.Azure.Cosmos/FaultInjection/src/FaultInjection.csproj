@@ -10,6 +10,7 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6</TargetFramework>
 		<TargetType>library</TargetType>
+		<Authors>Microsoft</Authors>
 		<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection</RootNamespace>
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
@@ -35,7 +36,17 @@
 		<DebugType>portable</DebugType>
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AdditionalFiles Include="stylecop.json" />
+		<None Include="..\..\..\Icon.png" Pack="true" PackagePath=""/>
+	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
