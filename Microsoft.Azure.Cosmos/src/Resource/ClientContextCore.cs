@@ -532,17 +532,21 @@ namespace Microsoft.Azure.Cosmos
                     // Checks if OpenTelemetry is configured for this operation and either Trace or Metrics are enabled by customer
                     if (isOtelCompatibleOperation)
                     {
-                        // Extracts and records telemetry data from the result of the operation.
-                        OpenTelemetryAttributes otelAttributes = openTelemetry?.GetAttributes(result);
+                        using (ITrace telemetryTrace = trace.StartChild("Recording Telemetry"))
+                        {
+                            // Extracts and records telemetry data from the result of the operation.
+                            OpenTelemetryAttributes otelAttributes = openTelemetry?.GetAttributes(result);
 
-                        // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
-                        recorder.Record(otelAttributes);
-                        RecordMetrics(getOperationName,
-                            this.client.Endpoint,
-                            containerName,
-                            databaseName,
-                            requestOptions,
-                            attributes: otelAttributes);
+                            // Records the telemetry attributes for Distributed Tracing (if enabled) and Metrics
+                            recorder.Record(otelAttributes);
+                            RecordMetrics(getOperationName,
+                                this.client.Endpoint,
+                                containerName,
+                                databaseName,
+                                requestOptions,
+                                attributes: otelAttributes,
+                                trace: telemetryTrace);
+                        }
                     }
 
                     return result;
@@ -551,13 +555,17 @@ namespace Microsoft.Azure.Cosmos
                 {
                     if (isOtelCompatibleOperation)
                     {
-                        recorder.MarkFailed(cosmosException);
-                        RecordMetrics(getOperationName,
-                            gatewayEndpoint,
-                            containerName,
-                            databaseName,
-                            requestOptions,
-                            cosmosException: cosmosException);
+                        using (ITrace telemetryTrace = trace.StartChild("Recording Telemetry"))
+                        {
+                            recorder.MarkFailed(cosmosException);
+                            RecordMetrics(getOperationName,
+                                gatewayEndpoint,
+                                containerName,
+                                databaseName,
+                                requestOptions,
+                                cosmosException: cosmosException,
+                                trace: telemetryTrace);
+                        }
                     }
 
                     throw cosmosException; // Rethrow after recording telemetry
@@ -613,24 +621,32 @@ namespace Microsoft.Azure.Cosmos
             string databaseName,
             RequestOptions requestOptions,
             OpenTelemetryAttributes attributes = null,
-            Exception cosmosException = null)
+            Exception cosmosException = null,
+            ITrace trace = null)
         {
-            // Records telemetry data
-            CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                 accountName: accountName,
-                                                 containerName: containerName,
-                                                 databaseName: databaseName,
-                                                 attributes: attributes,
-                                                 operationMetricsOptions: requestOptions?.OperationMetricsOptions,
-                                                 ex: cosmosException);
+            try
+            {
+                // Records telemetry data
+                CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                     accountName: accountName,
+                                                     containerName: containerName,
+                                                     databaseName: databaseName,
+                                                     attributes: attributes,
+                                                     operationMetricsOptions: requestOptions?.OperationMetricsOptions,
+                                                     ex: cosmosException);
 
-            CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                 accountName: accountName,
-                                                 containerName: containerName,
-                                                 databaseName: databaseName,
-                                                 attributes: attributes,
-                                                 networkMetricsOptions: requestOptions?.NetworkMetricsOptions,
-                                                 ex: cosmosException);
+                CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                     accountName: accountName,
+                                                     containerName: containerName,
+                                                     databaseName: databaseName,
+                                                     attributes: attributes,
+                                                     networkMetricsOptions: requestOptions?.NetworkMetricsOptions,
+                                                     ex: cosmosException);
+            }
+            catch (Exception ex)
+            {
+                trace?.AddDatum("Exception", ex.ToString());
+            }
         }
 
         private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(

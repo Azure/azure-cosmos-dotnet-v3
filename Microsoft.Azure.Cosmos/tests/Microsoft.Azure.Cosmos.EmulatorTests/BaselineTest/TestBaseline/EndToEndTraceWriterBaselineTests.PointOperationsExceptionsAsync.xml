@@ -66,7 +66,8 @@
     │                                   [Point Operation Statistics]
     │                                   Redacted To Not Change The Baselines From Run To Run
     │                               )
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    └── Recording Telemetry(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -154,6 +155,10 @@
     },
     {
       "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Recording Telemetry",
       "duration in milliseconds": 0
     }
   ]
@@ -293,7 +298,8 @@
     │                                   [Client Side Request Stats]
     │                                   Redacted To Not Change The Baselines From Run To Run
     │                               )
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    └── Recording Telemetry(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -437,6 +443,10 @@
     },
     {
       "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Recording Telemetry",
       "duration in milliseconds": 0
     }
   ]
@@ -589,7 +599,8 @@
     │                                   [Point Operation Statistics]
     │                                   Redacted To Not Change The Baselines From Run To Run
     │                               )
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    └── Recording Telemetry(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -698,6 +709,10 @@
     },
     {
       "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Recording Telemetry",
       "duration in milliseconds": 0
     }
   ]
@@ -861,7 +876,8 @@
     │                                   [Point Operation Statistics]
     │                                   Redacted To Not Change The Baselines From Run To Run
     │                               )
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    └── Recording Telemetry(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -991,6 +1007,10 @@
     },
     {
       "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Recording Telemetry",
       "duration in milliseconds": 0
     }
   ]
@@ -1176,7 +1196,8 @@
     │                                   [Point Operation Statistics]
     │                                   Redacted To Not Change The Baselines From Run To Run
     │                               )
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    └── Recording Telemetry(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1348,6 +1369,10 @@
     },
     {
       "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Recording Telemetry",
       "duration in milliseconds": 0
     }
   ]
@@ -1450,7 +1475,8 @@
     │                                   [Point Operation Statistics]
     │                                   Redacted To Not Change The Baselines From Run To Run
     │                               )
-    └── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ├── Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    └── Recording Telemetry(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1538,6 +1564,10 @@
     },
     {
       "name": "Get Collection Cache",
+      "duration in milliseconds": 0
+    },
+    {
+      "name": "Recording Telemetry",
       "duration in milliseconds": 0
     }
   ]
