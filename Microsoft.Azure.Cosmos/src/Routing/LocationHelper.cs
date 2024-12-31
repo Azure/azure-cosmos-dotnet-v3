@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal static class LocationHelper
     {
+        private static readonly char[] hostSeparators = new char[] { '.' };
+
         /// <summary>
         /// For example, for https://contoso.documents.azure.com:443/ and "West US", this will return https://contoso-westus.documents.azure.com:443/
         /// NOTE: This ONLY called by client first boot when the input endpoint is not available.
@@ -21,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             // Split the host into 2 parts seperated by '.'
             // For example, "contoso.documents.azure.com" is separated into "contoso" and "documents.azure.com"
             // If the host doesn't contains '.', this will return the host as is, as the only element
-            string[] hostParts = builder.Host.Split(new char[] { '.' }, 2);
+            string[] hostParts = builder.Host.Split(hostSeparators, 2);
 
             if (hostParts.Length != 0)
             {
