@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName, 
             Uri accountName,
             OpenTelemetryAttributes attributes, 
-            Exception ex);
+            Exception ex,
+            OperationMetricsOptions optionFromRequest);
 
         public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName,
             Uri accountName,
@@ -41,6 +42,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName,
             OpenTelemetryAttributes attributes,
             Exception ex,
+            NetworkMetricsOptions optionFromRequest,
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null);
 
