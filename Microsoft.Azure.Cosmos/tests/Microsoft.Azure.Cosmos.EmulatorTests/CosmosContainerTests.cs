@@ -1760,6 +1760,74 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [DataRow(true, DisplayName = "Container creation and deletion with binary encoding enabled.")]
+        [DataRow(false, DisplayName = "Container creation and deletion with binary encoding disabled.")]
+        public async Task ContainerCreationDeletionWithBinaryEncodingTest(bool binaryEncodingEnabled)
+        {
+            string containerId = Guid.NewGuid().ToString();
+            string originalBinaryEncodingValue = Environment.GetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled);
+
+            try
+            {
+                if (binaryEncodingEnabled)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                }
+                else
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+                }
+
+                string partitionKeyPath = "/pk";
+                ContainerProperties containerProperties = new ContainerProperties(containerId, partitionKeyPath);
+                ContainerResponse createResponse = await this.cosmosDatabase.CreateContainerAsync(containerProperties);
+                Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                Assert.IsNotNull(createResponse.Container);
+
+                // Validate the container was created
+                Container readContainer = this.cosmosDatabase.GetContainer(containerId);
+                ContainerResponse readResponse = await readContainer.ReadContainerAsync();
+                Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                Assert.IsNotNull(readResponse.Resource);
+                Assert.AreEqual(containerId, readResponse.Resource.Id);
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                ItemResponse<ToDoActivity> itemResponse = await readContainer.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+                Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+
+                // Delete the container
+                ContainerResponse deleteResponse = await readContainer.DeleteContainerAsync();
+                Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+                // Attempt to read the container again to ensure it was deleted
+                try
+                {
+                    await readContainer.ReadContainerAsync();
+                    Assert.Fail("Expected a NotFound exception after deleting the container.");
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    // exception
+                }
+            }
+            finally
+            {
+                // Restore the original binary encoding environment variable
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, originalBinaryEncodingValue);
+
+                try
+                {
+                    Container container = this.cosmosDatabase.GetContainer(containerId);
+                    await container.DeleteContainerAsync();
+                }
+                catch
+                {
+                    // Ignore exceptions during cleanup
+                }
+            }
+        }
+
         private void ValidateCreateContainerResponseContract(ContainerResponse containerResponse)
         {
             Assert.IsNotNull(containerResponse);

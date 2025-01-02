@@ -195,5 +195,15 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.SessionToken, sessionToken);
             }
         }
+
+        /// <summary>
+        /// Gets or sets the configuration for operation-level metrics.
+        /// </summary>
+        public OperationMetricsOptions OperationMetricsOptions { get; set; } = null;
+
+        /// <summary>
+        /// Gets or sets the configuration for network-level metrics.
+        /// </summary>
+        public NetworkMetricsOptions NetworkMetricsOptions { get; set; } = null;
     }
 }
