@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Metrics;
+    using System.Linq;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
 
     /// <summary>
     /// CosmosOperationMeter is a utility class responsible for collecting and recording telemetry metrics related to Cosmos DB operations.
@@ -24,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Populator Used for Dimension Attributes
         /// </summary>
-        private static readonly IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+        internal static IActivityAttributePopulator DimensionPopulator;
 
         /// <summary>
         /// Histogram to record request latency (in seconds) for Cosmos DB operations.
@@ -54,13 +56,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
-        internal static void Initialize()
+        internal static void Initialize(CosmosClientTelemetryOptions metricsOptions = null)
         {
             // If already initialized, do not initialize again
             if (IsEnabled)
             {
                 return;
             }
+
+            DimensionPopulator = TracesStabilityFactory.GetAttributePopulator(metricsOptions);
 
             CosmosDbOperationMeter.RequestLatencyHistogram ??= OperationMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.OperationMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.OperationMetrics.Unit.Sec,
@@ -89,8 +93,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Uri accountName,
             string containerName,
             string databaseName,
+            OperationMetricsOptions operationMetricsOptions,
             OpenTelemetryAttributes attributes = null,
-            CosmosException ex = null)
+            Exception ex = null)
         {
             if (!IsEnabled)
             {
@@ -101,16 +106,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             {
                 Func<KeyValuePair<string, object>[]> dimensionsFunc = () =>
                     DimensionPopulator.PopulateOperationMeterDimensions(
-                        getOperationName(), containerName, databaseName, accountName, attributes, ex);
+                        getOperationName(),
+                        containerName, 
+                        databaseName, 
+                        accountName, 
+                        attributes, 
+                        ex,
+                        operationMetricsOptions);
 
-                CosmosDbMeterUtil.RecordHistogramMetric<int>(value: attributes?.ItemCount ?? ex?.Headers?.ItemCount, 
-                    dimensionsFunc, ActualItemHistogram, 
-                    Convert.ToInt32);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(value: attributes?.RequestCharge ?? ex?.Headers?.RequestCharge, 
-                    dimensionsFunc, RequestUnitsHistogram);
-                CosmosDbMeterUtil.RecordHistogramMetric<double>(value: attributes?.Diagnostics?.GetClientElapsedTime() ?? ex?.Diagnostics?.GetClientElapsedTime(),
-                    dimensionsFunc, RequestLatencyHistogram, 
-                    t => ((TimeSpan)t).TotalSeconds);
+                if (CosmosDbMeterUtil.TryOperationMetricsValues(attributes, ex, out OperationMetricData value))
+                {
+                    CosmosDbMeterUtil.RecordHistogramMetric<int>(value.ItemCount, dimensionsFunc, ActualItemHistogram, Convert.ToInt32);
+                    CosmosDbMeterUtil.RecordHistogramMetric<double>(value.RequestCharge, dimensionsFunc, RequestUnitsHistogram);
+                }
+
+                if (CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
+                {
+                    CosmosDbMeterUtil.RecordHistogramMetric<double>(value: diagnostics.GetClientElapsedTime(),
+                                                                    dimensionsFunc, RequestLatencyHistogram,
+                                                                    t => ((TimeSpan)t).TotalSeconds);
+                }
             }
             catch (Exception exception)
             {
@@ -130,12 +145,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
             try
             {
-                KeyValuePair<string, object>[] dimensions = new[]
-                {
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountEndpoint.Host),
-                    new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountEndpoint.Port)
-                };
+                KeyValuePair<string, object>[] dimensions = DimensionPopulator.PopulateInstanceCountDimensions(accountEndpoint);
 
                 ActiveInstanceCounter.Add(adjustment, dimensions);
             }
@@ -153,6 +163,22 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal static void RemoveInstanceCount(Uri accountEndpoint)
         {
             AdjustInstanceCount(accountEndpoint, -1);
+        }
+
+        /// <summary>
+        /// Resets the histograms and counters for capturing Cosmos DB metrics in Tests
+        /// </summary>
+        internal static void Reset()
+        {
+            if (IsEnabled)
+            {
+                IsEnabled = false;
+
+                RequestLatencyHistogram = null;
+                RequestUnitsHistogram = null;
+                ActualItemHistogram = null;
+                ActiveInstanceCounter = null;
+            }
         }
     }
 }

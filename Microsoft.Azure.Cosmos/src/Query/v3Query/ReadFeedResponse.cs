@@ -38,6 +38,8 @@ namespace Microsoft.Azure.Cosmos
 
         public override string IndexMetrics { get; }
 
+        internal override string QueryAdvice { get; }
+
         internal override RequestMessage RequestMessage { get; }
 
         public override IEnumerator<T> GetEnumerator()

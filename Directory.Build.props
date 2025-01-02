@@ -3,7 +3,9 @@
 		<ClientOfficialVersion>3.46.0</ClientOfficialVersion>
 		<ClientPreviewVersion>3.47.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview.0</ClientPreviewSuffixVersion>
-		<DirectVersion>3.37.1</DirectVersion>
+		<DirectVersion>3.37.5</DirectVersion>
+		<FaultInjectionVersion>1.0.0</FaultInjectionVersion>
+		<FaultInjectionSuffixVersion>beta.0</FaultInjectionSuffixVersion>
 		<EncryptionOfficialVersion>2.0.4</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>2.1.0</EncryptionPreviewVersion>
 		<EncryptionPreviewSuffixVersion>preview4</EncryptionPreviewSuffixVersion>
