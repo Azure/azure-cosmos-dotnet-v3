@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
         }
 
         public static TryCatch<IQueryPipelineStage> MonadicCreate(
-            uint offsetCount,
+            int offsetCount,
             CosmosElement continuationToken,
             MonadicCreatePipelineStage monadicCreatePipelineStage)
         {

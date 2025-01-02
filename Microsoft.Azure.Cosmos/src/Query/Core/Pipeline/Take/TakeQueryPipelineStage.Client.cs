@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
             private ClientTakeQueryPipelineStage(
                 IQueryPipelineStage source,
-                uint takeCount,
+                int takeCount,
                 TakeEnum takeEnum)
                 : base(source, takeCount)
             {
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreateLimitStage(
-                uint limitCount,
+                int limitCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
@@ -102,7 +102,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreateTopStage(
-                uint topCount,
+                int topCount,
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                 IQueryPipelineStage stage = new ClientTakeQueryPipelineStage(
                     tryCreateSource.Result,
-                    (uint)topContinuationToken.Top,
+                    topContinuationToken.Top,
                     TakeEnum.Top);
 
                 return TryCatch<IQueryPipelineStage>.FromResult(stage);
@@ -205,10 +205,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                     string updatedContinuationToken = this.takeEnum switch
                     {
                         TakeEnum.Limit => new LimitContinuationToken(
-                            limit: (uint)this.takeCount,
+                            limit: this.takeCount,
                             sourceToken: sourcePage.State?.Value.ToString()).ToString(),
                         TakeEnum.Top => new TopContinuationToken(
-                            top: (uint)this.takeCount,
+                            top: this.takeCount,
                             sourceToken: sourcePage.State?.Value.ToString()).ToString(),
                         _ => throw new ArgumentOutOfRangeException($"Unknown {nameof(TakeEnum)}: {this.takeEnum}."),
                     };
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// </summary>
                 /// <param name="limit">The limit to the number of document drained for the remainder of the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public LimitContinuationToken(uint limit, string sourceToken)
+                public LimitContinuationToken(int limit, string sourceToken)
                 {
                     if (limit > int.MaxValue)
                     {
@@ -270,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
                 [JsonProperty("limit")]
-                public uint Limit
+                public int Limit
                 {
                     get;
                 }
@@ -329,14 +329,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// </summary>
                 /// <param name="top">The limit to the number of document drained for the remainder of the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public TopContinuationToken(uint top, string sourceToken)
+                public TopContinuationToken(int top, string sourceToken)
                 {
-                    if (top > int.MaxValue)
+                    if (top < 0)
                     {
                         throw new ArgumentOutOfRangeException(nameof(top));
                     }
 
-                    this.Top = (int)top;
+                    this.Top = top;
                     this.SourceToken = sourceToken;
                 }
 

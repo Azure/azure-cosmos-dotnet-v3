@@ -32,7 +32,7 @@
             {
                 List<CosmosElement> elements = await SkipQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,
-                    offsetCount: (uint)offsetCount,
+                    offsetCount: offsetCount,
                     continuationToken: null);
 
                 Assert.AreEqual(Math.Max(values.Length - offsetCount, 0), elements.Count);
@@ -41,7 +41,7 @@
 
         private static async Task<List<CosmosElement>> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            uint offsetCount,
+            int offsetCount,
             CosmosElement continuationToken)
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);

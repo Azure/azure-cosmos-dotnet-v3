@@ -109,18 +109,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
+                    if (hybridSearchQueryInfo.Skip.Value < 0 || hybridSearchQueryInfo.Skip.Value > int.MaxValue)
+                    {
+                        throw new ArgumentOutOfRangeException("skipCount");
+                    }
+
+                    int skipCount = (int)hybridSearchQueryInfo.Skip.Value;
+
                     MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                     monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                        hybridSearchQueryInfo.Skip.Value,
+                        skipCount,
                         continuationToken,
                         monadicCreateSourceStage);
                 }
 
                 if (hybridSearchQueryInfo.Take != null)
                 {
+                    if (hybridSearchQueryInfo.Take.Value < 0 || hybridSearchQueryInfo.Take.Value > int.MaxValue)
+                    {
+                        throw new ArgumentOutOfRangeException("takeCount");
+                    }
+
+                    int takeCount = (int)hybridSearchQueryInfo.Take.Value;
+
                     MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                     monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                        hybridSearchQueryInfo.Take.Value,
+                        takeCount,
                         requestContinuationToken,
                         monadicCreateSourceStage);
                 }
@@ -262,27 +276,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasOffset)
             {
+                if (queryInfo.Offset.Value < 0 || queryInfo.Offset.Value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException("offsetCount");
+                }
+
+                int offsetCount = (int)queryInfo.Offset.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                    queryInfo.Offset.Value,
+                    offsetCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasLimit)
             {
+                if (queryInfo.Limit.Value < 0 || queryInfo.Limit.Value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException("limitCount");
+                }
+
+                int limitCount = (int)queryInfo.Limit.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                    queryInfo.Limit.Value,
+                    limitCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasTop)
             {
+                if (queryInfo.Top.Value < 0 || queryInfo.Top.Value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException("topCount");
+                }
+
+                int topCount = (int)queryInfo.Top.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
-                    queryInfo.Top.Value,
+                    topCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }

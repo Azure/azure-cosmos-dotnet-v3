@@ -3,19 +3,19 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Xml;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
+    using System.Text;
+    using System.Xml;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -1147,7 +1147,27 @@
                 @"/key"),
 
                 Hash(
-                @"TOP value beyond limit",
+                @"TOP value beyond lower range",
+                @"SELECT TOP -1 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value at lower range",
+                @"SELECT TOP 0 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value at upper range (client)",
+                @"SELECT TOP 2147483647 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (client)",
+                @"SELECT TOP 2147483648 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (Interop)",
                 @"SELECT TOP 4294967296 c.name FROM c",
                 @"/key")
             };
@@ -1211,6 +1231,56 @@
                 Hash(
                     @"OFFSET LIMIT and partition filter but group by",
                     @"SELECT c.name FROM c WHERE c.key = 5 GROUP BY c.name OFFSET 1 LIMIT 2",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond lower range",
+                    @"SELECT c.name FROM c OFFSET -1 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at lower range",
+                    @"SELECT c.name FROM c OFFSET 0 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 2147483647 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 2147483648 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (Interop)",
+                    @"SELECT c.name FROM c OFFSET 4294967296 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond lower range",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT -1",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at lower range",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 0",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 2147483647",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 2147483648",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (Interop)",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 4294967296",
                     @"/key"),
             };
 
@@ -1692,7 +1762,16 @@
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteElementString(nameof(this.Exception), this.Exception.Message);
+            StringBuilder stringBuilder = new StringBuilder();
+
+            Exception ex = this.Exception;
+            while (ex != null)
+            {
+                stringBuilder.AppendLine($"{ex.GetType()} : {ex.Message}");
+                ex = ex.InnerException;
+            }
+
+            xmlWriter.WriteElementString(nameof(this.Exception), stringBuilder.ToString());
         }
 
         public Exception Exception { get; }

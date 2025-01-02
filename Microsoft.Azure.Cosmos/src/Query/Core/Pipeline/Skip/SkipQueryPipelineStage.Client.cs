@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -29,15 +30,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
             }
 
             public static new TryCatch<IQueryPipelineStage> MonadicCreate(
-                uint offsetCount,
+                int offsetCount,
                 CosmosElement continuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                if (offsetCount > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offsetCount));
-                }
-
                 if (monadicCreatePipelineStage == null)
                 {
                     throw new ArgumentNullException(nameof(monadicCreatePipelineStage));
@@ -127,11 +123,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 int numberOfDocumentsSkipped = sourcePage.Documents.Count - documentsAfterSkip.Count;
                 this.skipCount -= numberOfDocumentsSkipped;
 
+                Debug.Assert(this.skipCount >= 0, $"{nameof(SkipQueryPipelineStage)} Assert!", "this.skipCount should be greater than or equal to 0");
+
                 QueryState state;
                 if ((sourcePage.State != null) && (sourcePage.DisallowContinuationTokenMessage == null))
                 {
                     string token = new OffsetContinuationToken(
-                        offset: (uint)this.skipCount,
+                        offset: this.skipCount,
                         sourceToken: sourcePage.State?.Value.ToString()).ToString();
                     state = new QueryState(CosmosElement.Parse(token));
                 }
@@ -165,7 +163,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 /// </summary>
                 /// <param name="offset">The number of items to skip in the query.</param>
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
-                public OffsetContinuationToken(uint offset, string sourceToken)
+                public OffsetContinuationToken(int offset, string sourceToken)
                 {
                     if (offset < 0)
                     {
@@ -180,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
                 /// The number of items to skip in the query.
                 /// </summary>
                 [JsonProperty("offset")]
-                public uint Offset { get; }
+                public int Offset { get; }
 
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.
