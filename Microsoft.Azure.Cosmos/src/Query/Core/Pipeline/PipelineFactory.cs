@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
-                    if (hybridSearchQueryInfo.Skip.Value < 0 || hybridSearchQueryInfo.Skip.Value > int.MaxValue)
+                    if (hybridSearchQueryInfo.Skip.Value > int.MaxValue)
                     {
                         throw new ArgumentOutOfRangeException("skipCount");
                     }
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 if (hybridSearchQueryInfo.Take != null)
                 {
-                    if (hybridSearchQueryInfo.Take.Value < 0 || hybridSearchQueryInfo.Take.Value > int.MaxValue)
+                    if (hybridSearchQueryInfo.Take.Value > int.MaxValue)
                     {
                         throw new ArgumentOutOfRangeException("takeCount");
                     }
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasOffset)
             {
-                if (queryInfo.Offset.Value < 0 || queryInfo.Offset.Value > int.MaxValue)
+                if (queryInfo.Offset.Value > int.MaxValue)
                 {
                     throw new ArgumentOutOfRangeException("offsetCount");
                 }
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasLimit)
             {
-                if (queryInfo.Limit.Value < 0 || queryInfo.Limit.Value > int.MaxValue)
+                if (queryInfo.Limit.Value > int.MaxValue)
                 {
                     throw new ArgumentOutOfRangeException("limitCount");
                 }
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasTop)
             {
-                if (queryInfo.Top.Value < 0 || queryInfo.Top.Value > int.MaxValue)
+                if (queryInfo.Top.Value > int.MaxValue)
                 {
                     throw new ArgumentOutOfRangeException("topCount");
                 }
