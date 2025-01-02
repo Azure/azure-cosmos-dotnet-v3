@@ -15,10 +15,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         private readonly IActivityAttributePopulator appInsightPopulator;
         private readonly IActivityAttributePopulator otelPopulator;
 
-        public DatabaseDupAttributeKeys() 
+        public DatabaseDupAttributeKeys(CosmosClientTelemetryOptions metricsOptions) 
         {
-            this.otelPopulator = new OpenTelemetryAttributeKeys();
-            this.appInsightPopulator = new AppInsightClassicAttributeKeys();
+            this.otelPopulator = new OpenTelemetryAttributeKeys(metricsOptions?.OperationMetricsOptions, metricsOptions?.NetworkMetricsOptions);
+            this.appInsightPopulator = new AppInsightClassicAttributeKeys(metricsOptions?.OperationMetricsOptions);
         }
 
         public void PopulateAttributes(DiagnosticScope scope, 
@@ -62,13 +62,14 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName, 
             string databaseName, 
             OpenTelemetryAttributes attributes, 
-            Exception ex, 
+            Exception ex,
+            NetworkMetricsOptions optionFromRequest,
             ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null, 
             ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null)
         {
             return this.MergeDimensions(
-                () => this.appInsightPopulator.PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats),
-                () => this.otelPopulator.PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, tcpStats, httpStats));
+                () => this.appInsightPopulator.PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, optionFromRequest, tcpStats, httpStats),
+                () => this.otelPopulator.PopulateNetworkMeterDimensions(operationName, accountName, containerName, databaseName, attributes, ex, optionFromRequest, tcpStats, httpStats));
         }
 
         public KeyValuePair<string, object>[] PopulateOperationMeterDimensions(string operationName, 
@@ -76,11 +77,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string databaseName, 
             Uri accountName, 
             OpenTelemetryAttributes attributes, 
-            Exception ex)
+            Exception ex,
+            OperationMetricsOptions optionFromRequest)
         {
             return this.MergeDimensions(
-               () => this.appInsightPopulator.PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex),
-               () => this.otelPopulator.PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex));
+               () => this.appInsightPopulator.PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex, optionFromRequest),
+               () => this.otelPopulator.PopulateOperationMeterDimensions(operationName, containerName, databaseName, accountName, attributes, ex, optionFromRequest));
         }
 
         private KeyValuePair<string, object>[] MergeDimensions(

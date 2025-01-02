@@ -63,4 +63,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             return ExportResult.Success;
         }
     }
+
+    public class DimensionKey
+    {
+        public string MetricName { get; set; }
+        public bool IsDataOperation { get; set; }
+    }
 }

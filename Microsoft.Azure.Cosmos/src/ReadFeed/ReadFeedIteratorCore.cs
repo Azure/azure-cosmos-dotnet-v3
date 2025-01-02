@@ -39,9 +39,17 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
             CancellationToken cancellationToken)
         {
             this.container = container;
-            this.operationName = OpenTelemetryConstants.Operations.ReadFeedRanges;
 
             this.queryRequestOptions = queryRequestOptions;
+
+            this.SetupInfoForTelemetry(
+                databaseName: container?.Database?.Id,
+                operationName: OpenTelemetryConstants.Operations.ReadFeedRanges,
+                operationType: OperationType.ReadFeed,
+                querySpec: null,
+                operationMetricsOptions: queryRequestOptions?.OperationMetricsOptions,
+                networkMetricOptions: queryRequestOptions?.NetworkMetricsOptions);
+
             readFeedPaginationOptions ??= ReadFeedExecutionOptions.Default;
 
             if (!string.IsNullOrEmpty(continuationToken))
