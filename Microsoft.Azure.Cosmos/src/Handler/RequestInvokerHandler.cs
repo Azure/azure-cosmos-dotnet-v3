@@ -525,8 +525,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
         {
             int? throughputBucket = this.RequestedClientThroughputBucket;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
             if (promotedRequestOptions?.ThroughputBucket.HasValue == true)
             {
+                if (this.client.ClientOptions.AllowBulkExecution)
+                {
+                    throw new ArgumentException($"{nameof(requestMessage.RequestOptions.ThroughputBucket)} cannot be set in " +
+                        $"{nameof(requestMessage.RequestOptions)} with {nameof(this.client.ClientOptions.AllowBulkExecution)} set to true. " +
+                        $"Set {nameof(this.client.ClientOptions.ThroughputBucket)} in {nameof(this.client.ClientOptions)} instead.");
+                }
                 throughputBucket = promotedRequestOptions.ThroughputBucket.Value;
             }
 

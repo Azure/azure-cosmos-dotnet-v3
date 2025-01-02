@@ -396,8 +396,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             await invoker.SendAsync(requestMessage, new CancellationToken());
         }
 
-        [TestMethod]
-        public async Task ThroughputBucketClientTest()
+        public async Task ThroughputBucketClientOptionsHelper(bool allowBulkExecution)
         {
             List<int> throughputBuckets = Enumerable.Range(1, 5).ToList();
 
@@ -405,7 +404,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
                    accountConsistencyLevel: null,
-                   customizeClientBuilder: builder => builder.WithThroughputBucket(throughputBucket));
+                   customizeClientBuilder: builder => builder.WithThroughputBucket(throughputBucket).WithBulkExecution(allowBulkExecution));
 
                 TestHandler testHandler = new TestHandler((request, cancellationToken) =>
                 {
@@ -431,6 +430,13 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 await invoker.SendAsync(requestMessage, new CancellationToken());
             }
+        }
+
+        [TestMethod]
+        public async Task TestThroughputBucketClientOptions()
+        {
+            await this.ThroughputBucketClientOptionsHelper(allowBulkExecution: true);
+            await this.ThroughputBucketClientOptionsHelper(allowBulkExecution: false);
         }
 
         [TestMethod]
@@ -470,6 +476,44 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             await invoker.SendAsync(requestMessage, new CancellationToken());
+        }
+
+        [TestMethod]
+        public async Task TestRequestThroughputBucketWithBulkExecution()
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient(
+               accountConsistencyLevel: null,
+               customizeClientBuilder: builder => builder.WithBulkExecution(true));
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null);
+
+            RequestMessage requestMessage = new RequestMessage(HttpMethod.Get, new System.Uri("https://dummy.documents.azure.com:443/dbs"))
+            {
+                ResourceType = ResourceType.Document
+            };
+            requestMessage.Headers.Add(HttpConstants.HttpHeaders.PartitionKey, "[]");
+            requestMessage.OperationType = OperationType.Read;
+            requestMessage.RequestOptions = new RequestOptions
+            {
+                ThroughputBucket = 1
+            };
+
+            try
+            {
+                await invoker.SendAsync(requestMessage, new CancellationToken());
+                Assert.Fail();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                Assert.AreEqual(typeof(ArgumentException), ex.GetType()) ;
+                Assert.AreEqual("ThroughputBucket cannot be set in RequestOptions with AllowBulkExecution set to true. " +
+                    "Set ThroughputBucket in ClientOptions instead.", ex.Message);
+            }
         }
 
         [TestMethod]

@@ -945,7 +945,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
-        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket set on the CosmosClient is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
         public int? ThroughputBucket { get; set; }

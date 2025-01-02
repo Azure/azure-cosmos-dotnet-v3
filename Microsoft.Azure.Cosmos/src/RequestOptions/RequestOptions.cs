@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -107,7 +108,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the throughput bucket for a request.
         /// </summary>
         /// <remarks>
-        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient, throughput bucket set in RequestOptions is ignored.
+        /// If <see cref="CosmosClientOptions.AllowBulkExecution"/> is set to true on CosmosClient,
+        /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
         public int? ThroughputBucket { get; set; }
@@ -143,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ThroughputBucket.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, this.ThroughputBucket.ToString());
+                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, this.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
             }
 
             this.AddRequestHeaders?.Invoke(request.Headers);
