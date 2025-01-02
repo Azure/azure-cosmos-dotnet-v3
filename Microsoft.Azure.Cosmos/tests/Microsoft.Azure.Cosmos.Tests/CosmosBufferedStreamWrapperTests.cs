@@ -10,12 +10,58 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Tests.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class CosmosBufferedStreamWrapperTests
     {
+        private const string TempFilePath = "test_complex.json";
+
+        [TestInitialize]
+        public async Task Setup()
+        {
+            await JsonGenerator.CreateComplexJsonFileAsync(TempFilePath);
+        }
+
+        [TestCleanup]
+        public void Cleanup()
+        {
+            JsonGenerator.DeleteJsonFile(TempFilePath);
+        }
+
+        [TestMethod]
+        public void TestReadComplexJsonFile()
+        {
+            // Read the generated JSON file
+            string jsonContent = File.ReadAllText(TempFilePath);
+
+            Assert.IsNotNull(jsonContent);
+            Assert.IsTrue(jsonContent.Contains("Id"));
+            Assert.IsTrue(jsonContent.Contains("Reference"));
+            Assert.IsTrue(jsonContent.Contains("CreatedOn"));
+            Assert.IsTrue(jsonContent.Contains("HexCode"));
+        }
+
+        [TestMethod]
+        public async Task TestStreamReadingFromJsonFile()
+        {
+            // Open the JSON file as a stream
+            using FileStream fileStream = new FileStream(TempFilePath, FileMode.Open, FileAccess.Read);
+            using CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(fileStream), true);
+
+            byte[] buffer = new byte[fileStream.Length];
+            int bytesRead = bufferedStream.Read(buffer, 0, buffer.Length);
+
+            Assert.AreEqual(fileStream.Length, bytesRead);
+
+            string jsonContent = Encoding.UTF8.GetString(buffer);
+            Assert.IsNotNull(jsonContent);
+            Assert.IsTrue(jsonContent.Contains("NestedObject"));
+            Assert.IsTrue(jsonContent.Contains("ComplexArray"));
+        }
+
         [TestMethod]
         public async Task TestReadFirstByte()
         {
