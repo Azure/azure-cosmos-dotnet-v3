@@ -10,7 +10,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using System.Net;
+
     /// <summary>
     /// Tests for <see cref="AvailabilityStrategy"/>
     /// </summary>
