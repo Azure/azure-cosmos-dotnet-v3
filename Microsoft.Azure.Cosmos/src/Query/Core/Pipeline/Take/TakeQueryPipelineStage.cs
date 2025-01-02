@@ -20,11 +20,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
             int takeCount)
             : base(source)
         {
-            if (takeCount < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(takeCount));
-            }
-
             this.takeCount = takeCount;
         }
 

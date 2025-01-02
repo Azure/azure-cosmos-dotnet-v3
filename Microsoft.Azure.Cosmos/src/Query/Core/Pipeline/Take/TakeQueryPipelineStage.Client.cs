@@ -36,9 +36,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 CosmosElement requestContinuationToken,
                 MonadicCreatePipelineStage monadicCreatePipelineStage)
             {
-                if (limitCount > int.MaxValue)
+                if (limitCount < 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(limitCount));
+                    throw new ArgumentException($"{nameof(limitCount)}: {limitCount} must be a non negative number.");
                 }
 
                 if (monadicCreatePipelineStage == null)
@@ -257,9 +257,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
                 public LimitContinuationToken(int limit, string sourceToken)
                 {
-                    if (limit > int.MaxValue)
+                    if (limit < 0)
                     {
-                        throw new ArgumentNullException(nameof(limit));
+                        throw new ArgumentException($"{nameof(limit)} must be a non negative number.");
                     }
 
                     this.Limit = limit;
@@ -331,11 +331,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <param name="sourceToken">The continuation token for the source component of the query.</param>
                 public TopContinuationToken(int top, string sourceToken)
                 {
-                    if (top < 0)
-                    {
-                        throw new ArgumentOutOfRangeException(nameof(top));
-                    }
-
                     this.Top = top;
                     this.SourceToken = sourceToken;
                 }
