@@ -142,6 +142,50 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task LinqQueryToAsyncEnumerable()
+        {
+            int expected = 3;
+            string partitionKey = "example-partition-key";
+
+            List<Task> insertionTasks = new();
+            foreach(int index in Enumerable.Range(1, expected))
+            {
+                insertionTasks.Add(
+                    this.Container.CreateItemAsync(
+                        item: ToDoActivity.CreateRandomToDoActivity(
+                            id: $"{index:0000}", 
+                            pk: partitionKey
+                        )
+                    )
+                );
+            }
+            await Task.WhenAll(insertionTasks);
+
+            IAsyncEnumerable<FeedResponse<ToDoActivity>> pages = this.Container.GetItemLinqQueryable<ToDoActivity>()
+                .Where(i => i.pk == partitionKey)
+                .OrderBy(i => i.cost)
+                .AsAsyncEnumerable();
+
+            double requestUnits = 0.0;
+            int found = 0;
+            await foreach (FeedResponse<ToDoActivity> page in pages)
+            {
+                Assert.IsNotNull(page);
+                Assert.AreEqual(page.StatusCode, System.Net.HttpStatusCode.OK);
+                requestUnits += page.RequestCharge;
+                found += page.Count;
+                foreach (ToDoActivity item in page)
+                {
+                    Assert.IsNotNull(item);
+                    Assert.AreEqual(item.pk, partitionKey);
+                }
+            }
+
+            Assert.IsTrue(requestUnits > 0);
+            Assert.AreEqual(expected, found);
+        }
+
+        [TestMethod]
         [DataRow(false)]
         [DataRow(true)]
         [ExpectedException(typeof(NotSupportedException))]
