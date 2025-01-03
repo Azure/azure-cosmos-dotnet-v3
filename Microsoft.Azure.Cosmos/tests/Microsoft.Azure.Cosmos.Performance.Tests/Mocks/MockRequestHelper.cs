@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -25,6 +27,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         internal static readonly byte[] notFoundPayload = Encoding.ASCII.GetBytes("{\"Errors\":[\"Resource Not Found.Learn more: https:\\/\\/ aka.ms\\/ cosmosdb - tsg - not - found\"]}");
 
+        private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
 
         static MockRequestHelper()
         {
@@ -66,65 +69,67 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         {
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
 
+            DocumentServiceResponse response;
             if (request.OperationType == OperationType.Read)
             {
-                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
-                {
-                    return new DocumentServiceResponse(
+                response = request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId)
+                    ? new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
+                    )
+                    : new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.notFoundPayload),
+                        headers,
+                        System.Net.HttpStatusCode.NotFound
                     );
-                }
-
-                return new DocumentServiceResponse(
-                    new MemoryStream(MockRequestHelper.notFoundPayload),
-                    headers,
-                    System.Net.HttpStatusCode.NotFound
-                );
             }
-
-            if (request.OperationType == OperationType.Delete)
+            else if (request.OperationType == OperationType.Delete)
             {
-                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
-                {
-                    return new DocumentServiceResponse(
+                response = request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId)
+                    ? new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
+                    )
+                    : new DocumentServiceResponse(
+                        new MemoryStream(MockRequestHelper.notFoundPayload),
+                        headers,
+                        System.Net.HttpStatusCode.NotFound
                     );
-                }
-
-                return new DocumentServiceResponse(
-                    new MemoryStream(MockRequestHelper.notFoundPayload),
-                    headers,
-                    System.Net.HttpStatusCode.NotFound
-                );
             }
-
-            if (request.OperationType == OperationType.Create
+            else if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Patch)
             {
-                return new DocumentServiceResponse(
+                response = new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
             }
-
-            if (request.ResourceType == ResourceType.Document &&
+            else if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.ReadFeed)
             {
-                return new DocumentServiceResponse(
+                response = new DocumentServiceResponse(
                         new MemoryStream(MockRequestHelper.testItemFeedResponsePayload),
                         headers,
                         System.Net.HttpStatusCode.OK
                     );
             }
+            else
+            {
+                return null;
+            }
 
-            return null;
+            // Check if binary encoding is enabled and this is a supported point operation
+            if (ConfigurationManager.IsBinaryEncodingEnabled() && MockRequestHelper.IsPointOperationSupportedForBinaryEncoding(request))
+            {
+                response = ConvertToBinaryIfNeeded(response);
+            }
+
+            return response;
         }
 
         /// <summary>
@@ -134,8 +139,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// <returns>A <see cref="StoreResponse"/> instance.</returns>
         public static StoreResponse GetStoreResponse(DocumentServiceRequest request)
         {
+            StoreResponse response = null;
+
             if (request.ResourceType == ResourceType.Document &&
-               request.OperationType == OperationType.Query)
+                request.OperationType == OperationType.Query)
             {
                 StoreResponseNameValueCollection queryHeaders = new StoreResponseNameValueCollection()
                 {
@@ -179,96 +186,85 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     {
                         pagenumber = 0;
                     }
-
-                    return new StoreResponse()
-                    {
-                        ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
-                        Status = (int)System.Net.HttpStatusCode.OK,
-                        Headers = queryHeaders,
-                    };
                 }
 
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
                     ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = queryHeaders,
                 };
+
+                return response;
             }
 
             StoreResponseNameValueCollection headers = MockRequestHelper.GenerateTestHeaders();
-
             if (request.OperationType == OperationType.Read)
             {
                 headers.Add(WFConstants.BackendHeaders.LSN, "1");
-                if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
-                {
-                    return new StoreResponse()
+                response = request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId)
+                    ? new StoreResponse()
                     {
                         ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
+                    }
+                    : new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.NotFound,
+                        Headers = headers,
                     };
-                }
-
-                return new StoreResponse()
-                {
-                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
-                    Status = (int)System.Net.HttpStatusCode.NotFound,
-                    Headers = headers,
-                };
             }
-
-            if (request.OperationType == OperationType.Delete)
+            else if (request.OperationType == OperationType.Delete)
             {
+#pragma warning disable IDE0045 // Convert to conditional expression
                 if (request.ResourceAddress.EndsWith(MockedItemBenchmarkHelper.ExistingItemId))
                 {
-                    return new StoreResponse()
+                    response = new StoreResponse()
                     {
                         ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                         Status = (int)System.Net.HttpStatusCode.OK,
                         Headers = headers,
                     };
                 }
-
-                return new StoreResponse()
+                else
                 {
-                    ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
-                    Status = (int)System.Net.HttpStatusCode.NotFound,
-                    Headers = headers,
-                };
+                    response = new StoreResponse()
+                    {
+                        ResponseBody = new MemoryStream(MockRequestHelper.notFoundPayload, 0, MockRequestHelper.notFoundPayload.Length, writable: false, publiclyVisible: true),
+                        Status = (int)System.Net.HttpStatusCode.NotFound,
+                        Headers = headers,
+                    };
+                }
             }
-
-            if (request.OperationType == OperationType.Create
+            else if (request.OperationType == OperationType.Create
                 || request.OperationType == OperationType.Replace
                 || request.OperationType == OperationType.Upsert
                 || request.OperationType == OperationType.Patch)
             {
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
                     ResponseBody = new MemoryStream(MockRequestHelper.testItemResponsePayload, 0, MockRequestHelper.testItemResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
             }
-
-            if (request.ResourceType == ResourceType.Document &&
+            else if (request.ResourceType == ResourceType.Document &&
                 request.OperationType == OperationType.ReadFeed)
             {
                 headers.ItemCount = "1";
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
                     ResponseBody = new MemoryStream(MockRequestHelper.testItemFeedResponsePayload, 0, MockRequestHelper.testItemFeedResponsePayload.Length, writable: false, publiclyVisible: true),
                     Status = (int)System.Net.HttpStatusCode.OK,
                     Headers = headers,
                 };
             }
-
-            if (request.OperationType == OperationType.Batch)
+            else if (request.OperationType == OperationType.Batch)
             {
                 MemoryStream responseContent = batchResponsePayloadWriter.GeneratePayload();
-
-                return new StoreResponse()
+                response = new StoreResponse()
                 {
                     ResponseBody = responseContent,
                     Status = (int)System.Net.HttpStatusCode.OK,
@@ -276,7 +272,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 };
             }
 
-            return null;
+            if (response != null && ConfigurationManager.IsBinaryEncodingEnabled() && MockRequestHelper.IsPointOperationSupportedForBinaryEncoding(request))
+            {
+                response = ConvertToBinaryIfNeeded(response);
+            }
+
+            return response;
         }
 
         private static StoreResponseNameValueCollection GenerateTestHeaders()
@@ -289,6 +290,81 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             }
 
             return headers;
+        }
+
+        // Converts the response payload into binary if needed
+        // This simulates binary serialization using the same approach as in MockedItemBenchmarkHelper.
+        private static DocumentServiceResponse ConvertToBinaryIfNeeded(DocumentServiceResponse response)
+        {
+            byte[] originalPayload = ReadAllBytes(response.ResponseBody);
+            byte[] binaryPayload = ReSerializeToBinary(originalPayload);
+
+            // Replace stream with binary version
+            response.ResponseBody.Dispose();
+            response.ResponseBody = new MemoryStream(binaryPayload, writable: false);
+
+            // Add binary serialization header
+            response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+
+            return response;
+        }
+
+        private static StoreResponse ConvertToBinaryIfNeeded(StoreResponse response)
+        {
+            byte[] originalPayload = ReadAllBytes(response.ResponseBody);
+            byte[] binaryPayload = ReSerializeToBinary(originalPayload);
+
+            // Replace stream with binary version
+            response.ResponseBody.Dispose();
+            response.ResponseBody = new MemoryStream(binaryPayload, writable: false);
+
+            // Add binary serialization header
+            response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+
+            return response;
+        }
+
+        private static byte[] ReSerializeToBinary(byte[] textPayload)
+        {
+            // Deserialize from JSON text
+            using (MemoryStream ms = new MemoryStream(textPayload))
+            using (StreamReader sr = new StreamReader(ms))
+            using (Newtonsoft.Json.JsonReader jr = new JsonTextReader(sr))
+            {
+                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
+                // Assuming the payload matches the ToDoActivity schema
+                ToDoActivity deserialized = serializer.Deserialize<ToDoActivity>(jr);
+
+                using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
+                {
+                    serializer.Serialize(writer, deserialized);
+                    return writer.GetResult().ToArray();
+                }
+            }
+        }
+
+        private static byte[] ReadAllBytes(Stream stream)
+        {
+            if (stream is MemoryStream ms && ms.Position == 0)
+            {
+                return ms.ToArray();
+            }
+
+            using (MemoryStream copy = new MemoryStream())
+            {
+                stream.CopyTo(copy);
+                return copy.ToArray();
+            }
+        }
+
+        private static bool IsPointOperationSupportedForBinaryEncoding(DocumentServiceRequest request)
+        {
+            return request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
     }
 }
