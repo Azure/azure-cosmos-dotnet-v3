@@ -5,8 +5,10 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Text;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -28,38 +30,104 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestCleanup]
         public void Cleanup()
         {
+            // Delete the temporary file after each test
             JsonGenerator.DeleteJsonFile(TempFilePath);
         }
 
         [TestMethod]
-        public void TestReadComplexJsonFile()
+        public async Task TestStreamHandlingOfComplexJsonWithNestedObjects()
         {
-            // Read the generated JSON file
-            string jsonContent = File.ReadAllText(TempFilePath);
-
-            Assert.IsNotNull(jsonContent);
-            Assert.IsTrue(jsonContent.Contains("Id"));
-            Assert.IsTrue(jsonContent.Contains("Reference"));
-            Assert.IsTrue(jsonContent.Contains("CreatedOn"));
-            Assert.IsTrue(jsonContent.Contains("HexCode"));
-        }
-
-        [TestMethod]
-        public async Task TestStreamReadingFromJsonFile()
-        {
-            // Open the JSON file as a stream
             using FileStream fileStream = new FileStream(TempFilePath, FileMode.Open, FileAccess.Read);
             using CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(fileStream), true);
 
-            byte[] buffer = new byte[fileStream.Length];
-            int bytesRead = bufferedStream.Read(buffer, 0, buffer.Length);
+            // Deserialize JSON from the stream
+            string jsonReadFromStream;
+            using (StreamReader reader = new(bufferedStream))
+            {
+                jsonReadFromStream = await reader.ReadToEndAsync();
+            }
 
-            Assert.AreEqual(fileStream.Length, bytesRead);
+            Assert.IsNotNull(jsonReadFromStream, "JSON read from the stream should not be null.");
 
-            string jsonContent = Encoding.UTF8.GetString(buffer);
-            Assert.IsNotNull(jsonContent);
-            Assert.IsTrue(jsonContent.Contains("NestedObject"));
-            Assert.IsTrue(jsonContent.Contains("ComplexArray"));
+            // Deserialize original and streamed JSON into objects
+            Dictionary<string, object> originalObject = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(await File.ReadAllTextAsync(TempFilePath));
+            Dictionary<string, object> streamedObject = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(jsonReadFromStream);
+
+            Assert.AreEqual(
+                System.Text.Json.JsonSerializer.Serialize(originalObject),
+                System.Text.Json.JsonSerializer.Serialize(streamedObject),
+                "Serialized JSON does not match after deserialization."
+            );
+        }
+
+        [TestMethod]
+        public async Task TestStreamHandlingOfComplexJsonWithUniformArraysAndHierarchy()
+        {
+            string originalJson = await File.ReadAllTextAsync(TempFilePath);
+
+            using FileStream fileStream = new FileStream(TempFilePath, FileMode.Open, FileAccess.Read);
+            using CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(fileStream), true);
+
+            // Deserialize JSON from the stream
+            string jsonReadFromStream;
+            using (StreamReader reader = new(bufferedStream))
+            {
+                jsonReadFromStream = await reader.ReadToEndAsync();
+            }
+
+            Assert.IsNotNull(jsonReadFromStream, "JSON read from the stream should not be null.");
+
+            // Compare the normalized JSON for structural and content equality
+            Assert.AreEqual(
+                this.NormalizeJson(originalJson),
+                this.NormalizeJson(jsonReadFromStream),
+                "JSON does not match after processing through the wrapper."
+            );
+        }
+
+        [TestMethod]
+        public async Task TestStreamHandlingOfComplexJsonWithMixedDataAndRepeatingPatterns()
+        {
+            // Modify the utility-generated JSON for specific patterns
+            string originalJson = await File.ReadAllTextAsync(TempFilePath);
+
+            // Safely insert additional properties without breaking JSON syntax
+            Dictionary<string, object> jsonObject = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(originalJson);
+            jsonObject["Reference"] = "REF-1234";
+            jsonObject["HexCode"] = "#FF5733";
+
+            string updatedJson = System.Text.Json.JsonSerializer.Serialize(jsonObject, new JsonSerializerOptions { WriteIndented = true });
+
+            // Write the modified JSON to a new stream
+            using MemoryStream memoryStream = new(Encoding.UTF8.GetBytes(updatedJson));
+            using CosmosBufferedStreamWrapper bufferedStream = new(await StreamExtension.AsClonableStreamAsync(memoryStream), true);
+
+            // Deserialize JSON from the stream
+            string jsonReadFromStream;
+            using (StreamReader reader = new(bufferedStream))
+            {
+                jsonReadFromStream = await reader.ReadToEndAsync();
+            }
+
+            Assert.AreEqual(
+                this.NormalizeJson(updatedJson),
+                this.NormalizeJson(jsonReadFromStream),
+                "JSON with mixed data and repeating patterns does not match after processing."
+            );
+        }
+
+
+        /// <summary>
+        /// Normalizes JSON strings for consistent comparison.
+        /// </summary>
+        private string NormalizeJson(string json)
+        {
+            object jsonObject = System.Text.Json.JsonSerializer.Deserialize<object>(json);
+            return System.Text.Json.JsonSerializer.Serialize(jsonObject, new JsonSerializerOptions
+            {
+                WriteIndented = false,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
         }
 
         [TestMethod]
