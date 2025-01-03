@@ -57,6 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             IWebProxy webProxy = new TestWebProxy();
             Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
             Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
+            int throughputBucket = 3;
 
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
                 accountEndpoint: endpoint,
@@ -88,6 +89,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreNotEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
+            Assert.AreNotEqual(throughputBucket, clientOptions.ThroughputBucket);
 
             //Verify GetConnectionPolicy returns the correct values for default
             ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -122,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .WithBulkExecution(true)
                 .WithSerializerOptions(cosmosSerializerOptions)
                 .WithConsistencyLevel(consistencyLevel)
-                .WithPriorityLevel(priorityLevel);
+                .WithPriorityLevel(priorityLevel)
+                .WithThroughputBucket(throughputBucket);
 
             cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient());
             clientOptions = cosmosClient.ClientOptions;
@@ -148,6 +151,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
             Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
+            Assert.AreEqual(throughputBucket, clientOptions.ThroughputBucket);
 
             //Verify GetConnectionPolicy returns the correct values
             policy = clientOptions.GetConnectionPolicy(clientId: 0);
@@ -227,7 +231,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        [DataRow(true, DisplayName = "Validate that when enevironment variable is used to enable PPAF, the outcome of the test should be same.")]
+        [DataRow(true, DisplayName = "Validate that when environment variable is used to enable PPAF, the outcome of the test should be same.")]
         [DataRow(false, DisplayName = "Validate that when CosmosClientOptions is used to enable PPAF, the outcome of the test should be same.")]
         public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldThrowArgumentException(bool useEnvironmentVariable)
         {
@@ -254,6 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
                 Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
+                int throughputBucket = 3;
 
                 CosmosClientBuilder cosmosClientBuilder = new(
                     accountEndpoint: endpoint,
@@ -268,7 +273,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
                     .WithSerializerOptions(cosmosSerializerOptions)
                     .WithConsistencyLevel(consistencyLevel)
-                    .WithPriorityLevel(priorityLevel);
+                    .WithPriorityLevel(priorityLevel)
+                    .WithThroughputBucket(throughputBucket);
 
                 if (!useEnvironmentVariable)
                 {
@@ -321,6 +327,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
                 Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
+                int throughputBucket = 3;
                 CosmosClientBuilder cosmosClientBuilder = new(
                     accountEndpoint: endpoint,
                     authKeyOrResourceToken: key);
@@ -336,6 +343,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .WithConsistencyLevel(consistencyLevel)
                     .WithPriorityLevel(priorityLevel)
                     .WithPartitionLevelFailoverEnabled()
+                    .WithThroughputBucket(throughputBucket)
                     .WithApplicationPreferredRegions(
                         new List<string>()
                         {
@@ -424,6 +432,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             Assert.IsNull(cosmosClientOptionsNull.PriorityLevel);
+        }
+
+        [TestMethod]
+        public void VerifyThroughputBuckets()
+        {
+            List<int> throughputBuckets = Enumerable.Range(1, 5).ToList();
+
+            foreach (int throughputBucket in throughputBuckets)
+            {
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ThroughputBucket = throughputBucket
+                };
+
+                Assert.AreEqual(throughputBucket, cosmosClientOptions.ThroughputBucket);
+            }
+
+            CosmosClientOptions cosmosClientOptionsNull = new CosmosClientOptions()
+            {
+                ThroughputBucket = null
+            };
+
+            Assert.IsNull(cosmosClientOptionsNull.ThroughputBucket);
         }
 
         [TestMethod]

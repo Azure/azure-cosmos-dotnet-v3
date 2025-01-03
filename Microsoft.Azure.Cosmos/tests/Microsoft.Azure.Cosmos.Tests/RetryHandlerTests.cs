@@ -34,7 +34,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
@@ -67,7 +71,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
@@ -100,7 +108,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
@@ -145,7 +157,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
@@ -204,7 +220,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 InnerHandler = testHandler
             };
 
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
@@ -236,7 +256,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             RequestInvokerHandler invoker = new RequestInvokerHandler(
                 client,
                 requestedClientConsistencyLevel: null,
-                requestedClientPriorityLevel: null)
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
@@ -269,7 +290,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             });
 
             retryHandler.InnerHandler = testHandler;
-            RequestInvokerHandler invoker = new RequestInvokerHandler(client, requestedClientConsistencyLevel: null, requestedClientPriorityLevel: null)
+            RequestInvokerHandler invoker = new RequestInvokerHandler(
+                client,
+                requestedClientConsistencyLevel: null,
+                requestedClientPriorityLevel: null,
+                requestedClientThroughputBucket: null)
             {
                 InnerHandler = retryHandler
             };
