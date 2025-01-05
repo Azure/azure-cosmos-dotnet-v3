@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Fixed
 
 - [4928](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4928) Upgrade Resiliency: Fixes Code to Clean-up Unhealthy Connection and LbChannelState Object.
+- [4934](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4934) Region Availability: Adding SDK Changes for Upcoming Regions.
 
 
 ### <a name="3.47.0-preview.0"/> [3.47.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.0-preview.0) - 2024-11-15
