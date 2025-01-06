@@ -18,14 +18,21 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>.
+        /// 
+        /// <see cref="Container.CreateItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfMatchEtag"/> if specificed. 
         /// </remarks>
         public string IfMatchEtag { get; set; }
 
         /// <summary>
+        /// Most commonly used to detect changes to the resource
         /// Gets or sets the If-None-Match (ETag) associated with the request in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
-        /// Most commonly used to detect changes to the resource
+        /// Most commonly used with reads such as <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>.
+        /// If specified <see cref="IfNoneMatchEtag"/> matches the Item Etag then 304 status code will be returned, otherwise existing Item will be read.
+        /// 
+        /// "*" can be used to match any Etag.
+        /// If specified for writes (ex: Create, Replace, Delete) will be ignored.
         /// </remarks>
         public string IfNoneMatchEtag { get; set; }
 
