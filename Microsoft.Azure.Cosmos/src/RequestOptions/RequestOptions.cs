@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// Most commonly used with reads such as <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>.
-        /// If specified <see cref="IfNoneMatchEtag"/> matches the Item Etag then 304 status code will be returned, otherwise existing Item will be read.
+        /// When Item Etag matches the specified <see cref="IfNoneMatchEtag"/> then 304 status code will be returned, otherwise existing Item will be returned with 200.
         /// 
         /// "*" can be used to match any Etag.
         /// If specified for writes (ex: Create, Replace, Delete) will be ignored.
