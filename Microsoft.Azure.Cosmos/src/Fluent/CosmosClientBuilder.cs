@@ -818,7 +818,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
 #else
         internal
 #endif
-        CosmosClientBuilder WithThroughputBucket(int? throughputBucket)
+        CosmosClientBuilder WithThroughputBucket(int throughputBucket)
         {
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;
