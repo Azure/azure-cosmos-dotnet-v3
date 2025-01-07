@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using System.Net;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
@@ -200,12 +198,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// </summary>
         public const string ErrorType = "error.type";
 
-        /// <summary>
-        /// Default error type defined in OpenTelemetry conventions.
-        /// <a href="https://opentelemetry.io/docs/specs/semconv/attributes-registry/error/">OpenTelemetry Error Attributes</a>
-        /// </summary>
-        public const string DefaultErrorType = "_OTHER";
-
         public void PopulateAttributes(DiagnosticScope scope, 
             string operationName, 
             string databaseName, 
@@ -316,7 +308,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, GetStatusCode(tcpStats, httpStats)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, GetSubStatusCode(tcpStats, httpStats)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRegion, GetRegion(tcpStats, httpStats)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(operationLevelStatusCode, operationLevelSubStatusCode, httpStats?.Exception ?? tcpStats?.StoreResult?.Exception))
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(httpStats?.Exception ?? tcpStats?.StoreResult?.Exception))
             };
 
             this.AddOptionalDimensions(optionFromRequest, tcpStats, httpStats, dimensions);
@@ -358,8 +350,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Exception ex,
             OperationMetricsOptions optionFromRequest)
         {
-            int? statusCode = CosmosDbMeterUtil.GetStatusCode(attributes, ex);
-            int? subStatusCode = CosmosDbMeterUtil.GetSubStatusCode(attributes, ex);
             List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
@@ -368,10 +358,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, statusCode),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, subStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, GetConsistencyLevel(attributes, ex)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(statusCode, subStatusCode, ex))
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(ex))
             };
 
             this.AddOptionalDimensions(attributes, optionFromRequest, dimensions);
@@ -476,29 +466,19 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return httpStats?.Region ?? tcpStats.Region;
         }
 
-        private static string GetErrorType(int? statusCode, int? subStatusCode, Exception ex)
+        /// <summary>
+        /// Return the error.type dimension value based on the exception type.
+        /// </summary>
+        /// <param name="exception">Threw exception</param>
+        /// <returns>error.type dimension value</returns>
+        private static string GetErrorType(Exception exception)
         {
-            // In case sub status code has value, generate error type from sub status code.
-            if (subStatusCode.HasValue && subStatusCode != (int)SubStatusCodes.Unknown)
+            while (exception?.InnerException != null)
             {
-                SubStatusCodes subStatus = (SubStatusCodes)subStatusCode.Value;
-                return subStatus.ToString();
+                exception = exception.InnerException;
             }
 
-            // In case status code has value and doesn't indicate success, generate error type from status code.
-            if (statusCode.HasValue && !(statusCode.Value >= 200 && statusCode.Value <= 299))
-            {
-                return ((HttpStatusCode)statusCode.Value).ToString();
-            }
-
-            // Try to use inner exception to generate error type.
-            while (ex != null && ex.InnerException != null)
-            {
-                ex = ex.InnerException;
-            }
-
-            // Generate error type from exception type or use the default value.
-            return ex?.GetType().Name ?? DefaultErrorType;
+            return exception?.GetType().Name;
         }
 
         private static int GetSubStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)

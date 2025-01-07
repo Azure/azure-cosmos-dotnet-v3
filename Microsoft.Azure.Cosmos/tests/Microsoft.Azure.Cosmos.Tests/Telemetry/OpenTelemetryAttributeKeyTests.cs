@@ -21,12 +21,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     public class OpenTelemetryAttributeKeysTests
     {
         [TestMethod]
-        [DataRow(HttpStatusCode.NotFound, SubStatusCodes.Unknown, "NotFound")]
-        [DataRow(HttpStatusCode.OK, SubStatusCodes.CollectionCreateInProgress, "CollectionCreateInProgress")]
-        [DataRow(HttpStatusCode.OK, SubStatusCodes.Unknown, nameof(HttpRequestException))]
-        public void AppendErrorTypeForPopulateNetworkMeterDimensionsTests(HttpStatusCode statusCode, int subStatusCode, string expectedResult)
+        [DataRow(false, null)]
+        [DataRow(true, nameof(HttpRequestException))]
+        public void AppendErrorTypeForPopulateNetworkMeterDimensionsTests(bool throwException, string expectedResult)
         {
             OpenTelemetryAttributeKeys attributePopulator = new OpenTelemetryAttributeKeys();
+            HttpStatusCode statusCode = throwException ? HttpStatusCode.NotFound : HttpStatusCode.OK;
+            int subStatusCode = throwException ? (int)SubStatusCodes.ResourceNotFound : (int)SubStatusCodes.Unknown;
             OpenTelemetryAttributes attributes = new OpenTelemetryAttributes
             {
                 ConsistencyLevel = ConsistencyLevel.Strong.ToString(),
@@ -55,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 httpMethod: HttpMethod.Post,
                 resourceType: ResourceType.Database,
                 responseMessage: null,
-                exception: httpRequestException,
+                exception: throwException ? httpRequestException : null,
                 region: "East US");
 
             KeyValuePair<string, object>[] dimensions = attributePopulator.PopulateNetworkMeterDimensions(
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 "test_container",
                 "test_database",
                 attributes,
-                cosmosException,
+                throwException ? cosmosException : null,
                 null,
                 null,
                 httpStatistics);
@@ -76,39 +77,24 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         }
 
         [TestMethod]
-        [DataRow(null, null, false, "_OTHER")]
-        [DataRow(null, null, true, nameof(Exception))]
-        [DataRow(HttpStatusCode.OK, (int)SubStatusCodes.Unknown, true, nameof(Exception))]
-        [DataRow(HttpStatusCode.OK, (int)SubStatusCodes.ResourceNotFound, true, nameof(SubStatusCodes.ResourceNotFound))]
-        [DataRow(HttpStatusCode.Conflict, (int)SubStatusCodes.Unknown, true, nameof(HttpStatusCode.Conflict))]
-        [DataRow(HttpStatusCode.Conflict, (int)SubStatusCodes.ResourceNotFound, true, nameof(SubStatusCodes.ResourceNotFound))]
-        public void AppendErrorTypeForPopulateOperationMeterDimensionsTests(HttpStatusCode? statusCode, int? subStatusCode, bool passException, string expectedResult)
+        [DataRow(false, null)]
+        [DataRow(true, nameof(NotFoundException))]
+        public void AppendErrorTypeForPopulateOperationMeterDimensionsTests(bool throwException, string expectedResult)
         {
             OpenTelemetryAttributeKeys attributePopulator = new OpenTelemetryAttributeKeys();
-            OpenTelemetryAttributes attributes = null;
-
-            if (statusCode.HasValue)
+            OpenTelemetryAttributes attributes = new OpenTelemetryAttributes
             {
-                attributes ??= new OpenTelemetryAttributes();
-                attributes.StatusCode = statusCode.Value;
-            }
-
-            if (subStatusCode.HasValue)
-            {
-                attributes ??= new OpenTelemetryAttributes();
-                attributes.SubStatusCode = subStatusCode.Value;
-            }
-
-            Exception innerException = new Exception("Not found");
-            Headers headers = new Headers
-            {
-                { "x-ms-substatus", subStatusCode?.ToString() ?? SubStatusCodes.Unknown.ToString() }
+                ConsistencyLevel = ConsistencyLevel.Strong.ToString(),
+                StatusCode = throwException ? HttpStatusCode.NotFound : HttpStatusCode.OK,
+                SubStatusCode = throwException ? (int)SubStatusCodes.ResourceNotFound : (int)SubStatusCodes.Unknown,
             };
+
+            Exception innerException = new NotFoundException("Not found");
             CosmosException cosmosException = new CosmosException(
-                statusCode: statusCode ?? HttpStatusCode.OK,
+                statusCode: HttpStatusCode.NotFound,
                 message: "Not found",
                 stackTrace: null,
-                headers: headers,
+                headers: null,
                 trace: null,
                 error: null,
                 innerException: innerException);
@@ -119,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 databaseName: "ToDoList",
                 accountName: new Uri("https://test.com"),
                 attributes: attributes,
-                ex: passException ? cosmosException : null,
+                ex: throwException ? cosmosException : null,
                 optionFromRequest: null);
 
             // Check error.type value
