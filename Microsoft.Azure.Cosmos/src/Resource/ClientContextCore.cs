@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -542,8 +543,7 @@ namespace Microsoft.Azure.Cosmos
                             containerName,
                             databaseName,
                             requestOptions,
-                            attributes: otelAttributes,
-                            trace: trace);
+                            attributes: otelAttributes);
                     }
 
                     return result;
@@ -558,8 +558,7 @@ namespace Microsoft.Azure.Cosmos
                             containerName,
                             databaseName,
                             requestOptions,
-                            cosmosException: cosmosException,
-                            trace: trace);
+                            cosmosException: cosmosException);
                     }
 
                     throw cosmosException; // Rethrow after recording telemetry
@@ -615,8 +614,7 @@ namespace Microsoft.Azure.Cosmos
             string databaseName,
             RequestOptions requestOptions,
             OpenTelemetryAttributes attributes = null,
-            Exception cosmosException = null,
-            ITrace trace = null)
+            Exception cosmosException = null)
         {
             try
             {
@@ -639,7 +637,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                trace?.AddDatum("TelemetryException", ex.ToString());
+                DefaultTrace.TraceError(ex.ToString());
             }
         }
 
