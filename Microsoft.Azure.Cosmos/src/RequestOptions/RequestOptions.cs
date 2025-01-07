@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Most commonly used with the Delete* and Replace* methods of <see cref="Container"/> such as <see cref="Container.ReplaceItemAsync{T}(T, string, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/>.
         /// <see cref="Container.CreateItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfMatchEtag"/> if specificed. 
+        /// <see cref="Container.UpsertItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfMatchEtag"/> when materialized as Create, otherwise for Replace Etag constraint will be applied.
         /// 
         /// <seealso href="https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/database-transactions-optimistic-concurrency#implementing-optimistic-concurrency-control-using-etag-and-http-headers"/>
         /// </remarks>
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Most commonly used with reads such as <see cref="Container.ReadItemAsync{T}(string, PartitionKey, ItemRequestOptions, System.Threading.CancellationToken)"/>.
         /// When Item Etag matches the specified <see cref="IfNoneMatchEtag"/> then 304 status code will be returned, otherwise existing Item will be returned with 200.
+        /// <see cref="Container.UpsertItemAsync{T}(T, PartitionKey?, ItemRequestOptions, System.Threading.CancellationToken)"/> will ignore <see cref="IfNoneMatchEtag"/> when materialized as Create, otherwise for Replace Etag constraint will be applied.
         /// 
         /// To match any Etag use "*"
         /// If specified for writes (ex: Create, Replace, Delete) will be ignored.
