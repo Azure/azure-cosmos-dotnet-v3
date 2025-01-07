@@ -1219,6 +1219,60 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task AvailabilityStrategyWithCancellationTokenThrowsExceptionTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region1)
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .WithHitLimit(2)
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2 },
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                        threshold: TimeSpan.FromMilliseconds(300),
+                        thresholdStep: null),
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
+                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+
+                CosmosOperationCanceledException cancelledException = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
+                        container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                            "testId",
+                            new PartitionKey("pk"), cancellationToken: cts.Token
+                    ));
+
+            }
+
+        }
+
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<AvailabilityStrategyTestObject> changes,
