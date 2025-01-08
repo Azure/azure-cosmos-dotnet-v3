@@ -473,11 +473,6 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <returns>error.type dimension value</returns>
         private static string GetErrorType(Exception exception)
         {
-            while (exception?.InnerException != null)
-            {
-                exception = exception.InnerException;
-            }
-
             return exception?.GetType().Name;
         }
 

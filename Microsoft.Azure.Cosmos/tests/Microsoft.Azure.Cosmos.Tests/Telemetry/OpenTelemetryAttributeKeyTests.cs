@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         [TestMethod]
         [DataRow(false, null)]
-        [DataRow(true, nameof(NotFoundException))]
+        [DataRow(true, nameof(CosmosException))]
         public void AppendErrorTypeForPopulateOperationMeterDimensionsTests(bool throwException, string expectedResult)
         {
             OpenTelemetryAttributeKeys attributePopulator = new OpenTelemetryAttributeKeys();
