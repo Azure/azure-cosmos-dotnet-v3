@@ -37,23 +37,13 @@ namespace Microsoft.Azure.Cosmos
         public TimeSpan ThresholdStep { get; private set; }
 
         /// <summary>
-        /// Whether hedging for write requests on accounts with multi-region writes is enabled.
-        /// Note that this does come with the caveat that there will be more 409 / 412 errors thrown by the SDK.
-        /// This is expected and applications that adopt this feature should be prepared to handle these exceptions.
-        /// Application might not be able to be deterministic on Create vs Replace in the case of Upsert Operations
-        /// </summary>
-        public bool EnableMultiWriteRegionHedge { get; private set; }
-
-        /// <summary>
         /// Constructor for hedging availability strategy
         /// </summary>
         /// <param name="threshold"></param>
         /// <param name="thresholdStep"></param>
-        /// <param name="enableMultiWriteRegionHedge"></param>
         public CrossRegionHedgingAvailabilityStrategy(
             TimeSpan threshold,
-            TimeSpan? thresholdStep,
-            bool enableMultiWriteRegionHedge = false)
+            TimeSpan? thresholdStep)
         {
             if (threshold <= TimeSpan.Zero)
             {
@@ -67,7 +57,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.Threshold = threshold;
             this.ThresholdStep = thresholdStep ?? TimeSpan.FromMilliseconds(-1);
-            this.EnableMultiWriteRegionHedge = enableMultiWriteRegionHedge;
         }
 
         /// <inheritdoc/>
@@ -81,9 +70,8 @@ namespace Microsoft.Azure.Cosmos
         /// This availability strategy can only be used if the request is a read-only request on a document request.
         /// </summary>
         /// <param name="request"></param>
-        /// <param name="client"></param>
         /// <returns>whether the request should be a hedging request.</returns>
-        internal bool ShouldHedge(RequestMessage request, CosmosClient client)
+        internal bool ShouldHedge(RequestMessage request)
         {
             //Only use availability strategy for document point operations
             if (request.ResourceType != ResourceType.Document)
@@ -91,14 +79,9 @@ namespace Microsoft.Azure.Cosmos
                 return false;
             }
 
-            //check to see if it is a not a read-only request/ if multimaster writes are enabled
+            //check to see if it is a not a read-only request
             if (!OperationTypeExtensions.IsReadOperation(request.OperationType))
             {
-                if (this.EnableMultiWriteRegionHedge
-                    && client.DocumentClient.GlobalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType))
-                {
-                    return true;
-                }
                 return false;
             }
 
@@ -119,7 +102,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (!this.ShouldHedge(request, client)
+            if (!this.ShouldHedge(request)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
                 return await sender(request, cancellationToken);
@@ -130,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 using (CloneableStream clonedBody = (CloneableStream)(request.Content == null
-                    ? null
+                    ? null//new CloneableStream(new MemoryStream())
                     : await StreamExtension.AsClonableStreamAsync(request.Content)))
                 {
                     IReadOnlyCollection<string> hedgeRegions = client.DocumentClient.GlobalEndpointManager
@@ -160,8 +143,7 @@ namespace Microsoft.Azure.Cosmos
                                         request,
                                         hedgeRegions.ElementAt(requestNumber),
                                         cancellationToken,
-                                        cancellationTokenSource, 
-                                        trace);
+                                        cancellationTokenSource);
 
                                     requestTasks.Add(primaryRequest);
                                 }
@@ -280,8 +262,7 @@ namespace Microsoft.Azure.Cosmos
                     clonedRequest,
                     region,
                     cancellationToken,
-                    cancellationTokenSource, 
-                    trace);
+                    cancellationTokenSource);
             }
         }
 
@@ -290,8 +271,7 @@ namespace Microsoft.Azure.Cosmos
             RequestMessage request,
             string hedgedRegion,
             CancellationToken cancellationToken,
-            CancellationTokenSource cancellationTokenSource,
-            ITrace trace)
+            CancellationTokenSource cancellationTokenSource)
         {
             try
             {
@@ -308,9 +288,9 @@ namespace Microsoft.Azure.Cosmos
 
                 return new HedgingResponse(false, response, hedgedRegion);
             }
-            catch (OperationCanceledException oce ) when (cancellationTokenSource.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationTokenSource.IsCancellationRequested)
             {
-                throw new CosmosOperationCanceledException(oce, trace);
+                return new HedgingResponse(false, null, hedgedRegion);
             }
             catch (Exception ex)
             {
