@@ -7,8 +7,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Contains constant string values representing OpenTelemetry attribute keys for monitoring and tracing Cosmos DB operations.
@@ -291,6 +293,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             int? operationLevelStatusCode = CosmosDbMeterUtil.GetStatusCode(attributes, ex);
             int? operationLevelSubStatusCode = CosmosDbMeterUtil.GetSubStatusCode(attributes, ex);
 
+            int? serviceEndpointStatusCode = GetStatusCode(tcpStats, httpStats);
+            int? serviceEndpointSubStatusCode = GetSubStatusCode(tcpStats, httpStats);
+            Exception serviceEndpointException = httpStats?.Exception ?? tcpStats?.StoreResult?.Exception;
+
             List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
@@ -305,10 +311,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, replicaEndpoint.Scheme),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, replicaEndpoint.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndPointPort, replicaEndpoint.Port),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, GetStatusCode(tcpStats, httpStats)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, GetSubStatusCode(tcpStats, httpStats)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, serviceEndpointStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, serviceEndpointSubStatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRegion, GetRegion(tcpStats, httpStats)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetException(tcpStats, httpStats))
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(serviceEndpointException, serviceEndpointStatusCode, serviceEndpointSubStatusCode))
             };
 
             this.AddOptionalDimensions(optionFromRequest, tcpStats, httpStats, dimensions);
@@ -350,6 +356,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Exception ex,
             OperationMetricsOptions optionFromRequest)
         {
+            int? statusCode = CosmosDbMeterUtil.GetStatusCode(attributes, ex);
+            int? subStatusCode = CosmosDbMeterUtil.GetSubStatusCode(attributes, ex);
+
             List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
@@ -358,10 +367,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerAddress, accountName?.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServerPort, accountName?.Port),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbOperation, operationName),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, CosmosDbMeterUtil.GetStatusCode(attributes, ex)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, CosmosDbMeterUtil.GetSubStatusCode(attributes, ex)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.StatusCode, statusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.SubStatusCode, subStatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ConsistencyLevel, GetConsistencyLevel(attributes, ex)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, ex?.Message)
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(ex, statusCode, subStatusCode))
             };
 
             this.AddOptionalDimensions(attributes, optionFromRequest, dimensions);
@@ -466,9 +475,24 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             return httpStats?.Region ?? tcpStats.Region;
         }
 
-        private static string GetException(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
+        /// <summary>
+        /// Return the error.type dimension value based on the exception type, status code and sub status code.
+        /// </summary>
+        /// <param name="exception">Threw exception</param>
+        /// <param name="statusCode">Status code</param>
+        /// <param name="subStatusCode">Sub status code</param>
+        /// <returns>error.type dimension value</returns>
+        private static string GetErrorType(Exception exception, int? statusCode, int? subStatusCode)
         {
-            return httpStats?.Exception?.Message ?? tcpStats?.StoreResult?.Exception?.Message;
+            if (exception == null)
+            {
+                return null;
+            }
+
+            HttpStatusCode? code = statusCode.HasValue ? (HttpStatusCode)statusCode.Value : null;
+            SubStatusCodes? subCode = subStatusCode.HasValue ? (SubStatusCodes)subStatusCode.Value : null;
+
+            return $"{exception.GetType().Name}_{code?.ToString()}_{subCode?.ToString()}";
         }
 
         private static int GetSubStatusCode(ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats, ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats)
