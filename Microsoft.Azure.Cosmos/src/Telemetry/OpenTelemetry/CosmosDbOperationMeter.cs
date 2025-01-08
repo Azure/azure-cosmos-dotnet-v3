@@ -102,34 +102,27 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 return;
             }
 
-            try
+            Func<KeyValuePair<string, object>[]> dimensionsFunc = () =>
+                DimensionPopulator.PopulateOperationMeterDimensions(
+                    getOperationName(),
+                    containerName, 
+                    databaseName, 
+                    accountName, 
+                    attributes, 
+                    ex,
+                    operationMetricsOptions);
+
+            if (CosmosDbMeterUtil.TryOperationMetricsValues(attributes, ex, out OperationMetricData value))
             {
-                Func<KeyValuePair<string, object>[]> dimensionsFunc = () =>
-                    DimensionPopulator.PopulateOperationMeterDimensions(
-                        getOperationName(),
-                        containerName, 
-                        databaseName, 
-                        accountName, 
-                        attributes, 
-                        ex,
-                        operationMetricsOptions);
-
-                if (CosmosDbMeterUtil.TryOperationMetricsValues(attributes, ex, out OperationMetricData value))
-                {
-                    CosmosDbMeterUtil.RecordHistogramMetric<int>(value.ItemCount, dimensionsFunc, ActualItemHistogram, Convert.ToInt32);
-                    CosmosDbMeterUtil.RecordHistogramMetric<double>(value.RequestCharge, dimensionsFunc, RequestUnitsHistogram);
-                }
-
-                if (CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
-                {
-                    CosmosDbMeterUtil.RecordHistogramMetric<double>(value: diagnostics.GetClientElapsedTime(),
-                                                                    dimensionsFunc, RequestLatencyHistogram,
-                                                                    t => ((TimeSpan)t).TotalSeconds);
-                }
+                CosmosDbMeterUtil.RecordHistogramMetric<int>(value.ItemCount, dimensionsFunc, ActualItemHistogram, Convert.ToInt32);
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(value.RequestCharge, dimensionsFunc, RequestUnitsHistogram);
             }
-            catch (Exception exception)
+
+            if (CosmosDbMeterUtil.TryGetDiagnostics(attributes, ex, out CosmosTraceDiagnostics diagnostics))
             {
-                DefaultTrace.TraceWarning($"Failed to record telemetry data. {exception.StackTrace}");
+                CosmosDbMeterUtil.RecordHistogramMetric<double>(value: diagnostics.GetClientElapsedTime(),
+                                                                dimensionsFunc, RequestLatencyHistogram,
+                                                                t => ((TimeSpan)t).TotalSeconds);
             }
         }
 
