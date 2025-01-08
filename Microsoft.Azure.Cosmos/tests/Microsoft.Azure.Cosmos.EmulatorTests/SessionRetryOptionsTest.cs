@@ -31,7 +31,7 @@
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
+            //this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
             if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
@@ -45,13 +45,14 @@
         }
 
         [TestMethod]
-        [DataRow(FaultInjectionOperationType.ReadItem, 2, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(FaultInjectionOperationType.ReadItem, 2, true , DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
         [TestCategory("MultiMaster")]
         public async Task ReadOperationWithReadSessionUnavailableTest(FaultInjectionOperationType faultInjectionOperationType,
-            int sessionTokenMismatchRetryAttempts)
+            int sessionTokenMismatchRetryAttempts , Boolean remoteRegionPreferred)
         {
 
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
+            Console.WriteLine($" preferred regions are {String.Join(" , ", preferredRegions)}");
             // if I go to South Central US for reading an item, I should get a 404/2002 response for 90 minutes
             FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
                 id: "badSessionTokenRule",
@@ -63,7 +64,7 @@
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
                         .Build())
-                .WithDuration(TimeSpan.FromMinutes(90))
+                .WithDuration(TimeSpan.FromMinutes(10))
                 .Build();
 
             List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { badSessionTokenRule };
@@ -75,11 +76,11 @@
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                /*SessionRetryOptions = new SessionRetryOptions()
+                SessionRetryOptions = new SessionRetryOptions()
                 {
-                    MinInRegionRetryTime = 50,
+                    MinInRegionRetryTime = 100,
                     MaxInRegionRetryCount = sessionTokenMismatchRetryAttempts
-                },*/
+                },
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,
@@ -106,35 +107,39 @@
 
                 };
 
-                await container.CreateItemAsync(testObject);
+                ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(testObject);
+                Assert.IsNotNull(response);
                 //badSessionTokenRule.Enable();
 
-                ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(GUID,
+                /*ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(GUID,
                                                                                   new PartitionKey(GUID));
-                Assert.IsNotNull(itemResponse);
-                //OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, GUID);
-                //this.ValidateOperationExecutionResult(executionResult);
+                Assert.IsNotNull(itemResponse);*/
+
+                OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, GUID);
+                this.ValidateOperationExecutionResult(executionResult, remoteRegionPreferred);
 
                 // For a non-write operation, the request can go to multiple replicas (upto 4 replicas)
                 // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
                 // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
                 long hitCount = badSessionTokenRule.GetHitCount();
-                Console.WriteLine($" hit count is ${hitCount}");
-                
-                Assert.AreEqual(badSessionTokenRule.GetHitCount(), sessionTokenMismatchRetryAttempts);
-                //assertThat(badSessionTokenRule.getHitCount()).isBetween((long)sessionTokenMismatchRetryAttempts,
-                //  (1 + sessionTokenMismatchRetryAttempts) * 4L);
+                Console.WriteLine($" hit count is {hitCount}");
 
+                if (remoteRegionPreferred)
+                {
+                    Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4); 
+                }
+                
             }
         }
 
-        private void ValidateOperationExecutionResult(OperationExecutionResult operationExecutionResult)
+        private void ValidateOperationExecutionResult(OperationExecutionResult operationExecutionResult, Boolean remoteRegionPreferred)
         {
             int sessionTokenMismatchDefaultWaitTime = 5000;
 
             FaultInjectionOperationType executionOpType = operationExecutionResult.OperationType;
             HttpStatusCode statusCode = operationExecutionResult.StatusCode;
             int executionDuration = operationExecutionResult.Duration;
+
             if (executionOpType == FaultInjectionOperationType.CreateItem)
             {
                 //assertThat(statusCode).isEqualTo(HttpConstants.StatusCodes.CREATED);
@@ -152,37 +157,14 @@
                 Assert.IsTrue(statusCode == HttpStatusCode.OK);
             }
 
-
-            Assert.IsTrue(executionDuration < sessionTokenMismatchDefaultWaitTime);
-
-            /*int statusCode = operationExecutionResult.statusCode;
-            Duration executionDuration = operationExecutionResult.duration;
-
-            if (executionOpType == OperationType.Create)
+            if (remoteRegionPreferred)
             {
-                assertThat(statusCode).isEqualTo(HttpConstants.StatusCodes.CREATED);
+                Assert.IsTrue(executionDuration < sessionTokenMismatchDefaultWaitTime);
             }
-            else if (executionOpType == OperationType.Delete)
+            else 
             {
-                assertThat(statusCode).isEqualTo(HttpConstants.StatusCodes.NO_CONTENT);
+                Assert.IsTrue(executionDuration > sessionTokenMismatchDefaultWaitTime);
             }
-            else if (executionOpType == OperationType.Upsert)
-            {
-                assertThat(statusCode == HttpConstants.StatusCodes.OK || statusCode == HttpConstants.StatusCodes.CREATED).isTrue();
-            }
-            else
-            {
-                assertThat(statusCode).isEqualTo(HttpConstants.StatusCodes.OK);
-            }
-
-            if (regionSwitchHint == CosmosRegionSwitchHint.REMOTE_REGION_PREFERRED)
-            {
-                assertThat(executionDuration).isLessThan(sessionTokenMismatchDefaultWaitTimePerRegion);
-            }
-            else if (regionSwitchHint == CosmosRegionSwitchHint.LOCAL_REGION_PREFERRED || regionSwitchHint == null)
-            {
-                assertThat(executionDuration).isGreaterThan(sessionTokenMismatchDefaultWaitTimePerRegion);
-            }*/
 
         }
 

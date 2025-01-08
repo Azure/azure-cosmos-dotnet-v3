@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Documents
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly StoreReader storeReader;
         private readonly QuorumReader quorumReader;
-        private readonly SessionRetryOptions sessionRetryOptions;
+        private readonly ISessionRetryOptions sessionRetryOptions;
 
         public ConsistencyReader(
             AddressSelector addressSelector,
@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Documents
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool enableReplicaValidation,
-            SessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.addressSelector = addressSelector;
             this.serviceConfigReader = serviceConfigReader;

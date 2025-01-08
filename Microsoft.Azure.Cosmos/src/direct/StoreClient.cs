@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Documents
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
             RetryWithConfiguration retryWithConfiguration = null,
-            SessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.serviceConfigurationReader = serviceConfigurationReader;

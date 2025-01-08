@@ -315,7 +315,7 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            SessionRetryOptions sessionRetryOptions = null
+            ISessionRetryOptions sessionRetryOptions = null
             )
         {
             this.ThrowIfDisposed();
@@ -388,7 +388,7 @@ namespace Microsoft.Azure.Documents
             }
         }
         #endregion
-        private void ValidateSessionRetryOptions(SessionRetryOptions sessionRetryOptions)
+        private void ValidateSessionRetryOptions(ISessionRetryOptions sessionRetryOptions)
         {
             if (sessionRetryOptions != null)
             {

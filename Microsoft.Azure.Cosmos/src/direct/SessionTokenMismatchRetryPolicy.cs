@@ -20,14 +20,13 @@ namespace Microsoft.Azure.Documents
         private const int defaultWaitTimeInMilliSeconds = 5000;
         private const int defaultInitialBackoffTimeInMilliseconds = 5;
         private const int defaultMaximumBackoffTimeInMilliseconds = 500;
-        //private const int backoffMultiplier = 2;
         private const int backoffMultiplier = 5; // before it was very aggressive
-        private readonly SessionRetryOptions sessionRetryOptions;
+        private readonly ISessionRetryOptions sessionRetryOptions;
 
-        private const int DEFAULT_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED = 1;
-        internal const int MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS = 100;
-        private const int DEFAULT_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS = 500;
-        internal const int MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED = 1;
+        private const int DEFAULT_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED = 1; // added by Abhijeet
+        internal const int MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS = 100; // added by fabien -  have a question on this and DEFAULT_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS
+        private const int DEFAULT_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS = 500; // added by fabien
+        internal const int MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED = 1; // added by Fabine, same as by Abhijeet above
         private readonly DateTimeOffset startTime = DateTime.UtcNow;
 
 
@@ -81,7 +80,7 @@ namespace Microsoft.Azure.Documents
         }
 
         public SessionTokenMismatchRetryPolicy(int waitTimeInMilliSeconds = defaultWaitTimeInMilliSeconds,
-            SessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.durationTimer.Start();
             this.retryCount = 0;
@@ -150,9 +149,11 @@ namespace Microsoft.Azure.Documents
                 }
 
                 this.retryCount++;
+
                 // For remote region preference ensure that the last retry is long enough (even when exceeding max backoff time)
                 // to consume the entire minRetryTimeInLocalRegion
-                if(this.retryCount >= (this.sessionRetryOptions.MaxInRegionRetryCount - 1))
+                if( this.sessionRetryOptions != null && 
+                    this.retryCount >= (this.sessionRetryOptions.MaxInRegionRetryCount - 1))
                 {
                     
                     long elapsed =  DateTimeOffset.Now.ToUnixTimeMilliseconds() - this.startTime.ToUnixTimeMilliseconds();
@@ -177,10 +178,10 @@ namespace Microsoft.Azure.Documents
 
         private Boolean shouldRetryLocally()
         {
-            /*if (regionSwitchHint != CosmosRegionSwitchHint.REMOTE_REGION_PREFERRED)
+            if(this.sessionRetryOptions == null)
             {
                 return true;
-            }*/
+            }
 
             // SessionTokenMismatchRetryPolicy is invoked after 1 attempt on a region
             // sessionTokenMismatchRetryAttempts increments only after shouldRetry triggers

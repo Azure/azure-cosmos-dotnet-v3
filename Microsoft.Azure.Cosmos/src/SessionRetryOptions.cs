@@ -3,10 +3,12 @@
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Documents;
+
     /// <summary>
     /// Telemetry Options for Cosmos Client to enable/disable telemetry and distributed tracing along with corresponding threshold values.
     /// </summary>
-    public class SessionRetryOptions
+    public class SessionRetryOptions : ISessionRetryOptions
     {
         /// <summary>
         /// Disable sending telemetry data to Microsoft, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable for this. 

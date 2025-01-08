@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            SessionRetryOptions sessionRetryOptions = null
+            ISessionRetryOptions sessionRetryOptions = null
             );
     }
 }

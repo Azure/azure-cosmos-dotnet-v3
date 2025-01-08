@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Documents
             bool disableRetryWithRetryPolicy,
             bool enableReplicaValidation,
             RetryWithConfiguration retryWithConfiguration = null,
-            SessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.addressResolver = addressResolver;
             this.addressSelector = new AddressSelector(addressResolver, protocol);

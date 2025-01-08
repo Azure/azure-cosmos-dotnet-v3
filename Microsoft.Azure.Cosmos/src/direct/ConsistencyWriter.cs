@@ -58,7 +58,7 @@ For globally strong write:
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
-        private readonly SessionRetryOptions sessionRetryOptions;
+        private readonly ISessionRetryOptions sessionRetryOptions;
 
         public ConsistencyWriter(
             AddressSelector addressSelector,
@@ -68,7 +68,7 @@ For globally strong write:
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
             bool enableReplicaValidation,
-            SessionRetryOptions sessionRetryOptions = null)
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
