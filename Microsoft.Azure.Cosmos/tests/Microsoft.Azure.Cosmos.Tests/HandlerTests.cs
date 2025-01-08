@@ -511,8 +511,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Console.WriteLine(ex.ToString());
                 Assert.AreEqual(typeof(ArgumentException), ex.GetType()) ;
-                Assert.AreEqual("ThroughputBucket cannot be set in RequestOptions with AllowBulkExecution set to true. " +
-                    "Set ThroughputBucket in ClientOptions instead.", ex.Message);
+                Assert.AreEqual("ThroughputBucket cannot be set in RequestOptions when AllowBulkExecution is set to true. " +
+                    "Instead, set ThroughputBucket only in ClientOptions.", ex.Message);
             }
         }
 

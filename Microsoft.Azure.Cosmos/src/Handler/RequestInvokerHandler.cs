@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
-            this.SetThroughputBucket(request);
+            this.ValidateAndSetThroughputBucket(request);
 
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
@@ -521,7 +521,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         /// Set the ThroughputBucket in the request headers
         /// </summary>
         /// <param name="requestMessage"></param>
-        private void SetThroughputBucket(RequestMessage requestMessage)
+        private void ValidateAndSetThroughputBucket(RequestMessage requestMessage)
         {
             int? throughputBucket = this.RequestedClientThroughputBucket;
             RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
@@ -531,8 +531,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 if (this.client.ClientOptions.AllowBulkExecution)
                 {
                     throw new ArgumentException($"{nameof(requestMessage.RequestOptions.ThroughputBucket)} cannot be set in " +
-                        $"{nameof(requestMessage.RequestOptions)} with {nameof(this.client.ClientOptions.AllowBulkExecution)} set to true. " +
-                        $"Set {nameof(this.client.ClientOptions.ThroughputBucket)} in {nameof(this.client.ClientOptions)} instead.");
+                        $"{nameof(requestMessage.RequestOptions)} when {nameof(this.client.ClientOptions.AllowBulkExecution)} is set to true. " +
+                        $"Instead, set {nameof(this.client.ClientOptions.ThroughputBucket)} only in {nameof(this.client.ClientOptions)}.");
                 }
                 throughputBucket = promotedRequestOptions.ThroughputBucket.Value;
             }
