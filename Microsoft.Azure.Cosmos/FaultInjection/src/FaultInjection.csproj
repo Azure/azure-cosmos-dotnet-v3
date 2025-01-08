@@ -10,13 +10,43 @@
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net6</TargetFramework>
 		<TargetType>library</TargetType>
+		<Authors>Microsoft</Authors>
 		<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection</RootNamespace>
 		<AssemblyName>Microsoft.Azure.Cosmos.FaultInjection</AssemblyName>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<SdkProjectRef>True</SdkProjectRef>
+		<ClientVersion>$(FaultInjectionVersion)</ClientVersion>
+		<VersionSuffix>$(FaultInjectionSuffixVersion)</VersionSuffix>
+		<Title>Microsoft Azure Cosmos DB Fault Injection library</Title>
+		<PackageId>Microsoft.Azure.Cosmos.FaultInjection</PackageId>
+		<PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
+		<PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/Microsoft.Azure.Cosmos/FaultInjection/changelog.md at the time of release.</PackageReleaseNotes>
+		<PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos/FaultInjection</PackageProjectUrl>
+		<PublishRepositoryUrl Condition=" '$(ProjectRef)' != 'True' ">true</PublishRepositoryUrl>
+		<PackageIconUrl>http://go.microsoft.com/fwlink/?LinkID=288890</PackageIconUrl>
+		<PackageIcon>Icon.png</PackageIcon>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<ShippingScope>External</ShippingScope>
+		<SigningType>Product</SigningType>
+		<DebugType>portable</DebugType>
+		<IncludeSymbols>false</IncludeSymbols>
+		<IncludeSource>false</IncludeSource>
+		<PackageLicenseFile>LICENSE</PackageLicenseFile>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<AdditionalFiles Include="stylecop.json" />
+		<None Include="..\..\..\Icon.png" Pack="true" PackagePath=""/>
+	</ItemGroup>
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
@@ -37,9 +67,14 @@
 	  <PackageReference Include="System.Text.Json" Version="8.0.5" />
 	</ItemGroup>
 	
-	<PropertyGroup>
+	<PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>
-		<AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+		<AssemblyOriginatorKeyFile>..\..\..\35MSSharedLib1024.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
+		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
 	</PropertyGroup>
 </Project>

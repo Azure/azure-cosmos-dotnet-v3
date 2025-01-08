@@ -30,6 +30,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
         private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
+        private readonly int? RequestedClientThroughputBucket;
 
         private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
@@ -37,12 +38,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public RequestInvokerHandler(
             CosmosClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
-            Cosmos.PriorityLevel? requestedClientPriorityLevel)
+            Cosmos.PriorityLevel? requestedClientPriorityLevel,
+            int? requestedClientThroughputBucket)
         {
             this.client = client;
 
             this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
+            this.RequestedClientThroughputBucket = requestedClientThroughputBucket;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -76,6 +79,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
+            this.ValidateAndSetThroughputBucket(request);
 
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
@@ -510,6 +514,32 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (priorityLevel.HasValue)
             {
                 requestMessage.Headers.Set(HttpConstants.HttpHeaders.PriorityLevel, priorityLevel.ToString());
+            }
+        }
+
+        /// <summary>
+        /// Set the ThroughputBucket in the request headers
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        private void ValidateAndSetThroughputBucket(RequestMessage requestMessage)
+        {
+            int? throughputBucket = this.RequestedClientThroughputBucket;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
+            if (promotedRequestOptions?.ThroughputBucket.HasValue == true)
+            {
+                if (this.client.ClientOptions.AllowBulkExecution)
+                {
+                    throw new ArgumentException($"{nameof(requestMessage.RequestOptions.ThroughputBucket)} cannot be set in " +
+                        $"{nameof(requestMessage.RequestOptions)} when {nameof(this.client.ClientOptions.AllowBulkExecution)} is set to true. " +
+                        $"Instead, set {nameof(this.client.ClientOptions.ThroughputBucket)} only in {nameof(this.client.ClientOptions)}.");
+                }
+                throughputBucket = promotedRequestOptions.ThroughputBucket.Value;
+            }
+
+            if (throughputBucket.HasValue)
+            {
+                requestMessage.Headers.Set(HttpConstants.HttpHeaders.ThroughputBucket, throughputBucket.ToString());
             }
         }
 

@@ -398,6 +398,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override string IndexMetrics => null;
 
+            internal override string QueryAdvice => null;
+
             internal override RequestMessage RequestMessage => null;
 
             public override IEnumerator<ChangeFeedProcessorState> GetEnumerator()
@@ -431,7 +433,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
             public override CosmosDiagnostics Diagnostics => new CosmosTraceDiagnostics(this.Trace);
 
-            public override string IndexMetrics => string.Empty;
+            public override string IndexMetrics => null;
+
+            internal override string QueryAdvice => null;
 
             internal override RequestMessage RequestMessage => null;
 

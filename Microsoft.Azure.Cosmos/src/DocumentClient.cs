@@ -113,9 +113,11 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
+        private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
+
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
-        private readonly AvailabilityStrategy availabilityStrategy;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -441,7 +443,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientId"></param>
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
-        /// <param name="availabilityStrategy">This is the availability strategy for the client</param>"
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
@@ -471,7 +472,6 @@ namespace Microsoft.Azure.Cosmos
                               string cosmosClientId = null,
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-                              AvailabilityStrategy availabilityStrategy = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null)
         {
             if (sendingRequestEventArgs != null)
@@ -495,7 +495,6 @@ namespace Microsoft.Azure.Cosmos
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
-            this.availabilityStrategy = availabilityStrategy;
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
@@ -958,8 +957,9 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.cosmosClientTelemetryOptions.IsClientMetricsEnabled)
             {
-                CosmosDbOperationMeter.Initialize();
-
+                CosmosDbOperationMeter.Initialize(this.cosmosClientTelemetryOptions);
+                CosmosDbNetworkMeter.Initialize(this.cosmosClientTelemetryOptions);
+                
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
@@ -2168,7 +2168,7 @@ namespace Microsoft.Azure.Cosmos
             string databaseLink = PathsHelper.GetDatabasePath(sourceDocumentCollectionLink);
             if (PathsHelper.TryParsePathSegments(databaseLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
-                string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] segments = resourceIdOrFullName.Split(resourceIdOrFullNameSeparators, StringSplitOptions.RemoveEmptyEntries);
                 dbsId = segments[segments.Length - 1];
             }
             else
@@ -2179,7 +2179,7 @@ namespace Microsoft.Azure.Cosmos
             string sourceCollId;
             if (PathsHelper.TryParsePathSegments(sourceDocumentCollectionLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
-                string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] segments = resourceIdOrFullName.Split(resourceIdOrFullNameSeparators, StringSplitOptions.RemoveEmptyEntries);
                 sourceCollId = segments[segments.Length - 1];
             }
             else
@@ -6814,7 +6814,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(resourceId))
             {
-                int match = resourceId.IndexOfAny(new char[] { '/', '\\', '?', '#' });
+                int match = resourceId.IndexOfAny(resourceIdSeparators);
                 if (match != -1)
                 {
                     throw new ArgumentException(string.Format(
@@ -7096,6 +7096,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 headers.Set(HttpConstants.HttpHeaders.PreserveFullContent, bool.TrueString);
             }
+
+            if (options.ThroughputBucket.HasValue)
+            {
+                headers.Set(HttpConstants.HttpHeaders.ThroughputBucket, options.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
+            }
+
             return headers;
         }
 

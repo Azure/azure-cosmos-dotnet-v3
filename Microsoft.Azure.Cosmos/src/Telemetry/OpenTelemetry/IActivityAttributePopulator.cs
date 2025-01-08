@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System;
     using System.Collections.Generic;
-    using System.Xml.Linq;
     using global::Azure.Core;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
     internal interface IActivityAttributePopulator
     {
@@ -32,6 +32,20 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             string containerName, 
             string databaseName, 
             Uri accountName,
-            OpenTelemetryAttributes attributes, CosmosException ex);
+            OpenTelemetryAttributes attributes, 
+            Exception ex,
+            OperationMetricsOptions optionFromRequest);
+
+        public KeyValuePair<string, object>[] PopulateNetworkMeterDimensions(string operationName,
+            Uri accountName,
+            string containerName,
+            string databaseName,
+            OpenTelemetryAttributes attributes,
+            Exception ex,
+            NetworkMetricsOptions optionFromRequest,
+            ClientSideRequestStatisticsTraceDatum.StoreResponseStatistics tcpStats = null,
+            ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics? httpStats = null);
+
+        public KeyValuePair<string, object>[] PopulateInstanceCountDimensions(Uri accountName);
     }
 }

@@ -36,7 +36,7 @@
   "MockedItemBenchmark.ReadFeed;[Type=OfTWithClientMetricsEnabled]": "536267.5",
   "MockedItemBenchmark.ReadFeed;[Type=OfTWithDiagnosticsToString]": "557967.75",
   "MockedItemBenchmark.ReadFeed;[Type=OfTWithDistributedTracingEnabled]": "536887.5",
-  "MockedItemBenchmark.ReadFeed;[Type=Stream]": "35859 (4.88%)",
+  "MockedItemBenchmark.ReadFeed;[Type=Stream]": "35859",
   "MockedItemBenchmark.ReadItemExists;[Type=OfT]": "34509.75",
   "MockedItemBenchmark.ReadItemExists;[Type=OfTCustom]": "34516",
   "MockedItemBenchmark.ReadItemExists;[Type=OfTWithClientMetricsEnabled]": "35012.75",
