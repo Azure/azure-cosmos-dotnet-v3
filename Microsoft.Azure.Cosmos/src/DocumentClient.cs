@@ -113,6 +113,9 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
+        private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
+
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
@@ -2165,7 +2168,7 @@ namespace Microsoft.Azure.Cosmos
             string databaseLink = PathsHelper.GetDatabasePath(sourceDocumentCollectionLink);
             if (PathsHelper.TryParsePathSegments(databaseLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
-                string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] segments = resourceIdOrFullName.Split(resourceIdOrFullNameSeparators, StringSplitOptions.RemoveEmptyEntries);
                 dbsId = segments[segments.Length - 1];
             }
             else
@@ -2176,7 +2179,7 @@ namespace Microsoft.Azure.Cosmos
             string sourceCollId;
             if (PathsHelper.TryParsePathSegments(sourceDocumentCollectionLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
-                string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] segments = resourceIdOrFullName.Split(resourceIdOrFullNameSeparators, StringSplitOptions.RemoveEmptyEntries);
                 sourceCollId = segments[segments.Length - 1];
             }
             else
@@ -6811,7 +6814,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(resourceId))
             {
-                int match = resourceId.IndexOfAny(new char[] { '/', '\\', '?', '#' });
+                int match = resourceId.IndexOfAny(resourceIdSeparators);
                 if (match != -1)
                 {
                     throw new ArgumentException(string.Format(
