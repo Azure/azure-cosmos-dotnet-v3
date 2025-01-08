@@ -123,7 +123,8 @@ namespace Microsoft.Azure.Cosmos
                     clientOptions.ConsistencyLevel,
                     clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
-                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
+                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper,
+                    clientOptions.ThroughputBucket);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
