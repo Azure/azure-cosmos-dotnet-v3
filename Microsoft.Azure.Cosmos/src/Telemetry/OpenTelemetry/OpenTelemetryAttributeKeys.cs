@@ -354,6 +354,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         {
             int? statusCode = CosmosDbMeterUtil.GetStatusCode(attributes, ex);
             int? subStatusCode = CosmosDbMeterUtil.GetSubStatusCode(attributes, ex);
+
             List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
