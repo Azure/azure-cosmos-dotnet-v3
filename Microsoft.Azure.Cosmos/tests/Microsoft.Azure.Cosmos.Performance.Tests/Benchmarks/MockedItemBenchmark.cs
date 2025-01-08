@@ -24,28 +24,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
-        public static IItemBenchmark[] IterParameters = new IItemBenchmark[]
-        {
-            new MockedItemStreamBenchmark(),
-            new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-            new MockedItemOfTBenchmark() {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: true) },
-            new MockedItemOfTBenchmark() {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: false,
-                    includeDiagnosticsToString: true) },
-            new MockedItemOfTBenchmark() {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: false,
-                    includeDiagnosticsToString: false,
-                    isDistributedTracingEnabled: true) },
-            new MockedItemOfTBenchmark() { 
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: false,
-                    includeDiagnosticsToString: false,
-                    isClientMetricsEnabled: true) }
-        };
+        // Removed array initialization here — we'll do it in GlobalSetup instead
+        public static IItemBenchmark[] IterParameters;
 
         [Params(
             ScenarioType.Stream,
@@ -65,51 +45,62 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public void GlobalSetup()
         {
             // Set the environment variable based on the parameter
-            Environment.SetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING", this.EnableBinaryResponseOnPointOperations.ToString());
+            Environment.SetEnvironmentVariable(
+                "COSMOS_ENABLE_BINARY_ENCODING",
+                this.EnableBinaryResponseOnPointOperations.ToString());
 
-            // Determine the serialization format based on EnableBinaryResponseOnPointOperations
+            // Determine the serialization format
             JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations
                 ? JsonSerializationFormat.Binary
                 : JsonSerializationFormat.Text;
 
-            // Re-initialize the benchmarks that depend on MockedItemBenchmarkHelper
-            // with the chosen serialization format
-            IterParameters[1] = new MockedItemOfTBenchmark()
+            IterParameters = new IItemBenchmark[]
             {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat)
-            };
+                // Stream scenario
+                new MockedItemStreamBenchmark(),
 
-            IterParameters[2] = new MockedItemOfTBenchmark()
-            {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: true,
-                    serializationFormat: serializationFormat)
-            };
+                // OfT scenario
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat)
+                },
 
-            IterParameters[3] = new MockedItemOfTBenchmark()
-            {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: false,
-                    includeDiagnosticsToString: true,
-                    serializationFormat: serializationFormat)
-            };
+                // OfTCustom scenario
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: true,
+                        serializationFormat: serializationFormat)
+                },
 
-            IterParameters[4] = new MockedItemOfTBenchmark()
-            {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: false,
-                    includeDiagnosticsToString: false,
-                    isDistributedTracingEnabled: true,
-                    serializationFormat: serializationFormat)
-            };
+                // OfTWithDiagnosticsToString
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false,
+                        includeDiagnosticsToString: true,
+                        serializationFormat: serializationFormat)
+                },
 
-            IterParameters[5] = new MockedItemOfTBenchmark()
-            {
-                BenchmarkHelper = new MockedItemBenchmarkHelper(
-                    useCustomSerializer: false,
-                    includeDiagnosticsToString: false,
-                    isClientMetricsEnabled: true,
-                    serializationFormat: serializationFormat)
+                // OfTWithDistributedTracingEnabled
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false,
+                        includeDiagnosticsToString: false,
+                        isDistributedTracingEnabled: true,
+                        serializationFormat: serializationFormat)
+                },
+
+                // OfTWithClientMetricsEnabled
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false,
+                        includeDiagnosticsToString: false,
+                        isClientMetricsEnabled: true,
+                        serializationFormat: serializationFormat)
+                }
             };
         }
 
