@@ -1525,7 +1525,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             return ExpressionToSql.VisitScalarExpression(
                 expression,
-                new ReadOnlyCollection<ParameterExpression>(new ParameterExpression[] { }),
+                new ReadOnlyCollection<ParameterExpression>(Array.Empty<ParameterExpression>()),
                 context);
         }
 
