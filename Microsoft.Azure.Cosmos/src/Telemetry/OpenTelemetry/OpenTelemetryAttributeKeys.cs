@@ -293,6 +293,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             int? operationLevelStatusCode = CosmosDbMeterUtil.GetStatusCode(attributes, ex);
             int? operationLevelSubStatusCode = CosmosDbMeterUtil.GetSubStatusCode(attributes, ex);
 
+            int? serviceEndpointStatusCode = GetStatusCode(tcpStats, httpStats);
+            int? serviceEndpointSubStatusCode = GetSubStatusCode(tcpStats, httpStats);
+            Exception serviceEndpointException = httpStats?.Exception ?? tcpStats?.StoreResult?.Exception;
+
             List<KeyValuePair<string, object>> dimensions = new ()
             {
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.DbSystemName, OpenTelemetryCoreRecorder.CosmosDb),
@@ -307,10 +311,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.NetworkProtocolName, replicaEndpoint.Scheme),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointHost, replicaEndpoint.Host),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndPointPort, replicaEndpoint.Port),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, GetStatusCode(tcpStats, httpStats)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, GetSubStatusCode(tcpStats, httpStats)),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointStatusCode, serviceEndpointStatusCode),
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode, serviceEndpointSubStatusCode),
                 new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ServiceEndpointRegion, GetRegion(tcpStats, httpStats)),
-                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(httpStats?.Exception ?? tcpStats?.StoreResult?.Exception, operationLevelStatusCode, operationLevelSubStatusCode))
+                new KeyValuePair<string, object>(OpenTelemetryAttributeKeys.ErrorType, GetErrorType(serviceEndpointException, serviceEndpointStatusCode, serviceEndpointSubStatusCode))
             };
 
             this.AddOptionalDimensions(optionFromRequest, tcpStats, httpStats, dimensions);

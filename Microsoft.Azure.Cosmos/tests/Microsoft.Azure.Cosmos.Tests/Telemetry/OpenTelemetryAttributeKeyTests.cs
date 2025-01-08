@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 requestUri: new Uri("https://test.com"),
                 httpMethod: HttpMethod.Post,
                 resourceType: ResourceType.Database,
-                responseMessage: null,
+                responseMessage: responseMessage,
                 exception: throwException ? httpRequestException : null,
                 region: "East US");
 
