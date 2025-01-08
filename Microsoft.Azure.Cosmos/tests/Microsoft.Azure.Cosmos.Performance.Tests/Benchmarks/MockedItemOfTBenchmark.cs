@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Documents;
 
     public class MockedItemOfTBenchmark : IItemBenchmark
     {
@@ -17,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task CreateItem()
         {
-            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync(
+            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingPartitionId);
 
@@ -25,15 +24,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception($"Failed with status code {response.StatusCode}");
             }
-
-            this.VerifyBinaryHeaderIfExpected(response);
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task UpsertItem()
         {
-            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync(
+            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingPartitionId);
 
@@ -41,8 +38,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception($"Failed with status code {response.StatusCode}");
             }
-
-            this.VerifyBinaryHeaderIfExpected(response);
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
@@ -73,14 +68,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 throw new Exception($"Failed with status code {response.StatusCode}");
             }
 
-            this.VerifyBinaryHeaderIfExpected(response);
-
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
 
         public async Task UpdateItem()
         {
-            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync(
+            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingItemId,
                 MockedItemBenchmarkHelper.ExistingPartitionId);
@@ -89,8 +82,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception($"Failed with status code {response.StatusCode}");
             }
-
-            this.VerifyBinaryHeaderIfExpected(response);
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
@@ -105,8 +96,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             {
                 throw new Exception($"Failed with status code {response.StatusCode}");
             }
-
-            this.VerifyBinaryHeaderIfExpected(response);
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
@@ -144,9 +133,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
                 "select * from T",
-                requestOptions: new QueryRequestOptions
+                requestOptions: new QueryRequestOptions()
                 {
-                    PartitionKey = new Cosmos.PartitionKey("dummyValue"),
+                    PartitionKey = new PartitionKey("dummyValue"),
                 });
 
             while (resultIterator.HasMoreResults)
@@ -165,48 +154,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             using FeedIterator<ToDoActivity> resultIterator = this.BenchmarkHelper.TestContainer.GetItemQueryIterator<ToDoActivity>(
                 "select * from T",
-                requestOptions: new QueryRequestOptions
+                requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
-                    PartitionKey = new Cosmos.PartitionKey("dummyValue"),
+                    PartitionKey = new PartitionKey("dummyValue"),
                 });
 
             while (resultIterator.HasMoreResults)
             {
                 FeedResponse<ToDoActivity> response = await resultIterator.ReadNextAsync();
+
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
-            }
-        }
-
-        /// <summary>
-        /// Verifies that the response used binary encoding if the test was expecting it.
-        /// </summary>
-        /// <param name="response">ItemResponse from the operation.</param>
-        private void VerifyBinaryHeaderIfExpected(ItemResponse<ToDoActivity> response)
-        {
-            bool isBinaryFlagEnabled = bool.TryParse(
-                Environment.GetEnvironmentVariable("COSMOS_ENABLE_BINARY_ENCODING"),
-                out bool envValue)
-                && envValue;
-
-            if (isBinaryFlagEnabled)
-            {
-                string formatHeader = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
-                if (formatHeader == SupportedSerializationFormats.CosmosBinary.ToString())
-                {
-                    // Confirmed binary encoding for this point operation
-                    // (You might place a breakpoint here or track a local debug variable.)
-                }
-                else
-                {
-                    // If you want to fail if the header doesn't match, throw or assert here.
-                    // throw new Exception("Expected binary but did not see header...");
-                }
             }
         }
     }
