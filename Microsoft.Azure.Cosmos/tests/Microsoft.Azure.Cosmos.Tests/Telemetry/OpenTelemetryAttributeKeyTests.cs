@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
     {
         [TestMethod]
         [DataRow(false, null)]
-        [DataRow(true, nameof(HttpRequestException))]
+        [DataRow(true, "HttpRequestException_NotFound_ResourceNotFound")]
         public void AppendErrorTypeForPopulateNetworkMeterDimensionsTests(bool throwException, string expectedResult)
         {
             OpenTelemetryAttributeKeys attributePopulator = new OpenTelemetryAttributeKeys();
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
 
         [TestMethod]
         [DataRow(false, null)]
-        [DataRow(true, nameof(CosmosException))]
+        [DataRow(true, "CosmosException_NotFound_ResourceNotFound")]
         public void AppendErrorTypeForPopulateOperationMeterDimensionsTests(bool throwException, string expectedResult)
         {
             OpenTelemetryAttributeKeys attributePopulator = new OpenTelemetryAttributeKeys();
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
                 statusCode: HttpStatusCode.NotFound,
                 message: "Not found",
                 stackTrace: null,
-                headers: null,
+                headers: new Headers { { "x-ms-substatus", ((int)SubStatusCodes.ResourceNotFound).ToString() } },
                 trace: null,
                 error: null,
                 innerException: innerException);
@@ -112,6 +112,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             KeyValuePair<string, object> errorType = dimensions.FirstOrDefault(d => d.Key == "error.type");
             Assert.IsNotNull(errorType);
             Assert.AreEqual(expectedResult, errorType.Value);
+        }
+
+        [TestMethod]
+        public void AppendErrorTypeForPopulateOperationMeterDimensionsTests_AbnormalCase()
+        {
+            OpenTelemetryAttributeKeys attributePopulator = new OpenTelemetryAttributeKeys();
+
+            Exception exception = new NotFoundException("Not found");
+
+            KeyValuePair<string, object>[] dimensions = attributePopulator.PopulateOperationMeterDimensions(
+                operationName: "create_database_if_not_exists",
+                containerName: "Items",
+                databaseName: "ToDoList",
+                accountName: new Uri("https://test.com"),
+                attributes: null,
+                ex: exception,
+                optionFromRequest: null);
+
+            // Check error.type value
+            KeyValuePair<string, object> errorType = dimensions.FirstOrDefault(d => d.Key == "error.type");
+            Assert.IsNotNull(errorType);
+            Assert.AreEqual("NotFoundException__", errorType.Value);
         }
     }
 }
