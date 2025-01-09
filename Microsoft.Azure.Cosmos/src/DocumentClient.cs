@@ -7096,6 +7096,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 headers.Set(HttpConstants.HttpHeaders.PreserveFullContent, bool.TrueString);
             }
+
+            if (options.ThroughputBucket.HasValue)
+            {
+                headers.Set(HttpConstants.HttpHeaders.ThroughputBucket, options.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
+            }
+
             return headers;
         }
 
