@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly IConnectionStateListener connectionStateListener;
         private IOpenConnectionsHandler openConnectionsHandler;
 
         public GlobalAddressResolver(
@@ -50,7 +51,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyRangeCache routingMapProvider,
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            IConnectionStateListener connectionStateListener)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -60,6 +62,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.routingMapProvider = routingMapProvider;
             this.serviceConfigReader = serviceConfigReader;
             this.httpClient = httpClient;
+            this.connectionStateListener = connectionStateListener;
 
             int maxBackupReadEndpoints =
                 !connectionPolicy.EnableReadRequestsFallback.HasValue || connectionPolicy.EnableReadRequestsFallback.Value
@@ -229,19 +232,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
-        public async Task UpdateAsync(
-           ServerKey serverKey,
-           CancellationToken cancellationToken)
-        {
-            foreach (KeyValuePair<Uri, EndpointCache> addressCache in this.addressCacheByEndpoint)
-            {
-                // since we don't know which address cache contains the pkRanges mapped to this node,
-                // we mark all transport uris that has the same server key to unhealthy status in the
-                // AddressCaches of all regions.
-                await addressCache.Value.AddressCache.MarkAddressesToUnhealthyAsync(serverKey);
-            }
-        }
-
         /// <summary>
         /// ReplicatedResourceClient will use this API to get the direct connectivity AddressCache for given request.
         /// </summary>
@@ -283,6 +273,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.serviceConfigReader,
                         this.httpClient,
                         this.openConnectionsHandler,
+                        this.connectionStateListener,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
 
