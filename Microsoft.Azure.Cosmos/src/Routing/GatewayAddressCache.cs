@@ -61,7 +61,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool validateUnknownReplicas;
         private IOpenConnectionsHandler openConnectionsHandler;
 
-
         public GatewayAddressCache(
             Uri serviceEndpoint,
             Protocol protocol,
@@ -502,8 +501,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (this.disposedValue)
             {
-                /// Will enable Listener to un-register in-case of un-graceful dispose
-                /// <see cref="ConnectionStateMuxListener.NotifyAsync(ServerKey, ConcurrentDictionary{Func{ServerKey, Task}, object})"/>
+                // Will enable Listener to un-register in-case of un-graceful dispose
+                // <see cref="ConnectionStateMuxListener.NotifyAsync(ServerKey, ConcurrentDictionary{Func{ServerKey, Task}, object})"/>
                 throw new ObjectDisposedException(nameof(GatewayAddressCache));
             }
 
