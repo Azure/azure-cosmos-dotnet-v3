@@ -124,12 +124,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="RequestOptions.ThroughputBucket"/> cannot be set in RequestOptions.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        int? ThroughputBucket { get; set; }
+        internal int? ThroughputBucket { get; set; }
 
         /// <summary>
         /// Fill the CosmosRequestMessage headers with the set properties
@@ -162,7 +157,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ThroughputBucket.HasValue)
             {
-                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, this.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
+                string temp = this.ThroughputBucket?.ToString(CultureInfo.InvariantCulture);
+                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, temp);
             }
 
             this.AddRequestHeaders?.Invoke(request.Headers);
