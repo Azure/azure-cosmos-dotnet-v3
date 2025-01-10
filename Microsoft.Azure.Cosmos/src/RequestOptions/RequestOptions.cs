@@ -157,8 +157,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ThroughputBucket.HasValue)
             {
-                string temp = this.ThroughputBucket?.ToString(CultureInfo.InvariantCulture);
-                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, temp);
+                request.Headers.Add(HttpConstants.HttpHeaders.ThroughputBucket, this.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
             }
 
             this.AddRequestHeaders?.Invoke(request.Headers);
