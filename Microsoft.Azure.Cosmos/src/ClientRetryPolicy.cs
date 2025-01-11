@@ -310,7 +310,8 @@ namespace Microsoft.Azure.Cosmos
             }
             
             // Received 503 due to client connect timeout or Gateway
-            if (statusCode == HttpStatusCode.ServiceUnavailable)
+            if (statusCode == HttpStatusCode.ServiceUnavailable
+                || statusCode == HttpStatusCode.RequestTimeout) // Retry for even non-document resources?
             {
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
                     shouldMarkEndpointUnavailableForPkRange: true);
