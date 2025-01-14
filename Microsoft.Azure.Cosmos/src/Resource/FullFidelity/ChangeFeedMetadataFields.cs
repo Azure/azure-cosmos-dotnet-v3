@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity
         public const string OperationType = "operationType";
         public const string PreviousImageLSN = "previousImageLSN";
         public const string TimeToLiveExpired = "timeToLiveExpired";
-        public const string DeletedItemId = "id";
-        public const string DeletedItemPartitionKey = "partitionKey";
+        public const string Id = "id";
+        public const string PartitionKey = "partitionKey";
     }
 }

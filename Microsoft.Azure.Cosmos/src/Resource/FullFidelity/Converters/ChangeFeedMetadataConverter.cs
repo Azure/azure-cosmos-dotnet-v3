@@ -57,18 +57,18 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                 {
                     metadata.PreviousLsn = property.Value.GetInt64();
                 }
-                else if (property.NameEquals(ChangeFeedMetadataFields.DeletedItemId))
+                else if (property.NameEquals(ChangeFeedMetadataFields.Id))
                 {
-                    metadata.DeletedItemId = property.Value.GetString();
+                    metadata.Id = property.Value.GetString();
                 }
-                else if (property.NameEquals(ChangeFeedMetadataFields.DeletedItemPartitionKey))
+                else if (property.NameEquals(ChangeFeedMetadataFields.PartitionKey))
                 {
-                    Dictionary<string, string> partitionKey = new Dictionary<string, string>();
+                    List<(string, object)> partitionKey = new List<(string, object)>();
                     foreach (JsonProperty pk in property.Value.EnumerateObject())
                     {
-                        partitionKey.Add(pk.Name, pk.Value.GetString());
+                        partitionKey.Add((pk.Name, pk.Value));
                     }
-                    metadata.DeletedItemPartitionKey = partitionKey;
+                    metadata.PartitionKey = partitionKey;
                 }
             }
 
@@ -90,18 +90,46 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             writer.WriteString(ChangeFeedMetadataFields.OperationType, value.OperationType.ToString());
             writer.WriteNumber(ChangeFeedMetadataFields.PreviousImageLSN, value.PreviousLsn);
 
-            if (value.DeletedItemId != null)
+            if (value.Id != null)
             {
-                writer.WriteString(ChangeFeedMetadataFields.DeletedItemId, value.DeletedItemId);
+                writer.WriteString(ChangeFeedMetadataFields.Id, value.Id);
             }
 
-            if (value.DeletedItemPartitionKey != null)
+            if (value.PartitionKey != null)
             {
-                writer.WriteStartObject(ChangeFeedMetadataFields.DeletedItemPartitionKey);
-                foreach (KeyValuePair<string, string> kvp in value.DeletedItemPartitionKey)
+                writer.WriteStartObject(ChangeFeedMetadataFields.PartitionKey);
+
+                foreach ((string, object) pk in value.PartitionKey)
                 {
-                    writer.WriteString(kvp.Key, kvp.Value);
+                    JsonElement pkValue = (JsonElement)pk.Item2;
+
+                    switch (pkValue.ValueKind)
+                    {
+                        case JsonValueKind.String:
+                            writer.WriteString(pk.Item1, pkValue.GetString());
+                            break;
+
+                        case JsonValueKind.Number:
+                            writer.WriteNumber(pk.Item1, pkValue.GetDouble());
+                            break;
+
+                        case JsonValueKind.True:
+                        case JsonValueKind.False:
+                            writer.WriteBoolean(pk.Item1, pkValue.GetBoolean());
+                            break;
+
+                        case JsonValueKind.Null:
+                            writer.WriteNull(pk.Item1);
+                            break;
+
+                        case JsonValueKind.Undefined:
+                            break;
+
+                        default:
+                            throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
+                    }
                 }
+
                 writer.WriteEndObject();
             }
 
