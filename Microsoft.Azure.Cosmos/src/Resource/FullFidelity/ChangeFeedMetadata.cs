@@ -59,13 +59,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The id of the previous item version. Used for delete operations only.
         /// </summary>
-        [JsonProperty(PropertyName = ChangeFeedMetadataFields.DeletedItemId, NullValueHandling = NullValueHandling.Ignore)]
-        public string DeletedItemId { get; internal set; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.Id, NullValueHandling = NullValueHandling.Ignore)]
+        public string Id { get; internal set; }
 
         /// <summary>
         /// The partition key of the previous item version. Dictionary Key is the partition key property name and Dictionary Value is the partition key property value. Used for delete operations only.
         /// </summary>
-        [JsonProperty(PropertyName = ChangeFeedMetadataFields.DeletedItemPartitionKey, NullValueHandling = NullValueHandling.Ignore)]
-        public Dictionary<string, string> DeletedItemPartitionKey { get; internal set; }
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
+        public List<(string, object)> PartitionKey { get; internal set; }
     }
 }
