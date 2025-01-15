@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
 
     public class MockedItemOfTBenchmark : IItemBenchmark
     {
@@ -16,14 +17,27 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task CreateItem()
         {
-            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync<ToDoActivity>(
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
+
+            ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId,
+                requestOptions);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
                 throw new Exception($"Failed with status code {response.StatusCode}");
             }
+
+            // Check if we got binary
+            this.VerifyBinaryHeaderIfExpected(response);
 
             this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
         }
@@ -135,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 "select * from T",
                 requestOptions: new QueryRequestOptions()
                 {
-                    PartitionKey = new PartitionKey("dummyValue"),
+                    PartitionKey = new Cosmos.PartitionKey("dummyValue"),
                 });
 
             while (resultIterator.HasMoreResults)
@@ -157,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 requestOptions: new QueryRequestOptions()
                 {
                     MaxItemCount = 1,
-                    PartitionKey = new PartitionKey("dummyValue"),
+                    PartitionKey = new Cosmos.PartitionKey("dummyValue"),
                 });
 
             while (resultIterator.HasMoreResults)
@@ -170,6 +184,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 }
 
                 this.BenchmarkHelper.IncludeDiagnosticToStringHelper(response.Diagnostics);
+            }
+        }
+
+        private void VerifyBinaryHeaderIfExpected(ItemResponse<ToDoActivity> response)
+        {
+            // If this benchmark helper was set up for binary encoding, the response is binary.
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                string headerValue = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
+                if (headerValue != "CosmosBinary")
+                {
+                   //If we expected binary but got something else, fail.
+                    throw new InvalidOperationException(
+                        $"Expected response with 'CosmosBinary' format, but got '{headerValue ?? "<null>"}'.");
+                }
             }
         }
     }

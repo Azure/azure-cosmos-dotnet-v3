@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         internal Container TestContainer { get; }
 
         internal byte[] TestItemBytes { get; }
+        internal bool EnableBinaryEncoding { get; }
         internal JsonSerializationFormat SerializationFormat { get; }
 
         /// <summary>
@@ -85,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     this.TestItemBytes = ms.ToArray();
                 }
             }
+            this.EnableBinaryEncoding = serializationFormat == JsonSerializationFormat.Binary;
         }
 
         public void IncludeDiagnosticToStringHelper(
