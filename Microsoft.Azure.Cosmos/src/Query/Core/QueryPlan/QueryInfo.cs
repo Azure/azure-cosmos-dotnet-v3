@@ -24,21 +24,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         [JsonProperty("top")]
-        public int? Top
+        public uint? Top
         {
             get;
             set;
         }
 
         [JsonProperty("offset")]
-        public int? Offset
+        public uint? Offset
         {
             get;
             set;
         }
 
         [JsonProperty("limit")]
-        public int? Limit
+        public uint? Limit
         {
             get;
             set;

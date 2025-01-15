@@ -10,7 +10,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"Errors":["Compositions of aggregates and other expressions are not allowed."]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -24,7 +27,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":24,"end":25},"code":"SC2041","message":"'SELECT *' is not allowed with GROUP BY."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -38,7 +44,10 @@
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":24,"end":25},"code":"SC2041","message":"'SELECT *' is not allowed with GROUP BY."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -467,7 +476,10 @@ GROUP BY UPPER(c.name), SUBSTRING(c.address.city, 0, 3)]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <Exception>TryCatch resulted in an exception.</Exception>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":32,"end":39},"code":"SC2102","message":"Property reference 's.score' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."},{"severity":"Error","location":{"start":41,"end":49},"code":"SC2102","message":"Property reference 's.repeat' is invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
     </Output>
   </Result>
   <Result>

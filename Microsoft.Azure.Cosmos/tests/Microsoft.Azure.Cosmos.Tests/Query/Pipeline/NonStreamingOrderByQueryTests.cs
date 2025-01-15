@@ -363,8 +363,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 ranges: ranges,
                 requiresGlobalStatistics: testCase.RequiresGlobalStatistics,
                 pageSize: testCase.PageSize,
-                skip: testCase.Skip,
-                take: testCase.Take);
+                skip: (uint?)testCase.Skip,
+                take: (uint?)testCase.Take);
 
             Assert.AreEqual(expectedIndices.Count(), results.Count);
 
@@ -447,8 +447,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IReadOnlyList<FeedRangeEpk> ranges,
             bool requiresGlobalStatistics,
             int pageSize,
-            int? skip,
-            int? take)
+            uint? skip,
+            uint? take)
         {
             TryCatch<IQueryPipelineStage> tryCreatePipeline = PipelineFactory.MonadicCreate(
                 documentContainer,
@@ -1583,7 +1583,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
-        private static HybridSearchQueryInfo Create2ItemHybridSearchQueryInfo(bool requiresGlobalStatistics, int? skip, int? take)
+        private static HybridSearchQueryInfo Create2ItemHybridSearchQueryInfo(bool requiresGlobalStatistics, uint? skip, uint? take)
         {
             return new HybridSearchQueryInfo
             {

@@ -38,14 +38,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         }
 
         [JsonProperty("skip")]
-        public int? Skip
+        public uint? Skip
         {
             get;
             set;
         }
 
         [JsonProperty("take")]
-        public int? Take
+        public uint? Take
         {
             get;
             set;

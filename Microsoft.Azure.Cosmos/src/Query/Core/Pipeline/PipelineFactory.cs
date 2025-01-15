@@ -109,18 +109,32 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
+                    if (hybridSearchQueryInfo.Skip.Value > int.MaxValue)
+                    {
+                        throw new ArgumentOutOfRangeException("skipCount");
+                    }
+
+                    int skipCount = (int)hybridSearchQueryInfo.Skip.Value;
+
                     MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                     monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                        hybridSearchQueryInfo.Skip.Value,
+                        skipCount,
                         continuationToken,
                         monadicCreateSourceStage);
                 }
 
                 if (hybridSearchQueryInfo.Take != null)
                 {
+                    if (hybridSearchQueryInfo.Take.Value > int.MaxValue)
+                    {
+                        throw new ArgumentOutOfRangeException("takeCount");
+                    }
+
+                    int takeCount = (int)hybridSearchQueryInfo.Take.Value;
+
                     MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                     monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                        hybridSearchQueryInfo.Take.Value,
+                        takeCount,
                         requestContinuationToken,
                         monadicCreateSourceStage);
                 }
@@ -150,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
             long optimalPageSize = maxItemCount;
             if (queryInfo.HasOrderBy)
             {
-                int top;
+                uint top;
                 if (queryInfo.HasTop && (queryInfo.Top.Value > 0))
                 {
                     top = queryInfo.Top.Value;
@@ -162,6 +176,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 else
                 {
                     top = 0;
+                }
+
+                if (top > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
 
                 if (top > 0)
@@ -257,27 +276,48 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasOffset)
             {
+                if (queryInfo.Offset.Value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException("offsetCount");
+                }
+
+                int offsetCount = (int)queryInfo.Offset.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => SkipQueryPipelineStage.MonadicCreate(
-                    queryInfo.Offset.Value,
+                    offsetCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasLimit)
             {
+                if (queryInfo.Limit.Value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException("limitCount");
+                }
+
+                int limitCount = (int)queryInfo.Limit.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateLimitStage(
-                    queryInfo.Limit.Value,
+                    limitCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
 
             if (queryInfo.HasTop)
             {
+                if (queryInfo.Top.Value > int.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException("topCount");
+                }
+
+                int topCount = (int)queryInfo.Top.Value;
+
                 MonadicCreatePipelineStage monadicCreateSourceStage = monadicCreatePipelineStage;
                 monadicCreatePipelineStage = (continuationToken) => TakeQueryPipelineStage.MonadicCreateTopStage(
-                    queryInfo.Top.Value,
+                    topCount,
                     continuationToken,
                     monadicCreateSourceStage);
             }
