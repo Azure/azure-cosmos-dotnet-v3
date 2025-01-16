@@ -137,6 +137,7 @@ jobs:
   condition: and(succeeded(), eq(${{ parameters.IncludePerformance }}, true))
   pool:
     name: 'OneES'
+  timeoutInMinutes: 70 
 
   steps:
   - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
