@@ -163,7 +163,7 @@ namespace Microsoft.Azure.Cosmos
             string defaultValue)
         {
             Console.WriteLine(defaultValue);
-            return "https://cdb-ms-stage-eastus2-fe2.eastus2.cloudapp.azure.com:10650";
+            return "https://cdb-ms-stage-eastus2-fe2-sql.eastus2.cloudapp.azure.com:10650";
         }
     }
 }
