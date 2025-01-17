@@ -2,14 +2,13 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosAvailabilityStrategyTests;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
     [TestClass]
     public class CosmosMultiRegionDiagnosticsTests
@@ -50,7 +49,7 @@
         public async Task ExlcudeRegionDiagnosticsTest()
         {
             this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
-            ItemResponse<AvailabilityStrategyTestObject> itemResponse = await this.container.ReadItemAsync<AvailabilityStrategyTestObject>(
+            ItemResponse<CosmosIntegrationTestObject> itemResponse = await this.container.ReadItemAsync<CosmosIntegrationTestObject>(
                 "testId", new Cosmos.PartitionKey("pk"),
                 new ItemRequestOptions()
                 {
@@ -71,7 +70,7 @@
         {
             this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
 
-            FeedResponse<AvailabilityStrategyTestObject> feedResonse = await this.container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+            FeedResponse<CosmosIntegrationTestObject> feedResonse = await this.container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
@@ -138,7 +137,7 @@
                 };
 
                 //Request should be hedged to North Central US
-                ItemResponse<AvailabilityStrategyTestObject> itemResponse = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                ItemResponse<CosmosIntegrationTestObject> itemResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                     "testId", new PartitionKey("pk"),
                     requestOptions);
 
