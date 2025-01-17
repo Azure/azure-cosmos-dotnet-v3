@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip
             long skipCount)
             : base(source)
         {
-            if (skipCount > int.MaxValue)
+            if (skipCount > int.MaxValue || skipCount < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(skipCount));
             }
