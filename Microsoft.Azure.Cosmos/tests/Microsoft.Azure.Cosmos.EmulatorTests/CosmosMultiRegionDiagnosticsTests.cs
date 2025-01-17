@@ -2,21 +2,17 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Net;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.CosmosAvailabilityStrategyTests;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
     [TestClass]
     public class CosmosMultiRegionDiagnosticsTests
     {
-        private const string dbName = "availabilityStrategyTestDb";
-        private const string containerName = "availabilityStrategyTestContainer";
-
         CosmosClient client;
         Database database;
         Container container;
@@ -30,7 +26,7 @@
             this.client = new CosmosClient(this.connectionString);
 
             DatabaseResponse db = await this.client.CreateDatabaseIfNotExistsAsync(
-                id: CosmosMultiRegionDiagnosticsTests.dbName,
+                id: MultiRegionSetupHelpers.dbName,
                 throughput: 400);
             this.database = db.Database;
 
@@ -49,8 +45,8 @@
         [TestCategory("MultiRegion")]
         public async Task ExlcudeRegionDiagnosticsTest()
         {
-            this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
-            ItemResponse<AvailabilityStrategyTestObject> itemResponse = await this.container.ReadItemAsync<AvailabilityStrategyTestObject>(
+            this.container = this.database.GetContainer(MultiRegionSetupHelpers.containerName);
+            ItemResponse<CosmosIntegrationTestObject> itemResponse = await this.container.ReadItemAsync<CosmosIntegrationTestObject>(
                 "testId", new Cosmos.PartitionKey("pk"),
                 new ItemRequestOptions()
                 {
@@ -69,9 +65,9 @@
         [TestCategory("MultiRegion")]
         public async Task ExcludeRegionWithReadManyDiagnosticsTest()
         {
-            this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
+            this.container = this.database.GetContainer(MultiRegionSetupHelpers.containerName);
 
-            FeedResponse<AvailabilityStrategyTestObject> feedResonse = await this.container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+            FeedResponse<CosmosIntegrationTestObject> feedResonse = await this.container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
@@ -125,8 +121,8 @@
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosMultiRegionDiagnosticsTests.dbName);
-                Container container = database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
 
@@ -138,7 +134,7 @@
                 };
 
                 //Request should be hedged to North Central US
-                ItemResponse<AvailabilityStrategyTestObject> itemResponse = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                ItemResponse<CosmosIntegrationTestObject> itemResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                     "testId", new PartitionKey("pk"),
                     requestOptions);
 
