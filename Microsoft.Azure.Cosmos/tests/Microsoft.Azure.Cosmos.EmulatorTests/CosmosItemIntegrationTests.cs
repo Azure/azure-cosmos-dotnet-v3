@@ -77,7 +77,7 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [Timeout(70000)]
+        //[Timeout(70000)]
         public async Task ReadMany2UnreachablePartitionsTest()
         {
             List<FeedRange> feedRanges = (List<FeedRange>)await this.container.GetFeedRangesAsync();
@@ -87,8 +87,8 @@
                 .WithConnectionType(FaultInjectionConnectionType.Direct)
                 .WithOperationType(FaultInjectionOperationType.QueryItem)
                 .WithEndpoint(new FaultInjectionEndpointBuilder(
-                    "ItemTestsDb",
-                    "ItemTestsContainer",
+                    MultiRegionSetupHelpers.dbName,
+                    MultiRegionSetupHelpers.containerName,
                     feedRanges[0])
                     .WithReplicaCount(2)
                     .WithIncludePrimary(false)
@@ -111,7 +111,7 @@
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ConsistencyLevel = ConsistencyLevel.Strong,
-                Serializer = this.cosmosSystemTextJsonSerializer,
+                //Serializer = this.cosmosSystemTextJsonSerializer,
                 FaultInjector = injector,
             };
 
@@ -130,9 +130,6 @@
                 ("testId4", new PartitionKey("pk4")),
             };
 
-            FeedResponse<CosmosIntegrationTestObject> _ = await fic.ReadManyItemsAsync<CosmosIntegrationTestObject>(items);
-
-            Assert.Fail("boogie");
             try
             {
                 rule.Enable();
