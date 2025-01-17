@@ -319,7 +319,6 @@ namespace Microsoft.Azure.Documents
             )
         {
             this.ThrowIfDisposed();
-            this.ValidateSessionRetryOptions(sessionRetryOptions);
             if (useFallbackClient && this.fallbackTransportClient != null)
             {
                 DefaultTrace.TraceInformation("Using fallback TransportClient");
@@ -388,26 +387,6 @@ namespace Microsoft.Azure.Documents
             }
         }
         #endregion
-        private void ValidateSessionRetryOptions(ISessionRetryOptions sessionRetryOptions)
-        {
-            if (sessionRetryOptions != null)
-            {
-
-                if (sessionRetryOptions.MinInRegionRetryTime < SessionTokenMismatchRetryPolicy.MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS)
-                {
-                    throw new ArgumentException($" Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of " +
-                        $"{SessionTokenMismatchRetryPolicy.MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS} ms");
-                }
-
-                if (sessionRetryOptions.MaxInRegionRetryCount < SessionTokenMismatchRetryPolicy.MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED)
-                {
-                    throw new ArgumentException($" Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of " +
-                        $"{SessionTokenMismatchRetryPolicy.MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED}");
-                }
-
-            }
-        }
-
         private static void ValidatePortPoolReuseThreshold(ref int rntbdPortPoolReuseThreshold)
         {
             const int minRntbdPortPoolReuseThreshold = 32;

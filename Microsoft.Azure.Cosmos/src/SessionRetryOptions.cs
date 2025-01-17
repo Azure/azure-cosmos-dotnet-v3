@@ -1,38 +1,33 @@
 ﻿namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using Microsoft.Azure.Documents;
 
     /// <summary>
-    /// Telemetry Options for Cosmos Client to enable/disable telemetry and distributed tracing along with corresponding threshold values.
+    /// Implementation of ISessionRetryOptions interface, do not want clients to subclass.
     /// </summary>
-    public class SessionRetryOptions : ISessionRetryOptions
+    public sealed class SessionRetryOptions : ISessionRetryOptions
     {
         /// <summary>
-        /// Disable sending telemetry data to Microsoft, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable for this. 
+        /// Sets the minimum retry time for 404/1002 retries within each region for read and write operations. 
+        /// The minimum value is 100ms - this minimum is enforced to provide a way for the local region to catch-up on replication lag. The default value is 500ms - as a recommendation ensure that this value is higher than the steady-state
+        /// replication latency between the regions you chose
         /// </summary>
-        /// <remarks>This feature has to be enabled at 2 places:
-        /// <list type="bullet">
-        /// <item>Opt-in from portal to subscribe for this feature.</item>
-        /// <item>Setting this property to false, to enable it for a particular client instance.</item>
-        /// </list>
-        /// </remarks>
-        /// <value>true</value>
-        public int MinInRegionRetryTime { get; set; }
+        public TimeSpan MinInRegionRetryTime { get; set; } = ConfigurationManager.GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred();
 
         /// <summary>
-        /// Disable sending telemetry data to Microsoft, <see cref="Microsoft.Azure.Cosmos.CosmosThresholdOptions"/> is not applicable for this. 
+        /// Sets the maximum number of retries within each region for read and write operations. The minimum value is 1 - the backoff time for the last in-region retry will ensure that the total retry time within the
+        /// region is at least the min. in-region retry time.
         /// </summary>
-        /// <remarks>This feature has to be enabled at 2 places:
-        /// <list type="bullet">
-        /// <item>Opt-in from portal to subscribe for this feature.</item>
-        /// <item>Setting this property to false, to enable it for a particular client instance.</item>
-        /// </list>
-        /// </remarks>
-        /// <value>true</value>
-        public int MaxInRegionRetryCount { get; set; }
+        public int MaxInRegionRetryCount { get; set; } = ConfigurationManager.GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred();
 
+
+        /// <summary>
+        /// hints which guide SDK-internal retry policies on how early to switch retries to a different region.
+        /// </summary>
+        public Boolean RemoteRegionPreferred { get; set; } = false;
+
+
+            
     }
 }

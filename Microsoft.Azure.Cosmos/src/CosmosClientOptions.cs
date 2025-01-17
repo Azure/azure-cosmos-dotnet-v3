@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
+        private SessionRetryOptions sessionRetryOptions;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -87,6 +88,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+            this.sessionRetryOptions = new SessionRetryOptions();
         }
 
         /// <summary>
@@ -317,8 +319,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
         
-        
-
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
@@ -463,8 +463,6 @@ namespace Microsoft.Azure.Cosmos
                 this.ValidateDirectTCPSettings();
             }
         }
-
-        
 
         /// <summary>
         /// (Direct/TCP) Controls the amount of time allowed for trying to establish a connection.
@@ -734,8 +732,35 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable partition key level failover
         /// </summary>
-        internal SessionRetryOptions SessionRetryOptions { get; set; }
+        internal SessionRetryOptions SessionRetryOptions
+        {
+            get => this.sessionRetryOptions;
+            set
+            {
+                if (value.RemoteRegionPreferred)
+                {
 
+                    if (value.MinInRegionRetryTime == null)
+                    {
+                        throw new ArgumentException($" Argument 'MinInRegionRetryTime' must not be null when RemoteRegionPreferred option is selected.");
+                    }
+                    
+                    if (value.MinInRegionRetryTime.TotalMilliseconds < ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs)
+                    {
+                        throw new ArgumentException($" Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of " +
+                            "{ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs} ms");
+                    }
+
+                    if (value.MaxInRegionRetryCount < ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred)
+                    {
+                        throw new ArgumentException($" Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of " +
+                            "{ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred}");
+                    }
+                }
+
+                this.sessionRetryOptions = value;
+            }
+        }
         /// <summary>
         /// Enable partition key level failover
         /// </summary>

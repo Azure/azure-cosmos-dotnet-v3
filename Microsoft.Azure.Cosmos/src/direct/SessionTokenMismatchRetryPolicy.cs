@@ -152,12 +152,12 @@ namespace Microsoft.Azure.Documents
 
                 // For remote region preference ensure that the last retry is long enough (even when exceeding max backoff time)
                 // to consume the entire minRetryTimeInLocalRegion
-                if( this.sessionRetryOptions != null && 
+                if( this.sessionRetryOptions.RemoteRegionPreferred && 
                     this.retryCount >= (this.sessionRetryOptions.MaxInRegionRetryCount - 1))
                 {
                     
                     long elapsed =  DateTimeOffset.Now.ToUnixTimeMilliseconds() - this.startTime.ToUnixTimeMilliseconds();
-                    TimeSpan remainingMinRetryTimeInLocalRegion = TimeSpan.FromMilliseconds(this.sessionRetryOptions.MinInRegionRetryTime - elapsed);
+                    TimeSpan remainingMinRetryTimeInLocalRegion = TimeSpan.FromMilliseconds(this.sessionRetryOptions.MinInRegionRetryTime.TotalMilliseconds - elapsed);
 
                     if(remainingMinRetryTimeInLocalRegion.CompareTo(backoffTime) > 0)
                     {
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Documents
 
         private Boolean shouldRetryLocally()
         {
-            if(this.sessionRetryOptions == null)
+            if(! this.sessionRetryOptions.RemoteRegionPreferred)
             {
                 return true;
             }
