@@ -135,7 +135,7 @@
             Assert.Fail("boogie");
             try
             {
-                //rule.Enable();
+                rule.Enable();
                 FeedResponse<CosmosIntegrationTestObject> feedResponse = await fic.ReadManyItemsAsync<CosmosIntegrationTestObject>(items);
             }
             catch (Exception ex)

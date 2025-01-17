@@ -13,9 +13,6 @@
     [TestClass]
     public class CosmosMultiRegionDiagnosticsTests
     {
-        private const string dbName = "availabilityStrategyTestDb";
-        private const string containerName = "availabilityStrategyTestContainer";
-
         CosmosClient client;
         Database database;
         Container container;
@@ -29,7 +26,7 @@
             this.client = new CosmosClient(this.connectionString);
 
             DatabaseResponse db = await this.client.CreateDatabaseIfNotExistsAsync(
-                id: CosmosMultiRegionDiagnosticsTests.dbName,
+                id: MultiRegionSetupHelpers.dbName,
                 throughput: 400);
             this.database = db.Database;
 
@@ -48,7 +45,7 @@
         [TestCategory("MultiRegion")]
         public async Task ExlcudeRegionDiagnosticsTest()
         {
-            this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
+            this.container = this.database.GetContainer(MultiRegionSetupHelpers.containerName);
             ItemResponse<CosmosIntegrationTestObject> itemResponse = await this.container.ReadItemAsync<CosmosIntegrationTestObject>(
                 "testId", new Cosmos.PartitionKey("pk"),
                 new ItemRequestOptions()
@@ -68,7 +65,7 @@
         [TestCategory("MultiRegion")]
         public async Task ExcludeRegionWithReadManyDiagnosticsTest()
         {
-            this.container = this.database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
+            this.container = this.database.GetContainer(MultiRegionSetupHelpers.containerName);
 
             FeedResponse<CosmosIntegrationTestObject> feedResonse = await this.container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
@@ -124,8 +121,8 @@
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosMultiRegionDiagnosticsTests.dbName);
-                Container container = database.GetContainer(CosmosMultiRegionDiagnosticsTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
 
