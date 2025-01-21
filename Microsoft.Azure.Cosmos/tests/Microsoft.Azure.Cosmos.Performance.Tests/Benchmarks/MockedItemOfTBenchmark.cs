@@ -26,6 +26,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 };
             }
 
+            MockDocumentClient.LastRequestOptions = requestOptions;
+
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingPartitionId,
