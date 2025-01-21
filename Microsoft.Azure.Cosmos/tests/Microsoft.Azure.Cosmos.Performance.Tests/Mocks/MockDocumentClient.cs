@@ -306,6 +306,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 _ = dsr.Headers[this.dummyHeaderNames[i]];
             }
 
+            if (dsr.Properties != null && dsr.Properties.TryGetValue("ItemRequestOptions", out object maybeOpts))
+            {
+                if (maybeOpts is ItemRequestOptions iro && iro.EnableBinaryResponseOnPointOperations)
+                {
+                    dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = "CosmosBinary";
+                }
+            }
+
             return true;
         }
 
