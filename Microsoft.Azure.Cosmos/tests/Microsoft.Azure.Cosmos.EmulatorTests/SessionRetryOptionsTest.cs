@@ -48,6 +48,7 @@
                 },
             };
             
+            
             Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == ConfigurationManager.GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred());
             Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == ConfigurationManager.GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred());
 
@@ -122,7 +123,7 @@
             int sessionTokenMismatchRetryAttempts , Boolean remoteRegionPreferred)
         {
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
-            // if I go to South Central US for reading an item, I should get a 404/2002 response for 90 minutes
+            // if I go to first region for reading an item, I should get a 404/2002 response for 10 minutes
             FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
                 id: "badSessionTokenRule",
                 condition:
@@ -185,7 +186,6 @@
                 // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
                 // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
                 long hitCount = badSessionTokenRule.GetHitCount();
-                Console.WriteLine($" hit count is {hitCount}");
 
                 if (remoteRegionPreferred)
                 {
@@ -212,8 +212,7 @@
         {
 
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
-            //Console.WriteLine($" preferred regions are {String.Join(" , ", preferredRegions)}");
-            // if I go to South Central US for reading an item, I should get a 404/2002 response for 90 minutes
+            
             FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
                 id: "badSessionTokenRule",
                 condition:
@@ -270,8 +269,6 @@
                 // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
                 // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
                 long hitCount = badSessionTokenRule.GetHitCount();
-                Console.WriteLine($" hit count is {hitCount}");
-
                 if (remoteRegionPreferred)
                 {
                     // higher hit count is possible while in MinRetryWaitTimeWithinRegion

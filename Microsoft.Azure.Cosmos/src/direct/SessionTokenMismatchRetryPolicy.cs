@@ -22,11 +22,6 @@ namespace Microsoft.Azure.Documents
         private const int defaultMaximumBackoffTimeInMilliseconds = 500;
         private const int backoffMultiplier = 5; // before it was very aggressive
         private readonly ISessionRetryOptions sessionRetryOptions;
-
-        private const int DEFAULT_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED = 1; // added by Abhijeet
-        internal const int MIN_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS = 100; // added by fabien -  have a question on this and DEFAULT_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS
-        private const int DEFAULT_MIN_IN_REGION_RETRY_TIME_FOR_WRITES_MS = 500; // added by fabien
-        internal const int MIN_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED = 1; // added by Fabine, same as by Abhijeet above
         private readonly DateTimeOffset startTime = DateTime.UtcNow;
 
 
