@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static IFaultInjectionResult partitionIsMigratingResult;
         private static IFaultInjectionResult serviceUnavailableResult;
         private static IFaultInjectionResult responseDelayResult;
+        private static IFaultInjectionResult tooManyRequestsResult;
 
         private Dictionary<string, FaultInjectionCondition> conditions;
         private Dictionary<string, IFaultInjectionResult> results;
@@ -168,6 +169,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 .GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
                 .WithDelay(TimeSpan.FromMilliseconds(4000))
                 .Build();
+            tooManyRequestsResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                .Build();
 
             this.conditions = new Dictionary<string, FaultInjectionCondition>()
             {
@@ -190,7 +194,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 { "PartitionIsSplitting", partitionIsSplittingResult },
                 { "PartitionIsMigrating", partitionIsMigratingResult },
                 { "ServiceUnavailable", serviceUnavailableResult },
-                { "ResponseDelay", responseDelayResult }
+                { "ResponseDelay", responseDelayResult },
+                { "TooManyRequests", tooManyRequestsResult }
             };
         }
 
@@ -412,6 +417,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "PartitionIsMigrating", false, DisplayName = "Read | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("Read", "Read", "ServiceUnavailable", false, DisplayName = "Read | ServiceUnavailable | With Preferred Regions")]
         [DataRow("Read", "Read", "ResponseDelay", false, DisplayName = "Read | ResponseDelay | With Preferred Regions")]
+        [DataRow("Read", "Read", "TooManyRequests", false, DisplayName = "Read | TooManyRequests | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", false, DisplayName = "SinglePartitionQuery | RetryWith | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", false, DisplayName = "SinglePartitionQuery | InternalServerError | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
@@ -420,6 +426,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "SinglePartitionQuery | ServiceUnavailable | With Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", false, DisplayName = "SinglePartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "TooManyRequests", false, DisplayName = "SinglePartitionQuery | TooManyRequests | With Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "RetryWith", false, DisplayName = "CrossPartitionQuery | RetryWith | With Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "InternalServerError", false, DisplayName = "CrossPartitionQuery | InternalServerError | With Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
@@ -428,6 +435,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "CrossPartitionQuery | ServiceUnavailable | With Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", false, DisplayName = "CrossPartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "TooManyRequests", false, DisplayName = "CrossPartitionQuery | TooManyRequests | With Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "RetryWith", false, DisplayName = "ReadMany | RetryWith | With Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "InternalServerError", false, DisplayName = "ReadMany | InternalServerError | With Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", false, DisplayName = "ReadMany | ReadSessionNotAvailable | With Preferred Regions")]
@@ -436,6 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", false, DisplayName = "ReadMany | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", false, DisplayName = "ReadMany | ServiceUnavailable | With Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "ResponseDelay", false, DisplayName = "ReadMany | ResponseDelay | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "TooManyRequests", false, DisplayName = "ReadMany | TooManyRequests | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", false, DisplayName = "ChangeFeed | RetryWith | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", false, DisplayName = "ChangeFeed | InternalServerError | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", false, DisplayName = "ChangeFeed | ReadSessionNotAvailable | With Preferred Regions")]
@@ -444,6 +453,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", false, DisplayName = "ChangeFeed | PartitionIsMigrating | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", false, DisplayName = "ChangeFeed | ServiceUnavailable | With Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", false, DisplayName = "ChangeFeed | ResponseDelay | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "TooManyRequests", false, DisplayName = "ChangeFeed | TooManyRequests | With Preferred Regions")]
         [DataRow("Read", "Read", "RetryWith", true, DisplayName = "Read | RetryWith | W/O Preferred Regions")]
         [DataRow("Read", "Read", "InternalServerError", true, DisplayName = "Read | InternalServerError | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ReadSessionNotAvailable", true, DisplayName = "Read | ReadSessionNotAvailable | W/O Preferred Regions")]
@@ -452,6 +462,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("Read", "Read", "PartitionIsMigrating", true, DisplayName = "Read | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ServiceUnavailable", true, DisplayName = "Read | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("Read", "Read", "ResponseDelay", true, DisplayName = "Read | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "TooManyRequests", true, DisplayName = "Read | TooManyRequests | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "RetryWith", true, DisplayName = "SinglePartitionQuery | RetryWith | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "InternalServerError", true, DisplayName = "SinglePartitionQuery | InternalServerError | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
@@ -460,6 +471,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "SinglePartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", true, DisplayName = "SinglePartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "TooManyRequests", true, DisplayName = "SinglePartitionQuery | TooManyRequests | W/O Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "RetryWith", true, DisplayName = "CrossPartitionQuery | RetryWith | W/O Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "InternalServerError", true, DisplayName = "CrossPartitionQuery | InternalServerError | W/O Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
@@ -468,6 +480,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "CrossPartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", true, DisplayName = "CrossPartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "TooManyRequests", true, DisplayName = "CrossPartitionQuery | TooManyRequests | W/O Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "RetryWith", true, DisplayName = "ReadMany | RetryWith | W/O Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "InternalServerError", true, DisplayName = "ReadMany | InternalServerError | W/O Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", true, DisplayName = "ReadMany | ReadSessionNotAvailable | W/O Preferred Regions")]
@@ -476,6 +489,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", true, DisplayName = "ReadMany | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", true, DisplayName = "ReadMany | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("ReadMany", "ReadMany", "ResponseDelay", true, DisplayName = "ReadMany | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "TooManyRequests", true, DisplayName = "ReadMany | TooManyRequests | W/O Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", true, DisplayName = "ChangeFeed | RetryWith | W/O Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", true, DisplayName = "ChangeFeed | InternalServerError | W/O Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", true, DisplayName = "ChangeFeed | ReadSessionNotAvailable | W/O Preferred Regions")]
@@ -484,6 +498,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", true, DisplayName = "ChangeFeed | PartitionIsMigrating | W/O Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", true, DisplayName = "ChangeFeed | ServiceUnavailable | W/O Preferred Regions")]
         [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", true, DisplayName = "ChangeFeed | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "TooManyRequests", true, DisplayName = "ChangeFeed | TooManyRequests | W/O Preferred Regions")]
         public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName, bool isPreferredLocationsEmpty)
         {
             FaultInjectionCondition conditon = this.conditions[conditonName];
