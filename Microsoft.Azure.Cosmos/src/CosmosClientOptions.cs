@@ -722,12 +722,7 @@ namespace Microsoft.Azure.Cosmos
         /// If a response from either the primary request or the first hedged request is not received 
         /// after the threshold step time, the SDK will hedge to the third region and so on.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover
