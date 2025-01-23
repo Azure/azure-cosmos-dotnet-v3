@@ -77,7 +77,7 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        //[Timeout(70000)]
+        [Timeout(70000)]
         public async Task ReadMany2UnreachablePartitionsTest()
         {
             List<FeedRange> feedRanges = (List<FeedRange>)await this.container.GetFeedRangesAsync();
