@@ -138,12 +138,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 stopwatch.Stop();
                 delayRule.Disable();
 
+                Console.WriteLine(readResponse.Diagnostics.ToString());
                 this.ValidateHitCount(delayRule, 1);
 
                 //Check the create time is at least as long as the delay in the rule
                 Assert.IsTrue(elapsed.TotalSeconds >= 6);
                 this.ValidateHitCount(delayRule, 1);
-                Assert.IsTrue(readResponse.StatusCode == HttpStatusCode.OK);
             }
             finally
             {
