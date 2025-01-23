@@ -106,6 +106,70 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CRUDStreamTest()
+        {
+            TriggerProperties settings = new TriggerProperties
+            {
+                Id = Guid.NewGuid().ToString(),
+                Body = TriggersTests.GetTriggerFunction(".05"),
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
+            };
+
+
+            ResponseMessage triggerResponseMessage =
+                await this.scripts.CreateTriggerStreamAsync(
+                    TestCommon.SerializerCore.ToStream(settings),
+                    settings.Id);
+            TriggerResponse triggerResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(triggerResponseMessage.Content);
+            double reqeustCharge = triggerResponse.RequestCharge;
+            Assert.IsTrue(reqeustCharge > 0);
+            Assert.AreEqual(HttpStatusCode.Created, triggerResponse.StatusCode);
+            Assert.IsNotNull(triggerResponse.Diagnostics);
+            string diagnostics = triggerResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
+
+            triggerResponseMessage = await this.scripts.ReadTriggerStreamAsync(settings.Id);
+            triggerResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(triggerResponseMessage.Content);
+            reqeustCharge = triggerResponse.RequestCharge;
+            Assert.IsTrue(reqeustCharge > 0);
+            Assert.AreEqual(HttpStatusCode.OK, triggerResponse.StatusCode);
+            Assert.IsNotNull(triggerResponse.Diagnostics);
+            diagnostics = triggerResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+            TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
+
+            TriggerProperties updatedSettings = triggerResponse.Resource;
+            updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
+
+            ResponseMessage replaceResponseMessage = await this.scripts.ReplaceTriggerStreamAsync(
+                TestCommon.SerializerCore.ToStream(updatedSettings),
+                updatedSettings.Id);
+            TriggerResponse replaceResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(replaceResponseMessage.Content);
+            TriggersTests.ValidateTriggerSettings(updatedSettings, replaceResponse);
+            reqeustCharge = replaceResponse.RequestCharge;
+            Assert.IsTrue(reqeustCharge > 0);
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+            Assert.IsNotNull(replaceResponse.Diagnostics);
+            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            replaceResponseMessage = await this.scripts.DeleteTriggerStreamAsync(updatedSettings.Id);
+            replaceResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(replaceResponseMessage.Content);
+            reqeustCharge = replaceResponse.RequestCharge;
+            Assert.IsTrue(reqeustCharge > 0);
+            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
+            Assert.IsNotNull(replaceResponse.Diagnostics);
+            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+        }
+
+        [TestMethod]
         [DataRow(TriggerOperation.Create)]
         [DataRow(TriggerOperation.Upsert)]
         public async Task ValidatePreTriggerTest(TriggerOperation triggerOperation)
