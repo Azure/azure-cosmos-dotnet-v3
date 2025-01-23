@@ -145,7 +145,8 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
                 .Callback((
                     Uri serviceEndpoint,
                     INameValueCollection _,
@@ -207,7 +208,8 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
                 .ThrowsAsync(new Exception("Service is Unavailable at the Moment."));
 
             ConnectionPolicy connectionPolicy = new()
@@ -247,7 +249,8 @@ namespace Microsoft.Azure.Cosmos
                         It.IsAny<ResourceType>(),
                         It.IsAny<HttpTimeoutPolicy>(),
                         It.IsAny<IClientSideRequestStatistics>(),
-                        It.IsAny<CancellationToken>()))
+                        It.IsAny<CancellationToken>(),
+                        It.IsAny<DocumentServiceRequest>()))
                     .ThrowsAsync(new Exception("Service is Unavailable at the Moment."));
             }
         }

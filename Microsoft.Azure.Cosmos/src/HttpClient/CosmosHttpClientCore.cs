@@ -273,7 +273,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null)
         {
             if (uri == null)
             {
@@ -304,7 +305,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                documentServiceRequest);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(

@@ -99,8 +99,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if ((operationType != FaultInjectionOperationType.All) && this.CanErrorLimitToOperation(errorType))
             {
                 effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
-                //Will need to change when introducing metadata operations
-                effectiveCondition.SetResourceType(ResourceType.Document);
+                effectiveCondition.SetResourceType(this.GetEffectiveResourceType(operationType));
             }
 
             List<Uri> regionEndpoints = this.GetRegionEndpoints(rule.GetCondition());
@@ -246,6 +245,28 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.PatchItem => OperationType.Patch,
                 FaultInjectionOperationType.Batch => OperationType.Batch,
                 FaultInjectionOperationType.ReadFeed => OperationType.ReadFeed,
+                _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
+            };
+        }
+
+        private ResourceType GetEffectiveResourceType(FaultInjectionOperationType faultInjectionOperationType)
+        {
+            return faultInjectionOperationType switch
+            {
+                FaultInjectionOperationType.ReadItem => ResourceType.Document,
+                FaultInjectionOperationType.CreateItem => ResourceType.Document,
+                FaultInjectionOperationType.QueryItem => ResourceType.Document,
+                FaultInjectionOperationType.UpsertItem => ResourceType.Document,
+                FaultInjectionOperationType.ReplaceItem => ResourceType.Document,
+                FaultInjectionOperationType.DeleteItem => ResourceType.Document,
+                FaultInjectionOperationType.PatchItem => ResourceType.Document,
+                FaultInjectionOperationType.Batch => ResourceType.Document,
+                FaultInjectionOperationType.ReadFeed => ResourceType.Document,
+                FaultInjectionOperationType.MetadataContainer => ResourceType.Collection,
+                FaultInjectionOperationType.MetadataDatabaseAccount => ResourceType.DatabaseAccount,
+                FaultInjectionOperationType.MetadataPartitionKeyRange => ResourceType.PartitionKeyRange,
+                FaultInjectionOperationType.MetadataRefreshAddresses => ResourceType.Address,
+                FaultInjectionOperationType.MetadataQueryPlan => ResourceType.Document,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
