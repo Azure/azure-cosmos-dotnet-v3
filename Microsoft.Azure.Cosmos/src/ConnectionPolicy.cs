@@ -532,7 +532,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets Client Telemetry Options like feature flags and corresponding options
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
         /// </summary>
         internal SessionRetryOptions SessionRetryOptions
         {

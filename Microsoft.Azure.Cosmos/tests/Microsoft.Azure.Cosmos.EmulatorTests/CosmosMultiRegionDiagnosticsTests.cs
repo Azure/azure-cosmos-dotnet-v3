@@ -14,8 +14,6 @@
     [TestClass]
     public class CosmosMultiRegionDiagnosticsTests
     {
-        //private const string dbName = "availabilityStrategyTestDb";
-        //private const string containerName = "availabilityStrategyTestContainer";
 
         CosmosClient client;
         Database database;

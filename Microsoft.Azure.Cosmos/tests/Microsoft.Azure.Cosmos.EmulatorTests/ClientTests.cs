@@ -19,7 +19,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
-    using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -417,11 +416,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         
-
-
-
-
-
         internal async Task TestEtagOnUpsertOperation(bool useGateway, Protocol protocol = Protocol.Tcp)
         {
             using (DocumentClient client = TestCommon.CreateClient(false, Protocol.Tcp))
@@ -943,8 +937,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
         }
-
-        
 
         public static IReadOnlyList<string> GetActiveConnections()
         {

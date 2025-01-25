@@ -25,9 +25,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private const string centralUS = "Central US";
         private const string northCentralUS = "North Central US";
         private const string eastUs = "East US";
-        //private const string dbName = "availabilityStrategyTestDb";
-        //private const string containerName = "availabilityStrategyTestContainer";
-        //private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
 
         private CosmosClient client;
         private Database database;

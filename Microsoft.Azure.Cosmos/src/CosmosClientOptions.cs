@@ -730,7 +730,7 @@ namespace Microsoft.Azure.Cosmos
         AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
-        /// Enable partition key level failover
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
         /// </summary>
         internal SessionRetryOptions SessionRetryOptions
         {
