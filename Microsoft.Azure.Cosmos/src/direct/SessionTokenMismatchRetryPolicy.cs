@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using HdrHistogram.Utilities;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal sealed class SessionTokenMismatchRetryPolicy : IRetryPolicy
@@ -18,7 +20,10 @@ namespace Microsoft.Azure.Documents
         private const int defaultWaitTimeInMilliSeconds = 5000;
         private const int defaultInitialBackoffTimeInMilliseconds = 5;
         private const int defaultMaximumBackoffTimeInMilliseconds = 500;
-        private const int backoffMultiplier = 2;
+        private const int backoffMultiplier = 5; // before it was very aggressive
+        private readonly ISessionRetryOptions sessionRetryOptions;
+        private readonly DateTimeOffset startTime = DateTime.UtcNow;
+
 
         private static readonly Lazy<int> sessionRetryInitialBackoffConfig;
         private static readonly Lazy<int> sessionRetryMaximumBackoffConfig;
@@ -69,12 +74,14 @@ namespace Microsoft.Azure.Documents
             });
         }
 
-        public SessionTokenMismatchRetryPolicy(int waitTimeInMilliSeconds = defaultWaitTimeInMilliSeconds)
+        public SessionTokenMismatchRetryPolicy(int waitTimeInMilliSeconds = defaultWaitTimeInMilliSeconds,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.durationTimer.Start();
             this.retryCount = 0;
             this.waitTimeInMilliSeconds = waitTimeInMilliSeconds;
             this.currentBackoffInMilliSeconds = null;
+            this.sessionRetryOptions = sessionRetryOptions;
         }
 
         public Task<ShouldRetryResult> ShouldRetryAsync(Exception exception, CancellationToken cancellationToken)
@@ -108,6 +115,13 @@ namespace Microsoft.Azure.Documents
                     return ShouldRetryResult.NoRetry();
                 }
 
+                if (!this.shouldRetryLocally())
+                {
+                    DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy not retrying because it a retry attempt for the current region and " +
+                                                                    "fallback to a different region is preferred ");
+                    return ShouldRetryResult.NoRetry();
+                }
+
                 TimeSpan backoffTime = TimeSpan.Zero;
 
                 // Don't penalize first retry with delay
@@ -130,6 +144,23 @@ namespace Microsoft.Azure.Documents
                 }
 
                 this.retryCount++;
+
+                // For remote region preference ensure that the last retry is long enough (even when exceeding max backoff time)
+                // to consume the entire minRetryTimeInLocalRegion
+                if( this.sessionRetryOptions.RemoteRegionPreferred && 
+                    this.retryCount >= (this.sessionRetryOptions.MaxInRegionRetryCount - 1))
+                {
+                    
+                    long elapsed =  DateTimeOffset.Now.ToUnixTimeMilliseconds() - this.startTime.ToUnixTimeMilliseconds();
+                    TimeSpan remainingMinRetryTimeInLocalRegion = TimeSpan.FromMilliseconds(this.sessionRetryOptions.MinInRegionRetryTime.TotalMilliseconds - elapsed);
+
+                    if(remainingMinRetryTimeInLocalRegion.CompareTo(backoffTime) > 0)
+                    {
+                        backoffTime = remainingMinRetryTimeInLocalRegion;
+                    }
+
+                }
+
                 DefaultTrace.TraceInformation("SessionTokenMismatchRetryPolicy will retry. Retry count = {0}. Backoff time = {1} ms", this.retryCount, backoffTime.TotalMilliseconds);
 
                 return ShouldRetryResult.RetryAfter(backoffTime);
@@ -139,5 +170,24 @@ namespace Microsoft.Azure.Documents
 
             return ShouldRetryResult.NoRetry();
         }
+
+        private Boolean shouldRetryLocally()
+        {
+            if(! this.sessionRetryOptions.RemoteRegionPreferred)
+            {
+                return true;
+            }
+
+            // SessionTokenMismatchRetryPolicy is invoked after 1 attempt on a region
+            // sessionTokenMismatchRetryAttempts increments only after shouldRetry triggers
+            // another attempt on the same region
+            // hence to curb the retry attempts on a region,
+            // compare sessionTokenMismatchRetryAttempts with max retry attempts allowed on the region - 1
+            return this.retryCount <= (this.sessionRetryOptions.MaxInRegionRetryCount - 1);
+            
+        }
+
+       
+
     }
 }

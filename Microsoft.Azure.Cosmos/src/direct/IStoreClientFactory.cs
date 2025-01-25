@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using Microsoft.Azure.Cosmos;
 
     internal interface IStoreClientFactory: IDisposable
     {
@@ -18,6 +19,8 @@ namespace Microsoft.Azure.Documents
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
-            bool enableReplicaValidation = false);
+            bool enableReplicaValidation = false,
+            ISessionRetryOptions sessionRetryOptions = null
+            );
     }
 }

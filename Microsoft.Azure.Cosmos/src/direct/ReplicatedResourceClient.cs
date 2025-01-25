@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
 
@@ -70,7 +71,8 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues,
             bool disableRetryWithRetryPolicy,
             bool enableReplicaValidation,
-            RetryWithConfiguration retryWithConfiguration = null)
+            RetryWithConfiguration retryWithConfiguration = null,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.addressResolver = addressResolver;
             this.addressSelector = new AddressSelector(addressResolver, protocol);
@@ -90,7 +92,8 @@ namespace Microsoft.Azure.Documents
                 transportClient,
                 serviceConfigReader,
                 authorizationTokenProvider,
-                enableReplicaValidation);
+                enableReplicaValidation,
+                sessionRetryOptions);
             this.consistencyWriter = new ConsistencyWriter(
                 this.addressSelector,
                 sessionContainer,
@@ -98,7 +101,8 @@ namespace Microsoft.Azure.Documents
                 serviceConfigReader,
                 authorizationTokenProvider,
                 useMultipleWriteLocations,
-                enableReplicaValidation);
+                enableReplicaValidation,
+                sessionRetryOptions);
             this.enableReadRequestsFallback = enableReadRequestsFallback;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.detectClientConnectivityIssues = detectClientConnectivityIssues;

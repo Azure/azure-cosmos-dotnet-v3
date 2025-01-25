@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
+        private SessionRetryOptions sessionRetryOptions;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -87,6 +88,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+            this.sessionRetryOptions = new SessionRetryOptions();
         }
 
         /// <summary>
@@ -316,7 +318,7 @@ namespace Microsoft.Azure.Cosmos
         /// If this is not set the database account consistency level will be used for all requests.
         /// </summary>
         public ConsistencyLevel? ConsistencyLevel { get; set; }
-
+        
         /// <summary>
         /// Sets the priority level for requests created using cosmos client.
         /// </summary>
@@ -728,6 +730,38 @@ namespace Microsoft.Azure.Cosmos
         AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// </summary>
+        internal SessionRetryOptions SessionRetryOptions
+        {
+            get => this.sessionRetryOptions;
+            set
+            {
+                if (value.RemoteRegionPreferred)
+                {
+
+                    if (value.MinInRegionRetryTime == null)
+                    {
+                        throw new ArgumentException($" Argument 'MinInRegionRetryTime' must not be null when RemoteRegionPreferred option is selected.");
+                    }
+                    
+                    if (value.MinInRegionRetryTime.TotalMilliseconds < ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs)
+                    {
+                        throw new ArgumentException($" Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of " +
+                            "{ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs} ms");
+                    }
+
+                    if (value.MaxInRegionRetryCount < ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred)
+                    {
+                        throw new ArgumentException($" Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of " +
+                            "{ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred}");
+                    }
+                }
+
+                this.sessionRetryOptions = value;
+            }
+        }
+        /// <summary>
         /// Enable partition key level failover
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
@@ -930,6 +964,7 @@ namespace Microsoft.Azure.Cosmos
                 UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                SessionRetryOptions = this.SessionRetryOptions,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
@@ -1106,6 +1141,7 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
             }
         }
+
 
         private void ValidateDirectTCPSettings()
         {

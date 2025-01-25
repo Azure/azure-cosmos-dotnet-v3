@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Rntbd;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues = false,
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
-            RetryWithConfiguration retryWithConfiguration = null)
+            RetryWithConfiguration retryWithConfiguration = null,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.serviceConfigurationReader = serviceConfigurationReader;
@@ -70,7 +72,9 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
                 retryWithConfiguration: retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                sessionRetryOptions: sessionRetryOptions
+                );
         }
 
         internal JsonSerializerSettings SerializerSettings { get; set; }

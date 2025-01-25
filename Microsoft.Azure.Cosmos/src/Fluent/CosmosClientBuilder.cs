@@ -583,6 +583,19 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// </summary>
+        /// <param name="sessionRetryOptions">customer supplied region switch hints </param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithSessionRetryOptions(SessionRetryOptions sessionRetryOptions)
+        {
+            this.clientOptions.SessionRetryOptions = sessionRetryOptions;
+            return this;
+        }
+
+
+
+        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Documents
     using System.Diagnostics;
     using System.Net.Security;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.FaultInjection;
@@ -313,7 +314,9 @@ namespace Microsoft.Azure.Documents
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
-            bool enableReplicaValidation = false)
+            bool enableReplicaValidation = false,
+            ISessionRetryOptions sessionRetryOptions = null
+            )
         {
             this.ThrowIfDisposed();
             if (useFallbackClient && this.fallbackTransportClient != null)
@@ -332,7 +335,8 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                sessionRetryOptions: sessionRetryOptions);
             }
 
             return new StoreClient(
@@ -348,7 +352,8 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                sessionRetryOptions: sessionRetryOptions);
         }
 
         #region IDisposable
@@ -382,7 +387,6 @@ namespace Microsoft.Azure.Documents
             }
         }
         #endregion
-
         private static void ValidatePortPoolReuseThreshold(ref int rntbdPortPoolReuseThreshold)
         {
             const int minRntbdPortPoolReuseThreshold = 32;
