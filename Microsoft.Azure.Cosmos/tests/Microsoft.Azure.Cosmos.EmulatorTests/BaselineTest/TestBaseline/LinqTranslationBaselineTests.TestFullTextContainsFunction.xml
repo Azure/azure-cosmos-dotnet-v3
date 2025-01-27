@@ -1,0 +1,145 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContains with 1 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContains("test"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE FullTextContains(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContains with conditional]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextContains("test1") OrElse doc.StringField.FullTextContains("test2")))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (FullTextContains(root["StringField"], "test1") OR FullTextContains(root["StringField"], "test2"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContains with conditional 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContains("test1")).Where(doc => doc.StringField.FullTextContains("test2"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (FullTextContains(root["StringField"], "test1") AND FullTextContains(root["StringField"], "test2"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with 1 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAll(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE FullTextContainsAll(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with 3 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAll(new [] {"test1", "test2", "test3"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE FullTextContainsAll(root["StringField"], "test1", "test2", "test3")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with conditional]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextContainsAll(new [] {"test"}) OrElse doc.StringField.FullTextContainsAll(new [] {"test1", "test2", "test3"})))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (FullTextContainsAll(root["StringField"], "test") OR FullTextContainsAll(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with conditional 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAll(new [] {"test"})).Where(doc => doc.StringField.FullTextContainsAll(new [] {"test1", "test2", "test3"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (FullTextContainsAll(root["StringField"], "test") AND FullTextContainsAll(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with 1 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAny(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE FullTextContainsAny(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with 3 argument]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAny(new [] {"test1", "test2", "test3"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE FullTextContainsAny(root["StringField"], "test1", "test2", "test3")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with conditional]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextContainsAny(new [] {"test"}) OrElse doc.StringField.FullTextContainsAny(new [] {"test1", "test2", "test3"})))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (FullTextContainsAny(root["StringField"], "test") OR FullTextContainsAny(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with conditional 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAny(new [] {"test"})).Where(doc => doc.StringField.FullTextContainsAny(new [] {"test1", "test2", "test3"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (FullTextContainsAny(root["StringField"], "test") AND FullTextContainsAny(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

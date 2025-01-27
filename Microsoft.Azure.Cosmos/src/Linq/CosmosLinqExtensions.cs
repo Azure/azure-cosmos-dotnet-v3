@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool RegexMatch(this object obj, string regularExpression)
         {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
         }
 
         /// <summary>
@@ -234,7 +234,70 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool RegexMatch(this object obj, string regularExpression, string searchModifier)
         {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a boolean indicating whether the keyword string expression is contained in a specified property path.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextcontains.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="search">The string to find.</param>
+        /// <returns>Returns true if a given string is contained in the specified property of a document.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Name.FullTextContains(<keyword>));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool FullTextContains(this object obj, string search)
+        {
+            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a boolean indicating whether all of the provided string expressions are contained in a specified property path.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextcontainsall.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="searches">The strings to find.</param>
+        /// <returns>Returns true if all of the given strings are contained in the specified property of a document.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Name.FullTextContainsAll(<keyword1>, <keyword2>, <keyword3>, ...));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool FullTextContainsAll(this object obj, params string[] searches)
+        {
+            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a boolean indicating whether any of the provided string expressions are contained in a specified property path.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextcontainsany.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="searches">The strings to find.</param>
+        /// <returns>Returns true if any of the given strings are contained in the specified property of a document.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Name.FullTextContainsAny(<keyword1>, <keyword2>, <keyword3>, ...));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool FullTextContainsAny(this object obj, params string[] searches)
+        {
+            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
         }
 
         /// <summary>

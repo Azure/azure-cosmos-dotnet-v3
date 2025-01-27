@@ -347,6 +347,37 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestFullTextContainsFunction()
+        {
+            // Similar to the type checking function, FullTextContains/FullTextContainsAll/FullTextContainsAny are not supported client side.
+            // Therefore this method is verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // FullTextContains
+                new LinqTestInput("FullTextContains with 1 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContains("test"))),
+                new LinqTestInput("FullTextContains with conditional", b => getQuery(b).Where(doc => doc.StringField.FullTextContains("test1") || doc.StringField.FullTextContains("test2"))),
+                new LinqTestInput("FullTextContains with conditional 2", b => getQuery(b).Where(doc => doc.StringField.FullTextContains("test1")).Where(doc => doc.StringField.FullTextContains("test2"))),
+
+                // FullTextContainsAll
+                new LinqTestInput("FullTextContainsAll with 1 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test"))),
+                new LinqTestInput("FullTextContainsAll with 3 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAll with conditional", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test") || doc.StringField.FullTextContainsAll("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAll with conditional 2", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test")).Where(doc => doc.StringField.FullTextContainsAll("test1", "test2", "test3"))),
+
+                // FullTextContainsAny
+                new LinqTestInput("FullTextContainsAny with 1 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test"))),
+                new LinqTestInput("FullTextContainsAny with 3 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAny with conditional", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test") || doc.StringField.FullTextContainsAny("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAny with conditional 2", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test")).Where(doc => doc.StringField.FullTextContainsAny("test1", "test2", "test3")))
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestMemberInitializer()
         {
             const int Records = 100;
