@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
+    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -350,29 +351,61 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// </summary>
         private static DocumentServiceResponse ConvertToBinaryIfNeeded(DocumentServiceResponse response)
         {
+            // Read the original payload
             byte[] originalPayload = ReadAllBytes(response.ResponseBody);
+
+            // Convert text payload to binary
             byte[] binaryPayload = GetOrAddBinaryPayload(originalPayload);
 
+            // Dispose of the original response body stream
             response.ResponseBody.Dispose();
-            response.ResponseBody = new MemoryStream(binaryPayload, writable: false);
 
+            // Wrap the binary payload in a MemoryStream
+            MemoryStream memStream = new MemoryStream(binaryPayload, writable: false);
+
+            // Convert the MemoryStream to a CloneableStream
+            CloneableStream cloneable = StreamExtension
+                .AsClonableStreamAsync(memStream)
+                .GetAwaiter()
+                .GetResult();
+
+            // Assign it as the new response body
+            response.ResponseBody = cloneable;
+
+            // Mark headers as binary
             response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+
             return response;
         }
 
-        /// <summary>
-        /// Converts the StoreResponse payload to binary if needed.
-        /// Uses a cache to avoid repeated re-serialization.
-        /// </summary>
         private static StoreResponse ConvertToBinaryIfNeeded(StoreResponse response)
         {
+            // Read the original payload
             byte[] originalPayload = ReadAllBytes(response.ResponseBody);
+
+            // Convert text payload to binary
             byte[] binaryPayload = GetOrAddBinaryPayload(originalPayload);
 
+            // Dispose of the original response body stream
             response.ResponseBody.Dispose();
-            response.ResponseBody = new MemoryStream(binaryPayload, writable: false);
 
+            // Wrap the binary payload in a MemoryStream
+            MemoryStream memStream = new MemoryStream(binaryPayload, writable: false);
+
+            // Convert the MemoryStream to a CloneableStream
+            CloneableStream cloneable = StreamExtension
+                .AsClonableStreamAsync(memStream)
+                .GetAwaiter()
+                .GetResult();
+
+            // Assign it as the new response body
+            response.ResponseBody = cloneable;
+
+            // Mark headers as binary
             response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+            response.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat]
+                = ((int)JsonSerializationFormat.Binary).ToString();
+
             return response;
         }
 
@@ -392,18 +425,22 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         /// </summary>
         private static byte[] ReSerializeToBinary(byte[] textPayload)
         {
-            using (MemoryStream ms = new MemoryStream(textPayload))
-            using (StreamReader sr = new StreamReader(ms))
-            using (Newtonsoft.Json.JsonReader jr = new Newtonsoft.Json.JsonTextReader(sr))
+            // Deserialize the JSON payload into a ToDoActivity
+            using (MemoryStream textStream = new MemoryStream(textPayload))
             {
-                Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                // Assuming the payload matches the ToDoActivity schema
-                ToDoActivity deserialized = serializer.Deserialize<ToDoActivity>(jr);
+                CosmosJsonDotNetSerializer textSerializer = new CosmosJsonDotNetSerializer();
+                ToDoActivity deserialized = textSerializer.FromStream<ToDoActivity>(textStream)
+                    ?? throw new InvalidOperationException("Deserialization returned null. The payload might not match the schema.");
 
-                using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
+                // Serialize the object into binary format
+                CosmosJsonDotNetSerializer binarySerializer = new CosmosJsonDotNetSerializer(binaryEncodingEnabled: true);
+                using (MemoryStream binaryStream = new MemoryStream())
                 {
-                    serializer.Serialize(writer, deserialized);
-                    return writer.GetResult().ToArray();
+                    using (Stream serializedStream = binarySerializer.ToStream(deserialized))
+                    {
+                        serializedStream.CopyTo(binaryStream);
+                    }
+                    return binaryStream.ToArray();
                 }
             }
         }
