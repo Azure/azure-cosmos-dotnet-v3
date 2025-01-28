@@ -55,6 +55,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 };
             }
 
+            MockDocumentClient.LastRequestOptions = requestOptions;
+
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingPartitionId,
@@ -81,6 +83,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     EnableBinaryResponseOnPointOperations = true
                 };
             }
+
+            MockDocumentClient.LastRequestOptions = requestOptions;
 
             try
             {
@@ -111,6 +115,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 };
             }
 
+            MockDocumentClient.LastRequestOptions = requestOptions;
+
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
                 MockedItemBenchmarkHelper.ExistingPartitionId,
@@ -137,6 +143,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     EnableBinaryResponseOnPointOperations = true
                 };
             }
+
+            MockDocumentClient.LastRequestOptions = requestOptions;
 
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
@@ -166,6 +174,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 };
             }
 
+            MockDocumentClient.LastRequestOptions = requestOptions;
+
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
                 MockedItemBenchmarkHelper.ExistingPartitionId,
@@ -192,6 +202,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                     EnableBinaryResponseOnPointOperations = true
                 };
             }
+
+            MockDocumentClient.LastRequestOptions = requestOptions;
 
             try
             {
@@ -272,7 +284,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         private void VerifyBinaryHeaderIfExpected(ItemResponse<ToDoActivity> response)
         {
-            // If this benchmark helper was set up for binary encoding, the response is binary.
             if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
                 string headerValue = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
