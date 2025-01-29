@@ -144,9 +144,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 statusCode);
 
             // Check the "SupportedSerializationFormats" header for binary encoding
-            // and if the request is a supported point operation.
-            if (request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat
-                && IsPointOperationSupportedForBinaryEncoding(request))
+            if (request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
             {
                 response = ConvertToBinaryIfNeeded(response);
             }
@@ -325,8 +323,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             // Check the header for binary encoding
             if (response != null
-                && request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat
-                && IsPointOperationSupportedForBinaryEncoding(request))
+                && request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
             {
                 response = ConvertToBinaryIfNeeded(response);
             }
@@ -403,8 +400,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
             // Mark headers as binary
             response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
-            response.Headers[HttpConstants.HttpHeaders.ContentSerializationFormat]
-                = ((int)JsonSerializationFormat.Binary).ToString();
 
             return response;
         }
@@ -457,16 +452,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 stream.CopyTo(copy);
                 return copy.ToArray();
             }
-        }
-
-        private static bool IsPointOperationSupportedForBinaryEncoding(DocumentServiceRequest request)
-        {
-            return request.ResourceType == ResourceType.Document
-                && (request.OperationType == OperationType.Create
-                    || request.OperationType == OperationType.Replace
-                    || request.OperationType == OperationType.Delete
-                    || request.OperationType == OperationType.Read
-                    || request.OperationType == OperationType.Upsert);
         }
     }
 }

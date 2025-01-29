@@ -17,21 +17,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task CreateItem()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -46,21 +34,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpsertItem()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -75,23 +51,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadItemNotExists()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             try
             {
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                     MockedItemBenchmarkHelper.NonExistingItemId,
-                    MockedItemBenchmarkHelper.ExistingPartitionId,
-                    requestOptions);
+                    MockedItemBenchmarkHelper.ExistingPartitionId);
 
                 // Check if we got binary (even though item doesn't exist)
                 this.VerifyBinaryHeaderIfExpected(response);
@@ -106,21 +70,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadItemExists()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -135,22 +87,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpdateItem()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -165,21 +105,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task DeleteItemExists()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300)
             {
@@ -194,23 +122,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task DeleteItemNotExists()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
-
-            MockDocumentClient.LastRequestOptions = requestOptions;
-
             try
             {
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                     MockedItemBenchmarkHelper.NonExistingItemId,
-                    MockedItemBenchmarkHelper.ExistingPartitionId,
-                    requestOptions);
+                    MockedItemBenchmarkHelper.ExistingPartitionId);
 
                 // Check if we got binary (even though item doesn't exist)
                 this.VerifyBinaryHeaderIfExpected(response);

@@ -11,20 +11,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     public class MockedItemStreamBenchmark : IItemBenchmark
     {
-        private readonly MockedItemBenchmarkHelper benchmarkHelper;
-
-        public MockedItemStreamBenchmark()
-        {
-            this.benchmarkHelper = new MockedItemBenchmarkHelper();
-        }
+        public MockedItemBenchmarkHelper BenchmarkHelper { get; set; }
 
         public async Task CreateItem()
         {
-            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.CreateItemStreamAsync(
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.CreateItemStreamAsync(
                 ms,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
@@ -32,13 +30,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
-
         public async Task UpsertItem()
         {
-            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.UpsertItemStreamAsync(
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.UpsertItemStreamAsync(
                 ms,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
@@ -46,17 +45,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
         public async Task ReadItemNotExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReadItemStreamAsync(
                 MockedItemBenchmarkHelper.NonExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
+                    this.VerifyBinaryHeaderIfExpected(response);
+
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
@@ -64,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadItemExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReadItemStreamAsync(
                 MockedItemBenchmarkHelper.ExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
@@ -72,12 +75,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
         public async Task ReadItemExistsWithDiagnosticToString()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReadItemStreamAsync(
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReadItemStreamAsync(
                 MockedItemBenchmarkHelper.ExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
@@ -96,8 +101,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpdateItem()
         {
-            using (MemoryStream ms = this.benchmarkHelper.GetItemPayloadAsStream())
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.ReplaceItemStreamAsync(
+            using (MemoryStream ms = this.BenchmarkHelper.GetItemPayloadAsStream())
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.ReplaceItemStreamAsync(
                 ms,
                 MockedItemBenchmarkHelper.ExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
@@ -106,12 +111,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
         public async Task DeleteItemExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.DeleteItemStreamAsync(
                 MockedItemBenchmarkHelper.ExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
@@ -119,17 +126,21 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
         public async Task DeleteItemNotExists()
         {
-            using (ResponseMessage response = await this.benchmarkHelper.TestContainer.DeleteItemStreamAsync(
+            using (ResponseMessage response = await this.BenchmarkHelper.TestContainer.DeleteItemStreamAsync(
                 MockedItemBenchmarkHelper.NonExistingItemId,
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId)))
             {
                 if (response.StatusCode != System.Net.HttpStatusCode.NotFound)
                 {
+                    this.VerifyBinaryHeaderIfExpected(response);
+
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
@@ -137,55 +148,74 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadFeed()
         {
-            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator();
+            using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator();
             while (streamIterator.HasMoreResults)
             {
-                ResponseMessage response = await streamIterator.ReadNextAsync();
+                using ResponseMessage response = await streamIterator.ReadNextAsync();
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
         public async Task QuerySinglePartitionOnePage()
         {
-            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
+            using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator(
                 "select * from T",
                 requestOptions: new QueryRequestOptions()
                 {
-                    PartitionKey = new PartitionKey("dummyValue"),
+                    PartitionKey = new Cosmos.PartitionKey("dummyValue"),
                 });
             while (streamIterator.HasMoreResults)
             {
-                ResponseMessage response = await streamIterator.ReadNextAsync();
+                using ResponseMessage response = await streamIterator.ReadNextAsync();
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
         public async Task QuerySinglePartitionMultiplePages()
         {
-            using FeedIterator streamIterator = this.benchmarkHelper.TestContainer.GetItemQueryStreamIterator(
+            using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator(
               "select * from T",
               requestOptions: new QueryRequestOptions()
               {
                   MaxItemCount = 1,
-                  PartitionKey = new PartitionKey("dummyValue"),
+                  PartitionKey = new Cosmos.PartitionKey("dummyValue"),
               });
 
             while (streamIterator.HasMoreResults)
             {
-                ResponseMessage response = await streamIterator.ReadNextAsync();
+                using ResponseMessage response = await streamIterator.ReadNextAsync();
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
+
+                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
+        private void VerifyBinaryHeaderIfExpected(ResponseMessage response)
+        {
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                string headerValue = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
+                if (headerValue != "CosmosBinary")
+                {
+                    // If we expected binary but got something else, fail.
+                    throw new InvalidOperationException(
+                        $"Expected response with 'CosmosBinary' format, but got '{headerValue ?? "<null>"}'.");
+                }
+            }
+        }
     }
 }

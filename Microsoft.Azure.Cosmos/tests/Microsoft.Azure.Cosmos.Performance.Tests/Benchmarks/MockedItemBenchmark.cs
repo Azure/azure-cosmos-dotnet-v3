@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             // Set the environment variable based on the parameter
             Environment.SetEnvironmentVariable(
-                "COSMOS_ENABLE_BINARY_ENCODING",
+                "AZURE_COSMOS_BINARY_ENCODING_ENABLED",
                 this.EnableBinaryResponseOnPointOperations.ToString());
 
             // Determine the serialization format
@@ -57,7 +57,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             IterParameters = new IItemBenchmark[]
             {
                 // Stream scenario
-                new MockedItemStreamBenchmark(),
+                new MockedItemStreamBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat)
+                },
 
                 // OfT scenario
                 new MockedItemOfTBenchmark

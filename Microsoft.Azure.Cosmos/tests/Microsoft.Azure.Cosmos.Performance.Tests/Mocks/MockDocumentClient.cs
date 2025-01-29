@@ -31,7 +31,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
-        public static ItemRequestOptions LastRequestOptions { get; set; } = null;
 
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
@@ -303,13 +302,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private bool IsValidDsr(DocumentServiceRequest dsr)
         {
+            bool isBinaryEncodingEnabled = Environment.GetEnvironmentVariable("AZURE_COSMOS_BINARY_ENCODING_ENABLED")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
             for (int i = 0; i < this.dummyHeaderNames.Length; i++)
             {
                 _ = dsr.Headers[this.dummyHeaderNames[i]];
             }
 
-            if (LastRequestOptions?.EnableBinaryResponseOnPointOperations == true
-                && IsPointOperationSupportedForBinaryEncoding(dsr))
+            if (isBinaryEncodingEnabled && IsPointOperationSupportedForBinaryEncoding(dsr))
             {
                 dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = "CosmosBinary";
             }
