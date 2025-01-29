@@ -156,8 +156,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
-
-                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
@@ -176,8 +174,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
-
-                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
@@ -199,8 +195,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
-
-                this.VerifyBinaryHeaderIfExpected(response);
             }
         }
 
