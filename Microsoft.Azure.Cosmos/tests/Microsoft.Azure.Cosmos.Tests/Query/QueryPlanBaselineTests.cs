@@ -1169,6 +1169,31 @@
                 Hash(
                 @"TOP value beyond upper range (Interop)",
                 @"SELECT TOP 4294967296 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond lower range - hybrid search",
+                @"SELECT TOP -1 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value at lower range - hybrid search",
+                @"SELECT TOP 0 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value at upper range (client) - hybrid search",
+                @"SELECT TOP 2147483647 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (client) - hybrid search",
+                @"SELECT TOP 2147483648 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (Interop) - hybrid search",
+                @"SELECT TOP 4294967296 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
                 @"/key")
             };
 
@@ -1259,6 +1284,31 @@
                     @"/key"),
 
                 Hash(
+                    @"OFFSET value beyond lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET -1 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 0 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 2147483647 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 2147483648 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (Interop) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 4294967296 LIMIT 10",
+                    @"/key"),
+
+                Hash(
                     @"LIMIT value beyond lower range",
                     @"SELECT c.name FROM c OFFSET 10 LIMIT -1",
                     @"/key"),
@@ -1281,6 +1331,31 @@
                 Hash(
                     @"LIMIT value beyond upper range (Interop)",
                     @"SELECT c.name FROM c OFFSET 10 LIMIT 4294967296",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT -1",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 0",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 2147483647",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 2147483648",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (Interop) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 4294967296",
                     @"/key"),
             };
 
@@ -1793,9 +1868,9 @@
             xmlWriter.WriteEndElement();
         }
 
-        private static void WriteQueryInfoAsXML(QueryInfo queryInfo, XmlWriter writer)
+        private static void WriteQueryInfoAsXML(QueryInfo queryInfo, XmlWriter writer, string elementName, bool includeRewrittenQuery)
         {
-            writer.WriteStartElement(nameof(QueryInfo));
+            writer.WriteStartElement(elementName);
             writer.WriteElementString(nameof(queryInfo.DistinctType), queryInfo.DistinctType.ToString());
             writer.WriteElementString(nameof(queryInfo.Top), queryInfo.Top.ToString());
             writer.WriteElementString(nameof(queryInfo.Offset), queryInfo.Offset.ToString());
@@ -1840,6 +1915,12 @@
             }
             writer.WriteEndElement();
             writer.WriteElementString(nameof(queryInfo.HasSelectValue), queryInfo.HasSelectValue.ToString());
+
+            if (includeRewrittenQuery && queryInfo.RewrittenQuery != null)
+            {
+                WriteRewrittenQueryAsXML(queryInfo.RewrittenQuery, writer);
+            }
+
             writer.WriteEndElement();
         }
 
@@ -1875,7 +1956,7 @@
         {
             if (info.QueryInfo != null)
             {
-                WriteQueryInfoAsXML(info.QueryInfo, writer);
+                WriteQueryInfoAsXML(info.QueryInfo, writer, elementName: nameof(QueryInfo), includeRewrittenQuery: false);
             }
 
             if (info.QueryRanges != null)
@@ -1883,10 +1964,60 @@
                 WriteQueryRangesAsXML(info.QueryRanges, writer);
             }
 
-            if (info.QueryInfo.RewrittenQuery != null)
+            if (info.QueryInfo?.RewrittenQuery != null)
             {
                 WriteRewrittenQueryAsXML(info.QueryInfo.RewrittenQuery, writer);
             }
+
+            if(info.HybridSearchQueryInfo != null)
+            {
+                WriteHybridQueryInfoAsXML(info.HybridSearchQueryInfo, writer);
+            }
+        }
+
+        private static void WriteHybridQueryInfoAsXML(HybridSearchQueryInfo hybridsearchQueryInfo, XmlWriter writer)
+        {
+            writer.WriteStartElement(nameof(HybridSearchQueryInfo));
+
+            if (hybridsearchQueryInfo.GlobalStatisticsQuery != null)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.GlobalStatisticsQuery), hybridsearchQueryInfo.GlobalStatisticsQuery);
+            }
+
+            if (hybridsearchQueryInfo.ComponentQueryInfos != null)
+            {
+                foreach (QueryInfo componentQueryInfo in hybridsearchQueryInfo.ComponentQueryInfos)
+                {
+                    WriteQueryInfoAsXML(componentQueryInfo, writer, elementName: "componentQueryInfo", includeRewrittenQuery: true);
+                }
+            }
+
+            if (hybridsearchQueryInfo.ComponentWithoutPayloadQueryInfos != null)
+            {
+                foreach (QueryInfo componentWithoutPayloadQueryInfo in hybridsearchQueryInfo.ComponentWithoutPayloadQueryInfos)
+                {
+                    WriteQueryInfoAsXML(componentWithoutPayloadQueryInfo, writer, elementName: "componentWithoutPayloadQueryInfos", includeRewrittenQuery: true);
+                }
+            }
+
+            if (hybridsearchQueryInfo.ProjectionQueryInfo != null)
+            {
+                WriteQueryInfoAsXML(hybridsearchQueryInfo.ProjectionQueryInfo, writer, elementName: "projectionQueryInfo", includeRewrittenQuery: true);
+            }
+
+            if (hybridsearchQueryInfo.Skip.HasValue)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.Skip), hybridsearchQueryInfo.Skip.ToString());
+            }
+
+            if (hybridsearchQueryInfo.Take.HasValue)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.Take), hybridsearchQueryInfo.Take.ToString());
+            }
+
+            writer.WriteElementString(nameof(hybridsearchQueryInfo.RequiresGlobalStatistics), hybridsearchQueryInfo.RequiresGlobalStatistics.ToString());
+
+            writer.WriteEndElement();
         }
     }
 }
