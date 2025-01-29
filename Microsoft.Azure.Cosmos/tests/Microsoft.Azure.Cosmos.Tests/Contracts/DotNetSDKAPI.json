@@ -163,6 +163,17 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.AvailabilityStrategy;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.BoundingBoxProperties;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -2758,6 +2769,18 @@
           "Attributes": [],
           "MethodInfo": "Int32 get_GatewayModeMaxConnectionLimit();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy get_AvailabilityStrategy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.ConnectionMode ConnectionMode": {
           "Type": "Property",
           "Attributes": [],
@@ -3090,6 +3113,13 @@
           ],
           "MethodInfo": "Void set_ApplicationRegion(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_AvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Void set_ConnectionMode(Microsoft.Azure.Cosmos.ConnectionMode)": {
           "Type": "Method",
           "Attributes": [],
@@ -3286,6 +3316,30 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.NetworkMetricsOptions get_NetworkMetricsOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.NetworkMetricsOptions get_NetworkMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.NetworkMetricsOptions NetworkMetricsOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.NetworkMetricsOptions NetworkMetricsOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.NetworkMetricsOptions get_NetworkMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_NetworkMetricsOptions(Microsoft.Azure.Cosmos.NetworkMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.OperationMetricsOptions get_OperationMetricsOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.OperationMetricsOptions get_OperationMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.OperationMetricsOptions OperationMetricsOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.OperationMetricsOptions OperationMetricsOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.OperationMetricsOptions get_OperationMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_OperationMetricsOptions(Microsoft.Azure.Cosmos.OperationMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.QueryTextMode get_QueryTextMode()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -3330,6 +3384,20 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IsClientMetricsEnabled(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_NetworkMetricsOptions(Microsoft.Azure.Cosmos.NetworkMetricsOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_NetworkMetricsOptions(Microsoft.Azure.Cosmos.NetworkMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_OperationMetricsOptions(Microsoft.Azure.Cosmos.OperationMetricsOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_OperationMetricsOptions(Microsoft.Azure.Cosmos.OperationMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -6874,6 +6942,55 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.NetworkMetricsOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.IDictionary`2[System.String,System.String] CustomDimensions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IDictionary`2[System.String,System.String] CustomDimensions;CanRead:True;CanWrite:True;System.Collections.Generic.IDictionary`2[System.String,System.String] get_CustomDimensions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IDictionary`2[System.String,System.String] get_CustomDimensions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IDictionary`2[System.String,System.String] get_CustomDimensions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] get_IncludeRoutingId()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_IncludeRoutingId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] IncludeRoutingId": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Boolean] IncludeRoutingId;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_IncludeRoutingId();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IncludeRoutingId(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_IncludeRoutingId(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_IncludeRoutingId(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.OperationKind;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
       "Subclasses": {},
       "Members": {
@@ -6908,6 +7025,55 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.OperationKind Replace;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.OperationMetricsOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.Generic.IDictionary`2[System.String,System.String] CustomDimensions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.Generic.IDictionary`2[System.String,System.String] CustomDimensions;CanRead:True;CanWrite:True;System.Collections.Generic.IDictionary`2[System.String,System.String] get_CustomDimensions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.Generic.IDictionary`2[System.String,System.String] get_CustomDimensions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.Generic.IDictionary`2[System.String,System.String] get_CustomDimensions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] get_IncludeRegion()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_IncludeRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] IncludeRegion": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Boolean] IncludeRegion;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_IncludeRegion();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_IncludeRegion(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.String])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_CustomDimensions(System.Collections.Generic.IDictionary`2[System.String,System.String]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_IncludeRegion(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_IncludeRegion(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -7977,6 +8143,11 @@
           "Attributes": [],
           "MethodInfo": "System.String AustriaEast;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String BelgiumCentral": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String BelgiumCentral;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String BleuFranceCentral": {
           "Type": "Field",
           "Attributes": [],
@@ -8067,6 +8238,11 @@
           "Attributes": [],
           "MethodInfo": "System.String DelosCloudGermanyNorth;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String DenmarkEast": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String DenmarkEast;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String EastAsia": {
           "Type": "Field",
           "Attributes": [],
@@ -8121,6 +8297,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String IsraelCentral;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String IsraelNorthwest": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String IsraelNorthwest;IsInitOnly:False;IsStatic:True;"
         },
         "System.String ItalyNorth": {
           "Type": "Field",
@@ -8236,6 +8417,16 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String SoutheastUS;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastUS3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS3;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String SoutheastUS5": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String SoutheastUS5;IsInitOnly:False;IsStatic:True;"
         },
         "System.String SouthIndia": {
           "Type": "Field",
@@ -9322,6 +9513,30 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.CosmosThresholdOptions get_CosmosThresholdOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.NetworkMetricsOptions get_NetworkMetricsOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.NetworkMetricsOptions get_NetworkMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.NetworkMetricsOptions NetworkMetricsOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.NetworkMetricsOptions NetworkMetricsOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.NetworkMetricsOptions get_NetworkMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_NetworkMetricsOptions(Microsoft.Azure.Cosmos.NetworkMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.OperationMetricsOptions get_OperationMetricsOptions()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.OperationMetricsOptions get_OperationMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.OperationMetricsOptions OperationMetricsOptions": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.OperationMetricsOptions OperationMetricsOptions;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.OperationMetricsOptions get_OperationMetricsOptions();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_OperationMetricsOptions(Microsoft.Azure.Cosmos.OperationMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.RequestOptions ShallowCopy()": {
           "Type": "Method",
           "Attributes": [],
@@ -9438,6 +9653,20 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_IfNoneMatchEtag(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_NetworkMetricsOptions(Microsoft.Azure.Cosmos.NetworkMetricsOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_NetworkMetricsOptions(Microsoft.Azure.Cosmos.NetworkMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_OperationMetricsOptions(Microsoft.Azure.Cosmos.OperationMetricsOptions)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_OperationMetricsOptions(Microsoft.Azure.Cosmos.OperationMetricsOptions);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_PriorityLevel(System.Nullable`1[Microsoft.Azure.Cosmos.PriorityLevel])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Populator Used for Dimension Attributes
         /// </summary>
-        internal static IActivityAttributePopulator DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+        internal static IActivityAttributePopulator DimensionPopulator;
 
         private static Histogram<double> RequestLatencyHistogram = null;
 
@@ -43,13 +43,15 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Initializes the histograms and counters for capturing Cosmos DB metrics.
         /// </summary>
-        internal static void Initialize()
+        internal static void Initialize(CosmosClientTelemetryOptions metricsOptions = null)
         {
             // If already initialized, do not initialize again
             if (IsEnabled)
             {
                 return;
             }
+
+            DimensionPopulator = TracesStabilityFactory.GetAttributePopulator(metricsOptions);
 
             CosmosDbNetworkMeter.RequestLatencyHistogram ??= NetworkMeter.CreateHistogram<double>(name: CosmosDbClientMetrics.NetworkMetrics.Name.Latency,
                 unit: CosmosDbClientMetrics.NetworkMetrics.Unit.Sec,
@@ -86,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Uri accountName,
             string containerName,
             string databaseName,
+            NetworkMetricsOptions networkMetricsOptions,
             OpenTelemetryAttributes attributes = null,
             Exception ex = null)
         {
@@ -111,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                                     databaseName,
                                                                                     attributes,
                                                                                     ex,
+                                                                                    networkMetricsOptions,
                                                                                     tcpStats: stat);
 
                 CosmosDbMeterUtil.TryNetworkMetricsValues(stat, out NetworkMetricData metricData);
@@ -134,6 +138,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                                                                              databaseName,
                                                                              attributes,
                                                                              ex,
+                                                                             networkMetricsOptions,
                                                                              httpStats: stat);
                 }
 
@@ -143,6 +148,26 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.RequestBodySize, dimensionsFunc, RequestBodySizeHistogram);
                 CosmosDbMeterUtil.RecordHistogramMetric<long>(metricData.ResponseBodySize, dimensionsFunc, ResponseBodySizeHistogram);
             });
+        }
+
+        /// <summary>
+        /// Resets the histograms and counters for capturing Cosmos DB metrics in Tests.
+        /// </summary>
+        public static void Reset()
+        {
+            if (IsEnabled)
+            {
+                IsEnabled = false;
+
+                RequestLatencyHistogram = null;
+                RequestBodySizeHistogram = null;
+                ResponseBodySizeHistogram = null;
+                ChannelAquisitionLatencyHistogram = null;
+                BackendLatencyHistogram = null;
+                TransitLatencyHistogram = null;
+                ReceivedLatencyHistogram = null;
+            }
+           
         }
     }
 }

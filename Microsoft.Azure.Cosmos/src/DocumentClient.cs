@@ -113,6 +113,9 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
+        private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
+
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
@@ -954,8 +957,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.cosmosClientTelemetryOptions.IsClientMetricsEnabled)
             {
-                CosmosDbOperationMeter.Initialize();
-                CosmosDbNetworkMeter.Initialize();
+                CosmosDbOperationMeter.Initialize(this.cosmosClientTelemetryOptions);
+                CosmosDbNetworkMeter.Initialize(this.cosmosClientTelemetryOptions);
                 
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
@@ -2165,7 +2168,7 @@ namespace Microsoft.Azure.Cosmos
             string databaseLink = PathsHelper.GetDatabasePath(sourceDocumentCollectionLink);
             if (PathsHelper.TryParsePathSegments(databaseLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
-                string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] segments = resourceIdOrFullName.Split(resourceIdOrFullNameSeparators, StringSplitOptions.RemoveEmptyEntries);
                 dbsId = segments[segments.Length - 1];
             }
             else
@@ -2176,7 +2179,7 @@ namespace Microsoft.Azure.Cosmos
             string sourceCollId;
             if (PathsHelper.TryParsePathSegments(sourceDocumentCollectionLink, out isFeed, out resourceTypeString, out resourceIdOrFullName, out isNameBased) && isNameBased && !isFeed)
             {
-                string[] segments = resourceIdOrFullName.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+                string[] segments = resourceIdOrFullName.Split(resourceIdOrFullNameSeparators, StringSplitOptions.RemoveEmptyEntries);
                 sourceCollId = segments[segments.Length - 1];
             }
             else
@@ -6649,17 +6652,6 @@ namespace Microsoft.Azure.Cosmos
 
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
         {
-            this.AddressResolver = new GlobalAddressResolver(
-                this.GlobalEndpointManager,
-                this.PartitionKeyRangeLocation,
-                this.ConnectionPolicy.ConnectionProtocol,
-                this,
-                this.collectionCache,
-                this.partitionKeyRangeCache,
-                this.accountServiceConfiguration,
-                this.ConnectionPolicy,
-                this.httpClient);
-
             // Check if we have a store client factory in input and if we do, do not initialize another store client
             // The purpose is to reuse store client factory across all document clients inside compute gateway
             if (storeClientFactory != null)
@@ -6701,7 +6693,6 @@ namespace Microsoft.Azure.Cosmos
                     sendHangDetectionTimeSeconds: this.rntbdSendHangDetectionTimeSeconds,
                     retryWithConfiguration: this.ConnectionPolicy.RetryOptions?.GetRetryWithConfiguration(),
                     enableTcpConnectionEndpointRediscovery: this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
-                    addressResolver: this.AddressResolver,
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
@@ -6715,6 +6706,18 @@ namespace Microsoft.Azure.Cosmos
                 this.storeClientFactory = newClientFactory;
                 this.isStoreClientFactoryCreatedInternally = true;
             }
+
+            this.AddressResolver = new GlobalAddressResolver(
+                this.GlobalEndpointManager,
+                this.PartitionKeyRangeLocation,
+                this.ConnectionPolicy.ConnectionProtocol,
+                this,
+                this.collectionCache,
+                this.partitionKeyRangeCache,
+                this.accountServiceConfiguration,
+                this.ConnectionPolicy,
+                this.httpClient,
+                this.storeClientFactory.GetConnectionStateListener());
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }
@@ -6811,7 +6814,7 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(resourceId))
             {
-                int match = resourceId.IndexOfAny(new char[] { '/', '\\', '?', '#' });
+                int match = resourceId.IndexOfAny(resourceIdSeparators);
                 if (match != -1)
                 {
                     throw new ArgumentException(string.Format(
@@ -7093,6 +7096,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 headers.Set(HttpConstants.HttpHeaders.PreserveFullContent, bool.TrueString);
             }
+
+            if (options.ThroughputBucket.HasValue)
+            {
+                headers.Set(HttpConstants.HttpHeaders.ThroughputBucket, options.ThroughputBucket?.ToString(CultureInfo.InvariantCulture));
+            }
+
             return headers;
         }
 

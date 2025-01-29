@@ -22,8 +22,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         private const string StabilityEnvVariableName = "OTEL_SEMCONV_STABILITY_OPT_IN";
         private const int AggregatingInterval = 500;
 
-        private readonly ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim(false);
-
         private static readonly Dictionary<string, MetricType> expectedOperationMetrics = new()
         {
             { "db.client.operation.duration", MetricType.Histogram },
@@ -74,6 +72,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             this.meterProvider.Dispose();
 
+            CosmosDbOperationMeter.Reset();
+            CosmosDbNetworkMeter.Reset();
+
             Environment.SetEnvironmentVariable(StabilityEnvVariableName, null);
         }
 
@@ -88,22 +89,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         [DataRow(null, ConnectionMode.Gateway, DisplayName = "Gateway Mode: Metrics and Dimensions when OTEL_SEMCONV_STABILITY_OPT_IN is not set")]
         public async Task MetricsGenerationTest(string stabilityMode, ConnectionMode connectionMode)
         {
-            Environment.SetEnvironmentVariable(StabilityEnvVariableName, stabilityMode);
-
-            // Refreshing Static variables to reflect the new stability mode
-            TracesStabilityFactory.RefreshStabilityMode();
-            CosmosDbOperationMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
-            CosmosDbNetworkMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
-
-            // Initialize OpenTelemetry MeterProvider
-            this.meterProvider = Sdk
-                .CreateMeterProviderBuilder()
-                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Azure Cosmos DB Metrics"))
-                .AddMeter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.NetworkMetrics.MeterName)
-                .AddReader(new PeriodicExportingMetricReader(
-                    exporter: new CustomMetricExporter(this.manualResetEventSlim),
-                    exportIntervalMilliseconds: AggregatingInterval))
-                .Build();
+            ManualResetEventSlim manualResetEventSlim = this.SetupOpenTelemetry(stabilityMode);
 
             if (connectionMode == ConnectionMode.Direct)
             {
@@ -113,7 +99,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 })
                 .WithConnectionModeDirect());
 
-            } else if (connectionMode == ConnectionMode.Gateway)
+            }
+            else if (connectionMode == ConnectionMode.Gateway)
             {
                 await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
@@ -121,42 +108,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                 })
                 .WithConnectionModeGateway());
             }
-          
-            this.timeoutTimer = Stopwatch.StartNew();
 
-            // Cosmos Db operations
-            Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000);
-            for (int count = 0; count < 10; count++)
-            {
-                string randomId = Guid.NewGuid().ToString();
-                string pk = "Status1";
-                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk));
-                await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk));
-
-                QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
-                {
-                    MaxItemCount = Random.Shared.Next(1, 100)
-                };
-                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryText: "SELECT * FROM c", requestOptions: queryRequestOptions);
-                while (feedIterator.HasMoreResults)
-                {
-                    await feedIterator.ReadNextAsync();
-                }
-            }
-
-            // Waiting for a notification from the exporter, which means metrics are emitted
-            while (!this.manualResetEventSlim.IsSet)
-            {
-                // Timing out, if exporter didn't send any signal is 3 seconds
-                if (this.timeoutTimer.Elapsed == TimeSpan.FromSeconds(3))
-                {
-                    this.manualResetEventSlim.Set();
-                    Assert.Fail("Timed Out: Metrics were not generated in 3 seconds.");
-                }
-            }
+            await this.ExecuteOperation(manualResetEventSlim);
 
             // Asserting Metrics
-            CollectionAssert.AreEquivalent(connectionMode == ConnectionMode.Direct? expectedMetrics : expectedGatewayModeMetrics, CustomMetricExporter.ActualMetrics, string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
+            CollectionAssert.AreEquivalent(connectionMode == ConnectionMode.Direct ? expectedMetrics : expectedGatewayModeMetrics, CustomMetricExporter.ActualMetrics, string.Join(", ", CustomMetricExporter.ActualMetrics.Select(kv => $"{kv.Key}: {kv.Value}")));
 
             // Asserting Dimensions
             foreach (KeyValuePair<string, List<string>> dimension in CustomMetricExporter.Dimensions)
@@ -174,6 +130,172 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     CollectionAssert.AreEquivalent(GetExpectedNetworkDimensions(), dimension.Value, $"Actual dimensions for {dimension.Key} are {string.Join(", ", dimension.Value.Select(kv => $"{kv}"))}");
                 }
             }
+        }
+
+        [TestMethod]
+        [DataRow(true, true, DisplayName = "Optional and Custom Dimensions are included")]
+        [DataRow(false, true, DisplayName = "Optional Dimension is not included but Custom Dimensions are included")]
+        [DataRow(null, true, DisplayName = "Optional Dimension is not included with null but Custom Dimensions are included")]
+        [DataRow(null, true, DisplayName = "Optional Dimension is not included with null but Custom Dimensions are included")]
+        [DataRow(true, false, DisplayName = "Optional Dimension is included but Custom Dimensions are not included")]
+        [DataRow(false, false, DisplayName = "Optional Dimension is not included but Custom Dimensions are included")]
+        public async Task MetricsWithOptionalDimensionTest(bool? shouldIncludeOptionalDimensions, bool isCustomDimensionNull)
+        {
+            ManualResetEventSlim manualResetEventSlim = this.SetupOpenTelemetry(null);
+
+            RequestOptions requestOptions = new RequestOptions()
+            {
+                OperationMetricsOptions = isCustomDimensionNull? null : new OperationMetricsOptions()
+                {
+                    CustomDimensions = new Dictionary<string, string>()
+                    {
+                        { "custom_dimension5", "custom_dimension5_value" },
+                        { "custom_dimension6", "custom_dimension6_value" }
+                    },
+                    IncludeRegion = shouldIncludeOptionalDimensions
+                },
+                NetworkMetricsOptions = new NetworkMetricsOptions()
+                {
+                    CustomDimensions = isCustomDimensionNull ? null : new Dictionary<string, string>()
+                    {
+                        { "custom_dimension7", "custom_dimension7_value" },
+                        { "custom_dimension8", "custom_dimension8_value" }
+                    },
+                    IncludeRoutingId = shouldIncludeOptionalDimensions
+                }
+            };
+
+            await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+            {
+                IsClientMetricsEnabled = true,
+                OperationMetricsOptions = new OperationMetricsOptions()
+                {
+                    IncludeRegion  = shouldIncludeOptionalDimensions,
+                    CustomDimensions = isCustomDimensionNull ? null : new Dictionary<string, string>()
+                    {
+                        { "custom_dimension1", "custom_dimension1_value" },
+                        { "custom_dimension2", "custom_dimension2_value" }
+                    }
+                },
+                NetworkMetricsOptions = new NetworkMetricsOptions()
+                {
+                    IncludeRoutingId = shouldIncludeOptionalDimensions,
+                    CustomDimensions = isCustomDimensionNull ? null : new Dictionary<string, string>()
+                    {
+                        { "custom_dimension3", "custom_dimension3_value" },
+                        { "custom_dimension4", "custom_dimension4_value" }
+                    }
+                }
+            })
+            .WithConnectionModeDirect(), new ItemRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions.NetworkMetricsOptions
+            });
+
+            // Cosmos Db operations
+            await this.ExecuteOperation(manualResetEventSlim, requestOptions);
+
+            // Asserting Dimensions
+            foreach (KeyValuePair<string, List<string>> dimension in CustomMetricExporter.Dimensions)
+            {
+                if (dimension.Key == CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances)
+                {
+                    Assert.IsFalse(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region));
+                    Assert.IsFalse(dimension.Value.Contains(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId));
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension1"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension2"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension3"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension4"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension5"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension6"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension7"), $"Dimension missing for {dimension.Key}");
+                    Assert.IsFalse(dimension.Value.Contains("custom_dimension8"), $"Dimension missing for {dimension.Key}");
+                }
+                else if (expectedOperationMetrics.ContainsKey(dimension.Key))
+                {
+                    Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.Region), shouldIncludeOptionalDimensions ?? false);
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension1"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension2"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension5"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension6"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                }
+                else if (expectedNetworkMetrics.ContainsKey(dimension.Key))
+                {
+                    Assert.AreEqual(dimension.Value.Contains(OpenTelemetryAttributeKeys.ServiceEndpointRoutingId), shouldIncludeOptionalDimensions ?? false);
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension3"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension4"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension7"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                    Assert.AreEqual(dimension.Value.Contains("custom_dimension8"), !isCustomDimensionNull, $"Dimension missing for {dimension.Key}");
+                }
+            }
+        }
+
+        private async Task ExecuteOperation(ManualResetEventSlim manualResetEventSlim, RequestOptions requestOptions = null)
+        {
+            this.timeoutTimer = Stopwatch.StartNew();
+
+            ItemRequestOptions itemRequestOptions = new ItemRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions?.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions?.NetworkMetricsOptions
+            };
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions?.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions?.NetworkMetricsOptions
+            };
+
+            // Cosmos Db operations
+            Container container = await this.database.CreateContainerIfNotExistsAsync(Guid.NewGuid().ToString(), "/pk", throughput: 10000, requestOptions: itemRequestOptions);
+            for (int count = 0; count < 10; count++)
+            {
+                string randomId = Guid.NewGuid().ToString();
+                string pk = "Status1";
+
+                await container.CreateItemAsync<ToDoActivity>(ToDoActivity.CreateRandomToDoActivity(id: randomId, pk: pk), requestOptions: itemRequestOptions);
+                await container.ReadItemAsync<ToDoActivity>(randomId, new PartitionKey(pk), requestOptions: itemRequestOptions);
+
+                FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(queryText: "SELECT * FROM c", requestOptions: queryRequestOptions);
+                while (feedIterator.HasMoreResults)
+                {
+                    await feedIterator.ReadNextAsync();
+                }
+            }
+
+            // Waiting for a notification from the exporter, which means metrics are emitted
+            while (!manualResetEventSlim.IsSet)
+            {
+                // Timing out, if exporter didn't send any signal is 3 seconds
+                if (this.timeoutTimer.Elapsed == TimeSpan.FromSeconds(3))
+                {
+                    manualResetEventSlim.Set();
+                    Assert.Fail("Timed Out: Metrics were not generated in 3 seconds.");
+                }
+            }
+        }
+
+        private ManualResetEventSlim SetupOpenTelemetry(string stabilityMode)
+        {
+            ManualResetEventSlim manualResetEventSlim = new ManualResetEventSlim(false);
+            Environment.SetEnvironmentVariable(StabilityEnvVariableName, stabilityMode);
+
+            // Refreshing Static variables to reflect the new stability mode
+            TracesStabilityFactory.RefreshStabilityMode();
+            CosmosDbOperationMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+            CosmosDbNetworkMeter.DimensionPopulator = TracesStabilityFactory.GetAttributePopulator();
+
+            // Initialize OpenTelemetry MeterProvider
+            this.meterProvider = Sdk
+                .CreateMeterProviderBuilder()
+                .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("Azure Cosmos DB Metrics"))
+                .AddMeter(CosmosDbClientMetrics.OperationMetrics.MeterName, CosmosDbClientMetrics.NetworkMetrics.MeterName)
+                .AddReader(new PeriodicExportingMetricReader(
+                    exporter: new CustomMetricExporter(manualResetEventSlim),
+                    exportIntervalMilliseconds: AggregatingInterval))
+                .Build();
+            return manualResetEventSlim;
         }
 
         private static List<string> GetExpectedInstanceCountDimensions()
@@ -205,7 +327,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     OpenTelemetryAttributeKeys.StatusCode,
                     OpenTelemetryAttributeKeys.SubStatusCode,
                     OpenTelemetryAttributeKeys.ConsistencyLevel,
-                    OpenTelemetryAttributeKeys.Region,
                     OpenTelemetryAttributeKeys.ErrorType
                 };
             List<string> appInsightBased = new()
@@ -215,8 +336,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     AppInsightClassicAttributeKeys.ServerAddress,
                     AppInsightClassicAttributeKeys.DbOperation,
                     AppInsightClassicAttributeKeys.StatusCode,
-                    AppInsightClassicAttributeKeys.SubStatusCode,
-                    AppInsightClassicAttributeKeys.Region
+                    AppInsightClassicAttributeKeys.SubStatusCode
                 };
 
             return GetBasedOnStabilityMode(otelBased, appInsightBased);
@@ -238,7 +358,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
                     OpenTelemetryAttributeKeys.NetworkProtocolName,
                     OpenTelemetryAttributeKeys.ServiceEndpointHost,
                     OpenTelemetryAttributeKeys.ServiceEndPointPort,
-                    OpenTelemetryAttributeKeys.ServiceEndpointRoutingId,
                     OpenTelemetryAttributeKeys.ServiceEndpointStatusCode,
                     OpenTelemetryAttributeKeys.ServiceEndpointSubStatusCode,
                     OpenTelemetryAttributeKeys.ServiceEndpointRegion,

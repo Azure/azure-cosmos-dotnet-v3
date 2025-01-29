@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Handlers;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
@@ -123,7 +124,8 @@ namespace Microsoft.Azure.Cosmos
                     clientOptions.ConsistencyLevel,
                     clientOptions.PriorityLevel,
                     clientOptions.CustomHandlers,
-                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper);
+                    telemetryToServiceHelper: documentClient.telemetryToServiceHelper,
+                    clientOptions.ThroughputBucket);
 
                 requestInvokerHandler = clientPipelineBuilder.Build();
             }
@@ -541,6 +543,7 @@ namespace Microsoft.Azure.Cosmos
                             this.client.Endpoint,
                             containerName,
                             databaseName,
+                            requestOptions,
                             attributes: otelAttributes);
                     }
 
@@ -555,6 +558,7 @@ namespace Microsoft.Azure.Cosmos
                             gatewayEndpoint,
                             containerName,
                             databaseName,
+                            requestOptions,
                             cosmosException: cosmosException);
                     }
 
@@ -609,23 +613,33 @@ namespace Microsoft.Azure.Cosmos
             Uri accountName,
             string containerName,
             string databaseName,
+            RequestOptions requestOptions,
             OpenTelemetryAttributes attributes = null,
             Exception cosmosException = null)
         {
-            // Records telemetry data
-            CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                 accountName: accountName,
-                                                 containerName: containerName,
-                                                 databaseName: databaseName,
-                                                 attributes: attributes,
-                                                 ex: cosmosException);
+            try
+            {
+                // Records telemetry data
+                CosmosDbOperationMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                     accountName: accountName,
+                                                     containerName: containerName,
+                                                     databaseName: databaseName,
+                                                     attributes: attributes,
+                                                     operationMetricsOptions: requestOptions?.OperationMetricsOptions,
+                                                     ex: cosmosException);
 
-            CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
-                                                 accountName: accountName,
-                                                 containerName: containerName,
-                                                 databaseName: databaseName,
-                                                 attributes: attributes,
-                                                 ex: cosmosException);
+                CosmosDbNetworkMeter.RecordTelemetry(getOperationName: getOperationName,
+                                                     accountName: accountName,
+                                                     containerName: containerName,
+                                                     databaseName: databaseName,
+                                                     attributes: attributes,
+                                                     networkMetricsOptions: requestOptions?.NetworkMetricsOptions,
+                                                     ex: cosmosException);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError(ex.ToString());
+            }
         }
 
         private async Task<ResponseMessage> ProcessResourceOperationAsBulkStreamAsync(

@@ -722,12 +722,7 @@ namespace Microsoft.Azure.Cosmos
         /// If a response from either the primary request or the first hedged request is not received 
         /// after the threshold step time, the SDK will hedge to the third region and so on.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover
@@ -939,6 +934,16 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
         }
+
+        /// <summary>
+        /// Sets the throughput bucket for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
+        internal int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
