@@ -429,29 +429,10 @@ OFFSET 0 LIMIT 2147483657]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <Offset>2147483648</Offset>
-          <Limit>10</Limit>
-          <GroupByExpressions />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
-          <HasSelectValue>False</HasSelectValue>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT c.name
-FROM c
-OFFSET 0 LIMIT 2147483658]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"queryInfo":{"distinctType":"None","offset":2147483648,"limit":10,"groupByExpressions":[],"groupByAliases":[],"orderBy":[],"orderByExpressions":[],"aggregates":[],"hasSelectValue":0,"rewrittenQuery":"SELECT c.name\nFROM c\nOFFSET 0 LIMIT 2147483658","groupByAliasToAggregateType":{},"hasNonStreamingOrderBy":0},"queryRanges":[{"min":[],"max":"Infinity","isMinInclusive":true,"isMaxInclusive":false}]}
+System.ArgumentOutOfRangeException : Specified argument was out of the range of valid values. (Parameter 'QueryInfo.Offset')
+</Exception>
     </Output>
   </Result>
   <Result>
@@ -566,29 +547,10 @@ OFFSET 0 LIMIT 2147483657]]></RewrittenQuery>
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top />
-          <Offset>10</Offset>
-          <Limit>2147483648</Limit>
-          <GroupByExpressions />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
-          <HasSelectValue>False</HasSelectValue>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[SELECT c.name
-FROM c
-OFFSET 0 LIMIT 2147483658]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"queryInfo":{"distinctType":"None","offset":10,"limit":2147483648,"groupByExpressions":[],"groupByAliases":[],"orderBy":[],"orderByExpressions":[],"aggregates":[],"hasSelectValue":0,"rewrittenQuery":"SELECT c.name\nFROM c\nOFFSET 0 LIMIT 2147483658","groupByAliasToAggregateType":{},"hasNonStreamingOrderBy":0},"queryRanges":[{"min":[],"max":"Infinity","isMinInclusive":true,"isMaxInclusive":false}]}
+System.ArgumentOutOfRangeException : Specified argument was out of the range of valid values. (Parameter 'QueryInfo.Limit')
+</Exception>
     </Output>
   </Result>
   <Result>

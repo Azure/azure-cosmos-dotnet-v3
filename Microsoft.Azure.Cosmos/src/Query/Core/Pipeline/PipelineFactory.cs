@@ -109,10 +109,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 if (hybridSearchQueryInfo.Skip != null)
                 {
-                    if (hybridSearchQueryInfo.Skip.Value > int.MaxValue)
-                    {
-                        throw new ArgumentOutOfRangeException("skipCount");
-                    }
+                    Debug.Assert(hybridSearchQueryInfo.Skip.Value <= int.MaxValue, "PipelineFactory Assert!", "Skip value must be <= int.MaxValue");
 
                     int skipCount = (int)hybridSearchQueryInfo.Skip.Value;
 
@@ -125,10 +122,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
                 if (hybridSearchQueryInfo.Take != null)
                 {
-                    if (hybridSearchQueryInfo.Take.Value > int.MaxValue)
-                    {
-                        throw new ArgumentOutOfRangeException("takeCount");
-                    }
+                    Debug.Assert(hybridSearchQueryInfo.Take.Value <= int.MaxValue, "PipelineFactory Assert!", "Take value must be <= int.MaxValue");
 
                     int takeCount = (int)hybridSearchQueryInfo.Take.Value;
 
@@ -276,10 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasOffset)
             {
-                if (queryInfo.Offset.Value > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException("offsetCount");
-                }
+                Debug.Assert(queryInfo.Offset.Value <= int.MaxValue, "PipelineFactory Assert!", "Offset value must be <= int.MaxValue");
 
                 int offsetCount = (int)queryInfo.Offset.Value;
 
@@ -292,10 +283,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasLimit)
             {
-                if (queryInfo.Limit.Value > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException("limitCount");
-                }
+                Debug.Assert(queryInfo.Limit.Value <= int.MaxValue, "PipelineFactory Assert!", "Limit value must be <= int.MaxValue");
 
                 int limitCount = (int)queryInfo.Limit.Value;
 
@@ -308,10 +296,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
 
             if (queryInfo.HasTop)
             {
-                if (queryInfo.Top.Value > int.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException("topCount");
-                }
+                Debug.Assert(queryInfo.Top.Value <= int.MaxValue, "PipelineFactory Assert!", "Top value must be <= int.MaxValue");
 
                 int topCount = (int)queryInfo.Top.Value;
 

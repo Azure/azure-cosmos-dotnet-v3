@@ -111,9 +111,9 @@
 
                 foreach((string parameterName, string query) in new[]
                     {
-                        ("offsetCount", "SELECT c.name FROM c OFFSET 2147483648 LIMIT 10"),
-                        ("limitCount",  "SELECT c.name FROM c OFFSET 10 LIMIT 2147483648"),
-                        ("topCount",    "SELECT TOP 2147483648 c.name FROM c"),
+                        ("QueryInfo.Offset", "SELECT c.name FROM c OFFSET 2147483648 LIMIT 10"),
+                        ("QueryInfo.Limit",  "SELECT c.name FROM c OFFSET 10 LIMIT 2147483648"),
+                        ("QueryInfo.Top",    "SELECT TOP 2147483648 c.name FROM c"),
                     })
                 try
                 {
@@ -129,9 +129,11 @@
 
                     Assert.Fail("Expected to get an exception for this query.");
                 }
-                catch (ArgumentOutOfRangeException e)
+                catch (CosmosException e)
                 {
-                    Assert.IsTrue(e.Message.Contains(parameterName));
+                    Assert.IsTrue(e.StatusCode == HttpStatusCode.BadRequest);
+                    Assert.IsTrue(e.InnerException?.InnerException is ArgumentException ex &&
+                        ex.Message.Contains(parameterName));
                 }
             }
 

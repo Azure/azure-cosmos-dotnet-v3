@@ -435,27 +435,10 @@ System.Runtime.InteropServices.COMException : 0x800A0B00
       <PartitionKeyType>Hash</PartitionKeyType>
     </Input>
     <Output>
-      <PartitionedQueryExecutionInfoInternal>
-        <QueryInfo>
-          <DistinctType>None</DistinctType>
-          <Top>2147483648</Top>
-          <Offset />
-          <Limit />
-          <GroupByExpressions />
-          <OrderBy />
-          <OrderByExpressions />
-          <Aggregates />
-          <GroupByAliasToAggregateType />
-          <GroupByAliases />
-          <HasSelectValue>False</HasSelectValue>
-        </QueryInfo>
-        <QueryRanges>
-          <Range>
-            <Range>[[],"Infinity")</Range>
-          </Range>
-        </QueryRanges>
-        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
-      </PartitionedQueryExecutionInfoInternal>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"queryInfo":{"distinctType":"None","top":2147483648,"groupByExpressions":[],"groupByAliases":[],"orderBy":[],"orderByExpressions":[],"aggregates":[],"hasSelectValue":0,"rewrittenQuery":"","groupByAliasToAggregateType":{},"hasNonStreamingOrderBy":0},"queryRanges":[{"min":[],"max":"Infinity","isMinInclusive":true,"isMaxInclusive":false}]}
+System.ArgumentOutOfRangeException : Specified argument was out of the range of valid values. (Parameter 'QueryInfo.Top')
+</Exception>
     </Output>
   </Result>
   <Result>
