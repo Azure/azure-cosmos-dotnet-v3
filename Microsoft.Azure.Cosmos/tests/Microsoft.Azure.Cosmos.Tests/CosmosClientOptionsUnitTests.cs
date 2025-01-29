@@ -1165,6 +1165,20 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentException))]
+        public void PPAFClientAppRegionAndAppPreferredRegionTest()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                EnablePartitionLevelFailover = true,
+                ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
+                ApplicationRegion = Regions.AustraliaCentral
+            };
+
+            _ = new CosmosClient(ConnectionString, cosmosClientOptions);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
         public void PPAFClientNoRegionsTest()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
