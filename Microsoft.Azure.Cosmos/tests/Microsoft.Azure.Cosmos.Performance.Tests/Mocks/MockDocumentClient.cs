@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private bool IsValidDsr(DocumentServiceRequest dsr)
         {
-            bool isBinaryEncodingEnabled = Environment.GetEnvironmentVariable("AZURE_COSMOS_BINARY_ENCODING_ENABLED")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+            bool isBinaryEncodingEnabled = ConfigurationManager.IsBinaryEncodingEnabled();
 
             for (int i = 0; i < this.dummyHeaderNames.Length; i++)
             {

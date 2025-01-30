@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         {
             // Set the environment variable based on the parameter
             Environment.SetEnvironmentVariable(
-                "AZURE_COSMOS_BINARY_ENCODING_ENABLED",
+                ConfigurationManager.BinaryEncodingEnabled,
                 this.EnableBinaryResponseOnPointOperations.ToString());
 
             // Determine the serialization format
@@ -112,6 +112,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task CreateItem()
         {
             await this.CurrentBenchmark.CreateItem();
+        }
+
+        [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
+        public async Task CreateStreamItem_EnableBinaryResponseOnPointOperations_False()
+        {
+            if (this.CurrentBenchmark is MockedItemStreamBenchmark streamBenchmark)
+            {
+                await streamBenchmark.CreateStreamItem_SetBinaryResponseOnPointOperationsFalse_ReturnsText();
+            }
         }
 
         [Benchmark]

@@ -17,9 +17,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task CreateItem()
         {
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = this.BenchmarkHelper.EnableBinaryEncoding
+                };
+            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId,
+                requestOptions);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -34,9 +43,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpsertItem()
         {
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId,
+                requestOptions);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -56,11 +74,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                     MockedItemBenchmarkHelper.NonExistingItemId,
                     MockedItemBenchmarkHelper.ExistingPartitionId);
-
-                // Check if we got binary (even though item doesn't exist)
-                this.VerifyBinaryHeaderIfExpected(response);
-
-                throw new Exception($"Expected NotFound, but got status code {response.StatusCode}");
+                throw new Exception($"Failed with status code {response.StatusCode}");
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -70,9 +84,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadItemExists()
         {
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId,
+                requestOptions);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -87,10 +110,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpdateItem()
         {
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId,
+                requestOptions);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -105,9 +137,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task DeleteItemExists()
         {
+            ItemRequestOptions requestOptions = null;
+            if (this.BenchmarkHelper.EnableBinaryEncoding)
+            {
+                requestOptions = new ItemRequestOptions
+                {
+                    EnableBinaryResponseOnPointOperations = true
+                };
+            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId);
+                MockedItemBenchmarkHelper.ExistingPartitionId,
+                requestOptions);
 
             if ((int)response.StatusCode > 300)
             {
@@ -127,11 +168,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                     MockedItemBenchmarkHelper.NonExistingItemId,
                     MockedItemBenchmarkHelper.ExistingPartitionId);
-
-                // Check if we got binary (even though item doesn't exist)
-                this.VerifyBinaryHeaderIfExpected(response);
-
-                throw new Exception($"Expected NotFound, but got status code {response.StatusCode}");
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -205,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 string headerValue = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
                 if (headerValue != "CosmosBinary")
                 {
-                   //If we expected binary but got something else, fail.
+                    //If we expected binary but got something else, fail.
                     throw new InvalidOperationException(
                         $"Expected response with 'CosmosBinary' format, but got '{headerValue ?? "<null>"}'.");
                 }
