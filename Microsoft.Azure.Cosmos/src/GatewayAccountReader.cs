@@ -55,8 +55,6 @@ namespace Microsoft.Azure.Cosmos
                     using (DocumentServiceRequest request = DocumentServiceRequest.Create(
                         operationType: OperationType.Read,
                         resourceType: ResourceType.DatabaseAccount,
-                        relativePath: serviceEndpoint.AbsolutePath,
-                        headers: headers,
                         authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
                     {
                         using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
@@ -67,10 +65,10 @@ namespace Microsoft.Azure.Cosmos
                             clientSideRequestStatistics: stats,
                             cancellationToken: default,
                             documentServiceRequest: request))
-                        using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                        {
-                            return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
-                        }
+                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                         {
+                          return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                         }
                     }
                 }
                 catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)

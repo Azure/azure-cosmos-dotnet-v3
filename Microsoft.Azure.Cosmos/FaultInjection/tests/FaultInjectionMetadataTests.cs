@@ -80,25 +80,36 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
             //{
             //    await this.highThroughputContainer.DeleteContainerAsync();
             //}
-            await Task.Delay(0);
-            this.client?.Dispose();
-            this.fiClient?.Dispose();
+
+            try
+            {
+                await this.container.DeleteItemAsync<FaultInjectionTestObject>("deleteme", new PartitionKey("deleteme"));
+            }
+            finally
+            {
+                this.client?.Dispose();
+                this.fiClient?.Dispose();
+            }
         }
 
         [TestMethod]
         public async Task AddressRefreshResponseDelayTest()
         {
             //create rule
+
+            Uri primaryUri = this.client.DocumentClient.GlobalEndpointManager.WriteEndpoints.First();
+            string primaryRegion = this.client.DocumentClient.GlobalEndpointManager.GetLocation(primaryUri);
             string responseDelayRuleId = "responseDelayRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule delayRule = new FaultInjectionRuleBuilder(
                 id: responseDelayRuleId,
                 condition:
                     new FaultInjectionConditionBuilder()
+                        .WithRegion(primaryRegion)
                         .WithOperationType(FaultInjectionOperationType.MetadataRefreshAddresses)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromSeconds(10))
+                        .WithDelay(TimeSpan.FromSeconds(15))
                         .WithTimes(1)
                         .Build())
                 .WithDuration(TimeSpan.FromMinutes(5))
@@ -114,7 +125,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
                     ConsistencyLevel = ConsistencyLevel.Session,
-                    ConnectionMode = ConnectionMode.Gateway,
                     Serializer = this.serializer,
                     EnableContentResponseOnWrite = true,
                 };
@@ -130,9 +140,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 ValueStopwatch stopwatch = ValueStopwatch.StartNew();
                 TimeSpan elapsed;
 
-                ItemResponse<FaultInjectionTestObject> readResponse = await this.fiContainer.ReadItemAsync<FaultInjectionTestObject>(
-                   "testId",
-                   new PartitionKey("pk"));
+                ItemResponse<FaultInjectionTestObject> readResponse = await this.fiContainer.CreateItemAsync<FaultInjectionTestObject>(
+                   new FaultInjectionTestObject { Id = "deleteme", Pk = "deleteme" });
 
                 elapsed = stopwatch.Elapsed;
                 stopwatch.Stop();

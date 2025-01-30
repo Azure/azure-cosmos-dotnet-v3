@@ -98,7 +98,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionOperationType operationType = rule.GetCondition().GetOperationType();
             if ((operationType != FaultInjectionOperationType.All) && this.CanErrorLimitToOperation(errorType))
             {
-                effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
+                OperationType effectiveOperationType = this.GetEffectiveOperationType(operationType);
+                if (effectiveOperationType != OperationType.Invalid)
+                {
+                    effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
+                }
                 effectiveCondition.SetResourceType(this.GetEffectiveResourceType(operationType));
             }
 
@@ -245,6 +249,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.PatchItem => OperationType.Patch,
                 FaultInjectionOperationType.Batch => OperationType.Batch,
                 FaultInjectionOperationType.ReadFeed => OperationType.ReadFeed,
+                FaultInjectionOperationType.MetadataContainer => OperationType.Read,
+                FaultInjectionOperationType.MetadataDatabaseAccount => OperationType.Read,
+                FaultInjectionOperationType.MetadataPartitionKeyRange => OperationType.ReadFeed,
+                FaultInjectionOperationType.MetadataRefreshAddresses => OperationType.Invalid,
+                FaultInjectionOperationType.MetadataQueryPlan => OperationType.QueryPlan,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }

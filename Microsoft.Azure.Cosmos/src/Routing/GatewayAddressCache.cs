@@ -816,7 +816,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                     cancellationToken: default,
-                    documentServiceRequest: request))
+                    documentServiceRequest: request.Clone()))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
