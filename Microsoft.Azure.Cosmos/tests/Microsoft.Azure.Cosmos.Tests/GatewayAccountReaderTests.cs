@@ -153,7 +153,8 @@ namespace Microsoft.Azure.Cosmos
                     ResourceType _,
                     HttpTimeoutPolicy _,
                     IClientSideRequestStatistics _,
-                    CancellationToken _) => endpointSucceeded = serviceEndpoint)
+                    CancellationToken _,
+                    DocumentServiceRequest _) => endpointSucceeded = serviceEndpoint)
                 .ReturnsAsync(responseMessage);
 
             ConnectionPolicy connectionPolicy = new()
