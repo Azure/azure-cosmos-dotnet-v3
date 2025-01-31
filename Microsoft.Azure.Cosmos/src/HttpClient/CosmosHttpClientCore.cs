@@ -45,6 +45,8 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptor = chaosInterceptor;
         }
 
+        public override bool IsFaultInjectionClient => this.chaosInterceptor is not null;
+
         public override HttpMessageHandler HttpMessageHandler { get; }
 
         public static CosmosHttpClient CreateWithConnectionPolicy(

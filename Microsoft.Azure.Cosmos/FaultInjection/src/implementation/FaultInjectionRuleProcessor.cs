@@ -132,7 +132,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 rule.GetCondition().GetEndpoint()),
                             this.retryPolicy());
 
-                    effectiveCondition.SetPartitionKeyRangeIds(effectivePKRangeId);
+                    if (!this.IsMetaData(rule.GetCondition().GetOperationType()))
+                    {
+                        effectiveCondition.SetPartitionKeyRangeIds(effectivePKRangeId, rule);
+                    }
                 }
             }
             else
@@ -350,6 +353,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return condition.GetOperationType() != FaultInjectionOperationType.All 
                 && this.GetEffectiveOperationType(condition.GetOperationType()).IsWriteOperation();
+        }
+
+        private bool IsMetaData(FaultInjectionOperationType operationType)
+        {
+            return operationType == FaultInjectionOperationType.MetadataContainer
+                || operationType == FaultInjectionOperationType.MetadataDatabaseAccount
+                || operationType == FaultInjectionOperationType.MetadataPartitionKeyRange
+                || operationType == FaultInjectionOperationType.MetadataRefreshAddresses
+                || operationType == FaultInjectionOperationType.MetadataQueryPlan;
         }
 
         private async Task<List<Uri>> ResolvePhyicalAddresses(

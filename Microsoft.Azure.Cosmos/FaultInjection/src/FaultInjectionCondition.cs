@@ -33,7 +33,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.region = string.IsNullOrEmpty(region) ? string.Empty : mapper.GetCosmosDBRegionName(region);
 
             this.operationType = operationType ?? FaultInjectionOperationType.All;
-            this.connectionType = this.IsMetadataOperationType() ? FaultInjectionConnectionType.Gateway 
+            this.connectionType = this.IsMetadataOperationType()
+                ? FaultInjectionConnectionType.Gateway 
                 : connectionType ?? FaultInjectionConnectionType.All;
             this.endpoint = endpoint ?? FaultInjectionEndpoint.Empty;
         }

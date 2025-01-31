@@ -727,14 +727,38 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
                 string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+
+                if (this.httpClient.IsFaultInjectionClient)
+                {
+                    using (DocumentServiceRequest faultInjectionRequest = DocumentServiceRequest.Create(
+                        operationType: OperationType.Read,
+                        resourceType: ResourceType.Address,
+                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
+                    {
+                        faultInjectionRequest.RequestContext = request.RequestContext;
+                        using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                            uri: targetEndpoint,
+                            additionalHeaders: headers,
+                            resourceType: resourceType,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                            clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                            cancellationToken: default,
+                            documentServiceRequest: faultInjectionRequest))
+                        {
+                            DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                            GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                            return documentServiceResponse;
+                        }
+                    }
+                }
+
                 using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
                     uri: targetEndpoint,
                     additionalHeaders: headers,
                     resourceType: resourceType,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    cancellationToken: default,
-                    documentServiceRequest: request))
+                    cancellationToken: default))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
@@ -809,14 +833,38 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Uri targetEndpoint = UrlUtility.SetQuery(this.addressEndpoint, UrlUtility.CreateQuery(addressQuery));
 
                 string identifier = GatewayAddressCache.LogAddressResolutionStart(request, targetEndpoint);
+                
+                if (this.httpClient.IsFaultInjectionClient)
+                {
+                    using (DocumentServiceRequest faultInjectionRequest = DocumentServiceRequest.Create(
+                        operationType: OperationType.Read,
+                        resourceType: ResourceType.Address,
+                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
+                    {
+                        faultInjectionRequest.RequestContext = request.RequestContext;
+                        using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
+                            uri: targetEndpoint,
+                            additionalHeaders: headers,
+                            resourceType: ResourceType.Document,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                            clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
+                            cancellationToken: default,
+                            documentServiceRequest: faultInjectionRequest))
+                        {
+                            DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
+                            GatewayAddressCache.LogAddressResolutionEnd(request, identifier);
+                            return documentServiceResponse;
+                        }
+                    }
+                }
+
                 using (HttpResponseMessage httpResponseMessage = await this.httpClient.GetAsync(
                     uri: targetEndpoint,
                     additionalHeaders: headers,
                     resourceType: ResourceType.Document,
                     timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
-                    cancellationToken: default,
-                    documentServiceRequest: request.Clone()))
+                    cancellationToken: default))
                 {
                     DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(httpResponseMessage);
                     GatewayAddressCache.LogAddressResolutionEnd(request, identifier);

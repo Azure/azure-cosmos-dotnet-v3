@@ -148,7 +148,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             if (this.condition.IsMetadataOperationType())
             {
                 if (serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.TooManyRequests
-                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ResponseDelay)
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ResponseDelay
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.SendDelay)
                 {
                     throw new ArgumentException($"{serverErrorResult?.GetServerErrorType()} is not supported for metadata requests.");
                 }

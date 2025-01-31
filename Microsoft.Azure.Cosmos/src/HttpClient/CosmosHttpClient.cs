@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     internal abstract class CosmosHttpClient : IDisposable
     {
         public static readonly TimeSpan GatewayRequestTimeout = TimeSpan.FromSeconds(65);
+        public abstract bool IsFaultInjectionClient { get; }
 
         public abstract HttpMessageHandler HttpMessageHandler { get; }
 
