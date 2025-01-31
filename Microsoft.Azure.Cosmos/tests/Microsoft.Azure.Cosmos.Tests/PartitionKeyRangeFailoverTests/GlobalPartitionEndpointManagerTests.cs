@@ -253,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  cosmosClientOptions));
 
             Assert.AreEqual(
-                expected: "ApplicationPreferredRegions is required when EnablePartitionLevelFailover is enabled.",
+                expected: "ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
                 actual: exception.Message);
         }
 
