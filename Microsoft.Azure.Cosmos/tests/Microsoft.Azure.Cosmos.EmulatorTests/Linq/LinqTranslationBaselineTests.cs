@@ -117,6 +117,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value false
             public bool BooleanField;
             public SimpleObject ObjectField = new SimpleObject();
+            public SimpleObject[] ObjectArrayField = new SimpleObject[0];
             public Guid GuidField;
 #pragma warning restore // Field is never assigned to, and will always have its default value false
 
@@ -343,6 +344,31 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                 new LinqTestInput("RegexMatch with 2nd argument invalid string options", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "this should error out on the back end"))),
             };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestArrayContainsBuiltinFunction()
+        {
+            // Similar to the type checking function, Array_Contains are not supported client side.
+            // Therefore these methods are verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("ArrayContains in Select clause with int value and match partial true", b => getQuery(b).Select(doc => doc.ArrayField.ArrayContains(1, true))),
+                new LinqTestInput("ArrayContains in Filter clause with int value and match partial true", b => getQuery(b).Where(doc => doc.ArrayField.ArrayContains(1, true))),
+                new LinqTestInput("ArrayContains in Select clause with object value and match partial true", b => getQuery(b).Select(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, true))),
+                new LinqTestInput("ArrayContains in Filter clause with object value and match partial true", b => getQuery(b).Where(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, true))),
+                
+                new LinqTestInput("ArrayContains in Select clause with int value and match partial false", b => getQuery(b).Select(doc => doc.ArrayField.ArrayContains(1, false))),
+                new LinqTestInput("ArrayContains in Filter clause with int value and match partial false", b => getQuery(b).Where(doc => doc.ArrayField.ArrayContains(1, false))),
+                new LinqTestInput("ArrayContains in Select clause with object value and match partial false", b => getQuery(b).Select(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, false))),
+                new LinqTestInput("ArrayContains in Filter clause with object value and match partial false", b => getQuery(b).Where(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, false))),
+            };
+
             this.ExecuteTestSuite(inputs);
         }
 

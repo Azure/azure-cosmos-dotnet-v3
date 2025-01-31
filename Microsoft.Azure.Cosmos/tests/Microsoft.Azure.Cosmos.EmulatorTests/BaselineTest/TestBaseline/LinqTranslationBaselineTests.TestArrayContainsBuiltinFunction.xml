@@ -1,0 +1,94 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Select clause with int value and match partial true]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.ArrayContains(Convert(1, Object), True))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(root["ArrayField"], 1, true) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Filter clause with int value and match partial true]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.ArrayField.ArrayContains(Convert(1, Object), True))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ARRAY_CONTAINS(root["ArrayField"], 1, true)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Select clause with object value and match partial true]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ObjectArrayField.ArrayContains(new AnonymousType(Field = "abc"), True))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(root["ObjectArrayField"], {"Field": "abc"}, true) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Filter clause with object value and match partial true]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.ObjectArrayField.ArrayContains(new AnonymousType(Field = "abc"), True))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ARRAY_CONTAINS(root["ObjectArrayField"], {"Field": "abc"}, true)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Select clause with int value and match partial false]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ArrayField.ArrayContains(Convert(1, Object), False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(root["ArrayField"], 1, false) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Filter clause with int value and match partial false]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.ArrayField.ArrayContains(Convert(1, Object), False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ARRAY_CONTAINS(root["ArrayField"], 1, false)]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Select clause with object value and match partial false]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.ObjectArrayField.ArrayContains(new AnonymousType(Field = "abc"), False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE ARRAY_CONTAINS(root["ObjectArrayField"], {"Field": "abc"}, false) 
+FROM root]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[ArrayContains in Filter clause with object value and match partial false]]></Description>
+      <Expression><![CDATA[query.Where(doc => doc.ObjectArrayField.ArrayContains(new AnonymousType(Field = "abc"), False))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE ARRAY_CONTAINS(root["ObjectArrayField"], {"Field": "abc"}, false)]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

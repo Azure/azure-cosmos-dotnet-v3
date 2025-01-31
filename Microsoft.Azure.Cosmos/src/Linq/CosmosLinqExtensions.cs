@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -234,6 +235,35 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool RegexMatch(this object obj, string regularExpression, string searchModifier)
         {
+            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a boolean indicating whether the array contains the specified value.
+        /// You can check for a partial or full match of an object by using a boolean expression within the function.
+        /// For more information, see https://learn.microsoft.com/en-gb/azure/cosmos-db/nosql/query/array-contains.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="itemToMatch">The value to search within the array.</param>
+        /// <param name="partialMatch">Indicating whether the search should check for a partial match (true) or a full match (false).</param>
+        /// <returns>Returns true if the array array contains the specified value; otherwise, false.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Where(document => document.Namess.ArrayContains(<itemToMatch>, <partialMatch>));
+        /// // To do a partial match on an array of objects, pass in an anonymous object set partialMatch to true
+        /// var matched = documents.Where(document => document.ObjectArray.ArrayContains(new { Name = <name> }, true));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static bool ArrayContains(this IEnumerable obj, object itemToMatch, bool partialMatch)
+        {
+            // The signature for this is not generic so the user can pass in anonymous type for the item to match
+            // e.g documents.Where(document => document.FooItems.ArrayContains(new { Name = "Bar" }, true)
+            // partialMatch could have a default values (bool partialMatch = false) but those are not valid in expressions
+            // (see error CS0854) and this method will only be used in expressions, so not point adding it
             throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented);
         }
 

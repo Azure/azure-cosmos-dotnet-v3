@@ -61,6 +61,11 @@ namespace Microsoft.Azure.Cosmos.Linq
                         return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
                     }
 
+                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.ArrayContains))
+                    {
+                        return ArrayBuiltinFunctions.Visit(methodCallExpression, context);
+                    }
+
                     return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
             }
