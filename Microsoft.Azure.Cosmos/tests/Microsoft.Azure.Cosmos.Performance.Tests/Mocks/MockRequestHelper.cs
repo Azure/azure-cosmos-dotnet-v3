@@ -8,23 +8,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
-    using Microsoft.Azure.Cosmos.Json;
-    using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks;
-    using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal static class MockRequestHelper
     {
         internal static readonly byte[] testItemResponsePayload;
+        internal static readonly byte[] testItemResponsePayloadBinary;
         internal static readonly byte[] testItemFeedResponsePayload;
+        internal static readonly byte[] testItemFeedResponsePayloadBinary;
         internal static readonly BatchResponsePayloadWriter batchResponsePayloadWriter;
         internal static int pagenumber;
 
@@ -32,26 +27,29 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
 
-        // Cache of textPayload -> binaryPayload to avoid repeated re-serialization
-        private static readonly ConcurrentDictionary<string, byte[]> BinaryPayloadCache
-            = new ConcurrentDictionary<string, byte[]>();
-
         static MockRequestHelper()
         {
-            MemoryStream ms = new MemoryStream();
+            // Load the single-item text payload
+            using (MemoryStream ms = new MemoryStream())
             using (FileStream fs = File.OpenRead("samplepayload.json"))
             {
                 fs.CopyTo(ms);
                 testItemResponsePayload = ms.ToArray();
             }
 
-            // Load the feed payload
-            ms = new MemoryStream();
+            // Convert it once to binary
+            testItemResponsePayloadBinary = ConvertOnceToBinary(testItemResponsePayload);
+
+            // Load the feed text payload
+            using (MemoryStream ms = new MemoryStream())
             using (FileStream fs = File.OpenRead("samplefeedpayload.json"))
             {
                 fs.CopyTo(ms);
                 testItemFeedResponsePayload = ms.ToArray();
             }
+
+            // Convert it once to binary
+            testItemFeedResponsePayloadBinary = ConvertOnceToBinary(testItemFeedResponsePayload);
 
             List<TransactionalBatchOperationResult> results = new List<TransactionalBatchOperationResult>
         {
@@ -137,17 +135,20 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 return null;
             }
 
-            // Create the single response
+            // Check if binary is requested
+            if (request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
+            {
+                payload = (request.OperationType == OperationType.ReadFeed)
+                    ? testItemFeedResponsePayloadBinary
+                    : testItemResponsePayloadBinary;
+
+                headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+            }
+
             DocumentServiceResponse response = new DocumentServiceResponse(
                 new MemoryStream(payload, 0, payload.Length, writable: false, publiclyVisible: true),
                 headers,
                 statusCode);
-
-            // Check the "SupportedSerializationFormats" header for binary encoding
-            if (request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
-            {
-                response = ConvertToBinaryIfNeeded(response);
-            }
 
             return response;
         }
@@ -201,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
                     // return only 5 pages
                     queryHeaders.Continuation = pagenumber <= 5 ? "dummyToken" : null;
-                    
+
                     if (pagenumber > 5)
                     {
                         pagenumber = 0;
@@ -219,6 +220,19 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     Status = (int)HttpStatusCode.OK,
                     Headers = queryHeaders,
                 };
+
+                if (request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
+                {
+                    response.ResponseBody.Dispose();
+                    response.ResponseBody = new MemoryStream(
+                        testItemFeedResponsePayloadBinary,
+                        0,
+                        testItemFeedResponsePayloadBinary.Length,
+                        writable: false,
+                        publiclyVisible: true);
+
+                    response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
+                }
 
                 return response;
             }
@@ -321,11 +335,31 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 };
             }
 
-            // Check the header for binary encoding
-            if (response != null
-                && request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
+            if (response == null)
             {
-                response = ConvertToBinaryIfNeeded(response);
+                return null;
+            }
+
+            if (request.Headers.Get(HttpConstants.HttpHeaders.SupportedSerializationFormats) == BinarySerializationFormat)
+            {
+                response.ResponseBody.Dispose();
+
+                bool isFeed =
+                    (request.ResourceType == ResourceType.Document && request.OperationType == OperationType.ReadFeed)
+                    || (request.OperationType == OperationType.Query);
+
+                byte[] binaryPayload = isFeed
+                    ? testItemFeedResponsePayloadBinary
+                    : testItemResponsePayloadBinary;
+
+                response.ResponseBody = new MemoryStream(
+                    binaryPayload,
+                    0,
+                    binaryPayload.Length,
+                    writable: false,
+                    publiclyVisible: true);
+
+                response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
             }
 
             return response;
@@ -343,91 +377,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         }
 
         /// <summary>
-        /// Converts the DocumentServiceResponse payload to binary if needed.
-        /// Uses a cache to avoid repeated re-serialization of the same text payload.
-        /// </summary>
-        private static DocumentServiceResponse ConvertToBinaryIfNeeded(DocumentServiceResponse response)
-        {
-            // Read the original payload
-            byte[] originalPayload = ReadAllBytes(response.ResponseBody);
-
-            // Convert text payload to binary
-            byte[] binaryPayload = GetOrAddBinaryPayload(originalPayload);
-
-            // Dispose of the original response body stream
-            response.ResponseBody.Dispose();
-
-            // Wrap the binary payload in a MemoryStream
-            MemoryStream memStream = new MemoryStream(binaryPayload, writable: false);
-
-            // Convert the MemoryStream to a CloneableStream
-            CloneableStream cloneable = StreamExtension
-                .AsClonableStreamAsync(memStream)
-                .GetAwaiter()
-                .GetResult();
-
-            // Assign it as the new response body
-            response.ResponseBody = cloneable;
-
-            // Mark headers as binary
-            response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
-
-            return response;
-        }
-
-        private static StoreResponse ConvertToBinaryIfNeeded(StoreResponse response)
-        {
-            // Read the original payload
-            byte[] originalPayload = ReadAllBytes(response.ResponseBody);
-
-            // Convert text payload to binary
-            byte[] binaryPayload = GetOrAddBinaryPayload(originalPayload);
-
-            // Dispose of the original response body stream
-            response.ResponseBody.Dispose();
-
-            // Wrap the binary payload in a MemoryStream
-            MemoryStream memStream = new MemoryStream(binaryPayload, writable: false);
-
-            // Convert the MemoryStream to a CloneableStream
-            CloneableStream cloneable = StreamExtension
-                .AsClonableStreamAsync(memStream)
-                .GetAwaiter()
-                .GetResult();
-
-            // Assign it as the new response body
-            response.ResponseBody = cloneable;
-
-            // Mark headers as binary
-            response.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = BinarySerializationFormat;
-
-            return response;
-        }
-
-        /// <summary>
-        /// Returns a binary-serialized payload from cache or re-serializes if not found.
-        /// </summary>
-        private static byte[] GetOrAddBinaryPayload(byte[] textPayload)
-        {
-            // A simple key is the base64 of the payload. For large payloads, consider hashing.
-            string key = Convert.ToBase64String(textPayload);
-
-            return BinaryPayloadCache.GetOrAdd(key, _ => ReSerializeToBinary(textPayload));
-        }
-
-        /// <summary>
         /// Deserializes the JSON payload into a ToDoActivity, then re-serializes as binary.
         /// </summary>
-        private static byte[] ReSerializeToBinary(byte[] textPayload)
+        private static byte[] ConvertOnceToBinary(byte[] textPayload)
         {
-            // Deserialize the JSON payload into a ToDoActivity
             using (MemoryStream textStream = new MemoryStream(textPayload))
             {
                 CosmosJsonDotNetSerializer textSerializer = new CosmosJsonDotNetSerializer();
                 ToDoActivity deserialized = textSerializer.FromStream<ToDoActivity>(textStream)
-                    ?? throw new InvalidOperationException("Deserialization returned null. The payload might not match the schema.");
+                    ?? throw new InvalidOperationException("Deserialization returned null.");
 
-                // Serialize the object into binary format
                 CosmosJsonDotNetSerializer binarySerializer = new CosmosJsonDotNetSerializer(binaryEncodingEnabled: true);
                 using (MemoryStream binaryStream = new MemoryStream())
                 {
@@ -437,20 +396,6 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     }
                     return binaryStream.ToArray();
                 }
-            }
-        }
-
-        private static byte[] ReadAllBytes(Stream stream)
-        {
-            if (stream is MemoryStream ms && ms.Position == 0)
-            {
-                return ms.ToArray();
-            }
-
-            using (MemoryStream copy = new MemoryStream())
-            {
-                stream.CopyTo(copy);
-                return copy.ToArray();
             }
         }
     }

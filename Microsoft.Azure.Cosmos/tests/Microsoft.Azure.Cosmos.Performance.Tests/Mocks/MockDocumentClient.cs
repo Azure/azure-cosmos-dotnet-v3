@@ -302,16 +302,14 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private bool IsValidDsr(DocumentServiceRequest dsr)
         {
-            bool isBinaryEncodingEnabled = ConfigurationManager.IsBinaryEncodingEnabled();
-
             for (int i = 0; i < this.dummyHeaderNames.Length; i++)
             {
                 _ = dsr.Headers[this.dummyHeaderNames[i]];
             }
 
-            if (isBinaryEncodingEnabled && IsPointOperationSupportedForBinaryEncoding(dsr))
+            if (ConfigurationManager.IsBinaryEncodingEnabled() && IsPointOperationSupportedForBinaryEncoding(dsr))
             {
-                dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = "CosmosBinary";
+                dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = SupportedSerializationFormats.CosmosBinary.ToString();
             }
 
             return true;

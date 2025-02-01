@@ -17,18 +17,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task CreateItem()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = this.BenchmarkHelper.EnableBinaryEncoding
-                };
-            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.CreateItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -43,18 +34,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpsertItem()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.UpsertItemAsync(
                 this.BenchmarkHelper.TestItem,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -84,18 +66,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task ReadItemExists()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReadItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -110,19 +83,10 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task UpdateItem()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.ReplaceItemAsync<ToDoActivity>(
                 this.BenchmarkHelper.TestItem,
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300 || response.Resource == null)
             {
@@ -137,18 +101,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
         public async Task DeleteItemExists()
         {
-            ItemRequestOptions requestOptions = null;
-            if (this.BenchmarkHelper.EnableBinaryEncoding)
-            {
-                requestOptions = new ItemRequestOptions
-                {
-                    EnableBinaryResponseOnPointOperations = true
-                };
-            }
             ItemResponse<ToDoActivity> response = await this.BenchmarkHelper.TestContainer.DeleteItemAsync<ToDoActivity>(
                 MockedItemBenchmarkHelper.ExistingItemId,
-                MockedItemBenchmarkHelper.ExistingPartitionId,
-                requestOptions);
+                MockedItemBenchmarkHelper.ExistingPartitionId);
 
             if ((int)response.StatusCode > 300)
             {
@@ -239,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             if (this.BenchmarkHelper.EnableBinaryEncoding)
             {
                 string headerValue = response.Headers.GetValueOrDefault(HttpConstants.HttpHeaders.SupportedSerializationFormats);
-                if (headerValue != "CosmosBinary")
+                if (headerValue != SupportedSerializationFormats.CosmosBinary.ToString())
                 {
                     //If we expected binary but got something else, fail.
                     throw new InvalidOperationException(

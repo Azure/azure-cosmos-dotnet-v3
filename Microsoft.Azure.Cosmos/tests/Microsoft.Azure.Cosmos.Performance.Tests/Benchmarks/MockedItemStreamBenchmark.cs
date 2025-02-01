@@ -39,7 +39,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -65,10 +69,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
-                
+
+                // This test specifically expects text, even if EnableBinaryEncoding is true.
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertTextResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -96,7 +101,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -116,10 +125,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
                 requestOptions))
             {
-                if (response.StatusCode != System.Net.HttpStatusCode.NotFound && this.BenchmarkHelper.EnableBinaryEncoding)
+                if (response.StatusCode != HttpStatusCode.NotFound && this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
-
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
@@ -140,14 +148,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
                 requestOptions))
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                if (response.StatusCode == HttpStatusCode.NotFound || response.Content == null)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -167,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
                 requestOptions))
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                if (response.StatusCode == HttpStatusCode.NotFound || response.Content == null)
                 {
                     throw new Exception();
                 }
@@ -180,7 +192,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -202,14 +218,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
                 requestOptions))
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound || response.Content == null)
+                if (response.StatusCode == HttpStatusCode.NotFound || response.Content == null)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -229,14 +249,18 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
                 requestOptions))
             {
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                if (response.StatusCode == HttpStatusCode.NotFound)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
 
                 if (this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
+                }
+                else
+                {
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Text);
                 }
             }
         }
@@ -256,15 +280,13 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 new Cosmos.PartitionKey(MockedItemBenchmarkHelper.ExistingItemId),
                 requestOptions))
             {
-                if (response.StatusCode != System.Net.HttpStatusCode.NotFound && this.BenchmarkHelper.EnableBinaryEncoding)
+                if (response.StatusCode != HttpStatusCode.NotFound && this.BenchmarkHelper.EnableBinaryEncoding)
                 {
-                    this.AssertBinaryResponseType(response.Content);
-
+                    this.AssertResponseType(response.Content, JsonSerializationFormat.Binary);
                     throw new Exception($"Failed with status code {response.StatusCode}");
                 }
             }
         }
-
 
         public async Task ReadFeed()
         {
@@ -300,17 +322,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         public async Task QuerySinglePartitionMultiplePages()
         {
             using FeedIterator streamIterator = this.BenchmarkHelper.TestContainer.GetItemQueryStreamIterator(
-              "select * from T",
-              requestOptions: new QueryRequestOptions()
-              {
-                  MaxItemCount = 1,
-                  PartitionKey = new PartitionKey("dummyValue"),
-              });
+                "select * from T",
+                requestOptions: new QueryRequestOptions()
+                {
+                    MaxItemCount = 1,
+                    PartitionKey = new PartitionKey("dummyValue"),
+                });
 
             while (streamIterator.HasMoreResults)
             {
                 ResponseMessage response = await streamIterator.ReadNextAsync();
-
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
                     throw new Exception($"Failed with status code {response.StatusCode}");
@@ -318,43 +339,56 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
         }
 
-        private void AssertBinaryResponseType(Stream responseStream)
+        private void AssertResponseType(Stream responseStream, JsonSerializationFormat expectedFormat)
         {
-            if (responseStream != null)
+            if (responseStream == null)
             {
-                MemoryStream binaryStream = new();
-                responseStream.CopyTo(binaryStream);
-                byte[] content = binaryStream.ToArray();
-                responseStream.Position = 0;
-                Assert.IsTrue(content.Length > 0);
-                Assert.IsTrue(IsBinaryFormat(content[0], JsonSerializationFormat.Binary), "Not Binary format.");
+                throw new ArgumentNullException(nameof(responseStream));
             }
-        }
-        private void AssertTextResponseType(Stream responseStream)
-        {
-            if (responseStream != null)
+
+            // Ensure the stream is seekable
+            if (!responseStream.CanSeek)
             {
-                MemoryStream binaryStream = new();
-                responseStream.CopyTo(binaryStream);
-                byte[] content = binaryStream.ToArray();
-                responseStream.Position = 0;
-                Assert.IsTrue(content.Length > 0);
-                Assert.IsTrue(IsTextFormat(content[0], JsonSerializationFormat.Text), "Not Text format.");
+                // Wrap the responseStream in a MemoryStream
+                MemoryStream memoryStream = new MemoryStream();
+                responseStream.CopyTo(memoryStream);
+                memoryStream.Position = 0;
+                responseStream = memoryStream;
+            }
+
+            long originalPosition = responseStream.Position;
+
+            int firstByte = responseStream.ReadByte();
+
+            // Reset the position after reading
+            responseStream.Position = originalPosition;
+
+            if (firstByte == -1)
+            {
+                throw new InvalidOperationException("Response stream is empty.");
+            }
+
+            bool isExpectedFormat = this.IsExpectedSerializationFormat(firstByte, expectedFormat);
+
+            if (!isExpectedFormat)
+            {
+                throw new InvalidOperationException(
+                    $"Response content format does not match expected format: {expectedFormat}");
             }
         }
 
-        private static bool IsBinaryFormat(
-            int firstByte,
-            JsonSerializationFormat desiredFormat)
+        private bool IsExpectedSerializationFormat(int firstByte, JsonSerializationFormat expectedFormat)
         {
-            return desiredFormat == JsonSerializationFormat.Binary && firstByte == (int)JsonSerializationFormat.Binary;
-        }
+            if (expectedFormat == JsonSerializationFormat.Binary)
+            {
+                return firstByte == (int)JsonSerializationFormat.Binary;
+            }
+            else if (expectedFormat == JsonSerializationFormat.Text)
+            {
+                return firstByte != (int)JsonSerializationFormat.Binary;
+            }
 
-        private static bool IsTextFormat(
-            int firstByte,
-            JsonSerializationFormat desiredFormat)
-        {
-            return desiredFormat == JsonSerializationFormat.Text && firstByte < (int)JsonSerializationFormat.Binary;
+            return false;
         }
     }
 }

@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 useCustomSerializer,
                 (builder) => builder
                                 .WithBulkExecution(useBulk)
-                                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
+                                .WithClientTelemetryOptions(new CosmosClientTelemetryOptions
                                 {
                                     DisableDistributedTracing = !isDistributedTracingEnabled,
                                     IsClientMetricsEnabled = isClientMetricsEnabled
@@ -57,16 +57,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             this.IncludeDiagnosticsToString = includeDiagnosticsToString;
             this.SerializationFormat = serializationFormat;
 
-            // Load the test item from the JSON file
             string payloadContent = File.ReadAllText("samplepayload.json");
+
             this.TestItem = JsonConvert.DeserializeObject<ToDoActivity>(payloadContent);
 
-            // Serialize TestItem into the requested format (Text or Binary)
             if (this.SerializationFormat == JsonSerializationFormat.Binary)
             {
+                // Binary serialization path unchanged
                 using (CosmosDBToNewtonsoftWriter writer = new CosmosDBToNewtonsoftWriter(JsonSerializationFormat.Binary))
                 {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
+                    writer.Formatting = Formatting.None;
                     Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
                     serializer.Serialize(writer, this.TestItem);
                     this.TestItemBytes = writer.GetResult().ToArray();
@@ -74,23 +74,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             }
             else
             {
-                using (MemoryStream ms = new MemoryStream())
-                using (StreamWriter sw = new StreamWriter(ms, new UTF8Encoding(false, true), 1024, true))
-                using (Newtonsoft.Json.JsonWriter writer = new Newtonsoft.Json.JsonTextWriter(sw))
+                using (MemoryStream ms = (MemoryStream)this.ConvertInputToTextStream(this.TestItem, new Newtonsoft.Json.JsonSerializer()))
                 {
-                    writer.Formatting = Newtonsoft.Json.Formatting.None;
-                    Newtonsoft.Json.JsonSerializer serializer = new Newtonsoft.Json.JsonSerializer();
-                    serializer.Serialize(writer, this.TestItem);
-                    writer.Flush();
-                    sw.Flush();
                     this.TestItemBytes = ms.ToArray();
                 }
             }
+
             this.EnableBinaryEncoding = serializationFormat == JsonSerializationFormat.Binary;
         }
 
-        public void IncludeDiagnosticToStringHelper(
-            CosmosDiagnostics cosmosDiagnostics)
+        public void IncludeDiagnosticToStringHelper(CosmosDiagnostics cosmosDiagnostics)
         {
             if (!this.IncludeDiagnosticsToString)
             {
@@ -100,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
             string diagnostics = cosmosDiagnostics.ToString();
             if (string.IsNullOrEmpty(diagnostics))
             {
-                throw new Exception();
+                throw new Exception("Diagnostics were unexpectedly empty.");
             }
         }
 
@@ -112,6 +105,29 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
                 count: this.TestItemBytes.Length,
                 writable: false,
                 publiclyVisible: true);
+        }
+
+        internal Stream ConvertInputToTextStream<T>(T input, Newtonsoft.Json.JsonSerializer serializer)
+        {
+            MemoryStream streamPayload = new();
+            using (StreamWriter streamWriter = new(
+                streamPayload,
+                encoding: new UTF8Encoding(false, true),
+                bufferSize: 1024,
+                leaveOpen: true))
+            {
+                using (Newtonsoft.Json.JsonWriter writer = new JsonTextWriter(streamWriter))
+                {
+                    writer.Formatting = Formatting.None;
+                    serializer.Serialize(writer, input);
+                    writer.Flush();
+                    streamWriter.Flush();
+                }
+            }
+
+            // Reset position so the caller can read from the beginning
+            streamPayload.Position = 0;
+            return streamPayload;
         }
     }
 }
