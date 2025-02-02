@@ -21,8 +21,6 @@
             public bool? IsAutoScale { get; set; }
             public bool? ShouldContainerIndexAllProperties { get; set; }
 
-            public int? ItemPropertyCount { get; set; }
-
             public bool? IsGatewayMode { get; set; }
             public bool? AllowBulkExecution { get; set; }
             public bool? OmitContentInWriteResponse { get; set; }

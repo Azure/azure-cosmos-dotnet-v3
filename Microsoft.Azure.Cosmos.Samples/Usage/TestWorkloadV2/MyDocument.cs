@@ -14,8 +14,8 @@
         [BsonElement("pk")]
         public string PK { get; set; }
 
-        //[JsonProperty("arr")]
-        //public List<string> Arr { get; set; }
+        [JsonProperty("arr")]
+        public List<string> Arr { get; set; }
 
         [JsonProperty("other")]
         [BsonElement("other")]

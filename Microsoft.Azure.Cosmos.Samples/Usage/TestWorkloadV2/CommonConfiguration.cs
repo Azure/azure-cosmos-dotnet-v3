@@ -30,6 +30,7 @@
 
         public int? TotalRequestCount { get; set; }
         public int ItemSize { get; set; }
+        public int? ItemArrayCount { get; set; }
         public int PartitionKeyCount { get; set; }
 
         [JsonConverter(typeof(JsonStringEnumConverter))]

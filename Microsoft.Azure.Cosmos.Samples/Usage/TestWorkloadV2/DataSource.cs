@@ -2,10 +2,11 @@
 {
     using System.Threading;
     using System;
+    using System.Collections.Generic;
 
     internal class DataSource
     {
-        // private readonly List<string> additionalProperties = new List<string>();
+        private readonly List<string> arrayValue = new List<string>();
         private readonly int partitionKeyCount;
         private string padding;
         private long itemId;
@@ -22,7 +23,7 @@
 
         public DataSource(CommonConfiguration configuration)
         {
-            this.PartitionKeyValuePrefix = DateTime.UtcNow.ToString("MMddHHmm-");
+            this.PartitionKeyValuePrefix = DateTime.UtcNow.ToString("yyyyMMddHHmmss-");
             this.partitionKeyCount = configuration.PartitionKeyCount;
             if(configuration.TotalRequestCount.HasValue)
             {
@@ -30,11 +31,12 @@
             }
 
             this.PartitionKeyStrings = this.GetPartitionKeys(this.partitionKeyCount);
-            // Setup properties - reduce some for standard properties like PK and Id we are adding
-            //for (int i = 0; i < configuration.ItemPropertyCount - 10; i++)
-            //{
-            //    this.additionalProperties.Add(i.ToString());
-            //}
+
+            for (int i = 0; i < configuration.ItemArrayCount; i++)
+            {
+               this.arrayValue.Add(i.ToString());
+            }
+
             this.padding = string.Empty;
         }
 
@@ -67,7 +69,7 @@
             {
                 Id = id,
                 PK = partitionKey,
-                //Arr = this.additionalProperties,
+                Arr = this.arrayValue,
                 Other = this.padding
             }, currentPKIndex);
         }
