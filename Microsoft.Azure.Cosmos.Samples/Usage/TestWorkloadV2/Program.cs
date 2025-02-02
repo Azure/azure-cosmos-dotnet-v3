@@ -274,6 +274,7 @@
                 {
                     Avg = Math.Round((decimal)latenciesList.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero),
                     P50 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.50),
+                    P90 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.90),
                     P95 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.95),
                     P99 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.99),
                     P999 = this.GetRoundedLatency(latenciesList, nonWarmupRequestCount * 0.999),
