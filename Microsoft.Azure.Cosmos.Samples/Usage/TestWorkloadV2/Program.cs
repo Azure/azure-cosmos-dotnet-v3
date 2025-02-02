@@ -233,8 +233,12 @@
                     }
 
                     lastBucketLatencies.Sort();
-                    Console.Write($", Latency Avg: {Math.Round(lastBucketLatencies.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
-                        + $" P99: {this.GetRoundedLatency(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
+                    if(lastBucketLatencies.Count > 0)
+                    {
+                        Console.Write($", Latency Avg: {Math.Round(lastBucketLatencies.Average(t => t.TotalMilliseconds), 1, MidpointRounding.AwayFromZero)}"
+                            + $" P99: {this.GetRoundedLatency(lastBucketLatencies, lastBucketLatencies.Count * 0.99)}");
+                    }
+
                     lastLatencyEmittedSeconds = elapsedSeconds;
                 }
 

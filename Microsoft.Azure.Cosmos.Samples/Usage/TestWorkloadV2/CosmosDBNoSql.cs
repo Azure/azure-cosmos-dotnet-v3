@@ -26,6 +26,7 @@
             public bool? IsGatewayMode { get; set; }
             public bool? AllowBulkExecution { get; set; }
             public bool? OmitContentInWriteResponse { get; set; }
+            public string ApplicationRegion { get; set; }
         }
 
         private Configuration configuration;
@@ -105,10 +106,18 @@
 
         public Task MakeRequestAsync(CancellationToken cancellationToken, out object context)
         {
-            (MemoryStream stream, PartitionKey partitionKeyValue) = this.GetNextItem();
-            context = stream;
+            context = null;
 
-            return this.container.UpsertItemStreamAsync(stream, partitionKeyValue, this.itemRequestOptions, cancellationToken);
+            if (this.configuration.RequestType == RequestType.PointRead)
+            {
+                return this.container.ReadItemStreamAsync("someid", new PartitionKey("somepk"));
+            }
+            else
+            {
+                (MemoryStream stream, PartitionKey partitionKeyValue) = this.GetNextItem();
+                context = stream;
+                return this.container.UpsertItemStreamAsync(stream, partitionKeyValue, this.itemRequestOptions, cancellationToken);
+            }
         }
 
         public ResponseAttributes HandleResponse(Task request, object context)
@@ -123,8 +132,9 @@
                 {
                     ResponseAttributes responseAttributes;
                     responseAttributes.StatusCode = responseMessage.StatusCode;
-                    //responseAttributes.RequestLatency = responseMessage.Diagnostics.GetClientElapsedTime();
                     responseAttributes.RequestCharge = responseMessage.Headers.RequestCharge;
+                    //responseAttributes.RequestLatency = responseMessage.Diagnostics.GetClientElapsedTime();
+                    //responseAttributes.Diagnostics = responseMessage.Diagnostics;
                     return responseAttributes;
                 }
             }
@@ -145,7 +155,8 @@
                 ConnectionMode = this.configuration.IsGatewayMode.HasValue && this.configuration.IsGatewayMode.Value ? ConnectionMode.Gateway : ConnectionMode.Direct,
                 AllowBulkExecution = this.configuration.AllowBulkExecution ?? false,
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
-                PortReuseMode = PortReuseMode.ReuseUnicastPort
+                PortReuseMode = PortReuseMode.ReuseUnicastPort,
+                ApplicationRegion = this.configuration.ApplicationRegion == string.Empty ? null : this.configuration.ApplicationRegion
             });
         }
 

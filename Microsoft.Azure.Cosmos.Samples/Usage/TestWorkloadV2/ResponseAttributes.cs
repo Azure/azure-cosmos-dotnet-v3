@@ -7,8 +7,10 @@
     {
         public HttpStatusCode StatusCode;
 
-//        public TimeSpan RequestLatency;
-
         public double RequestCharge;
+
+        // public object Diagnostics;
+
+        // public TimeSpan RequestLatency;
     }
 }
