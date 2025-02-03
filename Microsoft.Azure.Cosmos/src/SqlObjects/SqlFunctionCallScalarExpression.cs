@@ -294,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Endswith = "ENDSWITH";
             public const string Exp = "EXP";
             public const string Floor = "FLOOR";
+            public const string FullTextScore = "FullTextScore";
             public const string GetCurrentDateTime = "GetCurrentDateTime";
             public const string GetCurrentTicks = "GetCurrentTicks";
             public const string GetCurrentTimestamp = "GetCurrentTimestamp";
@@ -339,6 +340,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Reverse = "REVERSE";
             public const string Right = "RIGHT";
             public const string Round = "ROUND";
+            public const string RRF = "RRF";
             public const string Rtrim = "RTRIM";
             public const string Sign = "SIGN";
             public const string Sin = "SIN";

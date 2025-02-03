@@ -641,6 +641,21 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return true;
         }
 
+        public override bool Visit(SqlOrderByRankClause first, SqlObject secondAsObject)
+        {
+            if (!(secondAsObject is SqlOrderByRankClause second))
+            {
+                return false;
+            }
+
+            if (Equals(first.ScoringFunction, second.ScoringFunction))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         public override bool Visit(SqlParameter first, SqlObject secondAsObject)
         {
             if (!(secondAsObject is SqlParameter second))

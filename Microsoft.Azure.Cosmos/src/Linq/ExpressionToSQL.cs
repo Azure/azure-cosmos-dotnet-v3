@@ -1273,6 +1273,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                         context.CurrentQuery = context.CurrentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
+                case nameof(CosmosLinqExtensions.OrderByRank):
+                    {
+                        SqlOrderByRankClause orderBy = ExpressionToSql.VisitOrderByRank(inputExpression.Arguments, context);
+                        context.CurrentQuery = context.CurrentQuery.AddOrderByRankClause(orderBy, context);
+                        break;
+                    }
                 case LinqMethods.Select:
                     {
                         SqlSelectClause select = ExpressionToSql.VisitSelect(inputExpression.Arguments, context);
@@ -1477,6 +1483,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Where:
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
+                case nameof(CosmosLinqExtensions.OrderByRank):
                 case LinqMethods.ThenBy:
                 case LinqMethods.ThenByDescending:
                 case LinqMethods.Skip:
@@ -1654,14 +1661,14 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlArrayScalarExpression arrayScalarExpression = SqlArrayScalarExpression.Create(query);
                     query = SqlQuery.Create(
                         SqlSelectClause.Create(SqlSelectValueSpec.Create(arrayScalarExpression)),
-                        fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
+                        fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, orderByRankClause: null, offsetLimitClause: null);
                     break;
 
                 case SubqueryKind.ExistsScalarExpression:
                     SqlExistsScalarExpression existsScalarExpression = SqlExistsScalarExpression.Create(query);
                     query = SqlQuery.Create(
                         SqlSelectClause.Create(SqlSelectValueSpec.Create(existsScalarExpression)),
-                        fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, offsetLimitClause: null);
+                        fromClause: null, whereClause: null, groupByClause: null, orderByClause: null, orderByRankClause: null, offsetLimitClause: null);
                     break;
 
                 case SubqueryKind.SubqueryScalarExpression:
@@ -2042,6 +2049,19 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
             SqlOrderByItem orderByItem = SqlOrderByItem.Create(sqlfunc, isDescending);
             SqlOrderByClause orderby = SqlOrderByClause.Create(new SqlOrderByItem[] { orderByItem });
+            return orderby;
+        }
+
+        private static SqlOrderByRankClause VisitOrderByRank(ReadOnlyCollection<Expression> arguments, TranslationContext context)
+        {
+            if (arguments.Count != 2)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.OrderBy, 2, arguments.Count));
+            }
+
+            LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+            SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
+            SqlOrderByRankClause orderby = SqlOrderByRankClause.Create(sqlfunc);
             return orderby;
         }
 

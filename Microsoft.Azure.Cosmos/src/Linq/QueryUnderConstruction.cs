@@ -60,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         private SqlSelectClause selectClause;
         private SqlWhereClause whereClause;
         private SqlOrderByClause orderByClause;
+        private SqlOrderByRankClause orderbyRankClause;
         private SqlGroupByClause groupByClause;
 
         // The specs could be in clauses to reflect the SqlQuery.
@@ -196,7 +197,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlOffsetLimitClause offsetLimitClause = (this.offsetSpec != null) ?
                 SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(SqlNumberLiteral.Create(int.MaxValue))) :
                 offsetLimitClause = default(SqlOffsetLimitClause);
-            SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, this.groupByClause, this.orderByClause, offsetLimitClause);
+            SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, this.groupByClause, this.orderByClause, this.orderbyRankClause, offsetLimitClause);
             return result;
         }
 
@@ -653,6 +654,16 @@ namespace Microsoft.Azure.Cosmos.Linq
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.CurrentQuery.AddBinding(binding);
 
             return context.CurrentQuery;
+        }
+
+        public QueryUnderConstruction AddOrderByRankClause(SqlOrderByRankClause orderBy, TranslationContext context)
+        {
+            QueryUnderConstruction result = context.PackageCurrentQueryIfNeccessary();
+
+            result.orderbyRankClause = orderBy;
+            foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) result.AddBinding(binding);
+
+            return result;
         }
 
         public QueryUnderConstruction AddGroupByClause(SqlGroupByClause groupBy, TranslationContext context)

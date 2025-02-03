@@ -51,17 +51,18 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(CosmosLinqExtensions))
                 {
                     // CosmosLinq Extensions can be RegexMatch, DocumentId or Type check functions (IsString, IsBool, etc.)
-                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.RegexMatch))
+                    switch (methodCallExpression.Method.Name)
                     {
-                        return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.RegexMatch):
+                            return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.DocumentId):
+                        case nameof(CosmosLinqExtensions.RRF):
+                        case nameof(CosmosLinqExtensions.OrderByRank):
+                        case nameof(CosmosLinqExtensions.FullTextScore):
+                            return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
+                        default:
+                            return TypeCheckFunctions.Visit(methodCallExpression, context);
                     }
-
-                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.DocumentId))
-                    {
-                        return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
-                    }
-
-                    return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
             }
             else

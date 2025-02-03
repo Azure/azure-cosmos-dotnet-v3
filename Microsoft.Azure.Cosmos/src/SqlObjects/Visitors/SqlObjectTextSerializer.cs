@@ -444,6 +444,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
         }
 
+        public override void Visit(SqlOrderByRankClause sqlOrderByClause)
+        {
+            this.writer.Write("ORDER BY RANK");
+            sqlOrderByClause.ScoringFunction.Accept(this);
+        }
+
         public override void Visit(SqlParameter sqlParameter)
         {
             this.writer.Write(sqlParameter.Name);
@@ -504,6 +510,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 this.WriteDelimiter(string.Empty);
                 sqlQuery.OrderByClause.Accept(this);
+            }
+
+            if (sqlQuery.OrderByRankClause != null)
+            {
+                this.WriteDelimiter(string.Empty);
+                sqlQuery.OrderByRankClause.Accept(this);
             }
 
             if (sqlQuery.OffsetLimitClause != null)

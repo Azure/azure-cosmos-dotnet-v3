@@ -50,6 +50,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlOffsetSpecHashCode = 109062001;
         private const int SqlOrderbyClauseHashCode = 1361708336;
         private const int SqlOrderbyItemHashCode = 846566057;
+        private const int SqlOrderByRankClauseHashCode = 536749207;
         private const int SqlOrderbyItemAscendingHashCode = -1123129997;
         private const int SqlOrderbyItemDescendingHashCode = -703648622;
         private const int SqlParameterHashCode = -1853999792;
@@ -441,6 +442,14 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 hashCode = CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
             }
 
+            return hashCode;
+        }
+
+        public override int Visit(SqlOrderByRankClause sqlOrderByRankClause)
+        {
+            int hashCode = SqlOrderByRankClauseHashCode;
+            hashCode = CombineHashes(hashCode, sqlOrderByRankClause.ScoringFunction.Accept(this));
+            
             return hashCode;
         }
 
