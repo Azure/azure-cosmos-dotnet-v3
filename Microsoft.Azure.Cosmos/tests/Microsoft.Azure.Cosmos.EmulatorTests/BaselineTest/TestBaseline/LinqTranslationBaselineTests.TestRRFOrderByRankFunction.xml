@@ -1,0 +1,22 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 1 function]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"})}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 2 functions]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Type check operations can be used in Linq expressions only and are evaluated in Azure CosmosDB server.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>

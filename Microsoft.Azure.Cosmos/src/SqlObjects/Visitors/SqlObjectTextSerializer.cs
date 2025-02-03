@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override void Visit(SqlOrderByRankClause sqlOrderByClause)
         {
-            this.writer.Write("ORDER BY RANK");
+            this.writer.Write("ORDER BY RANK ");
             sqlOrderByClause.ScoringFunction.Accept(this);
         }
 

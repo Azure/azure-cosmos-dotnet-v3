@@ -275,9 +275,14 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static IOrderedQueryable<TSource> OrderByRank<TSource>(this IEnumerable<TSource> source, Func<TSource, object> scoreFunction)
+        public static IOrderedQueryable<TSource> OrderByRank<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, object>> scoreFunction)
         {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented); //Todo: change this to LINQNotImplemented once the FTContains PR is checked in
+            return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
+               Expression.Call(
+                null,
+                typeof(CosmosLinqExtensions).GetMethod("OrderByRank").MakeGenericMethod(typeof(TSource)),
+                source.Expression,
+                Expression.Quote(scoreFunction)));
         }
 
         /// <summary>

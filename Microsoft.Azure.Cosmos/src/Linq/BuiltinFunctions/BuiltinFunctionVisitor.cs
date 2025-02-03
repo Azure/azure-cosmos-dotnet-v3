@@ -57,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Linq
                             return StringBuiltinFunctions.Visit(methodCallExpression, context);
                         case nameof(CosmosLinqExtensions.DocumentId):
                         case nameof(CosmosLinqExtensions.RRF):
-                        case nameof(CosmosLinqExtensions.OrderByRank):
                         case nameof(CosmosLinqExtensions.FullTextScore):
                             return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
                         default:
