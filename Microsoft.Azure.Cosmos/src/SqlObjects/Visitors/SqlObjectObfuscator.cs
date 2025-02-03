@@ -293,6 +293,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlOrderByItem.IsDescending);
         }
 
+        public override SqlObject Visit(SqlOrderByRankClause sqlOrderByRankClause)
+        {
+            return SqlOrderByRankClause.Create(sqlOrderByRankClause.ScoringFunction.Accept(this) as SqlScalarExpression);
+        }
+
         public override SqlObject Visit(SqlParameter sqlParameter)
         {
             return SqlParameter.Create(
@@ -336,6 +341,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.WhereClause?.Accept(this) as SqlWhereClause,
                 sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
                 sqlQuery.OrderByClause?.Accept(this) as SqlOrderByClause,
+                sqlQuery.OrderByRankClause?.Accept(this) as SqlOrderByRankClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
         }
 

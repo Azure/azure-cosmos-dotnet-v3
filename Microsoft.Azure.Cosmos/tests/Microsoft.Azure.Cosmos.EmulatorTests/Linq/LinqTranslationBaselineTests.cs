@@ -347,6 +347,50 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestFullTextScoreOrderByRankFunction()
+        {
+            // Similar to the type checking function, FullTextScore are not supported client side.
+            // Therefore this method is verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b).OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))),
+                new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b).OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }))),
+
+                // Negative case: FullTextScore in non order by clause
+                new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b).Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != null)),
+                new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b).Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestRRFOrderByRankFunction()
+        {
+            // Similar to the type checking function, FullTextScore are not supported client side.
+            // Therefore this method is verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("RRF with 1 function", b => getQuery(b).OrderByRank(doc => doc.RRF(doc.StringField.FullTextScore(new string[] { "test1" })))),
+                new LinqTestInput("RRF with 2 functions", b => getQuery(b)
+                .OrderByRank(doc => doc.RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))),
+
+                // Negative case: FullTextScore in non order by clause
+                new LinqTestInput("RRF in WHERE clause", b => getQuery(b).Where(doc => doc.RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != null)),
+                new LinqTestInput("RRF in WHERE clause 2", b => getQuery(b).Where(doc => doc.RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != null)),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestMemberInitializer()
         {
             const int Records = 100;

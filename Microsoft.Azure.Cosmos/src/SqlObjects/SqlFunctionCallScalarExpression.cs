@@ -85,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Endswith, Identifiers.Endswith },
             { Names.Exp, Identifiers.Exp },
             { Names.Floor, Identifiers.Floor },
+            { Names.FullTextScore, Identifiers.FullTextScore },
             { Names.GetCurrentDateTime, Identifiers.GetCurrentDateTime },
             { Names.GetCurrentTicks, Identifiers.GetCurrentTicks },
             { Names.GetCurrentTimestamp, Identifiers.GetCurrentTimestamp },
@@ -119,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Right, Identifiers.Right },
             { Names.Round, Identifiers.Round },
             { Names.Rtrim, Identifiers.Rtrim },
+            { Names.RRF, Identifiers.RRF },
             { Names.Sign, Identifiers.Sign },
             { Names.Sin, Identifiers.Sin },
             { Names.Sqrt, Identifiers.Sqrt },
@@ -294,6 +296,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Endswith = "ENDSWITH";
             public const string Exp = "EXP";
             public const string Floor = "FLOOR";
+            public const string FullTextScore = "FullTextScore";
             public const string GetCurrentDateTime = "GetCurrentDateTime";
             public const string GetCurrentTicks = "GetCurrentTicks";
             public const string GetCurrentTimestamp = "GetCurrentTimestamp";
@@ -339,6 +342,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Reverse = "REVERSE";
             public const string Right = "RIGHT";
             public const string Round = "ROUND";
+            public const string RRF = "RRF";
             public const string Rtrim = "RTRIM";
             public const string Sign = "SIGN";
             public const string Sin = "SIN";
@@ -437,6 +441,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Endswith = SqlIdentifier.Create(Names.Endswith);
             public static readonly SqlIdentifier Exp = SqlIdentifier.Create(Names.Exp);
             public static readonly SqlIdentifier Floor = SqlIdentifier.Create(Names.Floor);
+            public static readonly SqlIdentifier FullTextScore = SqlIdentifier.Create(Names.FullTextScore);
             public static readonly SqlIdentifier GetCurrentDateTime = SqlIdentifier.Create(Names.GetCurrentDateTime);
             public static readonly SqlIdentifier GetCurrentTicks = SqlIdentifier.Create(Names.GetCurrentTicks);
             public static readonly SqlIdentifier GetCurrentTimestamp = SqlIdentifier.Create(Names.GetCurrentTimestamp);
@@ -482,6 +487,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Reverse = SqlIdentifier.Create(Names.Reverse);
             public static readonly SqlIdentifier Right = SqlIdentifier.Create(Names.Right);
             public static readonly SqlIdentifier Round = SqlIdentifier.Create(Names.Round);
+            public static readonly SqlIdentifier RRF = SqlIdentifier.Create(Names.RRF);
             public static readonly SqlIdentifier Rtrim = SqlIdentifier.Create(Names.Rtrim);
             public static readonly SqlIdentifier Sign = SqlIdentifier.Create(Names.Sign);
             public static readonly SqlIdentifier Sin = SqlIdentifier.Create(Names.Sin);
