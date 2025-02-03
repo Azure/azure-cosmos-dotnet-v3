@@ -133,14 +133,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static async Task DeleteAllDatabasesAsync(CosmosClient client,
             IEnumerable<string> excludeDbIds = null,
-            bool deleteContainersOnExcludedDbs = true)
+            bool deleteContainersOnExcludedDbs = true,
+            ItemRequestOptions requestOptions = null)
         {
             if (client == null)
             {
                 return;
             }
 
-            using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>())
+            QueryRequestOptions queryRequestIptions = new QueryRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions?.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions?.NetworkMetricsOptions
+            };
+
+            using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(requestOptions: queryRequestIptions))
             {
                 while (feedIterator.HasMoreResults)
                 {
@@ -150,20 +157,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Cosmos.Database db = client.GetDatabase(database.Id);
                         if (excludeDbIds?.Contains(database.Id) != true)
                         {
-                            await db.DeleteAsync();
+                            await db.DeleteAsync(requestOptions: requestOptions);
                         }
                         else if(deleteContainersOnExcludedDbs)
                         {
-                            await DeleteAllContainersAsync(db);
+                            await DeleteAllContainersAsync(db, queryRequestIptions);
                         }
                     }
                 }
             }
         }
 
-        private static async Task DeleteAllContainersAsync(Cosmos.Database db)
+        private static async Task DeleteAllContainersAsync(Cosmos.Database db, QueryRequestOptions queryRequestIptions = null)
         {
-            using (FeedIterator<ContainerProperties> containerfeedIterator = db.GetContainerQueryIterator<ContainerProperties>())
+            using (FeedIterator<ContainerProperties> containerfeedIterator = db.GetContainerQueryIterator<ContainerProperties>(requestOptions: queryRequestIptions))
             {
                 while (containerfeedIterator.HasMoreResults)
                 {

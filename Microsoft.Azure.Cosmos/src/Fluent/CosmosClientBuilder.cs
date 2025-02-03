@@ -802,5 +802,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.CosmosClientTelemetryOptions = options;
             return this;
         }
+
+        /// <summary>
+        /// Sets the throughput bucket for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, throughput bucket can only be set at client level.
+        /// </remarks>
+        /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
+        internal CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+        {
+            this.clientOptions.ThroughputBucket = throughputBucket;
+            return this;
+        }
     }
 }
