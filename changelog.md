@@ -28,8 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4857](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4857) Query: Adds LINQ support for Multi-key Group By translation
 - [4872](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4872) Open Telemetry : Adds implementation for network level Metrics
 - [4925](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4925) Open Telemetry: Adds option to opt-in optional dimensions
-- [4966](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4966) Hedging: Adds CrossRegionalHedging to GA SDK release
-> This also includes a Direct Package version update to 3.37.7 in PR [#4968](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4968)
+- [4966](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4966) Hedging: Adds reads CrossRegionalHedging to GA SDK release
+> This also includes a Direct Package version update to 3.37.9 in PR [#4990](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4990)
 
 #### Fixed
 
@@ -37,7 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4869](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4869) Hedging: Fixes NullReference Exception Bug
 - [4949](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4949) RequestOptions: Fixes Etag code documentation
 - [4936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4936) Optimization: Fixes SDK to use static readonly arrays for seperators
-- [4970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4970) QuorumReader: Fixes bug with BoundedStaleness 
+- [4970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4970) QuorumReader: Fixes bug where reads will fail in BoundedStaleness when a secondary replica is unresponsive to use primary replica on retries
 
 ### <a name="3.47.0-preview.1"/> [3.47.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.0-preview.1) - 2024-12-24
 
