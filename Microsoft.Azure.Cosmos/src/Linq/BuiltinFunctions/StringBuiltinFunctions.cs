@@ -451,14 +451,14 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                Console.WriteLine(methodCallExpression.Arguments[1].Type);
                 if (methodCallExpression.Arguments.Count == 2
                     && methodCallExpression.Arguments[1] is ConstantExpression stringListArgumentExpression
                     && ExpressionToSql.VisitConstant(stringListArgumentExpression, context) is SqlArrayCreateScalarExpression arrayScalarExpressions)
                 {
-                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
-
-                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context));
+                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                    {
+                        ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                    };
                     arguments.AddRange(arrayScalarExpressions.Items);
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.FullTextContainsAll, arguments.ToImmutableArray());
@@ -487,14 +487,15 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                Console.WriteLine(methodCallExpression.Arguments[1].Type);
                 if (methodCallExpression.Arguments.Count == 2
                     && methodCallExpression.Arguments[1] is ConstantExpression stringListArgumentExpression
                     && ExpressionToSql.VisitConstant(stringListArgumentExpression, context) is SqlArrayCreateScalarExpression arrayScalarExpressions)
                 {
-                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
+                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                    {
+                        ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                    };
 
-                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context));
                     arguments.AddRange(arrayScalarExpressions.Items);
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.FullTextContainsAny, arguments.ToImmutableArray());
