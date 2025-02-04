@@ -101,5 +101,47 @@
                 QueryTestsBase.NoDocuments,
                 ImplementationAsync);
         }
+
+        [TestMethod]
+        public async Task TestTopOffsetLimitClientRanges()
+        {
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                await QueryTestsBase.NoOp();
+
+                foreach((string parameterName, string query) in new[]
+                    {
+                        ("QueryInfo.Offset", "SELECT c.name FROM c OFFSET 2147483648 LIMIT 10"),
+                        ("QueryInfo.Limit",  "SELECT c.name FROM c OFFSET 10 LIMIT 2147483648"),
+                        ("QueryInfo.Top",    "SELECT TOP 2147483648 c.name FROM c"),
+                    })
+                try
+                {
+                    List<Document> expectedValues = new List<Document>();
+                    FeedIterator<Document> resultSetIterator = container.GetItemQueryIterator<Document>(
+                        query,
+                        requestOptions: new QueryRequestOptions() { MaxConcurrency = 0 });
+
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        expectedValues.AddRange(await resultSetIterator.ReadNextAsync());
+                    }
+
+                    Assert.Fail("Expected to get an exception for this query.");
+                }
+                catch (CosmosException e)
+                {
+                    Assert.IsTrue(e.StatusCode == HttpStatusCode.BadRequest);
+                    Assert.IsTrue(e.InnerException?.InnerException is ArgumentException ex &&
+                        ex.Message.Contains(parameterName));
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                QueryTestsBase.NoDocuments,
+                ImplementationAsync);
+        }
     }
 }

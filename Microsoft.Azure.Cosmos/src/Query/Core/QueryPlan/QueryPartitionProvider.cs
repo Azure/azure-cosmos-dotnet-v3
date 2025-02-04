@@ -320,7 +320,54 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                        MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
                    });
 
+            if (!this.ValidateQueryExecutionInfo(queryInfoInternal, out ArgumentException innerException))
+            {
+                return TryCatch<PartitionedQueryExecutionInfoInternal>.FromException(
+                    new ExpectedQueryPartitionProviderException(
+                        serializedQueryExecutionInfo,
+                        innerException));
+            }
+
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
+        }
+
+        private bool ValidateQueryExecutionInfo(PartitionedQueryExecutionInfoInternal queryExecutionInfo, out ArgumentException innerException)
+        {
+            if (queryExecutionInfo.QueryInfo?.Limit.HasValue == true &&
+                queryExecutionInfo.QueryInfo.Limit.Value > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("QueryInfo.Limit");
+                return false;
+            }
+
+            if (queryExecutionInfo.QueryInfo?.Offset.HasValue == true &&
+                queryExecutionInfo.QueryInfo.Offset.Value > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("QueryInfo.Offset");
+                return false;
+            }
+
+            if (queryExecutionInfo.QueryInfo?.Top.HasValue == true &&
+                queryExecutionInfo.QueryInfo.Top.Value > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("QueryInfo.Top");
+                return false;
+            }
+
+            if ((queryExecutionInfo.HybridSearchQueryInfo?.Skip ?? 0) > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("HybridSearchQueryInfo.Skip");
+                return false;
+            }
+
+            if ((queryExecutionInfo.HybridSearchQueryInfo?.Take ?? 0) > int.MaxValue)
+            {
+                innerException = new ArgumentOutOfRangeException("HybridSearchQueryInfo.Take");
+                return false;
+            }
+
+            innerException = null;
+            return true;
         }
 
         internal static TryCatch<IntPtr> TryCreateServiceProvider(string queryEngineConfiguration)
