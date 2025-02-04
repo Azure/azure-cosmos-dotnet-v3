@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     public abstract class AvailabilityStrategy
     {
         public static AvailabilityStrategy CrossRegionHedgingStrategy(TimeSpan threshold, Nullable<TimeSpan> thresholdStep);
+        public static AvailabilityStrategy DisabledStrategy();
     }
     public sealed class BoundingBoxProperties
     {
