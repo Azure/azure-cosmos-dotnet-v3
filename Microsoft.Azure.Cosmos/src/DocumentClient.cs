@@ -971,7 +971,7 @@ namespace Microsoft.Azure.Cosmos
                                                                  this.ServiceEndpoint,
                                                                  this.GlobalEndpointManager,
                                                                  this.cancellationTokenSource,
-                                                                 this.chaosInterceptor == null);
+                                                                 this.chaosInterceptor is not null);
 
             if (sessionContainer != null)
             {
