@@ -466,9 +466,13 @@
             const string UnsupportedCompositeAggregate = "Compositions of aggregates and other expressions are not allowed.";
             const string UnsupportedNestedAggregateExpression = "Cannot perform an aggregate function on an expression containing an aggregate or a subquery.";
             const string UnsupportedSelectLisWithAggregateOrGroupByExpression = "invalid in the select list because it is not contained in either an aggregate function or the GROUP BY clause";
+            const string TopArgumentWasOutOfRange = "Specified argument was out of the range of valid values. (Parameter 'QueryInfo.Top')";
+            const string TopValueMustBeAnInteger = "The count value provided for a TOP clause must be an integer.";
 
             List<(string Query, string ExpectedMessage)> testVariations = new List<(string Query, string ExpectedMessage)>
             {
+                ("SELECT   TOP     2147483648 c FROM c", TopArgumentWasOutOfRange),
+                ("SELECT   TOP     4294967296 c FROM c", TopValueMustBeAnInteger),
                 ("SELECT   COUNT     (1)   + 5 FROM c", UnsupportedCompositeAggregate),
                 ("SELECT MIN(c.price)   + 10 FROM c", UnsupportedCompositeAggregate),
                 ("SELECT      MAX(c.price)       - 4 FROM c", UnsupportedCompositeAggregate),
@@ -508,7 +512,7 @@
                 }
                 catch (Exception ex)
                 {
-                    Assert.IsTrue(ex.InnerException.InnerException.Message.Contains(testCase.ExpectedMessage));
+                    Assert.IsTrue(ex.ToString().Contains(testCase.ExpectedMessage));
                     continue;
                 }
             }
