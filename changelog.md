@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4781](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4781) AppInsights: Adds classic attribute back to cosmos db to support appinsights sdk.
 
 - [4709](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4709) Availability: Adds account-level read regions as effective preferred regions when preferred regions is not set on client.
-  **Warning:** This is a breaking change for customers on Bounded Staleness Consistency who configure their `CosmosClient` instance with empty `ApplicationRegion` or `ApplicationPreferredRegions` and a global endpoint. Due to this change, document reads could be routed to secondary regions when the primary region has an availability loss thereby implicitly causing a Consistency downgrade for such reads from effectively Strong to Bounded Staleness.
+  **Warning:** This is a breaking change for customers whose CosmosDB accounts are configured with Bounded Staleness Consistency and `CosmosClient` instance with empty `ApplicationRegion` or `ApplicationPreferredRegions` and a global endpoint. Due to this change, document reads could be routed to secondary regions when the primary region has an availability loss thereby implicitly causing a Consistency downgrade for such reads from effectively Strong to Bounded Staleness.
 - [4810](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4810) Package Upgrade: Refactors code to upgrade DiagnosticSource Library from 6.0.1 to 8.0.1
 
 - [4794](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4794) Query: Adds hybrid search query pipeline stage
