@@ -343,4 +343,258 @@ GROUP BY c.name]]></RewrittenQuery>
       </PartitionedQueryExecutionInfoInternal>
     </Output>
   </Result>
+  <Result>
+    <Input>
+      <Description>TOP value beyond lower range</Description>
+      <Query>SELECT TOP -1 c.name FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":11,"end":12},"code":"SC1001","message":"Syntax error, incorrect syntax near '-'."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value at lower range</Description>
+      <Query>SELECT TOP 0 c.name FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>0</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value at upper range (client)</Description>
+      <Query>SELECT TOP 2147483647 c.name FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryInfo>
+          <DistinctType>None</DistinctType>
+          <Top>2147483647</Top>
+          <Offset />
+          <Limit />
+          <GroupByExpressions />
+          <OrderBy />
+          <OrderByExpressions />
+          <Aggregates />
+          <GroupByAliasToAggregateType />
+          <GroupByAliases />
+          <HasSelectValue>False</HasSelectValue>
+        </QueryInfo>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <RewrittenQuery><![CDATA[]]></RewrittenQuery>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value beyond upper range (client)</Description>
+      <Query>SELECT TOP 2147483648 c.name FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"queryInfo":{"distinctType":"None","top":2147483648,"groupByExpressions":[],"groupByAliases":[],"orderBy":[],"orderByExpressions":[],"aggregates":[],"hasSelectValue":0,"rewrittenQuery":"","groupByAliasToAggregateType":{},"hasNonStreamingOrderBy":0},"queryRanges":[{"min":[],"max":"Infinity","isMinInclusive":true,"isMaxInclusive":false}]}
+System.ArgumentOutOfRangeException : Specified argument was out of the range of valid values. (Parameter 'QueryInfo.Top')
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value beyond upper range (Interop)</Description>
+      <Query>SELECT TOP 4294967296 c.name FROM c</Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":11,"end":21},"code":"SC2060","message":"The count value provided for a TOP clause must be an integer."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value beyond lower range - hybrid search</Description>
+      <Query>SELECT TOP -1 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":11,"end":12},"code":"SC1001","message":"Syntax error, incorrect syntax near '-'."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value at lower range - hybrid search</Description>
+      <Query>SELECT TOP 0 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>120</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 120 c._rid, [{"item": _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": {"name": c.name}, "componentScores": [_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>0</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value at upper range (client) - hybrid search</Description>
+      <Query>SELECT TOP 2147483647 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <PartitionedQueryExecutionInfoInternal>
+        <QueryRanges>
+          <Range>
+            <Range>[[],"Infinity")</Range>
+          </Range>
+        </QueryRanges>
+        <HybridSearchQueryInfo>
+          <GlobalStatisticsQuery>SELECT COUNT(1) AS documentCount, [{"totalWordCount": SUM(_FullTextWordCount(c.text)), "hitCounts": [COUNTIF(FullTextContains(c.text, "swim"))]}] AS fullTextStatistics
+FROM c</GlobalStatisticsQuery>
+          <componentQueryInfo>
+            <DistinctType>None</DistinctType>
+            <Top>4294967294</Top>
+            <Offset />
+            <Limit />
+            <GroupByExpressions />
+            <OrderBy>
+              <SortOrder>Descending</SortOrder>
+            </OrderBy>
+            <OrderByExpressions>
+              <OrderByExpression>_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})</OrderByExpression>
+            </OrderByExpressions>
+            <Aggregates />
+            <GroupByAliasToAggregateType />
+            <GroupByAliases />
+            <HasSelectValue>False</HasSelectValue>
+            <RewrittenQuery><![CDATA[SELECT TOP 4294967294 c._rid, [{"item": _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {"payload": {"name": c.name}, "componentScores": [_FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})]} AS payload
+FROM c
+WHERE ({documentdb-formattableorderbyquery-filter})
+ORDER BY _FullTextScore(c.text, ["swim"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC]]></RewrittenQuery>
+          </componentQueryInfo>
+          <Take>2147483647</Take>
+          <RequiresGlobalStatistics>True</RequiresGlobalStatistics>
+        </HybridSearchQueryInfo>
+      </PartitionedQueryExecutionInfoInternal>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value beyond upper range (client) - hybrid search</Description>
+      <Query>SELECT TOP 2147483648 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"queryRanges":[{"min":[],"max":"Infinity","isMinInclusive":true,"isMaxInclusive":false}],"hybridSearchQueryInfo":{"globalStatisticsQuery":"SELECT COUNT(1) AS documentCount, [{\"totalWordCount\": SUM(_FullTextWordCount(c.text)), \"hitCounts\": [COUNTIF(FullTextContains(c.text, \"swim\"))]}] AS fullTextStatistics\nFROM c","componentQueryInfos":[{"distinctType":"None","top":0,"groupByExpressions":[],"groupByAliases":[],"orderBy":["Descending"],"orderByExpressions":["_FullTextScore(c.text, [\"swim\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})"],"aggregates":[],"hasSelectValue":0,"rewrittenQuery":"SELECT TOP 4294967296 c._rid, [{\"item\": _FullTextScore(c.text, [\"swim\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})}] AS orderByItems, {\"payload\": {\"name\": c.name}, \"componentScores\": [_FullTextScore(c.text, [\"swim\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0})]} AS payload\nFROM c\nWHERE ({documentdb-formattableorderbyquery-filter})\nORDER BY _FullTextScore(c.text, [\"swim\"], {documentdb-formattablehybridsearchquery-totaldocumentcount}, {documentdb-formattablehybridsearchquery-totalwordcount-0}, {documentdb-formattablehybridsearchquery-hitcountsarray-0}) DESC","groupByAliasToAggregateType":{},"hasNonStreamingOrderBy":1}],"componentWithoutPayloadQueryInfos":[],"take":2147483648,"requiresGlobalStatistics":true}}
+System.ArgumentOutOfRangeException : Specified argument was out of the range of valid values. (Parameter 'HybridSearchQueryInfo.Take')
+</Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>TOP value beyond upper range (Interop) - hybrid search</Description>
+      <Query>SELECT TOP 4294967296 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) </Query>
+      <PartitionKeys>
+        <Key>/key</Key>
+      </PartitionKeys>
+      <PartitionKeyType>Hash</PartitionKeyType>
+    </Input>
+    <Output>
+      <Exception>Microsoft.Azure.Cosmos.Query.Core.Monads.ExceptionWithStackTraceException : TryCatch resulted in an exception.
+Microsoft.Azure.Cosmos.Query.Core.Exceptions.ExpectedQueryPartitionProviderException : {"errors":[{"severity":"Error","location":{"start":11,"end":21},"code":"SC2060","message":"The count value provided for a TOP clause must be an integer."}]}
+System.Runtime.InteropServices.COMException : 0x800A0B00
+</Exception>
+    </Output>
+  </Result>
 </Results>

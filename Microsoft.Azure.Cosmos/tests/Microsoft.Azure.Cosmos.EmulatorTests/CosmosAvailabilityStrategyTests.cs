@@ -4,28 +4,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Data;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
+    using CosmosSystemTextJsonSerializer = MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer;
     using Database = Database;
     using PartitionKey = PartitionKey;
 
     [TestClass]
     public class CosmosAvailabilityStrategyTests
     {
-        private const string dbName = "availabilityStrategyTestDb";
-        private const string containerName = "availabilityStrategyTestContainer";
-        private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
-
         private CosmosClient client;
         private Database database;
         private Container container;
@@ -69,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
-            this.cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
@@ -99,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                this.container.DeleteItemAsync<AvailabilityStrategyTestObject>("deleteMe", new PartitionKey("MMWrite"));
+                this.container.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -256,11 +252,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
@@ -326,8 +322,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
 
@@ -337,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
                 };
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                     "testId",
                     new PartitionKey("pk"),
                     requestOptions);
@@ -390,8 +386,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -399,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     AvailabilityStrategy = new DisabledAvailabilityStrategy()
                 };
 
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                     "testId",
                     new PartitionKey("pk"),
                     requestOptions);
@@ -534,8 +530,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -552,7 +548,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             itemRequestOptions.ExcludeRegions = new List<string>() { "East US" };
                         }
 
-                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                        ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                             "testId",
                             new PartitionKey("pk"),
                             itemRequestOptions);
@@ -579,7 +575,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             requestOptions.ExcludeRegions = new List<string>() { "East US" };
                         }
 
-                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        FeedIterator<CosmosIntegrationTestObject> queryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(queryString),
                             requestOptions: requestOptions);
 
@@ -587,7 +583,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (queryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await queryIterator.ReadNextAsync();
 
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
@@ -609,7 +605,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             queryRequestOptions.ExcludeRegions = new List<string>() { "East US" };
                         }
                         
-                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        FeedIterator<CosmosIntegrationTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(crossPartitionQueryString),
                             null,
                             queryRequestOptions);
@@ -618,7 +614,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (crossPartitionQueryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
 
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
@@ -640,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             readManyRequestOptions.ExcludeRegions = new List<string>() { "East US" };
                         }
 
-                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                        FeedResponse<CosmosIntegrationTestObject> readManyResponse = await container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
@@ -660,8 +656,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
-                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                        Container leaseContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<CosmosIntegrationTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesAsync)
                             .WithInstanceName("test")
@@ -670,13 +666,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await changeFeedProcessor.StartAsync();
                         await Task.Delay(1000);
 
-                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        CosmosIntegrationTestObject testObject = new CosmosIntegrationTestObject
                         {
                             Id = "item4",
                             Pk = "pk4",
                             Other = Guid.NewGuid().ToString()
                         };
-                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
+                        await container.UpsertItemAsync<CosmosIntegrationTestObject>(testObject);
 
                         rule.Enable();
 
@@ -751,8 +747,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -763,7 +759,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         rule1.Enable();
                         rule2.Enable();
 
-                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                        ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                             "testId",
                             new PartitionKey("pk"));
 
@@ -783,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             PartitionKey = new PartitionKey("pk"),
                         };
 
-                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        FeedIterator<CosmosIntegrationTestObject> queryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(queryString),
                             requestOptions: requestOptions);
 
@@ -792,7 +788,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (queryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await queryIterator.ReadNextAsync();
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
@@ -805,7 +801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     case "CrossPartitionQuery":
                         string crossPartitionQueryString = "SELECT * FROM c";
-                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        FeedIterator<CosmosIntegrationTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(crossPartitionQueryString));
 
                         rule1.Enable();
@@ -813,7 +809,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (crossPartitionQueryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
@@ -828,7 +824,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         rule1.Enable();
                         rule2.Enable();
 
-                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                        FeedResponse<CosmosIntegrationTestObject> readManyResponse = await container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
@@ -846,8 +842,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
-                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                        Container leaseContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<CosmosIntegrationTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesStepAsync)
                             .WithInstanceName("test")
@@ -856,13 +852,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await changeFeedProcessor.StartAsync();
                         await Task.Delay(1000);
 
-                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        CosmosIntegrationTestObject testObject = new CosmosIntegrationTestObject
                         {
                             Id = "item4",
                             Pk = "pk4",
                             Other = Guid.NewGuid().ToString()
                         };
-                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
+                        await container.UpsertItemAsync<CosmosIntegrationTestObject>(testObject);
 
                         rule1.Enable();
                         rule2.Enable();
@@ -920,8 +916,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 sendDelay.Enable();
 
@@ -933,15 +929,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         enableMultiWriteRegionHedge: true)
                 };
 
-                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
                 {
                     Id = "deleteMe",
                     Pk = "MMWrite",
                     Other = "test"
                 };
 
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    availabilityStrategyTestObject,
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
                     requestOptions: requestOptions);
 
                 sendDelay.Disable();
@@ -988,8 +984,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
 
@@ -1001,7 +997,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         enableMultiWriteRegionHedge: true)
                 };
 
-                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
                 {
                     Id = "deleteMe",
                     Pk = "MMWrite",
@@ -1010,8 +1006,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 try
                 {
-                    ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    availabilityStrategyTestObject,
+                    ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
                     requestOptions: requestOptions);
                 }
                 catch (CosmosException ex)
@@ -1080,8 +1076,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 
 
@@ -1093,7 +1089,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         enableMultiWriteRegionHedge: true)
                 };
 
-                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
                 {
                     Id = "deleteMe",
                     Pk = "MMWrite",
@@ -1102,9 +1098,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 try
                 {
-                    await this.container.DeleteItemAsync<AvailabilityStrategyTestObject>(
-                        availabilityStrategyTestObject.Id,
-                        new PartitionKey(availabilityStrategyTestObject.Pk));
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                        CosmosIntegrationTestObject.Id,
+                        new PartitionKey(CosmosIntegrationTestObject.Pk));
                 }
                 catch (Exception)
                 {
@@ -1114,8 +1110,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 sendDelay.Enable();
                 sendDelay2.Enable();
 
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    availabilityStrategyTestObject,
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
                     requestOptions: requestOptions);
 
                 sendDelay.Disable();
@@ -1178,8 +1174,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
@@ -1189,7 +1185,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         enableMultiWriteRegionHedge: true)
                 };
 
-                AvailabilityStrategyTestObject availabilityStrategyTestObject = new AvailabilityStrategyTestObject
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
                 {
                     Id = "deleteMe",
                     Pk = "MMWrite",
@@ -1198,9 +1194,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 try
                 {
-                    await this.container.DeleteItemAsync<AvailabilityStrategyTestObject>(
-                        availabilityStrategyTestObject.Id,
-                        new PartitionKey(availabilityStrategyTestObject.Pk));
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                        CosmosIntegrationTestObject.Id,
+                        new PartitionKey(CosmosIntegrationTestObject.Pk));
                 }
                 catch (Exception)
                 {
@@ -1212,8 +1208,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 try
                 {
-                    ItemResponse<AvailabilityStrategyTestObject> ir = await container.CreateItemAsync<AvailabilityStrategyTestObject>(
-                    availabilityStrategyTestObject,
+                    ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
                     requestOptions: requestOptions);
                 }
                 catch (CosmosException ex)
@@ -1275,11 +1271,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CancellationTokenSource cts = new CancellationTokenSource();
                 cts.Cancel();
 
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosOperationCanceledException cancelledException = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
-                        container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                        container.ReadItemAsync<CosmosIntegrationTestObject>(
                             "testId",
                             new PartitionKey("pk"), cancellationToken: cts.Token
                     ));
@@ -1290,7 +1286,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
-            IReadOnlyCollection<AvailabilityStrategyTestObject> changes,
+            IReadOnlyCollection<CosmosIntegrationTestObject> changes,
             CancellationToken cancellationToken)
         {
             if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
@@ -1308,7 +1304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         private static async Task HandleChangesStepAsync(
             ChangeFeedProcessorContext context,
-            IReadOnlyCollection<AvailabilityStrategyTestObject> changes,
+            IReadOnlyCollection<CosmosIntegrationTestObject> changes,
             CancellationToken cancellationToken)
         {
             if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
@@ -1323,56 +1319,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreNotEqual(region1, (string)hedgeContext);
             Assert.AreNotEqual(region2, (string)hedgeContext);
             await Task.Delay(1);
-        }
-
-        internal class AvailabilityStrategyTestObject
-        {
-
-            [JsonPropertyName("id")]
-            public string Id { get; set; }
-
-            [JsonPropertyName("pk")]
-            public string Pk { get; set; }
-
-            [JsonPropertyName("other")]
-            public string Other { get; set; }
-        }
-
-        private class CosmosSystemTextJsonSerializer : CosmosSerializer
-        {
-            private readonly JsonObjectSerializer systemTextJsonSerializer;
-
-            public CosmosSystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
-            {
-                this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
-            }
-
-            public override T FromStream<T>(Stream stream)
-            {
-                using (stream)
-                {
-                    if (stream.CanSeek
-                           && stream.Length == 0)
-                    {
-                        return default;
-                    }
-
-                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
-                    {
-                        return (T)(object)stream;
-                    }
-
-                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
-                }
-            }
-
-            public override Stream ToStream<T>(T input)
-            {
-                MemoryStream streamPayload = new MemoryStream();
-                this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
-                streamPayload.Position = 0;
-                return streamPayload;
-            }
         }
     }
 }

@@ -1138,9 +1138,10 @@ namespace Microsoft.Azure.Cosmos
         private void ValidatePartitionLevelFailoverSettings()
         {
             if (this.EnablePartitionLevelFailover
-                && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
+                && string.IsNullOrEmpty(this.ApplicationRegion)
+                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
             {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 
