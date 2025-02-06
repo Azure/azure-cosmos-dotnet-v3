@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Net;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -1209,6 +1210,203 @@ namespace Microsoft.Azure.Cosmos
                  },
                  openTelemetry: new (OpenTelemetryConstants.Operations.CreateDatabase, (response) => new OpenTelemetryResponse(response)));
         }
+
+#pragma warning disable SA1600 // ElementsMustBeDocumented
+#pragma warning disable CS1001 // ElementsMustBeDocumented
+#pragma warning disable SA1602 // ElementsMustBeDocumented
+#pragma warning disable CS1591 // ElementsMustBeDocumented
+#pragma warning disable IDE0090 // Use 'new(...)'
+        public virtual DistributeTransaction CreateDistributedTransaction()
+        {
+            throw new NotImplementedException();
+        }
+
+        public enum OperationType
+        {
+            Check,
+            Read, 
+            Create,
+            Replace,
+            Upsert, 
+            Delete
+        }
+
+        public class Operation
+        {
+            public Operation(OperationType, string, string, PartitionKey, string, ItemRequestOptions = null)
+            {
+
+            }
+
+            public Operation(OperationType, string, string, PartitionKey, string, Stream payload, ItemRequestOptions = null)
+            {
+
+            }
+
+            public OperationType OperationType { get; set; }
+            public string Database { get; set; }
+            public string Container { get; set; }
+            public PartitionKey PartitionKey { get; set; }
+            public string Id { get; set; }
+            public Stream Payload { get; set; }
+            public ItemRequestOptions RequestOptions { get; set; }
+
+            public static Operation With<T>(OperationType, string, string, PartitionKey, string, T payload, ItemRequestOptions = null)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public class DistributedTransactionResponse : ResponseMessage
+        {
+            public IEnumerable<ResponseMessage> OperationResults()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public virtual Task<DistributedTransactionResponse> ExecuteDistributedAsync(IEnumerable<Operation> operations)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task Usage1Async()
+        {
+            CosmosClient testClient = null;
+
+            // SessionConsistency: So-far we are hiding under a logical PK concept but not its widening much broadly, so sessionToken needs to come from DTC orchestrator
+
+            // Option-1: Existence check modeled as Read => 404 == Check failure
+            // TBD: Non-existence with-out side-affects is a new construct we need to add (if its not a BE operation then its co-ordinator responsibility)
+            {
+                DistributeTransaction distributeTransaction = testClient.CreateDistributedTransaction();
+                distributeTransaction.ReadItem("db1", "container1", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db2", "container2", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db3", "container3", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+
+                TransactionalBatchResponse results = await distributeTransaction.ExecuteAsync();
+                ResponseMessage readResult = results[0].ToResponseMessage();
+                ResponseMessage create1Result = results[1].ToResponseMessage();
+                ResponseMessage create2Result = results[2].ToResponseMessage();
+
+                System.Diagnostics.Trace.TraceInformation($"DTC activityId {results.ActivityId}");
+                System.Diagnostics.Trace.TraceInformation($"DTC ops status codes {readResult.IsSuccessStatusCode} {create1Result.IsSuccessStatusCode}  {create2Result.IsSuccessStatusCode}");
+            }
+
+            // Option-2: Model explicit Check API (BE support ??)
+            {
+                DistributeTransaction distributeTransaction = testClient.CreateDistributedTransaction();
+                distributeTransaction.CheckItem("db1", "container1", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CheckNotItem("db1", "container1", new PartitionKey("User1"), "doc2", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db2", "container2", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+                distributeTransaction.CreateItem("db3", "container3", new PartitionKey("User1"), "doc1", new TransactionalBatchItemRequestOptions() { IfMatchEtag = "???" });
+
+                TransactionalBatchResponse results = await distributeTransaction.ExecuteAsync();
+                ResponseMessage readResult = results[0].ToResponseMessage();
+                ResponseMessage create1Result = results[1].ToResponseMessage();
+                ResponseMessage create2Result = results[2].ToResponseMessage();
+
+                System.Diagnostics.Trace.TraceInformation($"DTC activityId {results.ActivityId}");
+                System.Diagnostics.Trace.TraceInformation($"DTC ops status codes {readResult.IsSuccessStatusCode} {create1Result.IsSuccessStatusCode}  {create2Result.IsSuccessStatusCode}");
+            }
+        }
+
+        public async Task Usage2Async()
+        {
+            CosmosClient testClient = null;
+
+            DistributedTransactionResponse response = await testClient.ExecuteDistributedAsync(new Operation[]
+                {
+                    new Operation(OperationType.Check, "db1", "container1", new PartitionKey("User1"), "doc1", new ItemRequestOptions() { IfMatchEtag = "???" }),
+                    Operation.With<UserPayload>(OperationType.Create, "db2", "container2", new PartitionKey("User1"), "doc1", UserPayload.New()),
+                    Operation.With<UserPayload>(OperationType.Create, "db3", "container3", new PartitionKey("User1"), "doc1", UserPayload.New()),
+                });
+
+            System.Diagnostics.Trace.TraceInformation($"DTC activityId {response.Headers.ActivityId}");
+
+            foreach (ResponseMessage operationResponse in response.OperationResults())
+            {
+                System.Diagnostics.Trace.TraceInformation($"DTC ops status codes {operationResponse.StatusCode}");
+            }
+        }
+
+        public abstract class DistributeTransaction
+        {
+            public abstract TransactionalBatch CreateItem<T>(
+                string database, 
+                string container,
+                PartitionKey partitionKey,
+                T item,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch CheckItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch CheckNotItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch ReadItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch UpsertItem<T>(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                T item,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch ReplaceItem<T>(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                T item,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch DeleteItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                TransactionalBatchItemRequestOptions requestOptions = null);
+
+            public abstract TransactionalBatch PatchItem(
+                string database,
+                string container,
+                PartitionKey partitionKey,
+                string id,
+                IReadOnlyList<PatchOperation> patchOperations,
+                TransactionalBatchPatchItemRequestOptions requestOptions = null);
+
+            public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+                CancellationToken cancellationToken = default);
+
+            public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+               TransactionalBatchRequestOptions requestOptions,
+               CancellationToken cancellationToken = default);
+        }
+
+        public class UserPayload
+        {
+            public static UserPayload New()
+            {
+                throw new NotImplementedException();
+            }
+        }
+#pragma warning restore SA1600 // ElementsMustBeDocumented
+#pragma warning restore CS1591 // ElementsMustBeDocumented
 
         /// <summary>
         /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 
