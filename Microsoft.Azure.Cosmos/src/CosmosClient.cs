@@ -1216,60 +1216,6 @@ namespace Microsoft.Azure.Cosmos
 #pragma warning disable SA1602 // ElementsMustBeDocumented
 #pragma warning disable CS1591 // ElementsMustBeDocumented
 #pragma warning disable IDE0090 // Use 'new(...)'
-        public virtual DistributeTransaction CreateDistributedTransaction()
-        {
-            throw new NotImplementedException();
-        }
-
-        public enum OperationType
-        {
-            Check,
-            Read, 
-            Create,
-            Replace,
-            Upsert, 
-            Delete
-        }
-
-        public class Operation
-        {
-            public Operation(OperationType, string, string, PartitionKey, string, ItemRequestOptions = null)
-            {
-
-            }
-
-            public Operation(OperationType, string, string, PartitionKey, string, Stream payload, ItemRequestOptions = null)
-            {
-
-            }
-
-            public OperationType OperationType { get; set; }
-            public string Database { get; set; }
-            public string Container { get; set; }
-            public PartitionKey PartitionKey { get; set; }
-            public string Id { get; set; }
-            public Stream Payload { get; set; }
-            public ItemRequestOptions RequestOptions { get; set; }
-
-            public static Operation With<T>(OperationType, string, string, PartitionKey, string, T payload, ItemRequestOptions = null)
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public class DistributedTransactionResponse : ResponseMessage
-        {
-            public IEnumerable<ResponseMessage> OperationResults()
-            {
-                throw new NotImplementedException();
-            }
-        }
-
-        public virtual Task<DistributedTransactionResponse> ExecuteDistributedAsync(IEnumerable<Operation> operations)
-        {
-            throw new NotImplementedException();
-        }
-
         public async Task Usage1Async()
         {
             CosmosClient testClient = null;
@@ -1328,6 +1274,60 @@ namespace Microsoft.Azure.Cosmos
             {
                 System.Diagnostics.Trace.TraceInformation($"DTC ops status codes {operationResponse.StatusCode}");
             }
+        }
+
+        public virtual DistributeTransaction CreateDistributedTransaction()
+        {
+            throw new NotImplementedException();
+        }
+
+        public enum OperationType
+        {
+            Check,
+            Read, 
+            Create,
+            Replace,
+            Upsert, 
+            Delete
+        }
+
+        public class Operation
+        {
+            public Operation(OperationType, string, string, PartitionKey, string, ItemRequestOptions = null)
+            {
+
+            }
+
+            public Operation(OperationType, string, string, PartitionKey, string, Stream payload, ItemRequestOptions = null)
+            {
+
+            }
+
+            public OperationType OperationType { get; set; }
+            public string Database { get; set; }
+            public string Container { get; set; }
+            public PartitionKey PartitionKey { get; set; }
+            public string Id { get; set; }
+            public Stream Payload { get; set; }
+            public ItemRequestOptions RequestOptions { get; set; }
+
+            public static Operation With<T>(OperationType, string, string, PartitionKey, string, T payload, ItemRequestOptions = null)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public class DistributedTransactionResponse : ResponseMessage
+        {
+            public IEnumerable<ResponseMessage> OperationResults()
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        public virtual Task<DistributedTransactionResponse> ExecuteDistributedAsync(IEnumerable<Operation> operations)
+        {
+            throw new NotImplementedException();
         }
 
         public abstract class DistributeTransaction
