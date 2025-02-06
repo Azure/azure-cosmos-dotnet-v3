@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isPertitionLevelFailoverEnabled;
+        private readonly bool isPertitionLevelCircuitBreakerEnabled;
         private readonly RetryOptions retryOptions;
 
         /// <summary>
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
             this.globalEndpointManager = globalEndpointManager;
             this.retryOptions = connectionPolicy.RetryOptions;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
+            this.isPertitionLevelCircuitBreakerEnabled = connectionPolicy.EnablePartitionLevelCircuitBreaker;
         }
 
         /// <summary>
@@ -41,7 +43,8 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeLocationCache,
                 this.retryOptions,
                 this.enableEndpointDiscovery,
-                this.isPertitionLevelFailoverEnabled);
+                this.isPertitionLevelFailoverEnabled,
+                this.isPertitionLevelCircuitBreakerEnabled);
 
             return clientRetryPolicy;
         }

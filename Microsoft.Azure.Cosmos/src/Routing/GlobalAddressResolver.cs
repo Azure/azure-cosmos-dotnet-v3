@@ -85,6 +85,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.GetOrAddEndpoint(endpoint);
             }
+
+            this.partitionKeyRangeLocationCache.SetBackgroundConnectionInitTask(this.TryOpenConnectionToUnhealthyEndpointsAsync);
         }
 
         public async Task OpenAsync(
@@ -228,8 +230,60 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return partitionAddressInformation;
             }
 
+            List<Tuple<PartitionKeyRange, Uri>> pkRangeUriMappings = this.partitionKeyRangeLocationCache.GetTuples();
+            if (pkRangeUriMappings.Count > 0)
+            {
+                await this.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeUriMappings);
+            }
+
             resolver = this.GetAddressResolver(request);
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
+        }
+
+        public async Task<bool> TryOpenConnectionToUnhealthyEndpointsAsync(
+            List<Tuple<PartitionKeyRange, Uri>> pkRangeUriMappings)
+        {
+            foreach (Tuple<PartitionKeyRange, Uri> tuple in pkRangeUriMappings)
+            {
+                PartitionKeyRange pkRange = tuple.Item1;
+                Uri originalFailedLocation = tuple.Item2;
+                //PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
+                //Uri originalFailedLocation = partionFailover.GetFailedLocations().First();
+
+                DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.ResourceToken);
+                try
+                {
+                    PartitionAddressInformation addresses = await this.addressCacheByEndpoint[originalFailedLocation]
+                        .AddressCache
+                        .TryGetAddressesAsync(
+                            request,
+                            new PartitionKeyRangeIdentity(pkRange.Id),
+                            request.ServiceIdentity,
+                            false,
+                            CancellationToken.None);
+
+                    PerProtocolPartitionAddressInformation currentAddressInfo = addresses.Get(Protocol.Tcp);
+                    IReadOnlyList<TransportAddressUri> transportAddressUris = currentAddressInfo.ReplicaTransportAddressUris;
+
+                    await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(transportAddressUris);
+
+                    foreach (TransportAddressUri transportAddressUri in transportAddressUris)
+                    {
+                        Console.WriteLine($"Opened connection to {transportAddressUri.Uri} and current health: {transportAddressUri.GetCurrentHealthState().GetHealthStatus()}");
+                        if (transportAddressUri.GetCurrentHealthState().GetHealthStatus() != TransportAddressHealthState.HealthStatus.Connected)
+                        {
+                            return false;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Do Nothing.
+                    DefaultTrace.TraceInformation(ex.Message);
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

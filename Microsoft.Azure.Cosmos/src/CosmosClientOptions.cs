@@ -730,6 +730,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
+        /// Enable partition level circuit breaker
+        /// </summary>
+        internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: true);
+
+        /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
@@ -981,6 +986,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
+                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,

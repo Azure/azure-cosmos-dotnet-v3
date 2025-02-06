@@ -8,25 +8,44 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Linq;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
     /// <summary>
     /// This class is used to failover single partitions to different regions.
-    /// The client retry policy will mark a partition as down. The PartitionKeyRangeToLocation
+    /// The client retry policy will mark a partition as down. The PartitionKeyRangeToLocationForWrite
     /// will add an override to the next read region. When the request is retried it will 
-    /// override the default location with the new region from the PartitionKeyRangeToLocation.
+    /// override the default location with the new region from the PartitionKeyRangeToLocationForWrite.
     /// </summary>
     internal sealed class GlobalPartitionEndpointManagerCore : GlobalPartitionEndpointManager
     {
         private readonly IGlobalEndpointManager globalEndpointManager;
-        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocation = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
+
+        //private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
+
+        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForWrite = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
+
+        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForRead = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
+            () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
+
+        // Set a callback delegate to open connections to the unhealthy endpoint.
+        //private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
+        private Func<List<Tuple<PartitionKeyRange, Uri>>, Task<bool>>? backgroundConnectionInitTask;
 
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager)
         {
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
+        }
+
+        public override void SetBackgroundConnectionInitTask(
+            Func<List<Tuple<PartitionKeyRange, Uri>>, Task<bool>> backgroundConnectionInitTask)
+        {
+            this.backgroundConnectionInitTask = backgroundConnectionInitTask;
         }
 
         private bool CanUsePartitionLevelFailoverLocations(DocumentServiceRequest request)
@@ -75,17 +94,35 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (this.PartitionKeyRangeToLocation.IsValueCreated
-                && this.PartitionKeyRangeToLocation.Value.TryGetValue(
-                    partitionKeyRange,
-                    out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
+            if (request.IsReadOnlyRequest)
             {
-                DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
-                    partitionKeyRangeFailover.Current,
-                    partitionKeyRange.Id);
+                if (this.PartitionKeyRangeToLocationForRead.IsValueCreated
+                    && this.PartitionKeyRangeToLocationForRead.Value.TryGetValue(
+                        partitionKeyRange,
+                        out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
+                {
+                    DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
+                        partitionKeyRangeFailover.Current,
+                        partitionKeyRange.Id);
 
-                request.RequestContext.RouteToLocation(partitionKeyRangeFailover.Current);
-                return true;
+                    request.RequestContext.RouteToLocation(partitionKeyRangeFailover.Current);
+                    return true;
+                }
+            }
+            else
+            {
+                if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated
+                    && this.PartitionKeyRangeToLocationForWrite.Value.TryGetValue(
+                        partitionKeyRange,
+                        out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
+                {
+                    DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
+                        partitionKeyRangeFailover.Current,
+                        partitionKeyRange.Id);
+
+                    request.RequestContext.RouteToLocation(partitionKeyRangeFailover.Current);
+                    return true;
+                }
             }
 
             return false;
@@ -102,24 +139,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 throw new ArgumentNullException(nameof(request));
             }
 
-            // Only do partition level failover if it is a write operation.
-            // Write operation will throw a write forbidden if it is not the primary
-            // region.
-            if (request.IsReadOnlyRequest)
-            {
-                return false;
-            }
-
-            if (request.RequestContext == null)
-            {
-                return false;
-            }
-
-            if (!this.CanUsePartitionLevelFailoverLocations(request))
-            {
-                return false;
-            }
-
             PartitionKeyRange? partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
             if (partitionKeyRange == null)
             {
@@ -132,56 +151,211 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocation.Value.GetOrAdd(
+            // Only do partition level failover if it is a write operation.
+            // Write operation will throw a write forbidden if it is not the primary
+            // region.
+            if (request.IsReadOnlyRequest)
+            {
+                PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value.GetOrAdd(
+                    partitionKeyRange,
+                    (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
+
+                ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.ReadEndpoints;
+
+                // Will return true if it was able to update to a new region
+                if (partionFailover.TryMoveNextLocation(
+                        locations: nextLocations,
+                        failedLocation: failedLocation))
+                {
+                    DefaultTrace.TraceInformation("Partition level override added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
+                        partitionKeyRange,
+                        failedLocation,
+                        partionFailover.Current);
+
+                    //Task task = Task.Run(async () => await this.TryOpenConnectionToUnhealthyEndpointsAsync());
+
+                    return true;
+                }
+
+                // All the locations have been tried. Remove the override information
+                DefaultTrace.TraceInformation("Partition level override removed. PartitionKeyRange: {0}, failedLocation: {1}",
+                       partitionKeyRange,
+                       failedLocation);
+
+                this.PartitionKeyRangeToLocationForRead.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
+                return false;
+            }
+            else
+            {
+                if (request.RequestContext == null)
+                {
+                    return false;
+                }
+
+                if (!this.CanUsePartitionLevelFailoverLocations(request))
+                {
+                    return false;
+                }
+
+                PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
+                    partitionKeyRange,
+                    (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
+
+                // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
+                // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
+                // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
+                bool isSingleMasterWriteAccount = !this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+
+                ReadOnlyCollection<Uri> nextLocations = isSingleMasterWriteAccount
+                    ? this.globalEndpointManager.AccountReadEndpoints
+                    : this.globalEndpointManager.ReadEndpoints;
+
+                // Will return true if it was able to update to a new region
+                if (partionFailover.TryMoveNextLocation(
+                        locations: nextLocations,
+                        failedLocation: failedLocation))
+                {
+                    DefaultTrace.TraceInformation("Partition level override added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
+                        partitionKeyRange,
+                        failedLocation,
+                        partionFailover.Current);
+
+                    return true;
+                }
+
+                // All the locations have been tried. Remove the override information
+                DefaultTrace.TraceInformation("Partition level override removed. PartitionKeyRange: {0}, failedLocation: {1}",
+                       partitionKeyRange,
+                       failedLocation);
+
+                this.PartitionKeyRangeToLocationForWrite.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
+                return false;
+            }
+        }
+
+        public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+            DocumentServiceRequest request)
+        {
+            if (!this.IsRequestValidForPartitionFailover(
+                request,
+                out PartitionKeyRange? partitionKeyRange,
+                out Uri? failedLocation))
+            {
+                return false;
+            }
+
+            if (partitionKeyRange == null || failedLocation == null)
+            {
+                return false;
+            }
+
+            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value.GetOrAdd(
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(failedLocation));
 
-            // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
-            // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
-            // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
-            bool isSingleMasterWriteAccount = !this.globalEndpointManager.CanUseMultipleWriteLocations(request);
+            partionFailover.IncrementRequestFailureCounts();
 
-            ReadOnlyCollection<Uri> nextLocations = isSingleMasterWriteAccount
-                ? this.globalEndpointManager.AccountReadEndpoints
-                : this.globalEndpointManager.ReadEndpoints;
+            return partionFailover.CanCircuitBreakerTriggerPartitionFailOver();
+        }
 
-            // Will return true if it was able to update to a new region
-            if (partionFailover.TryMoveNextLocation(
-                    locations: nextLocations,
-                    failedLocation: failedLocation))
+        private bool IsRequestValidForPartitionFailover(
+            DocumentServiceRequest request,
+            out PartitionKeyRange? partitionKeyRange,
+            out Uri? failedLocation)
+        {
+            partitionKeyRange = default;
+            failedLocation = default;
+            if (request == null)
             {
-                DefaultTrace.TraceInformation("Partition level override added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
-                    partitionKeyRange,
-                    failedLocation,
-                    partionFailover.Current);
-
-                return true;
+                throw new ArgumentNullException(nameof(request));
             }
 
-            // All the locations have been tried. Remove the override information
-            DefaultTrace.TraceInformation("Partition level override removed. PartitionKeyRange: {0}, failedLocation: {1}",
-                   partitionKeyRange,
-                   failedLocation);
+            // Only do partition level failover if it is a write operation.
+            // Write operation will throw a write forbidden if it is not the primary
+            // region.
+            //if (request.IsReadOnlyRequest)
+            //{
+            //    return false;
+            //}
 
-            this.PartitionKeyRangeToLocation.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
-            return false;
+            if (request.RequestContext == null)
+            {
+                return false;
+            }
 
+            if (!this.CanUsePartitionLevelFailoverLocations(request))
+            {
+                return false;
+            }
+
+            partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+            if (partitionKeyRange == null)
+            {
+                return false;
+            }
+
+            failedLocation = request.RequestContext.LocationEndpointToRoute;
+            if (failedLocation == null)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public async Task TryOpenConnectionToUnhealthyEndpointsAsync()
+        {
+            List<Tuple<PartitionKeyRange, Uri>> list = new (); 
+            foreach (PartitionKeyRange pkRange in this.PartitionKeyRangeToLocationForRead.Value.Keys)
+            {
+                PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
+                Uri originalFailedLocation = partionFailover.GetFailedLocations().First();
+                list.Add(new Tuple<PartitionKeyRange, Uri>(pkRange, originalFailedLocation));
+            }
+
+            if (this.backgroundConnectionInitTask != null)
+            {
+                await this.backgroundConnectionInitTask(list);
+            }
+        }
+
+        public override List<Tuple<PartitionKeyRange, Uri>> GetTuples()
+        {
+            List<Tuple<PartitionKeyRange, Uri>> list = new ();
+            foreach (PartitionKeyRange pkRange in this.PartitionKeyRangeToLocationForRead.Value.Keys)
+            {
+                PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
+                if (partionFailover.GetFailedLocations().Count > 0)
+                {
+                    Uri originalFailedLocation = partionFailover.GetFailedLocations().First();
+                    list.Add(new Tuple<PartitionKeyRange, Uri>(pkRange, originalFailedLocation));
+                }
+            }
+
+            return list;
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo
         {
             // HashSet is not thread safe and should only accessed in the lock
             private readonly HashSet<Uri> FailedLocations;
+            private readonly TimeSpan TimeoutCounterResetWindowInMinutes;
+            private readonly int RequestFailureCounterThreshold;
+            private DateTime LastRequestTimeoutTime;
+            private int ConsecutiveRequestFailureCount;
 
             public PartitionKeyRangeFailoverInfo(
                 Uri currentLocation)
             {
                 this.Current = currentLocation;
                 this.FailedLocations = new HashSet<Uri>();
+                this.ConsecutiveRequestFailureCount = 0;
+                this.RequestFailureCounterThreshold = 0; // Get this from environment variable
+                this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
             }
 
             public Uri Current { get; private set; }
-            
+
             public bool TryMoveNextLocation(
                 IReadOnlyCollection<Uri> locations,
                 Uri failedLocation)
@@ -219,6 +393,27 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 return false;
+            }
+
+            public bool CanCircuitBreakerTriggerPartitionFailOver()
+            {
+                return this.ConsecutiveRequestFailureCount > this.RequestFailureCounterThreshold;
+            }
+
+            public void IncrementRequestFailureCounts()
+            {
+                DateTime now = DateTime.UtcNow;
+                if (now - this.LastRequestTimeoutTime > this.TimeoutCounterResetWindowInMinutes)
+                {
+                    this.ConsecutiveRequestFailureCount = 0;
+                }
+                this.ConsecutiveRequestFailureCount += 1;
+                this.LastRequestTimeoutTime = now;
+            }
+
+            public HashSet<Uri> GetFailedLocations()
+            {
+                return this.FailedLocations;
             }
         }
     }

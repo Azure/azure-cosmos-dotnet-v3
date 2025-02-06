@@ -4,6 +4,9 @@
 #nullable enable
 namespace Microsoft.Azure.Cosmos.Routing
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     internal sealed class GlobalPartitionEndpointManagerNoOp : GlobalPartitionEndpointManager
@@ -12,6 +15,21 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private GlobalPartitionEndpointManagerNoOp()
         {
+        }
+
+        public override List<Tuple<PartitionKeyRange, Uri>> GetTuples()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(DocumentServiceRequest request)
+        {
+            return false;
+        }
+
+        public override void SetBackgroundConnectionInitTask(Func<List<Tuple<PartitionKeyRange, Uri>>, Task<bool>> backgroundConnectionInitTask)
+        {
+            throw new NotImplementedException();
         }
 
         public override bool TryAddPartitionLevelLocationOverride(

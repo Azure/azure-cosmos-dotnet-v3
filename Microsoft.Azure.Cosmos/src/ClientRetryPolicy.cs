@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isPertitionLevelFailoverEnabled;
+        private readonly bool isPertitionLevelCircuitBreakerEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -45,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPertitionLevelFailoverEnabled)
+            bool isPertitionLevelFailoverEnabled,
+            bool isPertitionLevelCircuitBreakerEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -60,6 +62,7 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
+            this.isPertitionLevelCircuitBreakerEnabled = isPertitionLevelCircuitBreakerEnabled;
         }
 
         /// <summary> 
@@ -454,10 +457,16 @@ namespace Microsoft.Azure.Cosmos
 
             if (shouldMarkEndpointUnavailableForPkRange)
             {
-                // Mark the partition as unavailable.
-                // Let the ClientRetry logic decide if the request should be retried
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
+                if (!this.documentServiceRequest.IsReadOnlyRequest
+                    || (this.documentServiceRequest.IsReadOnlyRequest
+                        && this.isPertitionLevelCircuitBreakerEnabled
+                        && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(this.documentServiceRequest)))
+                {
+                    // Mark the partition as unavailable.
+                    // Let the ClientRetry logic decide if the request should be retried
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest);
+                }
             }
 
             return this.ShouldRetryOnServiceUnavailable();
