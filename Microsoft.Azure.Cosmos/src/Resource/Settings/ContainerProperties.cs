@@ -330,12 +330,7 @@ namespace Microsoft.Azure.Cosmos
         /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
         /// </value>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        Collection<ComputedProperty> ComputedProperties
+        public Collection<ComputedProperty> ComputedProperties
         {
             get
             {
