@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4781](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4781) AppInsights: Adds classic attribute back to cosmos db to support appinsights sdk.
 
 - [4709](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4709) Availability: Adds account-level read regions as effective preferred regions when preferred regions is not set on client.
-
+  **Warning:** BoundedStaleness accounts configured with-out `ApplicationRegion` or `ApplicationPreferredRegions` and just global endpoint, will also have cross-region high availability but might see eventual reads from read-regions. Applications can set `CosmosClientOptions.LimitToEndpoint` to limit interactions to the configured endpoint only as workaround ``
 - [4810](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4810) Package Upgrade: Refactors code to upgrade DiagnosticSource Library from 6.0.1 to 8.0.1
 
 - [4794](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4794) Query: Adds hybrid search query pipeline stage
