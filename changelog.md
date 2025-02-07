@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [4706)(https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4706) Hedging: Adds support for writes on multi region accounts
 
-### <a name="3.47.0"/> [3.47.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.0) - 2025-1-30
+### <a name="3.47.0"/> [3.47.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.0) - 2025-2-07
 
 #### Added
 - [4682](https://github.com/Azure/azure-cosmos-dotnet-v3/pull4682) OpenTelemetry Metrics: Adds support to collect Operation level metrics
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4872](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4872) Open Telemetry : Adds implementation for network level Metrics
 - [4925](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4925) Open Telemetry: Adds option to opt-in optional dimensions
 - [4966](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4966) Hedging: Adds reads CrossRegionalHedging to GA SDK release
+- [4994](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4994) Query: Adds Computed Properties to Public Interface
 > This also includes a Direct Package version update to 3.37.9 in PR [#4990](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4990)
 
 #### Fixed
@@ -38,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [4949](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4949) RequestOptions: Fixes Etag code documentation
 - [4936](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4936) Optimization: Fixes SDK to use static readonly arrays for seperators
 - [4970](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4970) QuorumReader: Fixes bug where reads will fail in BoundedStaleness when a secondary replica is unresponsive to use primary replica on retries
+- [4995](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4995) Open Telemetry: Fixes attribute name as per OTel Guidance
 
 ### <a name="3.47.0-preview.1"/> [3.47.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.0-preview.1) - 2024-12-24
 

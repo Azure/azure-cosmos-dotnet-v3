@@ -169,6 +169,12 @@ namespace Microsoft.Azure.Cosmos
         Ascending = 0,
         Descending = 1,
     }
+    public sealed class ComputedProperty
+    {
+        public ComputedProperty();
+        public string Name { get; set; }
+        public string Query { get; set; }
+    }
     public class ConflictProperties
     {
         public ConflictProperties();
@@ -279,6 +285,7 @@ namespace Microsoft.Azure.Cosmos
         public ContainerProperties(string id, string partitionKeyPath);
         public Nullable<int> AnalyticalStoreTimeToLiveInSeconds { get; set; }
         public ClientEncryptionPolicy ClientEncryptionPolicy { get; set; }
+        public Collection<ComputedProperty> ComputedProperties { get; set; }
         public ConflictResolutionPolicy ConflictResolutionPolicy { get; set; }
         public Nullable<int> DefaultTimeToLive { get; set; }
         public string ETag { get; }
@@ -412,13 +419,13 @@ namespace Microsoft.Azure.Cosmos
             }
             public static class Name
             {
-                public const string BackendLatency = "db.client.cosmosdb.request.service_duration";
-                public const string ChannelAquisitionLatency = "db.client.cosmosdb.request.channel_aquisition.duration";
-                public const string Latency = "db.client.cosmosdb.request.duration";
-                public const string ReceivedTimeLatency = "db.client.cosmosdb.request.received.duration";
-                public const string RequestBodySize = "db.client.cosmosdb.request.body.size";
-                public const string ResponseBodySize = "db.client.cosmosdb.response.body.size";
-                public const string TransitTimeLatency = "db.client.cosmosdb.request.transit.duration";
+                public const string BackendLatency = "azure.cosmosdb.client.request.service_duration";
+                public const string ChannelAquisitionLatency = "azure.cosmosdb.client.request.channel_aquisition.duration";
+                public const string Latency = "azure.cosmosdb.client.request.duration";
+                public const string ReceivedTimeLatency = "azure.cosmosdb.client.request.received.duration";
+                public const string RequestBodySize = "azure.cosmosdb.client.request.body.size";
+                public const string ResponseBodySize = "azure.cosmosdb.client.response.body.size";
+                public const string TransitTimeLatency = "azure.cosmosdb.client.request.transit.duration";
             }
             public static class Unit
             {
@@ -439,9 +446,9 @@ namespace Microsoft.Azure.Cosmos
             }
             public static class Name
             {
-                public const string ActiveInstances = "db.client.cosmosdb.active_instance.count";
+                public const string ActiveInstances = "azure.cosmosdb.client.active_instance.count";
                 public const string Latency = "db.client.operation.duration";
-                public const string RequestCharge = "db.client.cosmosdb.operation.request_charge";
+                public const string RequestCharge = "azure.cosmosdb.client.operation.request_charge";
                 public const string RowCount = "db.client.response.row_count";
             }
             public static class Unit
@@ -1315,6 +1322,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CompositeIndexDefinition<T> Path(string path);
         public CompositeIndexDefinition<T> Path(string path, CompositePathSortOrder sortOrder);
     }
+    public class ComputedPropertiesDefinition<T>
+    {
+        public T Attach();
+        public ComputedPropertiesDefinition<T> WithComputedProperty(string name, string query);
+    }
     public class ConflictResolutionDefinition
     {
         public ContainerBuilder Attach();
@@ -1340,6 +1352,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     {
         public ContainerDefinition();
         public ContainerProperties Build();
+        public ComputedPropertiesDefinition<T> WithComputedProperties();
         public T WithDefaultTimeToLive(int defaultTtlInSeconds);
         public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan);
         public IndexingPolicyDefinition<T> WithIndexingPolicy();
