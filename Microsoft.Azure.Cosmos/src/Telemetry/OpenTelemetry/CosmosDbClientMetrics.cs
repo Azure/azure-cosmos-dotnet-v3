@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// These metrics are useful for tracking various aspects of Cosmos DB client operations and compliant with Open Telemetry Semantic Conventions 
     /// It defines standardized names, units, descriptions, and histogram buckets for measuring and monitoring performance through OpenTelemetry.
     /// </summary>
-    public sealed class CosmosDbClientMetrics
+#if PREVIEW
+    public
+#else 
+    internal
+#endif
+    sealed class CosmosDbClientMetrics
     {
         /// <summary>
         /// Operation Metrics
