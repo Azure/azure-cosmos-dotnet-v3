@@ -389,75 +389,7 @@ namespace Microsoft.Azure.Cosmos
         public CosmosThresholdOptions CosmosThresholdOptions { get; set; }
         public bool DisableDistributedTracing { get; set; }
         public bool DisableSendingMetricsToService { get; set; }
-        public bool IsClientMetricsEnabled { get; set; }
-        public NetworkMetricsOptions NetworkMetricsOptions { get; set; }
-        public OperationMetricsOptions OperationMetricsOptions { get; set; }
         public QueryTextMode QueryTextMode { get; set; }
-    }
-    public sealed class CosmosDbClientMetrics
-    {
-        public CosmosDbClientMetrics();
-        public static class HistogramBuckets
-        {
-            public static readonly double[] RequestLatencyBuckets;
-            public static readonly double[] RequestUnitBuckets;
-            public static readonly double[] RowCountBuckets;
-        }
-        public static class NetworkMetrics
-        {
-            public const string MeterName = "Azure.Cosmos.Client.Request";
-            public const string Version = "1.0.0";
-            public static class Description
-            {
-                public const string BackendLatency = "Backend Latency (for direct mode).";
-                public const string ChannelAquisitionLatency = "The duration of the successfully established outbound TCP connections. i.e. Channel Aquisition Time (for direct mode).";
-                public const string Latency = "Duration of client requests.";
-                public const string ReceivedTimeLatency = "Time spent on 'Received' stage (for direct mode).";
-                public const string RequestBodySize = "Size of client request body.";
-                public const string ResponseBodySize = "Size of client response body.";
-                public const string TransitTimeLatency = "Time spent on the wire (for direct mode).";
-            }
-            public static class Name
-            {
-                public const string BackendLatency = "azure.cosmosdb.client.request.service_duration";
-                public const string ChannelAquisitionLatency = "azure.cosmosdb.client.request.channel_aquisition.duration";
-                public const string Latency = "azure.cosmosdb.client.request.duration";
-                public const string ReceivedTimeLatency = "azure.cosmosdb.client.request.received.duration";
-                public const string RequestBodySize = "azure.cosmosdb.client.request.body.size";
-                public const string ResponseBodySize = "azure.cosmosdb.client.response.body.size";
-                public const string TransitTimeLatency = "azure.cosmosdb.client.request.transit.duration";
-            }
-            public static class Unit
-            {
-                public const string Bytes = "bytes";
-                public const string Sec = "s";
-            }
-        }
-        public static class OperationMetrics
-        {
-            public const string MeterName = "Azure.Cosmos.Client.Operation";
-            public const string Version = "1.0.0";
-            public static class Description
-            {
-                public const string ActiveInstances = "Number of active SDK client instances.";
-                public const string Latency = "Total end-to-end duration of the operation";
-                public const string RequestCharge = "Total request units per operation (sum of RUs for all requested needed when processing an operation)";
-                public const string RowCount = "For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service";
-            }
-            public static class Name
-            {
-                public const string ActiveInstances = "azure.cosmosdb.client.active_instance.count";
-                public const string Latency = "db.client.operation.duration";
-                public const string RequestCharge = "azure.cosmosdb.client.operation.request_charge";
-                public const string RowCount = "db.client.response.row_count";
-            }
-            public static class Unit
-            {
-                public const string Count = "#";
-                public const string RequestUnit = "# RU";
-                public const string Sec = "s";
-            }
-        }
     }
     public abstract class CosmosDiagnostics
     {
@@ -774,12 +706,6 @@ namespace Microsoft.Azure.Cosmos
         public override T Resource { get; }
         public override HttpStatusCode StatusCode { get; }
     }
-    public class NetworkMetricsOptions
-    {
-        public NetworkMetricsOptions();
-        public IDictionary<string, string> CustomDimensions { get; set; }
-        public Nullable<bool> IncludeRoutingId { get; set; }
-    }
     public enum OperationKind
     {
         Create = 1,
@@ -787,12 +713,6 @@ namespace Microsoft.Azure.Cosmos
         Invalid = 0,
         Read = 4,
         Replace = 2,
-    }
-    public class OperationMetricsOptions
-    {
-        public OperationMetricsOptions();
-        public IDictionary<string, string> CustomDimensions { get; set; }
-        public Nullable<bool> IncludeRegion { get; set; }
     }
     public struct PartitionKey : IEquatable<PartitionKey>
     {
@@ -1065,8 +985,6 @@ namespace Microsoft.Azure.Cosmos
         public List<string> ExcludeRegions { get; set; }
         public string IfMatchEtag { get; set; }
         public string IfNoneMatchEtag { get; set; }
-        public NetworkMetricsOptions NetworkMetricsOptions { get; set; }
-        public OperationMetricsOptions OperationMetricsOptions { get; set; }
         public Nullable<PriorityLevel> PriorityLevel { get; set; }
         public IReadOnlyDictionary<string, object> Properties { get; set; }
         public RequestOptions ShallowCopy();
