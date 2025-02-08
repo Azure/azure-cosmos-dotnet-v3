@@ -90,6 +90,7 @@
 
             // todo?
             // BsonSerializer.RegisterSerializer(typeof(ulong), new UInt64Serializer(BsonType.Decimal128));
+
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
                 await this.database.DropCollectionAsync(this.configuration.ContainerName);
@@ -100,7 +101,6 @@
             this.dataSource = await DataSource.CreateAsync(this.configuration,
             paddingGenerator: (DataSource d) =>
             {
-                // setup padding
                 (MyDocument tempDoc, _) = d.GetNextItemToInsert();
                 int currentLen = tempDoc.ToBson().Length;
                 int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
@@ -130,7 +130,7 @@
             }
 
             long mid = (start + end) / 2;
-            string midId = this.dataSource.GetId(mid);
+            string midId = DataSource.GetId(mid);
             IAsyncCursor<MyDocument> docsFound = await this.collection.FindAsync<MyDocument>(doc => doc.Id == midId);
             if(!docsFound.Any())
             {
@@ -161,13 +161,11 @@
             else if (this.configuration.RequestType == RequestType.PointRead)
             {
                 long randomId = this.random.NextInt64(this.dataSource.InitialItemId);
-                string id = this.dataSource.GetId(randomId);
+                string id = DataSource.GetId(randomId);
                 return this.collection.FindAsync((MyDocument doc) => doc.Id == id);
             }
-            else
-            { 
-                throw new NotSupportedException(); 
-            }
+
+            throw new NotImplementedException(this.configuration.RequestType.ToString());
         }
 
         public ResponseAttributes HandleResponse(Task request, object context)

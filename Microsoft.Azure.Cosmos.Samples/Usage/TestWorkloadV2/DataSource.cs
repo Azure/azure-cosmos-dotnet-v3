@@ -35,7 +35,7 @@
         }
 
 
-        public string GetId(long itemId)
+        public static string GetId(long itemId)
         {
             return itemId.ToString(IdFormatSpecifier);
         }

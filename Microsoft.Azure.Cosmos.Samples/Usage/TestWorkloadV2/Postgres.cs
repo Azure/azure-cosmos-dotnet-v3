@@ -114,15 +114,21 @@
             NpgsqlConnection conn = this.pgDataSource.OpenConnection();
             context = conn;
 
-            (MyDocument doc, _) = this.dataSource.GetNextItemToInsert();
+            if (this.configuration.RequestType == RequestType.Create)
+            {
 
-            NpgsqlCommand cmd = new NpgsqlCommand(this.insertStatement, conn);
-            cmd.Parameters.AddWithValue("id", doc.Id);
-            cmd.Parameters.AddWithValue("pk", doc.PK);
-            cmd.Parameters.AddWithValue("other", doc.Other);
-            cmd.Prepare();
-   
-            return cmd.ExecuteNonQueryAsync();
+                (MyDocument doc, _) = this.dataSource.GetNextItemToInsert();
+
+                NpgsqlCommand cmd = new NpgsqlCommand(this.insertStatement, conn);
+                cmd.Parameters.AddWithValue("id", doc.Id);
+                cmd.Parameters.AddWithValue("pk", doc.PK);
+                cmd.Parameters.AddWithValue("other", doc.Other);
+                cmd.Prepare();
+
+                return cmd.ExecuteNonQueryAsync();
+            }
+
+            throw new NotImplementedException(this.configuration.RequestType.ToString());
         }
     }
 }

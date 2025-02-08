@@ -159,9 +159,15 @@
         public Task MakeRequestAsync(CancellationToken cancellationToken, out object context)
         {
             context = null;
-            (MyDocument myDocument, _) = this.dataSource.GetNextItemToInsert();
-            IStatement boundStatement = this.preparedStatement.Bind(myDocument.PK, myDocument.Id, Guid.NewGuid().ToString(), myDocument.Other);
-            return this.session.ExecuteAsync(boundStatement);
+
+            if (this.configuration.RequestType == RequestType.Create)
+            {
+                (MyDocument myDocument, _) = this.dataSource.GetNextItemToInsert();
+                IStatement boundStatement = this.preparedStatement.Bind(myDocument.PK, myDocument.Id, Guid.NewGuid().ToString(), myDocument.Other);
+                return this.session.ExecuteAsync(boundStatement);
+            }
+
+            throw new NotImplementedException(this.configuration.RequestType.ToString());
         }
 
         public ResponseAttributes HandleResponse(Task request, object context)

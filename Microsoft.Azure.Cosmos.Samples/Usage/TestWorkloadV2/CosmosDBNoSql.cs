@@ -114,12 +114,14 @@
             {
                 return this.container.ReadItemStreamAsync("someid", new PartitionKey("somepk"));
             }
-            else
+            else if(this.configuration.RequestType == RequestType.Create)
             {
                 (MemoryStream stream, PartitionKey partitionKeyValue) = this.GetNextItem(this.dataSource);
                 context = stream;
                 return this.container.UpsertItemStreamAsync(stream, partitionKeyValue, this.itemRequestOptions, cancellationToken);
             }
+
+            throw new NotImplementedException(this.configuration.RequestType.ToString());
         }
 
         public ResponseAttributes HandleResponse(Task request, object context)
