@@ -66,7 +66,6 @@
                 throw;
             }
 
-            this.dataSource = new DataSource(this.configuration);
 
             this.partitionKeys = new PartitionKey[this.configuration.PartitionKeyCount];
             for (int pkIndex = 0; pkIndex < this.configuration.PartitionKeyCount; pkIndex++)
@@ -74,11 +73,16 @@
                 this.partitionKeys[pkIndex] = new PartitionKey(this.dataSource.PartitionKeyStrings[pkIndex]);
             }
 
-            // Find length and keep some bytes for the system generated properties
-            (MemoryStream stream, _) = this.GetNextItem();
-            int currentLen = (int)stream.Length + 205;
-            string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen) : string.Empty;
-            this.dataSource.InitializePaddingAndInitialItemId(padding);
+            this.dataSource = await DataSource.CreateAsync(this.configuration,
+                paddingGenerator: (DataSource d) =>
+                {
+                    // Find length and keep some bytes for the system generated properties
+                    (MemoryStream stream, _) = this.GetNextItem(d);
+                    int currentLen = (int)stream.Length + 205;
+                    string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen) : string.Empty;
+                    return Task.FromResult(padding);
+                },
+                initialItemIdFinder: null);
 
             this.itemRequestOptions = null;
             if (this.configuration.OmitContentInWriteResponse ?? true)
@@ -112,7 +116,7 @@
             }
             else
             {
-                (MemoryStream stream, PartitionKey partitionKeyValue) = this.GetNextItem();
+                (MemoryStream stream, PartitionKey partitionKeyValue) = this.GetNextItem(this.dataSource);
                 context = stream;
                 return this.container.UpsertItemStreamAsync(stream, partitionKeyValue, this.itemRequestOptions, cancellationToken);
             }
@@ -252,9 +256,9 @@
             return (type, value);
         }
 
-        public (MemoryStream, PartitionKey) GetNextItem()
+        private (MemoryStream, PartitionKey) GetNextItem(DataSource dataSource)
         {
-            (MyDocument myDocument, int currentPKIndex) = this.dataSource.GetNextItemToInsert();
+            (MyDocument myDocument, int currentPKIndex) = dataSource.GetNextItemToInsert();
             string value = JsonConvert.SerializeObject(myDocument, JsonSerializerSettings);
             return (new MemoryStream(Encoding.UTF8.GetBytes(value)), this.partitionKeys[currentPKIndex]);
         }

@@ -58,8 +58,13 @@
                 throw;
             }
 
-            this.dataSource = new DataSource(this.configuration);
-            this.dataSource.InitializePaddingAndInitialItemId(this.configuration.ItemSize > 400 ? new string('x', this.configuration.ItemSize - 400) : string.Empty);
+            this.dataSource = await DataSource.CreateAsync(this.configuration,
+                paddingGenerator: (_) => 
+                    { 
+                        string padding = this.configuration.ItemSize > 400 ? new string('x', this.configuration.ItemSize - 400) : string.Empty; 
+                        return Task.FromResult(padding); 
+                    },
+                initialItemIdFinder: null);
 
             this.preparedStatement = this.session.Prepare("INSERT INTO " + this.configuration.ContainerName + "(pk, ck, mvpk, other) VALUES (?, ?, ?, ?)");
 

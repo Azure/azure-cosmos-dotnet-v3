@@ -90,31 +90,31 @@
 
             // todo?
             // BsonSerializer.RegisterSerializer(typeof(ulong), new UInt64Serializer(BsonType.Decimal128));
-
-            this.dataSource = new DataSource(this.configuration);
-
-            // setup padding
-            (MyDocument tempDoc, _) = this.dataSource.GetNextItemToInsert();
-            int currentLen = tempDoc.ToBson().Length;
-            int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
-            string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen - systemPropertiesLen) : string.Empty;
-
-            int workerIndex = this.configuration.WorkerIndex ?? 0;
-            long lastId; 
             if (this.configuration.ShouldRecreateContainerOnStart)
             {
                 await this.database.DropCollectionAsync(this.configuration.ContainerName);
 
                 await this.database.CreateCollectionAsync(this.configuration.ContainerName);
-
-                lastId = workerIndex * DataSource.WorkerIdMultiplier;
             }
-            else
+
+            this.dataSource = await DataSource.CreateAsync(this.configuration,
+            paddingGenerator: (DataSource d) =>
             {
-                lastId = await this.BinarySearchExistingIdAsync(workerIndex * DataSource.WorkerIdMultiplier, (workerIndex + 1) * DataSource.WorkerIdMultiplier);
-            }
-
-            this.dataSource.InitializePaddingAndInitialItemId(padding, lastId);
+                // setup padding
+                (MyDocument tempDoc, _) = d.GetNextItemToInsert();
+                int currentLen = tempDoc.ToBson().Length;
+                int systemPropertiesLen = this.mongoFlavor == MongoFlavor.CosmosDBRU ? 100 : 0;
+                string padding = this.configuration.ItemSize > currentLen ? new string('x', this.configuration.ItemSize - currentLen - systemPropertiesLen) : string.Empty;
+                return Task.FromResult(padding);
+            },
+            initialItemIdFinder: async () =>
+            {
+                int workerIndex = this.configuration.WorkerIndex ?? 0;
+                long lastId = this.configuration.ShouldRecreateContainerOnStart
+                    ? workerIndex * DataSource.WorkerIdMultiplier
+                    : await this.BinarySearchExistingIdAsync(workerIndex * DataSource.WorkerIdMultiplier, (workerIndex + 1) * DataSource.WorkerIdMultiplier);
+                return lastId;
+            });
 
             this.insertOneOptions = new InsertOneOptions();
             this.random = new Random(Configuration.RandomSeed);

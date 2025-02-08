@@ -3,6 +3,7 @@
     using System.Threading;
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     internal class DataSource
     {
@@ -21,32 +22,18 @@
         public const string IdFormatSpecifier = "D10";
         public const long WorkerIdMultiplier = 10000000000;
 
-        public DataSource(CommonConfiguration configuration)
+
+        public static async Task<DataSource> CreateAsync(CommonConfiguration configuration, 
+            Func<DataSource, Task<string>> paddingGenerator, 
+            Func<Task<long>> initialItemIdFinder)
         {
-            this.PartitionKeyValuePrefix = DateTime.UtcNow.ToString("yyyyMMddHHmmss-");
-            this.partitionKeyCount = configuration.PartitionKeyCount;
-            if(configuration.TotalRequestCount.HasValue)
-            {
-                this.partitionKeyCount = Math.Min(this.partitionKeyCount, configuration.TotalRequestCount.Value);
-            }
-
-            this.PartitionKeyStrings = this.GetPartitionKeys(this.partitionKeyCount);
-
-            for (int i = 0; i < configuration.ItemArrayCount; i++)
-            {
-               this.arrayValue.Add(i.ToString());
-            }
-
-            this.padding = string.Empty;
+            DataSource dataSource = new DataSource(configuration);
+            dataSource.padding = paddingGenerator != null ? await paddingGenerator(dataSource) : null;
+            dataSource.InitialItemId = initialItemIdFinder != null ? await initialItemIdFinder() : 0;
+            dataSource.itemId = dataSource.InitialItemId;
+            return dataSource;
         }
 
-        // Ugly as the caller has to remember to do this, but anyway looks optional
-        public void InitializePaddingAndInitialItemId(string padding, long? itemIndex = null)
-        {
-            this.padding = padding;
-            this.InitialItemId = itemIndex ?? 0;
-            this.itemId = this.InitialItemId;
-        }
 
         public string GetId(long itemId)
         {
@@ -73,6 +60,26 @@
                 Other = this.padding
             }, currentPKIndex);
         }
+
+        private DataSource(CommonConfiguration configuration)
+        {
+            this.PartitionKeyValuePrefix = DateTime.UtcNow.ToString("yyyyMMddHHmmss-");
+            this.partitionKeyCount = configuration.PartitionKeyCount;
+            if (configuration.TotalRequestCount.HasValue)
+            {
+                this.partitionKeyCount = Math.Min(this.partitionKeyCount, configuration.TotalRequestCount.Value);
+            }
+
+            this.PartitionKeyStrings = this.GetPartitionKeys(this.partitionKeyCount);
+
+            for (int i = 0; i < configuration.ItemArrayCount; i++)
+            {
+                this.arrayValue.Add(i.ToString());
+            }
+
+            this.padding = string.Empty;
+        }
+
 
         private string[] GetPartitionKeys(int partitionKeyCount)
         {
