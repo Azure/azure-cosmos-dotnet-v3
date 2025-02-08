@@ -17,19 +17,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
         }
 
-        public override List<Tuple<PartitionKeyRange, Uri>> GetTuples()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(DocumentServiceRequest request)
+        public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+            DocumentServiceRequest request)
         {
             return false;
         }
 
-        public override void SetBackgroundConnectionInitTask(Func<List<Tuple<PartitionKeyRange, Uri>>, Task<bool>> backgroundConnectionInitTask)
+        public override void SetBackgroundConnectionInitTask(
+            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>> backgroundConnectionInitTask)
         {
-            throw new NotImplementedException();
+            return;
         }
 
         public override bool TryAddPartitionLevelLocationOverride(

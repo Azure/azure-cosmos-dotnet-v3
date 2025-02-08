@@ -939,7 +939,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
-            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover
+            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
                 ? new GlobalPartitionEndpointManagerCore(this.GlobalEndpointManager)
                 : GlobalPartitionEndpointManagerNoOp.Instance;
 

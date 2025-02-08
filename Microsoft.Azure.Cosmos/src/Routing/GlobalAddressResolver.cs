@@ -230,34 +230,39 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return partitionAddressInformation;
             }
 
-            List<Tuple<PartitionKeyRange, Uri>> pkRangeUriMappings = this.partitionKeyRangeLocationCache.GetTuples();
-            if (pkRangeUriMappings.Count > 0)
-            {
-                await this.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeUriMappings);
-            }
+            //ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
+
+            //List<Tuple<PartitionKeyRange, Uri>> pkRangeUriMappings = this.partitionKeyRangeLocationCache.GetTuples();
+            //if (pkRangeUriMappings.Count > 0)
+            //{
+            //    await this.TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync(pkRangeUriMappings, collection.ResourceId);
+            //}
 
             resolver = this.GetAddressResolver(request);
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
         public async Task<bool> TryOpenConnectionToUnhealthyEndpointsAsync(
-            List<Tuple<PartitionKeyRange, Uri>> pkRangeUriMappings)
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
         {
-            foreach (Tuple<PartitionKeyRange, Uri> tuple in pkRangeUriMappings)
+            foreach (PartitionKeyRange pkRange in pkRangeUriMappings.Keys)
             {
-                PartitionKeyRange pkRange = tuple.Item1;
-                Uri originalFailedLocation = tuple.Item2;
-                //PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
-                //Uri originalFailedLocation = partionFailover.GetFailedLocations().First();
+                string collectionRid = pkRangeUriMappings[pkRange].Item1;
+                Uri originalFailedLocation = pkRangeUriMappings[pkRange].Item2;
 
-                DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.ResourceToken);
+                DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
+                    OperationType.Read,
+                    collectionRid,
+                    ResourceType.Collection,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
                 try
                 {
                     PartitionAddressInformation addresses = await this.addressCacheByEndpoint[originalFailedLocation]
                         .AddressCache
                         .TryGetAddressesAsync(
                             request,
-                            new PartitionKeyRangeIdentity(pkRange.Id),
+                            new PartitionKeyRangeIdentity(collectionRid, pkRange.Id),
                             request.ServiceIdentity,
                             false,
                             CancellationToken.None);
@@ -265,14 +270,23 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PerProtocolPartitionAddressInformation currentAddressInfo = addresses.Get(Protocol.Tcp);
                     IReadOnlyList<TransportAddressUri> transportAddressUris = currentAddressInfo.ReplicaTransportAddressUris;
 
+                    foreach (TransportAddressUri transportAddressUri in transportAddressUris)
+                    {
+                        DefaultTrace.TraceInformation($"Opening connection to {transportAddressUri.Uri} and current health: {transportAddressUri.GetCurrentHealthState().GetHealthStatus()}");
+                    }
+
                     await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(transportAddressUris);
 
                     foreach (TransportAddressUri transportAddressUri in transportAddressUris)
                     {
-                        Console.WriteLine($"Opened connection to {transportAddressUri.Uri} and current health: {transportAddressUri.GetCurrentHealthState().GetHealthStatus()}");
                         if (transportAddressUri.GetCurrentHealthState().GetHealthStatus() != TransportAddressHealthState.HealthStatus.Connected)
                         {
                             return false;
+                        }
+                        else
+                        {
+                            DefaultTrace.TraceInformation($"Opened connection to {transportAddressUri.Uri} and current health: {transportAddressUri.GetCurrentHealthState().GetHealthStatus()}");
+                            pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
                         }
                     }
                 }
@@ -280,6 +294,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     // Do Nothing.
                     DefaultTrace.TraceInformation(ex.Message);
+                    return false;
                 }
             }
 

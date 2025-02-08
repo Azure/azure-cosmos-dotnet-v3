@@ -35,11 +35,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Can Partition fail over on request timeouts.
         /// </summary>
         public abstract void SetBackgroundConnectionInitTask(
-            Func<List<Tuple<PartitionKeyRange, Uri>>, Task<bool>> backgroundConnectionInitTask);
-
-        /// <summary>
-        /// Can Partition fail over on request timeouts.
-        /// </summary>
-        public abstract List<Tuple<PartitionKeyRange, Uri>> GetTuples();
+            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>> backgroundConnectionInitTask);
     }
 }
