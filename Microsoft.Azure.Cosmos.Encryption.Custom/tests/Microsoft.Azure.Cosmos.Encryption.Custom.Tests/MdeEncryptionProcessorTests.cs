@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.AreEqual(testDoc.PK, encryptedDoc.Property(nameof(TestDoc.PK)).Value.Value<string>());
             Assert.AreEqual(testDoc.NonSensitive, encryptedDoc.Property(nameof(TestDoc.NonSensitive)).Value.Value<string>());
             Assert.IsNotNull(encryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<string>());
-            Assert.AreNotEqual(testDoc.SensitiveInt, encryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<string>()); // not equal since value is encrypted
+            Assert.AreNotEqual(testDoc.SensitiveInt.ToString(), encryptedDoc.Property(nameof(TestDoc.SensitiveInt)).Value.Value<string>()); // not equal since value is encrypted
 
             JProperty eiJProp = encryptedDoc.Property(Constants.EncryptedInfo);
             Assert.IsNotNull(eiJProp);

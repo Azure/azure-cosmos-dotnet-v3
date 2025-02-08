@@ -96,7 +96,9 @@
         }
 
         [TestClass]
+#pragma warning disable MSTEST0002 // Test classes should have valid layout - intent needs to be revised, but something is suspicious here.
         private sealed class Implementation : PartitionRangeEnumeratorTests<ReadFeedPage, ReadFeedState>
+#pragma warning restore MSTEST0002 // Test classes should have valid layout
         {
             private const int Iterations = 1;
 
@@ -106,7 +108,9 @@
             }
 
             [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
             public async Task TestSplitAsync(bool aggressivePrefetch, bool exercisePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -144,7 +148,9 @@
             }
 
             [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
             public async Task TestBufferPageAsync(bool aggressivePrefetch, bool exercisePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);

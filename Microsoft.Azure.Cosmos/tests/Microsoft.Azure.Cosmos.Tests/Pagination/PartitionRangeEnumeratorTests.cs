@@ -22,7 +22,9 @@
         }
 
         [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
         public async Task TestMoveNextAsyncThrowsTaskCanceledException()
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
         {
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -39,7 +41,9 @@
         }
 
         [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
         public async Task TestDrainFullyAsync(bool aggressivePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
         {
             int numItems = 1000;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -49,7 +53,9 @@
         }
 
         [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
         public async Task TestResumingFromStateAsync(bool aggressivePrefetch, bool exercisePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
         {
             int numItems = 1000;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
@@ -64,7 +70,9 @@
         }
 
         [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
         public async Task Test429sAsync(bool aggressivePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
         {
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
@@ -105,7 +113,9 @@
         }
 
         [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
         public async Task Test429sWithContinuationsAsync(bool aggressivePrefetch, bool exercisePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
         {
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(
@@ -157,7 +167,9 @@
         }
 
         [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
         public async Task TestEmptyPages(bool aggressivePrefetch)
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
         {
             int numItems = 100;
             IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(

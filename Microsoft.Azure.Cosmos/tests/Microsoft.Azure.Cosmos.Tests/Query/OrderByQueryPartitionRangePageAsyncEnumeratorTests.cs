@@ -24,7 +24,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
         }
 
         [TestClass]
+#pragma warning disable MSTEST0002 // Test classes should have valid layout - intent needs to be revised, but something is suspicious here.
         private sealed class Implementation : PartitionRangeEnumeratorTests<OrderByQueryPage, QueryState>
+#pragma warning restore MSTEST0002 // Test classes should have valid layout
         {
             public Implementation()
                 : base(singlePartition: true)

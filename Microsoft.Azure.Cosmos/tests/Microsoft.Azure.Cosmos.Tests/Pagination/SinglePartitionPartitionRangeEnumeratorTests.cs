@@ -61,7 +61,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         }
 
         [TestClass]
+#pragma warning disable MSTEST0002 // Test classes should have valid layout - intent needs to be revised, but something is suspicious here.
         private sealed class Implementation : PartitionRangeEnumeratorTests<ReadFeedPage, ReadFeedState>
+#pragma warning restore MSTEST0002 // Test classes should have valid layout
         {
             public Implementation()
                 : base(singlePartition: true)
@@ -69,7 +71,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             }
 
             [TestMethod]
+#pragma warning disable MSTEST0003 // Test methods should have valid layout - intent needs to be revised, but something is suspicious here.
             public async Task TestSplitAsync()
+#pragma warning restore MSTEST0003 // Test methods should have valid layout
             {
                 int numItems = 100;
                 IDocumentContainer inMemoryCollection = await this.CreateDocumentContainerAsync(numItems);
