@@ -95,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             {
                 await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
+                    DisableDistributedTracing = true,
                     IsClientMetricsEnabled = true
                 })
                 .WithConnectionModeDirect());
@@ -104,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             {
                 await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
+                    DisableDistributedTracing = true,
                     IsClientMetricsEnabled = true
                 })
                 .WithConnectionModeGateway());
@@ -167,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
             {
+                DisableDistributedTracing = true,
                 IsClientMetricsEnabled = true,
                 OperationMetricsOptions = new OperationMetricsOptions()
                 {
