@@ -207,7 +207,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.EmulatorPipeline1Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulatorPipeline1Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -p:IsPreview=true;SdkProjectRef=true
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
@@ -247,7 +247,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.EmulatorPipeline2Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulatorPipeline2Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -p:IsPreview=true;SdkProjectRef=true
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
@@ -406,7 +406,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.EmulatorPipeline3Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulatorPipeline3Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -p:IsPreview=true;SdkProjectRef=true
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
@@ -445,7 +445,7 @@ jobs:
     inputs:
       command: test
       projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
-      arguments: ${{ parameters.EmulatorPipeline4Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      arguments: ${{ parameters.EmulatorPipeline4Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }} -p:IsPreview=true;SdkProjectRef=true
       nugetConfigPath: NuGet.config
       publishTestResults: true
       testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests
