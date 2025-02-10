@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
     using System;
     using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
     using Newtonsoft.Json.Linq;
 
     /// <summary>
@@ -84,6 +86,33 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         protected internal override Stream ToStream(CosmosSerializer serializer)
         {
             return serializer.ToStream(this.Item);
+        }
+
+        /// <inheritdoc/>
+        /// <remarks>This solution is not performant with Newtonsoft.Json.</remarks>
+        protected internal override async Task ToStreamAsync(CosmosSerializer serializer, Stream outputStream, CancellationToken cancellationToken)
+        {
+            Stream temp = serializer.ToStream(this.Item);
+#if NET8_0_OR_GREATER
+            await temp.CopyToAsync(outputStream, cancellationToken);
+#else
+            await temp.CopyToAsync(outputStream, 81920, cancellationToken);
+#endif
+        }
+
+#if NET8_0_OR_GREATER
+        /// <inheritdoc/>
+        /// <remarks>Direct stream based item is not supported with Newtonsoft.Json.</remarks>
+        protected internal override void SetDecryptableStream(Stream decryptableStream, Encryptor encryptor, JsonProcessor jsonProcessor, CosmosSerializer cosmosSerializer, StreamManager streamManager)
+        {
+            throw new NotImplementedException("Stream based item is only allowed for EncryptionContainerStream");
+        }
+#endif
+
+        /// <inheritdoc/>
+        /// <remarks>Does nothing with Newtonsoft based EncryptableItem.</remarks>
+        public override void Dispose()
+        {
         }
     }
 }
