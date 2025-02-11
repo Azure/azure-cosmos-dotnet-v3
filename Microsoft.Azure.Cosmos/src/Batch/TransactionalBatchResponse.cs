@@ -393,6 +393,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Retrieves the size of the transactional batch.
+        /// </summary>
+        /// <returns>
+        /// An integer representing the number of operations in the batch. 
+        /// Returns 0 if there are no operations.
+        /// </returns>
+        /// <remarks>
+        /// This method checks the <see cref="Operations"/> property to determine the number of operations in the current transactional batch.
+        /// If the <see cref="Operations"/> property is null, it returns 0, indicating that there are no operations in the batch.
+        /// </remarks>
+        internal int GetBatchSize()
+        {
+            if (this.Operations == null)
+            {
+               return 0;
+            }
+            return this.Operations.Count;
+        }
+
+        /// <summary>
         /// Disposes the disposable members held by this class.
         /// </summary>
         /// <param name="disposing">Indicates whether to dispose managed resources or not.</param>

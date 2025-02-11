@@ -234,14 +234,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 {
                                     if (aggregate == Aggregate.Avg)
                                     {
-                                        if (count == 0)
-                                        {
-                                            aggregationResult = Undefined;
-                                        }
-                                        else
-                                        {
-                                            aggregationResult = CosmosNumber64.Create(Number64.ToDouble(number.Value) / count);
-                                        }
+                                        aggregationResult = count == 0 ? Undefined : CosmosNumber64.Create(Number64.ToDouble(number.Value) / count);
                                     }
                                     else
                                     {
@@ -263,15 +256,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                                 throw new ArgumentException($"Unknown {nameof(Aggregate)} {aggregate}");
                         }
 
-                        if(aggregationResult != Undefined)
-                        {
-                            rewrittenExpression = aggregationResult.Accept(CosmosElementToSqlScalarExpression.Singleton);
-                        }
-                        else
-                        {
-                            rewrittenExpression = SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
-                        }
-                        
+                        rewrittenExpression = aggregationResult != Undefined
+                            ? aggregationResult.Accept(CosmosElementToSqlScalarExpression.Singleton)
+                            : SqlLiteralScalarExpression.Create(SqlUndefinedLiteral.Create());
+
                     }
                     else
                     {

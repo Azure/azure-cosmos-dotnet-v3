@@ -157,7 +157,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             {
                 return CosmosExceptionFactory.CreateBadRequestException(
                     message: malformedChangeFeedContinuationTokenException.Message,
-                    headers: new Headers(),
+                    headers: new Headers()
+                    {
+                        SubStatusCode = Documents.SubStatusCodes.MalformedContinuationToken
+                    },
                     stackTrace: malformedChangeFeedContinuationTokenException.StackTrace,
                     innerException: malformedChangeFeedContinuationTokenException,
                     trace: trace);

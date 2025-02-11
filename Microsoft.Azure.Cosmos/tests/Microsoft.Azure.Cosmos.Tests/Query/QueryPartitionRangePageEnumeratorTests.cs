@@ -89,7 +89,7 @@
 
                 await documentContainer.RefreshProviderAsync(NoOpTrace.Singleton, cancellationToken: default);
                 List<FeedRangeEpk> ranges = await documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default);
                 foreach (FeedRangeEpk range in ranges)
                 {
@@ -101,7 +101,7 @@
                             feedRangeState: feedRangeState,
                             partitionKey: null,
                             containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                            queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10)),
+                            queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10)),
                         trace: NoOpTrace.Singleton);
                     HashSet<string> resourceIdentifiers = await this.DrainFullyAsync(enumerable);
 
@@ -133,7 +133,7 @@
                 QueryState state = null)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
                 return new PartitionRangePageAsyncEnumerable<QueryPage, QueryState>(
@@ -144,7 +144,7 @@
                         feedRangeState: feedRangeState,
                         partitionKey: null,
                         containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10)),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10)),
                     trace: NoOpTrace.Singleton);
             }
 
@@ -156,7 +156,7 @@
                 CancellationToken cancellationToken = default)
             {
                 List<FeedRangeEpk> ranges = documentContainer.GetFeedRangesAsync(
-                    trace: NoOpTrace.Singleton, 
+                    trace: NoOpTrace.Singleton,
                     cancellationToken: default).Result;
                 Assert.AreEqual(1, ranges.Count);
 
@@ -167,7 +167,7 @@
                         feedRangeState: new FeedRangeState<QueryState>(ranges[0], state),
                         partitionKey: null,
                         containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
-                        queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: 10)),
+                        queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10)),
                     trace: NoOpTrace.Singleton,
                     cancellationToken: default);
 

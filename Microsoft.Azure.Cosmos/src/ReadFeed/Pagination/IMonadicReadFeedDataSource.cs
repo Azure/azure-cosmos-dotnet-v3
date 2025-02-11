@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed.Pagination
     {
         Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions,
+            ReadFeedExecutionOptions readFeedPaginationOptions,
             ITrace trace,
             CancellationToken cancellationToken);
     }

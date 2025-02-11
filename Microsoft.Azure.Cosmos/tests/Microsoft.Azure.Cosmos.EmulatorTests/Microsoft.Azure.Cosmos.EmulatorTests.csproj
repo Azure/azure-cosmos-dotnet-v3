@@ -43,6 +43,7 @@
     <None Remove="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDataMember.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNetCustomSerializer.xml" />
+    <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNetDefaultSerializer.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoft.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoftDotNet.xml" />
     <None Remove="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerNewtonsoftDataMember.xml" />
@@ -51,9 +52,9 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.7.1" />
-    <PackageReference Include="OpenTelemetry" Version="1.3.1" />
+    <PackageReference Include="OpenTelemetry" Version="1.9.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Security.SecureString" Version="4.3.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.0" />
@@ -62,9 +63,8 @@
     <PackageReference Include="Moq" Version="4.8.2" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.3.2" />
     <PackageReference Include="MSTest.TestFramework" Version="1.3.2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="System.Reflection" Version="4.3.0" />
-    <PackageReference Include="Azure.Core" Version="1.19.0" />
   </ItemGroup>
   
   <ItemGroup>
@@ -112,6 +112,9 @@
 	<Content Include="BaselineTest\TestBaseline\IndexMetricsParserBaselineTest.IndexUtilizationHeaderLengthTest.xml">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</Content>
+    <Content Include="BaselineTest\TestBaseline\QueryAdvisorBaselineTest.QueryAdviceParse.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqAggregateFunctionBaselineTests.TestAny.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -196,6 +199,12 @@
 	<Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestGroupByTranslation.xml">
 		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</Content>
+	<Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestGroupByMultiValueTranslation.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
+	<Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestGroupByMultiKeyTranslation.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqGeneralBaselineTests.TestOrderByTranslation.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -223,6 +232,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDateTimeJsonConverterTimezones.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+	<Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestDocumentIdBuiltinFunction.xml">
+		<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccessWithNullableTypes.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -277,6 +289,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestMemberAccess.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDotNetDefaultSerializer.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationWithCustomSerializerBaseline.TestMemberInitializerDataMember.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -330,6 +345,10 @@
       <Link>Documents\MillionSong1KDocuments.json</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Documents\text-3properties-1536dimensions-100documents.json">
+      <Link>Documents\text-3properties-1536dimensions-100documents.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
@@ -357,6 +376,9 @@
     <None Update="Query\AggregateQueryTests.AggregateMixedTypes_baseline.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\FaultInjection\src\FaultInjection.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

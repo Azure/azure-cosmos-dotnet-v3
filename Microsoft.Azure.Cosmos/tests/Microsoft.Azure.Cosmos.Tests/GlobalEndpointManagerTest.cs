@@ -13,9 +13,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Microsoft.Azure.Documents;
 
     /// <summary>
     /// Tests for <see cref="GlobalEndpointManager"/>
@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// Tests for <see cref="GlobalEndpointManager"/>
         /// </summary>
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task EndpointFailureMockTest()
         {
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", "100");
@@ -35,24 +36,32 @@ namespace Microsoft.Azure.Cosmos
                 // Setup dummpy read locations for the database account
                 Collection<AccountRegion> readableLocations = new Collection<AccountRegion>();
 
-                AccountRegion writeLocation = new AccountRegion();
-                writeLocation.Name = "WriteLocation";
-                writeLocation.Endpoint = "https://writeendpoint.net/";
+                AccountRegion writeLocation = new AccountRegion
+                {
+                    Name = "WriteLocation",
+                    Endpoint = "https://writeendpoint.net/"
+                };
 
-                AccountRegion readLocation1 = new AccountRegion();
-                readLocation1.Name = "ReadLocation1";
-                readLocation1.Endpoint = "https://readendpoint1.net/";
+                AccountRegion readLocation1 = new AccountRegion
+                {
+                    Name = "ReadLocation1",
+                    Endpoint = "https://readendpoint1.net/"
+                };
 
-                AccountRegion readLocation2 = new AccountRegion();
-                readLocation2.Name = "ReadLocation2";
-                readLocation2.Endpoint = "https://readendpoint2.net/";
+                AccountRegion readLocation2 = new AccountRegion
+                {
+                    Name = "ReadLocation2",
+                    Endpoint = "https://readendpoint2.net/"
+                };
 
                 readableLocations.Add(writeLocation);
                 readableLocations.Add(readLocation1);
                 readableLocations.Add(readLocation2);
 
-                AccountProperties databaseAccount = new AccountProperties();
-                databaseAccount.ReadLocationsInternal = readableLocations;
+                AccountProperties databaseAccount = new AccountProperties
+                {
+                    ReadLocationsInternal = readableLocations
+                };
 
                 //Setup mock owner "document client"
                 Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
@@ -93,8 +102,8 @@ namespace Microsoft.Azure.Cosmos
 
                 Assert.IsTrue(getAccountInfoCount > 0, "Callback is not working. There should be at least one call in this time frame.");
                 getAccountInfoCount = 0;
-                Thread.Sleep(TimeSpan.FromSeconds(3));
-                Assert.AreEqual(0, getAccountInfoCount, "There should be no more account calls after the GlobalEndpointManager is disposed");
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                Assert.IsTrue(getAccountInfoCount <= 1, "There should be at most 1 call to refresh tied to the background refresh happening while Dispose cancels the internal CancellationToken");
             }
             finally
             {
@@ -119,8 +128,8 @@ namespace Microsoft.Azure.Cosmos
                            "northcentralus"
                        },
                    accountInitializationCustomEndpoints: null,
-                       getDatabaseAccountFn: (uri) => throw new Exception("The operation should be canceled and never make the network call."),
-                       cancellationTokenSource.Token);
+                   getDatabaseAccountFn: (uri) => throw new Exception("The operation should be canceled and never make the network call."),
+                   cancellationTokenSource.Token);
 
                 Assert.Fail("Previous call should have failed");
             }
@@ -260,7 +269,7 @@ namespace Microsoft.Azure.Cosmos
                 Assert.AreEqual(4, count, "All endpoints should have been tried. 1 global, 3 regional endpoints");
                 Assert.AreEqual(4, exceptions.Count, "Some exceptions were not logged");
                 Assert.AreEqual(4, aggregateException.InnerExceptions.Count, "aggregateException should have 4 inner exceptions");
-                foreach(Exception exception in aggregateException.InnerExceptions)
+                foreach (Exception exception in aggregateException.InnerExceptions)
                 {
                     Assert.IsTrue(exceptions.Contains(exception));
                 }
@@ -418,6 +427,70 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Test to validate for a client that has been warmed up with account-level regions, any subsequent
+        /// DatabaseAccount refresh calls should go through the effective preferred regions / account-level read regions
+        /// if the DatabaseAccount refresh call to the global / default endpoint failed with HttpRequestException (timeout also but not possible to inject
+        /// w/o adding a refresh method just for this test)
+        /// </summary>
+        [TestMethod]
+        public async Task GetDatabaseAccountFromEffectiveRegionalEndpointTestAsync()
+        {
+            AccountProperties databaseAccount = new AccountProperties
+            {
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    new AccountRegion
+                    {
+                        Name = "Location1",
+                        Endpoint = "https://testfailover-location1.documents-test.windows-int.net/"
+                    },
+                    new AccountRegion
+                    {
+                        Name = "Location2",
+                        Endpoint = "https://testfailover-location2.documents-test.windows-int.net/"
+                    },
+                    new AccountRegion
+                    {
+                        Name = "Location3",
+                        Endpoint = "https://testfailover-location3.documents-test.windows-int.net/"
+                    },
+                }
+            };
+
+            Uri defaultEndpoint = new Uri("https://testfailover.documents-test.windows-int.net/");
+            Uri effectivePreferredRegion1SuffixedUri = new Uri("https://testfailover-location1.documents-test.windows-int.net/");
+
+            //Setup mock owner "document client"
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(defaultEndpoint);
+            mockOwner.SetupSequence(owner =>
+                    owner.GetDatabaseAccountInternalAsync(defaultEndpoint, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount)
+                .ThrowsAsync(new HttpRequestException());
+            mockOwner.Setup(owner =>
+                    owner.GetDatabaseAccountInternalAsync(effectivePreferredRegion1SuffixedUri, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            // Create connection policy with no preferred locations
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+
+            using GlobalEndpointManager globalEndpointManager =
+                new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            globalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
+
+            await Task.Delay(TimeSpan.FromSeconds(5));
+            await globalEndpointManager.RefreshLocationAsync(forceRefresh: true);
+
+            mockOwner.Verify(
+                owner => owner.GetDatabaseAccountInternalAsync(defaultEndpoint, It.IsAny<CancellationToken>()),
+                Times.Exactly(2));
+            mockOwner.Verify(
+                owner => owner.GetDatabaseAccountInternalAsync(effectivePreferredRegion1SuffixedUri, It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        /// <summary>
         /// Test to validate that when an exception is thrown during a RefreshLocationAsync call
         /// the exception should not be bubbled up and remain unobserved. The exception should be
         /// handled gracefully and logged as a warning trace event.
@@ -447,7 +520,7 @@ namespace Microsoft.Azure.Cosmos
             DefaultTrace.TraceSource.Listeners.Add(new TestTraceListener { Callback = TraceHandler });
             DefaultTrace.InitEventListener();
 
-            using GlobalEndpointManager globalEndpointManager = new (mockOwner.Object, connectionPolicy);
+            using GlobalEndpointManager globalEndpointManager = new(mockOwner.Object, connectionPolicy);
 
             // Act.
             await globalEndpointManager.RefreshLocationAsync(forceRefresh: false);

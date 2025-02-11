@@ -56,6 +56,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task RetryTransientIssuesTestAsync()
         {
             using CancellationTokenSource cancellationTokenSource1 = new CancellationTokenSource();
@@ -275,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             Assert.AreEqual(3, count, "Should retry 3 times");
         }
- 
+
         [TestMethod]
         public async Task HttpTimeoutThrow503TestAsync()
         {
@@ -317,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     {
                         CosmosException cosmosException = (CosmosException)e;
                         Assert.AreEqual(cosmosException.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
-                        Assert.AreEqual((int)cosmosException.SubStatusCode,(int)SubStatusCodes.TransportGenerated503);
+                        Assert.AreEqual((int)cosmosException.SubStatusCode, (int)SubStatusCodes.TransportGenerated503);
 
                         Assert.IsNotNull(cosmosException.Trace);
                         Assert.AreNotEqual(cosmosException.Trace, NoOpTrace.Singleton);
@@ -348,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             int count = 0;
             Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                if(count == 0)
+                if (count == 0)
                 {
                     Assert.IsFalse(cancellationToken.IsCancellationRequested);
                 }
@@ -383,6 +384,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task RetryTransientIssuesForQueryPlanTestAsync()
         {
             DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
@@ -445,8 +447,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback = (certificate2, x509Chain, sslPolicyErrors) => false;
 
             HttpMessageHandler handler = CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(
-                gatewayLimit, 
-                webProxy, 
+                gatewayLimit,
+                webProxy,
                 serverCertificateCustomValidationCallback);
 
             Assert.AreEqual(Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http"), handler.GetType());

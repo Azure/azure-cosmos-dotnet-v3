@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     using global::Azure;
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
 
@@ -649,6 +650,21 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Configures the <see cref="CosmosClientBuilder"/> to use System.Text.Json for serialization.
+        /// Use <see cref="System.Text.Json.JsonSerializerOptions" /> to use System.Text.Json with a default configuration.
+        /// If no options are specified, Newtonsoft.Json will be used for serialization instead.
+        /// </summary>
+        /// <param name="serializerOptions">An instance of <see cref="System.Text.Json.JsonSerializerOptions"/>
+        /// containing the system text json serializer options.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithSystemTextJsonSerializerOptions(
+            System.Text.Json.JsonSerializerOptions serializerOptions)
+        {
+            this.clientOptions.UseSystemTextJsonSerializerWithOptions = serializerOptions;
+            return this;
+        }
+
+        /// <summary>
         /// The event handler to be invoked before the request is sent.
         /// </summary>
         internal CosmosClientBuilder WithSendingRequestEventArgs(EventHandler<SendingRequestEventArgs> sendingRequestEventArgs)
@@ -682,6 +698,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         internal CosmosClientBuilder WithApiType(ApiType apiType)
         {
             this.clientOptions.ApiType = apiType;
+            return this;
+        }
+
+        /// <summary>
+        /// Availability Stragey to be used for periods of high latency
+        /// </summary>
+        /// <param name="strategy"></param>
+        /// <returns>The CosmosClientBuilder</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithAvailabilityStrategy(AvailabilityStrategy strategy)
+        {
+            this.clientOptions.AvailabilityStrategy = strategy;
             return this;
         }
 
@@ -727,6 +759,17 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Enables SDK to inject fault. Used for testing applications.  
+        /// </summary>
+        /// <param name="faultInjector"></param>
+        /// <returns>>The <see cref="CosmosClientBuilder"/> object</returns>
+        public CosmosClientBuilder WithFaultInjection(IFaultInjector faultInjector)
+        {
+            this.clientOptions.ChaosInterceptorFactory = faultInjector.GetChaosInterceptorFactory();
+            return this;
+        }
+
+        /// <summary>
         /// To enable LocalQuorum Consistency, i.e. Allows Quorum read with Eventual Consistency Account or with Consistent Prefix Account.
         /// Use By Compute Only
         /// </summary>
@@ -757,6 +800,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         public CosmosClientBuilder WithClientTelemetryOptions(CosmosClientTelemetryOptions options)
         {
             this.clientOptions.CosmosClientTelemetryOptions = options;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the throughput bucket for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
+        /// If <see cref="WithBulkExecution(bool)"/> is set to true, throughput bucket can only be set at client level.
+        /// </remarks>
+        /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
+        /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
+        /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
+        internal CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+        {
+            this.clientOptions.ThroughputBucket = throughputBucket;
             return this;
         }
     }

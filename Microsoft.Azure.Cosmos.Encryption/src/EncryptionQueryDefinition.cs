@@ -8,8 +8,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
 
     internal sealed class EncryptionQueryDefinition : QueryDefinition
     {
-        internal Container Container { get; }
-
         internal EncryptionQueryDefinition(
             string queryText,
             Container container)
@@ -17,5 +15,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
         {
             this.Container = container ?? throw new ArgumentNullException(nameof(container));
         }
+
+        internal Container Container { get; }
     }
 }

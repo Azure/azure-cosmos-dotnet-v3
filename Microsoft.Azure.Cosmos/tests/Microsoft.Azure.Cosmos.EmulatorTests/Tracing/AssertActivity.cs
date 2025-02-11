@@ -21,13 +21,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         {
             if (activity.OperationName.StartsWith("Operation.", StringComparison.OrdinalIgnoreCase))
             {
-                Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("db.cosmosdb.connection_mode").ToString()), $"connection mode is empty for {activity.OperationName}");
+                Assert.IsFalse(string.IsNullOrEmpty(activity.GetTagItem("azure.cosmosdb.connection.mode").ToString()), $"connection mode is empty for {activity.OperationName}");
 
-                if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Gateway.ToString())
+                if (activity.GetTagItem("azure.cosmosdb.connection.mode").ToString() == ConnectionMode.Gateway.ToString())
                 {
                     Assert.AreEqual(ActivityKind.Internal, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Internal} for {activity.OperationName}");
                 }
-                else if (activity.GetTagItem("db.cosmosdb.connection_mode").ToString() == ConnectionMode.Direct.ToString())
+                else if (activity.GetTagItem("azure.cosmosdb.connection.mode").ToString() == ConnectionMode.Direct.ToString())
                 {
                     Assert.AreEqual(ActivityKind.Client, activity.Kind, $" Actual Kind is {activity.Kind} but expected is {ActivityKind.Client} for {activity.OperationName}");
                 }
@@ -38,28 +38,48 @@ namespace Microsoft.Azure.Cosmos.Tracing
                      "az.schema_url",
                      "kind",
                      "db.system",
-                     "db.name",
-                     "db.operation",
+                     "db.system.name",
+                     "db.namespace",
+                     "db.operation.name",
                      "server.address",
+                     "server.port",
+                     "azure.cosmosdb.client.id",
                      "db.cosmosdb.client_id",
-                     "db.cosmosdb.machine_id",
                      "user_agent.original",
+                     "azure.cosmosdb.connection.mode",
                      "db.cosmosdb.connection_mode",
-                     "db.cosmosdb.operation_type",
-                     "db.cosmosdb.container",
-                     "db.cosmosdb.request_content_length_bytes",
-                     "db.cosmosdb.response_content_length_bytes",
-                     "db.cosmosdb.status_code",
+                     "db.collection.name",
+                     "azure.cosmosdb.request.body.size",
+                     "azure.cosmosdb.response.body.size",
+                     "db.response.status_code",
+                     "azure.cosmosdb.response.sub_status_code",
                      "db.cosmosdb.sub_status_code",
+                     "azure.cosmosdb.request.request_charge",
                      "db.cosmosdb.request_charge",
+                     "azure.cosmosdb.contacted_regions",
                      "db.cosmosdb.regions_contacted",
-                     "db.cosmosdb.item_count",
+                     "azure.cosmosdb.row.count",
+                     "db.operation.batch.size",
+                     "azure.cosmosdb.activity_id",
+                     "db.cosmosdb.activity_id",
+                     "azure.cosmosdb.correlated_activity_id",
+                     "azure.cosmosdb.consistency.level",
                      "exception.type",
                      "exception.message",
                      "exception.stacktrace",
-                     "db.cosmosdb.activity_id",
-                     "db.cosmosdb.correlated_activity_id",
-                     "error.type"
+                     "db.query.text",
+                     "error.type",
+                     AppInsightClassicAttributeKeys.DbName,
+                     AppInsightClassicAttributeKeys.ContainerName,
+                     AppInsightClassicAttributeKeys.DbOperation,
+                     AppInsightClassicAttributeKeys.ServerAddress,
+                     AppInsightClassicAttributeKeys.StatusCode,
+                     AppInsightClassicAttributeKeys.UserAgent,
+                     AppInsightClassicAttributeKeys.MachineId,
+                     AppInsightClassicAttributeKeys.OperationType,
+                     AppInsightClassicAttributeKeys.ResponseContentLength,
+                     AppInsightClassicAttributeKeys.RequestContentLength,
+                     AppInsightClassicAttributeKeys.ItemCount
                 };
 
                 foreach (KeyValuePair<string, object> actualTag in activity.TagObjects)
@@ -69,7 +89,9 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     AssertActivity.AssertDatabaseAndContainerName(activity.OperationName, actualTag);
                 }
 
-                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(activity.GetTagItem("db.cosmosdb.status_code"));
+                object statusCodeFromTraces = activity.GetTagItem("db.response.status_code") ?? 
+                                                activity.GetTagItem(AppInsightClassicAttributeKeys.StatusCode);
+                HttpStatusCode statusCode = (HttpStatusCode)Convert.ToInt32(statusCodeFromTraces);
                 int subStatusCode = Convert.ToInt32(activity.GetTagItem("db.cosmosdb.sub_status_code"));
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(statusCode, subStatusCode))
                 {

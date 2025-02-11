@@ -97,7 +97,8 @@ namespace Microsoft.Azure.Cosmos.Encryption
         /// Helper function which force refreshes the gateway cache to fetch the latest client encryption key to build ProtectedDataEncryptionKey object for the encryption setting.
         /// </summary>
         /// <param name="existingCekEtag">Client encryption key etag to be passed, which is used as If-None-Match Etag for the request. </param>
-        /// <param name="cancellationToken"> cacellation token. </param>
+        /// <param name="refreshRetriedOnException"> KEK expired exception. </param>
+        /// <param name="cancellationToken"> Cancellation token. </param>
         /// <returns>ProtectedDataEncryptionKey object. </returns>
         private async Task<ProtectedDataEncryptionKey> ForceRefreshGatewayCacheAndBuildProtectedDataEncryptionKeyAsync(
             string existingCekEtag,

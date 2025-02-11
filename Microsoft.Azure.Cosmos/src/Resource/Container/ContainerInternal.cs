@@ -139,11 +139,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken = default);
 
 #if !PREVIEW
-        public abstract Task<ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(
-            Cosmos.PartitionKey partitionKey,
-            RequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default);
-
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
@@ -151,6 +146,11 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
+
+        public abstract Task<bool> IsFeedRangePartOfAsync(
+            Cosmos.FeedRange x,
+            Cosmos.FeedRange y,
+            CancellationToken cancellationToken = default);
 #endif
 
         public abstract class TryExecuteQueryResult

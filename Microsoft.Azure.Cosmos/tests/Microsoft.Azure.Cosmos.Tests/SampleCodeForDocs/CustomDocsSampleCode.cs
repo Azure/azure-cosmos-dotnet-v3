@@ -4,8 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
 {
-    using Microsoft.Azure.Cosmos.Scripts;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Scripts;
 
     class CustomDocsSampleCode
     {
@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
             ItemResponse<dynamic> itemResponse = await container.CreateItemAsync<dynamic>(
                 item: new { id = itemId, pk = partitionKey },
                 partitionKey: new PartitionKey(partitionKey));
-            double requestCharge = itemResponse.RequestCharge;
+            _ = itemResponse.RequestCharge;
 
             Scripts scripts = container.Scripts;
             StoredProcedureExecuteResponse<object> sprocResponse = await scripts.ExecuteStoredProcedureAsync<object>(
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
                 partitionKey: new PartitionKey(partitionKey),
                 parameters: new dynamic[] { new object() });
 
-            requestCharge = sprocResponse.RequestCharge;
+            _ = sprocResponse.RequestCharge;
 
             FeedIterator<dynamic> feedIterator = container.GetItemQueryIterator<dynamic>(
                  queryText: queryText,
@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos.SampleCodeForDocs
             while (feedIterator.HasMoreResults)
             {
                 FeedResponse<dynamic> feedResponse = await feedIterator.ReadNextAsync();
-                requestCharge = feedResponse.RequestCharge;
+                _ = feedResponse.RequestCharge;
             }
             // </GetRequestCharge>
         }

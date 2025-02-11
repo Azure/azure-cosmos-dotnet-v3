@@ -211,7 +211,7 @@
                 for (int i = 0; i < 3; i++)
                 {
                     IReadOnlyList<FeedRangeInternal> ranges = await documentContainer.GetFeedRangesAsync(
-                        trace: NoOpTrace.Singleton, 
+                        trace: NoOpTrace.Singleton,
                         cancellationToken: default);
                     foreach (FeedRangeInternal range in ranges)
                     {

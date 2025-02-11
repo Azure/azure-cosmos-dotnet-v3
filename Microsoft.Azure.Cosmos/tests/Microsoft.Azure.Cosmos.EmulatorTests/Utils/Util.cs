@@ -131,6 +131,59 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             requestChargeHelper?.CompareRequestCharge(testName);
         }
 
+        internal static async Task DeleteAllDatabasesAsync(CosmosClient client,
+            IEnumerable<string> excludeDbIds = null,
+            bool deleteContainersOnExcludedDbs = true,
+            ItemRequestOptions requestOptions = null)
+        {
+            if (client == null)
+            {
+                return;
+            }
+
+            QueryRequestOptions queryRequestIptions = new QueryRequestOptions()
+            {
+                OperationMetricsOptions = requestOptions?.OperationMetricsOptions,
+                NetworkMetricsOptions = requestOptions?.NetworkMetricsOptions
+            };
+
+            using (FeedIterator<DatabaseProperties> feedIterator = client.GetDatabaseQueryIterator<DatabaseProperties>(requestOptions: queryRequestIptions))
+            {
+                while (feedIterator.HasMoreResults)
+                {
+                    FeedResponse<DatabaseProperties> response = await feedIterator.ReadNextAsync();
+                    foreach (DatabaseProperties database in response)
+                    {
+                        Cosmos.Database db = client.GetDatabase(database.Id);
+                        if (excludeDbIds?.Contains(database.Id) != true)
+                        {
+                            await db.DeleteAsync(requestOptions: requestOptions);
+                        }
+                        else if(deleteContainersOnExcludedDbs)
+                        {
+                            await DeleteAllContainersAsync(db, queryRequestIptions);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static async Task DeleteAllContainersAsync(Cosmos.Database db, QueryRequestOptions queryRequestIptions = null)
+        {
+            using (FeedIterator<ContainerProperties> containerfeedIterator = db.GetContainerQueryIterator<ContainerProperties>(requestOptions: queryRequestIptions))
+            {
+                while (containerfeedIterator.HasMoreResults)
+                {
+                    FeedResponse<ContainerProperties> containerResponse = await containerfeedIterator.ReadNextAsync();
+                    foreach (ContainerProperties container in containerResponse)
+                    {
+                        System.Diagnostics.Trace.TraceInformation($"Deleting container {container.Id}");
+                        await db.GetContainer(container.Id).DeleteContainerAsync();
+                    }
+                }
+            }
+        }
+
         /// <summary>
         /// Helper function to run a test scenario for a random client of type DocumentClientType.
         /// </summary>

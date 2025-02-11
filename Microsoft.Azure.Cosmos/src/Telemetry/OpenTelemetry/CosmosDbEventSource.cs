@@ -9,13 +9,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
-    /// This class is used to generate events with Azure.Cosmos.Operation Source Name
+    /// This class is used to generate events with Azure-Cosmos-Operation-Request-Diagnostics Source Name
     /// </summary>
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
     {
         internal const string EventSourceName = "Azure-Cosmos-Operation-Request-Diagnostics";
-        
+
         private static CosmosDbEventSource Singleton { get; } = new CosmosDbEventSource();
 
         private CosmosDbEventSource()
@@ -35,17 +35,31 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
-            if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
-                        response.StatusCode, response.SubStatusCode) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+            if (response.Diagnostics == null)
             {
-                CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
-            } 
-            else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
-                    config: config,
-                    operationType: operationType,
-                    response: response) && CosmosDbEventSource.IsEnabled(EventLevel.Warning))
+                return;
+            }
+
+            if (CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
-                CosmosDbEventSource.Singleton.LatencyOverThreshold(response.Diagnostics.ToString());
+                if (!DiagnosticsFilterHelper.IsSuccessfulResponse(
+                                        response.StatusCode, response.SubStatusCode))
+                {
+                    CosmosDbEventSource.Singleton.FailedRequest(response.Diagnostics.ToString());
+                }
+                else if (DiagnosticsFilterHelper.IsLatencyThresholdCrossed(
+                            config: config,
+                            operationType: operationType,
+                            response: response) ||
+                        (config.RequestChargeThreshold is not null &&
+                            config.RequestChargeThreshold <= response.RequestCharge) ||
+                        (config.PayloadSizeThresholdInBytes is not null &&
+                            DiagnosticsFilterHelper.IsPayloadSizeThresholdCrossed(
+                                config: config,
+                                response: response)))
+                {
+                    CosmosDbEventSource.Singleton.ThresholdViolation(response.Diagnostics.ToString());
+                }
             }
         }
 
@@ -65,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         }
 
         [Event(2, Level = EventLevel.Warning)]
-        private void LatencyOverThreshold(string message)
+        private void ThresholdViolation(string message)
         {
             this.WriteEvent(2, message);
         }

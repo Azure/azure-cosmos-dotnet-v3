@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace Microsoft.Azure.Cosmos
+﻿namespace Microsoft.Azure.Cosmos
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     /// <summary>
     /// A task scheduler that processes a single task at a time.
     /// It is used for testing async deadlocks
@@ -20,7 +20,10 @@ namespace Microsoft.Azure.Cosmos
 
         protected override IEnumerable<Task> GetScheduledTasks() { throw new NotSupportedException(); }
 
-        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
+        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
+        {
+            return false;
+        }
 
         protected override void QueueTask(Task task)
         {

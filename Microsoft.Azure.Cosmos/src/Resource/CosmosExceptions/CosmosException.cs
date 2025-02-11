@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using global::Azure.Core;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -296,7 +297,10 @@ namespace Microsoft.Azure.Cosmos
                 ClientTelemetryHelper.GetContactedRegions(exception.Diagnostics?.GetContactedRegions()));
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
 
-            CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
+            if (!DiagnosticsFilterHelper.IsSuccessfulResponse(exception.StatusCode, (int)exception.SubStatusCode))
+            {
+                CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
+            }
         }
     }
 }

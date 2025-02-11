@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class QueryIterator : FeedIteratorInternal
@@ -42,7 +43,8 @@ namespace Microsoft.Azure.Cosmos.Query
             RequestOptions requestOptions,
             CosmosClientContext clientContext,
             Guid correlatedActivityId,
-            ContainerInternal container)
+            ContainerInternal container,
+            SqlQuerySpec sqlQuerySpec)
         {
             this.cosmosQueryContext = cosmosQueryContext ?? throw new ArgumentNullException(nameof(cosmosQueryContext));
             this.queryPipelineStage = cosmosQueryExecutionContext ?? throw new ArgumentNullException(nameof(cosmosQueryExecutionContext));
@@ -53,6 +55,14 @@ namespace Microsoft.Azure.Cosmos.Query
             this.correlatedActivityId = correlatedActivityId;
 
             this.container = container;
+
+            this.SetupInfoForTelemetry(
+                databaseName: container?.Database?.Id,
+                operationName: OpenTelemetryConstants.Operations.QueryItems,
+                operationType: Documents.OperationType.Query,
+                querySpec: sqlQuerySpec,
+                operationMetricsOptions: requestOptions?.OperationMetricsOptions,
+                networkMetricOptions: requestOptions?.NetworkMetricsOptions);
         }
 
         public static QueryIterator Create(
@@ -86,53 +96,48 @@ namespace Microsoft.Azure.Cosmos.Query
                 useSystemPrefix: QueryIterator.IsSystemPrefixExpected(queryRequestOptions),
                 correlatedActivityId: correlatedActivityId);
 
+            ICosmosDistributedQueryClient distributedQueryClient = new CosmosDistributedQueryClient(
+                clientContext,
+                resourceLink,
+                correlatedActivityId);
+
             NetworkAttachedDocumentContainer networkAttachedDocumentContainer = new NetworkAttachedDocumentContainer(
                 containerCore,
                 client,
+                distributedQueryClient,
                 correlatedActivityId,
                 queryRequestOptions,
                 resourceType: resourceType);
             DocumentContainer documentContainer = new DocumentContainer(networkAttachedDocumentContainer);
 
             CosmosElement requestContinuationToken;
-            switch (queryRequestOptions.ExecutionEnvironment.GetValueOrDefault(ExecutionEnvironment.Client))
+            if (continuationToken != null)
             {
-                case ExecutionEnvironment.Client:
-                    if (continuationToken != null)
-                    {
-                        TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(continuationToken);
-                        if (tryParse.Failed)
-                        {
-                            return new QueryIterator(
-                                cosmosQueryContext,
-                                new FaultedQueryPipelineStage(
-                                    new MalformedContinuationTokenException(
-                                        message: $"Malformed Continuation Token: {continuationToken}",
-                                        innerException: tryParse.Exception)),
-                                queryRequestOptions.CosmosSerializationFormatOptions,
-                                queryRequestOptions,
-                                clientContext,
-                                correlatedActivityId,
-                                containerCore);
-                        }
+                TryCatch<CosmosElement> tryParse = CosmosElement.Monadic.Parse(continuationToken);
+                if (tryParse.Failed)
+                {
+                    return new QueryIterator(
+                        cosmosQueryContext,
+                        new FaultedQueryPipelineStage(
+                            new MalformedContinuationTokenException(
+                                message: $"Malformed Continuation Token: {continuationToken}",
+                                innerException: tryParse.Exception)),
+                        queryRequestOptions.CosmosSerializationFormatOptions,
+                        queryRequestOptions,
+                        clientContext,
+                        correlatedActivityId,
+                        containerCore,
+                        sqlQuerySpec);
+                }
 
-                        requestContinuationToken = tryParse.Result;
-                    }
-                    else
-                    {
-                        requestContinuationToken = null;
-                    }
-                    break;
-
-                case ExecutionEnvironment.Compute:
-                    requestContinuationToken = queryRequestOptions.CosmosElementContinuationToken;
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException($"Unknown {nameof(ExecutionEnvironment)}: {queryRequestOptions.ExecutionEnvironment.Value}.");
+                requestContinuationToken = tryParse.Result;
+            }
+            else
+            {
+                requestContinuationToken = null;
             }
 
-            CosmosQueryExecutionContextFactory.InputParameters inputParameters = new CosmosQueryExecutionContextFactory.InputParameters(
+            CosmosQueryExecutionContextFactory.InputParameters inputParameters = CosmosQueryExecutionContextFactory.InputParameters.Create(
                 sqlQuerySpec: sqlQuerySpec,
                 initialUserContinuationToken: requestContinuationToken,
                 initialFeedRange: feedRangeInternal,
@@ -142,9 +147,10 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionKey: queryRequestOptions.PartitionKey,
                 properties: queryRequestOptions.Properties,
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
-                executionEnvironment: queryRequestOptions.ExecutionEnvironment,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
+                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(
@@ -154,7 +160,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 queryRequestOptions,
                 clientContext,
                 correlatedActivityId,
-                containerCore);
+                containerCore,
+                sqlQuerySpec);
         }
 
         public override bool HasMoreResults => this.hasMoreResults;
@@ -276,8 +283,6 @@ namespace Microsoft.Azure.Cosmos.Query
                     cosmosException.ActivityId),
                 trace: trace);
         }
-
-        public override CosmosElement GetCosmosElementContinuationToken() => this.queryPipelineStage.Current.Result.State?.Value;
 
         protected override void Dispose(bool disposing)
         {

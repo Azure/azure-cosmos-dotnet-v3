@@ -15,12 +15,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     internal sealed class ReadFeedPartitionRangeEnumerator : PartitionRangePageAsyncEnumerator<ReadFeedPage, ReadFeedState>
     {
         private readonly IReadFeedDataSource readFeedDataSource;
-        private readonly ReadFeedPaginationOptions readFeedPaginationOptions;
+        private readonly ReadFeedExecutionOptions readFeedPaginationOptions;
 
         public ReadFeedPartitionRangeEnumerator(
             IReadFeedDataSource readFeedDataSource,
             FeedRangeState<ReadFeedState> feedRangeState,
-            ReadFeedPaginationOptions readFeedPaginationOptions)
+            ReadFeedExecutionOptions readFeedPaginationOptions)
             : base(feedRangeState)
         {
             this.readFeedDataSource = readFeedDataSource ?? throw new ArgumentNullException(nameof(readFeedDataSource));

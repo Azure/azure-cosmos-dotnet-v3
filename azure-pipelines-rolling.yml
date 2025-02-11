@@ -1,0 +1,34 @@
+# A pipeline with no CI trigger
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 7,13,0,5 * * 1,2,3,4,5" # cron syntax https://learn.microsoft.com/en-us/azure/devops/pipelines/process/scheduled-triggers?view=azure-devops&tabs=yaml#cron-syntax
+  displayName: Cosmos Weekly Rolling
+  branches:
+    include: 
+    - master
+  always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
+- cron: "0 0/2 * * 0,6" # cron syntax https://learn.microsoft.com/en-us/azure/devops/pipelines/process/scheduled-triggers?view=azure-devops&tabs=yaml#cron-syntax
+  displayName: Cosmos Weekly Rolling
+  branches:
+    include: 
+    - master
+  always: true # whether to always run the pipeline or only if there have been source code changes since the last run. The default is false
+
+variables:
+  ReleaseArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+
+jobs:
+- template:  templates/build-test.yml
+  parameters:
+    BuildConfiguration: Release
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    IncludeEncryption: true
+    IncludePerformance: true
+    IncludeCoverage: true
+

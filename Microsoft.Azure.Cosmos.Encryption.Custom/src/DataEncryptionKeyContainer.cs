@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Container for data encryption keys. Provides methods to create, re-wrap, read and enumerate data encryption keys.
@@ -55,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             string encryptionAlgorithm,
             EncryptionKeyWrapMetadata encryptionKeyWrapMetadata,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Wraps the raw data encryption key (after unwrapping using the old metadata if needed) using the provided
@@ -106,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             EncryptionKeyWrapMetadata newWrapMetadata,
             string encryptionAlgorithm = null,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Returns an iterator that can be iterated to get properties of data encryption keys.
@@ -132,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </code>
         /// </example>
         /// <remarks>
-        /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
+        /// <see cref="DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
         public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
             string queryText = null,
@@ -167,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </code>
         /// </example>
         /// <remarks>
-        /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
+        /// <see cref="DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
         public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
             QueryDefinition queryDefinition,
@@ -216,6 +218,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         public abstract Task<ItemResponse<DataEncryptionKeyProperties>> ReadDataEncryptionKeyAsync(
             string id,
             ItemRequestOptions requestOptions = null,
-            CancellationToken cancellationToken = default(CancellationToken));
+            CancellationToken cancellationToken = default);
     }
 }

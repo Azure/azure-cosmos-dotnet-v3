@@ -7,14 +7,14 @@
     <RootNamespace>Cosmos.Samples.SystemTextJson</RootNamespace>
     <LangVersion>latest</LangVersion>
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Azure.Core" Version="1.19.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="2.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="2.2.0" />
-    <PackageReference Include="System.Text.Json" Version="5.0.2" />
-    <PackageReference Include="Microsoft.Azure.Cosmos" Version="*" />
+    <PackageReference Include="Azure.Core" Version="1.43.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.43.0" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\AppSettings.json">

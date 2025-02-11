@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Reflection;
     using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.ClientDistributionPlan.Cql;
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Spatial;
@@ -1107,6 +1108,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             return result;
         }
 
+        private static SqlSelectItem[] CreateSelectItems(ReadOnlyCollection<Expression> arguments, ReadOnlyCollection<MemberInfo> members, TranslationContext context)
+        {
+            if (arguments.Count != members.Count)
+            {
+                throw new InvalidOperationException("Expected same number of arguments as members");
+            }
+
+            SqlSelectItem[] result = new SqlSelectItem[arguments.Count];
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                Expression arg = arguments[i];
+                MemberInfo member = members[i];
+                SqlScalarExpression selectExpression = ExpressionToSql.VisitScalarExpression(arg, context);
+
+                string memberName = member.GetMemberName(context);
+                SqlIdentifier alias = SqlIdentifier.Create(memberName);
+                SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                result[i] = prop;
+            }
+
+            return result;
+        }
+
         private static SqlScalarExpression VisitNew(NewExpression inputExpression, TranslationContext context)
         {
             if (typeof(Geometry).IsAssignableFrom(inputExpression.Type))
@@ -1536,6 +1560,70 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Visit a method call, construct the corresponding query and return the select clause for the aggregate function.
+        /// At ExpressionToSql point only LINQ method calls are allowed.
+        /// These methods are static extension methods of IQueryable or IEnumerable.
+        /// </summary>
+        /// <param name="inputExpression">Method to translate.</param>
+        /// <param name="context">Query translation context.</param>
+        private static SqlSelectClause VisitGroupByAggregateMethodCall(MethodCallExpression inputExpression, TranslationContext context)
+        {
+            context.PushMethod(inputExpression);
+
+            Type declaringType = inputExpression.Method.DeclaringType;
+            if ((declaringType != typeof(Queryable) && declaringType != typeof(Enumerable))
+                || !inputExpression.Method.IsStatic)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.OnlyLINQMethodsAreSupported, inputExpression.Method.Name));
+            }
+
+            if (inputExpression.Object != null)
+            {
+                throw new DocumentQueryException(ClientResources.ExpectedMethodCallsMethods);
+            }
+
+            if (context.LastExpressionIsGroupBy)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, "Group By cannot be followed by other methods"));
+            }
+
+            SqlSelectClause select;
+            switch (inputExpression.Method.Name)
+            {
+                case LinqMethods.Average:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Avg);
+                        break;
+                    }
+                case LinqMethods.Count:
+                    {
+                        select = ExpressionToSql.VisitCount(inputExpression.Arguments, context);
+                        break;
+                    }
+                case LinqMethods.Max:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Max);
+                        break;
+                    }
+                case LinqMethods.Min:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Min);
+                        break;
+                    }
+                case LinqMethods.Sum:
+                    {
+                        select = ExpressionToSql.VisitAggregateFunction(inputExpression.Arguments, context, SqlFunctionCallScalarExpression.Names.Sum);
+                        break;
+                    }
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, inputExpression.Method.Name));
+            }
+
+            context.PopMethod();
+            return select;
+        }
+
+        /// <summary>
         /// Determine if an expression should be translated to a subquery.
         /// This only applies to expression that is inside a lamda.
         /// </summary>
@@ -1657,7 +1745,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             return ExpressionToSql.VisitScalarExpression(
                 expression,
-                new ReadOnlyCollection<ParameterExpression>(new ParameterExpression[] { }),
+                new ReadOnlyCollection<ParameterExpression>(Array.Empty<ParameterExpression>()),
                 context);
         }
 
@@ -1917,93 +2005,247 @@ namespace Microsoft.Azure.Cosmos.Linq
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.GroupBy, 3, arguments.Count));
             }
 
-            // bind the parameters in the value selector to the current input
-            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
-            {
-                context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
-            }
-
+            // Key Selector handling
             // First argument is input, second is key selector and third is value selector
             LambdaExpression keySelectorLambda = Utilities.GetLambda(arguments[1]);
 
-            // Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
-            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
+            Collection collection = new Collection("Group By");
+            context.CurrentQuery.GroupByParameter = new FromParameterBindings();
 
-            SqlGroupByClause groupby = SqlGroupByClause.Create(keySelectorFunc);
+            SqlGroupByClause groupby;
+            ParameterExpression parameterExpression;
+            switch (keySelectorLambda.Body.NodeType)
+            {
+                case ExpressionType.Parameter:
+                case ExpressionType.Call:
+                case ExpressionType.MemberAccess:
+                    {
+                        // bind the parameters in the value selector to the current input
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+                        {
+                            context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+                        }
 
+                        //Current GroupBy doesn't allow subquery, so we need to visit non subquery scalar lambda
+                        SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarLambda(keySelectorLambda, context);
+
+                        // The group by clause don't need to handle the value selector, so adding the clause to the uery now.
+                        groupby = SqlGroupByClause.Create(keySelectorFunc);
+                        parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
+
+                        break;
+                    }
+                case ExpressionType.New:
+                    {
+                        // bind the parameters in the key selector to the current input - in this case, the value selector key is being substituted by the key selector
+                        foreach (ParameterExpression par in Utilities.GetLambda(arguments[1]).Parameters)
+                        {
+                            context.PushParameter(par, context.CurrentSubqueryBinding.ShouldBeOnNewQuery);
+                        }
+
+                        NewExpression newExpression = (NewExpression)keySelectorLambda.Body;
+
+                        if (newExpression.Members == null)
+                        {
+                            throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                        }
+
+                        ReadOnlyCollection<Expression> newExpressionArguments = newExpression.Arguments;
+
+                        List<SqlScalarExpression> keySelectorFunctions = new List<SqlScalarExpression>();
+                        for (int i = 0; i < newExpressionArguments.Count; i++)
+                        {
+                            //Current GroupBy doesn't allow subquery, so we need to visit non subquery scalara
+                            SqlScalarExpression keySelectorFunc = ExpressionToSql.VisitNonSubqueryScalarExpression(newExpressionArguments[i], context);
+                            keySelectorFunctions.Add(keySelectorFunc);
+                        }
+
+                        groupby = SqlGroupByClause.Create(keySelectorFunctions.ToImmutableArray());
+                        parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunctions.ToString(), includeSuffix: false);
+
+                        break;
+                    }
+                default:
+                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, keySelectorLambda.Body.NodeType));
+            }
+
+            // The group by clause don't need to handle the value selector, so adding the clause to the qery now.
             context.CurrentQuery = context.CurrentQuery.AddGroupByClause(groupby, context);
 
-            // Create a GroupBy collection and bind the new GroupBy collection to the new parameters created from the key
-            Collection collection = ExpressionToSql.ConvertToCollection(keySelectorFunc);
-            collection.isOuter = true;
-            collection.Name = "GroupBy";
-
-            ParameterExpression parameterExpression = context.GenerateFreshParameter(returnElementType, keySelectorFunc.ToString(), includeSuffix: false);
+            // Bind the alias
             Binding binding = new Binding(parameterExpression, collection.inner, isInCollection: false, isInputParameter: true);
-
-            context.CurrentQuery.GroupByParameter = new FromParameterBindings();
             context.CurrentQuery.GroupByParameter.Add(binding);
 
             // The alias for the key in the value selector lambda is the first arguemt lambda - we bound it to the parameter expression, which already has substitution
             ParameterExpression valueSelectorKeyExpressionAlias = Utilities.GetLambda(arguments[2]).Parameters[0];
-            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression/*Utilities.GetLambda(arguments[1]).Body*/);
+            context.GroupByKeySubstitution.AddSubstitution(valueSelectorKeyExpressionAlias, parameterExpression);
 
+            // Value Selector Handingling
             // Translate the body of the value selector lambda
             Expression valueSelectorExpression = Utilities.GetLambda(arguments[2]).Body;
 
             // The value selector function needs to be either a MethodCall or an AnonymousType
             switch (valueSelectorExpression.NodeType)
             {
-                case ExpressionType.Constant:
-                {
-                    ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
-                    SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant(constantExpression, context);
-
-                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
-                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
-                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                    break;
-                }
-                case ExpressionType.Parameter:
-                {
-                    ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
-                    SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
-
-                    SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
-                    SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
-                    context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
-                    break;
-                }    
-                case ExpressionType.Call:
-                {
-                    // Single Value Selector
-                    MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
-                    switch (methodCallExpression.Method.Name)
+                case ExpressionType.MemberAccess:
                     {
-                        case LinqMethods.Max:
-                        case LinqMethods.Min:
-                        case LinqMethods.Average:
-                        case LinqMethods.Count:
-                        case LinqMethods.Sum:
-                            ExpressionToSql.VisitMethodCall(methodCallExpression, context);
-                            break;
-                        default:
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.MethodNotSupported, methodCallExpression.Method.Name));
+                        MemberExpression memberAccessExpression = (MemberExpression)valueSelectorExpression;
+
+                        if (memberAccessExpression.Expression.NodeType == ExpressionType.Parameter)
+                        {
+                            // Look up the object of the expression to see if it is the key
+                            ParameterExpression memberAccessObject = (ParameterExpression)memberAccessExpression.Expression;
+                            Expression subst = context.GroupByKeySubstitution.Lookup(memberAccessObject);
+                            if (subst != null)
+                            {
+                                // If  there is a match, we construct a new Member Access expression with the substituted expression and visit it to create a select clause
+                                MemberExpression newMemberAccessExpression = memberAccessExpression.Update(keySelectorLambda.Body); 
+                                SqlScalarExpression selectExpression = ExpressionToSql.VisitMemberAccess(newMemberAccessExpression, context);
+
+                                SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                                SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                                context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                            }
+                        }
+                        break;
                     }
+                case ExpressionType.Constant:
+                    {
+                        ConstantExpression constantExpression = (ConstantExpression)valueSelectorExpression;
+                        SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant(constantExpression, context);
 
-                    break;
-                }
+                        SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                        SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
+                case ExpressionType.Parameter:
+                    {
+                        ParameterExpression parameterValueExpression = (ParameterExpression)valueSelectorExpression;
+                        SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter(parameterValueExpression, context);
+
+                        SqlSelectSpec sqlSpec = SqlSelectValueSpec.Create(selectExpression);
+                        SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
+                case ExpressionType.Call:
+                    {
+                        // Single Value Selector
+                        MethodCallExpression methodCallExpression = (MethodCallExpression)valueSelectorExpression;
+                        SqlSelectClause select = ExpressionToSql.VisitGroupByAggregateMethodCall(methodCallExpression, context);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+                        break;
+                    }
                 case ExpressionType.New:
-                    // TODO: Multi Value Selector
-                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, ExpressionType.New));
+                    {
+                        // Add select item clause at the end of this method
+                        NewExpression newExpression = (NewExpression)valueSelectorExpression;
 
+                        if (newExpression.Members == null)
+                        {
+                            throw new DocumentQueryException(ClientResources.ConstructorInvocationNotSupported);
+                        }
+
+                        // Get the list of items and the bindings
+                        ReadOnlyCollection<Expression> newExpressionArguments = newExpression.Arguments;
+                        ReadOnlyCollection<MemberInfo> newExpressionMembers = newExpression.Members;
+
+                        SqlSelectItem[] selectItems = new SqlSelectItem[newExpressionArguments.Count];
+                        for (int i = 0; i < newExpressionArguments.Count; i++)
+                        {
+                            MemberInfo member = newExpressionMembers[i];
+                            string memberName = member.GetMemberName(context);
+                            SqlIdentifier alias = SqlIdentifier.Create(memberName);
+
+                            Expression arg = newExpressionArguments[i];
+                            switch (arg.NodeType)
+                            {
+                                case ExpressionType.Constant:
+                                    {
+                                        SqlScalarExpression selectExpression = ExpressionToSql.VisitConstant((ConstantExpression)arg, context);
+
+                                        SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                        selectItems[i] = prop;
+                                        break;
+                                    }
+                                case ExpressionType.Parameter:
+                                    {
+                                        SqlScalarExpression selectExpression = ExpressionToSql.VisitParameter((ParameterExpression)arg, context);
+
+                                        SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                        selectItems[i] = prop;
+                                        break;
+                                    }
+                                case ExpressionType.Call:
+                                    {
+                                        SqlSelectClause selectClause = ExpressionToSql.VisitGroupByAggregateMethodCall((MethodCallExpression)arg, context);
+                                        SqlScalarExpression selectExpression = ((SqlSelectValueSpec)selectClause.SelectSpec).Expression;
+
+                                        SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                        selectItems[i] = prop;
+                                        break;
+                                    }
+                                case ExpressionType.MemberAccess:
+                                    {
+                                        MemberExpression memberAccessExpression = (MemberExpression)arg;
+
+                                        if (memberAccessExpression.Expression.NodeType == ExpressionType.Parameter)
+                                        {
+                                            // Look up the object of the expression to see if it is the key
+                                            ParameterExpression memberAccessObject = (ParameterExpression)memberAccessExpression.Expression;
+                                            Expression subst = context.GroupByKeySubstitution.Lookup(memberAccessObject);
+                                            if (subst != null)
+                                            {
+                                                // If  there is a match, we construct a new Member Access expression with the substituted expression and visit it to create a select clause
+                                                MemberExpression newMemberAccessExpression = memberAccessExpression.Update(keySelectorLambda.Body); /*System.Linq.Expressions.Expression.Field(subst, memberAccessExpression.Member.Name);*/
+                                                SqlScalarExpression selectExpression = ExpressionToSql.VisitMemberAccess(newMemberAccessExpression, context);
+
+                                                SqlSelectItem prop = SqlSelectItem.Create(selectExpression, alias);
+                                                selectItems[i] = prop;
+                                            }
+                                        }
+                                        break;
+                                    }
+                                default:
+                                    throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, arg.NodeType));
+                            }
+                        }
+
+                        SqlSelectListSpec sqlSpec = SqlSelectListSpec.Create(selectItems);
+                        SqlSelectClause select = SqlSelectClause.Create(sqlSpec, null);
+                        context.CurrentQuery = context.CurrentQuery.AddSelectClause(select, context);
+
+                        break;
+                    }
                 default:
                     throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, valueSelectorExpression.NodeType));
             }
 
-            foreach (ParameterExpression par in Utilities.GetLambda(arguments[2]).Parameters)
+            // Pop the correct number of items off the parameter stack
+            switch (keySelectorLambda.Body.NodeType)
             {
-                context.PopParameter();
+                case ExpressionType.Parameter:
+                case ExpressionType.Call:
+                case ExpressionType.MemberAccess:
+                    {
+                        foreach (ParameterExpression param in Utilities.GetLambda(arguments[2]).Parameters)
+                        {
+                            context.PopParameter();
+                        }
+                        break;
+                    }
+                case ExpressionType.New:
+                    {
+                        //bind the parameters in the value selector to the current input
+                        foreach (ParameterExpression param in Utilities.GetLambda(arguments[1]).Parameters)
+                        {
+                            context.PopParameter();
+                        }
+                        break;
+                    }
+                default:
+                    break;
             }
 
             return collection;

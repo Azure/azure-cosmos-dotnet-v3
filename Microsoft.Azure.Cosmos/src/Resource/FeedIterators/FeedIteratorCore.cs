@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Serializer;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using static Microsoft.Azure.Documents.RuntimeConstants;
@@ -26,7 +27,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly CosmosClientContext clientContext;
         private readonly string resourceLink;
         private readonly ResourceType resourceType;
-        private readonly SqlQuerySpec querySpec;
         private bool hasMoreResultsInternal;
 
         public FeedIteratorCore(
@@ -47,8 +47,14 @@ namespace Microsoft.Azure.Cosmos
             this.requestOptions = options;
             this.hasMoreResultsInternal = true;
 
-            this.databaseName = databaseId;
             this.container = container;
+
+            this.SetupInfoForTelemetry(databaseName: databaseId,
+                operationName: OpenTelemetryConstants.Operations.QueryItems,
+                operationType: OperationType.Query,
+                querySpec: this.querySpec,
+                operationMetricsOptions: options?.OperationMetricsOptions,
+                networkMetricOptions: options?.NetworkMetricsOptions);
         }
 
         public override bool HasMoreResults => this.hasMoreResultsInternal;
@@ -131,11 +137,6 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            throw new NotImplementedException();
-        }
-
         private static async Task RewriteStreamAsTextAsync(ResponseMessage responseMessage, QueryRequestOptions requestOptions, ITrace trace)
         {
             using (ITrace rewriteTrace = trace.StartChild("Rewrite Stream as Text", TraceComponent.Json, TraceLevel.Info))
@@ -215,16 +216,23 @@ namespace Microsoft.Azure.Cosmos
             this.responseCreator = responseCreator;
             this.feedIterator = feedIterator;
 
-            this.databaseName = feedIterator.databaseName;
-            this.container = feedIterator.container;
+            this.SetupInfoForTelemetry(feedIterator);
+        }
+
+        private void SetupInfoForTelemetry(FeedIterator feedIteratorInternal)
+        {
+            this.container = feedIteratorInternal.container;
+            this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
+            this.operationType = feedIteratorInternal.operationType;
+
+            this.querySpec = feedIteratorInternal.querySpec;
+            this.operationMetricsOptions = feedIteratorInternal.operationMetricsOptions;
+            this.networkMetricsOptions = feedIteratorInternal.networkMetricsOptions;
         }
 
         public override bool HasMoreResults => this.feedIterator.HasMoreResults;
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIterator.GetCosmosElementContinuationToken();
-        }
 
         /// <summary>
         /// Get the next set of results from the cosmos service

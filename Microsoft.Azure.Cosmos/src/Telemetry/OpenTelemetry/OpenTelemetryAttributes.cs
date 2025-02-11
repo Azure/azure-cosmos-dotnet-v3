@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Telemetry
 {
     using System.Net;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     internal class OpenTelemetryAttributes
     {
@@ -18,6 +19,17 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength;
+            this.ConsistencyLevel = requestMessage?.Headers?.ConsistencyLevel;
+
+            if (requestMessage != null)
+            {
+                this.OperationType = requestMessage.OperationType;
+                this.ResourceType = requestMessage.ResourceType;
+            }
+            else
+            {
+                this.OperationType = Documents.OperationType.Invalid;
+            }
         }
 
         /// <summary>
@@ -69,5 +81,25 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// OperationType
         /// </summary>
         internal Documents.OperationType OperationType { get; set; }
+
+        /// <summary>
+        /// ResourceType
+        /// </summary>
+        internal Documents.ResourceType? ResourceType { get; set; }
+
+        /// <summary>
+        /// Batch Size
+        /// </summary>
+        internal int? BatchSize { get; set; }
+
+        /// <summary>
+        /// Query Spec with Query Text and Parameters
+        /// </summary>
+        internal SqlQuerySpec QuerySpec { get; set; }
+
+        /// <summary>
+        /// Consistency Level
+        /// </summary>
+        internal string ConsistencyLevel { get; set; }
     }
 }

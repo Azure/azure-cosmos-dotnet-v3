@@ -16,10 +16,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using System.Xml;
     using System.Xml.Linq;
     using global::Azure;
+    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -49,6 +52,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         [ClassInitialize]
         public static async Task ClassInitAsync(TestContext _)
         {
+            Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", OpenTelemetryStablityModes.DatabaseDupe);
+            TracesStabilityFactory.RefreshStabilityMode();
+
             EndToEndTraceWriterBaselineTests.testListener = Util.ConfigureOpenTelemetryAndCustomListeners();
             
             client = Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestCommon.CreateCosmosClient(
@@ -61,8 +67,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         {
                             PointOperationLatencyThreshold = TimeSpan.Zero,
                             NonPointOperationLatencyThreshold = TimeSpan.Zero
-                        }
-                    }));
+                        },
+                        QueryTextMode = QueryTextMode.All
+                    })
+                    .WithConsistencyLevel(ConsistencyLevel.Session))
+                ;
+            await Util.DeleteAllDatabasesAsync(client);
 
             bulkClient = TestCommon.CreateCosmosClient(builder => builder
                 .WithBulkExecution(true)
@@ -73,8 +83,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                     {
                         PointOperationLatencyThreshold = TimeSpan.Zero,
                         NonPointOperationLatencyThreshold = TimeSpan.Zero
-                    }
-                 }));
+                    },
+                    QueryTextMode = QueryTextMode.All
+                })
+                .WithConsistencyLevel(ConsistencyLevel.Session));
 
             // Set a small retry count to reduce test time
             miscCosmosClient = TestCommon.CreateCosmosClient(builder =>
@@ -87,8 +99,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                         {
                             PointOperationLatencyThreshold = TimeSpan.Zero,
                             NonPointOperationLatencyThreshold = TimeSpan.Zero
-                        }
-                     }));
+                        },
+                        QueryTextMode = QueryTextMode.All
+                    }));
 
             EndToEndTraceWriterBaselineTests.database = await client.CreateDatabaseAsync(
                     "databaseName",
@@ -137,7 +150,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 Util.DisposeOpenTelemetryAndCustomListeners();
 
                 EndToEndTraceWriterBaselineTests.testListener.Dispose();
-                
+
+                Environment.SetEnvironmentVariable("OTEL_SEMCONV_STABILITY_OPT_IN", null);
             }
         }
         
@@ -481,10 +495,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
-            QueryRequestOptions requestOptions = new QueryRequestOptions();
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { IsNonStreamingOrderByQueryFeatureDisabled = true };
 
             int startLineNumber;
             int endLineNumber;
@@ -519,6 +534,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Typed
             //----------------------------------------------------------------
             {
+                requestOptions.QueryTextMode = QueryTextMode.None;
+
                 startLineNumber = GetLineNumber();
                 FeedIteratorInternal<JToken> feedIterator = (FeedIteratorInternal<JToken>)container.GetItemQueryIterator<JToken>(
                     queryText: "SELECT * FROM c",
@@ -538,6 +555,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 inputs.Add(new Input("Query Typed", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
+                requestOptions.QueryTextMode = QueryTextMode.None; //Reset request Option
             }
             //----------------------------------------------------------------
 
@@ -545,6 +564,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Public API
             //----------------------------------------------------------------
             {
+                requestOptions.QueryTextMode = QueryTextMode.ParameterizedOnly;
+
                 startLineNumber = GetLineNumber();
                 FeedIterator feedIterator = container.GetItemQueryStreamIterator(
                     queryText: "SELECT * FROM c",
@@ -565,6 +586,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 inputs.Add(new Input("Query Public API", traceForest, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+
+                requestOptions.QueryTextMode = QueryTextMode.None; //Reset request Option
             }
             //----------------------------------------------------------------
 
@@ -572,9 +595,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             //  Query Public API Typed
             //----------------------------------------------------------------
             {
+                requestOptions.QueryTextMode = QueryTextMode.ParameterizedOnly;
+
+                QueryDefinition parameterizedQuery = new QueryDefinition(
+                    query: "SELECT * FROM c WHERE c.id != @customIdentifier"
+                )
+                .WithParameter("@customIdentifier", "anyRandomId");
+
                 startLineNumber = GetLineNumber();
                 FeedIterator<JToken> feedIterator = container.GetItemQueryIterator<JToken>(
-                    queryText: "SELECT * FROM c",
+                    queryDefinition: parameterizedQuery,
                     requestOptions: requestOptions);
 
                 List<ITrace> traces = new List<ITrace>();
@@ -1224,7 +1254,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             int endLineNumber;
 
             //----------------------------------------------------------------
-            //  Standard Batch
+            //  Standard Batch (Non Homogenous Operations)
             //----------------------------------------------------------------
             {
                 startLineNumber = GetLineNumber();
@@ -1258,6 +1288,34 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 endLineNumber = GetLineNumber();
 
                 inputs.Add(new Input("Batch Operation", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
+
+                EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
+            }
+            //----------------------------------------------------------------
+
+            //----------------------------------------------------------------
+            //  Standard Batch (Homogenous Operations)
+            //----------------------------------------------------------------
+            {
+                startLineNumber = GetLineNumber();
+                string pkValue = "DiagnosticTestPk";
+                TransactionalBatch batch = container.CreateTransactionalBatch(new PartitionKey(pkValue));
+                List<ToDoActivity> createItems = new List<ToDoActivity>();
+                for (int i = 0; i < 50; i++)
+                {
+                    ToDoActivity item = ToDoActivity.CreateRandomToDoActivity(pk: pkValue);
+                    createItems.Add(item);
+                    batch.CreateItem<ToDoActivity>(item);
+                }
+
+                TransactionalBatchRequestOptions requestOptions = null;
+                TransactionalBatchResponse response = await batch.ExecuteAsync(requestOptions);
+
+                Assert.IsNotNull(response);
+                ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
+                endLineNumber = GetLineNumber();
+
+                inputs.Add(new Input("Batch Homogenous Operation", trace, startLineNumber, endLineNumber, EndToEndTraceWriterBaselineTests.testListener?.GetRecordedAttributes()));
 
                 EndToEndTraceWriterBaselineTests.AssertAndResetActivityInformation();
             }
@@ -1796,7 +1854,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
                 return new TraceForBaselineTesting("Trace For Baseline Testing", TraceLevel.Info, TraceComponent.Unknown, parent: null);
             }
 
-            public void UpdateRegionContacted(TraceDatum traceDatum)
+            public void UpdateRegionContacted(TraceDatum _)
             {
                 //NoImplementation
             }

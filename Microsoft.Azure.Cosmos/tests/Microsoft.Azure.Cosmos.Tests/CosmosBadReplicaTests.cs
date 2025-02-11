@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CosmosBadReplicaTests
     {
         [TestMethod]
+        [TestCategory("Flaky")]
         [Timeout(30000)]
         [DataRow(true, true, false, DisplayName = "Validate when replica validation is enabled using environment variable.")]
         [DataRow(false, true, false, DisplayName = "Validate when replica validation is disabled using environment variable.")]
@@ -63,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     cRid,
                     out IReadOnlyList<string> partitionKeyRanges);
 
-                    List<string> replicaIds1 = new List<string>()
+                List<string> replicaIds1 = new List<string>()
                 {
                     "11111111111111111",
                     "22222222222222222",
@@ -77,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     "eastus",
                     cRid);
 
-                    // One replica changed on the refresh
-                    List<string> replicaIds2 = new List<string>()
+                // One replica changed on the refresh
+                List<string> replicaIds2 = new List<string>()
                 {
                     "11111111111111111",
                     "22222222222222222",
@@ -97,7 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 mockHttpHandler.SetupSequence(x => x.SendAsync(
                     It.Is<HttpRequestMessage>(r => r.RequestUri.ToString().Contains("addresses")), It.IsAny<CancellationToken>()))
                     .Returns(Task.FromResult(replicaSet1))
-                    .Returns(async ()=>
+                    .Returns(async () =>
                     {
                         //block cache refresh to verify bad replica is not visited during refresh
                         while (delayCacheRefresh)
@@ -197,7 +198,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         do
                         {
                             await Task.Delay(TimeSpan.FromMilliseconds(100));
-                        }while (!delayRefreshUnblocked);
+                        } while (!delayRefreshUnblocked);
 
                         for (int i = 0; i < 20; i++)
                         {

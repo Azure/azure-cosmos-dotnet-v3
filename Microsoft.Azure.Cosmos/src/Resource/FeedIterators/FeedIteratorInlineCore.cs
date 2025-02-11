@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore : FeedIteratorInternal
@@ -28,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
 
             this.container = feedIteratorInternal.container;
-            this.databaseName = feedIteratorInternal.databaseName;
+
+            this.SetupInfoForTelemetry(feedIteratorInternal);
         }
 
         internal FeedIteratorInlineCore(
@@ -39,15 +41,11 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
 
             this.container = feedIteratorInternal.container;
-            this.databaseName = feedIteratorInternal.databaseName;
+
+            this.SetupInfoForTelemetry(feedIteratorInternal);
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIteratorInternal.GetCosmosElementContinuationToken();
-        }
 
         public override Task<ResponseMessage> ReadNextAsync(CancellationToken cancellationToken = default)
         {
@@ -56,9 +54,22 @@ namespace Microsoft.Azure.Cosmos
                         containerName: this.container?.Id,
                         databaseName: this.container?.Database?.Id ?? this.databaseName,
                         operationType: Documents.OperationType.ReadFeed,
-                        requestOptions: null,
+                        requestOptions: new RequestOptions()
+                        {
+                            OperationMetricsOptions = this.operationMetricsOptions,
+                            NetworkMetricsOptions = this.networkMetricsOptions,
+                        },
                         task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
-                        openTelemetry: (response) => new OpenTelemetryResponse(responseMessage: response));
+                        openTelemetry: new (this.operationName, (response) =>
+                        {
+                            OpenTelemetryResponse openTelemetryResponse = new OpenTelemetryResponse(responseMessage: response, querySpecFunc: () => this.querySpec);
+
+                            if (this.operationType.HasValue)
+                            {
+                                openTelemetryResponse.OperationType = this.operationType.Value;
+                            }
+                            return openTelemetryResponse;
+                        }));
         }
 
         public override Task<ResponseMessage> ReadNextAsync(ITrace trace, CancellationToken cancellationToken = default)

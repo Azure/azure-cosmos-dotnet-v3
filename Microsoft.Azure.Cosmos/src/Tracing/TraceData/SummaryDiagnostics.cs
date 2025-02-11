@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 foreach (KeyValuePair<(int, int), int> kvp in this.DirectRequestsSummary.Value)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    jsonWriter.WriteNumber64Value(kvp.Value);
+                    jsonWriter.WriteNumberValue(kvp.Value);
                 }
                 jsonWriter.WriteObjectEnd();
             }
@@ -133,7 +133,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             if (this.AllRegionsContacted.IsValueCreated)
             {
                 jsonWriter.WriteFieldName("RegionsContacted");
-                jsonWriter.WriteNumber64Value(this.AllRegionsContacted.Value.Count);
+                jsonWriter.WriteNumberValue(this.AllRegionsContacted.Value.Count);
             }
 
             if (this.GatewayRequestsSummary.IsValueCreated)
@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 foreach (KeyValuePair<(int, int), int> kvp in this.GatewayRequestsSummary.Value)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
-                    jsonWriter.WriteNumber64Value(kvp.Value);
+                    jsonWriter.WriteNumberValue(kvp.Value);
                 }
                 jsonWriter.WriteObjectEnd();
             }

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
     internal static class EncryptionExceptionFactory
     {
+#pragma warning disable CA2208 // Instantiate argument exceptions correctly
         internal static ArgumentException InvalidKeySize(string algorithmName, int actualKeylength, int expectedLength)
         {
             return new ArgumentException(
@@ -25,9 +26,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static ArgumentException InvalidAlgorithmVersion(byte actual, byte expected)
         {
             return new ArgumentException(
-                $"Invalid encryption algorithm version; actual: {actual.ToString(@"X2")}, expected: {expected.ToString(@"X2")}.",
+                $"Invalid encryption algorithm version; actual: {actual:X2}, expected: {expected:X2}.",
                 "cipherText");
         }
+#pragma warning restore CA2208 // Instantiate argument exceptions correctly
 
         internal static ArgumentException InvalidAuthenticationTag()
         {

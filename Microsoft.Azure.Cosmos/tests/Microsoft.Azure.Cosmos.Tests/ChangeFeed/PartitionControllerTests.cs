@@ -254,7 +254,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                     manualResetEvent.Set();
                     throw exception;
                 });
-            
+
             Mock.Get(this.partitionSupervisorFactory)
                 .Setup(f => f.Create(this.lease))
                 .Returns(supervisor.Object);
