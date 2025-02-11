@@ -732,7 +732,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Enable partition level circuit breaker
         /// </summary>
-        internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: true);
+        internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.

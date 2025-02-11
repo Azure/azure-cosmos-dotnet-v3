@@ -940,7 +940,10 @@ namespace Microsoft.Azure.Cosmos
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy);
             this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                ? new GlobalPartitionEndpointManagerCore(this.GlobalEndpointManager)
+                ? new GlobalPartitionEndpointManagerCore(
+                    this.GlobalEndpointManager,
+                    this.ConnectionPolicy.EnablePartitionLevelFailover,
+                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
                 : GlobalPartitionEndpointManagerNoOp.Instance;
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(

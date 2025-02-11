@@ -30,6 +30,27 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string PartitionLevelCircuitBreakerEnabled = "AZURE_COSMOS_PARTITION_LEVEL_CIRCUIT_BREAKER_ENABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
+        /// This will eventually be removed once per partition automatic failover is enabled by default for both preview
+        /// and GA.
+        /// </summary>
+        internal static readonly string StalePartitionUnavailabilityRefreshIntervalInSeconds = "AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
+        /// This will eventually be removed once per partition automatic failover is enabled by default for both preview
+        /// and GA.
+        /// </summary>
+        internal static readonly string AllowedPartitionUnavailabilityDurationInSeconds = "AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
+        /// This will eventually be removed once per partition automatic failover is enabled by default for both preview
+        /// and GA.
+        /// </summary>
+        internal static readonly string CircuitBreakerConsecutiveFailureCount = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_BASED";
+
+        /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
         /// </summary>
         internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
@@ -116,6 +137,57 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.PartitionLevelCircuitBreakerEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value of the partition level circuit breaker environment variable. Note that, partition level
+        /// circuit breaker is disabled by default for both preview and GA releases. The user can set the  respective
+        /// environment variable 'AZURE_COSMOS_PARTITION_LEVEL_CIRCUIT_BREAKER_ENABLED' to override the value for both preview and GA.
+        /// The method will eventually be removed, once partition level failover is enabled by default.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
+        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
+        public static int GetStalePartitionUnavailabilityRefreshIntervalInSeconds(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value of the partition level circuit breaker environment variable. Note that, partition level
+        /// circuit breaker is disabled by default for both preview and GA releases. The user can set the  respective
+        /// environment variable 'AZURE_COSMOS_PARTITION_LEVEL_CIRCUIT_BREAKER_ENABLED' to override the value for both preview and GA.
+        /// The method will eventually be removed, once partition level failover is enabled by default.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
+        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
+        public static int GetAllowedPartitionUnavailabilityDurationInSeconds(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value of the partition level circuit breaker environment variable. Note that, partition level
+        /// circuit breaker is disabled by default for both preview and GA releases. The user can set the  respective
+        /// environment variable 'AZURE_COSMOS_PARTITION_LEVEL_CIRCUIT_BREAKER_ENABLED' to override the value for both preview and GA.
+        /// The method will eventually be removed, once partition level failover is enabled by default.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
+        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
+        public static int GetCircuitBreakerConsecutiveFailureCount(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCount,
                         defaultValue: defaultValue);
         }
 

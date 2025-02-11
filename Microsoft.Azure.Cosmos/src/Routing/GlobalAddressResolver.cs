@@ -230,14 +230,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return partitionAddressInformation;
             }
 
-            //ContainerProperties collection = await this.collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
-
-            //List<Tuple<PartitionKeyRange, Uri>> pkRangeUriMappings = this.partitionKeyRangeLocationCache.GetTuples();
-            //if (pkRangeUriMappings.Count > 0)
-            //{
-            //    await this.TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync(pkRangeUriMappings, collection.ResourceId);
-            //}
-
             resolver = this.GetAddressResolver(request);
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }

@@ -23,13 +23,19 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class GlobalPartitionEndpointManagerCore : GlobalPartitionEndpointManager, IDisposable
     {
-        private readonly object backgroundAccountRefreshLock = new ();
+        private readonly object backgroundConnectionInitLock = new ();
 
         private readonly IGlobalEndpointManager globalEndpointManager;
 
         private readonly CancellationTokenSource cancellationTokenSource = new ();
 
-        private readonly int backgroundRefreshLocationTimeIntervalInMS = 60000;
+        private readonly int partitionFailbackWindowInSeconds = ConfigurationManager.GetAllowedPartitionUnavailabilityDurationInSeconds(5);
+
+        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(10);
+
+        private readonly bool isPpafEnabled;
+
+        private readonly bool isPpcbEnabled;
 
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForWrite = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
@@ -39,13 +45,17 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private int disposeCounter = 0;
 
-        private bool isBackgroundAccountRefreshActive = false;
+        private bool isBackgroundConnectionInitActive = false;
 
-        private Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>>? backgroundConnectionInitTask;
+        private Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>>? backgroundOpenConnectionTask;
 
         public GlobalPartitionEndpointManagerCore(
-            IGlobalEndpointManager globalEndpointManager)
+            IGlobalEndpointManager globalEndpointManager,
+            bool isPpafEnabled = false,
+            bool isPpcbEnabled = false)
         {
+            this.isPpafEnabled = isPpafEnabled;
+            this.isPpcbEnabled = isPpcbEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
@@ -53,50 +63,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override void SetBackgroundConnectionInitTask(
             Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>> backgroundConnectionInitTask)
         {
-            this.backgroundConnectionInitTask = backgroundConnectionInitTask;
-        }
-
-        private bool CanUsePartitionLevelFailoverLocations(DocumentServiceRequest request)
-        {
-            if (this.globalEndpointManager.ReadEndpoints.Count <= 1)
-            {
-                return false;
-            }
-
-            if (request.ResourceType == ResourceType.Document || 
-                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Documents.OperationType.ExecuteJavaScript))
-            {
-                // Disable for multimaster because it currently 
-                // depends on 403.3 to signal the primary region is backup
-                // and to fail back over
-                if (!this.globalEndpointManager.CanUseMultipleWriteLocations(request))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            this.backgroundOpenConnectionTask = backgroundConnectionInitTask;
         }
 
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            if (request.RequestContext == null)
-            {
-                return false;
-            }
-
-            if (!this.CanUsePartitionLevelFailoverLocations(request))
+            if (!this.IsRequestValidForPartitionFailover(
+                request,
+                shouldValidateFailedLocation: false,
+                out PartitionKeyRange? partitionKeyRange,
+                out Uri? _))
             {
                 return false;
             }
 
-            PartitionKeyRange? partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
             if (partitionKeyRange == null)
             {
                 return false;
@@ -142,19 +123,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request));
-            }
-
-            PartitionKeyRange? partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
-            if (partitionKeyRange == null)
+            if (!this.IsRequestValidForPartitionFailover(
+                request,
+                shouldValidateFailedLocation: true,
+                out PartitionKeyRange? partitionKeyRange,
+                out Uri? failedLocation))
             {
                 return false;
             }
 
-            Uri? failedLocation = request.RequestContext.LocationEndpointToRoute;
-            if (failedLocation == null)
+            if (partitionKeyRange == null || failedLocation == null)
             {
                 return false;
             }
@@ -177,7 +155,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         locations: nextLocations,
                         failedLocation: failedLocation))
                 {
-                    DefaultTrace.TraceInformation("Partition level override added to new location for Reads. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
+                    DefaultTrace.TraceInformation("Partition level override for reads added to new location for Reads. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
                         partitionKeyRange,
                         failedLocation,
                         partionFailover.Current);
@@ -186,25 +164,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 // All the locations have been tried. Remove the override information
-                DefaultTrace.TraceInformation("Partition level override removed. PartitionKeyRange: {0}, failedLocation: {1}",
+                DefaultTrace.TraceInformation("Partition level override for reads removed. PartitionKeyRange: {0}, failedLocation: {1}",
                        partitionKeyRange,
                        failedLocation);
 
                 this.PartitionKeyRangeToLocationForRead.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
-                return false;
             }
-            else
+            else if (this.isPpafEnabled
+                || (this.isPpcbEnabled
+                && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
-                if (request.RequestContext == null)
-                {
-                    return false;
-                }
-
-                if (!this.CanUsePartitionLevelFailoverLocations(request))
-                {
-                    return false;
-                }
-
                 PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
                     partitionKeyRange,
                     (_) => new PartitionKeyRangeFailoverInfo(
@@ -225,7 +194,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         locations: nextLocations,
                         failedLocation: failedLocation))
                 {
-                    DefaultTrace.TraceInformation("Partition level override added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
+                    DefaultTrace.TraceInformation("Partition level override for writes added to new location. PartitionKeyRange: {0}, failedLocation: {1}, new location: {2}",
                         partitionKeyRange,
                         failedLocation,
                         partionFailover.Current);
@@ -234,13 +203,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 
                 // All the locations have been tried. Remove the override information
-                DefaultTrace.TraceInformation("Partition level override removed. PartitionKeyRange: {0}, failedLocation: {1}",
+                DefaultTrace.TraceInformation("Partition level override for writes removed. PartitionKeyRange: {0}, failedLocation: {1}",
                        partitionKeyRange,
                        failedLocation);
 
                 this.PartitionKeyRangeToLocationForWrite.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
-                return false;
             }
+
+            return false;
         }
 
         public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
@@ -248,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (!this.IsRequestValidForPartitionFailover(
                 request,
+                shouldValidateFailedLocation: true,
                 out PartitionKeyRange? partitionKeyRange,
                 out Uri? failedLocation))
             {
@@ -270,13 +241,41 @@ namespace Microsoft.Azure.Cosmos.Routing
             return partionFailover.CanCircuitBreakerTriggerPartitionFailOver();
         }
 
+        private bool CanUsePartitionLevelFailoverLocations(DocumentServiceRequest request)
+        {
+            if (this.globalEndpointManager.ReadEndpoints.Count <= 1)
+            {
+                return false;
+            }
+
+            if (request.ResourceType == ResourceType.Document ||
+                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == Documents.OperationType.ExecuteJavaScript))
+            {
+                // Disable for multimaster because it currently 
+                // depends on 403.3 to signal the primary region is backup
+                // and to fail back over
+                if (!this.globalEndpointManager.CanUseMultipleWriteLocations(request))
+                {
+                    return true;
+                }
+                else
+                {
+                    return request.OperationType == Documents.OperationType.Read;
+                }
+            }
+
+            return false;
+        }
+
         private bool IsRequestValidForPartitionFailover(
             DocumentServiceRequest request,
+            bool shouldValidateFailedLocation,
             out PartitionKeyRange? partitionKeyRange,
             out Uri? failedLocation)
         {
             partitionKeyRange = default;
             failedLocation = default;
+
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
@@ -306,10 +305,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            failedLocation = request.RequestContext.LocationEndpointToRoute;
-            if (failedLocation == null)
+            if (shouldValidateFailedLocation)
             {
-                return false;
+                failedLocation = request.RequestContext.LocationEndpointToRoute;
+                if (failedLocation == null)
+                {
+                    return false;
+                }
             }
 
             return true;
@@ -322,19 +324,19 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            if (this.isBackgroundAccountRefreshActive)
+            if (this.isBackgroundConnectionInitActive)
             {
                 return;
             }
 
-            lock (this.backgroundAccountRefreshLock)
+            lock (this.backgroundConnectionInitLock)
             {
-                if (this.isBackgroundAccountRefreshActive)
+                if (this.isBackgroundConnectionInitActive)
                 {
                     return;
                 }
 
-                this.isBackgroundAccountRefreshActive = true;
+                this.isBackgroundConnectionInitActive = true;
             }
 
             try
@@ -343,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
             catch
             {
-                this.isBackgroundAccountRefreshActive = false;
+                this.isBackgroundConnectionInitActive = false;
                 throw;
             }
         }
@@ -361,7 +363,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             try
             {
-                await Task.Delay(this.backgroundRefreshLocationTimeIntervalInMS, this.cancellationTokenSource.Token);
+                await Task.Delay(
+                    TimeSpan.FromSeconds(this.backgroundConnectionInitTimeIntervalInSeconds),
+                    this.cancellationTokenSource.Token);
 
                 if (this.cancellationTokenSource.IsCancellationRequested)
                 {
@@ -391,35 +395,45 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            if (this.backgroundConnectionInitTask != null)
+            if (this.backgroundOpenConnectionTask != null)
             {
                 Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings = new ();
                 foreach (PartitionKeyRange pkRange in this.PartitionKeyRangeToLocationForRead.Value.Keys)
                 {
                     PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
 
-                    // TODO: Change this to use the first preferred location.
-                    Uri originalFailedLocation = partionFailover.GetFailedLocations().First().Key;
+                    if (DateTime.UtcNow - partionFailover.FirstRequestFailureTime > TimeSpan.FromSeconds(this.partitionFailbackWindowInSeconds))
+                    {
+                        // TODO: Change this to use the first preferred location.
+                        Uri originalFailedLocation = partionFailover.FirstFailedLocation;
 
-                    pkRangeToEndpointMappings.Add(
-                        key: pkRange,
-                        value: new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(partionFailover.CollectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Unhealthy));
+                        pkRangeToEndpointMappings.Add(
+                            key: pkRange,
+                            value: new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(
+                                partionFailover.CollectionRid,
+                                originalFailedLocation,
+                                TransportAddressHealthState.HealthStatus.Unhealthy));
+
+                    }
                 }
 
-                await this.backgroundConnectionInitTask(pkRangeToEndpointMappings);
-
-                foreach (PartitionKeyRange pkRange in pkRangeToEndpointMappings.Keys)
+                if (pkRangeToEndpointMappings.Count > 0)
                 {
-                    Uri originalFailedLocation = pkRangeToEndpointMappings[pkRange].Item2;
-                    TransportAddressHealthState.HealthStatus currentHealthState = pkRangeToEndpointMappings[pkRange].Item3;
+                    await this.backgroundOpenConnectionTask(pkRangeToEndpointMappings);
 
-                    if (currentHealthState == TransportAddressHealthState.HealthStatus.Connected)
+                    foreach (PartitionKeyRange pkRange in pkRangeToEndpointMappings.Keys)
                     {
-                        // Initiate Failback.
-                        DefaultTrace.TraceInformation($"Initiating Failback to endpoint: {originalFailedLocation}, for partition key range: {pkRange}");
+                        Uri originalFailedLocation = pkRangeToEndpointMappings[pkRange].Item2;
+                        TransportAddressHealthState.HealthStatus currentHealthState = pkRangeToEndpointMappings[pkRange].Item3;
 
-                        PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
-                        partionFailover.SetCurrentLocation(originalFailedLocation);
+                        if (currentHealthState == TransportAddressHealthState.HealthStatus.Connected)
+                        {
+                            // Initiate Failback.
+                            DefaultTrace.TraceInformation($"Initiating Failback to endpoint: {originalFailedLocation}, for partition key range: {pkRange}");
+
+                            // Think about the possibility of removing the partition key range from the dictionary.
+                            this.PartitionKeyRangeToLocationForRead.Value.TryRemove(pkRange, out PartitionKeyRangeFailoverInfo _);
+                        }
                     }
                 }
             }
@@ -440,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             private readonly ConcurrentDictionary<Uri, DateTime> FailedLocations;
             private readonly TimeSpan TimeoutCounterResetWindowInMinutes;
             private readonly int RequestFailureCounterThreshold;
-            private DateTime LastRequestTimeoutTime;
+            private DateTime LastRequestFailureTime;
             private int ConsecutiveRequestFailureCount;
 
             public PartitionKeyRangeFailoverInfo(
@@ -449,15 +463,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.CollectionRid = collectionRid;
                 this.Current = currentLocation;
+                this.FirstFailedLocation = currentLocation;
                 this.FailedLocations = new ConcurrentDictionary<Uri, DateTime>();
                 this.ConsecutiveRequestFailureCount = 0;
-                this.RequestFailureCounterThreshold = 0; // Get this from environment variable
+                this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(0); // Get this from environment variable
                 this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
+                this.FirstRequestFailureTime = DateTime.UtcNow;
             }
 
             public Uri Current { get; private set; }
 
+            public Uri FirstFailedLocation { get; private set; }
+
             public string CollectionRid { get; private set; }
+
+            public DateTime FirstRequestFailureTime { get; private set; }
 
             public bool TryMoveNextLocation(
                 IReadOnlyCollection<Uri> locations,
@@ -506,25 +526,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             public void IncrementRequestFailureCounts()
             {
                 DateTime now = DateTime.UtcNow;
-                if (now - this.LastRequestTimeoutTime > this.TimeoutCounterResetWindowInMinutes)
+                if (now - this.LastRequestFailureTime > this.TimeoutCounterResetWindowInMinutes)
                 {
                     this.ConsecutiveRequestFailureCount = 0;
                 }
+
                 this.ConsecutiveRequestFailureCount += 1;
-                this.LastRequestTimeoutTime = now;
-            }
-
-            public ConcurrentDictionary<Uri, DateTime> GetFailedLocations()
-            {
-                return this.FailedLocations;
-            }
-
-            public void SetCurrentLocation(
-                Uri currentLocation)
-            {
-                this.Current = currentLocation;
-                this.FailedLocations.TryRemove(currentLocation, out _);
-                this.ConsecutiveRequestFailureCount = 0;
+                this.LastRequestFailureTime = now;
             }
         }
     }
