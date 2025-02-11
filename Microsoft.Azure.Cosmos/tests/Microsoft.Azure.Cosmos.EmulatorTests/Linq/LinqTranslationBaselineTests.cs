@@ -358,11 +358,19 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
+
+                new LinqTestInput("ArrayContains in Select clause with int value", b => getQuery(b).Select(doc => doc.ArrayField.ArrayContains(1))),
+                new LinqTestInput("ArrayContains in Filter clause with int value", b => getQuery(b).Where(doc => doc.ArrayField.ArrayContains(1))),
+                new LinqTestInput("ArrayContains in Select clause with object value", b => getQuery(b).Select(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }))),
+                new LinqTestInput("ArrayContains in Filter clause with object value", b => getQuery(b).Where(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }))),
+
+                // Same tests, but with 3rd `partialMatch` parameter being true
                 new LinqTestInput("ArrayContains in Select clause with int value and match partial true", b => getQuery(b).Select(doc => doc.ArrayField.ArrayContains(1, true))),
                 new LinqTestInput("ArrayContains in Filter clause with int value and match partial true", b => getQuery(b).Where(doc => doc.ArrayField.ArrayContains(1, true))),
                 new LinqTestInput("ArrayContains in Select clause with object value and match partial true", b => getQuery(b).Select(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, true))),
                 new LinqTestInput("ArrayContains in Filter clause with object value and match partial true", b => getQuery(b).Where(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, true))),
-                
+
+                // Same tests, but with 3rd `partialMatch` parameter being false
                 new LinqTestInput("ArrayContains in Select clause with int value and match partial false", b => getQuery(b).Select(doc => doc.ArrayField.ArrayContains(1, false))),
                 new LinqTestInput("ArrayContains in Filter clause with int value and match partial false", b => getQuery(b).Where(doc => doc.ArrayField.ArrayContains(1, false))),
                 new LinqTestInput("ArrayContains in Select clause with object value and match partial false", b => getQuery(b).Select(doc => doc.ObjectArrayField.ArrayContains(new { Field = "abc" }, false))),
