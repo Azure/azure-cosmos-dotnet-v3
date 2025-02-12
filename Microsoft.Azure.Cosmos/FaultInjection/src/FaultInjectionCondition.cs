@@ -33,7 +33,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.region = string.IsNullOrEmpty(region) ? string.Empty : mapper.GetCosmosDBRegionName(region);
 
             this.operationType = operationType ?? FaultInjectionOperationType.All;
-            this.connectionType = connectionType ?? FaultInjectionConnectionType.All;
+            this.connectionType = this.IsMetadataOperationType()
+                ? FaultInjectionConnectionType.Gateway 
+                : connectionType ?? FaultInjectionConnectionType.All;
             this.endpoint = endpoint ?? FaultInjectionEndpoint.Empty;
         }
 
@@ -86,6 +88,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.connectionType,
                 this.region,  
                 this.endpoint.ToString());
+        }
+
+        internal bool IsMetadataOperationType()
+        {
+            return this.operationType == FaultInjectionOperationType.MetadataContainer
+                || this.operationType == FaultInjectionOperationType.MetadataDatabaseAccount
+                || this.operationType == FaultInjectionOperationType.MetadataPartitionKeyRange
+                || this.operationType == FaultInjectionOperationType.MetadataRefreshAddresses
+                || this.operationType == FaultInjectionOperationType.MetadataQueryPlan;
         }
     }
 }
