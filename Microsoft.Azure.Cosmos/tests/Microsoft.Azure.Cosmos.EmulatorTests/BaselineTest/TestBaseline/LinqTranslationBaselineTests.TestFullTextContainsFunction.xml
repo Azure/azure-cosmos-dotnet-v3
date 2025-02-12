@@ -66,11 +66,14 @@ ORDER BY FullTextContains(root["StringField"], "test") ASC]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[FullTextContains with group by]]></Description>
-      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContains("test"))]]></Expression>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContains("test"), value => value)]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT VALUE FullTextContains(root["StringField"], "test") 
+FROM root 
+GROUP BY FullTextContains(root["StringField"], "test") ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -167,11 +170,14 @@ ORDER BY FullTextContainsAll(root["StringField"], "test") ASC]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[FullTextContainsAll with group by]]></Description>
-      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContainsAll(new [] {"test"}))]]></Expression>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContainsAll(new [] {"test"}), value => value)]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT VALUE FullTextContainsAll(root["StringField"], "test") 
+FROM root 
+GROUP BY FullTextContainsAll(root["StringField"], "test") ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -268,11 +274,14 @@ ORDER BY FullTextContainsAny(root["StringField"], "test") ASC]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[FullTextContainsAny with group by]]></Description>
-      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContainsAny(new [] {"test"}))]]></Expression>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContainsAny(new [] {"test"}), value => value)]]></Expression>
     </Input>
     <Output>
-      <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+      <SqlQuery><![CDATA[
+SELECT VALUE FullTextContainsAny(root["StringField"], "test") 
+FROM root 
+GROUP BY FullTextContainsAny(root["StringField"], "test") ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
