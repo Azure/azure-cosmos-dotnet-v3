@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool RegexMatch(this object obj, string regularExpression)
         {
-            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
         }
 
         /// <summary>
@@ -234,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool RegexMatch(this object obj, string regularExpression, string searchModifier)
         {
-            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
         }
 
         /// <summary>
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool FullTextContains(this object obj, string search)
         {
-            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
         }
 
         /// <summary>
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool FullTextContainsAll(this object obj, params string[] searches)
         {
-            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
         }
 
         /// <summary>
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static bool FullTextContainsAny(this object obj, params string[] searches)
         {
-            throw new NotImplementedException(ClientResources.LINQExtensionFunctionNotImplemented);
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
         }
 
         /// <summary>

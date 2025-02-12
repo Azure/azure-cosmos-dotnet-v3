@@ -40,6 +40,55 @@ WHERE (FullTextContains(root["StringField"], "test1") AND FullTextContains(root[
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[FullTextContains with projection]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.FullTextContains("test"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE FullTextContains(root["StringField"], "test") 
+FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContains with order by]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.StringField.FullTextContains("test"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY FullTextContains(root["StringField"], "test") ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContains with group by]]></Description>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContains("test"))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContains with SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContains("test")).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE FullTextContains(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[FullTextContainsAll with 1 argument]]></Description>
       <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAll(new [] {"test"}))]]></Expression>
     </Input>
@@ -92,6 +141,55 @@ WHERE (FullTextContainsAll(root["StringField"], "test") AND FullTextContainsAll(
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[FullTextContainsAll with projection]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.FullTextContainsAll(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE FullTextContainsAll(root["StringField"], "test") 
+FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with order by]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.StringField.FullTextContainsAll(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY FullTextContainsAll(root["StringField"], "test") ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with group by]]></Description>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContainsAll(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAll with SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContainsAll(new [] {"test"})).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE FullTextContainsAll(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[FullTextContainsAny with 1 argument]]></Description>
       <Expression><![CDATA[query.Where(doc => doc.StringField.FullTextContainsAny(new [] {"test"}))]]></Expression>
     </Input>
@@ -139,6 +237,55 @@ WHERE (FullTextContainsAny(root["StringField"], "test") OR FullTextContainsAny(r
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContainsAny(root["StringField"], "test") AND FullTextContainsAny(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with projection]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField.FullTextContainsAny(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE FullTextContainsAny(root["StringField"], "test") 
+FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with order by]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.StringField.FullTextContainsAny(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY FullTextContainsAny(root["StringField"], "test") ASC]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","code":2206,"message":"Unsupported ORDER BY clause. ORDER BY item expression could not be mapped to a document path."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with group by]]></Description>
+      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextContainsAny(new [] {"test"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Incorrect number of arguments for method 'GroupBy'. Expected '3' but received '2'.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextContainsAny with SelectMany]]></Description>
+      <Expression><![CDATA[query.SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContainsAny(new [] {"test"})).Select(number => number))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE number0 
+FROM root 
+JOIN number0 IN root["EnumerableField"] 
+WHERE FullTextContainsAny(root["StringField"], "test")]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
