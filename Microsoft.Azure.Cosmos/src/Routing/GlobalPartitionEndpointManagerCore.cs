@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
@@ -83,14 +84,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (request.IsReadOnlyRequest)
+            if (request.IsReadOnlyRequest
+                || (!request.IsReadOnlyRequest
+                    && this.isPpcbEnabled
+                    && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
                 if (this.PartitionKeyRangeToLocationForRead.IsValueCreated
                     && this.PartitionKeyRangeToLocationForRead.Value.TryGetValue(
                         partitionKeyRange,
                         out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
                 {
-                    DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
+                    DefaultTrace.TraceVerbose("Partition level override for reads. URI: {0}, PartitionKeyRange: {1}",
                         partitionKeyRangeFailover.Current,
                         partitionKeyRange.Id);
 
@@ -98,14 +102,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return true;
                 }
             }
-            else
+            else if (this.isPpafEnabled && !request.IsReadOnlyRequest)
             {
                 if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated
                     && this.PartitionKeyRangeToLocationForWrite.Value.TryGetValue(
                         partitionKeyRange,
                         out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
                 {
-                    DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
+                    DefaultTrace.TraceVerbose("Partition level override for writes. URI: {0}, PartitionKeyRange: {1}",
                         partitionKeyRangeFailover.Current,
                         partitionKeyRange.Id);
 
@@ -140,7 +144,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             // Only do partition level failover if it is a write operation.
             // Write operation will throw a write forbidden if it is not the primary
             // region.
-            if (request.IsReadOnlyRequest)
+            if (request.IsReadOnlyRequest 
+                || (!request.IsReadOnlyRequest
+                    && this.isPpcbEnabled 
+                    && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
                 PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value.GetOrAdd(
                     partitionKeyRange,
@@ -170,9 +177,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 this.PartitionKeyRangeToLocationForRead.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
             }
-            else if (this.isPpafEnabled
-                || (this.isPpcbEnabled
-                && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
+            else if (this.isPpafEnabled && !request.IsReadOnlyRequest)
             {
                 PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
                     partitionKeyRange,
@@ -236,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.ResolvedCollectionRid,
                     failedLocation));
 
-            partionFailover.IncrementRequestFailureCounts();
+            partionFailover.IncrementRequestFailureCounts(DateTime.UtcNow);
 
             return partionFailover.CanCircuitBreakerTriggerPartitionFailOver();
         }
@@ -260,6 +265,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 else
                 {
+                    // Right now, for multi master, only reads are supported for circuit breaker.
                     return request.OperationType == Documents.OperationType.Read;
                 }
             }
@@ -280,14 +286,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 throw new ArgumentNullException(nameof(request));
             }
-
-            // Only do partition level failover if it is a write operation.
-            // Write operation will throw a write forbidden if it is not the primary
-            // region.
-            //if (request.IsReadOnlyRequest)
-            //{
-            //    return false;
-            //}
 
             if (request.RequestContext == null)
             {
@@ -402,7 +400,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
 
-                    if (DateTime.UtcNow - partionFailover.FirstRequestFailureTime > TimeSpan.FromSeconds(this.partitionFailbackWindowInSeconds))
+                    partionFailover.SnapshotPartitionFailoverTimestamps(
+                        out DateTime firstRequestFailureTime,
+                        out DateTime _);
+
+                    if (DateTime.UtcNow - firstRequestFailureTime > TimeSpan.FromSeconds(this.partitionFailbackWindowInSeconds))
                     {
                         // TODO: Change this to use the first preferred location.
                         Uri originalFailedLocation = partionFailover.FirstFailedLocation;
@@ -451,6 +453,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         internal sealed class PartitionKeyRangeFailoverInfo
         {
             // HashSet is not thread safe and should only accessed in the lock
+            private readonly object counterLock = new ();
+            private readonly object timestampLock = new ();
             private readonly ConcurrentDictionary<Uri, DateTime> FailedLocations;
             private readonly TimeSpan TimeoutCounterResetWindowInMinutes;
             private readonly int RequestFailureCounterThreshold;
@@ -466,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.FirstFailedLocation = currentLocation;
                 this.FailedLocations = new ConcurrentDictionary<Uri, DateTime>();
                 this.ConsecutiveRequestFailureCount = 0;
-                this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(0); // Get this from environment variable
+                this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(10); // Get this from environment variable
                 this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
                 this.FirstRequestFailureTime = DateTime.UtcNow;
             }
@@ -520,19 +524,53 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public bool CanCircuitBreakerTriggerPartitionFailOver()
             {
-                return this.ConsecutiveRequestFailureCount > this.RequestFailureCounterThreshold;
+                this.SnapshotConsecutiveRequestFailureCount(
+                    out int consecutiveRequestFailureCount);
+
+                return consecutiveRequestFailureCount > this.RequestFailureCounterThreshold;
             }
 
-            public void IncrementRequestFailureCounts()
+            public void IncrementRequestFailureCounts(
+                DateTime currentTime)
             {
-                DateTime now = DateTime.UtcNow;
-                if (now - this.LastRequestFailureTime > this.TimeoutCounterResetWindowInMinutes)
+                this.SnapshotPartitionFailoverTimestamps(
+                    out DateTime _,
+                    out DateTime lastRequestFailureTime);
+
+                if (currentTime - lastRequestFailureTime > this.TimeoutCounterResetWindowInMinutes)
                 {
-                    this.ConsecutiveRequestFailureCount = 0;
+                    Interlocked.Exchange(ref this.ConsecutiveRequestFailureCount, 0);
                 }
 
-                this.ConsecutiveRequestFailureCount += 1;
-                this.LastRequestFailureTime = now;
+                Interlocked.Increment(ref this.ConsecutiveRequestFailureCount);
+                this.LastRequestFailureTime = currentTime;
+            }
+
+            /// <summary>
+            /// Helper method to snapshot the connection timestamps.
+            /// </summary>
+            /// <param name="firstRequestFailureTime">A <see cref="DateTime"/> field containing the last send attempt time.</param>
+            /// <param name="lastRequestFailureTime">A <see cref="DateTime"/> field containing th e last send attempt time.</param>
+            public void SnapshotPartitionFailoverTimestamps(
+                out DateTime firstRequestFailureTime,
+                out DateTime lastRequestFailureTime)
+            {
+                Debug.Assert(!Monitor.IsEntered(this.timestampLock));
+                lock (this.timestampLock)
+                {
+                    firstRequestFailureTime = this.FirstRequestFailureTime;
+                    lastRequestFailureTime = this.LastRequestFailureTime;
+                }
+            }
+
+            public void SnapshotConsecutiveRequestFailureCount(
+                out int consecutiveRequestFailureCount)
+            {
+                Debug.Assert(!Monitor.IsEntered(this.counterLock));
+                lock (this.counterLock)
+                {
+                    consecutiveRequestFailureCount = this.ConsecutiveRequestFailureCount;
+                }
             }
         }
     }
