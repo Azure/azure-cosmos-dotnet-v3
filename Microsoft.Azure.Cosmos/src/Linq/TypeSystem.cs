@@ -21,18 +21,6 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         public static string GetMemberName(this MemberInfo memberInfo, TranslationContext context)
         {
-            //!HACK START
-            if (memberInfo is PropertyInfo propertyInfo)
-            {
-                string name = (string)memberInfo.DeclaringType?.GetMethod("GetJsonName",
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                        BindingFlags.FlattenHierarchy, null, new[] {typeof(PropertyInfo)}, null)?
-                    .Invoke(null, new object[] {propertyInfo});
-                if (name != null)
-                    return name;
-            }
-            //!HACK END
-            
             return context.CosmosLinqSerializer.SerializeMemberName(memberInfo);
         }
 
