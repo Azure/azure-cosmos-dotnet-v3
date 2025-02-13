@@ -158,7 +158,7 @@
                     .WithRegion(region1)
                     .Build(),
                 result: new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.SendDelay)
-                    .WithDelay(TimeSpan.FromSeconds(2))
+                    .WithDelay(TimeSpan.FromSeconds(65))
                     .Build())
                 .Build();
 
@@ -183,18 +183,14 @@
                 Database fidb = fiClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container fic = fidb.GetContainer(MultiRegionSetupHelpers.containerName);
 
-                //warm up connection
-                //await fic.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
-
                 gatewayRule.Enable();
 
                 try
                 {
-                    CancellationTokenSource cts = new CancellationTokenSource();
-                    CancellationToken token = cts.Token;
-                    cts.CancelAfter(TimeSpan.FromSeconds(100));
-                    ItemResponse<CosmosIntegrationTestObject> o = await fic.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"), cancellationToken: token);
-                    Console.WriteLine(o.Diagnostics.ToString());
+                    ItemResponse<CosmosIntegrationTestObject> o = await fic.ReadItemAsync<CosmosIntegrationTestObject>(
+                        "testId", 
+                        new PartitionKey("pk"));
+                    Assert.IsTrue(o.StatusCode == HttpStatusCode.OK);
                 }
                 catch (Exception ex)
                 {
@@ -203,7 +199,9 @@
                 finally
                 {
                     gatewayRule.Disable();
-                    Console.WriteLine(gatewayRule.GetHitCount());
+                    Assert.IsTrue(gatewayRule.GetHitCount() >= 3);
+
+                    fiClient.Dispose();
                 }
             }
         }
