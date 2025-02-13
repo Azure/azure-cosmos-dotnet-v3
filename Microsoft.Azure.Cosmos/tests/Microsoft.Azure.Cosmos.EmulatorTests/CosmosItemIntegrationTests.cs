@@ -6,6 +6,7 @@
     using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -111,7 +112,7 @@
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ConsistencyLevel = ConsistencyLevel.Strong,
-                //Serializer = this.cosmosSystemTextJsonSerializer,
+                Serializer = this.cosmosSystemTextJsonSerializer,
                 FaultInjector = injector,
             };
 
@@ -143,6 +144,67 @@
             {
                 rule.Disable();
                 fiClient.Dispose();
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task AddressRefreshTimeoutTest()
+        {
+            FaultInjectionRule gatewayRule = new FaultInjectionRuleBuilder(
+                id: "gatewayRule",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataRefreshAddresses)
+                    .WithRegion(region1)
+                    .Build(),
+                result: new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                    .WithDelay(TimeSpan.FromSeconds(2))
+                    .Build())
+                .Build();
+
+            gatewayRule.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { gatewayRule });
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ConnectionMode = ConnectionMode.Direct,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(1),
+
+            };
+
+            using (CosmosClient fiClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: cosmosClientOptions))
+            {
+                Database fidb = fiClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container fic = fidb.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                //warm up connection
+                //await fic.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
+                gatewayRule.Enable();
+
+                try
+                {
+                    CancellationTokenSource cts = new CancellationTokenSource();
+                    CancellationToken token = cts.Token;
+                    cts.CancelAfter(TimeSpan.FromSeconds(100));
+                    ItemResponse<CosmosIntegrationTestObject> o = await fic.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"), cancellationToken: token);
+                    Console.WriteLine(o.Diagnostics.ToString());
+                }
+                catch (Exception ex)
+                {
+                    Assert.Fail(ex.ToString());
+                }
+                finally
+                {
+                    gatewayRule.Disable();
+                    Console.WriteLine(gatewayRule.GetHitCount());
+                }
             }
         }
     }
