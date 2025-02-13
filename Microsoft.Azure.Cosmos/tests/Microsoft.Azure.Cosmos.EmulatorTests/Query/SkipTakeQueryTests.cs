@@ -185,5 +185,43 @@
                 }
             }
         }
+
+        [TestMethod]
+        public async Task TestTopOffsetLimitClientRanges()
+        {
+            async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> documents)
+            {
+                await QueryTestsBase.NoOp();
+
+                foreach (string query in new[]
+                    {
+                        "SELECT c.name FROM c OFFSET 0 LIMIT 10",
+                        "SELECT c.name FROM c OFFSET 2147483647 LIMIT 10",
+                        "SELECT c.name FROM c OFFSET 10 LIMIT 0",
+                        "SELECT c.name FROM c OFFSET 10 LIMIT 2147483647",
+                        "SELECT TOP 0 c.name FROM c",
+                        "SELECT TOP 2147483647 c.name FROM c",
+                    })
+                {
+                    List<CosmosElement> expectedValues = new List<CosmosElement>();
+                    FeedIterator<CosmosElement> resultSetIterator = container.GetItemQueryIterator<CosmosElement>(
+                        query,
+                        requestOptions: new QueryRequestOptions() { MaxConcurrency = 0 });
+
+                    while (resultSetIterator.HasMoreResults)
+                    {
+                        expectedValues.AddRange(await resultSetIterator.ReadNextAsync());
+                    }
+
+                    Assert.AreEqual(0, expectedValues.Count);
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct | ConnectionModes.Gateway,
+                CollectionTypes.MultiPartition,
+                QueryTestsBase.NoDocuments,
+                ImplementationAsync);
+        }
     }
 }

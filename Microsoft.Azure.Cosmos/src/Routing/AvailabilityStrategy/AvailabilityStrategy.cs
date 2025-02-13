@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         ///  Used on a per request level to disable a client level AvailabilityStrategy
         /// </summary>
         /// <returns>something</returns>
-        internal static AvailabilityStrategy DisabledStrategy()
+        public static AvailabilityStrategy DisabledStrategy()
         {
             return new DisabledAvailabilityStrategy();
         }
