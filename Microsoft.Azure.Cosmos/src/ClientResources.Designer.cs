@@ -304,7 +304,7 @@ namespace Microsoft.Azure.Cosmos {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Extension function can be used in Linq expressions only and are evaluated in Azure CosmosDB server..
+        ///   Looks up a localized string similar to Extension function can be used in LINQ expressions only and are evaluated in Azure Cosmos DB server..
         /// </summary>
         internal static string ExtensionMethodNotImplemented {
             get {
