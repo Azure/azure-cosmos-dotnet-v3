@@ -8,10 +8,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Text;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -25,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void TestSingleReadRegionScenario()
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
-            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object, isPartitionLevelFailoverEnabled: true);
 
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(new List<Uri>() { new Uri("https://localhost:443/") }));
 
@@ -72,7 +68,10 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
 
-            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(mockEndpointManager.Object);
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: true);
+
             List<Uri> readRegions = new(), writeRegions = new();
             for (int i = 0; i < numOfReadRegions; i++)
             {
@@ -122,6 +121,175 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
                     Assert.AreNotEqual(region, createRequest.RequestContext.LocationEndpointToRoute);
                 }
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, true, DisplayName = "Scenario when PPAF is disabled and circuit breaker is enabled.")]
+        [DataRow(true, false, DisplayName = "Scenario when PPAF is enabled and circuit breaker is disabled.")]
+        [DataRow(true, true, DisplayName = "Scenario when PPAF is enabled and circuit breaker is enabled.")]
+        [Timeout(10000)]
+        public void TryMarkEndpointUnavailableForPartitionKeyRange_WithSingleMasterWriteAccount_WritesShouldNotAddOverrideWhenCircuitBreakerEnabled(
+            bool ppafEnabled,
+            bool ppcbEnabled)
+        {
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+            List<Uri> readRegions = new(), writeRegions = new();
+            for (int i = 0; i < 3; i++)
+            {
+                readRegions.Add(new Uri($"https://localhost:{i}/"));
+            }
+
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(false);
+
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: ppafEnabled,
+                isPartitionLevelCircuitBreakerEnabled: ppcbEnabled);
+
+            PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "",
+                MaxExclusive = "FF"
+            };
+
+            Uri routeToLocation = new Uri("https://localhost:443/");
+            using DocumentServiceRequest readRequest = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            readRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            readRequest.RequestContext.RouteToLocation(routeToLocation);
+            Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                readRequest));
+            Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(
+                readRequest));
+
+            using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            createRequest.RequestContext.RouteToLocation(routeToLocation);
+
+            if (ppafEnabled)
+            {
+                Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    createRequest));
+                Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(
+                    createRequest));
+            }
+            else
+            {
+                Assert.IsFalse(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    createRequest));
+                Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
+                    createRequest));
+            }
+        }
+
+        [TestMethod]
+        [DataRow(true, DisplayName = "Scenario when circuit breaker is enabled.")]
+        [DataRow(false, DisplayName = "Scenario when circuit breaker is disabled.")]
+        [Timeout(10000)]
+        public void TryMarkEndpointUnavailableForPartitionKeyRange_WithMultiMasterWriteAccount_WritesShouldAddOverrideWhenCircuitBreakerEnabled(
+            bool circuitBreakerEnabled)
+        {
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+            List<Uri> readRegions = new(), writeRegions = new();
+            for (int i = 0; i < 3; i++)
+            {
+                readRegions.Add(new Uri($"https://localhost:{i}/"));
+            }
+
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(true);
+
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: false,
+                isPartitionLevelCircuitBreakerEnabled: circuitBreakerEnabled);
+
+            PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "",
+                MaxExclusive = "FF"
+            };
+
+            Uri routeToLocation = new Uri("https://localhost:443/");
+            using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            createRequest.RequestContext.RouteToLocation(routeToLocation);
+
+            if (circuitBreakerEnabled)
+            {
+                Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    createRequest));
+                Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(
+                    createRequest));
+            }
+            else
+            {
+                Assert.IsFalse(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    createRequest));
+                Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
+                    createRequest));
+            }
+        }
+
+        [TestMethod]
+        [DataRow(6, DisplayName = "Scenario when request failure counter is lesser than the default threshold of 10.")]
+        [DataRow(11, DisplayName = "Scenario when request failure counter is higher than the default threshold of 10.")]
+        [Timeout(10000)]
+        public void IncrementRequestFailureCounterAndCheckIfPartitionCanFailover_WithSingleMasterWriteAccount_ShouldReturnTrueWhenCounterReachesDefaultThreshold(
+            int failureCount)
+        {
+            Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+            List<Uri> readRegions = new(), writeRegions = new();
+            for (int i = 0; i < 3; i++)
+            {
+                readRegions.Add(new Uri($"https://localhost:{i}/"));
+            }
+
+            mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(true);
+
+            GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
+                mockEndpointManager.Object,
+                isPartitionLevelFailoverEnabled: false,
+                isPartitionLevelCircuitBreakerEnabled: true);
+
+            PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+            {
+                Id = "0",
+                MinInclusive = "",
+                MaxExclusive = "FF"
+            };
+
+            Uri routeToLocation = new Uri("https://localhost:443/");
+            using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+            createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+            createRequest.RequestContext.RouteToLocation(routeToLocation);
+
+            bool shouldPartitionFailOver = false;
+            for(int i=0; i<=failureCount; i++)
+            {
+                shouldPartitionFailOver = failoverManager.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(createRequest);
+            }
+
+            if (failureCount < 10)
+            {
+                Assert.IsFalse(shouldPartitionFailOver);
+            }
+            else
+            {
+                Assert.IsTrue(shouldPartitionFailOver);
             }
         }
     }

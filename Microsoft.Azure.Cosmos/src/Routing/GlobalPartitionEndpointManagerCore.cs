@@ -9,10 +9,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Diagnostics;
-    using System.Linq;
     using System.Threading;
     using System.Threading.Tasks;
-    using HdrHistogram;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
 
@@ -32,11 +30,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private readonly int partitionFailbackWindowInSeconds = ConfigurationManager.GetAllowedPartitionUnavailabilityDurationInSeconds(5);
 
-        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(10);
+        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(5);
 
-        private readonly bool isPpafEnabled;
+        private readonly bool isPartitionLevelFailoverEnabled;
 
-        private readonly bool isPpcbEnabled;
+        private readonly bool isPartitionLevelCircuitBreakerEnabled;
 
         private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForWrite = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
@@ -52,11 +50,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
-            bool isPpafEnabled = false,
-            bool isPpcbEnabled = false)
+            bool isPartitionLevelFailoverEnabled = false,
+            bool isPartitionLevelCircuitBreakerEnabled = false)
         {
-            this.isPpafEnabled = isPpafEnabled;
-            this.isPpcbEnabled = isPpcbEnabled;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled;
             this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
@@ -86,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             if (request.IsReadOnlyRequest
                 || (!request.IsReadOnlyRequest
-                    && this.isPpcbEnabled
+                    && this.isPartitionLevelCircuitBreakerEnabled
                     && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
                 if (this.PartitionKeyRangeToLocationForRead.IsValueCreated
@@ -102,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return true;
                 }
             }
-            else if (this.isPpafEnabled && !request.IsReadOnlyRequest)
+            else if (this.isPartitionLevelFailoverEnabled && !request.IsReadOnlyRequest)
             {
                 if (this.PartitionKeyRangeToLocationForWrite.IsValueCreated
                     && this.PartitionKeyRangeToLocationForWrite.Value.TryGetValue(
@@ -146,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             // region.
             if (request.IsReadOnlyRequest 
                 || (!request.IsReadOnlyRequest
-                    && this.isPpcbEnabled 
+                    && this.isPartitionLevelCircuitBreakerEnabled 
                     && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
                 PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value.GetOrAdd(
@@ -177,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 this.PartitionKeyRangeToLocationForRead.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
             }
-            else if (this.isPpafEnabled && !request.IsReadOnlyRequest)
+            else if (this.isPartitionLevelFailoverEnabled && !request.IsReadOnlyRequest)
             {
                 PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
                     partitionKeyRange,
@@ -214,6 +212,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 this.PartitionKeyRangeToLocationForWrite.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
             }
+
+            DefaultTrace.TraceInformation("Skipping Partition level override.");
 
             return false;
         }
@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 else
                 {
                     // Right now, for multi master, only reads are supported for circuit breaker.
-                    return request.OperationType == Documents.OperationType.Read;
+                    // return request.OperationType == Documents.OperationType.Read;
+                    return true;
                 }
             }
 
@@ -315,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return true;
         }
 
-        public void InitializeAndStartCircuitBreakerFailbackBackgroundRefresh()
+        private void InitializeAndStartCircuitBreakerFailbackBackgroundRefresh()
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -357,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            DefaultTrace.TraceInformation("GlobalPartitionEndpointManagerCore: InitializeAccountPropertiesAndStartBackgroundRefresh() trying to get address and open connections for failed locations.");
+            DefaultTrace.TraceInformation("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() trying to get address and open connections for failed locations.");
 
             try
             {
@@ -379,14 +380,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
 
-                DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitializeAccountPropertiesAndStartBackgroundRefresh() - Unable to get address and open connections. Exception: {0}", ex.ToString());
+                DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() - Unable to get address and open connections. Exception: {0}", ex.ToString());
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
             this.InitiateCircuitBreakerFailbackLoop();
         }
 
-        public async Task TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync()
+        private async Task TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync()
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -470,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.FirstFailedLocation = currentLocation;
                 this.FailedLocations = new ConcurrentDictionary<Uri, DateTime>();
                 this.ConsecutiveRequestFailureCount = 0;
-                this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(10); // Get this from environment variable
+                this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(10);
                 this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
                 this.FirstRequestFailureTime = DateTime.UtcNow;
             }
