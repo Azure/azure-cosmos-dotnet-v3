@@ -782,6 +782,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "TimeToLivePropertyPath",
                 "PartitionKeyPath",
                 "PartitionKeyDefinitionVersion",
+                "ComputedProperties",
                 "ConflictResolutionPolicy",
                 "ClientEncryptionPolicy",
                 "PartitionKeyPaths",
