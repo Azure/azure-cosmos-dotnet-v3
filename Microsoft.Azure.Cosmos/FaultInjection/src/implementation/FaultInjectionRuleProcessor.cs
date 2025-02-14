@@ -98,9 +98,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionOperationType operationType = rule.GetCondition().GetOperationType();
             if ((operationType != FaultInjectionOperationType.All) && this.CanErrorLimitToOperation(errorType))
             {
-                effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
-                //Will need to change when introducing metadata operations
-                effectiveCondition.SetResourceType(ResourceType.Document);
+                OperationType effectiveOperationType = this.GetEffectiveOperationType(operationType);
+                if (effectiveOperationType != OperationType.Invalid)
+                {
+                    effectiveCondition.SetOperationType(this.GetEffectiveOperationType(operationType));
+                }
+                effectiveCondition.SetResourceType(this.GetEffectiveResourceType(operationType));
             }
 
             List<Uri> regionEndpoints = this.GetRegionEndpoints(rule.GetCondition());
@@ -129,7 +132,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                                 rule.GetCondition().GetEndpoint()),
                             this.retryPolicy());
 
-                    effectiveCondition.SetPartitionKeyRangeIds(effectivePKRangeId);
+                    if (!this.IsMetaData(rule.GetCondition().GetOperationType()))
+                    {
+                        effectiveCondition.SetPartitionKeyRangeIds(effectivePKRangeId, rule);
+                    }
                 }
             }
             else
@@ -246,6 +252,33 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 FaultInjectionOperationType.PatchItem => OperationType.Patch,
                 FaultInjectionOperationType.Batch => OperationType.Batch,
                 FaultInjectionOperationType.ReadFeed => OperationType.ReadFeed,
+                FaultInjectionOperationType.MetadataContainer => OperationType.Read,
+                FaultInjectionOperationType.MetadataDatabaseAccount => OperationType.Read,
+                FaultInjectionOperationType.MetadataPartitionKeyRange => OperationType.ReadFeed,
+                FaultInjectionOperationType.MetadataRefreshAddresses => OperationType.Invalid,
+                FaultInjectionOperationType.MetadataQueryPlan => OperationType.QueryPlan,
+                _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
+            };
+        }
+
+        private ResourceType GetEffectiveResourceType(FaultInjectionOperationType faultInjectionOperationType)
+        {
+            return faultInjectionOperationType switch
+            {
+                FaultInjectionOperationType.ReadItem => ResourceType.Document,
+                FaultInjectionOperationType.CreateItem => ResourceType.Document,
+                FaultInjectionOperationType.QueryItem => ResourceType.Document,
+                FaultInjectionOperationType.UpsertItem => ResourceType.Document,
+                FaultInjectionOperationType.ReplaceItem => ResourceType.Document,
+                FaultInjectionOperationType.DeleteItem => ResourceType.Document,
+                FaultInjectionOperationType.PatchItem => ResourceType.Document,
+                FaultInjectionOperationType.Batch => ResourceType.Document,
+                FaultInjectionOperationType.ReadFeed => ResourceType.Document,
+                FaultInjectionOperationType.MetadataContainer => ResourceType.Collection,
+                FaultInjectionOperationType.MetadataDatabaseAccount => ResourceType.DatabaseAccount,
+                FaultInjectionOperationType.MetadataPartitionKeyRange => ResourceType.PartitionKeyRange,
+                FaultInjectionOperationType.MetadataRefreshAddresses => ResourceType.Address,
+                FaultInjectionOperationType.MetadataQueryPlan => ResourceType.Document,
                 _ => throw new ArgumentException($"FaultInjectionOperationType: {faultInjectionOperationType} is not supported"),
             };
         }
@@ -320,6 +353,15 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         {
             return condition.GetOperationType() != FaultInjectionOperationType.All 
                 && this.GetEffectiveOperationType(condition.GetOperationType()).IsWriteOperation();
+        }
+
+        private bool IsMetaData(FaultInjectionOperationType operationType)
+        {
+            return operationType == FaultInjectionOperationType.MetadataContainer
+                || operationType == FaultInjectionOperationType.MetadataDatabaseAccount
+                || operationType == FaultInjectionOperationType.MetadataPartitionKeyRange
+                || operationType == FaultInjectionOperationType.MetadataRefreshAddresses
+                || operationType == FaultInjectionOperationType.MetadataQueryPlan;
         }
 
         private async Task<List<Uri>> ResolvePhyicalAddresses(
