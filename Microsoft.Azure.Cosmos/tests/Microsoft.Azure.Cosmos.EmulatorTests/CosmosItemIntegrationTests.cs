@@ -25,28 +25,16 @@
         private static string region3;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
 
-        private readonly List<CosmosIntegrationTestObject> itemsList = new ()
-        {
-            new() { Id = "testId10", Pk = "pk1" },
-            new() { Id = "testId11", Pk = "pk2" },
-            new() { Id = "testId12", Pk = "pk3" },
-            new() { Id = "testId13", Pk = "pk4" },
-            new() { Id = "testId14", Pk = "pk5" },
-        };
-
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            // Delete this environment variable after the test run
-            Environment.SetEnvironmentVariable("COSMOSDB_MULTI_REGION", "AccountEndpoint=https://dkunda-ppaf-account.documents-test.windows-int.net:443/;AccountKey=blabla;");
-
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
-            this.cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
@@ -75,11 +63,6 @@
             try
             {
                 this.container.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
-
-                foreach (CosmosIntegrationTestObject item in this.itemsList)
-                {
-                    this.container.DeleteItemAsync<CosmosIntegrationTestObject>(item.Id, new PartitionKey(item.Pk));
-                }
             }
             catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
             {
@@ -208,6 +191,11 @@
                 ApplicationPreferredRegions = preferredRegions,
             };
 
+            List<CosmosIntegrationTestObject> itemsList = new ()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
             try
             {
                 CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
@@ -215,8 +203,8 @@
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 // Act and Assert.
-                Task<ItemResponse<CosmosIntegrationTestObject>> createItemResponse = this.container.CreateItemAsync<CosmosIntegrationTestObject>(this.itemsList.ElementAt(0));
-                
+                await this.TryCreateItems(itemsList);
+
                 //Must Ensure the data is replicated to all regions
                 await Task.Delay(3000);
 
@@ -226,8 +214,8 @@
                     try
                     {
                         ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
-                            id: this.itemsList[0].Id,
-                            partitionKey: new PartitionKey(this.itemsList[0].Pk));
+                            id: itemsList[0].Id,
+                            partitionKey: new PartitionKey(itemsList[0].Pk));
 
                         IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
                         HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
@@ -274,11 +262,15 @@
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+
+                await this.TryDeleteItems(itemsList);
             }
         }
 
         [TestMethod]
         [Owner("dkunda")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerDisabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldNotApplyPartitionLevelOverride()
         {
             // Arrange.
@@ -314,6 +306,11 @@
                 ApplicationPreferredRegions = preferredRegions,
             };
 
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
             try
             {
                 CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
@@ -321,7 +318,7 @@
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 // Act and Assert.
-                Task<ItemResponse<CosmosIntegrationTestObject>> createItemResponse = this.container.CreateItemAsync<CosmosIntegrationTestObject>(this.itemsList.ElementAt(0));
+                await this.TryCreateItems(itemsList);
 
                 //Must Ensure the data is replicated to all regions
                 await Task.Delay(3000);
@@ -332,8 +329,8 @@
                     try
                     {
                         ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
-                            id: this.itemsList[0].Id,
-                            partitionKey: new PartitionKey(this.itemsList[0].Pk));
+                            id: itemsList[0].Id,
+                            partitionKey: new PartitionKey(itemsList[0].Pk));
 
                         IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
                         HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
@@ -348,7 +345,7 @@
                     }
                     catch (CosmosException)
                     {
-                        Assert.Fail("Read Item operation should not succeed.");
+                        Assert.Fail("Read Item operation should succeed.");
                     }
                     catch (Exception ex)
                     {
@@ -360,11 +357,15 @@
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
                 Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+
+                await this.TryDeleteItems(itemsList);
             }
         }
 
         [TestMethod]
         [Owner("dkunda")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
         public async Task CreateItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldNotApplyPartitionLevelOverride()
         {
             // Arrange.
@@ -394,7 +395,7 @@
             FaultInjector faultInjector = new FaultInjector(rules);
 
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
-            CosmosClientOptions cosmosClientOptions = new ()
+            CosmosClientOptions cosmosClientOptions = new()
             {
                 ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
@@ -402,7 +403,7 @@
                 ApplicationPreferredRegions = preferredRegions,
             };
 
-            CosmosClient cosmosClient = new (connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+            CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
 
             Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
             Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
@@ -445,15 +446,17 @@
 
         [TestMethod]
         [Owner("dkunda")]
-        public async Task CreateItemAsync_WithPartitionLevelFailoverEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride()
+        [TestCategory("MultiMaster")]
+        [Timeout(70000)]
+        public async Task CreateItemAsync_WithCircuitBreakerEnabledAndMultiMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride()
         {
             // Arrange.
-            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string region1 = Regions.NorthCentralUS;
-            string region2 = Regions.CentralUS;
-            string region3 = Regions.WestUS2;
+            string region1 = Regions.WestUS2;
+            string region2 = Regions.EastUS2;
+            string region3 = Regions.UKSouth;
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
             FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
                 id: serviceUnavailableRuleId,
@@ -471,6 +474,7 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
+            List<CosmosIntegrationTestObject> itemsCleanupList = new();
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new()
             {
@@ -478,6 +482,7 @@
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer
             };
 
             try
@@ -492,25 +497,31 @@
                 {
                     try
                     {
-                        ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(this.itemsList[3]);
+                        CosmosIntegrationTestObject testItem = new()
+                        {
+                            Id = $"mmTestId{attemptCount}",
+                            Pk = $"mmpk{attemptCount}"
+                        };
+
+                        ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem);
+                        itemsCleanupList.Add(testItem);
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.Created,
+                            actual: createResponse.StatusCode);
 
                         IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = createResponse.Diagnostics.GetContactedRegions();
                         HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
-
-                        Assert.AreEqual(
-                            expected: HttpStatusCode.OK,
-                            actual: createResponse.StatusCode);
-
                         Assert.IsNotNull(contactedRegions);
 
                         if (attemptCount == 1)
                         {
-                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the write request succeeds after failover, the partition was failed over to the next region, after the failures reaches the threshold.");
+                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the write request fails ue to 503, the partition will be failed over to the next region and there will be 2 retry attempts.");
                             Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
                         }
                         else
                         {
-                            Assert.IsTrue(contactedRegions.Count == 1);
+                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the first write request succeeds after failover, the partition was indeed failed over to the next region and the subsequent writes will be routed to the next region.");
                             Assert.IsTrue(contactedRegions.Contains(region2));
                         }
                     }
@@ -527,7 +538,54 @@
             }
             finally
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
+
+                foreach (CosmosIntegrationTestObject item in itemsCleanupList)
+                {
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(item.Id, new PartitionKey(item.Pk));
+                }
+            }
+        }
+
+        private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
+        {
+            foreach (CosmosIntegrationTestObject item in testItems)
+            {
+                await this.TryCreateItem(item);
+            }
+        }
+
+        private async Task TryCreateItem(CosmosIntegrationTestObject testItem)
+        {
+            try
+            {
+                await this.container.CreateItemAsync<CosmosIntegrationTestObject>(testItem);
+            }
+            catch (CosmosException ce)
+            {
+                Assert.Fail($"Failed to create item with id: {testItem.Id}, message: {ce.Message}");
+            }
+        }
+
+        private async Task TryDeleteItems(List<CosmosIntegrationTestObject> testItems)
+        {
+            foreach (CosmosIntegrationTestObject item in testItems)
+            {
+                await this.TryDeleteItem(item);
+            }
+        }
+
+        private async Task TryDeleteItem(CosmosIntegrationTestObject testItem)
+        {
+            try
+            {
+                await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                    testItem.Id,
+                    new PartitionKey(testItem.Pk));
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Ignore
             }
         }
     }
