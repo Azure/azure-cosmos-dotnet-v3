@@ -20,7 +20,7 @@
         private ContainerInternal Container = null;
         private const string PartitionKey = "/pk";
 
-        //[TestInitialize]
+        [TestInitialize]
         public async Task TestInitialize()
         {
             await this.TestInit();
@@ -364,94 +364,5 @@
             Assert.IsNotNull(ce);
             Assert.AreEqual(HttpStatusCode.NotFound, ce.StatusCode);
         }
-
-        [TestMethod]
-        [Owner("dkunda")]
-        public async Task CreateAndInitializeAsync_LocalTest()
-        {
-            try
-            {
-                Random random = new();
-                string databaseName = "ppaf_test_db_1";
-                string containerName = "ppaf_test_container_1";
-
-                CosmosClientOptions clientOptions = new CosmosClientOptions
-                {
-                    ApplicationName = "dkunda-ppaf-app",
-                    EnableContentResponseOnWrite = true,
-                    ApplicationPreferredRegions = new List<string> { Regions.NorthCentralUS, Regions.CentralUS, Regions.WestUS2 },
-                    //RequestTimeout = TimeSpan.FromSeconds(10),
-                    EnablePartitionLevelFailover = true,
-                    ConnectionMode = ConnectionMode.Direct,
-                    ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
-                };
-                string binaryConnectionString = "AccountEndpoint=https://dkunda-ppaf-account.documents-test.windows-int.net:443/;AccountKey=blabla==;";
-                using CosmosClient binaryClient = new CosmosClient(binaryConnectionString, clientOptions);
-
-                //DatabaseResponse dbResponse = await binaryClient.CreateDatabaseIfNotExistsAsync(databaseName);
-                //Console.WriteLine(dbResponse.Diagnostics);
-
-                //ContainerProperties properties = new ContainerProperties(id: containerName, partitionKeyPath: PartitionKey);
-
-                //try
-                //{
-                //    ContainerResponse containerResponse = await dbResponse.Database.CreateContainerIfNotExistsAsync(properties);
-                //    Console.WriteLine(containerResponse.Diagnostics);
-                //}
-                //catch (CosmosException ce)
-                //{
-                //    Console.WriteLine(ce.Diagnostics);
-                //}
-
-                Cosmos.Database database = binaryClient.GetDatabase(databaseName);
-                Container container = database.GetContainer(containerName);
-
-                //ItemRequestOptions requestOptions = new();
-
-                //Comment comment = new Comment(Guid.NewGuid().ToString(), "pk", random.Next().ToString(), "dkunda@test.com", "This document is intended for ppaf testing demo.");
-
-                //ItemResponse<Comment> writeResponse = await container.CreateItemAsync<Comment>(
-                //    item: comment,
-                //    partitionKey: new Cosmos.PartitionKey(comment.pk),
-                //    requestOptions: requestOptions
-                //);
-
-                //Console.WriteLine("Comment ID: " + comment.id);
-                //Console.WriteLine(writeResponse.Diagnostics);
-
-                for (int i = 0; i < 1; i++)
-                {
-                    try
-                    {
-                        ItemResponse<Comment> readResponse = await container.ReadItemAsync<Comment>(
-                            id: "329c7ed7-ce38-4e72-b7bd-c3158aff4c58",
-                            partitionKey: new Cosmos.PartitionKey("pk"),
-                            requestOptions: default
-                            );
-                        Console.WriteLine(readResponse.Diagnostics);
-                    }
-                    catch (CosmosException ce)
-                    {
-                        Console.WriteLine(ce.Diagnostics);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Exception Occurred: " + ex.StackTrace);
-                    }
-                }
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable("AZURE_COSMOS_BINARY_ENCODING_ENABLED", null);
-            }
-        }
-
-        public record Comment(
-            string id,
-            string pk,
-            string name,
-            string email,
-            string body
-        );
     }
 }
