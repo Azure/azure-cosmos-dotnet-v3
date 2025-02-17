@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the name of the database system.
         /// </summary>
-        public const string DbSystemName = "db.system";
+        public const string DbSystemName = "db.system.name";
 
         /// <summary>
         /// Represents the namespace of the database.
@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the client ID for Cosmos DB.
         /// </summary>
-        public const string ClientId = "db.cosmosdb.client_id";
+        public const string ClientId = "azure.cosmosdb.client.id";
 
         /// <summary>
         /// Represents the user agent, compliant with OpenTelemetry conventions.
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the connection mode for Cosmos DB.
         /// </summary>
-        public const string ConnectionMode = "db.cosmosdb.connection_mode";
+        public const string ConnectionMode = "azure.cosmosdb.connection.mode";
 
         // Request/Response specifics
 
@@ -107,12 +107,12 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the content length of the request.
         /// </summary>
-        public const string RequestContentLength = "db.cosmosdb.request_content_length";
+        public const string RequestContentLength = "azure.cosmosdb.request.body.size";
 
         /// <summary>
         /// Represents the content length of the response.
         /// </summary>
-        public const string ResponseContentLength = "db.cosmosdb.response_content_length";
+        public const string ResponseContentLength = "azure.cosmosdb.response.body.size";
 
         /// <summary>
         /// Represents the status code of the response.
@@ -122,32 +122,32 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Represents the sub-status code of the response.
         /// </summary>
-        public const string SubStatusCode = "db.cosmosdb.sub_status_code";
+        public const string SubStatusCode = "azure.cosmosdb.response.sub_status_code";
 
         /// <summary>
         /// Represents the request charge for the operation.
         /// </summary>
-        public const string RequestCharge = "db.cosmosdb.request_charge";
+        public const string RequestCharge = "azure.cosmosdb.request.request_charge";
 
         /// <summary>
         /// Represents the regions contacted for the operation.
         /// </summary>
-        public const string Region = "db.cosmosdb.regions_contacted";
+        public const string Region = "azure.cosmosdb.contacted_regions";
 
         /// <summary>
         /// Represents the item count in the operation.
         /// </summary>
-        public const string ItemCount = "db.cosmosdb.row_count";
+        public const string ItemCount = "azure.cosmosdb.row.count";
 
         /// <summary>
         /// Represents the activity ID for the operation.
         /// </summary>
-        public const string ActivityId = "db.cosmosdb.activity_id";
+        public const string ActivityId = "azure.cosmosdb.activity_id";
 
         /// <summary>
         /// Represents the correlated activity ID for the operation.
         /// </summary>
-        public const string CorrelatedActivityId = "db.cosmosdb.correlated_activity_id";
+        public const string CorrelatedActivityId = "azure.cosmosdb.correlated_activity_id";
 
         /// <summary>
         /// Represents the Azure Cosmos DB SQL Query.
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// <summary>
         /// Consistency Level
         /// </summary>
-        public const string ConsistencyLevel = "db.cosmosdb.consistency_level";
+        public const string ConsistencyLevel = "azure.cosmosdb.consistency.level";
 
         // Exceptions
 
@@ -187,13 +187,13 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public const string ServiceEndPointPort = "network.protocol.port";
 
-        public const string ServiceEndpointStatusCode = "db.cosmosdb.network.response.status_code";
+        public const string ServiceEndpointStatusCode = "azure.cosmosdb.network.response.status_code";
         
-        public const string ServiceEndpointSubStatusCode = "db.cosmosdb.network.response.sub_status_code";
+        public const string ServiceEndpointSubStatusCode = "azure.cosmosdb.network.response.sub_status_code";
         
         public const string ServiceEndpointRegion = "cloud.region";
         
-        public const string ServiceEndpointRoutingId = "db.cosmosdb.network.routing_id ";
+        public const string ServiceEndpointRoutingId = "azure.cosmosdb.network.routing_id ";
 
         /// <summary>
         /// Represents the type of error.

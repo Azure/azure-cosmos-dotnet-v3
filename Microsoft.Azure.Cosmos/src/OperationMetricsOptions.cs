@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Represents the configuration options for collecting metrics related to Cosmos DB operations.
     /// </summary>
-    public class OperationMetricsOptions
+#if PREVIEW
+    public
+#else
+    internal
+#endif
+    class OperationMetricsOptions
     {
         /// <summary>
         /// <para>
