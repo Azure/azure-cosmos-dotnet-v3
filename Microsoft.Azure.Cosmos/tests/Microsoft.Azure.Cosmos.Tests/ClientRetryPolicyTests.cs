@@ -211,7 +211,6 @@
         [TestMethod]
         [DataRow(true, DisplayName = "Case when partition level failover is enabled.")]
         [DataRow(false, DisplayName = "Case when partition level failover is disabled.")]
-
         public void HttpRequestExceptionHandelingTests(
             bool enablePartitionLevelFailover)
         {
@@ -441,7 +440,7 @@
             FieldInfo fieldInfo = globalPartitionEndpointManager
                 .GetType()
                 .GetField(
-                    name: "PartitionKeyRangeToLocation",
+                    name: "PartitionKeyRangeToLocationForWrite",
                     bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (fieldInfo != null)
@@ -546,7 +545,9 @@
 
             if (enablePartitionLevelFailover)
             {
-                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(endpointManager);
+                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(
+                    globalEndpointManager: endpointManager,
+                    isPartitionLevelFailoverEnabled: enablePartitionLevelFailover);
             }
             else
             {

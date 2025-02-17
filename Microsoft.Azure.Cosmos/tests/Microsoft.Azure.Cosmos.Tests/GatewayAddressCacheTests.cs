@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos
                     IConnectionStateListener connectionStateListener = new ConnectionStateMuxListener(true);
                     GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
                         endpointManager: globalEndpointManager,
-                        null,
+                        partitionKeyRangeLocationCache,
                         Protocol.Tcp,
                         this.mockTokenProvider.Object,
                         null,

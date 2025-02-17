@@ -457,11 +457,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (shouldMarkEndpointUnavailableForPkRange)
             {
-                if (!this.documentServiceRequest.IsReadOnlyRequest
+                if (this.documentServiceRequest != null
+                    && (!this.documentServiceRequest.IsReadOnlyRequest
                     || (this.documentServiceRequest.IsReadOnlyRequest
                         && this.isPertitionLevelCircuitBreakerEnabled
                         && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
-                            this.documentServiceRequest)))
+                            this.documentServiceRequest))))
                 {
                     // Mark the partition as unavailable.
                     // Let the ClientRetry logic decide if the request should be retried
