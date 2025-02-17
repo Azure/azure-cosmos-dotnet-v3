@@ -162,9 +162,6 @@
             Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, circuitBreakerConsecutiveFailureCount);
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string region1 = Regions.NorthCentralUS;
-            string region2 = Regions.CentralUS;
-            string region3 = Regions.WestUS2;
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
             FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
                 id: serviceUnavailableRuleId,
@@ -277,9 +274,6 @@
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "False");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string region1 = Regions.NorthCentralUS;
-            string region2 = Regions.CentralUS;
-            string region3 = Regions.WestUS2;
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
             FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
                 id: serviceUnavailableRuleId,
@@ -374,9 +368,6 @@
             Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, $"{circuitBreakerConsecutiveFailureCount}");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string region1 = Regions.NorthCentralUS;
-            string region2 = Regions.CentralUS;
-            string region3 = Regions.WestUS2;
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
             FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
                 id: serviceUnavailableRuleId,
@@ -454,9 +445,6 @@
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
-            string region1 = Regions.WestUS2;
-            string region2 = Regions.EastUS2;
-            string region3 = Regions.UKSouth;
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
             FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
                 id: serviceUnavailableRuleId,
