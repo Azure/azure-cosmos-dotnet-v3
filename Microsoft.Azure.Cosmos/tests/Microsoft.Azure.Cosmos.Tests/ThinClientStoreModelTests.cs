@@ -58,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestCleanup]
         public void TestCleanup()
         {
+            System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.Empty;
             this.thinClientStoreModel?.Dispose();
         }
 

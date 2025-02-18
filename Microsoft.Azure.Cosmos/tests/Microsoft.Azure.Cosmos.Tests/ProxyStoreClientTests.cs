@@ -24,6 +24,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.NewGuid();
         }
 
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.Empty;
+        }
+
         [TestMethod]
         public async Task InvokeAsync_Json404_ShouldThrowDocumentClientException()
         {
