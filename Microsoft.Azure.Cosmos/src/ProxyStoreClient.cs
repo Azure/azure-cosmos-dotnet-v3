@@ -51,16 +51,19 @@ namespace Microsoft.Azure.Cosmos
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
         }
 
-        public async Task<DocumentServiceResponse> InvokeAsync(
-           DocumentServiceRequest request,
-           ResourceType resourceType,
-           Uri physicalAddress,
-           CancellationToken cancellationToken)
+        public virtual async Task<DocumentServiceResponse> InvokeAsync(
+          DocumentServiceRequest request,
+          ResourceType resourceType,
+          Uri physicalAddress,
+          CancellationToken cancellationToken)
         {
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellationToken))
             {
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
-                return await ProxyStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? this.SerializerSettings, request);
+                return await ProxyStoreClient.ParseResponseAsync(
+                    proxyResponse,
+                    request.SerializerSettings ?? this.SerializerSettings,
+                    request);
             }
         }
 

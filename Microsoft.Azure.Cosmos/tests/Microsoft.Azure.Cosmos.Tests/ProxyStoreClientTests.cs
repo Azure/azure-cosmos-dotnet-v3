@@ -18,6 +18,12 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ProxyStoreClientTests
     {
+        [TestInitialize]
+        public void TestInitialize()
+        {
+            System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.NewGuid();
+        }
+
         [TestMethod]
         public async Task InvokeAsync_Json404_ShouldThrowDocumentClientException()
         {
@@ -27,9 +33,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = new StringContent("{\"message\":\"Sample 404 JSON error.\"}", Encoding.UTF8, "application/json")
             };
 
-            CosmosHttpClient mockHttpClient = new MockCosmosHttpClient(notFoundResponse, notFoundResponse);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                _ => Task.FromResult(notFoundResponse));
+
             ProxyStoreClient proxyClient = new ProxyStoreClient(
-                httpClient: mockHttpClient,
+                httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
                 globalDatabaseAccountName: "MockAccount",
@@ -41,6 +49,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceId: "docId",
                 body: null,
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
 
             // Act + Assert => Should throw DocumentClientException
             await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
@@ -60,9 +70,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = new StringContent("{\"message\":\"Sample 500 JSON error.\"}", Encoding.UTF8, "application/json")
             };
 
-            CosmosHttpClient mockHttpClient = new MockCosmosHttpClient(serverErrorResponse, serverErrorResponse);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                _ => Task.FromResult(serverErrorResponse));
+
             ProxyStoreClient proxyClient = new ProxyStoreClient(
-                httpClient: mockHttpClient,
+                httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
                 globalDatabaseAccountName: "MockAccount",
@@ -76,6 +88,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
             // Act + Assert => Should throw DocumentClientException
+
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
+
             await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
                 await proxyClient.InvokeAsync(
                     request,
@@ -93,9 +108,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = new StringContent("<html><body>403 Forbidden.</body></html>", Encoding.UTF8, "text/html")
             };
 
-            CosmosHttpClient mockHttpClient = new MockCosmosHttpClient(forbiddenHtml, forbiddenHtml);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                _ => Task.FromResult(forbiddenHtml));
+
             ProxyStoreClient proxyClient = new ProxyStoreClient(
-                httpClient: mockHttpClient,
+                httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
                 globalDatabaseAccountName: "MockAccount",
@@ -107,6 +124,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceId: "docId",
                 body: null,
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            // Add partition key
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
 
             // Act + Assert => Should throw DocumentClientException
             await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
@@ -124,16 +144,16 @@ namespace Microsoft.Azure.Cosmos.Tests
             string base64RntbdSuccess = "9AEAAMkAAAAIvhHfD23jSaynaR+gyTZ3AAAAAQIAByFUaHUsIDEzIEZlYiAyMDI1IDE0OjI1OjI4LjAyNCBHTVQEAAgmACIwMDAwYWQzZS0wMDAwLTAyMDAtMDAwMC02N2FlNjRjMDAwMDAiDgAIVABkb2N1bWVudFNpemU9NTEyMDA7ZG9jdW1lbnRzU2l6ZT01MjQyODgwMDtkb2N1bWVudHNDb3VudD0tMTtjb2xsZWN0aW9uU2l6ZT01MjQyODgwMDsPAAhBAGRvY3VtZW50U2l6ZT0wO2RvY3VtZW50c1NpemU9MTtkb2N1bWVudHNDb3VudD04O2NvbGxlY3Rpb25TaXplPTM7EAAHBDEuMTkTAAUKAAAAAAAAABUADgzDMAzDMBxAFwAIOgBkYnMvdGhpbi1jbGllbnQtdGVzdC1kYi9jb2xscy90aGluLWNsaWVudC10ZXN0LWNvbnRhaW5lci0xGAAIDABOSDF1QUo2QU5tMD0aAAUJAAAAAAAAAB4AAgMAAAAfAAIEAAAAIQAIAQAwJgACAQAAACkABQkAAAAAAAAAMAACAAAAADUAAgEAAAA6AAUKAAAAAAAAADsABQkAAAAAAAAAPgAIBQAtMSMxMFEADkjhehSuRxBAYwAIAQAweAAF//////////89AQAAeyJpZCI6IjNiMTFiNDM2LTViMTUtNGQwZS1iZWYwLWY1MzVmNjA0MTQxYyIsInBrIjoicGsiLCJuYW1lIjoiODM2MzI0NTA2IiwiZW1haWwiOiJhYmNAZGVmLmNvbSIsImJvZHkiOiJibGFibGEiLCJfcmlkIjoiTkgxdUFKNkFObTBKQUFBQUFBQUFBQT09IiwiX3NlbGYiOiJkYnMvTkgxdUFBPT0vY29sbHMvTkgxdUFKNkFObTA9L2RvY3MvTkgxdUFKNkFObTBKQUFBQUFBQUFBQT09LyIsIl9ldGFnIjoiXCIwMDAwYWQzZS0wMDAwLTAyMDAtMDAwMC02N2FlNjRjMDAwMDBcIiIsIl9hdHRhY2htZW50cyI6ImF0dGFjaG1lbnRzLyIsIl90cyI6MTczOTQ4MjMwNH0=";
 
             byte[] rntbdBytes = Convert.FromBase64String(base64RntbdSuccess);
-
-            // Build a 200 HttpResponseMessage with the binary content
             HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.Created)
             {
                 Content = new ByteArrayContent(rntbdBytes)
             };
 
-            CosmosHttpClient mockHttpClient = new MockCosmosHttpClient(successResponse, successResponse);
+            CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
+                _ => Task.FromResult(successResponse));
+
             ProxyStoreClient proxyClient = new ProxyStoreClient(
-                httpClient: mockHttpClient,
+                httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
                 globalDatabaseAccountName: "MockAccount",
@@ -145,6 +165,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 resourceId: "docId",
                 body: null,
                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            // Add partition key
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
 
             // Act
             DocumentServiceResponse dsr = await proxyClient.InvokeAsync(
@@ -159,62 +182,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             using StreamReader sr = new StreamReader(dsr.ResponseBody);
             string responseBody = sr.ReadToEnd();
-        }
-    }
-
-    internal class MockCosmosHttpClient : CosmosHttpClient
-    {
-        private readonly HttpResponseMessage getAsyncResponse;
-        private readonly HttpResponseMessage sendHttpAsyncResponse;
-        private bool disposed;
-
-        public override HttpMessageHandler HttpMessageHandler { get; } = new HttpClientHandler();
-
-        public MockCosmosHttpClient(HttpResponseMessage getAsyncResponse, HttpResponseMessage sendHttpAsyncResponse)
-        {
-            this.getAsyncResponse = getAsyncResponse;
-            this.sendHttpAsyncResponse = sendHttpAsyncResponse;
-        }
-
-        public override Task<HttpResponseMessage> GetAsync(
-            Uri uri,
-            INameValueCollection additionalHeaders,
-            ResourceType resourceType,
-            HttpTimeoutPolicy timeoutPolicy,
-            IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(this.getAsyncResponse);
-        }
-
-        public override Task<HttpResponseMessage> SendHttpAsync(
-            Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
-            ResourceType resourceType,
-            HttpTimeoutPolicy timeoutPolicy,
-            IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken,
-            DocumentServiceRequest documentServiceRequest = null)
-        {
-            return Task.FromResult(this.sendHttpAsyncResponse);
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            if (!this.disposed)
-            {
-                if (disposing)
-                {
-                    this.getAsyncResponse?.Dispose();
-                    this.sendHttpAsyncResponse?.Dispose();
-                }
-                this.disposed = true;
-            }
-        }
-
-        public override void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

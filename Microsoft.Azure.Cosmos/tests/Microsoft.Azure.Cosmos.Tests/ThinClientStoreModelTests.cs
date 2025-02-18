@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
@@ -26,7 +27,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         private Mock<IGlobalEndpointManager> mockEndpointManager;
         private SessionContainer sessionContainer;
 
-        // By default, set to "Session" for testing
         private readonly ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session;
 
         [TestInitialize]
@@ -39,7 +39,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(x => x.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
                 .Returns(new Uri("https://mock.proxy.com"));
 
-            // Create a ThinClientStoreModel with null httpClient. We'll inject the ProxyStoreClient later.
             this.thinClientStoreModel = new ThinClientStoreModel(
                 endpointManager: this.mockEndpointManager.Object,
                 sessionContainer: this.sessionContainer,
@@ -53,79 +52,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             PartitionKeyRangeCache pkRangeCache = (PartitionKeyRangeCache)FormatterServices.GetUninitializedObject(typeof(PartitionKeyRangeCache));
             ClientCollectionCache collCache = (ClientCollectionCache)FormatterServices.GetUninitializedObject(typeof(ClientCollectionCache));
             this.thinClientStoreModel.SetCaches(pkRangeCache, collCache);
+            System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.NewGuid();
         }
 
         [TestCleanup]
         public void TestCleanup()
         {
             this.thinClientStoreModel?.Dispose();
-        }
-
-        [TestMethod]
-        public async Task ProcessMessageAsync_404_ShouldThrowDocumentClientException()
-        {
-            // Arrange
-            HttpResponseMessage notFoundResponse = new HttpResponseMessage(HttpStatusCode.NotFound)
-            {
-                Content = new StringContent("{\"message\":\"Not found\"}", System.Text.Encoding.UTF8, "application/json")
-            };
-
-            CosmosHttpClient mockCosmosHttpClient = new MockCosmosHttpClient(notFoundResponse, notFoundResponse);
-
-            ProxyStoreClient proxyStoreClient = new ProxyStoreClient(
-                httpClient: mockCosmosHttpClient,
-                eventSource: null,
-                proxyEndpoint: new Uri("https://mock.proxy.com"),
-                globalDatabaseAccountName: "MockAccount",
-                serializerSettings: null);
-
-
-            DocumentServiceRequest request = DocumentServiceRequest.Create(
-              operationType: OperationType.Read,
-              resourceType: ResourceType.Document,
-              resourceId: "NH1uAJ6ANm0=",
-              body: null,
-              authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
-
-
-            Mock<IGlobalEndpointManager> endpointManager = new Mock<IGlobalEndpointManager>();
-            endpointManager.Setup(gem => gem.CanUseMultipleWriteLocations(It.Is<DocumentServiceRequest>(dsr => dsr == request))).Returns(true);
-            endpointManager.Setup(gem => gem.ResolveServiceEndpoint(request)).Returns(new Uri("https://foo.com/dbs/db1/colls/coll1"));
-
-            ThinClientStoreModel storeModel = new ThinClientStoreModel(
-                endpointManager: endpointManager.Object,
-                sessionContainer: this.sessionContainer,
-                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
-                eventSource: new DocumentClientEventSource(),
-                serializerSettings: null,
-                httpClient: null,  // We will override the proxy client
-                proxyEndpoint: new Uri("https://foo.com/dbs/db1/colls/coll1"),
-                globalDatabaseAccountName: "MockAccount");
-
-            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
-              this.sessionContainer,
-              /* IStoreModel */ storeModel,
-              /* ICosmosAuthorizationTokenProvider */ null,
-              /* IRetryPolicyFactory */ null,
-              /* TelemetryToServiceHelper */ null).Object;
-
-            // Mock PartitionKeyRangeCache
-            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
-                /* ICosmosAuthorizationTokenProvider */ null,
-                /* IStoreModel */ storeModel,
-                /* CollectionCache */ clientCollectionCache,
-                /* IGlobalEndpointManager */ endpointManager.Object).Object;
-
-            // Set caches
-            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
-
-
-            // Inject the ProxyStoreClient into the ThinClientStoreModel
-            ReplaceProxyStoreClientField(storeModel, proxyStoreClient);
-
-            // Act & Assert
-            await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
-                await storeModel.ProcessMessageAsync(request));
         }
 
         [TestMethod]
@@ -140,25 +73,24 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = new ByteArrayContent(Convert.FromBase64String(mockBase64))
             };
 
-            CosmosHttpClient mockCosmosHttpClient = new MockCosmosHttpClient(successResponse, successResponse);
-
-            ProxyStoreClient proxyStoreClient = new ProxyStoreClient(
-                httpClient: mockCosmosHttpClient,
-                eventSource: null,
-                proxyEndpoint: new Uri("https://mock.proxy.com"),
-                globalDatabaseAccountName: "MockAccount",
-                serializerSettings: null);
+            MockProxyStoreClient proxyStoreClient = new MockProxyStoreClient(
+                invokeAsyncFunc: (request, resourceType, uri, cancellationToken) =>
+                {
+                    Stream responseBody = successResponse.Content.ReadAsStream();
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(responseBody, headers, successResponse.StatusCode));
+                });
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                resourceId: "NH1uAJ6ANm0=",
-                body: null,
-                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+               operationType: OperationType.Create,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
             Mock<IGlobalEndpointManager> endpointManager = new Mock<IGlobalEndpointManager>();
             endpointManager.Setup(gem => gem.CanUseMultipleWriteLocations(It.Is<DocumentServiceRequest>(dsr => dsr == request))).Returns(true);
-            endpointManager.Setup(gem => gem.ResolveServiceEndpoint(request)).Returns(new Uri("https://foo.com/dbs/db1/colls/coll1"));
+            endpointManager.Setup(gem => gem.ResolveServiceEndpoint(request)).Returns(new Uri("http://localhost"));
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: endpointManager.Object,
@@ -172,12 +104,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
-                /* IStoreModel */ storeModel,
-                /* ICosmosAuthorizationTokenProvider */ null,
-                /* IRetryPolicyFactory */ null,
-                /* TelemetryToServiceHelper */ null).Object;
+                storeModel,
+                null,
+                null,
+                null).Object;
 
-            // Mock PartitionKeyRangeCache
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
                 /* ICosmosAuthorizationTokenProvider */ null,
                 /* IStoreModel */ storeModel,
@@ -196,7 +127,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(response);
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
-
 
         [TestMethod]
         public void Dispose_ShouldDisposeProxyStoreClient()
@@ -218,6 +148,64 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(disposeCalled, "Expected Dispose to be called on ProxyStoreClient.");
         }
 
+        [TestMethod]
+        public async Task ProcessMessageAsync_404_ShouldThrowDocumentClientException()
+        {
+            // Arrange
+            MockProxyStoreClient proxyStoreClient = new MockProxyStoreClient(
+                invokeAsyncFunc: (request, resourceType, uri, cancellationToken) => throw new DocumentClientException(
+                        message: "Not Found",
+                        innerException: null,
+                        responseHeaders: new StoreResponseNameValueCollection(),
+                        statusCode: HttpStatusCode.NotFound,
+                        requestUri: uri));
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+              operationType: OperationType.Read,
+              resourceType: ResourceType.Document,
+              resourceId: "NH1uAJ6ANm0=",
+              body: null,
+              authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            Mock<IGlobalEndpointManager> endpointManager = new Mock<IGlobalEndpointManager>();
+            endpointManager
+                .Setup(gem => gem.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true);
+            endpointManager
+                .Setup(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
+                .Returns(new Uri("https://foo.com/dbs/db1/colls/coll1"));
+
+            ThinClientStoreModel storeModel = new ThinClientStoreModel(
+                endpointManager: endpointManager.Object,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
+                eventSource: new DocumentClientEventSource(),
+                serializerSettings: null,
+                httpClient: null,
+                proxyEndpoint: new Uri("https://foo.com/dbs/db1/colls/coll1"),
+                globalDatabaseAccountName: "MockAccount");
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                this.sessionContainer,
+                storeModel,
+                null,
+                null,
+                null).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                endpointManager.Object).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+
+            ReplaceProxyStoreClientField(storeModel, proxyStoreClient);
+
+            // Act & Assert
+            await Assert.ThrowsExceptionAsync<DocumentClientException>(async () => await storeModel.ProcessMessageAsync(request));
+        }
+
         // Helper method to inject the ProxyStoreClient into ThinClientStoreModel
         private static void ReplaceProxyStoreClientField(ThinClientStoreModel model, ProxyStoreClient newClient)
         {
@@ -226,51 +214,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 BindingFlags.NonPublic | BindingFlags.Instance)
                 ?? throw new InvalidOperationException("Could not find 'proxyStoreClient' field on ThinClientStoreModel");
             field.SetValue(model, newClient);
-        }
-
-        internal class MockCosmosHttpClient : CosmosHttpClient
-        {
-            private readonly HttpResponseMessage getAsyncResponse;
-            private readonly HttpResponseMessage sendHttpAsyncResponse;
-
-            public override HttpMessageHandler HttpMessageHandler => new HttpClientHandler();
-
-            public MockCosmosHttpClient(HttpResponseMessage getAsyncResponse, HttpResponseMessage sendHttpAsyncResponse)
-            {
-                this.getAsyncResponse = getAsyncResponse;
-                this.sendHttpAsyncResponse = sendHttpAsyncResponse;
-            }
-
-            public override Task<HttpResponseMessage> GetAsync(
-                Uri uri,
-                INameValueCollection additionalHeaders,
-                ResourceType resourceType,
-                HttpTimeoutPolicy timeoutPolicy,
-                IClientSideRequestStatistics clientSideRequestStatistics,
-                CancellationToken cancellationToken)
-            {
-                return Task.FromResult(this.getAsyncResponse);
-            }
-
-            public override Task<HttpResponseMessage> SendHttpAsync(
-                Func<ValueTask<HttpRequestMessage>> createRequestMessageAsync,
-                ResourceType resourceType,
-                HttpTimeoutPolicy timeoutPolicy,
-                IClientSideRequestStatistics clientSideRequestStatistics,
-                CancellationToken cancellationToken,
-                DocumentServiceRequest documentServiceRequest = null)
-            {
-                return Task.FromResult(this.sendHttpAsyncResponse);
-            }
-
-            protected override void Dispose(bool disposing)
-            {
-            }
-
-            public override void Dispose()
-            {
-                throw new NotImplementedException();
-            }
         }
 
         internal class MockProxyStoreClient : ProxyStoreClient
@@ -292,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 this.onDispose = onDispose;
             }
 
-            public new async Task<DocumentServiceResponse> InvokeAsync(
+            public override async Task<DocumentServiceResponse> InvokeAsync(
                 DocumentServiceRequest request,
                 ResourceType resourceType,
                 Uri physicalAddress,
