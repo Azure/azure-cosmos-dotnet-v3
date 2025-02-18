@@ -15,6 +15,14 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.48.0-preview.1"/> [3.48.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.48.0-preview.1) - 2025-2-14
+
+### <a name="3.47.1"/> [3.47.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.1) - 2025-2-14
+
+#### Added
+- [5013](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5013) Resiliency: Fixes a bug in the feature for "Faster detection of broken Transport connections".
+> Set Environment variable AZURE_COSMOS_AGGRESSIVE_TIMEOUT_DETECTION_ENABLED to "True" to enable the above feature.  Fixed an issue where connections weren't marked as "unhealthy" under sustained failures, delaying recovery. Now, unhealthy connections trigger prompt reconnection, ensuring continuous client operations.
+
 ### <a name="3.48.0-preview.0"/> [3.48.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.48.0-preview.0) - 2025-1-30
 
 #### Added 
