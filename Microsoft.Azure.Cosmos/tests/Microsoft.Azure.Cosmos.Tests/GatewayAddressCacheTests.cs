@@ -1590,6 +1590,118 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync()"/> is called with a
+        /// valid open connection handler, the handler method is indeed invoked and an attempt is made to open the connections to the backend replicas.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(true, DisplayName = "Scenario when pk range to address mapping is populated")]
+        [DataRow(false, DisplayName = "Scenario when pk range to address mapping is missing")]
+        public async Task GlobalAddressResolver_TryOpenConnectionToUnhealthyEndpointsAsync_WithValidHandler_ShouldOpenConnectionsAndMarkThemAsConnected(
+            bool shouldPopulatePkRangeToAddressMapping)
+        {
+            // Arrange.
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
+            UserAgentContainer container = new(clientId: 0);
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new AccountProperties()
+            {
+                EnableMultipleWriteLocations = false,
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = new Uri("https://location1.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = new Uri("https://location2.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = new Uri("https://location3.documents.azure.com").ToString() } },
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = new Uri("https://location1.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = new Uri("https://location2.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = new Uri("https://location3.documents.azure.com").ToString() } },
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://location1.documents.azure.com"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new(
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerProperties));
+
+            GlobalAddressResolver globalAddressResolver = new(
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
+            // Act.
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+            PartitionKeyRange pkRange = new () { Id = "YxM9ANCZIwABAAAAAAAAAA==", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings = new();
+
+            if (shouldPopulatePkRangeToAddressMapping)
+            {
+                pkRangeToEndpointMappings.Add(
+                    key: pkRange,
+                    value: new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(
+                        containerProperties.ResourceId,
+                        new Uri("https://location1.documents.azure.com"),
+                        TransportAddressHealthState.HealthStatus.Unhealthy));
+            }
+
+            await globalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeToEndpointMappings);
+
+            // Assert.
+            int totalHandlerInvocationCount = shouldPopulatePkRangeToAddressMapping ? 1 : 0;
+            int totalReceivedAddressesCount = shouldPopulatePkRangeToAddressMapping ? 3 : 0;
+            int totalSuccessAddressesToOpenCount = shouldPopulatePkRangeToAddressMapping ? 3 : 0;
+
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: totalHandlerInvocationCount,
+                expectedTotalReceivedAddressesCount: totalReceivedAddressesCount,
+                expectedTotalSuccessAddressesToOpenCount: totalSuccessAddressesToOpenCount);
+        }
+
+        /// <summary>
         /// Blocks the current thread until a completion signal on the ManualResetEvent
         /// is received. A timeout of 5 seconds is added to avoid any thread starvation.
         /// </summary>

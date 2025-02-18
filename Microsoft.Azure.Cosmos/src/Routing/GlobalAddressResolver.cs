@@ -86,7 +86,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.GetOrAddEndpoint(endpoint);
             }
 
-            this.partitionKeyRangeLocationCache.SetBackgroundConnectionInitTask(this.TryOpenConnectionToUnhealthyEndpointsAsync);
+            this.partitionKeyRangeLocationCache.SetBackgroundConnectionPeriodicRefreshTask(
+                this.TryOpenConnectionToUnhealthyEndpointsAsync);
         }
 
         public async Task OpenAsync(
@@ -234,10 +235,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             return await resolver.ResolveAsync(request, forceRefresh, cancellationToken);
         }
 
-        public async Task<bool> TryOpenConnectionToUnhealthyEndpointsAsync(
+        /// <summary>
+        /// Attempts to open connections to unhealthy endpoints by validating and opening Rntbd connections
+        /// to the backend replicas. Updates the health status of the endpoints if the connection is successful.
+        /// </summary>
+        /// <param name="pkRangeUriMappings">A dictionary mapping partition key ranges to their corresponding collection resource ID, original failed location, and health status.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task TryOpenConnectionToUnhealthyEndpointsAsync(
             Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
         {
-            foreach (PartitionKeyRange pkRange in pkRangeUriMappings.Keys)
+            foreach (PartitionKeyRange pkRange in pkRangeUriMappings?.Keys)
             {
                 string collectionRid = pkRangeUriMappings[pkRange].Item1;
                 Uri originalFailedLocation = pkRangeUriMappings[pkRange].Item2;
@@ -262,35 +269,36 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PerProtocolPartitionAddressInformation currentAddressInfo = addresses.Get(Protocol.Tcp);
                     IReadOnlyList<TransportAddressUri> transportAddressUris = currentAddressInfo.ReplicaTransportAddressUris;
 
-                    foreach (TransportAddressUri transportAddressUri in transportAddressUris)
-                    {
-                        DefaultTrace.TraceInformation($"Opening connection to {transportAddressUri.Uri} and current health: {transportAddressUri.GetCurrentHealthState().GetHealthStatus()}");
-                    }
+                    DefaultTrace.TraceVerbose("Trying to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}",
+                        pkRange.Id,
+                        collectionRid,
+                        originalFailedLocation);
 
                     await this.openConnectionsHandler.TryOpenRntbdChannelsAsync(transportAddressUris);
 
                     foreach (TransportAddressUri transportAddressUri in transportAddressUris)
                     {
-                        if (transportAddressUri.GetCurrentHealthState().GetHealthStatus() != TransportAddressHealthState.HealthStatus.Connected)
+                        if (transportAddressUri.GetCurrentHealthState().GetHealthStatus() == TransportAddressHealthState.HealthStatus.Connected)
                         {
-                            return false;
-                        }
-                        else
-                        {
-                            DefaultTrace.TraceInformation($"Opened connection to {transportAddressUri.Uri} and current health: {transportAddressUri.GetCurrentHealthState().GetHealthStatus()}");
+                            DefaultTrace.TraceVerbose("Opened connection to replica addresses: {0}, for the PkRange: {1}, collectionRid: {2} and and current health: {3}",
+                                transportAddressUri.Uri,
+                                pkRange.Id,
+                                collectionRid,
+                                transportAddressUri.GetCurrentHealthState().GetHealthStatus());
+
                             pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Do Nothing.
-                    DefaultTrace.TraceInformation(ex.Message);
-                    return false;
+                    DefaultTrace.TraceWarning("Failed to open connection to all the replica addresses for the PkRange: {0}, collectionRid: {1} and originalFailedLocation: {2}, with exception: {3}",
+                        pkRange.Id,
+                        collectionRid,
+                        originalFailedLocation,
+                        ex.Message);
                 }
             }
-
-            return true;
         }
 
         /// <summary>

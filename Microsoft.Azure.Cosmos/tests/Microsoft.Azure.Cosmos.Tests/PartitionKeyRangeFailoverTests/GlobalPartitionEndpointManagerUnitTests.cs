@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     isPartitionLevelFailoverEnabled: false,
                     isPartitionLevelCircuitBreakerEnabled: true);
 
-                failoverManager.SetBackgroundConnectionInitTask(this.OpenConnectionToUnhealthyEndpointsAsync);
+                failoverManager.SetBackgroundConnectionPeriodicRefreshTask(this.OpenConnectionToUnhealthyEndpointsAsync);
 
                 PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
                 {
@@ -346,7 +346,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
                 Assert.AreEqual(new Uri("https://localhost:1"), createRequest.RequestContext.LocationEndpointToRoute);
 
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                // Wait for 3 seconds for the background task to finish execution.
+                await Task.Delay(TimeSpan.FromSeconds(3));
 
                 Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
             }
@@ -357,7 +358,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        private async Task<bool> OpenConnectionToUnhealthyEndpointsAsync(
+        private async Task OpenConnectionToUnhealthyEndpointsAsync(
             Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
         {
             foreach (PartitionKeyRange pkRange in pkRangeUriMappings.Keys)
@@ -369,8 +370,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
                 pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
             }
-
-            return true;
         }
     }
 }

@@ -26,15 +26,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request);
 
         /// <summary>
-        /// Can Partition fail over on request timeouts.
+        /// Increments the failure counter for the specified partition and checks if the partition can fail over.
+        /// This method is used to determine if a partition should be failed over based on the number of request failures.
         /// </summary>
         public abstract bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request);
 
         /// <summary>
-        /// Can Partition fail over on request timeouts.
+        /// Sets the background connection periodic refresh task.
         /// </summary>
-        public abstract void SetBackgroundConnectionInitTask(
-            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>> backgroundConnectionInitTask);
+        public abstract void SetBackgroundConnectionPeriodicRefreshTask(
+            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task> backgroundConnectionInitTask);
     }
 }

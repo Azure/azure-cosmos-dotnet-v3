@@ -23,8 +23,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
-        public override void SetBackgroundConnectionInitTask(
-            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>> backgroundConnectionInitTask)
+        public override void SetBackgroundConnectionPeriodicRefreshTask(
+            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task> backgroundConnectionInitTask)
         {
             return;
         }
