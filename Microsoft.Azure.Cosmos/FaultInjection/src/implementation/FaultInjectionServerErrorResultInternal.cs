@@ -466,6 +466,28 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return httpResponse;
 
+                case FaultInjectionServerErrorType.DatabaseAccountNotFound:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.NotFound,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.DatabaseAccountNotFound).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }
