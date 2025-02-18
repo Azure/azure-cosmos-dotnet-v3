@@ -459,10 +459,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (this.documentServiceRequest != null
                     && (!this.documentServiceRequest.IsReadOnlyRequest
-                    || (this.documentServiceRequest.IsReadOnlyRequest
-                        && this.isPertitionLevelCircuitBreakerEnabled
-                        && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
-                            this.documentServiceRequest))))
+                    || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
                 {
                     // Mark the partition as unavailable.
                     // Let the ClientRetry logic decide if the request should be retried
@@ -533,6 +530,14 @@ namespace Microsoft.Azure.Cosmos
                 && statusCode.HasValue
                 && (int)statusCode.Value == (int)StatusCodes.TooManyRequests
                 && subStatusCode == SubStatusCodes.SystemResourceUnavailable;
+        }
+
+        private bool IsRequestEligibleForPartitionLevelCircuitBreaker()
+        {
+            return this.documentServiceRequest.IsReadOnlyRequest
+                        && this.isPertitionLevelCircuitBreakerEnabled
+                        && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                            this.documentServiceRequest);
         }
 
         private sealed class RetryContext

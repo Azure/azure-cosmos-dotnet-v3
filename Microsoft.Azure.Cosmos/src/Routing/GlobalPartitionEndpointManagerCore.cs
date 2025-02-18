@@ -22,32 +22,77 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class GlobalPartitionEndpointManagerCore : GlobalPartitionEndpointManager, IDisposable
     {
+        /// <summary>
+        /// A readonly object used as a lock to synchronize the background connection initialization.
+        /// </summary>
         private readonly object backgroundConnectionInitLock = new ();
 
+        /// <summary>
+        /// An instance of <see cref="IGlobalEndpointManager"/>.
+        /// </summary>
         private readonly IGlobalEndpointManager globalEndpointManager;
 
+        /// <summary>
+        /// An instance of <see cref="CancellationTokenSource"/> used to cancel the background connection initialization task.
+        /// </summary>
         private readonly CancellationTokenSource cancellationTokenSource = new ();
 
-        private readonly int partitionFailbackWindowInSeconds = ConfigurationManager.GetAllowedPartitionUnavailabilityDurationInSeconds(5);
+        /// <summary>
+        /// A readonly integer containing the partition unavailability duration in seconds, before it can be considered for a refresh by the background
+        /// recursive task. The default value is 5 seconds.
+        /// </summary>
+        private readonly int partitionUnavailabilityDurationInSeconds = ConfigurationManager.GetAllowedPartitionUnavailabilityDurationInSeconds(5);
 
-        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(5);
+        /// <summary>
+        /// A readonly integer containing the partition failback refresh interval in seconds. The default value is 60 seconds.
+        /// </summary>
+        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(60);
 
+        /// <summary>
+        /// A readonly boolean flag used to determine if partition level failover is enabled.
+        /// </summary>
         private readonly bool isPartitionLevelFailoverEnabled;
 
+        /// <summary>
+        /// A readonly boolean flag used to determine if partition level circuit breaker is enabled.
+        /// </summary>
         private readonly bool isPartitionLevelCircuitBreakerEnabled;
 
-        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForWrite = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
+        /// <summary>
+        /// A <see cref="Lazy{T}"/> instance of <see cref="ConcurrentDictionary{K,V}"/> containing the partition key range to failover info mapping.
+        /// This mapping is primarily used for writes in a single master account.
+        /// </summary>
+        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForWrite = new (
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
-        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForRead = new Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>>(
+        /// <summary>
+        /// A <see cref="Lazy{T}"/> instance of <see cref="ConcurrentDictionary{K,V}"/> containing the partition key range to failover info mapping.
+        /// This mapping is primarily used for reads in a single master account, and both reads and writes in a multi master account.
+        /// </summary>
+        private readonly Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> PartitionKeyRangeToLocationForReadAndWrite = new (
             () => new ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>());
 
+        /// <summary>
+        /// An integer indicating how many times the dispose was invoked.
+        /// </summary>
         private int disposeCounter = 0;
 
+        /// <summary>
+        /// A boolean flag indicating if the background connection initialization recursive task is active.
+        /// </summary>
         private bool isBackgroundConnectionInitActive = false;
 
+        /// <summary>
+        /// A callback func delegate used by the background connection refresh recursive task to establish rntbd connections to backend replicas.
+        /// </summary>
         private Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>>? backgroundOpenConnectionTask;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="GlobalPartitionEndpointManagerCore"/> class.
+        /// </summary>
+        /// <param name="globalEndpointManager">An instance of <see cref="GlobalEndpointManager"/>.</param>
+        /// <param name="isPartitionLevelFailoverEnabled">A boolean flag indicating if partition level failover is enabled.</param>
+        /// <param name="isPartitionLevelCircuitBreakerEnabled">A boolean flag indicating if partition level circuit breaker is enabled.</param>
         public GlobalPartitionEndpointManagerCore(
             IGlobalEndpointManager globalEndpointManager,
             bool isPartitionLevelFailoverEnabled = false,
@@ -59,12 +104,21 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.InitializeAndStartCircuitBreakerFailbackBackgroundRefresh();
         }
 
+        /// <summary>
+        /// Sets the background connection initialization task.
+        /// </summary>
+        /// <param name="backgroundConnectionInitTask"></param>
         public override void SetBackgroundConnectionInitTask(
             Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task<bool>> backgroundConnectionInitTask)
         {
             this.backgroundOpenConnectionTask = backgroundConnectionInitTask;
         }
 
+        /// <summary>
+        /// Updates the DocumentServiceRequest routing location to point
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>A boolean flag</returns>
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {
@@ -87,8 +141,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && this.isPartitionLevelCircuitBreakerEnabled
                     && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
-                if (this.PartitionKeyRangeToLocationForRead.IsValueCreated
-                    && this.PartitionKeyRangeToLocationForRead.Value.TryGetValue(
+                if (this.PartitionKeyRangeToLocationForReadAndWrite.IsValueCreated
+                    && this.PartitionKeyRangeToLocationForReadAndWrite.Value.TryGetValue(
                         partitionKeyRange,
                         out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
                 {
@@ -147,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && this.isPartitionLevelCircuitBreakerEnabled 
                     && this.globalEndpointManager.CanUseMultipleWriteLocations(request)))
             {
-                PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value.GetOrAdd(
+                PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForReadAndWrite.Value.GetOrAdd(
                     partitionKeyRange,
                     (_) => new PartitionKeyRangeFailoverInfo(
                         request.RequestContext.ResolvedCollectionRid,
@@ -173,7 +227,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                        partitionKeyRange,
                        failedLocation);
 
-                this.PartitionKeyRangeToLocationForRead.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
+                this.PartitionKeyRangeToLocationForReadAndWrite.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
             }
             else if (this.isPartitionLevelFailoverEnabled && !request.IsReadOnlyRequest)
             {
@@ -218,6 +272,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
+        /// <summary>
+        /// Can Partition fail over on request timeouts.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>A boolean flag.</returns>
         public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request)
         {
@@ -235,7 +294,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value.GetOrAdd(
+            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForReadAndWrite.Value.GetOrAdd(
                 partitionKeyRange,
                 (_) => new PartitionKeyRangeFailoverInfo(
                     request.RequestContext.ResolvedCollectionRid,
@@ -246,6 +305,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             return partionFailover.CanCircuitBreakerTriggerPartitionFailOver();
         }
 
+        /// <summary>
+        /// Can Partition fail over on request timeouts.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns>A boolean</returns>
         private bool CanUsePartitionLevelFailoverLocations(DocumentServiceRequest request)
         {
             if (this.globalEndpointManager.ReadEndpoints.Count <= 1)
@@ -274,6 +338,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             return false;
         }
 
+        /// <summary>
+        /// Helper method to check if the request is valid for partition failover.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="shouldValidateFailedLocation"></param>
+        /// <param name="partitionKeyRange"></param>
+        /// <param name="failedLocation"></param>
+        /// <returns>A bool.</returns>
         private bool IsRequestValidForPartitionFailover(
             DocumentServiceRequest request,
             bool shouldValidateFailedLocation,
@@ -316,7 +388,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             return true;
         }
 
-        private void InitializeAndStartCircuitBreakerFailbackBackgroundRefresh()
+        /// <summary>
+        /// Initialize and start the background connection initialization.
+        /// </summary>
+        internal void InitializeAndStartCircuitBreakerFailbackBackgroundRefresh()
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
@@ -397,15 +472,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (this.backgroundOpenConnectionTask != null)
             {
                 Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings = new ();
-                foreach (PartitionKeyRange pkRange in this.PartitionKeyRangeToLocationForRead.Value.Keys)
+                foreach (PartitionKeyRange pkRange in this.PartitionKeyRangeToLocationForReadAndWrite.Value.Keys)
                 {
-                    PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForRead.Value[pkRange];
+                    PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForReadAndWrite.Value[pkRange];
 
                     partionFailover.SnapshotPartitionFailoverTimestamps(
                         out DateTime firstRequestFailureTime,
                         out DateTime _);
 
-                    if (DateTime.UtcNow - firstRequestFailureTime > TimeSpan.FromSeconds(this.partitionFailbackWindowInSeconds))
+                    if (DateTime.UtcNow - firstRequestFailureTime > TimeSpan.FromSeconds(this.partitionUnavailabilityDurationInSeconds))
                     {
                         // TODO: Change this to use the first preferred location.
                         Uri originalFailedLocation = partionFailover.FirstFailedLocation;
@@ -435,7 +510,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             DefaultTrace.TraceInformation($"Initiating Failback to endpoint: {originalFailedLocation}, for partition key range: {pkRange}");
 
                             // Think about the possibility of removing the partition key range from the dictionary.
-                            this.PartitionKeyRangeToLocationForRead.Value.TryRemove(pkRange, out PartitionKeyRangeFailoverInfo _);
+                            this.PartitionKeyRangeToLocationForReadAndWrite.Value.TryRemove(pkRange, out PartitionKeyRangeFailoverInfo _);
                         }
                     }
                 }

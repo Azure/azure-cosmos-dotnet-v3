@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Linq;
+    using System.Threading.Tasks;
+    using System.Threading;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -125,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
         [DataRow(false, true, DisplayName = "Scenario when PPAF is disabled and circuit breaker is enabled.")]
         [DataRow(true, false, DisplayName = "Scenario when PPAF is enabled and circuit breaker is disabled.")]
         [DataRow(true, true, DisplayName = "Scenario when PPAF is enabled and circuit breaker is enabled.")]
@@ -188,6 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
         [DataRow(true, DisplayName = "Scenario when circuit breaker is enabled.")]
         [DataRow(false, DisplayName = "Scenario when circuit breaker is disabled.")]
         [Timeout(10000)]
@@ -241,6 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
         [DataRow(6, DisplayName = "Scenario when request failure counter is lesser than the default threshold of 10.")]
         [DataRow(11, DisplayName = "Scenario when request failure counter is higher than the default threshold of 10.")]
         [Timeout(10000)]
@@ -291,6 +296,81 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.IsTrue(shouldPartitionFailOver);
             }
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        [Timeout(10000)]
+        public async Task InitializeAndStartCircuitBreakerFailbackBackgroundRefresh_WithCircuitBreakerEnabled_ShouldValidateUnhealthyEndpoints()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, "1");
+            Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, "1");
+            try
+            {
+                string collectionRid = "test-collection-1";
+                Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+
+                List<Uri> readRegions = new(), writeRegions = new();
+                for (int i = 1; i <= 3; i++)
+                {
+                    readRegions.Add(new Uri($"https://localhost:{i}/"));
+                }
+
+                mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
+                mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(true);
+
+                GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
+                    mockEndpointManager.Object,
+                    isPartitionLevelFailoverEnabled: false,
+                    isPartitionLevelCircuitBreakerEnabled: true);
+
+                failoverManager.SetBackgroundConnectionInitTask(this.OpenConnectionToUnhealthyEndpointsAsync);
+
+                PartitionKeyRange partitionKeyRange = new PartitionKeyRange()
+                {
+                    Id = "0",
+                    MinInclusive = "",
+                    MaxExclusive = "FF"
+                };
+
+                Uri routeToLocation = new Uri("https://localhost:0/");
+
+                using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
+                createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                createRequest.RequestContext.RouteToLocation(routeToLocation);
+                createRequest.RequestContext.ResolvedCollectionRid = collectionRid;
+
+                Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(createRequest));
+                Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
+                Assert.AreEqual(new Uri("https://localhost:1"), createRequest.RequestContext.LocationEndpointToRoute);
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
+
+                Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds, null);
+            }
+        }
+
+        private async Task<bool> OpenConnectionToUnhealthyEndpointsAsync(
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
+        {
+            foreach (PartitionKeyRange pkRange in pkRangeUriMappings.Keys)
+            {
+                string collectionRid = pkRangeUriMappings[pkRange].Item1;
+                Uri originalFailedLocation = pkRangeUriMappings[pkRange].Item2;
+
+                await Task.Delay(TimeSpan.FromMilliseconds(1));
+
+                pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
+            }
+
+            return true;
         }
     }
 }
