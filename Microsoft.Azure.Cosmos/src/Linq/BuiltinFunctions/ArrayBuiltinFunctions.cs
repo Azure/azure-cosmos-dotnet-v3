@@ -42,10 +42,13 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
             }
 
+            public bool UsePartialMatchParameter { get; set; }
+
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
                 Expression searchList = null;
                 Expression searchExpression = null;
+                Expression partialMatchExpression = null;
 
                 // If non static Contains
                 if (methodCallExpression.Arguments.Count == 1)
@@ -58,6 +61,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     searchList = methodCallExpression.Arguments[0];
                     searchExpression = methodCallExpression.Arguments[1];
+                }
+                // if CosmosLinqExtensions.ArrayContains extension method which includes partial match parameter
+                else if (this.UsePartialMatchParameter && methodCallExpression.Arguments.Count == 3)
+                {
+                    searchList = methodCallExpression.Arguments[0];
+                    searchExpression = methodCallExpression.Arguments[1];
+                    partialMatchExpression = methodCallExpression.Arguments[2];
                 }
 
                 if (searchList == null || searchExpression == null)
@@ -72,7 +82,20 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 SqlScalarExpression array = ExpressionToSql.VisitScalarExpression(searchList, context);
                 SqlScalarExpression expression = ExpressionToSql.VisitScalarExpression(searchExpression, context);
-                return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", array, expression);
+
+                SqlScalarExpression[] arrayContainsArgs;
+
+                if (partialMatchExpression is null)
+                {
+                    arrayContainsArgs = new[] { array, expression };
+                }
+                else
+                {
+                    SqlScalarExpression partialMatch = ExpressionToSql.VisitScalarExpression(partialMatchExpression, context);
+                    arrayContainsArgs = new[] { array, expression, partialMatch };
+                }
+
+                return SqlFunctionCallScalarExpression.CreateBuiltin("ARRAY_CONTAINS", arrayContainsArgs);
             }
 
             private SqlScalarExpression VisitIN(Expression expression, ConstantExpression constantExpressionList, TranslationContext context)
@@ -177,6 +200,10 @@ namespace Microsoft.Azure.Cosmos.Linq
                 {
                     "ToList",
                     new ArrayToArrayVisitor()
+                },
+                {
+                    nameof(CosmosLinqExtensions.ArrayContains),
+                    new ArrayContainsVisitor() { UsePartialMatchParameter = true }
                 }
             };
         }
