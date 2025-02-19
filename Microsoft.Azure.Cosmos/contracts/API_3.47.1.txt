@@ -1,0 +1,1919 @@
+namespace Microsoft.Azure.Cosmos
+{
+    public partial class AccountConsistency
+    {
+        public AccountConsistency() { }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="defaultConsistencyLevel")]
+        public Microsoft.Azure.Cosmos.ConsistencyLevel DefaultConsistencyLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="maxIntervalInSeconds")]
+        public int MaxStalenessIntervalInSeconds { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="maxStalenessPrefix")]
+        public int MaxStalenessPrefix { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class AccountProperties
+    {
+        internal AccountProperties() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="userConsistencyPolicy")]
+        public Microsoft.Azure.Cosmos.AccountConsistency Consistency { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { get { throw null; } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Collections.Generic.IEnumerable<Microsoft.Azure.Cosmos.AccountRegion> ReadableRegions { get { throw null; } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Collections.Generic.IEnumerable<Microsoft.Azure.Cosmos.AccountRegion> WritableRegions { get { throw null; } }
+    }
+    public partial class AccountRegion
+    {
+        public AccountRegion() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="databaseAccountEndpoint")]
+        public string Endpoint { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="name")]
+        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public abstract partial class AvailabilityStrategy
+    {
+        internal AvailabilityStrategy() { }
+        public static Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan threshold, System.Nullable<System.TimeSpan> thresholdStep) { throw null; }
+        public static Microsoft.Azure.Cosmos.AvailabilityStrategy DisabledStrategy() { throw null; }
+    }
+    public sealed partial class BoundingBoxProperties
+    {
+        public BoundingBoxProperties() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="xmax")]
+        public double Xmax { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="xmin")]
+        public double Xmin { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="ymax")]
+        public double Ymax { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="ymin")]
+        public double Ymin { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class ChangeFeedEstimator
+    {
+        protected ChangeFeedEstimator() { }
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<Microsoft.Azure.Cosmos.ChangeFeedProcessorState> GetCurrentStateIterator(Microsoft.Azure.Cosmos.ChangeFeedEstimatorRequestOptions changeFeedEstimatorRequestOptions=null);
+    }
+    public sealed partial class ChangeFeedEstimatorRequestOptions
+    {
+        public ChangeFeedEstimatorRequestOptions() { }
+        public System.Nullable<int> MaxItemCount { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class ChangeFeedMode
+    {
+        internal ChangeFeedMode() { }
+        public static Microsoft.Azure.Cosmos.ChangeFeedMode Incremental { get { throw null; } }
+        public static Microsoft.Azure.Cosmos.ChangeFeedMode LatestVersion { get { throw null; } }
+    }
+    public abstract partial class ChangeFeedProcessor
+    {
+        protected ChangeFeedProcessor() { }
+        public abstract System.Threading.Tasks.Task StartAsync();
+        public abstract System.Threading.Tasks.Task StopAsync();
+    }
+    public partial class ChangeFeedProcessorBuilder
+    {
+        internal ChangeFeedProcessorBuilder() { }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessor Build() { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithErrorNotification(Microsoft.Azure.Cosmos.Container.ChangeFeedMonitorErrorDelegate errorDelegate) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInstanceName(string instanceName) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseAcquireNotification(Microsoft.Azure.Cosmos.Container.ChangeFeedMonitorLeaseAcquireDelegate acquireDelegate) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseConfiguration(System.Nullable<System.TimeSpan> acquireInterval=default(System.Nullable<System.TimeSpan>), System.Nullable<System.TimeSpan> expirationInterval=default(System.Nullable<System.TimeSpan>), System.Nullable<System.TimeSpan> renewInterval=default(System.Nullable<System.TimeSpan>)) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseContainer(Microsoft.Azure.Cosmos.Container leaseContainer) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithLeaseReleaseNotification(Microsoft.Azure.Cosmos.Container.ChangeFeedMonitorLeaseReleaseDelegate releaseDelegate) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithMaxItems(int maxItemCount) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithPollInterval(System.TimeSpan pollInterval) { throw null; }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithStartTime(System.DateTime startTime) { throw null; }
+    }
+    public abstract partial class ChangeFeedProcessorContext
+    {
+        protected ChangeFeedProcessorContext() { }
+        public abstract Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { get; }
+        public abstract Microsoft.Azure.Cosmos.FeedRange FeedRange { get; }
+        public abstract Microsoft.Azure.Cosmos.Headers Headers { get; }
+        public abstract string LeaseToken { get; }
+    }
+    public sealed partial class ChangeFeedProcessorState
+    {
+        public ChangeFeedProcessorState(string leaseToken, long estimatedLag, string instanceName) { }
+        public long EstimatedLag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string InstanceName { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string LeaseToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class ChangeFeedProcessorUserException : System.Exception
+    {
+        public ChangeFeedProcessorUserException(System.Exception originalException, Microsoft.Azure.Cosmos.ChangeFeedProcessorContext context) { }
+        protected ChangeFeedProcessorUserException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public Microsoft.Azure.Cosmos.ChangeFeedProcessorContext ChangeFeedProcessorContext { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+    }
+    public sealed partial class ChangeFeedRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public ChangeFeedRequestOptions() { }
+        [System.ComponentModel.EditorBrowsableAttribute(1)]
+        [System.ObsoleteAttribute("IfMatchEtag is inherited from the base class but not used.")]
+        public new string IfMatchEtag { get { throw null; } set { } }
+        [System.ComponentModel.EditorBrowsableAttribute(1)]
+        [System.ObsoleteAttribute("IfNoneMatchEtag is inherited from the base class but not used.")]
+        public new string IfNoneMatchEtag { get { throw null; } set { } }
+        public System.Nullable<int> PageSizeHint { get { throw null; } set { } }
+    }
+    public abstract partial class ChangeFeedStartFrom
+    {
+        internal ChangeFeedStartFrom() { }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning() { throw null; }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom Beginning(Microsoft.Azure.Cosmos.FeedRange feedRange) { throw null; }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom ContinuationToken(string continuationToken) { throw null; }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now() { throw null; }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom Now(Microsoft.Azure.Cosmos.FeedRange feedRange) { throw null; }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime dateTimeUtc) { throw null; }
+        public static Microsoft.Azure.Cosmos.ChangeFeedStartFrom Time(System.DateTime dateTimeUtc, Microsoft.Azure.Cosmos.FeedRange feedRange) { throw null; }
+    }
+    public sealed partial class ClientEncryptionIncludedPath
+    {
+        public ClientEncryptionIncludedPath() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="clientEncryptionKeyId")]
+        public string ClientEncryptionKeyId { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="encryptionAlgorithm")]
+        public string EncryptionAlgorithm { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="encryptionType")]
+        public string EncryptionType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class ClientEncryptionKey
+    {
+        protected ClientEncryptionKey() { }
+        public abstract string Id { get; }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse> ReadAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse> ReplaceAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties clientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public partial class ClientEncryptionKeyProperties : System.IEquatable<Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties>
+    {
+        protected ClientEncryptionKeyProperties() { }
+        public ClientEncryptionKeyProperties(string id, string encryptionAlgorithm, byte[] wrappedDataEncryptionKey, Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata encryptionKeyWrapMetadata) { }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_cts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> CreatedTime { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="encryptionAlgorithm", NullValueHandling=1)]
+        public string EncryptionAlgorithm { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="keyWrapMetadata", NullValueHandling=1)]
+        public Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata EncryptionKeyWrapMetadata { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public virtual string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="wrappedDataEncryptionKey", NullValueHandling=1)]
+        public byte[] WrappedDataEncryptionKey { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    public partial class ClientEncryptionKeyResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties>
+    {
+        protected ClientEncryptionKeyResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.ClientEncryptionKey ClientEncryptionKey { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.ClientEncryptionKey (Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse response) { throw null; }
+    }
+    public sealed partial class ClientEncryptionPolicy
+    {
+        public ClientEncryptionPolicy(System.Collections.Generic.IEnumerable<Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath> includedPaths) { }
+        public ClientEncryptionPolicy(System.Collections.Generic.IEnumerable<Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath> includedPaths, int policyFormatVersion) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="includedPaths")]
+        public System.Collections.Generic.IEnumerable<Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath> IncludedPaths { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="policyFormatVersion")]
+        public int PolicyFormatVersion { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public sealed partial class CompositePath
+    {
+        public CompositePath() { }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="order")]
+        public Microsoft.Azure.Cosmos.CompositePathSortOrder Order { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum CompositePathSortOrder
+    {
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="ascending")]
+        Ascending = 0,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="descending")]
+        Descending = 1,
+    }
+    public sealed partial class ComputedProperty
+    {
+        public ComputedProperty() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="name")]
+        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="query")]
+        public string Query { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class ConflictProperties
+    {
+        public ConflictProperties() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="operationType")]
+        public Microsoft.Azure.Cosmos.OperationKind OperationKind { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public enum ConflictResolutionMode
+    {
+        Custom = 1,
+        LastWriterWins = 0,
+    }
+    public partial class ConflictResolutionPolicy
+    {
+        public ConflictResolutionPolicy() { }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="mode", NullValueHandling=1)]
+        public Microsoft.Azure.Cosmos.ConflictResolutionMode Mode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="conflictResolutionPath", NullValueHandling=1)]
+        public string ResolutionPath { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="conflictResolutionProcedure", NullValueHandling=1)]
+        public string ResolutionProcedure { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class Conflicts
+    {
+        protected Conflicts() { }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> DeleteAsync(Microsoft.Azure.Cosmos.ConflictProperties conflict, Microsoft.Azure.Cosmos.PartitionKey partitionKey, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetConflictQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetConflictQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetConflictQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetConflictQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract T ReadConflictContent<T>(Microsoft.Azure.Cosmos.ConflictProperties conflict);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> ReadCurrentAsync<T>(Microsoft.Azure.Cosmos.ConflictProperties conflict, Microsoft.Azure.Cosmos.PartitionKey partitionKey, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public enum ConnectionMode
+    {
+        Direct = 1,
+        Gateway = 0,
+    }
+    public enum ConsistencyLevel
+    {
+        BoundedStaleness = 1,
+        ConsistentPrefix = 4,
+        Eventual = 3,
+        Session = 2,
+        Strong = 0,
+    }
+    public abstract partial class Container
+    {
+        protected Container() { }
+        public abstract Microsoft.Azure.Cosmos.Conflicts Conflicts { get; }
+        public abstract Microsoft.Azure.Cosmos.Database Database { get; }
+        public abstract string Id { get; }
+        public abstract Microsoft.Azure.Cosmos.Scripts.Scripts Scripts { get; }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> CreateItemAsync<T>(T item, System.Nullable<Microsoft.Azure.Cosmos.PartitionKey> partitionKey=default(System.Nullable<Microsoft.Azure.Cosmos.PartitionKey>), Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> CreateItemStreamAsync(System.IO.Stream streamPayload, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch CreateTransactionalBatch(Microsoft.Azure.Cosmos.PartitionKey partitionKey);
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> DeleteAllItemsByPartitionKeyStreamAsync(Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> DeleteContainerAsync(Microsoft.Azure.Cosmos.ContainerRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> DeleteContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> DeleteItemAsync<T>(string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> DeleteItemStreamAsync(string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedEstimator GetChangeFeedEstimator(string processorName, Microsoft.Azure.Cosmos.Container leaseContainer);
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedEstimatorBuilder(string processorName, Microsoft.Azure.Cosmos.Container.ChangesEstimationHandler estimationDelegate, System.Nullable<System.TimeSpan> estimationPeriod=default(System.Nullable<System.TimeSpan>));
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetChangeFeedIterator<T>(Microsoft.Azure.Cosmos.ChangeFeedStartFrom changeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedMode changeFeedMode, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder(string processorName, Microsoft.Azure.Cosmos.Container.ChangeFeedStreamHandler onChangesDelegate);
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(string processorName, Microsoft.Azure.Cosmos.Container.ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint<T>(string processorName, Microsoft.Azure.Cosmos.Container.ChangeFeedHandlerWithManualCheckpoint<T> onChangesDelegate);
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Microsoft.Azure.Cosmos.Container.ChangeFeedHandler<T> onChangesDelegate);
+        public abstract Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(string processorName, Microsoft.Azure.Cosmos.Container.ChangesHandler<T> onChangesDelegate);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetChangeFeedStreamIterator(Microsoft.Azure.Cosmos.ChangeFeedStartFrom changeFeedStartFrom, Microsoft.Azure.Cosmos.ChangeFeedMode changeFeedMode, Microsoft.Azure.Cosmos.ChangeFeedRequestOptions changeFeedRequestOptions=null);
+        public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.FeedRange>> GetFeedRangesAsync(System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Linq.IOrderedQueryable<T> GetItemLinqQueryable<T>(bool allowSynchronousQueryExecution=false, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null, Microsoft.Azure.Cosmos.CosmosLinqSerializerOptions linqSerializerOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetItemQueryIterator<T>(Microsoft.Azure.Cosmos.FeedRange feedRange, Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetItemQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetItemQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.FeedRange feedRange, Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetItemQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> PatchItemAsync<T>(string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.PatchOperation> patchOperations, Microsoft.Azure.Cosmos.PatchItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> PatchItemStreamAsync(string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.PatchOperation> patchOperations, Microsoft.Azure.Cosmos.PatchItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> ReadContainerAsync(Microsoft.Azure.Cosmos.ContainerRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReadContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> ReadItemAsync<T>(string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReadItemStreamAsync(string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.FeedResponse<T>> ReadManyItemsAsync<T>([System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "id", "partitionKey"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, Microsoft.Azure.Cosmos.PartitionKey>> items, Microsoft.Azure.Cosmos.ReadManyRequestOptions readManyRequestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReadManyItemsStreamAsync([System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "id", "partitionKey"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, Microsoft.Azure.Cosmos.PartitionKey>> items, Microsoft.Azure.Cosmos.ReadManyRequestOptions readManyRequestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ThroughputResponse> ReadThroughputAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<System.Nullable<int>> ReadThroughputAsync(System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> ReplaceContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, Microsoft.Azure.Cosmos.ContainerRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReplaceContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, Microsoft.Azure.Cosmos.ContainerRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> ReplaceItemAsync<T>(T item, string id, System.Nullable<Microsoft.Azure.Cosmos.PartitionKey> partitionKey=default(System.Nullable<Microsoft.Azure.Cosmos.PartitionKey>), Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReplaceItemStreamAsync(System.IO.Stream streamPayload, string id, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ThroughputResponse> ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ThroughputResponse> ReplaceThroughputAsync(int throughput, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ItemResponse<T>> UpsertItemAsync<T>(T item, System.Nullable<Microsoft.Azure.Cosmos.PartitionKey> partitionKey=default(System.Nullable<Microsoft.Azure.Cosmos.PartitionKey>), Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> UpsertItemStreamAsync(System.IO.Stream streamPayload, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.ItemRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public delegate System.Threading.Tasks.Task ChangeFeedHandlerWithManualCheckpoint<T>(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext context, System.Collections.Generic.IReadOnlyCollection<T> changes, System.Func<System.Threading.Tasks.Task> checkpointAsync, System.Threading.CancellationToken cancellationToken);
+        public delegate System.Threading.Tasks.Task ChangeFeedHandler<T>(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext context, System.Collections.Generic.IReadOnlyCollection<T> changes, System.Threading.CancellationToken cancellationToken);
+        public delegate System.Threading.Tasks.Task ChangeFeedMonitorErrorDelegate(string leaseToken, System.Exception exception);
+        public delegate System.Threading.Tasks.Task ChangeFeedMonitorLeaseAcquireDelegate(string leaseToken);
+        public delegate System.Threading.Tasks.Task ChangeFeedMonitorLeaseReleaseDelegate(string leaseToken);
+        public delegate System.Threading.Tasks.Task ChangeFeedStreamHandler(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext context, System.IO.Stream changes, System.Threading.CancellationToken cancellationToken);
+        public delegate System.Threading.Tasks.Task ChangeFeedStreamHandlerWithManualCheckpoint(Microsoft.Azure.Cosmos.ChangeFeedProcessorContext context, System.IO.Stream changes, System.Func<System.Threading.Tasks.Task> checkpointAsync, System.Threading.CancellationToken cancellationToken);
+        public delegate System.Threading.Tasks.Task ChangesEstimationHandler(long estimatedPendingChanges, System.Threading.CancellationToken cancellationToken);
+        public delegate System.Threading.Tasks.Task ChangesHandler<T>(System.Collections.Generic.IReadOnlyCollection<T> changes, System.Threading.CancellationToken cancellationToken);
+    }
+    public partial class ContainerProperties
+    {
+        public ContainerProperties() { }
+        public ContainerProperties(string id, System.Collections.Generic.IReadOnlyList<string> partitionKeyPaths) { }
+        public ContainerProperties(string id, string partitionKeyPath) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="analyticalStorageTtl", NullValueHandling=1)]
+        public System.Nullable<int> AnalyticalStoreTimeToLiveInSeconds { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public Microsoft.Azure.Cosmos.ClientEncryptionPolicy ClientEncryptionPolicy { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.ComputedProperty> ComputedProperties { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public Microsoft.Azure.Cosmos.ConflictResolutionPolicy ConflictResolutionPolicy { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="defaultTtl", NullValueHandling=1)]
+        public System.Nullable<int> DefaultTimeToLive { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public Microsoft.Azure.Cosmos.GeospatialConfig GeospatialConfig { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public Microsoft.Azure.Cosmos.IndexingPolicy IndexingPolicy { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Nullable<Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion> PartitionKeyDefinitionVersion { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public string PartitionKeyPath { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Collections.Generic.IReadOnlyList<string> PartitionKeyPaths { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="ttlPropertyPath", NullValueHandling=1)]
+        [System.ObsoleteAttribute]
+        public string TimeToLivePropertyPath { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public Microsoft.Azure.Cosmos.UniqueKeyPolicy UniqueKeyPolicy { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public Microsoft.Azure.Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy { get { throw null; } set { } }
+    }
+    public partial class ContainerRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public ContainerRequestOptions() { }
+        public bool PopulateQuotaInfo { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class ContainerResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.ContainerProperties>
+    {
+        protected ContainerResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.Container Container { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.ContainerProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.Container (Microsoft.Azure.Cosmos.ContainerResponse response) { throw null; }
+    }
+    public partial class CosmosClient : System.IDisposable
+    {
+        protected CosmosClient() { }
+        public CosmosClient(string accountEndpoint, Azure.AzureKeyCredential authKeyOrResourceTokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions=null) { }
+        public CosmosClient(string accountEndpoint, Azure.Core.TokenCredential tokenCredential, Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions=null) { }
+        public CosmosClient(string connectionString, Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions=null) { }
+        public CosmosClient(string accountEndpoint, string authKeyOrResourceToken, Microsoft.Azure.Cosmos.CosmosClientOptions clientOptions=null) { }
+        public virtual Microsoft.Azure.Cosmos.CosmosClientOptions ClientOptions { get { throw null; } }
+        public virtual System.Uri Endpoint { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.CosmosResponseFactory ResponseFactory { get { throw null; } }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.CosmosClient> CreateAndInitializeAsync(string accountEndpoint, Azure.AzureKeyCredential authKeyOrResourceTokenCredential, [System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "databaseId", "containerId"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, string>> containers, Microsoft.Azure.Cosmos.CosmosClientOptions cosmosClientOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.CosmosClient> CreateAndInitializeAsync(string accountEndpoint, Azure.Core.TokenCredential tokenCredential, [System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "databaseId", "containerId"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, string>> containers, Microsoft.Azure.Cosmos.CosmosClientOptions cosmosClientOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.CosmosClient> CreateAndInitializeAsync(string connectionString, [System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "databaseId", "containerId"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, string>> containers, Microsoft.Azure.Cosmos.CosmosClientOptions cosmosClientOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.CosmosClient> CreateAndInitializeAsync(string accountEndpoint, string authKeyOrResourceToken, [System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "databaseId", "containerId"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, string>> containers, Microsoft.Azure.Cosmos.CosmosClientOptions cosmosClientOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.DatabaseResponse> CreateDatabaseAsync(string id, Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.DatabaseResponse> CreateDatabaseAsync(string id, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.DatabaseResponse> CreateDatabaseIfNotExistsAsync(string id, Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.DatabaseResponse> CreateDatabaseIfNotExistsAsync(string id, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> CreateDatabaseStreamAsync(Microsoft.Azure.Cosmos.DatabaseProperties databaseProperties, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public virtual Microsoft.Azure.Cosmos.Container GetContainer(string databaseId, string containerId) { throw null; }
+        public virtual Microsoft.Azure.Cosmos.Database GetDatabase(string id) { throw null; }
+        public virtual Microsoft.Azure.Cosmos.FeedIterator<T> GetDatabaseQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null) { throw null; }
+        public virtual Microsoft.Azure.Cosmos.FeedIterator<T> GetDatabaseQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null) { throw null; }
+        public virtual Microsoft.Azure.Cosmos.FeedIterator GetDatabaseQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null) { throw null; }
+        public virtual Microsoft.Azure.Cosmos.FeedIterator GetDatabaseQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null) { throw null; }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.AccountProperties> ReadAccountAsync() { throw null; }
+    }
+    public partial class CosmosClientOptions
+    {
+        public CosmosClientOptions() { }
+        public System.Collections.Generic.IEnumerable<System.Uri> AccountInitializationCustomEndpoints { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool AllowBulkExecution { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string ApplicationName { get { throw null; } set { } }
+        public System.Collections.Generic.IReadOnlyList<string> ApplicationPreferredRegions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string ApplicationRegion { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.AvailabilityStrategy AvailabilityStrategy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.ConnectionMode ConnectionMode { get { throw null; } set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.ConsistencyLevel> ConsistencyLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions CosmosClientTelemetryOptions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.RequestHandler> CustomHandlers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public System.Nullable<bool> EnableContentResponseOnWrite { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool EnableTcpConnectionEndpointRediscovery { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector FaultInjector { get { throw null; } set { } }
+        public int GatewayModeMaxConnectionLimit { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Func<System.Net.Http.HttpClient> HttpClientFactory { get { throw null; } set { } }
+        public System.Nullable<System.TimeSpan> IdleTcpConnectionTimeout { get { throw null; } set { } }
+        public bool LimitToEndpoint { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> MaxRequestsPerTcpConnection { get { throw null; } set { } }
+        public System.Nullable<int> MaxRetryAttemptsOnRateLimitedRequests { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<System.TimeSpan> MaxRetryWaitTimeOnRateLimitedRequests { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> MaxTcpConnectionsPerEndpoint { get { throw null; } set { } }
+        public System.Nullable<System.TimeSpan> OpenTcpConnectionTimeout { get { throw null; } set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.PortReuseMode> PortReuseMode { get { throw null; } set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.PriorityLevel> PriorityLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.TimeSpan RequestTimeout { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.CosmosSerializer Serializer { get { throw null; } set { } }
+        public Microsoft.Azure.Cosmos.CosmosSerializationOptions SerializerOptions { get { throw null; } set { } }
+        public System.Func<System.Security.Cryptography.X509Certificates.X509Certificate2, System.Security.Cryptography.X509Certificates.X509Chain, System.Net.Security.SslPolicyErrors, bool> ServerCertificateCustomValidationCallback { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<System.TimeSpan> TokenCredentialBackgroundRefreshInterval { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Text.Json.JsonSerializerOptions UseSystemTextJsonSerializerWithOptions { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Net.IWebProxy WebProxy { get { throw null; } set { } }
+    }
+    public partial class CosmosClientTelemetryOptions
+    {
+        public CosmosClientTelemetryOptions() { }
+        public Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool DisableDistributedTracing { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool DisableSendingMetricsToService { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class CosmosDiagnostics
+    {
+        protected CosmosDiagnostics() { }
+        public virtual System.TimeSpan GetClientElapsedTime() { throw null; }
+        public abstract [System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "regionName", "uri"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, System.Uri>> GetContactedRegions();
+        public virtual int GetFailedRequestCount() { throw null; }
+        public virtual Microsoft.Azure.Cosmos.ServerSideCumulativeMetrics GetQueryMetrics() { throw null; }
+        public virtual System.Nullable<System.DateTime> GetStartTimeUtc() { throw null; }
+        public abstract override string ToString();
+    }
+    public partial class CosmosException : System.Exception
+    {
+        public CosmosException(string message, System.Net.HttpStatusCode statusCode, int subStatusCode, string activityId, double requestCharge) { }
+        public virtual string ActivityId { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string Message { get { throw null; } }
+        public virtual double RequestCharge { get { throw null; } }
+        public virtual string ResponseBody { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual System.Nullable<System.TimeSpan> RetryAfter { get { throw null; } }
+        public override string StackTrace { get { throw null; } }
+        public virtual System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual int SubStatusCode { get { throw null; } }
+        public override string ToString() { throw null; }
+        public virtual bool TryGetHeader(string headerName, out string value) { value = default(string); throw null; }
+    }
+    public abstract partial class CosmosLinqSerializer : Microsoft.Azure.Cosmos.CosmosSerializer
+    {
+        protected CosmosLinqSerializer() { }
+        public abstract string SerializeMemberName(System.Reflection.MemberInfo memberInfo);
+    }
+    public sealed partial class CosmosLinqSerializerOptions
+    {
+        public CosmosLinqSerializerOptions() { }
+        public Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class CosmosOperationCanceledException : System.OperationCanceledException
+    {
+        public CosmosOperationCanceledException(System.OperationCanceledException originalException, Microsoft.Azure.Cosmos.CosmosDiagnostics diagnostics) { }
+        protected CosmosOperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public override System.Collections.IDictionary Data { get { throw null; } }
+        public Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string HelpLink { get { throw null; } set { } }
+        public override string Message { get { throw null; } }
+        public override string Source { get { throw null; } set { } }
+        public override string StackTrace { get { throw null; } }
+        public override System.Exception GetBaseException() { throw null; }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public override string ToString() { throw null; }
+    }
+    public enum CosmosPropertyNamingPolicy
+    {
+        CamelCase = 1,
+        Default = 0,
+    }
+    public abstract partial class CosmosResponseFactory
+    {
+        protected CosmosResponseFactory() { }
+        public abstract Microsoft.Azure.Cosmos.FeedResponse<T> CreateItemFeedResponse<T>(Microsoft.Azure.Cosmos.ResponseMessage responseMessage);
+        public abstract Microsoft.Azure.Cosmos.ItemResponse<T> CreateItemResponse<T>(Microsoft.Azure.Cosmos.ResponseMessage responseMessage);
+        public abstract Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse<T> CreateStoredProcedureExecuteResponse<T>(Microsoft.Azure.Cosmos.ResponseMessage responseMessage);
+    }
+    public sealed partial class CosmosSerializationOptions
+    {
+        public CosmosSerializationOptions() { }
+        public bool IgnoreNullValues { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool Indented { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.CosmosPropertyNamingPolicy PropertyNamingPolicy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class CosmosSerializer
+    {
+        protected CosmosSerializer() { }
+        public abstract T FromStream<T>(System.IO.Stream stream);
+        public abstract System.IO.Stream ToStream<T>(T input);
+    }
+    public partial class CosmosThresholdOptions
+    {
+        public CosmosThresholdOptions() { }
+        public System.TimeSpan NonPointOperationLatencyThreshold { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> PayloadSizeThresholdInBytes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.TimeSpan PointOperationLatencyThreshold { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<double> RequestChargeThreshold { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class Database
+    {
+        protected Database() { }
+        public abstract Microsoft.Azure.Cosmos.CosmosClient Client { get; }
+        public abstract string Id { get; }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ClientEncryptionKeyResponse> CreateClientEncryptionKeyAsync(Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties clientEncryptionKeyProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateContainerAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateContainerAsync(string id, string partitionKeyPath, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateContainerIfNotExistsAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateContainerIfNotExistsAsync(string id, string partitionKeyPath, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> CreateContainerStreamAsync(Microsoft.Azure.Cosmos.ContainerProperties containerProperties, System.Nullable<int> throughput=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.UserResponse> CreateUserAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.Fluent.ContainerBuilder DefineContainer(string name, string partitionKeyPath);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.DatabaseResponse> DeleteAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> DeleteStreamAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.ClientEncryptionKey GetClientEncryptionKey(string id);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<Microsoft.Azure.Cosmos.ClientEncryptionKeyProperties> GetClientEncryptionKeyQueryIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.Container GetContainer(string id);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetContainerQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetContainerQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetContainerQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetContainerQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.User GetUser(string id);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetUserQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetUserQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.DatabaseResponse> ReadAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReadStreamAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ThroughputResponse> ReadThroughputAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<System.Nullable<int>> ReadThroughputAsync(System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ThroughputResponse> ReplaceThroughputAsync(Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ThroughputResponse> ReplaceThroughputAsync(int throughput, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.UserResponse> UpsertUserAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public partial class DatabaseProperties
+    {
+        public DatabaseProperties() { }
+        public DatabaseProperties(string id) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class DatabaseResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.DatabaseProperties>
+    {
+        protected DatabaseResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.Database Database { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.DatabaseProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.Database (Microsoft.Azure.Cosmos.DatabaseResponse response) { throw null; }
+    }
+    public enum DataType
+    {
+        LineString = 3,
+        MultiPolygon = 5,
+        Number = 0,
+        Point = 2,
+        Polygon = 4,
+        String = 1,
+    }
+    public partial class DedicatedGatewayRequestOptions
+    {
+        public DedicatedGatewayRequestOptions() { }
+        public System.Nullable<bool> BypassIntegratedCache { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<System.TimeSpan> MaxIntegratedCacheStaleness { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum DistanceFunction
+    {
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="cosine")]
+        Cosine = 1,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="dotproduct")]
+        DotProduct = 2,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="euclidean")]
+        Euclidean = 0,
+    }
+    public partial class Embedding : System.IEquatable<Microsoft.Azure.Cosmos.Embedding>
+    {
+        public Embedding() { }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="dataType")]
+        public Microsoft.Azure.Cosmos.VectorDataType DataType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="dimensions")]
+        public int Dimensions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="distanceFunction")]
+        public Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool Equals(Microsoft.Azure.Cosmos.Embedding that) { throw null; }
+        public void ValidateEmbeddingPath() { }
+    }
+    public partial class EncryptionKeyWrapMetadata : System.IEquatable<Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata>
+    {
+        public EncryptionKeyWrapMetadata(Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata source) { }
+        public EncryptionKeyWrapMetadata(string type, string name, string value, string algorithm) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="algorithm", NullValueHandling=1)]
+        public string Algorithm { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="name", NullValueHandling=1)]
+        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="type", NullValueHandling=1)]
+        public string Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="value", NullValueHandling=1)]
+        public string Value { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.EncryptionKeyWrapMetadata other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    public sealed partial class ExcludedPath
+    {
+        public ExcludedPath() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class FeedIterator : System.IDisposable
+    {
+        protected FeedIterator() { }
+        public abstract bool HasMoreResults { get; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ReadNextAsync(System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public abstract partial class FeedIterator<T> : System.IDisposable
+    {
+        protected FeedIterator() { }
+        public abstract bool HasMoreResults { get; }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.FeedResponse<T>> ReadNextAsync(System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public abstract partial class FeedRange
+    {
+        protected FeedRange() { }
+        public static Microsoft.Azure.Cosmos.FeedRange FromJsonString(string toStringValue) { throw null; }
+        public static Microsoft.Azure.Cosmos.FeedRange FromPartitionKey(Microsoft.Azure.Cosmos.PartitionKey partitionKey) { throw null; }
+        public abstract string ToJsonString();
+    }
+    public abstract partial class FeedResponse<T> : System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
+    {
+        protected FeedResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public abstract string ContinuationToken { get; }
+        public abstract int Count { get; }
+        public override string ETag { get { throw null; } }
+        public abstract string IndexMetrics { get; }
+        public override double RequestCharge { get { throw null; } }
+        public abstract System.Collections.Generic.IEnumerator<T> GetEnumerator();
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public sealed partial class GeospatialConfig
+    {
+        public GeospatialConfig() { }
+        public GeospatialConfig(Microsoft.Azure.Cosmos.GeospatialType geospatialType) { }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="type")]
+        public Microsoft.Azure.Cosmos.GeospatialType GeospatialType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum GeospatialType
+    {
+        Geography = 0,
+        Geometry = 1,
+    }
+    public partial class Headers : System.Collections.IEnumerable
+    {
+        public Headers() { }
+        public virtual string ActivityId { get { throw null; } }
+        public virtual string ContentLength { get { throw null; } set { } }
+        public virtual string ContentType { get { throw null; } }
+        public virtual string ContinuationToken { get { throw null; } }
+        public virtual string ETag { get { throw null; } }
+        public virtual string this[string headerName] { get { throw null; } set { } }
+        public virtual string Location { get { throw null; } }
+        public virtual double RequestCharge { get { throw null; } }
+        public virtual string Session { get { throw null; } }
+        public virtual void Add(string headerName, System.Collections.Generic.IEnumerable<string> values) { }
+        public virtual void Add(string headerName, string value) { }
+        public virtual string[] AllKeys() { throw null; }
+        public virtual string Get(string headerName) { throw null; }
+        public virtual System.Collections.Generic.IEnumerator<string> GetEnumerator() { throw null; }
+        public virtual T GetHeaderValue<T>(string headerName) { throw null; }
+        public virtual string GetValueOrDefault(string headerName) { throw null; }
+        public virtual void Remove(string headerName) { }
+        public virtual void Set(string headerName, string value) { }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+        public virtual bool TryGetValue(string headerName, out string value) { value = default(string); throw null; }
+    }
+    public sealed partial class IncludedPath
+    {
+        public IncludedPath() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum IndexingDirective
+    {
+        Default = 0,
+        Exclude = 2,
+        Include = 1,
+    }
+    public enum IndexingMode
+    {
+        Consistent = 0,
+        Lazy = 1,
+        None = 2,
+    }
+    public sealed partial class IndexingPolicy
+    {
+        public IndexingPolicy() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="automatic")]
+        public bool Automatic { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="compositeIndexes")]
+        public System.Collections.ObjectModel.Collection<System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.CompositePath>> CompositeIndexes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="excludedPaths")]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.ExcludedPath> ExcludedPaths { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="includedPaths")]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.IncludedPath> IncludedPaths { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="indexingMode")]
+        public Microsoft.Azure.Cosmos.IndexingMode IndexingMode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="spatialIndexes")]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.SpatialPath> SpatialIndexes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="vectorIndexes", NullValueHandling=1)]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.VectorIndexPath> VectorIndexes { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum IndexKind
+    {
+        Hash = 0,
+        Range = 1,
+        Spatial = 2,
+    }
+    public partial class ItemRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public ItemRequestOptions() { }
+        public System.Nullable<Microsoft.Azure.Cosmos.ConsistencyLevel> ConsistencyLevel { get { throw null; } set { } }
+        public Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<bool> EnableContentResponseOnWrite { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.IndexingDirective> IndexingDirective { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Collections.Generic.IEnumerable<string> PostTriggers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Collections.Generic.IEnumerable<string> PreTriggers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string SessionToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class ItemResponse<T> : Microsoft.Azure.Cosmos.Response<T>
+    {
+        protected ItemResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override T Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public enum OperationKind
+    {
+        Create = 1,
+        Delete = 3,
+        Invalid = 0,
+        [System.ObsoleteAttribute("This item is obsolete as it does not apply to Conflict.")]
+        Read = 4,
+        Replace = 2,
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct PartitionKey : System.IEquatable<Microsoft.Azure.Cosmos.PartitionKey>
+    {
+        public static readonly Microsoft.Azure.Cosmos.PartitionKey None;
+        public static readonly Microsoft.Azure.Cosmos.PartitionKey Null;
+        public static readonly string SystemKeyName;
+        public static readonly string SystemKeyPath;
+        public PartitionKey(bool partitionKeyValue) { throw null;}
+        public PartitionKey(double partitionKeyValue) { throw null;}
+        public PartitionKey(string partitionKeyValue) { throw null;}
+        public bool Equals(Microsoft.Azure.Cosmos.PartitionKey other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(Microsoft.Azure.Cosmos.PartitionKey left, Microsoft.Azure.Cosmos.PartitionKey right) { throw null; }
+        public static bool operator !=(Microsoft.Azure.Cosmos.PartitionKey left, Microsoft.Azure.Cosmos.PartitionKey right) { throw null; }
+        public override string ToString() { throw null; }
+    }
+    public sealed partial class PartitionKeyBuilder
+    {
+        public PartitionKeyBuilder() { }
+        public Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(bool val) { throw null; }
+        public Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(double val) { throw null; }
+        public Microsoft.Azure.Cosmos.PartitionKeyBuilder Add(string val) { throw null; }
+        public Microsoft.Azure.Cosmos.PartitionKeyBuilder AddNoneType() { throw null; }
+        public Microsoft.Azure.Cosmos.PartitionKeyBuilder AddNullValue() { throw null; }
+        public Microsoft.Azure.Cosmos.PartitionKey Build() { throw null; }
+    }
+    public enum PartitionKeyDefinitionVersion
+    {
+        V1 = 1,
+        V2 = 2,
+    }
+    public sealed partial class PatchItemRequestOptions : Microsoft.Azure.Cosmos.ItemRequestOptions
+    {
+        public PatchItemRequestOptions() { }
+        public string FilterPredicate { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public abstract partial class PatchOperation
+    {
+        protected PatchOperation() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="from")]
+        public virtual string From { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="op")]
+        public abstract Microsoft.Azure.Cosmos.PatchOperationType OperationType { get; }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public abstract string Path { get; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Add<T>(string path, T value) { throw null; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Increment(string path, double value) { throw null; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Increment(string path, long value) { throw null; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Move(string from, string path) { throw null; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Remove(string path) { throw null; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Replace<T>(string path, T value) { throw null; }
+        public static Microsoft.Azure.Cosmos.PatchOperation Set<T>(string path, T value) { throw null; }
+        public virtual bool TrySerializeValueParameter(Microsoft.Azure.Cosmos.CosmosSerializer cosmosSerializer, out System.IO.Stream valueParam) { valueParam = default(System.IO.Stream); throw null; }
+    }
+    [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+    public enum PatchOperationType
+    {
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="add")]
+        Add = 0,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="incr")]
+        Increment = 4,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="move")]
+        Move = 5,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="remove")]
+        Remove = 1,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="replace")]
+        Replace = 2,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="set")]
+        Set = 3,
+    }
+    public abstract partial class PatchOperation<T> : Microsoft.Azure.Cosmos.PatchOperation
+    {
+        protected PatchOperation() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="value")]
+        public abstract T Value { get; }
+    }
+    public abstract partial class Permission
+    {
+        protected Permission() { }
+        public abstract string Id { get; }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.PermissionResponse> DeleteAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.PermissionResponse> ReadAsync(System.Nullable<int> tokenExpiryInSeconds=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.PermissionResponse> ReplaceAsync(Microsoft.Azure.Cosmos.PermissionProperties permissionProperties, System.Nullable<int> tokenExpiryInSeconds=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    [System.FlagsAttribute]
+    public enum PermissionMode : byte
+    {
+        All = (byte)2,
+        Read = (byte)1,
+    }
+    public partial class PermissionProperties
+    {
+        public PermissionProperties(string id, Microsoft.Azure.Cosmos.PermissionMode permissionMode, Microsoft.Azure.Cosmos.Container container, Microsoft.Azure.Cosmos.PartitionKey resourcePartitionKey, string itemId) { }
+        public PermissionProperties(string id, Microsoft.Azure.Cosmos.PermissionMode permissionMode, Microsoft.Azure.Cosmos.Container container, System.Nullable<Microsoft.Azure.Cosmos.PartitionKey> resourcePartitionKey=default(System.Nullable<Microsoft.Azure.Cosmos.PartitionKey>)) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="permissionMode")]
+        public Microsoft.Azure.Cosmos.PermissionMode PermissionMode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Nullable<Microsoft.Azure.Cosmos.PartitionKey> ResourcePartitionKey { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="resource")]
+        public string ResourceUri { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_token", NullValueHandling=1)]
+        public string Token { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class PermissionResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.PermissionProperties>
+    {
+        protected PermissionResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.Permission Permission { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.PermissionProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.Permission (Microsoft.Azure.Cosmos.PermissionResponse response) { throw null; }
+    }
+    public enum PortReuseMode
+    {
+        PrivatePortPool = 1,
+        ReuseUnicastPort = 0,
+    }
+    public enum PriorityLevel
+    {
+        High = 1,
+        Low = 2,
+    }
+    public partial class QueryDefinition
+    {
+        public QueryDefinition(string query) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="query", Order=0)]
+        public string QueryText { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public [System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "Name", "Value"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, object>> GetQueryParameters() { throw null; }
+        public Microsoft.Azure.Cosmos.QueryDefinition WithParameter(string name, object value) { throw null; }
+        public Microsoft.Azure.Cosmos.QueryDefinition WithParameterStream(string name, System.IO.Stream valueStream) { throw null; }
+    }
+    public partial class QueryRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public QueryRequestOptions() { }
+        public System.Nullable<Microsoft.Azure.Cosmos.ConsistencyLevel> ConsistencyLevel { get { throw null; } set { } }
+        public Microsoft.Azure.Cosmos.DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<bool> EnableLowPrecisionOrderBy { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public bool EnableOptimisticDirectExecution { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<bool> EnableScanInQuery { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> MaxBufferedItemCount { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> MaxConcurrency { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> MaxItemCount { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.PartitionKey> PartitionKey { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<bool> PopulateIndexMetrics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.QueryTextMode QueryTextMode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<int> ResponseContinuationTokenLimitInKb { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string SessionToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum QueryTextMode
+    {
+        All = 2,
+        None = 0,
+        ParameterizedOnly = 1,
+    }
+    public partial class ReadManyRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public ReadManyRequestOptions() { }
+        public System.Nullable<Microsoft.Azure.Cosmos.ConsistencyLevel> ConsistencyLevel { get { throw null; } set { } }
+        public string SessionToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public static partial class Regions
+    {
+        public const string AustraliaCentral = "Australia Central";
+        public const string AustraliaCentral2 = "Australia Central 2";
+        public const string AustraliaEast = "Australia East";
+        public const string AustraliaSoutheast = "Australia Southeast";
+        public const string AustriaEast = "Austria East";
+        public const string BelgiumCentral = "Belgium Central";
+        public const string BleuFranceCentral = "Bleu France Central";
+        public const string BleuFranceSouth = "Bleu France South";
+        public const string BrazilSouth = "Brazil South";
+        public const string BrazilSoutheast = "Brazil Southeast";
+        public const string CanadaCentral = "Canada Central";
+        public const string CanadaEast = "Canada East";
+        public const string CentralIndia = "Central India";
+        public const string CentralUS = "Central US";
+        public const string CentralUSEUAP = "Central US EUAP";
+        public const string ChileCentral = "Chile Central";
+        public const string ChinaEast = "China East";
+        public const string ChinaEast2 = "China East 2";
+        public const string ChinaEast3 = "China East 3";
+        public const string ChinaNorth = "China North";
+        public const string ChinaNorth2 = "China North 2";
+        public const string ChinaNorth3 = "China North 3";
+        public const string DelosCloudGermanyCentral = "Delos Cloud Germany Central";
+        public const string DelosCloudGermanyNorth = "Delos Cloud Germany North";
+        public const string DenmarkEast = "Denmark East";
+        public const string EastAsia = "East Asia";
+        public const string EastUS = "East US";
+        public const string EastUS2 = "East US 2";
+        public const string EastUS2EUAP = "East US 2 EUAP";
+        public const string EastUSSLV = "East US SLV";
+        public const string FranceCentral = "France Central";
+        public const string FranceSouth = "France South";
+        public const string GermanyNorth = "Germany North";
+        public const string GermanyWestCentral = "Germany West Central";
+        public const string IndonesiaCentral = "Indonesia Central";
+        public const string IsraelCentral = "Israel Central";
+        public const string IsraelNorthwest = "Israel Northwest";
+        public const string ItalyNorth = "Italy North";
+        public const string JapanEast = "Japan East";
+        public const string JapanWest = "Japan West";
+        public const string JioIndiaCentral = "Jio India Central";
+        public const string JioIndiaWest = "Jio India West";
+        public const string KoreaCentral = "Korea Central";
+        public const string KoreaSouth = "Korea South";
+        public const string MalaysiaSouth = "Malaysia South";
+        public const string MalaysiaWest = "Malaysia West";
+        public const string MexicoCentral = "Mexico Central";
+        public const string NewZealandNorth = "New Zealand North";
+        public const string NorthCentralUS = "North Central US";
+        public const string NorthEurope = "North Europe";
+        public const string NorwayEast = "Norway East";
+        public const string NorwayWest = "Norway West";
+        public const string PolandCentral = "Poland Central";
+        public const string QatarCentral = "Qatar Central";
+        public const string SouthAfricaNorth = "South Africa North";
+        public const string SouthAfricaWest = "South Africa West";
+        public const string SouthCentralUS = "South Central US";
+        public const string SouthCentralUS2 = "South Central US 2";
+        public const string SoutheastAsia = "Southeast Asia";
+        public const string SoutheastUS = "Southeast US";
+        public const string SoutheastUS3 = "Southeast US 3";
+        public const string SoutheastUS5 = "Southeast US 5";
+        public const string SouthIndia = "South India";
+        public const string SouthwestUS = "Southwest US";
+        public const string SpainCentral = "Spain Central";
+        public const string SwedenCentral = "Sweden Central";
+        public const string SwedenSouth = "Sweden South";
+        public const string SwitzerlandNorth = "Switzerland North";
+        public const string SwitzerlandWest = "Switzerland West";
+        public const string TaiwanNorth = "Taiwan North";
+        public const string TaiwanNorthwest = "Taiwan Northwest";
+        public const string UAECentral = "UAE Central";
+        public const string UAENorth = "UAE North";
+        public const string UKSouth = "UK South";
+        public const string UKWest = "UK West";
+        public const string USDoDCentral = "USDoD Central";
+        public const string USDoDEast = "USDoD East";
+        public const string USGovArizona = "USGov Arizona";
+        public const string USGovTexas = "USGov Texas";
+        public const string USGovVirginia = "USGov Virginia";
+        public const string USNatEast = "USNat East";
+        public const string USNatWest = "USNat West";
+        public const string USSecEast = "USSec East";
+        public const string USSecWest = "USSec West";
+        public const string USSecWestCentral = "USSec West Central";
+        public const string WestCentralUS = "West Central US";
+        public const string WestEurope = "West Europe";
+        public const string WestIndia = "West India";
+        public const string WestUS = "West US";
+        public const string WestUS2 = "West US 2";
+        public const string WestUS3 = "West US 3";
+    }
+    public abstract partial class RequestHandler
+    {
+        protected RequestHandler() { }
+        public Microsoft.Azure.Cosmos.RequestHandler InnerHandler { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public virtual System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> SendAsync(Microsoft.Azure.Cosmos.RequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
+    }
+    public partial class RequestMessage : System.IDisposable
+    {
+        public RequestMessage() { }
+        public RequestMessage(System.Net.Http.HttpMethod method, System.Uri requestUri) { }
+        public virtual System.IO.Stream Content { get { throw null; } set { } }
+        public virtual Microsoft.Azure.Cosmos.Headers Headers { get { throw null; } }
+        public virtual System.Net.Http.HttpMethod Method { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual System.Collections.Generic.Dictionary<string, object> Properties { get { throw null; } }
+        public virtual System.Uri RequestUri { get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+    }
+    public partial class RequestOptions
+    {
+        public RequestOptions() { }
+        public System.Action<Microsoft.Azure.Cosmos.Headers> AddRequestHeaders { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.CosmosThresholdOptions CosmosThresholdOptions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Collections.Generic.List<string> ExcludeRegions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string IfMatchEtag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string IfNoneMatchEtag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.PriorityLevel> PriorityLevel { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, object> Properties { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public Microsoft.Azure.Cosmos.RequestOptions ShallowCopy() { throw null; }
+    }
+    public partial class ResponseMessage : System.IDisposable
+    {
+        public ResponseMessage() { }
+        public ResponseMessage(System.Net.HttpStatusCode statusCode, Microsoft.Azure.Cosmos.RequestMessage requestMessage=null, string errorMessage=null) { }
+        public virtual System.IO.Stream Content { get { throw null; } set { } }
+        public virtual string ContinuationToken { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { get { throw null; } set { } }
+        public virtual string ErrorMessage { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public string IndexMetrics { get { throw null; } }
+        public virtual bool IsSuccessStatusCode { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.RequestMessage RequestMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public virtual Microsoft.Azure.Cosmos.ResponseMessage EnsureSuccessStatusCode() { throw null; }
+    }
+    public abstract partial class Response<T>
+    {
+        protected Response() { }
+        public abstract string ActivityId { get; }
+        public abstract Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { get; }
+        public abstract string ETag { get; }
+        public abstract Microsoft.Azure.Cosmos.Headers Headers { get; }
+        public abstract double RequestCharge { get; }
+        public abstract T Resource { get; }
+        public abstract System.Net.HttpStatusCode StatusCode { get; }
+        public static implicit operator T (Microsoft.Azure.Cosmos.Response<T> response) { throw null; }
+    }
+    public abstract partial class ServerSideCumulativeMetrics
+    {
+        protected ServerSideCumulativeMetrics() { }
+        public abstract Microsoft.Azure.Cosmos.ServerSideMetrics CumulativeMetrics { get; }
+        public abstract System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.ServerSidePartitionedMetrics> PartitionedMetrics { get; }
+        public abstract double TotalRequestCharge { get; }
+    }
+    public abstract partial class ServerSideMetrics
+    {
+        protected ServerSideMetrics() { }
+        public abstract System.TimeSpan DocumentLoadTime { get; }
+        public abstract System.TimeSpan DocumentWriteTime { get; }
+        public abstract double IndexHitRatio { get; }
+        public abstract System.TimeSpan IndexLookupTime { get; }
+        public abstract long OutputDocumentCount { get; }
+        public abstract long OutputDocumentSize { get; }
+        public abstract System.TimeSpan QueryPreparationTime { get; }
+        public abstract long RetrievedDocumentCount { get; }
+        public abstract long RetrievedDocumentSize { get; }
+        public abstract System.TimeSpan RuntimeExecutionTime { get; }
+        public abstract System.TimeSpan TotalTime { get; }
+        public abstract System.TimeSpan VMExecutionTime { get; }
+    }
+    public abstract partial class ServerSidePartitionedMetrics
+    {
+        protected ServerSidePartitionedMetrics() { }
+        public abstract string FeedRange { get; }
+        public abstract System.Nullable<int> PartitionKeyRangeId { get; }
+        public abstract double RequestCharge { get; }
+        public abstract Microsoft.Azure.Cosmos.ServerSideMetrics ServerSideMetrics { get; }
+    }
+    public sealed partial class SpatialPath
+    {
+        public SpatialPath() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="boundingBox", NullValueHandling=1)]
+        public Microsoft.Azure.Cosmos.BoundingBoxProperties BoundingBox { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="types", ItemConverterType=typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.SpatialType> SpatialTypes { get { throw null; } }
+    }
+    public enum SpatialType
+    {
+        LineString = 1,
+        MultiPolygon = 3,
+        Point = 0,
+        Polygon = 2,
+    }
+    public partial class ThroughputProperties
+    {
+        internal ThroughputProperties() { }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Nullable<int> AutoscaleMaxThroughput { get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonIgnoreAttribute]
+        public System.Nullable<int> Throughput { get { throw null; } }
+        public static Microsoft.Azure.Cosmos.ThroughputProperties CreateAutoscaleThroughput(int autoscaleMaxThroughput) { throw null; }
+        public static Microsoft.Azure.Cosmos.ThroughputProperties CreateManualThroughput(int throughput) { throw null; }
+    }
+    public partial class ThroughputResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.ThroughputProperties>
+    {
+        protected ThroughputResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public System.Nullable<bool> IsReplacePending { get { throw null; } }
+        public System.Nullable<int> MinThroughput { get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.ThroughputProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.ThroughputProperties (Microsoft.Azure.Cosmos.ThroughputResponse response) { throw null; }
+    }
+    public abstract partial class TransactionalBatch
+    {
+        protected TransactionalBatch() { }
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch CreateItemStream(System.IO.Stream streamPayload, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch CreateItem<T>(T item, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch DeleteItem(string id, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.TransactionalBatchResponse> ExecuteAsync(Microsoft.Azure.Cosmos.TransactionalBatchRequestOptions requestOptions, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.TransactionalBatchResponse> ExecuteAsync(System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch PatchItem(string id, System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.PatchOperation> patchOperations, Microsoft.Azure.Cosmos.TransactionalBatchPatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch ReadItem(string id, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch ReplaceItemStream(string id, System.IO.Stream streamPayload, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch ReplaceItem<T>(string id, T item, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch UpsertItemStream(System.IO.Stream streamPayload, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.TransactionalBatch UpsertItem<T>(T item, Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions requestOptions=null);
+    }
+    public partial class TransactionalBatchItemRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public TransactionalBatchItemRequestOptions() { }
+        public System.Nullable<bool> EnableContentResponseOnWrite { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public System.Nullable<Microsoft.Azure.Cosmos.IndexingDirective> IndexingDirective { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class TransactionalBatchOperationResult
+    {
+        protected TransactionalBatchOperationResult() { }
+        public virtual string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual bool IsSuccessStatusCode { get { throw null; } }
+        public virtual System.IO.Stream ResourceStream { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual System.TimeSpan RetryAfter { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class TransactionalBatchOperationResult<T> : Microsoft.Azure.Cosmos.TransactionalBatchOperationResult
+    {
+        protected TransactionalBatchOperationResult() { }
+        public virtual T Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class TransactionalBatchPatchItemRequestOptions : Microsoft.Azure.Cosmos.TransactionalBatchItemRequestOptions
+    {
+        public TransactionalBatchPatchItemRequestOptions() { }
+        public string FilterPredicate { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class TransactionalBatchRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public TransactionalBatchRequestOptions() { }
+        public System.Nullable<Microsoft.Azure.Cosmos.ConsistencyLevel> ConsistencyLevel { get { throw null; } set { } }
+        public string SessionToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class TransactionalBatchResponse : System.Collections.Generic.IEnumerable<Microsoft.Azure.Cosmos.TransactionalBatchOperationResult>, System.Collections.Generic.IReadOnlyCollection<Microsoft.Azure.Cosmos.TransactionalBatchOperationResult>, System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.TransactionalBatchOperationResult>, System.Collections.IEnumerable, System.IDisposable
+    {
+        protected TransactionalBatchResponse() { }
+        public virtual string ActivityId { get { throw null; } }
+        public virtual int Count { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual string ErrorMessage { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual bool IsSuccessStatusCode { get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.TransactionalBatchOperationResult this[int index] { get { throw null; } }
+        public virtual double RequestCharge { get { throw null; } }
+        public virtual System.Nullable<System.TimeSpan> RetryAfter { get { throw null; } }
+        public virtual System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public void Dispose() { }
+        protected virtual void Dispose(bool disposing) { }
+        public virtual System.Collections.Generic.IEnumerator<Microsoft.Azure.Cosmos.TransactionalBatchOperationResult> GetEnumerator() { throw null; }
+        public virtual Microsoft.Azure.Cosmos.TransactionalBatchOperationResult<T> GetOperationResultAtIndex<T>(int index) { throw null; }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
+    }
+    public partial class UniqueKey
+    {
+        public UniqueKey() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="paths")]
+        public System.Collections.ObjectModel.Collection<string> Paths { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public sealed partial class UniqueKeyPolicy
+    {
+        public UniqueKeyPolicy() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="uniqueKeys")]
+        public System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.UniqueKey> UniqueKeys { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public abstract partial class User
+    {
+        protected User() { }
+        public abstract string Id { get; }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.PermissionResponse> CreatePermissionAsync(Microsoft.Azure.Cosmos.PermissionProperties permissionProperties, System.Nullable<int> tokenExpiryInSeconds=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.UserResponse> DeleteAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.Permission GetPermission(string id);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetPermissionQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetPermissionQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.UserResponse> ReadAsync(Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.UserResponse> ReplaceAsync(Microsoft.Azure.Cosmos.UserProperties userProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.PermissionResponse> UpsertPermissionAsync(Microsoft.Azure.Cosmos.PermissionProperties permissionProperties, System.Nullable<int> tokenExpiryInSeconds=default(System.Nullable<int>), Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public partial class UserProperties
+    {
+        protected UserProperties() { }
+        public UserProperties(string id) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class UserResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.UserProperties>
+    {
+        protected UserResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.UserProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual Microsoft.Azure.Cosmos.User User { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.User (Microsoft.Azure.Cosmos.UserResponse response) { throw null; }
+    }
+    public enum VectorDataType
+    {
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="float32")]
+        Float32 = 0,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="int8")]
+        Int8 = 2,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="uint8")]
+        Uint8 = 1,
+    }
+    public sealed partial class VectorEmbeddingPolicy
+    {
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="vectorEmbeddings")]
+        public readonly System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Embedding> Embeddings;
+        public VectorEmbeddingPolicy(System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Embedding> embeddings) { }
+    }
+    public sealed partial class VectorIndexPath
+    {
+        public VectorIndexPath() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="path")]
+        public string Path { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="type")]
+        public Microsoft.Azure.Cosmos.VectorIndexType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum VectorIndexType
+    {
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="diskANN")]
+        DiskANN = 1,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="flat")]
+        Flat = 0,
+        [System.Runtime.Serialization.EnumMemberAttribute(Value="quantizedFlat")]
+        QuantizedFlat = 2,
+    }
+}
+namespace Microsoft.Azure.Cosmos.FaultInjection
+{
+    public partial interface IFaultInjector
+    {
+    }
+}
+namespace Microsoft.Azure.Cosmos.Fluent
+{
+    public sealed partial class ClientEncryptionPolicyDefinition
+    {
+        internal ClientEncryptionPolicyDefinition() { }
+        public Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithIncludedPath(Microsoft.Azure.Cosmos.ClientEncryptionIncludedPath path) { throw null; }
+    }
+    public partial class CompositeIndexDefinition<T>
+    {
+        internal CompositeIndexDefinition() { }
+        public T Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition<T> Path(string path) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition<T> Path(string path, Microsoft.Azure.Cosmos.CompositePathSortOrder sortOrder) { throw null; }
+    }
+    public partial class ComputedPropertiesDefinition<T>
+    {
+        internal ComputedPropertiesDefinition() { }
+        public T Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ComputedPropertiesDefinition<T> WithComputedProperty(string name, string query) { throw null; }
+    }
+    public partial class ConflictResolutionDefinition
+    {
+        internal ConflictResolutionDefinition() { }
+        public Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithCustomStoredProcedureResolution(string conflictResolutionProcedure) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithLastWriterWinsResolution(string conflictResolutionPath) { throw null; }
+    }
+    public partial class ContainerBuilder : Microsoft.Azure.Cosmos.Fluent.ContainerDefinition<Microsoft.Azure.Cosmos.Fluent.ContainerBuilder>
+    {
+        protected ContainerBuilder() { }
+        public ContainerBuilder(Microsoft.Azure.Cosmos.Database database, string name, string partitionKeyPath) { }
+        public new Microsoft.Azure.Cosmos.ContainerProperties Build() { throw null; }
+        public System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateAsync(Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateAsync(System.Nullable<int> throughput=default(System.Nullable<int>), System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateIfNotExistsAsync(Microsoft.Azure.Cosmos.ThroughputProperties throughputProperties, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ContainerResponse> CreateIfNotExistsAsync(System.Nullable<int> throughput=default(System.Nullable<int>), System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ClientEncryptionPolicyDefinition WithClientEncryptionPolicy(int policyFormatVersion) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Embedding> embeddings) { throw null; }
+    }
+    public abstract partial class ContainerDefinition<T> where T : Microsoft.Azure.Cosmos.Fluent.ContainerDefinition<T>
+    {
+        public ContainerDefinition() { }
+        public Microsoft.Azure.Cosmos.ContainerProperties Build() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.ComputedPropertiesDefinition<T> WithComputedProperties() { throw null; }
+        public T WithDefaultTimeToLive(int defaultTtlInSeconds) { throw null; }
+        public T WithDefaultTimeToLive(System.TimeSpan defaultTtlTimeSpan) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T> WithIndexingPolicy() { throw null; }
+        public T WithPartitionKeyDefinitionVersion(Microsoft.Azure.Cosmos.PartitionKeyDefinitionVersion partitionKeyDefinitionVersion) { throw null; }
+        public T WithTimeToLivePropertyPath(string propertyPath) { throw null; }
+    }
+    public partial class CosmosClientBuilder
+    {
+        public CosmosClientBuilder(string connectionString) { }
+        public CosmosClientBuilder(string accountEndpoint, Azure.AzureKeyCredential authKeyOrResourceTokenCredential) { }
+        public CosmosClientBuilder(string accountEndpoint, Azure.Core.TokenCredential tokenCredential) { }
+        public CosmosClientBuilder(string accountEndpoint, string authKeyOrResourceToken) { }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder AddCustomHandlers(params Microsoft.Azure.Cosmos.RequestHandler[] customHandlers) { throw null; }
+        public Microsoft.Azure.Cosmos.CosmosClient Build() { throw null; }
+        public System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.CosmosClient> BuildAndInitializeAsync([System.Runtime.CompilerServices.TupleElementNamesAttribute(new string[]{ "databaseId", "containerId"})]System.Collections.Generic.IReadOnlyList<System.ValueTuple<string, string>> containers, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationName(string applicationName) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationPreferredRegions(System.Collections.Generic.IReadOnlyList<string> applicationPreferredRegions) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(string applicationRegion) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(bool enabled) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithClientTelemetryOptions(Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions options) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeDirect(System.Nullable<System.TimeSpan> idleTcpConnectionTimeout=default(System.Nullable<System.TimeSpan>), System.Nullable<System.TimeSpan> openTcpConnectionTimeout=default(System.Nullable<System.TimeSpan>), System.Nullable<int> maxRequestsPerTcpConnection=default(System.Nullable<int>), System.Nullable<int> maxTcpConnectionsPerEndpoint=default(System.Nullable<int>), System.Nullable<Microsoft.Azure.Cosmos.PortReuseMode> portReuseMode=default(System.Nullable<Microsoft.Azure.Cosmos.PortReuseMode>), System.Nullable<bool> enableTcpConnectionEndpointRediscovery=default(System.Nullable<bool>)) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConnectionModeGateway(System.Nullable<int> maxConnectionLimit=default(System.Nullable<int>), System.Net.IWebProxy webProxy=null) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithConsistencyLevel(Microsoft.Azure.Cosmos.ConsistencyLevel consistencyLevel) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithContentResponseOnWrite(bool contentResponseOnWrite) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomAccountEndpoints(System.Collections.Generic.IEnumerable<System.Uri> customAccountEndpoints) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithCustomSerializer(Microsoft.Azure.Cosmos.CosmosSerializer cosmosJsonSerializer) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithFaultInjection(Microsoft.Azure.Cosmos.FaultInjection.IFaultInjector faultInjector) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithHttpClientFactory(System.Func<System.Net.Http.HttpClient> httpClientFactory) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithLimitToEndpoint(bool limitToEndpoint) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithPriorityLevel(Microsoft.Azure.Cosmos.PriorityLevel priorityLevel) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithRequestTimeout(System.TimeSpan requestTimeout) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSerializerOptions(Microsoft.Azure.Cosmos.CosmosSerializationOptions cosmosSerializerOptions) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithSystemTextJsonSerializerOptions(System.Text.Json.JsonSerializerOptions serializerOptions) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithThrottlingRetryOptions(System.TimeSpan maxRetryWaitTimeOnThrottledRequests, int maxRetryAttemptsOnThrottledRequests) { throw null; }
+    }
+    public partial class IndexingPolicyDefinition<T>
+    {
+        public IndexingPolicyDefinition() { }
+        public T Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T> WithAutomaticIndexing(bool enabled) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition<Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T>> WithCompositeIndex() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.PathsDefinition<Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T>> WithExcludedPaths() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.PathsDefinition<Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T>> WithIncludedPaths() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T> WithIndexingMode(Microsoft.Azure.Cosmos.IndexingMode indexingMode) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition<Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T>> WithSpatialIndex() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition<Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition<T>> WithVectorIndex() { throw null; }
+    }
+    public partial class PathsDefinition<T>
+    {
+        internal PathsDefinition() { }
+        public T Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.PathsDefinition<T> Path(string path) { throw null; }
+    }
+    public partial class SpatialIndexDefinition<T>
+    {
+        internal SpatialIndexDefinition() { }
+        public T Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition<T> Path(string path) { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.SpatialIndexDefinition<T> Path(string path, params Microsoft.Azure.Cosmos.SpatialType[] spatialTypes) { throw null; }
+    }
+    public partial class UniqueKeyDefinition
+    {
+        internal UniqueKeyDefinition() { }
+        public Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition Path(string path) { throw null; }
+    }
+    public partial class VectorEmbeddingPolicyDefinition
+    {
+        public VectorEmbeddingPolicyDefinition(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder parent, System.Collections.ObjectModel.Collection<Microsoft.Azure.Cosmos.Embedding> embeddings, System.Action<Microsoft.Azure.Cosmos.VectorEmbeddingPolicy> attachCallback) { }
+        public Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach() { throw null; }
+    }
+    public partial class VectorIndexDefinition<T>
+    {
+        public VectorIndexDefinition(T parent, System.Action<Microsoft.Azure.Cosmos.VectorIndexPath> attachCallback) { }
+        public T Attach() { throw null; }
+        public Microsoft.Azure.Cosmos.Fluent.VectorIndexDefinition<T> Path(string path, Microsoft.Azure.Cosmos.VectorIndexType indexType) { throw null; }
+    }
+}
+namespace Microsoft.Azure.Cosmos.Linq
+{
+    public static partial class CosmosLinq
+    {
+        public static object InvokeUserDefinedFunction(string udfName, params object[] arguments) { throw null; }
+    }
+    public static partial class CosmosLinqExtensions
+    {
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<decimal>> AverageAsync(this System.Linq.IQueryable<decimal> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<double>> AverageAsync(this System.Linq.IQueryable<double> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<double>> AverageAsync(this System.Linq.IQueryable<int> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<double>> AverageAsync(this System.Linq.IQueryable<long> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<decimal>>> AverageAsync(this System.Linq.IQueryable<System.Nullable<decimal>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<double>>> AverageAsync(this System.Linq.IQueryable<System.Nullable<double>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<double>>> AverageAsync(this System.Linq.IQueryable<System.Nullable<int>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<double>>> AverageAsync(this System.Linq.IQueryable<System.Nullable<long>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<float>>> AverageAsync(this System.Linq.IQueryable<System.Nullable<float>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<float>> AverageAsync(this System.Linq.IQueryable<float> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<int>> CountAsync<TSource>(this System.Linq.IQueryable<TSource> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static int DocumentId(this object obj) { throw null; }
+        public static bool IsArray(this object obj) { throw null; }
+        public static bool IsBool(this object obj) { throw null; }
+        public static bool IsDefined(this object obj) { throw null; }
+        public static bool IsNull(this object obj) { throw null; }
+        public static bool IsNumber(this object obj) { throw null; }
+        public static bool IsObject(this object obj) { throw null; }
+        public static bool IsPrimitive(this object obj) { throw null; }
+        public static bool IsString(this object obj) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<TSource>> MaxAsync<TSource>(this System.Linq.IQueryable<TSource> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<TSource>> MinAsync<TSource>(this System.Linq.IQueryable<TSource> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static bool RegexMatch(this object obj, string regularExpression) { throw null; }
+        public static bool RegexMatch(this object obj, string regularExpression, string searchModifier) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<decimal>> SumAsync(this System.Linq.IQueryable<decimal> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<double>> SumAsync(this System.Linq.IQueryable<double> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<int>> SumAsync(this System.Linq.IQueryable<int> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<long>> SumAsync(this System.Linq.IQueryable<long> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<decimal>>> SumAsync(this System.Linq.IQueryable<System.Nullable<decimal>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<double>>> SumAsync(this System.Linq.IQueryable<System.Nullable<double>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<int>>> SumAsync(this System.Linq.IQueryable<System.Nullable<int>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<long>>> SumAsync(this System.Linq.IQueryable<System.Nullable<long>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<System.Nullable<float>>> SumAsync(this System.Linq.IQueryable<System.Nullable<float>> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Response<float>> SumAsync(this System.Linq.IQueryable<float> source, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken)) { throw null; }
+        public static Microsoft.Azure.Cosmos.FeedIterator<T> ToFeedIterator<T>(this System.Linq.IQueryable<T> query) { throw null; }
+        public static Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition<T>(this System.Linq.IQueryable<T> query) { throw null; }
+        public static Microsoft.Azure.Cosmos.FeedIterator ToStreamIterator<T>(this System.Linq.IQueryable<T> query) { throw null; }
+    }
+}
+namespace Microsoft.Azure.Cosmos.Scripts
+{
+    public abstract partial class Scripts
+    {
+        protected Scripts() { }
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse> CreateStoredProcedureAsync(Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties storedProcedureProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.TriggerResponse> CreateTriggerAsync(Microsoft.Azure.Cosmos.Scripts.TriggerProperties triggerProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties userDefinedFunctionProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse> DeleteStoredProcedureAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.TriggerResponse> DeleteTriggerAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(string storedProcedureId, Microsoft.Azure.Cosmos.PartitionKey partitionKey, dynamic parameters, Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ExecuteStoredProcedureStreamAsync(string storedProcedureId, Microsoft.Azure.Cosmos.PartitionKey partitionKey, dynamic parameters, Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.ResponseMessage> ExecuteStoredProcedureStreamAsync(string storedProcedureId, System.IO.Stream streamPayload, Microsoft.Azure.Cosmos.PartitionKey partitionKey, Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetStoredProcedureQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetStoredProcedureQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetStoredProcedureQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetStoredProcedureQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetTriggerQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetTriggerQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetTriggerQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetTriggerQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator<T> GetUserDefinedFunctionQueryIterator<T>(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetUserDefinedFunctionQueryStreamIterator(Microsoft.Azure.Cosmos.QueryDefinition queryDefinition, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract Microsoft.Azure.Cosmos.FeedIterator GetUserDefinedFunctionQueryStreamIterator(string queryText=null, string continuationToken=null, Microsoft.Azure.Cosmos.QueryRequestOptions requestOptions=null);
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse> ReadStoredProcedureAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.TriggerResponse> ReadTriggerAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(string id, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse> ReplaceStoredProcedureAsync(Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties storedProcedureProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.TriggerResponse> ReplaceTriggerAsync(Microsoft.Azure.Cosmos.Scripts.TriggerProperties triggerProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+        public abstract System.Threading.Tasks.Task<Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties userDefinedFunctionProperties, Microsoft.Azure.Cosmos.RequestOptions requestOptions=null, System.Threading.CancellationToken cancellationToken=default(System.Threading.CancellationToken));
+    }
+    public partial class StoredProcedureExecuteResponse<T> : Microsoft.Azure.Cosmos.Response<T>
+    {
+        protected StoredProcedureExecuteResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override T Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual string ScriptLog { get { throw null; } }
+        public virtual string SessionToken { get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class StoredProcedureProperties
+    {
+        public StoredProcedureProperties() { }
+        public StoredProcedureProperties(string id, string body) { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="body")]
+        public string Body { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { get { throw null; } set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Microsoft.Azure.Documents.UnixDateTimeConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_ts", NullValueHandling=1)]
+        public System.Nullable<System.DateTime> LastModified { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class StoredProcedureRequestOptions : Microsoft.Azure.Cosmos.RequestOptions
+    {
+        public StoredProcedureRequestOptions() { }
+        public System.Nullable<Microsoft.Azure.Cosmos.ConsistencyLevel> ConsistencyLevel { get { throw null; } set { } }
+        public bool EnableScriptLogging { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string SessionToken { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class StoredProcedureResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties>
+    {
+        protected StoredProcedureResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public virtual string SessionToken { get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties (Microsoft.Azure.Cosmos.Scripts.StoredProcedureResponse response) { throw null; }
+    }
+    public enum TriggerOperation : short
+    {
+        All = (short)0,
+        Create = (short)1,
+        Delete = (short)3,
+        Replace = (short)4,
+        Update = (short)2,
+        Upsert = (short)5,
+    }
+    public partial class TriggerProperties
+    {
+        public TriggerProperties() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="body")]
+        public string Body { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="triggerOperation")]
+        public Microsoft.Azure.Cosmos.Scripts.TriggerOperation TriggerOperation { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="triggerType")]
+        public Microsoft.Azure.Cosmos.Scripts.TriggerType TriggerType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public partial class TriggerResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.Scripts.TriggerProperties>
+    {
+        protected TriggerResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Scripts.TriggerProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.Scripts.TriggerProperties (Microsoft.Azure.Cosmos.Scripts.TriggerResponse response) { throw null; }
+    }
+    public enum TriggerType : byte
+    {
+        Post = (byte)1,
+        Pre = (byte)0,
+    }
+    public partial class UserDefinedFunctionProperties
+    {
+        public UserDefinedFunctionProperties() { }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="body")]
+        public string Body { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_etag", NullValueHandling=1)]
+        public string ETag { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="id")]
+        public string Id { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [Newtonsoft.Json.JsonPropertyAttribute(PropertyName="_self", NullValueHandling=1)]
+        public string SelfLink { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    public partial class UserDefinedFunctionResponse : Microsoft.Azure.Cosmos.Response<Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties>
+    {
+        protected UserDefinedFunctionResponse() { }
+        public override string ActivityId { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.CosmosDiagnostics Diagnostics { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override string ETag { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Headers Headers { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override double RequestCharge { get { throw null; } }
+        public override Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties Resource { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public override System.Net.HttpStatusCode StatusCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static implicit operator Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties (Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionResponse response) { throw null; }
+    }
+}
+namespace Microsoft.Azure.Cosmos.Spatial
+{
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class BoundingBox : System.IEquatable<Microsoft.Azure.Cosmos.Spatial.BoundingBox>
+    {
+        public BoundingBox(Microsoft.Azure.Cosmos.Spatial.Position min, Microsoft.Azure.Cosmos.Spatial.Position max) { }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="max")]
+        public Microsoft.Azure.Cosmos.Spatial.Position Max { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="min")]
+        public Microsoft.Azure.Cosmos.Spatial.Position Min { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.BoundingBox other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public abstract partial class Crs
+    {
+        protected Crs(Microsoft.Azure.Cosmos.Spatial.CrsType type) { }
+        public static Microsoft.Azure.Cosmos.Spatial.Crs Default { get { throw null; } }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="type")]
+        public Microsoft.Azure.Cosmos.Spatial.CrsType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static Microsoft.Azure.Cosmos.Spatial.Crs Unspecified { get { throw null; } }
+        public static Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(string href) { throw null; }
+        public static Microsoft.Azure.Cosmos.Spatial.LinkedCrs Linked(string href, string type) { throw null; }
+        public static Microsoft.Azure.Cosmos.Spatial.NamedCrs Named(string name) { throw null; }
+    }
+    public enum CrsType
+    {
+        Linked = 1,
+        Named = 0,
+        Unspecified = 2,
+    }
+    [Newtonsoft.Json.JsonObjectAttribute(1)]
+    [System.Runtime.Serialization.DataContractAttribute]
+    public abstract partial class Geometry
+    {
+        protected Geometry(Microsoft.Azure.Cosmos.Spatial.GeometryType type, Microsoft.Azure.Cosmos.Spatial.GeometryParams geometryParams) { }
+        [Newtonsoft.Json.JsonExtensionDataAttribute]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="properties")]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute("bbox", DefaultValueHandling=1, Order=3)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="bbox")]
+        public Microsoft.Azure.Cosmos.Spatial.BoundingBox BoundingBox { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public Microsoft.Azure.Cosmos.Spatial.Crs Crs { get { throw null; } }
+        [Newtonsoft.Json.JsonConverterAttribute(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
+        [Newtonsoft.Json.JsonPropertyAttribute("type", Required=2, Order=0)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="type")]
+        public Microsoft.Azure.Cosmos.Spatial.GeometryType Type { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public double Distance(Microsoft.Azure.Cosmos.Spatial.Geometry to) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+        public bool Intersects(Microsoft.Azure.Cosmos.Spatial.Geometry geometry2) { throw null; }
+        public bool IsValid() { throw null; }
+        public Microsoft.Azure.Cosmos.Spatial.GeometryValidationResult IsValidDetailed() { throw null; }
+        public bool Within(Microsoft.Azure.Cosmos.Spatial.Geometry outer) { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public partial class GeometryParams
+    {
+        public GeometryParams() { }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="properties")]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="bbox")]
+        public Microsoft.Azure.Cosmos.Spatial.BoundingBox BoundingBox { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="crs")]
+        public Microsoft.Azure.Cosmos.Spatial.Crs Crs { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+    }
+    public enum GeometryShape
+    {
+        GeometryCollection = 6,
+        LineString = 2,
+        MultiLineString = 3,
+        MultiPoint = 1,
+        MultiPolygon = 5,
+        Point = 0,
+        Polygon = 4,
+    }
+    public enum GeometryType
+    {
+        GeometryCollection = 6,
+        LineString = 2,
+        MultiLineString = 3,
+        MultiPoint = 1,
+        MultiPolygon = 5,
+        Point = 0,
+        Polygon = 4,
+    }
+    [Newtonsoft.Json.JsonObjectAttribute(1)]
+    [System.Runtime.Serialization.DataContractAttribute]
+    public partial class GeometryValidationResult
+    {
+        public GeometryValidationResult() { }
+        [Newtonsoft.Json.JsonPropertyAttribute("valid", Required=2, Order=0)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="valid")]
+        public bool IsValid { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [Newtonsoft.Json.JsonPropertyAttribute("reason", Order=1)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="reason")]
+        public string Reason { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class LinearRing : System.IEquatable<Microsoft.Azure.Cosmos.Spatial.LinearRing>
+    {
+        public LinearRing(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.Position> coordinates) { }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="coordinates")]
+        public System.Collections.ObjectModel.ReadOnlyCollection<Microsoft.Azure.Cosmos.Spatial.Position> Positions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.LinearRing other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class LineString : Microsoft.Azure.Cosmos.Spatial.Geometry, System.IEquatable<Microsoft.Azure.Cosmos.Spatial.LineString>
+    {
+        public LineString(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.Position> coordinates) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        public LineString(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.Position> coordinates, Microsoft.Azure.Cosmos.Spatial.GeometryParams geometryParams) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        [Newtonsoft.Json.JsonPropertyAttribute("coordinates", Required=2, Order=1)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="coordinates")]
+        public System.Collections.ObjectModel.ReadOnlyCollection<Microsoft.Azure.Cosmos.Spatial.Position> Positions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.LineString other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class LinkedCrs : Microsoft.Azure.Cosmos.Spatial.Crs, System.IEquatable<Microsoft.Azure.Cosmos.Spatial.LinkedCrs>
+    {
+        internal LinkedCrs() : base (default(Microsoft.Azure.Cosmos.Spatial.CrsType)) { }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="href")]
+        public string Href { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="hrefType")]
+        public string HrefType { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.LinkedCrs other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class MultiPolygon : Microsoft.Azure.Cosmos.Spatial.Geometry, System.IEquatable<Microsoft.Azure.Cosmos.Spatial.MultiPolygon>
+    {
+        public MultiPolygon(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates> polygons) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        public MultiPolygon(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates> polygons, Microsoft.Azure.Cosmos.Spatial.GeometryParams geometryParams) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        [Newtonsoft.Json.JsonPropertyAttribute("coordinates", Required=2, Order=1)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="coordinates")]
+        public System.Collections.ObjectModel.ReadOnlyCollection<Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates> Polygons { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.MultiPolygon other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class NamedCrs : Microsoft.Azure.Cosmos.Spatial.Crs, System.IEquatable<Microsoft.Azure.Cosmos.Spatial.NamedCrs>
+    {
+        internal NamedCrs() : base (default(Microsoft.Azure.Cosmos.Spatial.CrsType)) { }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="name")]
+        public string Name { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.NamedCrs other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class Point : Microsoft.Azure.Cosmos.Spatial.Geometry, System.IEquatable<Microsoft.Azure.Cosmos.Spatial.Point>
+    {
+        public Point(Microsoft.Azure.Cosmos.Spatial.Position position) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        public Point(Microsoft.Azure.Cosmos.Spatial.Position position, Microsoft.Azure.Cosmos.Spatial.GeometryParams geometryParams) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        public Point(double longitude, double latitude) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        [Newtonsoft.Json.JsonPropertyAttribute("coordinates", Required=2, Order=1)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="coordinates")]
+        public Microsoft.Azure.Cosmos.Spatial.Position Position { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.Point other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class Polygon : Microsoft.Azure.Cosmos.Spatial.Geometry, System.IEquatable<Microsoft.Azure.Cosmos.Spatial.Polygon>
+    {
+        public Polygon(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.LinearRing> rings) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        public Polygon(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.LinearRing> rings, Microsoft.Azure.Cosmos.Spatial.GeometryParams geometryParams) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        public Polygon(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.Position> externalRingPositions) : base (default(Microsoft.Azure.Cosmos.Spatial.GeometryType), default(Microsoft.Azure.Cosmos.Spatial.GeometryParams)) { }
+        [Newtonsoft.Json.JsonPropertyAttribute("coordinates", Required=2, Order=1)]
+        [System.Runtime.Serialization.DataMemberAttribute(Name="coordinates")]
+        public System.Collections.ObjectModel.ReadOnlyCollection<Microsoft.Azure.Cosmos.Spatial.LinearRing> Rings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.Polygon other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class PolygonCoordinates : System.IEquatable<Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates>
+    {
+        public PolygonCoordinates(System.Collections.Generic.IList<Microsoft.Azure.Cosmos.Spatial.LinearRing> rings) { }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="rings")]
+        public System.Collections.ObjectModel.ReadOnlyCollection<Microsoft.Azure.Cosmos.Spatial.LinearRing> Rings { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.PolygonCoordinates other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+    [System.Runtime.Serialization.DataContractAttribute]
+    public sealed partial class Position : System.IEquatable<Microsoft.Azure.Cosmos.Spatial.Position>
+    {
+        public Position(System.Collections.Generic.IList<double> coordinates) { }
+        public Position(double longitude, double latitude) { }
+        public Position(double longitude, double latitude, System.Nullable<double> altitude) { }
+        public System.Nullable<double> Altitude { get { throw null; } }
+        [System.Runtime.Serialization.DataMemberAttribute(Name="Coordinates")]
+        public System.Collections.ObjectModel.ReadOnlyCollection<double> Coordinates { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public double Latitude { get { throw null; } }
+        public double Longitude { get { throw null; } }
+        public bool Equals(Microsoft.Azure.Cosmos.Spatial.Position other) { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override int GetHashCode() { throw null; }
+    }
+}
