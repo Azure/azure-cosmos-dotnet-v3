@@ -221,7 +221,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request.RequestContext.ResolvedCollectionRid,
                     failedLocation));
 
-            partionFailover.IncrementRequestFailureCounts(DateTime.UtcNow);
+            partionFailover.IncrementRequestFailureCounts(
+                currentTime: DateTime.UtcNow);
 
             return partionFailover.CanCircuitBreakerTriggerPartitionFailOver();
         }
@@ -420,7 +421,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                     if (DateTime.UtcNow - firstRequestFailureTime > TimeSpan.FromSeconds(this.partitionUnavailabilityDurationInSeconds))
                     {
-                        // TODO: Change this to use the first preferred location.
+                        // The first failed location would always be the first preferred location.
                         Uri originalFailedLocation = partionFailover.FirstFailedLocation;
 
                         pkRangeToEndpointMappings.Add(
@@ -444,8 +445,8 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                         if (currentHealthState == TransportAddressHealthState.HealthStatus.Connected)
                         {
-                            // Initiate Failback.
-                            DefaultTrace.TraceVerbose($"Initiating Failback to endpoint: {originalFailedLocation}, for partition key range: {pkRange}");
+                            // Initiate Failback to the original failed location.
+                            DefaultTrace.TraceInformation($"Initiating Failback to endpoint: {originalFailedLocation}, for partition key range: {pkRange}");
                             this.PartitionKeyRangeToLocationForReadAndWrite.Value.TryRemove(pkRange, out PartitionKeyRangeFailoverInfo _);
                         }
                     }
@@ -591,6 +592,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(10);
                 this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
                 this.FirstRequestFailureTime = DateTime.UtcNow;
+                this.LastRequestFailureTime = DateTime.UtcNow;
             }
 
             public Uri Current { get; private set; }

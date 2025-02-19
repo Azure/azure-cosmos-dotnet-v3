@@ -458,8 +458,7 @@ namespace Microsoft.Azure.Cosmos
             if (shouldMarkEndpointUnavailableForPkRange)
             {
                 if (this.documentServiceRequest != null
-                    && (!this.documentServiceRequest.IsReadOnlyRequest
-                    || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
+                    && (this.IsWriteRequest() || this.IsReadRequestEligibleForPartitionLevelCircuitBreaker()))
                 {
                     // Mark the partition as unavailable.
                     // Let the ClientRetry logic decide if the request should be retried
@@ -532,7 +531,26 @@ namespace Microsoft.Azure.Cosmos
                 && subStatusCode == SubStatusCodes.SystemResourceUnavailable;
         }
 
-        private bool IsRequestEligibleForPartitionLevelCircuitBreaker()
+        /// <summary>
+        /// Determines if the current request is a write request.
+        /// </summary>
+        /// <returns>
+        /// True if the request is a write request; otherwise, false.
+        /// </returns>
+        private bool IsWriteRequest()
+        {
+            return !this.documentServiceRequest.IsReadOnlyRequest;
+        }
+
+        /// <summary>
+        /// Determines if a read request is eligible for partition-level circuit breaker.
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
+        /// </summary>
+        /// <returns>
+        /// True if the read request is eligible for partition-level circuit breaker, otherwise false.
+        /// </returns>
+        private bool IsReadRequestEligibleForPartitionLevelCircuitBreaker()
         {
             return this.documentServiceRequest.IsReadOnlyRequest
                         && this.isPertitionLevelCircuitBreakerEnabled
