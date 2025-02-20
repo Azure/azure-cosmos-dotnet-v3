@@ -1202,14 +1202,15 @@ namespace Microsoft.Azure.Cosmos
             string suffix = string.Empty;
             if (this.EnablePartitionLevelFailover)
             {
-                suffix = this.ApplicationName + "|true";
+                suffix += string.IsNullOrEmpty(this.ApplicationName) ? "ppaf" : "ppaf|";
             }
 
+            suffix += this.ApplicationName;
             return new UserAgentContainer(
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: suffix ?? this.ApplicationName);
+                        suffix: suffix);
         }
 
         /// <summary>

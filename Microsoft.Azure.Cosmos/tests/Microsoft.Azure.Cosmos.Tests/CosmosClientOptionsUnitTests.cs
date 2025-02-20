@@ -512,6 +512,59 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [DataRow(true, DisplayName = "With ApplicationName")]
+        [DataRow(false, DisplayName = "Without ApplicationName")]
+        public void UserAgentContainsPPAFInformation(bool appName)
+        {
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            string userAgentSuffix = "testSuffix";
+            if (appName)
+            {
+                cosmosClientOptions.ApplicationName = userAgentSuffix;
+            }
+
+            cosmosClientOptions.EnablePartitionLevelFailover = true;
+            cosmosClientOptions.ApplicationRegion = Regions.WestUS;
+            if (appName)
+            {
+                Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+            }
+            else
+            {
+                Assert.IsNull(cosmosClientOptions.ApplicationName);
+            }
+
+            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
+            Console.WriteLine(userAgentContainer.UserAgent);
+            
+            if (appName)
+            {
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith("ppaf"));
+            }
+            
+            Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.Contains("ppaf"));
+            if (appName)
+            {
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith("ppaf"));
+            }
+            Console.WriteLine(connectionPolicy.UserAgentContainer.UserAgent);
+        }
+
+        [TestMethod]
         public void ValidateThatCustomSerializerGetsOverriddenWhenSTJSerializerEnabled()
         {
             CosmosClientOptions options = new CosmosClientOptions()
