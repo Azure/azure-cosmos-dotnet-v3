@@ -119,6 +119,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
 
+        // Thin Client
+        private readonly bool isThinClientEnabled;
+        private readonly string thinClientEndpoint;
+
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private readonly IChaosInterceptor chaosInterceptor;
@@ -166,6 +170,8 @@ namespace Microsoft.Azure.Cosmos
         // creator of TransportClient is responsible for disposing it.
         private IStoreClientFactory storeClientFactory;
         internal CosmosHttpClient httpClient { get; private set; }
+
+        internal CosmosHttpClient thinClientModeHttpClient { get; private set; }
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
@@ -245,6 +251,12 @@ namespace Microsoft.Azure.Cosmos
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
+            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: true);
+
+            if (this.isThinClientEnabled)
+            {
+                this.thinClientEndpoint = ConfigurationManager.GetThinClientEndpoint("defaultendpoint");
+            }
         }
 
         /// <summary>
@@ -497,6 +509,12 @@ namespace Microsoft.Azure.Cosmos
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(cancellationToken: this.cancellationTokenSource.Token);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
+            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: true);
+
+            if (this.isThinClientEnabled)
+            {
+                this.thinClientEndpoint = ConfigurationManager.GetThinClientEndpoint("defaultendpoint");
+            }
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -508,7 +526,8 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions,
+                enableThinClientMode: this.isThinClientEnabled);
         }
 
         /// <summary>
@@ -692,7 +711,8 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
+            bool enableThinClientMode = false)
         {
             if (serviceEndpoint == null)
             {
@@ -952,6 +972,17 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse,
                 this.chaosInterceptor);
 
+            if (enableThinClientMode)
+            {
+                this.thinClientModeHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
+                    this.ApiType,
+                    DocumentClientEventSource.Instance,
+                    this.ConnectionPolicy,
+                    null,
+                    this.sendingRequest,
+                    this.receivedResponse);
+            }
+
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
@@ -1065,6 +1096,22 @@ namespace Microsoft.Azure.Cosmos
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
                 this.StoreModel = this.GatewayStoreModel;
+            }
+            else if (this.isThinClientEnabled)
+            {
+                ThinClientStoreModel thinClientStoreModel = new(
+                    endpointManager: this.GlobalEndpointManager,
+                    this.sessionContainer,
+                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                    this.eventSource,
+                    this.serializerSettings,
+                    this.thinClientModeHttpClient,
+                    new Uri(this.thinClientEndpoint),
+                    this.accountServiceConfiguration.AccountProperties.Id);
+
+                thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+
+                this.StoreModel = thinClientStoreModel;
             }
             else
             {
@@ -6543,6 +6590,13 @@ namespace Microsoft.Azure.Cosmos
                 resourceType == ResourceType.Snapshot ||
                 resourceType == ResourceType.ClientEncryptionKey ||
                 (resourceType == ResourceType.PartitionKey && operationType == OperationType.Delete))
+            {
+                return this.GatewayStoreModel;
+            }
+
+            if (this.isThinClientEnabled
+               && operationType == OperationType.Read
+               && resourceType == ResourceType.Database)
             {
                 return this.GatewayStoreModel;
             }
