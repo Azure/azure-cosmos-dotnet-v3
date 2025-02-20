@@ -537,7 +537,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
-            Console.WriteLine(userAgentContainer.UserAgent);
             
             if (appName)
             {
@@ -561,7 +560,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith("ppaf"));
             }
-            Console.WriteLine(connectionPolicy.UserAgentContainer.UserAgent);
         }
 
         [TestMethod]
