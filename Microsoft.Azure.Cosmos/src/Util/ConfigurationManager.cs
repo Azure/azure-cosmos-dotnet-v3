@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
-        internal static readonly string CircuitBreakerConsecutiveFailureCount = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_BASED";
+        internal static readonly string CircuitBreakerConsecutiveFailureCount = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT";
 
         /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.

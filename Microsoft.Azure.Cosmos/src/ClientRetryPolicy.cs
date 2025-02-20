@@ -458,7 +458,7 @@ namespace Microsoft.Azure.Cosmos
             if (shouldMarkEndpointUnavailableForPkRange)
             {
                 if (this.documentServiceRequest != null
-                    && (this.IsWriteRequest() || this.IsReadRequestEligibleForPartitionLevelCircuitBreaker()))
+                    && (this.IsRequestEligibleForPerPartitionAutomaticFailover() || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
                 {
                     // Mark the partition as unavailable.
                     // Let the ClientRetry logic decide if the request should be retried
@@ -537,9 +537,11 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// True if the request is a write request; otherwise, false.
         /// </returns>
-        private bool IsWriteRequest()
+        private bool IsRequestEligibleForPerPartitionAutomaticFailover()
         {
-            return !this.documentServiceRequest.IsReadOnlyRequest;
+            return !this.documentServiceRequest.IsReadOnlyRequest
+                && !this.isMultiMasterWriteRequest
+                && this.isPertitionLevelFailoverEnabled;
         }
 
         /// <summary>
@@ -550,9 +552,9 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>
         /// True if the read request is eligible for partition-level circuit breaker, otherwise false.
         /// </returns>
-        private bool IsReadRequestEligibleForPartitionLevelCircuitBreaker()
+        private bool IsRequestEligibleForPartitionLevelCircuitBreaker()
         {
-            return this.documentServiceRequest.IsReadOnlyRequest
+            return (this.documentServiceRequest.IsReadOnlyRequest || this.isMultiMasterWriteRequest)
                         && this.isPertitionLevelCircuitBreakerEnabled
                         && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                             this.documentServiceRequest);
