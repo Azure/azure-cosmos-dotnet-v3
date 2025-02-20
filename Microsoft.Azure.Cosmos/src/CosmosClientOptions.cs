@@ -1198,12 +1198,18 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string regionConfiguration = this.GetRegionConfiguration();
+            
+            string suffix = string.Empty;
+            if (this.EnablePartitionLevelFailover)
+            {
+                suffix = this.ApplicationName + "|true";
+            }
 
             return new UserAgentContainer(
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: this.ApplicationName);
+                        suffix: suffix ?? this.ApplicationName);
         }
 
         /// <summary>
