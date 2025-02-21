@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
-        private readonly bool isPertitionLevelFailoverEnabled;
+        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly bool isPartitionLevelCircuitBreakerEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -45,7 +46,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPertitionLevelFailoverEnabled)
+            bool isPartitionLevelFailoverEnabled,
+            bool isPartitionLevelCircuitBreakerEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -59,7 +61,8 @@ namespace Microsoft.Azure.Cosmos
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
-            this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled;
         }
 
         /// <summary> 
@@ -80,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                if (this.isPertitionLevelFailoverEnabled)
+                if (this.isPartitionLevelFailoverEnabled)
                 {
                     // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
                     // partition has been failed over to region B, when per partition automatic failover is enabled.
@@ -454,10 +457,14 @@ namespace Microsoft.Azure.Cosmos
 
             if (shouldMarkEndpointUnavailableForPkRange)
             {
-                // Mark the partition as unavailable.
-                // Let the ClientRetry logic decide if the request should be retried
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
+                if (this.documentServiceRequest != null
+                    && (this.IsRequestEligibleForPerPartitionAutomaticFailover() || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
+                {
+                    // Mark the partition as unavailable.
+                    // Let the ClientRetry logic decide if the request should be retried
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest);
+                }
             }
 
             return this.ShouldRetryOnServiceUnavailable();
@@ -477,7 +484,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest
-                    && !this.isPertitionLevelFailoverEnabled)
+                    && !this.isPartitionLevelFailoverEnabled)
             {
                 // Write requests on single master cannot be retried if partition level failover is disabled.
                 // This means there are no other regions available to serve the writes.
@@ -522,6 +529,35 @@ namespace Microsoft.Azure.Cosmos
                 && statusCode.HasValue
                 && (int)statusCode.Value == (int)StatusCodes.TooManyRequests
                 && subStatusCode == SubStatusCodes.SystemResourceUnavailable;
+        }
+
+        /// <summary>
+        /// Determines if the current request is a write request.
+        /// </summary>
+        /// <returns>
+        /// True if the request is a write request; otherwise, false.
+        /// </returns>
+        private bool IsRequestEligibleForPerPartitionAutomaticFailover()
+        {
+            return !this.documentServiceRequest.IsReadOnlyRequest
+                && !this.isMultiMasterWriteRequest
+                && this.isPartitionLevelFailoverEnabled;
+        }
+
+        /// <summary>
+        /// Determines if a read request is eligible for partition-level circuit breaker.
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
+        /// </summary>
+        /// <returns>
+        /// True if the read request is eligible for partition-level circuit breaker, otherwise false.
+        /// </returns>
+        private bool IsRequestEligibleForPartitionLevelCircuitBreaker()
+        {
+            return (this.documentServiceRequest.IsReadOnlyRequest || this.isMultiMasterWriteRequest)
+                        && this.isPartitionLevelCircuitBreakerEnabled
+                        && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                            this.documentServiceRequest);
         }
 
         private sealed class RetryContext

@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos.Routing
 {
     using System;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
 
     internal abstract class GlobalPartitionEndpointManager
@@ -22,5 +24,18 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public abstract bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request);
+
+        /// <summary>
+        /// Increments the failure counter for the specified partition and checks if the partition can fail over.
+        /// This method is used to determine if a partition should be failed over based on the number of request failures.
+        /// </summary>
+        public abstract bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+            DocumentServiceRequest request);
+
+        /// <summary>
+        /// Sets the background connection periodic refresh task.
+        /// </summary>
+        public abstract void SetBackgroundConnectionPeriodicRefreshTask(
+            Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task> backgroundConnectionInitTask);
     }
 }
