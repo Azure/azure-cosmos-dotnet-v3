@@ -512,6 +512,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("ntripician")]
         [DataRow(true, DisplayName = "With ApplicationName")]
         [DataRow(false, DisplayName = "Without ApplicationName")]
         public void UserAgentContainsPPAFInformation(bool appName)
