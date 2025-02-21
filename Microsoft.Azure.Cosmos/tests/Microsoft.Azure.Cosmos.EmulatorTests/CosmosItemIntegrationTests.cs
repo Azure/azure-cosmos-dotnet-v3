@@ -194,7 +194,7 @@
 
             try
             {
-                CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
                 Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
@@ -306,7 +306,7 @@
 
             try
             {
-                CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
                 Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
@@ -393,7 +393,7 @@
                 ApplicationPreferredRegions = preferredRegions,
             };
 
-            CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+            using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
 
             Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
             Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
@@ -481,7 +481,7 @@
             {
                 // Act and Assert.
                 int consecutiveFailureCount = int.Parse(circuitBreakerConsecutiveFailureCount);
-                CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
                 Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 

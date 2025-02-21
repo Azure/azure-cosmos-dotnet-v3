@@ -28,8 +28,8 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
-        private readonly bool isPertitionLevelFailoverEnabled;
-        private readonly bool isPertitionLevelCircuitBreakerEnabled;
+        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly bool isPartitionLevelCircuitBreakerEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -46,8 +46,8 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPertitionLevelFailoverEnabled,
-            bool isPertitionLevelCircuitBreakerEnabled)
+            bool isPartitionLevelFailoverEnabled,
+            bool isPartitionLevelCircuitBreakerEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -61,8 +61,8 @@ namespace Microsoft.Azure.Cosmos
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
-            this.isPertitionLevelFailoverEnabled = isPertitionLevelFailoverEnabled;
-            this.isPertitionLevelCircuitBreakerEnabled = isPertitionLevelCircuitBreakerEnabled;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled;
         }
 
         /// <summary> 
@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                if (this.isPertitionLevelFailoverEnabled)
+                if (this.isPartitionLevelFailoverEnabled)
                 {
                     // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
                     // partition has been failed over to region B, when per partition automatic failover is enabled.
@@ -484,7 +484,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest
-                    && !this.isPertitionLevelFailoverEnabled)
+                    && !this.isPartitionLevelFailoverEnabled)
             {
                 // Write requests on single master cannot be retried if partition level failover is disabled.
                 // This means there are no other regions available to serve the writes.
@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return !this.documentServiceRequest.IsReadOnlyRequest
                 && !this.isMultiMasterWriteRequest
-                && this.isPertitionLevelFailoverEnabled;
+                && this.isPartitionLevelFailoverEnabled;
         }
 
         /// <summary>
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos
         private bool IsRequestEligibleForPartitionLevelCircuitBreaker()
         {
             return (this.documentServiceRequest.IsReadOnlyRequest || this.isMultiMasterWriteRequest)
-                        && this.isPertitionLevelCircuitBreakerEnabled
+                        && this.isPartitionLevelCircuitBreakerEnabled
                         && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                             this.documentServiceRequest);
         }
