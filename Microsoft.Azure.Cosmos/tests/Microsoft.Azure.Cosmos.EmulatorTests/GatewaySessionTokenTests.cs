@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string globalSessionToken = sessionContainer.ResolveGlobalSessionToken(request);
             Assert.IsTrue(globalSessionToken.Split(',').Length > 1);
 
-            await GatewayStoreModel.ApplySessionTokenAsync(request,
+            await StoreModelHelper.ApplySessionTokenAsync(request,
                                                            Cosmos.ConsistencyLevel.Session,
                                                            sessionContainer,
                                                            await this.cosmosClient.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton),
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 headers.Set(HttpConstants.HttpHeaders.PartitionKey, "[\"Status1001\"]");
 
                 DocumentServiceRequest request = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, docLink, AuthorizationTokenType.PrimaryMasterKey, headers);
-                await GatewayStoreModel.ApplySessionTokenAsync(request,
+                await StoreModelHelper.ApplySessionTokenAsync(request,
                                                                Cosmos.ConsistencyLevel.Session,
                                                                client.DocumentClient.sessionContainer,
                                                                await client.DocumentClient.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton),

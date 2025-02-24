@@ -261,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (OperationType operationType in operationTypes)
                 {
-                    Assert.IsTrue(GatewayStoreModel.IsMasterOperation(
+                    Assert.IsTrue(StoreModelHelper.IsMasterOperation(
                         resourceType,
                         operationType),
                         $"{resourceType}, {operationType}");
@@ -276,7 +276,7 @@ namespace Microsoft.Azure.Cosmos
 
                     await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
                     {
-                        await GatewayStoreModel.ApplySessionTokenAsync(
+                        await StoreModelHelper.ApplySessionTokenAsync(
                            dsr,
                            ConsistencyLevel.Session,
                            new Mock<ISessionContainer>().Object,
@@ -289,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            Assert.IsTrue(GatewayStoreModel.IsMasterOperation(
+            Assert.IsTrue(StoreModelHelper.IsMasterOperation(
                     ResourceType.Document,
                     OperationType.QueryPlan));
 
@@ -303,7 +303,7 @@ namespace Microsoft.Azure.Cosmos
 
             await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
             {
-                await GatewayStoreModel.ApplySessionTokenAsync(
+                await StoreModelHelper.ApplySessionTokenAsync(
                     dsrQueryPlan,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
@@ -340,7 +340,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (OperationType operationType in operationTypes)
                 {
-                    Assert.IsFalse(GatewayStoreModel.IsMasterOperation(
+                    Assert.IsFalse(StoreModelHelper.IsMasterOperation(
                         resourceType,
                         operationType),
                         $"{resourceType}, {operationType}");
@@ -357,7 +357,7 @@ namespace Microsoft.Azure.Cosmos
 
                         await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
                         {
-                            await GatewayStoreModel.ApplySessionTokenAsync(
+                            await StoreModelHelper.ApplySessionTokenAsync(
                                 dsr,
                                 ConsistencyLevel.Session,
                                 new Mock<ISessionContainer>().Object,
@@ -387,7 +387,7 @@ namespace Microsoft.Azure.Cosmos
                         await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
                         {
                             dsrNoSessionToken.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_1" };
-                            await GatewayStoreModel.ApplySessionTokenAsync(
+                            await StoreModelHelper.ApplySessionTokenAsync(
                                 dsrNoSessionToken,
                                 ConsistencyLevel.Session,
                                 sessionContainer,
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
                             It.IsAny<ITrace>(),
                             false)).Returns(Task.FromResult(new PartitionKeyRange { Id = "range_1" }));
 
-                        await GatewayStoreModel.ApplySessionTokenAsync(
+                        await StoreModelHelper.ApplySessionTokenAsync(
                             dsr,
                             ConsistencyLevel.Session,
                             sessionContainer,
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Verify stored procedure execute
-            Assert.IsFalse(GatewayStoreModel.IsMasterOperation(
+            Assert.IsFalse(StoreModelHelper.IsMasterOperation(
                 ResourceType.StoredProcedure,
                 OperationType.ExecuteJavaScript));
 
@@ -475,7 +475,7 @@ namespace Microsoft.Azure.Cosmos
 
             await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
             {
-                await GatewayStoreModel.ApplySessionTokenAsync(
+                await StoreModelHelper.ApplySessionTokenAsync(
                     dsrSprocExecute,
                     ConsistencyLevel.Session,
                     new Mock<ISessionContainer>().Object,
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
             await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
             {
                 dsrNoSessionToken.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_1" };
-                await GatewayStoreModel.ApplySessionTokenAsync(
+                await StoreModelHelper.ApplySessionTokenAsync(
                     dsrNoSessionToken,
                     ConsistencyLevel.Session,
                     sessionContainer,
@@ -983,7 +983,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // pkrange 1 : which has session token
                 dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_1" };
-                await GatewayStoreModel.ApplySessionTokenAsync(dsr,
+                await StoreModelHelper.ApplySessionTokenAsync(dsr,
                                                 ConsistencyLevel.Session,
                                                 sessionContainer,
                                                 partitionKeyRangeCache.Object,
@@ -999,7 +999,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // pkrange 2 : which has no session token
                 dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_2" };
-                await GatewayStoreModel.ApplySessionTokenAsync(dsr,
+                await StoreModelHelper.ApplySessionTokenAsync(dsr,
                                                 ConsistencyLevel.Session,
                                                 sessionContainer,
                                                 partitionKeyRangeCache.Object,
@@ -1019,7 +1019,7 @@ namespace Microsoft.Azure.Cosmos
                 // pkrange 3 : Split scenario where session token exists for parent of pk range
                 Collection<string> parents = new Collection<string> { "range_1" };
                 dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_3", Parents = parents };
-                await GatewayStoreModel.ApplySessionTokenAsync(dsr,
+                await StoreModelHelper.ApplySessionTokenAsync(dsr,
                                                 ConsistencyLevel.Session,
                                                 sessionContainer,
                                                 partitionKeyRangeCache.Object,
@@ -1129,7 +1129,7 @@ namespace Microsoft.Azure.Cosmos
             Mock<IGlobalEndpointManager> globalEndpointManager = new Mock<IGlobalEndpointManager>();
             await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
             {
-                await GatewayStoreModel.ApplySessionTokenAsync(
+                await StoreModelHelper.ApplySessionTokenAsync(
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
@@ -1195,7 +1195,7 @@ namespace Microsoft.Azure.Cosmos
             Mock<IGlobalEndpointManager> globalEndpointManager = new Mock<IGlobalEndpointManager>();
             await this.GetGatewayStoreModelForConsistencyTest(async (gatewayStoreModel) =>
             {
-                await GatewayStoreModel.ApplySessionTokenAsync(
+                await StoreModelHelper.ApplySessionTokenAsync(
                     documentServiceRequestToChild,
                     ConsistencyLevel.Session,
                     sessionContainer,
