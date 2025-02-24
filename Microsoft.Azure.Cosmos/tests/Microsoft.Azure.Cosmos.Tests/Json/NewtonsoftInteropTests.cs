@@ -155,6 +155,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
+        [Owner("dkunda")]
+        public void ByteArrayTest()
+        {
+            byte[] byteArray = new byte[] { 1, 2, 3, 4, 5 };
+            NewtonsoftInteropTests.VerifyNewtonsoftInterop<byte[]>(byteArray);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void NestedArrayTest()
         {
