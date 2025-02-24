@@ -19,6 +19,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
+        /// <param name="streamPayload"></param>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created stored procedure</returns>
+        public abstract Task<ResponseMessage> CreateStoredProcedureStreamAsync(
+            Stream streamPayload,
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
         /// <param name="storedProcedureProperties">The Stored Procedure to create.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -217,6 +231,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.</returns>
+        public abstract Task<ResponseMessage> ReadStoredProcedureStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to read.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -234,6 +260,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces a <see cref="StoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="streamPayload"></param>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.</returns>
+        public abstract Task<ResponseMessage> ReplaceStoredProcedureStreamAsync(
+            Stream streamPayload,
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -274,12 +314,24 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Deletes a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
+        public abstract Task<ResponseMessage> DeleteStoredProcedureStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Delete a <see cref="StoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which will contain the response to the request issued.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This examples gets a reference to an existing stored procedure and deletes it.
@@ -485,6 +537,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
+        /// <param name="streamPayload"></param>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A task object representing the service response for the asynchronous operation.</returns>
+        public abstract Task<ResponseMessage> CreateTriggerStreamAsync(
+            Stream streamPayload,
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
         /// <param name="triggerProperties">The <see cref="TriggerProperties"/> object.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -663,6 +729,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.</returns>
+        public abstract Task<ResponseMessage> ReadTriggerStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The id of the trigger to read.</param>
         /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -681,6 +759,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<TriggerResponse> ReadTriggerAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces a <see cref="TriggerProperties"/> in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="streamPayload"></param>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>containing the updated resource record.</returns>
+        public abstract Task<ResponseMessage> ReplaceTriggerStreamAsync(
+            Stream streamPayload,
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -728,6 +820,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>  which will contain information about the request issued.</returns>
+        public abstract Task<ResponseMessage> DeleteTriggerStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The id of the trigger to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -743,6 +847,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<TriggerResponse> DeleteTriggerAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="streamPayload"></param>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A task object representing the service response for the asynchronous operation.</returns>
+        public abstract Task<ResponseMessage> CreateUserDefinedFunctionStreamAsync(
+            Stream streamPayload,
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -941,6 +1059,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.</returns>
+        public abstract Task<ResponseMessage> ReadUserDefinedFunctionStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The id of the user defined function to read</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -959,6 +1089,20 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </code>
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces a <see cref="UserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="streamPayload"></param>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns> A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the updated resource record. </returns>
+        public abstract Task<ResponseMessage> ReplaceUserDefinedFunctionStreamAsync(
+            Stream streamPayload,
             string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -990,6 +1134,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
+        public abstract Task<ResponseMessage> DeleteUserDefinedFunctionStreamAsync(
+            string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
