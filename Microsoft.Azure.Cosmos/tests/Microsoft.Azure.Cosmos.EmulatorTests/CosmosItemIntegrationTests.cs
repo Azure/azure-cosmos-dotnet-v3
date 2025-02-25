@@ -155,6 +155,14 @@
             bool isBinaryEncodingEnabled)
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, isBinaryEncodingEnabled.ToString());
+
+            Random random = new();
+            CosmosIntegrationTestObject testItem = new()
+            {
+                Id = $"smTestId{random.Next()}",
+                Pk = $"smpk{random.Next()}",
+            };
+
             try
             {
                 CosmosClientOptions cosmosClientOptions = new()
@@ -177,13 +185,6 @@
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 // Create a transactional batch
-                Random random = new();
-                CosmosIntegrationTestObject testItem = new()
-                {
-                    Id = $"smTestId{random.Next()}",
-                    Pk = $"smpk{random.Next()}",
-                };
-
                 TransactionalBatch transactionalBatch = container.CreateTransactionalBatch(new PartitionKey(testItem.Pk));
 
                 transactionalBatch.CreateItem(
@@ -226,6 +227,10 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+
+                await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                    testItem.Id,
+                    new PartitionKey(testItem.Pk));
             }
         }
     }

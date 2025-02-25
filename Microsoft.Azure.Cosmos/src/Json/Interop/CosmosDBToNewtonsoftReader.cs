@@ -183,15 +183,18 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         public override byte[] ReadAsBytes()
         {
             this.Read();
-            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null || this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.Null)
             {
                 return null;
             }
 
-            string stringValue = this.jsonReader.GetStringValue();
-            byte[] byteArray = Convert.FromBase64String(stringValue);
+            if (this.jsonReader.CurrentTokenType == JsonTokenType.EndArray)
+            {
+                return new byte[0];
+            }
 
-            return byteArray;
+            string stringValue = this.jsonReader.GetStringValue();
+            return Convert.FromBase64String(stringValue);
         }
 
         /// <summary>
