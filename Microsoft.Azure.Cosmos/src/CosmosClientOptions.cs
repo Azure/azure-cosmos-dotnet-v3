@@ -1199,17 +1199,29 @@ namespace Microsoft.Azure.Cosmos
 
             string regionConfiguration = this.GetRegionConfiguration();
 
-            string suffix = this.EnablePartitionLevelFailover
-                ? string.IsNullOrEmpty(this.ApplicationName) 
-                    ? "ppaf" 
-                    : $"ppaf|{this.ApplicationName}"
-                : this.ApplicationName;
-
             return new UserAgentContainer(
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: suffix);
+                        suffix: this.GetUserAgentSuffix());
+        }
+
+        internal string GetUserAgentSuffix()
+        {
+            int featureFlag = 0;
+            if (this.EnablePartitionLevelFailover)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (featureFlag == 0)
+            {
+                return this.ApplicationName;
+            }
+
+            return string.IsNullOrEmpty(this.ApplicationName) ?
+                $"F{featureFlag:X}" :
+                $"F{featureFlag:X}|{this.ApplicationName}";
         }
 
         /// <summary>

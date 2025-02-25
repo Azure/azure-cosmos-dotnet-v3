@@ -538,28 +538,28 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
-            
+            Console.WriteLine(userAgentContainer.UserAgent);
             if (appName)
             {
                 Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
             }
             else
             {
-                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith("ppaf"));
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith("F1"));
             }
             
             Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
 
             ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
             Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
-            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.Contains("ppaf"));
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.Contains("F1"));
             if (appName)
             {
                 Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
             }
             else
             {
-                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith("ppaf"));
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith("F1"));
             }
         }
 
