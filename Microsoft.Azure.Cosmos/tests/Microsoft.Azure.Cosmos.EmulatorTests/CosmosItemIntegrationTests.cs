@@ -145,5 +145,93 @@
                 fiClient.Dispose();
             }
         }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        [TestCategory("MultiRegion")]
+        [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
+        [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
+        public async Task ExecuteTransactionalBatch_WhenBinaryEncodingEnabled_ShouldCompleteSuccessfully(
+            bool isBinaryEncodingEnabled)
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, isBinaryEncodingEnabled.ToString());
+
+            Random random = new();
+            CosmosIntegrationTestObject testItem = new()
+            {
+                Id = $"smTestId{random.Next()}",
+                Pk = $"smpk{random.Next()}",
+            };
+
+            try
+            {
+                CosmosClientOptions cosmosClientOptions = new()
+                {
+                    ConsistencyLevel = ConsistencyLevel.Session,
+                    RequestTimeout = TimeSpan.FromSeconds(10),
+                    Serializer = new CosmosJsonDotNetSerializer(
+                        cosmosSerializerOptions: new CosmosSerializationOptions()
+                        {
+                            PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                        },
+                        binaryEncodingEnabled: isBinaryEncodingEnabled)
+                };
+
+                using CosmosClient cosmosClient = new(
+                    connectionString: this.connectionString,
+                    clientOptions: cosmosClientOptions);
+
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Create a transactional batch
+                TransactionalBatch transactionalBatch = container.CreateTransactionalBatch(new PartitionKey(testItem.Pk));
+
+                transactionalBatch.CreateItem(
+                    testItem,
+                    new TransactionalBatchItemRequestOptions
+                    {
+                        EnableContentResponseOnWrite = true,
+                    });
+
+                transactionalBatch.ReadItem(
+                    testItem.Id,
+                    new TransactionalBatchItemRequestOptions
+                    {
+                        EnableContentResponseOnWrite = true,
+                    });
+
+                // Execute the transactional batch
+                TransactionalBatchResponse transactionResponse = await transactionalBatch.ExecuteAsync(
+                    new TransactionalBatchRequestOptions
+                    {
+                    });
+
+                Assert.AreEqual(HttpStatusCode.OK, transactionResponse.StatusCode);
+                Assert.AreEqual(2, transactionResponse.Count);
+
+                TransactionalBatchOperationResult<CosmosIntegrationTestObject> createOperationResult = transactionResponse.GetOperationResultAtIndex<CosmosIntegrationTestObject>(0);
+                
+                Assert.IsNotNull(createOperationResult);
+                Assert.IsNotNull(createOperationResult.Resource);
+                Assert.AreEqual(testItem.Id, createOperationResult.Resource.Id);
+                Assert.AreEqual(testItem.Pk, createOperationResult.Resource.Pk);
+
+                TransactionalBatchOperationResult<CosmosIntegrationTestObject> readOperationResult = transactionResponse.GetOperationResultAtIndex<CosmosIntegrationTestObject>(1);
+                
+                Assert.IsNotNull(readOperationResult);
+                Assert.IsNotNull(readOperationResult.Resource);
+                Assert.AreEqual(testItem.Id, readOperationResult.Resource.Id);
+                Assert.AreEqual(testItem.Pk, readOperationResult.Resource.Pk);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+
+                await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                    testItem.Id,
+                    new PartitionKey(testItem.Pk));
+            }
+        }
     }
 }

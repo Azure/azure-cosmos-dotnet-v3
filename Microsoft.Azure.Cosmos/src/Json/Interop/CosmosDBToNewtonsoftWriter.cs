@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="byte"/>[] value to write.</param>
         public override void WriteValue(byte[] value)
         {
-            throw new NotSupportedException("Can not write byte arrays");
+            this.WriteValue(Convert.ToBase64String(value));
         }
 
         /// <summary>

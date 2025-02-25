@@ -183,8 +183,14 @@ namespace Microsoft.Azure.Cosmos
                             return r;
                         }
 
-                        batchOperationResult.ResourceStream = new MemoryStream(
-                            buffer: resourceBody, index: 0, count: resourceBody.Length, writable: false, publiclyVisible: true);
+                        batchOperationResult.ResourceStream = new CloneableStream(
+                            internalStream: new MemoryStream(
+                                buffer: resourceBody,
+                                index: 0,
+                                count: resourceBody.Length,
+                                writable: false,
+                                publiclyVisible: true),
+                            allowUnsafeDataAccess: true);
                         break;
 
                     case "requestCharge":
