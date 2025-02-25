@@ -55,11 +55,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
-        public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds)
+        public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds, FaultInjectionRule rule)
         {
             if (partitionKeyRangeIds != null && partitionKeyRangeIds.Any())
             {
-                this.validators.Add(new PartitionKeyRangeIdValidator(partitionKeyRangeIds));
+                this.validators.Add(new PartitionKeyRangeIdValidator(
+                    partitionKeyRangeIds,
+                    rule.GetCondition().GetEndpoint().IsIncludePrimary()));
             }
         }
 
@@ -302,10 +304,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private class PartitionKeyRangeIdValidator : IFaultInjectionConditionValidator
         {
             private readonly IEnumerable<string> pkRangeIds;
+            private readonly bool includePrimaryForMetaData;
 
-            public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds)
+            public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds, bool includePrimaryForMetaData)
             {
                 this.pkRangeIds = pkRangeIds ?? throw new ArgumentNullException(nameof(pkRangeIds));
+                this.includePrimaryForMetaData = includePrimaryForMetaData;
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
@@ -320,7 +324,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 PartitionKeyRange pkRange = request.RequestContext.ResolvedPartitionKeyRange;
 
-                return this.pkRangeIds.Contains(pkRange.Id);
+                if (pkRange is null && this.includePrimaryForMetaData)
+                {
+                    //For metadata operations, rule will apply to all partition key ranges
+                    return true;
+                }
+
+                return this.pkRangeIds.Contains(pkRange?.Id);
             }
         }
 
