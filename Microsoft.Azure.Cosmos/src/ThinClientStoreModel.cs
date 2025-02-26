@@ -5,16 +5,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
-    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
 
     /// <summary>

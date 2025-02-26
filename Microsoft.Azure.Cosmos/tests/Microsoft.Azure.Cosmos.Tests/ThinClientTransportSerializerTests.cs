@@ -116,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string bodyString = await converted.Content.ReadAsStringAsync();
             Assert.IsTrue(
-                converted.Headers.Any(h => h.Key == ThinClientTransportSerializer.RoutedViaProxy),
+                converted.Headers.Any(h => h.Key == ThinClientConstants.RoutedViaProxy),
                 "Expected 'x-ms-thinclient-route-via-proxy' header to be set in the converted response.");
         }
     }

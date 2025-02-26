@@ -21,13 +21,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class ThinClientTransportSerializer
     {
-        public const string RoutedViaProxy = "x-ms-thinclient-route-via-proxy";
-        public const string ProxyStartEpk = "x-ms-thinclient-range-min";
-        public const string ProxyEndEpk = "x-ms-thinclient-range-max";
-
-        public const string ProxyOperationType = "x-ms-thinclient-proxy-operation-type";
-        public const string ProxyResourceType = "x-ms-thinclient-proxy-resource-type";
-
         private static readonly PartitionKeyDefinition HashV2SinglePath;
 
         static ThinClientTransportSerializer()
@@ -62,8 +55,8 @@ namespace Microsoft.Azure.Cosmos
             HttpRequestMessage requestMessage)
         {
             // Skip this and use the original DSR.
-            OperationType operationType = (OperationType)Enum.Parse(typeof(OperationType), requestMessage.Headers.GetValues(ProxyOperationType).First());
-            ResourceType resourceType = (ResourceType)Enum.Parse(typeof(ResourceType), requestMessage.Headers.GetValues(ProxyResourceType).First());
+            OperationType operationType = (OperationType)Enum.Parse(typeof(OperationType), requestMessage.Headers.GetValues(ThinClientConstants.ProxyOperationType).First());
+            ResourceType resourceType = (ResourceType)Enum.Parse(typeof(ResourceType), requestMessage.Headers.GetValues(ThinClientConstants.ProxyResourceType).First());
 
             Guid activityId = Guid.Parse(requestMessage.Headers.GetValues(HttpConstants.HttpHeaders.ActivityId).First());
 
@@ -99,18 +92,18 @@ namespace Microsoft.Azure.Cosmos
                     { "x-ms-effective-partition-key", HexStringUtility.HexStringToBytes(epk) }
                 };
             }
-            else if (request.Headers[ProxyStartEpk] != null)
+            else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null)
             {
                 // Re-add EPK headers removed by RequestInvokerHandler through Properties
                 request.Properties = new Dictionary<string, object>
                 {
-                    { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ProxyStartEpk]) },
-                    { WFConstants.BackendHeaders.EndEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ProxyEndEpk]) }
+                    { WFConstants.BackendHeaders.StartEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ThinClientConstants.ProxyStartEpk]) },
+                    { WFConstants.BackendHeaders.EndEpkHash, HexStringUtility.HexStringToBytes(request.Headers[ThinClientConstants.ProxyEndEpk]) }
                 };
 
                 request.Headers.Add(HttpConstants.HttpHeaders.ReadFeedKeyType, RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString());
-                request.Headers.Add(HttpConstants.HttpHeaders.StartEpk, request.Headers[ProxyStartEpk]);
-                request.Headers.Add(HttpConstants.HttpHeaders.EndEpk, request.Headers[ProxyEndEpk]);
+                request.Headers.Add(HttpConstants.HttpHeaders.StartEpk, request.Headers[ThinClientConstants.ProxyStartEpk]);
+                request.Headers.Add(HttpConstants.HttpHeaders.EndEpk, request.Headers[ThinClientConstants.ProxyEndEpk]);
             }
 
             await request.EnsureBufferedBodyAsync();
@@ -198,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
-            response.Headers.TryAddWithoutValidation(RoutedViaProxy, "1");
+            response.Headers.TryAddWithoutValidation(ThinClientConstants.RoutedViaProxy, "1");
             return response;
         }
 
