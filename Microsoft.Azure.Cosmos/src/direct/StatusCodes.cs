@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Documents
     internal enum SubStatusCodes
     {
         Unknown = 0,
+        OperationInProgress = 100,
         TooManyRequests = 429,
 
         // 204 Head requests
@@ -72,7 +73,11 @@ namespace Microsoft.Azure.Documents
         ScriptCompileError = 0xFFFF,    // From ExecuteStoredProcedure.
         AnotherOfferReplaceOperationIsInProgress = 3205,
         HttpListenerException = 1101,
-        NotImplementedPartitonKeyKindOrVersion = 1038, // Used for ThinClient Proxy
+        NotImplementedPartitonKeyKindOrVersion = 1038, // Used for ThinProxy
+        MultipleAccountsNotAllowedInSameConnection = 1039, // Used for ThinProxy
+        ThinClientPublicEndpointDisabled = 1040, // Used for ThinProxy
+        MissingRequiredRntbdToken = 1041, // Used for ThinProxy
+        InvalidRntbdToken = 1042, // Used for ThinProxy
 
         // 410: StatusCodeType_Gone: substatus
         NameCacheIsStale = 1000,
@@ -157,10 +162,13 @@ namespace Microsoft.Azure.Documents
         CanNotAcquireInAccountRestoreInProgressLock = 2019,
         CollectionStateChanged = 2020,
         OfferScaledUpByUser = 2021,
+        CannotAcquireLock = 2022,
+        CannotOfflineWriteRegionWithNoReadRegions = 2024,
         TargetPkRangeExceededMaxAllowedSize = 2102,
         DocumentCountMismatchBetweenSourceAndTarget = 2103,
         AccountAlreadyinTargetGateway = 2100,
         CanNotAcquireLogStoreStorageAccountLoadBalanceLock = 2101,
+        CannotCompleteFalseProgressReconciliationMaxConflictSizeReached = 2104,
 
         //412: PreConditionFailed migration substatus codes
         PartitionMigrationCancelledForPendingUserOperation = 2006,
@@ -215,6 +223,11 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationSourceFedMaxOutgoingConcurrencyIsZero = 2067,
         PartitionMigrationTargetFedMaxIncomingConcurrencyIsZero = 2068,
         PartitionMigrationCanNotProceedDuringBlockedWindow = 2069,
+        RevokedPartitionMigrationCanNotProceedForMultimasterAccount = 2070,
+        RevokedPartitionMigrationCanNotProceedForNonRevokedAccount = 2071,
+        PartitionMigrationWaitForCatchupGotCancelledBeforeTimeout = 2072,
+        PartitionMigrationWaitForLocalCatchupTimedOut = 2073,
+        PartitionMigrationFailureMitigationInvalidResumeStep = 2074,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -235,6 +248,7 @@ namespace Microsoft.Azure.Documents
         ThottleDueToSplit = 3088,
         SystemResourceUnavailable = 3092,
         ThrottleDueToTransportBufferUsage = 3103,
+        TooManyThroughputBucketUpdates = 3213,
 
         // Key Vault Access Client Error Code
         AadClientCredentialsGrantFailure = 4000, // Indicated access to AAD failed to get a token

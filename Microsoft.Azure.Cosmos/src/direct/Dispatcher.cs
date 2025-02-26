@@ -101,6 +101,25 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.chaosInterceptor = chaosInterceptor;
         }
 
+        internal Dispatcher(
+            Uri serverUri,
+            UserAgentContainer userAgent,
+            IConnectionStateListener connectionStateListener,
+            TimerPool idleTimerPool,
+            bool enableChannelMultiplexing,
+            IChaosInterceptor chaosInterceptor,
+            Connection connection)
+        {
+            this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
+            this.userAgent = userAgent;
+            this.connectionStateListener = connectionStateListener;
+            this.serverUri = serverUri;
+            this.idleTimerPool = idleTimerPool;
+            this.enableChannelMultiplexing = enableChannelMultiplexing;
+            this.chaosInterceptor = chaosInterceptor;
+        }
+
+
         #region Test hook.
 
         internal event Action TestOnConnectionClosed;
@@ -399,7 +418,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             this.ThrowIfDisposed();
             this.connection.NotifyConnectionStatus(
-                isCompleted: true,
+                isCompleted: false,
                 isReadRequest: isReadOnly);
 
             CallInfo call = this.RemoveCall(preparedCall.RequestId);
@@ -910,15 +929,14 @@ namespace Microsoft.Azure.Documents.Rntbd
             IConnectionStateListener connectionStateListener = this.connectionStateListener;
             ServerKey serverKey = new ServerKey(this.serverUri);
             DateTime exceptionTime = transportException.Timestamp;
+
             // Run the event handler asynchronously and catch all exceptions.
-            Task t = Task.Run(() =>
-            {
-                connectionStateListener.OnConnectionEvent(connectionEvent, exceptionTime, serverKey);
-            });
+            // Its possible that some of the validation logic inside handler can run on caller thread that's fine
+            Task t = connectionStateListener.OnConnectionEventAsync(connectionEvent, exceptionTime, serverKey);
 
             t.ContinueWith(static (failedTask, connectionIdObject) =>
             {
-                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEvent callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
+                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEventAsync callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
             }, this.ConnectionCorrelationId, TaskContinuationOptions.OnlyOnFaulted);
         }
 

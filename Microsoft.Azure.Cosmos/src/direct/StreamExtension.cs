@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Documents
 
             long numberOfBytesRead = 0;
 
-            while(true)
+            while (true)
             {
                 int bytesRead = await srcStream.ReadAsync(buffer, 0, RuntimeConstants.Serialization.ChunkSize1K);
 
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Documents
 
                 numberOfBytesRead += bytesRead;
                 
-                if(numberOfBytesRead > maxSizeToCopy)
+                if (numberOfBytesRead > maxSizeToCopy)
                 {
                     throw new RequestEntityTooLargeException(
                         RMResources.RequestTooLarge);
@@ -87,13 +87,22 @@ namespace Microsoft.Azure.Documents
         private static async Task<CloneableStream> CopyStreamAndReturnAsync(Stream mediaStream)
         {
             MemoryStream memoryStreamClone = new MemoryStream();
+            long initialPosition = -1;
+
             if (mediaStream.CanSeek)
             {
+                initialPosition = mediaStream.Position;
                 mediaStream.Position = 0;
             }
 
             await mediaStream.CopyToAsync(memoryStreamClone);
             memoryStreamClone.Position = 0;
+            
+            if (mediaStream.CanSeek)
+            {
+                mediaStream.Position = initialPosition;
+            }
+
             return new CloneableStream(memoryStreamClone);
         }
     }

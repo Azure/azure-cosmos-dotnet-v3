@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Documents
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
-            bool enableReplicaValidation = false);
+            bool enableReplicaValidation = false,
+            AccountConfigurationProperties accountConfigurationProperties = null);
+
+        IConnectionStateListener GetConnectionStateListener();
     }
 }

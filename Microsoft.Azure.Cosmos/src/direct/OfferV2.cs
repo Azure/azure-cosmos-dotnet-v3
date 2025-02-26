@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Documents
 {
     using Newtonsoft.Json;
+    using System.Collections.ObjectModel;
+    using System.Linq;
 
     /// <summary>
     /// Represents the Standard pricing offer for a resource in the Azure Cosmos DB service.
@@ -102,18 +104,43 @@ namespace Microsoft.Azure.Documents
 
 #if !DOCDBCLIENT
         /// <summary>
-        /// Initializes a Resource offer with the given autopilot settings, from a reference Offer object for the Azue Cosmos DB service.
+        /// Initializes a Resource offer with the given autopilot settings, from a reference Offer object for the Azure Cosmos DB service.
         /// </summary>
         internal OfferV2(Offer offer, AutopilotSettings autopilotSettings)
             : base(offer)
         {
             this.OfferType = string.Empty;
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
-            this.Content = new OfferContentV2(autopilotSettings);
+
+            OfferContentV2 contentV2 = null;
+            if (offer is OfferV2 offerV2)
+            {
+                contentV2 = offerV2.Content;
+            }
+
+            this.Content = new OfferContentV2(contentV2, autopilotSettings);
         }
 
         /// <summary>
-        /// Initializes a Resource offer with the given autopilot settings for the Azue Cosmos DB service.
+        /// Initializes a Resource offer with the given autopilot settings and Throughput buckets, from a reference Offer object for the Azure Cosmos DB service.
+        /// </summary>
+        internal OfferV2(Offer offer, AutopilotSettings autopilotSettings, Collection<ThroughputBucket> throughputBuckets)
+            : base(offer)
+        {
+            this.OfferType = string.Empty;
+            this.OfferVersion = Constants.Offers.OfferVersion_V2;
+
+            OfferContentV2 contentV2 = null;
+            if (offer is OfferV2)
+            {
+                contentV2 = ((OfferV2)offer).Content;
+            }
+
+            this.Content = new OfferContentV2(contentV2, autopilotSettings, throughputBuckets);
+        }
+
+        /// <summary>
+        /// Initializes a Resource offer with the given autopilot settings for the Azure Cosmos DB service.
         /// </summary>
         internal OfferV2(AutopilotSettings autopilotSettings)
             : this()
@@ -124,18 +151,23 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Initializes a Resource offer with the given given autopilot settings, max allocation for background tasks for the Azue Cosmos DB service.
+        /// Initializes a Resource offer with the given autopilot settings, max allocation for background tasks, throughput distribution policy and
+        /// throughput buckets for the Azure Cosmos DB service.
         /// </summary>
-        internal OfferV2(AutopilotSettings autopilotSettings, double? bgTaskMaxAllowedThroughputPercent, ThroughputDistributionPolicyType? throughputDistributionPolicy)
+        internal OfferV2(
+            AutopilotSettings autopilotSettings,
+            double? bgTaskMaxAllowedThroughputPercent,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy,
+            Collection<ThroughputBucket> throughputBuckets)
             : this()
         {
             this.OfferType = string.Empty;
             this.OfferVersion = Constants.Offers.OfferVersion_V2;
-            this.Content = new OfferContentV2(autopilotSettings, bgTaskMaxAllowedThroughputPercent, throughputDistributionPolicy);
+            this.Content = new OfferContentV2(autopilotSettings, bgTaskMaxAllowedThroughputPercent, throughputDistributionPolicy, throughputBuckets);
         }
 
         /// <summary>
-        /// Internal constructor initializes offer with the the given throughput, autopilot settings and max allocation for background task allocation.
+        /// Internal constructor initializes offer with the given throughput, autopilot settings, max allocation for background task and throughput buckets.
         /// Only called during collection or database create
         /// </summary>
         internal OfferV2(
@@ -144,7 +176,8 @@ namespace Microsoft.Azure.Documents
             bool? offerIsAutoScaleV1Enabled,
             AutopilotSettings autopilotSettings,
             double? bgTaskMaxAllowedThroughputPercent,
-            ThroughputDistributionPolicyType? throughputDistributionPolicy)
+            ThroughputDistributionPolicyType? throughputDistributionPolicy,
+            Collection<ThroughputBucket> throughputBuckets)
             : this()
         {
             this.Content = new OfferContentV2(
@@ -154,11 +187,13 @@ namespace Microsoft.Azure.Documents
                 autopilotSettings,
                 null,
                 bgTaskMaxAllowedThroughputPercent,
-                throughputDistributionPolicy);
+                throughputDistributionPolicy,
+                throughputBuckets);
         }
 
         /// <summary>
-        /// Internal constructor that initializes offer with the given throughput, autoscale setting and from reference offer object
+        /// Internal constructor that initializes offer with the given throughput, autoscale setting, minimum throughput parameters,
+        /// throughput buckets and from reference offer object
         /// </summary>
         internal OfferV2(
             Offer offer,
@@ -166,7 +201,8 @@ namespace Microsoft.Azure.Documents
             bool? offerEnableRUPerMinuteThroughput,
             bool? offerIsAutoScaleV1Enabled,
             AutopilotSettings autopilotSettings,
-            OfferMinimumThroughputParameters minimumThroughputParameters)
+            OfferMinimumThroughputParameters minimumThroughputParameters,
+            Collection<ThroughputBucket> throughputBuckets)
             : base(offer)
         {
             this.OfferType = string.Empty;
@@ -181,11 +217,13 @@ namespace Microsoft.Azure.Documents
                 offerIsAutoScaleV1Enabled,
                 autopilotSettings,
                 minimumThroughputParameters,
-                contentV2.ThroughputDistributionPolicy);
+                contentV2.ThroughputDistributionPolicy,
+                throughputBuckets);
         }
 
         /// <summary>
-        /// Internal constructor that initializes offer with the given throughput, max allowed background task throughput percentage, autoscale setting from reference offer object
+        /// Internal constructor that initializes offer with the given throughput, max allowed background task throughput percentage, autoscale setting,
+        /// minimum throughput parameters, throughput distribution policy, throughput buckets and a reference offer object
         /// </summary>
         internal OfferV2(
             Offer offer,
@@ -195,7 +233,9 @@ namespace Microsoft.Azure.Documents
             AutopilotSettings autopilotSettings,
             OfferMinimumThroughputParameters minimumThroughputParameters,
             double? bgTaskMaxAllowedThroughputPercent,
-            ThroughputDistributionPolicyType? throughputDistributionPolicy)
+            ThroughputDistributionPolicyType? throughputDistributionPolicy,
+            Collection<ThroughputBucket> throughputBuckets,
+            int? offerTargetThroughput = null)
             : base(offer)
         {
             this.OfferType = string.Empty;
@@ -208,7 +248,9 @@ namespace Microsoft.Azure.Documents
                 autopilotSettings,
                 minimumThroughputParameters,
                 bgTaskMaxAllowedThroughputPercent,
-                throughputDistributionPolicy);
+                throughputDistributionPolicy,
+                throughputBuckets,
+                offerTargetThroughput);
         }
 #endif
 
@@ -270,7 +312,8 @@ namespace Microsoft.Azure.Documents
                        // and read again from master and compare it to see if it is what we expect. If they are equal we treat it as success.
                        (this.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false) == offer.Content.OfferIsAutoScaleEnabled.GetValueOrDefault(false)) &&
                        (this.Content.ThroughputDistributionPolicy == offer.Content.ThroughputDistributionPolicy) &&
-                       (this.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) == offer.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0));
+                       (this.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) == offer.Content.BackgroundTaskMaxAllowedThroughputPercent.GetValueOrDefault(0.0) &&
+                       (ThroughputBucket.Equals(this.Content.ThroughputBuckets, offer.Content.ThroughputBuckets)));
 #endif
             }
 
@@ -284,7 +327,7 @@ namespace Microsoft.Azure.Documents
             {
                 AutopilotSettings autopilotSettings = this.Content.OfferAutopilotSettings;
 
-                // Autoscale V2: uses AutopilotSettings and takes precedencde over autoscale V1 settings
+                // Autoscale V2: uses AutopilotSettings and takes precedence over autoscale V1 settings
                 if (autopilotSettings != null)
                 {
                     // Presence of AutopilotSettings indicates Autopilot is enabled.

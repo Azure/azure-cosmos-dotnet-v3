@@ -457,19 +457,31 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Name of the Azure Israel Northwest region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string IsraelNorthwest = "Israel Northwest";
+        public const string IsraelNorthwest = "Israel Northwest";
 
         /// <summary>
         /// Name of the Azure Belgium Central region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string BelgiumCentral = "Belgium Central";
+        public const string BelgiumCentral = "Belgium Central";
 
         /// <summary>
         /// Name of the Azure Denmark East region in the Azure Cosmos DB service.
         /// </summary>
-        internal const string DenmarkEast = "Denmark East";
+        public const string DenmarkEast = "Denmark East";
+
+        /// <summary>
+        /// Name of the Azure Southeast US 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SoutheastUS3 = "Southeast US 3";
+
+        /// <summary>
+        /// Name of the Azure Southeast US 5 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string SoutheastUS5 = "Southeast US 5";
     }
 }
+
+
 
 
 

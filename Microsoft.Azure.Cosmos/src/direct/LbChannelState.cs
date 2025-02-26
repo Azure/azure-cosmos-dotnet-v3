@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         private readonly int maxRequestsPending;
         private readonly IChannel channel;
         private int requestsPending = 0;  // Atomic.
+        private int stateDisposeCounter = 0;  // Atomic.
         // Atomic. Stays true for as long as IChannel.Healthy keeps returning
         // true. Transitions to false exactly once, when IChannel.Healthy starts
         // returning false.
@@ -49,8 +50,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         public bool Exit()
         {
             int currentRequests = Interlocked.Decrement(ref this.requestsPending);
-            Debug.Assert(currentRequests >= 0);
-            return currentRequests == 0;
+            return currentRequests <= 0;
         }
 
         // Checks the health status of the channel and returns it. This is more
@@ -90,7 +90,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         public void Dispose()
         {
-            this.channel.Close();
+            int disposeInvocationCounter = Interlocked.Increment(ref this.stateDisposeCounter);
+            if (disposeInvocationCounter == 1)
+            {
+                this.channel.Close();
+            }
         }
     }
 }

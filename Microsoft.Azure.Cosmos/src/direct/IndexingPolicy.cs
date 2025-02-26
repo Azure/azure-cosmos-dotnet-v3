@@ -42,6 +42,8 @@ namespace Microsoft.Azure.Documents
 
         private Collection<VectorIndexPath> vectorIndexPaths;
 
+        private Collection<FullTextIndexPath> fullTextIndexPaths;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IndexingPolicy"/> class for the Azure Cosmos DB service.
         /// </summary>
@@ -337,6 +339,38 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets or sets the additonal full text indexes 
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.FullTextIndexPaths, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal Collection<FullTextIndexPath> FullTextIndexPaths
+        {
+            get
+            {
+                if (this.fullTextIndexPaths == null)
+                {
+                    this.fullTextIndexPaths = this.GetValue<Collection<FullTextIndexPath>>(Constants.Properties.FullTextIndexPaths);
+                    if (this.fullTextIndexPaths == null)
+                    {
+                        this.fullTextIndexPaths = new Collection<FullTextIndexPath>();
+                    }
+                }
+
+                return this.fullTextIndexPaths;
+            }
+
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(this.fullTextIndexPaths)));
+                }
+
+                this.fullTextIndexPaths = value;
+                this.SetValue(Constants.Properties.FullTextIndexPaths, this.fullTextIndexPaths);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
@@ -370,6 +404,11 @@ namespace Microsoft.Azure.Documents
             foreach (VectorIndexPath vectorIndexPath in this.VectorIndexPaths)
             {
                 vectorIndexPath.Validate();
+            }
+
+            foreach (FullTextIndexPath fullTextIndexPath in this.FullTextIndexPaths)
+            {
+                fullTextIndexPath.Validate();
             }
         }
 
@@ -418,6 +457,13 @@ namespace Microsoft.Azure.Documents
             }
 
             this.SetValue(Constants.Properties.VectorIndexPaths, this.vectorIndexPaths);
+
+            foreach (FullTextIndexPath fullTextIndexPath in this.FullTextIndexPaths)
+            {
+                fullTextIndexPath.OnSave();
+            }
+
+            this.SetValue(Constants.Properties.FullTextIndexPaths, this.fullTextIndexPaths);
         }
 
         /// <summary>
@@ -473,6 +519,15 @@ namespace Microsoft.Azure.Documents
             }
 
             cloned.VectorIndexPaths = clonedvectorIndexes;
+
+            Collection<FullTextIndexPath> clonedFullTextIndexes = new Collection<FullTextIndexPath>();
+            foreach (FullTextIndexPath fullTextIndexPath in this.FullTextIndexPaths)
+            {
+                FullTextIndexPath clonedFullTextIndex = (FullTextIndexPath)fullTextIndexPath.Clone();
+                clonedFullTextIndexes.Add(clonedFullTextIndex);
+            }
+
+            cloned.FullTextIndexPaths = clonedFullTextIndexes;
 
             return cloned;
         }
@@ -831,6 +886,129 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        internal sealed class VectorIndexPathEqualityComparer : IEqualityComparer<VectorIndexPath>
+        {
+            public static readonly VectorIndexPathEqualityComparer Singleton = new VectorIndexPathEqualityComparer();
+
+            public bool Equals(VectorIndexPath vectorIndexPath1, VectorIndexPath vectorIndexPath2)
+            {
+                if (Object.ReferenceEquals(vectorIndexPath1, vectorIndexPath2))
+                {
+                    return true;
+                }
+
+                if (vectorIndexPath1 == null || vectorIndexPath2 == null)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.Path != vectorIndexPath2.Path)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.Type != vectorIndexPath2.Type)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.QuantizationByteSize.HasValue != vectorIndexPath2.QuantizationByteSize.HasValue)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.QuantizationByteSize.HasValue && (vectorIndexPath1.QuantizationByteSize != vectorIndexPath2.QuantizationByteSize))
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.IndexingSearchListSize.HasValue != vectorIndexPath2.IndexingSearchListSize.HasValue)
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.IndexingSearchListSize.HasValue && (vectorIndexPath1.IndexingSearchListSize != vectorIndexPath2.IndexingSearchListSize))
+                {
+                    return false;
+                }
+
+                if (vectorIndexPath1.VectorIndexShardKey != null || vectorIndexPath2.VectorIndexShardKey != null)
+                {
+                    if (vectorIndexPath1.VectorIndexShardKey == null || vectorIndexPath2.VectorIndexShardKey == null)
+                    {
+                        return false;
+                    }
+
+                    if (vectorIndexPath1.VectorIndexShardKey.Length != vectorIndexPath2.VectorIndexShardKey.Length)
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < vectorIndexPath1.VectorIndexShardKey.Length; i++)
+                    {
+                        if (vectorIndexPath1.VectorIndexShardKey[i] != vectorIndexPath2.VectorIndexShardKey[i])
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            public int GetHashCode(VectorIndexPath vectorIndexPath)
+            {
+                int hashCode = 0;
+                hashCode = hashCode ^ vectorIndexPath.Path.GetHashCode();
+                hashCode = hashCode ^ vectorIndexPath.Type.GetHashCode();
+
+                if (vectorIndexPath.QuantizationByteSize.HasValue)
+                {
+                    hashCode = hashCode ^ vectorIndexPath.QuantizationByteSize.GetHashCode();
+                }
+
+                if (vectorIndexPath.IndexingSearchListSize.HasValue)
+                {
+                    hashCode = hashCode ^ vectorIndexPath.IndexingSearchListSize.GetHashCode();
+                }
+
+                if (vectorIndexPath.VectorIndexShardKey != null)
+                {
+                    foreach (string shardKey in vectorIndexPath.VectorIndexShardKey)
+                    {
+                        hashCode = hashCode ^ shardKey.GetHashCode();
+                    }
+                }
+
+                return hashCode;
+            }
+        }
+
+        internal sealed class FullTextIndexPathEqualityComparer : IEqualityComparer<FullTextIndexPath>
+        {
+            public static readonly FullTextIndexPathEqualityComparer Singleton = new FullTextIndexPathEqualityComparer();
+
+            public bool Equals(FullTextIndexPath fullTextIndexPath1, FullTextIndexPath fullTextIndexPath2)
+            {
+                if (Object.ReferenceEquals(fullTextIndexPath1, fullTextIndexPath2))
+                {
+                    return true;
+                }
+
+                if (fullTextIndexPath1 == null || fullTextIndexPath2 == null)
+                {
+                    return false;
+                }
+
+                return (fullTextIndexPath1.Path == fullTextIndexPath2.Path);
+            }
+
+            public int GetHashCode(FullTextIndexPath fullTextIndexPath)
+            {
+                return fullTextIndexPath.Path.GetHashCode();
+            }
+        }
+
         internal sealed class IndexingPolicyEqualityComparer : IEqualityComparer<IndexingPolicy>
         {
             public static readonly IndexingPolicyEqualityComparer Singleton = new IndexingPolicyEqualityComparer();
@@ -838,6 +1016,8 @@ namespace Microsoft.Azure.Documents
             private static readonly ExcludedPathEqualityComparer excludedPathEqualityComparer = new ExcludedPathEqualityComparer();
             private static readonly CompositeIndexesEqualityComparer compositeIndexesEqualityComparer = new CompositeIndexesEqualityComparer();
             private static readonly AdditionalSpatialIndexesEqualityComparer additionalSpatialIndexesEqualityComparer = new AdditionalSpatialIndexesEqualityComparer();
+            private static readonly VectorIndexPathEqualityComparer vectorIndexPathEqualityComparer = new VectorIndexPathEqualityComparer();
+            private static readonly FullTextIndexPathEqualityComparer fullTextIndexPathEqualityComparer = new FullTextIndexPathEqualityComparer();
 
             public bool Equals(IndexingPolicy indexingPolicy1, IndexingPolicy indexingPolicy2)
             {
@@ -852,14 +1032,27 @@ namespace Microsoft.Azure.Documents
                 isEqual &= (indexingPolicy1.IndexingMode == indexingPolicy2.IndexingMode);
                 isEqual &= compositeIndexesEqualityComparer.Equals(indexingPolicy1.CompositeIndexes, indexingPolicy2.CompositeIndexes);
                 isEqual &= additionalSpatialIndexesEqualityComparer.Equals(indexingPolicy1.SpatialIndexes, indexingPolicy2.SpatialIndexes);
+                if (!isEqual) return false;
 
                 HashSet<IncludedPath> includedPaths1 = new HashSet<IncludedPath>(indexingPolicy1.IncludedPaths, includedPathEqualityComparer);
                 HashSet<IncludedPath> includedPaths2 = new HashSet<IncludedPath>(indexingPolicy2.IncludedPaths, includedPathEqualityComparer);
                 isEqual &= includedPaths1.SetEquals(includedPaths2);
+                if (!isEqual) return false;
 
                 HashSet<ExcludedPath> excludedPaths1 = new HashSet<ExcludedPath>(indexingPolicy1.ExcludedPaths, excludedPathEqualityComparer);
                 HashSet<ExcludedPath> excludedPaths2 = new HashSet<ExcludedPath>(indexingPolicy2.ExcludedPaths, excludedPathEqualityComparer);
                 isEqual &= excludedPaths1.SetEquals(excludedPaths2);
+                if (!isEqual) return false;
+
+                HashSet<VectorIndexPath> vectorIndexPaths1 = new HashSet<VectorIndexPath>(indexingPolicy1.VectorIndexPaths, vectorIndexPathEqualityComparer);
+                HashSet<VectorIndexPath> vectorIndexPaths2 = new HashSet<VectorIndexPath>(indexingPolicy2.VectorIndexPaths, vectorIndexPathEqualityComparer);
+                isEqual &= vectorIndexPaths1.SetEquals(vectorIndexPaths2);
+                if (!isEqual) return false;
+
+                HashSet<FullTextIndexPath> fullTextIndexPaths1 = new HashSet<FullTextIndexPath>(indexingPolicy1.FullTextIndexPaths, fullTextIndexPathEqualityComparer);
+                HashSet<FullTextIndexPath> fullTextIndexPaths2 = new HashSet<FullTextIndexPath>(indexingPolicy2.FullTextIndexPaths, fullTextIndexPathEqualityComparer);
+                isEqual &= fullTextIndexPaths1.SetEquals(fullTextIndexPaths2);
+                if (!isEqual) return false;
 
                 return isEqual;
             }
@@ -880,6 +1073,16 @@ namespace Microsoft.Azure.Documents
                 foreach (ExcludedPath excludedPath in indexingPolicy.ExcludedPaths)
                 {
                     hashCode = hashCode ^ excludedPathEqualityComparer.GetHashCode(excludedPath);
+                }
+
+                foreach (VectorIndexPath vectorIndexPath in indexingPolicy.VectorIndexPaths)
+                {
+                    hashCode = hashCode ^ vectorIndexPathEqualityComparer.GetHashCode(vectorIndexPath);
+                }
+
+                foreach (FullTextIndexPath fullTextIndexPath in indexingPolicy.FullTextIndexPaths)
+                {
+                    hashCode = hashCode ^ fullTextIndexPathEqualityComparer.GetHashCode(fullTextIndexPath);
                 }
 
                 return hashCode;

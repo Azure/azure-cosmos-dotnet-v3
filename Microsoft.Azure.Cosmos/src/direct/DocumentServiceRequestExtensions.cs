@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace Microsoft.Azure.Documents
 {
     internal static class DocumentServiceRequestExtensions
@@ -23,6 +24,13 @@ namespace Microsoft.Azure.Documents
                 || statusCode == (int)System.Net.HttpStatusCode.Conflict
                 // ReadSessionNotAvailable: fall back to exception based approach for reliability
                 || (statusCode == (int)System.Net.HttpStatusCode.NotFound && subStatusCode != SubStatusCodes.ReadSessionNotAvailable)))
+            {
+                return true;
+            }
+
+            // 403
+            if(request.UseStatusCodeFor403
+                && statusCode == (int)System.Net.HttpStatusCode.Forbidden)
             {
                 return true;
             }

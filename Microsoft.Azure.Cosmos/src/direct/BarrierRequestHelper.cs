@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Documents
         /// Used to determine the appropriate back-off time between barrier requests based
         /// on the responses to previous barrier requests. The substatus code of HEAD requests
         /// indicate the gap - like how far the targeted LSN/GCLSN was missed.
-        /// As a very naive rule-of-thumb the assumption is that even for small documents less than 1 KB
+        /// As a very naive rule-of-thumb the assumpiton is that even for small documents less than 1 KB
         /// only about 2000 write trasnactions can possibly be committed on a single phsyical
         /// partition (10,000 RU / 5 RU at least per write operation). The allowed
         /// throughput per physical partition could grow and the min. RU per write operations

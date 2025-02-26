@@ -119,6 +119,12 @@ namespace Microsoft.Azure.Documents
             return this.IsEqual(collection);
         }
 
+        public void Remove(string key)
+        {
+            this.Collection.Remove(key);
+            this.propertyBag.Remove(key);
+        }
+
         private bool IsEqual(SerializableNameValueCollection serializableNameValueCollection)
         {
             if (this.Collection.Count != serializableNameValueCollection.Collection.Count)

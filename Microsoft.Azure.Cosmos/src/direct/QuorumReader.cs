@@ -87,13 +87,15 @@ namespace Microsoft.Azure.Documents
             int readQuorumRetry = QuorumReader.maxNumberOfReadQuorumRetries;
             bool shouldRetryOnSecondary = false;
             bool hasPerformedReadFromPrimary = false;
+            bool includePrimary = false;
+
             do
             {
                 entity.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
 
                 shouldRetryOnSecondary = false;
                 using ReadQuorumResult secondaryQuorumReadResult =
-                    await this.ReadQuorumAsync(entity, readQuorumValue, false, readMode);
+                    await this.ReadQuorumAsync(entity, readQuorumValue, includePrimary, readMode);
                 switch (secondaryQuorumReadResult.QuorumResult)
                 {
                     case ReadQuorumResultKind.QuorumMet:
@@ -138,8 +140,11 @@ namespace Microsoft.Azure.Documents
                         {
                             if (hasPerformedReadFromPrimary)
                             {
-                                DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries.");
-                                throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
+                                DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries. ReadStoreResponses: {0}", secondaryQuorumReadResult.ToString());
+
+                                throw new GoneException(RMResources.ReadQuorumNotMet +
+                                    $", partitionId: {entity.PartitionKeyRangeIdentity}",
+                                    SubStatusCodes.Server_ReadQuorumNotMet);
                             }
 
                             DefaultTrace.TraceWarning("QuorumNotSelected: Quorum could not be selected with read quorum of {0}", readQuorumValue);
@@ -148,7 +153,8 @@ namespace Microsoft.Azure.Documents
                             if (response.IsSuccessful && response.ShouldRetryOnSecondary)
                             {
                                 Debug.Assert(false, "QuorumNotSelected: PrimaryResult has both Successful and ShouldRetryOnSecondary flags set");
-                                DefaultTrace.TraceCritical("PrimaryResult has both Successful and ShouldRetryOnSecondary flags set");
+                                DefaultTrace.TraceCritical("PrimaryResult has both Successful and ShouldRetryOnSecondary flags set. ReadQuorumResult StoreResponses: {0}", secondaryQuorumReadResult.ToString());
+
                             }
                             else if (response.IsSuccessful)
                             {
@@ -158,8 +164,15 @@ namespace Microsoft.Azure.Documents
                             else if (response.ShouldRetryOnSecondary)
                             {
                                 shouldRetryOnSecondary = true;
-                                DefaultTrace.TraceWarning("QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary.");
+                                DefaultTrace.TraceWarning("QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary. ReadQuorumResult StoreResponses: {0}", secondaryQuorumReadResult.ToString());
                                 hasPerformedReadFromPrimary = true;
+
+                                // We have failed to select a quorum before - could very well happen again
+                                // especially with reduced replica set size (1 Primary and 2 Secondaries
+                                // left, one Secondary might be unreachable - due to endpoint health like
+                                // service-side crashes or network/connectivity issues). Including the
+                                // Primary replica even for quorum selection in this case for the retry
+                                includePrimary = true;
                             }
                             else
                             {

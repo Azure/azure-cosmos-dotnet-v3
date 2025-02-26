@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Documents.Client
     /// </code>
     /// </example>
     /// <seealso cref="Resource"/>
+    /// <seealso cref="FeedResponse{T}"/>
 #if COSMOSCLIENT
     internal
 #else
