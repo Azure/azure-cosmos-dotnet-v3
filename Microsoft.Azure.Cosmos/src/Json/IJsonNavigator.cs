@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// </summary>
         /// <param name="numberNode">The node you want the number value from.</param>
         /// <returns>A double that represents the number value in the node.</returns>
-        Number64 GetNumber64Value(IJsonNavigatorNode numberNode);
+        Number64 GetNumberValue(IJsonNavigatorNode numberNode);
 
         /// <summary>
         /// Tries to get the buffered string value from a node.
@@ -178,15 +178,15 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Creates an <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.
         /// </summary>
-        /// <param name="jsonNavigatorNode">The node to create a reader from..</param>
+        /// <param name="node">The node to create a reader from..</param>
         /// <returns>The <see cref="IJsonReader"/> that is able to read the supplied <see cref="IJsonNavigatorNode"/>.</returns>
-        public IJsonReader CreateReader(IJsonNavigatorNode jsonNavigatorNode);
+        public IJsonReader CreateReader(IJsonNavigatorNode node);
 
         /// <summary>
         /// Writes a <see cref="IJsonNavigatorNode"/> to a <see cref="IJsonWriter"/>.
         /// </summary>
-        /// <param name="jsonNavigatorNode">The <see cref="IJsonNavigatorNode"/> to write.</param>
+        /// <param name="node">The <see cref="IJsonNavigatorNode"/> to write.</param>
         /// <param name="jsonWriter">The <see cref="IJsonWriter"/> to write to.</param>
-        void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter);
+        void WriteNode(IJsonNavigatorNode node, IJsonWriter jsonWriter);
     }
 }

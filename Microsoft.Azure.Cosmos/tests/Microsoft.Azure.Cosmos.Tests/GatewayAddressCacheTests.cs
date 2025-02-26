@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
             this.serviceName = new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint);
             this.serviceIdentity = new ServiceIdentity("federation1", this.serviceName, false);
 
-            List<PartitionKeyRange> partitionKeyRanges = new ()
+            List<PartitionKeyRange> partitionKeyRanges = new()
             {
                 new PartitionKeyRange()
                 {
@@ -74,8 +74,10 @@ namespace Microsoft.Azure.Cosmos
         public void TestGatewayAddressCacheAutoRefreshOnSuboptimalPartition()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new HttpClient(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
@@ -83,6 +85,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: null,
+                 Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             int initialAddressesCount = cache.TryGetAddressesAsync(
@@ -106,6 +109,42 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(finalAddressCount == this.targetReplicaSetSize);
         }
 
+
+        [TestMethod]
+        public async Task TestGatewayAddressCacheAndConnectionStateListenerRegAndUnReg()
+        {
+            FakeMessageHandler messageHandler = new FakeMessageHandler();
+            HttpClient httpClient = new HttpClient(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
+
+            Mock<IConnectionStateListener> connectionListenerMock = new Mock<IConnectionStateListener>();
+
+            GatewayAddressCache cache = new GatewayAddressCache(
+                new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
+                Documents.Client.Protocol.Tcp,
+                this.mockTokenProvider.Object,
+                this.mockServiceConfigReader.Object,
+                MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
+                openConnectionsHandler: null,
+                connectionListenerMock.Object,
+                suboptimalPartitionForceRefreshIntervalInSeconds: 2,
+                enableTcpConnectionEndpointRediscovery: true);
+
+            PartitionAddressInformation addresses = await cache.TryGetAddressesAsync(
+             DocumentServiceRequest.Create(OperationType.Invalid, ResourceType.Address, AuthorizationTokenType.Invalid),
+             this.testPartitionKeyRangeIdentity,
+             this.serviceIdentity,
+             false,
+             CancellationToken.None);
+
+            Mock.Get(connectionListenerMock.Object).Verify(x => x.Register(It.IsAny<ServerKey>(), It.IsAny<Func<ServerKey, Task>>()), Times.Exactly(3));
+            cache.Dispose();
+            Mock.Get(connectionListenerMock.Object).Verify(x => x.UnRegister(It.IsAny<ServerKey>(), It.IsAny<Func<ServerKey, Task>>()), Times.Exactly(3));
+
+        }
+
         [TestMethod]
         public async Task TestGatewayAddressCacheUpdateOnConnectionResetAsync()
         {
@@ -122,6 +161,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: null,
+                Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -131,11 +171,11 @@ namespace Microsoft.Azure.Cosmos
              this.serviceIdentity,
              false,
              CancellationToken.None);
-
+            
             Assert.IsNotNull(addresses.AllAddresses.Select(address => address.PhysicalUri == "https://blabla.com"));
 
             // Mark transport addresses to Unhealthy depcting a connection reset event.
-            ServerKey faultyServerKey = new (new Uri("https://blabla2.com"));
+            ServerKey faultyServerKey = new(new Uri("https://blabla2.com"));
             await cache.MarkAddressesToUnhealthyAsync(faultyServerKey);
 
             // check if the addresss is updated
@@ -189,6 +229,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: null,
+                Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -267,19 +308,20 @@ namespace Microsoft.Azure.Cosmos
                         RequestTimeout = TimeSpan.FromSeconds(10)
                     };
 
+                    IConnectionStateListener connectionStateListener = new ConnectionStateMuxListener(true);
                     GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
                         endpointManager: globalEndpointManager,
-                        partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
-                        protocol: Documents.Client.Protocol.Tcp,
-                        tokenProvider: this.mockTokenProvider.Object,
-                        collectionCache: null,
-                        routingMapProvider: null,
-                        serviceConfigReader: this.mockServiceConfigReader.Object,
-                        connectionPolicy: connectionPolicy,
-                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                        null,
+                        Protocol.Tcp,
+                        this.mockTokenProvider.Object,
+                        null,
+                        null,
+                        this.mockServiceConfigReader.Object,
+                        connectionPolicy,
+                        httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                        connectionStateListener: connectionStateListener);
 
-                    ConnectionStateListener connectionStateListener = new ConnectionStateListener(globalAddressResolver);
-                    connectionStateListener.OnConnectionEvent(ConnectionEvent.ReadEof, DateTime.Now, new Documents.Rntbd.ServerKey(new Uri("https://endpoint.azure.com:4040/")));
+                    connectionStateListener.OnConnectionEventAsync(ConnectionEvent.ReadEof, DateTime.Now, new ServerKey(new Uri("https://endpoint.azure.com:4040/"))).Wait();
 
                 }, state: null);
             }
@@ -294,8 +336,10 @@ namespace Microsoft.Azure.Cosmos
         public async Task GatewayAddressCacheInNetworkRequestTestAsync()
         {
             FakeMessageHandler messageHandler = new FakeMessageHandler();
-            HttpClient httpClient = new(messageHandler);
-            httpClient.Timeout = TimeSpan.FromSeconds(120);
+            HttpClient httpClient = new(messageHandler)
+            {
+                Timeout = TimeSpan.FromSeconds(120)
+            };
             GatewayAddressCache cache = new GatewayAddressCache(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
@@ -303,6 +347,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: null,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 
@@ -346,8 +391,8 @@ namespace Microsoft.Azure.Cosmos
         public async Task OpenConnectionsAsync_WithValidOpenConnectionHandler_ShouldInvokeHandlerMethod()
         {
             // Arrange.
-            FakeMessageHandler messageHandler = new ();
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
+            FakeMessageHandler messageHandler = new();
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -356,13 +401,14 @@ namespace Microsoft.Azure.Cosmos
                 Timeout = TimeSpan.FromSeconds(120)
             };
 
-            GatewayAddressCache cache = new (
+            GatewayAddressCache cache = new(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -395,20 +441,21 @@ namespace Microsoft.Azure.Cosmos
         public async Task OpenConnectionsAsync_WhenConnectionHandlerThrowsException_ShouldNotFailInitialization()
         {
             // Arrange.
-            FakeMessageHandler messageHandler = new ();
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>() { 0, 1, 2});
+            FakeMessageHandler messageHandler = new();
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>() { 0, 1, 2 });
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
             HttpClient httpClient = new(messageHandler);
 
-            GatewayAddressCache cache = new (
+            GatewayAddressCache cache = new(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Documents.Client.Protocol.Tcp,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -441,8 +488,8 @@ namespace Microsoft.Azure.Cosmos
         public async Task OpenConnectionsAsync_WithNullOpenConnectionHandler_ShouldNotInvokeHandlerMethod()
         {
             // Arrange.
-            FakeMessageHandler messageHandler = new ();
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
+            FakeMessageHandler messageHandler = new();
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
@@ -458,6 +505,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: null,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -502,8 +550,8 @@ namespace Microsoft.Azure.Cosmos
             bool shouldCancelToken)
         {
             // Arrange.
-            FakeMessageHandler messageHandler = new ();
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (
+            FakeMessageHandler messageHandler = new();
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(
                 failingIndexes: new HashSet<int>(),
                 openConnectionDelayInSeconds: openConnectionDelayInSeconds);
 
@@ -515,16 +563,17 @@ namespace Microsoft.Azure.Cosmos
                 Timeout = TimeSpan.FromSeconds(120)
             };
 
-            CancellationTokenSource cts = new (TimeSpan.FromSeconds(cancellationTokenTimeoutInSeconds));
+            CancellationTokenSource cts = new(TimeSpan.FromSeconds(cancellationTokenTimeoutInSeconds));
             CancellationToken token = cts.Token;
 
-            GatewayAddressCache cache = new (
+            GatewayAddressCache cache = new(
                 new Uri(GatewayAddressCacheTests.DatabaseAccountApiEndpoint),
                 Protocol.Tcp,
                 this.mockTokenProvider.Object,
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -559,85 +608,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WithValidHandler_ShouldOpenConnectionsToBackend()
         {
             // Arrange.
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
-            UserAgentContainer container = new (clientId: 0);
-            FakeMessageHandler messageHandler = new ();
-            AccountProperties databaseAccount = new ();
-
-            Mock<IDocumentClientInternal> mockDocumentClient = new ();
-            mockDocumentClient
-                .Setup(owner => owner.ServiceEndpoint)
-                .Returns(new Uri("https://blabla.com/"));
-
-            mockDocumentClient
-                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(databaseAccount);
-
-            GlobalEndpointManager globalEndpointManager = new (
-                mockDocumentClient.Object,
-                new ConnectionPolicy());
-            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
-
-            ConnectionPolicy connectionPolicy = new ()
-            {
-                RequestTimeout = TimeSpan.FromSeconds(120)
-            };
-
-            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
-            containerProperties.Id = "TestId";
-            containerProperties.PartitionKeyPath = "/pk";
-
-            Mock<CollectionCache> mockCollectionCahce = new (MockBehavior.Strict);
-            mockCollectionCahce
-                .Setup(x => x.ResolveByNameAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    false,
-                    It.IsAny<ITrace>(),
-                    It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
-                .Returns(Task.FromResult(containerProperties));
-
-            GlobalAddressResolver globalAddressResolver = new (
-                endpointManager: globalEndpointManager,
-                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
-                protocol: Documents.Client.Protocol.Tcp,
-                tokenProvider: this.mockTokenProvider.Object,
-                collectionCache: mockCollectionCahce.Object,
-                routingMapProvider: this.partitionKeyRangeCache.Object,
-                serviceConfigReader: this.mockServiceConfigReader.Object,
-                connectionPolicy: connectionPolicy,
-                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
-
-            globalAddressResolver.SetOpenConnectionsHandler(
-                openConnectionsHandler: fakeOpenConnectionHandler);
-
-            // Act.
-            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
-                databaseName: "test-db",
-                containerLinkUri: "https://test.uri.cosmos.com",
-                CancellationToken.None);
-
-            // Assert.
-            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
-                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
-                expectedTotalFailedAddressesToOpenCount: 0,
-                expectedTotalHandlerInvocationCount: 1,
-                expectedTotalReceivedAddressesCount: 3,
-                expectedTotalSuccessAddressesToOpenCount: 3);
-        }
-
-        /// <summary>
-        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is called with a
-        /// open connection handler that throws an exception, the handler method is indeed invoked and the exception is handled
-        /// in such a way that the cosmos client initialization does not fail.
-        /// </summary>
-        [TestMethod]
-        [Owner("dkunda")]
-        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenHandlerDelegateThrowsException_ShouldNotFailInitialization()
-        {
-            // Arrange.
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>() { 0, 2});
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
             UserAgentContainer container = new(clientId: 0);
             FakeMessageHandler messageHandler = new();
             AccountProperties databaseAccount = new();
@@ -685,6 +656,86 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
+            // Act.
+            await globalAddressResolver.OpenConnectionsToAllReplicasAsync(
+                databaseName: "test-db",
+                containerLinkUri: "https://test.uri.cosmos.com",
+                CancellationToken.None);
+
+            // Assert.
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: 1,
+                expectedTotalReceivedAddressesCount: 3,
+                expectedTotalSuccessAddressesToOpenCount: 3);
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.OpenConnectionsToAllReplicasAsync()"/> is called with a
+        /// open connection handler that throws an exception, the handler method is indeed invoked and the exception is handled
+        /// in such a way that the cosmos client initialization does not fail.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenHandlerDelegateThrowsException_ShouldNotFailInitialization()
+        {
+            // Arrange.
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>() { 0, 2 });
+            UserAgentContainer container = new(clientId: 0);
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new();
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://blabla.com/"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new(
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerProperties));
+
+            GlobalAddressResolver globalAddressResolver = new(
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Documents.Client.Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             globalAddressResolver.SetOpenConnectionsHandler(
@@ -715,7 +766,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenInternalExceptionThrownApartFromTransportError_ShouldThrowException()
         {
             // Arrange.
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
             UserAgentContainer container = new(clientId: 0);
             FakeMessageHandler messageHandler = new();
             AccountProperties databaseAccount = new();
@@ -729,12 +780,12 @@ namespace Microsoft.Azure.Cosmos
                 .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(databaseAccount);
 
-            GlobalEndpointManager globalEndpointManager = new (
+            GlobalEndpointManager globalEndpointManager = new(
                 mockDocumentClient.Object,
                 new ConnectionPolicy());
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
 
-            ConnectionPolicy connectionPolicy = new ()
+            ConnectionPolicy connectionPolicy = new()
             {
                 RequestTimeout = TimeSpan.FromSeconds(120)
             };
@@ -743,7 +794,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new (MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -755,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(containerProperties));
 
             string exceptionMessage = "Failed to lookup partition key ranges.";
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new (null, null, null, null);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -774,6 +825,7 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             globalAddressResolver.SetOpenConnectionsHandler(
@@ -806,12 +858,12 @@ namespace Microsoft.Azure.Cosmos
         public async Task GlobalAddressResolver_OpenConnectionsToAllReplicasAsync_WhenNullCollectionReturned_ShouldThrowException()
         {
             // Arrange.
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
-            UserAgentContainer container = new (clientId: 0);
-            FakeMessageHandler messageHandler = new ();
-            AccountProperties databaseAccount = new ();
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
+            UserAgentContainer container = new(clientId: 0);
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new();
 
-            Mock<IDocumentClientInternal> mockDocumentClient = new ();
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
             mockDocumentClient
                 .Setup(owner => owner.ServiceEndpoint)
                 .Returns(new Uri("https://blabla.com/"));
@@ -820,17 +872,17 @@ namespace Microsoft.Azure.Cosmos
                 .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(databaseAccount);
 
-            GlobalEndpointManager globalEndpointManager = new (
+            GlobalEndpointManager globalEndpointManager = new(
                 mockDocumentClient.Object,
                 new ConnectionPolicy());
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
 
-            ConnectionPolicy connectionPolicy = new ()
+            ConnectionPolicy connectionPolicy = new()
             {
                 RequestTimeout = TimeSpan.FromSeconds(120)
             };
 
-            Mock<CollectionCache> mockCollectionCahce = new (MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -841,7 +893,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<CancellationToken>()))
                 .Returns(Task.FromResult<ContainerProperties>(null));
 
-            GlobalAddressResolver globalAddressResolver = new (
+            GlobalAddressResolver globalAddressResolver = new(
                 endpointManager: globalEndpointManager,
                 partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
                 protocol: Documents.Client.Protocol.Tcp,
@@ -850,6 +902,7 @@ namespace Microsoft.Azure.Cosmos
                 routingMapProvider: this.partitionKeyRangeCache.Object,
                 serviceConfigReader: this.mockServiceConfigReader.Object,
                 connectionPolicy: connectionPolicy,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
 
             globalAddressResolver.SetOpenConnectionsHandler(
@@ -883,14 +936,14 @@ namespace Microsoft.Azure.Cosmos
         public async Task OpenConnectionsAsync_WhenSomeAddressResolvingFailsWithException_ShouldIgnoreExceptionsAndInvokeHandlerMethodForOtherAddresses()
         {
             // Arrange.
-            FakeMessageHandler messageHandler = new ();
-            FakeOpenConnectionHandler fakeOpenConnectionHandler = new (failingIndexes: new HashSet<int>());
+            FakeMessageHandler messageHandler = new();
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
             List<PartitionKeyRangeIdentity> partitionKeyRangeIdentities = Enumerable.Repeat(this.testPartitionKeyRangeIdentity, 70).ToList();
 
-            List<Address> addresses = new ()
+            List<Address> addresses = new()
             {
                 new Address() { IsPrimary = true, PhysicalUri = "https://blabla.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
                 new Address() { IsPrimary = false, PhysicalUri = "https://blabla3.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" },
@@ -899,7 +952,7 @@ namespace Microsoft.Azure.Cosmos
                 new Address() { IsPrimary = false, PhysicalUri = "https://blabla5.com", Protocol = RuntimeConstants.Protocols.RNTBD, PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" }
             };
 
-            FeedResource<Address> addressFeedResource = new ()
+            FeedResource<Address> addressFeedResource = new()
             {
                 Id = "YxM9ANCZIwABAAAAAAAAAA==",
                 SelfLink = "dbs/YxM9AA==/colls/YxM9ANCZIwA=/docs/YxM9ANCZIwABAAAAAAAAAA==/",
@@ -907,24 +960,25 @@ namespace Microsoft.Azure.Cosmos
                 InnerCollection = new Collection<Address>(addresses),
             };
 
-            StringBuilder feedResourceString = new ();
+            StringBuilder feedResourceString = new();
             addressFeedResource.SaveTo(feedResourceString);
 
-            StringContent content = new (feedResourceString.ToString());
-            HttpResponseMessage responseMessage = new ()
+            StringContent content = new(feedResourceString.ToString());
+            HttpResponseMessage responseMessage = new()
             {
                 StatusCode = HttpStatusCode.OK,
                 Content = content,
             };
 
-            Mock<CosmosHttpClient> mockHttpClient = new ();
+            Mock<CosmosHttpClient> mockHttpClient = new();
             mockHttpClient.SetupSequence(x => x.GetAsync(
                     It.IsAny<Uri>(),
                     It.IsAny<Documents.Collections.INameValueCollection>(),
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
                 .ThrowsAsync(new Exception("Some random error occurred."))
                 .ReturnsAsync(responseMessage);
 
@@ -935,6 +989,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 mockHttpClient.Object,
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2);
 
             // Act.
@@ -999,6 +1054,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true,
                 replicaAddressValidationEnabled: true);
@@ -1144,6 +1200,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true,
                 replicaAddressValidationEnabled: true);
@@ -1361,6 +1418,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true,
                 replicaAddressValidationEnabled: true);
@@ -1410,10 +1468,10 @@ namespace Microsoft.Azure.Cosmos
                             cancellationToken: CancellationToken.None)
                          .ContinueWith(x =>
                          {
-                            if(x.IsCompletedSuccessfully)
-                            {
-                                Interlocked.Increment(ref numberOfTasksCreated);
-                            }
+                             if (x.IsCompletedSuccessfully)
+                             {
+                                 Interlocked.Increment(ref numberOfTasksCreated);
+                             }
                          }));
                 }
 
@@ -1477,6 +1535,7 @@ namespace Microsoft.Azure.Cosmos
                 this.mockServiceConfigReader.Object,
                 MockCosmosUtil.CreateCosmosHttpClient(() => httpClient),
                 openConnectionsHandler: fakeOpenConnectionHandler,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
                 suboptimalPartitionForceRefreshIntervalInSeconds: 2,
                 enableTcpConnectionEndpointRediscovery: true);
 

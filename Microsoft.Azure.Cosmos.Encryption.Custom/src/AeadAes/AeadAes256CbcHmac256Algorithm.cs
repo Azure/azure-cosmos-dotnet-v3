@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using System.IO;
     using System.Security.Cryptography;
 
+#pragma warning disable SYSLIB0021 // Type or member is obsolete
+
     /// <summary>
     /// This class implements authenticated encryption algorithm with associated data as described in
     /// http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05 - specifically this implements
@@ -156,7 +158,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// cell_tag = HMAC_SHA-2-256(mac_key, versionbyte + cell_iv + cell_ciphertext + versionbyte_length)
         /// cell_blob = versionbyte + cell_tag + cell_iv + cell_ciphertext
         /// </summary>
-        /// <param name="plainText">Plaintext data to be encrypted</param>
         /// <returns>Returns the ciphertext corresponding to the plaintext.</returns>
         public override int EncryptData(byte[] plainText, int plainTextOffset, int plainTextLength, byte[] output, int outputOffset)
         {
@@ -484,4 +485,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             return ((inputSize / BlockSizeInBytes) + 1) * BlockSizeInBytes;
         }
     }
+
+#pragma warning restore SYSLIB0021 // Type or member is obsolete
 }

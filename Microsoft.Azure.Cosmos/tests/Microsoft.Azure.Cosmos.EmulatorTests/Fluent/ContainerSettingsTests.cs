@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
     using System;
-    using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
@@ -585,10 +584,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                 .Path(vector1Path, VectorIndexType.Flat)
                              .Attach()
                             .WithVectorIndex()
-                                .Path(vector2Path, VectorIndexType.Flat)
+                                .Path(vector2Path, VectorIndexType.QuantizedFlat)
+                                .WithQuantizationByteSize(3)
+                                .WithVectorIndexShardKey(new string[] { "/Country" })
                              .Attach()
                             .WithVectorIndex()
-                                .Path(vector3Path, VectorIndexType.Flat)
+                                .Path(vector3Path, VectorIndexType.DiskANN)
+                                .WithQuantizationByteSize(2)
+                                .WithIndexingSearchListSize(5)
+                                .WithVectorIndexShardKey(new string[] { "/ZipCode" })
                              .Attach()
                         .Attach()
                         .CreateAsync();
@@ -610,9 +614,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(vector1Path, containerSettings.IndexingPolicy.VectorIndexes[0].Path);
                 Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[0].Type);
                 Assert.AreEqual(vector2Path, containerSettings.IndexingPolicy.VectorIndexes[1].Path);
-                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(VectorIndexType.QuantizedFlat, containerSettings.IndexingPolicy.VectorIndexes[1].Type);
+                Assert.AreEqual(3, containerSettings.IndexingPolicy.VectorIndexes[1].QuantizationByteSize);
+                CollectionAssert.AreEqual(new string[] { "/Country" }, containerSettings.IndexingPolicy.VectorIndexes[1].VectorIndexShardKey);
                 Assert.AreEqual(vector3Path, containerSettings.IndexingPolicy.VectorIndexes[2].Path);
-                Assert.AreEqual(VectorIndexType.Flat, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+                Assert.AreEqual(VectorIndexType.DiskANN, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
+                Assert.AreEqual(2, containerSettings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize);
+                Assert.AreEqual(5, containerSettings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize);
+                CollectionAssert.AreEqual(new string[] { "/ZipCode" }, containerSettings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey);
             }
             finally
             {
@@ -671,6 +680,130 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             containerResponse = await containerResponse.Container.DeleteContainerAsync();
             Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicy()
+        {
+            string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
+            Database databaseForVectorEmbedding = await this.GetClient().CreateDatabaseAsync("fullTextSearchDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath1,
+                        Language = "en-US",
+                    },
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath2,
+                        Language = "en-US",
+                    },
+                    new FullTextPath()
+                    {
+                        Path = fullTextPath3,
+                        Language = "en-US",
+                    },
+                };
+
+                string containerName = "fullTextContainerTest";
+                string partitionKeyPath = "/pk";
+
+                ContainerResponse containerResponse =
+                    await databaseForVectorEmbedding.DefineContainer(containerName, partitionKeyPath)
+                        .WithFullTextPolicy(
+                            defaultLanguage: "en-US",
+                            fullTextPaths: fullTextPaths)
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath1)
+                             .Attach()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath2)
+                             .Attach()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath3)
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+
+                // Validate FullText Paths.
+                Assert.IsNotNull(containerSettings.FullTextPolicy);
+                Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
+                Assert.AreEqual(fullTextPaths.Count, containerSettings.FullTextPolicy.FullTextPaths.Count());
+                Assert.IsTrue(fullTextPaths.OrderBy(x => x.Path).SequenceEqual(containerSettings.FullTextPolicy.FullTextPaths.OrderBy(x => x.Path)));
+
+                // Validate Full Text Indexes.
+                Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+                Assert.AreEqual(fullTextPaths.Count, containerSettings.IndexingPolicy.FullTextIndexes.Count());
+                Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
+                Assert.AreEqual(fullTextPath2, containerSettings.IndexingPolicy.FullTextIndexes[1].Path);
+                Assert.AreEqual(fullTextPath3, containerSettings.IndexingPolicy.FullTextIndexes[2].Path);
+            }
+            finally
+            {
+                await databaseForVectorEmbedding.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyWithDefaultLanguage()
+        {
+            string fullTextPath1 = "/fts1";
+            Database databaseForVectorEmbedding = await this.GetClient().CreateDatabaseAsync("fullTextSearchDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                string containerName = "fullTextContainerTest";
+                string partitionKeyPath = "/pk";
+
+                ContainerResponse containerResponse =
+                    await databaseForVectorEmbedding.DefineContainer(containerName, partitionKeyPath)
+                        .WithFullTextPolicy(
+                            defaultLanguage: "en-US",
+                            fullTextPaths: new Collection<FullTextPath>() {  new FullTextPath()
+                            {
+                                Language = "en-US",
+                                Path = fullTextPath1
+                            }})
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath1)
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+
+                // Validate FullText Paths.
+                Assert.IsNotNull(containerSettings.FullTextPolicy);
+                Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
+                Assert.AreEqual(1, containerSettings.FullTextPolicy.FullTextPaths.Count());
+
+                // Validate Full Text Indexes.
+                Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+                Assert.AreEqual(1, containerSettings.IndexingPolicy.FullTextIndexes.Count());
+                Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
+            }
+            finally
+            {
+                await databaseForVectorEmbedding.DeleteAsync();
+            }
         }
 
         [Ignore]

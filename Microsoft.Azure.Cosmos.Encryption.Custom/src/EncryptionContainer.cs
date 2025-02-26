@@ -122,10 +122,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(streamPayload);
+#else
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
             }
+#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("CreateItemStream"))
@@ -304,6 +308,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(id);
+            ArgumentNullException.ThrowIfNull(item);
+#else
             if (id == null)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -313,6 +321,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(item));
             }
+#endif
 
             if (requestOptions is not EncryptionItemRequestOptions encryptionItemRequestOptions ||
                 encryptionItemRequestOptions.EncryptionOptions == null)
@@ -384,6 +393,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(id);
+            ArgumentNullException.ThrowIfNull(streamPayload);
+#else
             if (id == null)
             {
                 throw new ArgumentNullException(nameof(id));
@@ -393,6 +406,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(streamPayload));
             }
+#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("ReplaceItemStream"))
@@ -426,11 +440,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     partitionKey,
                     requestOptions,
                     cancellationToken);
-            }
-
-            if (partitionKey == null)
-            {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
             streamPayload = await EncryptionProcessor.EncryptAsync(
@@ -536,10 +545,14 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(streamPayload);
+#else
             if (streamPayload == null)
             {
                 throw new ArgumentNullException(nameof(streamPayload));
             }
+#endif
 
             CosmosDiagnosticsContext diagnosticsContext = CosmosDiagnosticsContext.Create(requestOptions);
             using (diagnosticsContext.CreateScope("UpsertItemStream"))
@@ -570,11 +583,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     partitionKey,
                     requestOptions,
                     cancellationToken);
-            }
-
-            if (partitionKey == null)
-            {
-                throw new NotSupportedException($"{nameof(partitionKey)} cannot be null for operations using {nameof(EncryptionContainer)}.");
             }
 
             streamPayload = await EncryptionProcessor.EncryptAsync(
@@ -1041,6 +1049,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 cancellationToken);
         }
 #endif
+
         private async Task<ResponseMessage> ReadManyItemsHelperAsync(
            IReadOnlyList<(string id, PartitionKey partitionKey)> items,
            ReadManyRequestOptions readManyRequestOptions = null,

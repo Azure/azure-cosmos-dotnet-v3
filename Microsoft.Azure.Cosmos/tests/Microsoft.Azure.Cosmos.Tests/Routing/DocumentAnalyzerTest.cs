@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                     new IsoDateTimeConverter()
                                 }
                             });
-                        return str.Substring(1, str.Length - 2);
+                        return str[1..^1];
                     }),
                 ("Enum", HttpStatusCode.OK, val => (int)val),
                 ("CustomEnum", HttpStatusCode.OK, val => val.ToString()),
@@ -314,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             sd,
                             new JsonSerializerSettings()
                             {
-                                
+
                             }),
                         partitionKeyDefinition);
 
@@ -427,16 +427,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
             {
-                int seconds;
-                if (value is DateTime time)
-                {
-                    seconds = DateTimeToEpoch(time);
-                }
-                else
-                {
-                    throw new Exception("Expected date object value.");
-                }
-
+                int seconds = value is DateTime time ? DateTimeToEpoch(time) : throw new Exception("Expected date object value.");
                 writer.WriteValue(seconds);
             }
         }

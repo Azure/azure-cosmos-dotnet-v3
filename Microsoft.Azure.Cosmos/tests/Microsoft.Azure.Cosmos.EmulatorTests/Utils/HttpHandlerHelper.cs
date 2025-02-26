@@ -17,7 +17,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> RequestCallBack { get; set; }
 
-        public Func<HttpResponseMessage, Task<HttpResponseMessage>> ResponseIntercepter { get; set; }
+        public Func<HttpResponseMessage, HttpRequestMessage, Task<HttpResponseMessage>> ResponseIntercepter { get; set; }
+
+        public Action<HttpRequestMessage, Exception> ExceptionIntercepter { get; set; }
 
         public Action<HttpRequestMessage, Exception> ExceptionIntercepter { get; set; }
 
@@ -34,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if (this.ResponseIntercepter != null)
                         {
-                            httpResponse = await this.ResponseIntercepter(httpResponse);
+                            httpResponse = await this.ResponseIntercepter(httpResponse, request);
                         }
                         return httpResponse;
                     }
@@ -58,7 +60,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
            
             if (this.ResponseIntercepter != null)
             {
-                httpResponse = await this.ResponseIntercepter(httpResponse);
+                httpResponse = await this.ResponseIntercepter(httpResponse, request);
             }
 
             return httpResponse;

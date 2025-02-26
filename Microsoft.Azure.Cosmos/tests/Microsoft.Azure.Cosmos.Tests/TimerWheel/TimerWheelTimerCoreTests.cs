@@ -18,14 +18,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         public void TimeSpanZero()
         {
-            TimerWheelTimerCore timer = new TimerWheelTimerCore(TimeSpan.Zero, Mock.Of<TimerWheel>());
+            _ = new TimerWheelTimerCore(TimeSpan.Zero, Mock.Of<TimerWheel>());
         }
 
         [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public void NullTimerWheel()
         {
-            TimerWheelTimerCore timer = new TimerWheelTimerCore(TimeSpan.FromMilliseconds(1), null);
+            _ = new TimerWheelTimerCore(TimeSpan.FromMilliseconds(1), null);
         }
 
         [TestMethod]

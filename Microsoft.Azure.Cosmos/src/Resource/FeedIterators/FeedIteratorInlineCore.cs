@@ -28,12 +28,9 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
 
-            this.querySpec = feedIteratorInternal.querySpec;
             this.container = feedIteratorInternal.container;
-            this.databaseName = feedIteratorInternal.databaseName;
 
-            this.operationName = feedIteratorInternal.operationName;
-            this.operationType = feedIteratorInternal.operationType;
+            this.SetupInfoForTelemetry(feedIteratorInternal);
         }
 
         internal FeedIteratorInlineCore(
@@ -44,10 +41,8 @@ namespace Microsoft.Azure.Cosmos
             this.clientContext = clientContext;
 
             this.container = feedIteratorInternal.container;
-            this.databaseName = feedIteratorInternal.databaseName;
 
-            this.operationName = feedIteratorInternal.operationName;
-            this.operationType = feedIteratorInternal.operationType;
+            this.SetupInfoForTelemetry(feedIteratorInternal);
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -59,7 +54,11 @@ namespace Microsoft.Azure.Cosmos
                         containerName: this.container?.Id,
                         databaseName: this.container?.Database?.Id ?? this.databaseName,
                         operationType: Documents.OperationType.ReadFeed,
-                        requestOptions: null,
+                        requestOptions: new RequestOptions()
+                        {
+                            OperationMetricsOptions = this.operationMetricsOptions,
+                            NetworkMetricsOptions = this.networkMetricsOptions,
+                        },
                         task: (trace) => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
                         openTelemetry: new (this.operationName, (response) =>
                         {

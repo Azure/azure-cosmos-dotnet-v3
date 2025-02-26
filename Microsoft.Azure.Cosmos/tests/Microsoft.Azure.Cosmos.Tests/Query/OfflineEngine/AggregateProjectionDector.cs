@@ -62,6 +62,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
                     return false;
                 }
 
+                public override bool Visit(SqlAllScalarExpression sqlAllScalarExpression)
+                {
+                    // No need to worry about aggregates within the subquery (they will recursively get rewritten).
+                    return false;
+                }
+
                 public override bool Visit(SqlArrayCreateScalarExpression sqlArrayCreateScalarExpression)
                 {
                     bool hasAggregates = false;
@@ -119,9 +125,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 
                 public override bool Visit(SqlFunctionCallScalarExpression sqlFunctionCallScalarExpression)
                 {
-                    Aggregate aggregate;
                     return !sqlFunctionCallScalarExpression.IsUdf &&
-                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out aggregate);
+                        Enum.TryParse(value: sqlFunctionCallScalarExpression.Name.Value, ignoreCase: true, result: out Aggregate _);
                 }
 
                 public override bool Visit(SqlInScalarExpression sqlInScalarExpression)

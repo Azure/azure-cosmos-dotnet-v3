@@ -54,10 +54,15 @@ namespace Microsoft.Azure.Cosmos.Query
             this.hasMoreResults = true;
             this.correlatedActivityId = correlatedActivityId;
 
-            this.querySpec = sqlQuerySpec;
             this.container = container;
-            this.operationName = OpenTelemetryConstants.Operations.QueryItems;
-            this.operationType = Documents.OperationType.Query;
+
+            this.SetupInfoForTelemetry(
+                databaseName: container?.Database?.Id,
+                operationName: OpenTelemetryConstants.Operations.QueryItems,
+                operationType: Documents.OperationType.Query,
+                querySpec: sqlQuerySpec,
+                operationMetricsOptions: requestOptions?.OperationMetricsOptions,
+                networkMetricOptions: requestOptions?.NetworkMetricsOptions);
         }
 
         public static QueryIterator Create(
@@ -145,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
                 isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
-                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode && (clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway),
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(

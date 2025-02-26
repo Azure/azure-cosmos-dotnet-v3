@@ -114,7 +114,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 { HttpConstants.HttpHeaders.Continuation, continuation }
             };
-            Range<string> range = partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out List<CompositeContinuationToken> compositeContinuationTokens);
+            Range<string> range = partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(headers, out _);
             Assert.IsTrue(expectedRange.Equals(range));
             Assert.AreEqual(expectedToken, headers.Get(HttpConstants.HttpHeaders.Continuation)); //not a composite token
         }

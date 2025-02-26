@@ -37,15 +37,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             set;
         }
 
+        [JsonProperty("componentWeights")]
+        public List<double> ComponentWeights
+        {
+            get;
+            set;
+        }
+
         [JsonProperty("skip")]
-        public int? Skip
+        public uint? Skip
         {
             get;
             set;
         }
 
         [JsonProperty("take")]
-        public int? Take
+        public uint? Take
         {
             get;
             set;

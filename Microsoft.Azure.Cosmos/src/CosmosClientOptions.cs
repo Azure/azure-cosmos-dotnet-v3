@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography.X509Certificates;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -73,6 +74,7 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
+        private IFaultInjector faultInjector;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -720,12 +722,7 @@ namespace Microsoft.Azure.Cosmos
         /// If a response from either the primary request or the first hedged request is not received 
         /// after the threshold step time, the SDK will hedge to the third region and so on.
         /// </remarks>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        AvailabilityStrategy AvailabilityStrategy { get; set; }
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
         /// Enable partition key level failover
@@ -898,6 +895,56 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
+        /// <summary>
+        /// Create a client with Fault Injection capabilities using the Cosmos DB Fault Injection Library.
+        /// </summary>
+        /// <example>
+        /// How to create a CosmosClient with Fault Injection capabilities.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// FaultInjectionRule rule = new FaultInjectionRuleBuilder(
+        ///     id: "ruleId",
+        ///     condition: new FaultInjectionConditionBuilder()
+        ///         .WithRegion("East US")
+        ///         .Build(),
+        ///     result: new FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+        ///         .Build())
+        ///     .Build();
+        ///     
+        /// FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule>() { rule });
+        /// 
+        /// CosmosClientOptions clientOptions = new CosmosClientOptions()
+        /// {
+        ///     FaultInjector = faultInjector
+        /// };
+        /// 
+        /// CosmosClient client = new CosmosClient("connection string", clientOptions);
+        /// ]]>
+        /// </code>
+        /// </example> 
+        public IFaultInjector FaultInjector
+        {
+            get => this.faultInjector;
+            set
+            {
+                this.faultInjector = value;
+                if (this.faultInjector != null)
+                {
+                    this.ChaosInterceptorFactory = this.faultInjector.GetChaosInterceptorFactory();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets the throughput bucket for requests created using cosmos client.
+        /// </summary>
+        /// <remarks>
+        /// If throughput bucket is also set at request level in <see cref="RequestOptions.ThroughputBucket"/>, that throughput bucket is used.
+        /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
+        /// </remarks>
+        /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
+        internal int? ThroughputBucket { get; set; }
+
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
         internal void SetSerializerIfNotConfigured(CosmosSerializer serializer)
@@ -919,7 +966,6 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
             this.ValidatePartitionLevelFailoverSettings();
-            this.ValidateAvailabilityStrategy();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1092,18 +1138,10 @@ namespace Microsoft.Azure.Cosmos
         private void ValidatePartitionLevelFailoverSettings()
         {
             if (this.EnablePartitionLevelFailover
-                && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
+                && string.IsNullOrEmpty(this.ApplicationRegion)
+                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
             {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
-            }
-        }
-
-        private void ValidateAvailabilityStrategy()
-        {
-            if (this.AvailabilityStrategy != null
-                && this.ApplicationPreferredRegions == null && this.ApplicationRegion == null)
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} must be set to use {nameof(this.AvailabilityStrategy)}");
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 

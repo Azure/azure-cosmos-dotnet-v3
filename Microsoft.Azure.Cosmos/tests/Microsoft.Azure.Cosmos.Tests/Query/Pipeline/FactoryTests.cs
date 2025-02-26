@@ -28,8 +28,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 targetRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 partitionKey: null,
                 containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
+                allRanges: new List<FeedRangeEpk>() { FeedRangeEpk.FullRange },
                 queryInfo: new QueryInfo() { },
-                queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: 10),
+                hybridSearchQueryInfo: null,
+                maxItemCount: 10,
+                isContinuationExpected: true,
                 maxConcurrency: 10,
                 requestContinuationToken: default); ;
             Assert.IsTrue(monadicCreatePipeline.Succeeded);

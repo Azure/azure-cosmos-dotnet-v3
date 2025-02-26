@@ -42,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             using (SHA256 sha256 = SHA256.Create())
             {
+#pragma warning disable CA1850 // Prefer static 'HashData' method over 'ComputeHash'
                 byte[] hashValue = sha256.ComputeHash(input);
+#pragma warning restore CA1850 // Prefer static 'HashData' method over 'ComputeHash'
                 return GetHexString(hashValue);
             }
         }
@@ -54,8 +56,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static void GenerateRandomBytes(byte[] randomBytes)
         {
             // Generate random bytes cryptographically.
+#if NET8_0_OR_GREATER
+            RandomNumberGenerator.Fill(randomBytes);
+#else
             using RNGCryptoServiceProvider rngCsp = new ();
             rngCsp.GetBytes(randomBytes);
+#endif
         }
 
         /// <summary>

@@ -117,16 +117,27 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// Defines a <see cref="VectorIndexPath"/> in the current <see cref="Container"/>'s definition.
         /// </summary>
         /// <returns>An instance of <see cref="VectorIndexDefinition{T}"/>.</returns>
+        public VectorIndexDefinition<IndexingPolicyDefinition<T>> WithVectorIndex()
+        {
+            return new VectorIndexDefinition<IndexingPolicyDefinition<T>>(
+                this,
+                (vectorIndex) => this.AddVectorIndexPath(vectorIndex));
+        }
+
+        /// <summary>
+        /// Defines a <see cref="FullTextIndexPath"/> in the current <see cref="Container"/>'s definition.
+        /// </summary>
+        /// <returns>An instance of <see cref="FullTextIndexDefinition{T}"/>.</returns>
 #if PREVIEW
         public
 #else
         internal
 #endif
-        VectorIndexDefinition<IndexingPolicyDefinition<T>> WithVectorIndex()
+        FullTextIndexDefinition<IndexingPolicyDefinition<T>> WithFullTextIndex()
         {
-            return new VectorIndexDefinition<IndexingPolicyDefinition<T>>(
+            return new FullTextIndexDefinition<IndexingPolicyDefinition<T>>(
                 this,
-                (vectorIndex) => this.AddVectorIndexPath(vectorIndex));
+                (fullTextIndex) => this.AddFullTextndexPath(fullTextIndex));
         }
 
         /// <summary>
@@ -152,6 +163,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void AddVectorIndexPath(VectorIndexPath vectorIndexPath)
         {
             this.indexingPolicy.VectorIndexes.Add(vectorIndexPath);
+        }
+
+        private void AddFullTextndexPath(FullTextIndexPath fullTextIndexPath)
+        {
+            this.indexingPolicy.FullTextIndexes.Add(fullTextIndexPath);
         }
 
         private void AddIncludedPaths(IEnumerable<string> paths)

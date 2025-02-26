@@ -17,8 +17,8 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Web;
     using global::Azure;
     using global::Azure.Core;
-    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Authorization;
+    using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Documents.Collections;
@@ -314,7 +314,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockHttpHandler.Setup(x => x.SendAsync(
                     It.IsAny<HttpRequestMessage>(),
                     It.IsAny<CancellationToken>()))
-                .Returns((HttpRequestMessage request, CancellationToken cancellationToken) => {
+                .Returns((HttpRequestMessage request, CancellationToken cancellationToken) =>
+                {
 
                     HttpResponseMessage responseMessage = new HttpResponseMessage((HttpStatusCode)defaultStatusCode);
                     if (request.RequestUri != VmMetadataApiHandler.vmMetadataEndpointUrl)
@@ -330,22 +331,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                             out ReadOnlyMemory<char> _,
                             out ReadOnlyMemory<char> tokenFromAuthHeader);
 
-                        bool authValidated = false;
-                        if (MemoryExtensions.Equals(authType.Span, Documents.Constants.Properties.ResourceToken.AsSpan(), StringComparison.OrdinalIgnoreCase))
-                        {
-                            authValidated = HttpUtility.UrlDecode(authValues.First()) == currentKey;
-                        }
-                        else
-                        { 
-                            authValidated = AuthorizationHelper.CheckPayloadUsingKey(
+                        bool authValidated = MemoryExtensions.Equals(authType.Span, Documents.Constants.Properties.ResourceToken.AsSpan(), StringComparison.OrdinalIgnoreCase)
+                            ? HttpUtility.UrlDecode(authValues.First()) == currentKey
+                            : AuthorizationHelper.CheckPayloadUsingKey(
                                 tokenFromAuthHeader,
                                 request.Method.Method,
                                 resourceIdValue,
                                 resourceType,
                                 request.Headers.Aggregate(new NameValueCollectionWrapper(), (c, kvp) => { c.Add(kvp.Key, kvp.Value); return c; }),
                                 currentKey);
-                        }
-
                         int subStatusCode = authValidated ? defaultSubStatusCode : authMisMatchStatusCode;
                         responseMessage.Headers.Add(Documents.WFConstants.BackendHeaders.SubStatus, subStatusCode.ToString());
                     }
@@ -399,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         private static string NewRamdonResourceToken()
         {
-            return "type=resource&ver=1.0&sig="  + Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+            return "type=resource&ver=1.0&sig=" + Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
         }
 
         [TestMethod]
