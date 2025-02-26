@@ -167,8 +167,6 @@ namespace Microsoft.Azure.Cosmos
         private IStoreClientFactory storeClientFactory;
         internal CosmosHttpClient httpClient { get; private set; }
 
-        internal CosmosHttpClient liteModeHttpClient { get; private set; }
-
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
         // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
@@ -200,7 +198,7 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-        private string liteClientTestEndpoint = "https://aavasthy-vmsstest.sql.cosmos.azure.com:10650";
+        private string liteClientTestEndpoint = "https://cdb-ms-stage-eastus2-fe2-sql.eastus2.cloudapp.azure.com:10650";
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -968,17 +966,6 @@ namespace Microsoft.Azure.Cosmos
                 this.sendingRequest,
                 this.receivedResponse);
 
-            if (enableLiteClientMode)
-            {
-                this.liteModeHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
-                    this.ApiType,
-                    DocumentClientEventSource.Instance,
-                    this.ConnectionPolicy,
-                    null,
-                    this.sendingRequest,
-                    this.receivedResponse);
-            }
-
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
@@ -1093,7 +1080,7 @@ namespace Microsoft.Azure.Cosmos
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.liteModeHttpClient,
+                    this.httpClient,
                     new Uri(this.liteClientEndpoint),
                     this.accountServiceConfiguration.AccountProperties.Id);
 

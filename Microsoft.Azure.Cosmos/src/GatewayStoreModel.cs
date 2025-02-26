@@ -24,18 +24,18 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
-        private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
+        internal static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
 
-        private readonly GlobalEndpointManager endpointManager;
-        private readonly DocumentClientEventSource eventSource;
-        private readonly ISessionContainer sessionContainer;
-        private readonly ConsistencyLevel defaultConsistencyLevel;
+        internal readonly GlobalEndpointManager endpointManager;
+        internal readonly DocumentClientEventSource eventSource;
+        internal readonly ISessionContainer sessionContainer;
+        internal readonly ConsistencyLevel defaultConsistencyLevel;
 
-        private GatewayStoreClient gatewayStoreClient;
+        internal GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private ClientCollectionCache clientCollectionCache;
-        private PartitionKeyRangeCache partitionKeyRangeCache;
+        internal ClientCollectionCache clientCollectionCache;
+        internal PartitionKeyRangeCache partitionKeyRangeCache;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
-        private async Task CaptureSessionTokenAndHandleSplitAsync(
+        internal async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Uri GetEntityUri(DocumentServiceRequest entity)
+        internal Uri GetEntityUri(DocumentServiceRequest entity)
         {
             string contentLocation = entity.Headers[HttpConstants.HttpHeaders.ContentLocation];
 
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos
             return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
         }
 
-        private Uri GetFeedUri(DocumentServiceRequest request)
+        internal Uri GetFeedUri(DocumentServiceRequest request)
         {
             return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
         }

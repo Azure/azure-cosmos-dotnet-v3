@@ -21,9 +21,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
+        internal readonly CosmosHttpClient httpClient;
+        internal readonly JsonSerializerSettings SerializerSettings;
         private readonly ICommunicationEventSource eventSource;
-        private readonly CosmosHttpClient httpClient;
-        private readonly JsonSerializerSettings SerializerSettings;
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = eventSource;
         }
 
-        public async Task<DocumentServiceResponse> InvokeAsync(
+        public virtual async Task<DocumentServiceResponse> InvokeAsync(
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        private async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
+        internal async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
             DocumentServiceRequest request,
             Uri physicalAddress)
         {
