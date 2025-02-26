@@ -21,18 +21,12 @@ namespace Microsoft.Azure.Cosmos
     /// An IStoreModelExtension implementation that routes operations through the ThinClient proxy. 
     /// It applies session tokens, resolves partition key ranges, and delegates requests to ProxyStoreClient.
     /// </summary>
-    internal class ThinClientStoreModel : IStoreModelExtension, IDisposable
+    internal class ThinClientStoreModel : GatewayStoreModel
     {
         private readonly IGlobalEndpointManager endpointManager;
-        private readonly DocumentClientEventSource eventSource;
-        private readonly ISessionContainer sessionContainer;
         private readonly ConsistencyLevel defaultConsistencyLevel;
-
+        private readonly DocumentClientEventSource eventSource;
         private ProxyStoreClient proxyStoreClient;
-
-        // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private ClientCollectionCache clientCollectionCache;
-        private PartitionKeyRangeCache partitionKeyRangeCache;
 
         public ThinClientStoreModel(
             IGlobalEndpointManager endpointManager,
@@ -43,11 +37,18 @@ namespace Microsoft.Azure.Cosmos
             CosmosHttpClient httpClient,
             Uri proxyEndpoint,
             string globalDatabaseAccountName)
+            : base(
+                  (IGlobalEndpointManager)endpointManager,
+                  sessionContainer,
+                  defaultConsistencyLevel,
+                  eventSource,
+                  serializerSettings,
+                  httpClient)
         {
             this.endpointManager = endpointManager;
-            this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
+
             this.proxyStoreClient = new ProxyStoreClient(
                 httpClient,
                 this.eventSource,
@@ -56,17 +57,11 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings);
         }
 
-        public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(
+        public override async Task<DocumentServiceResponse> ProcessMessageAsync(
             DocumentServiceRequest request,
             CancellationToken cancellationToken = default)
         {
-            DefaultTrace.TraceInformation(
-                "In {0}, OperationType: {1}, ResourceType: {2}",
-                nameof(ThinClientStoreModel),
-                request.OperationType,
-                request.ResourceType);
-
-            await StoreModelHelper.ApplySessionTokenAsync(
+            await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
                 this.sessionContainer,
@@ -81,11 +76,10 @@ namespace Microsoft.Azure.Cosmos
                     ? this.GetFeedUri(request)
                     : this.GetEntityUri(request);
 
-                // Collect region name only for document resources
-                if (request.ResourceType.Equals(ResourceType.Document)
-                    && this.endpointManager.TryGetLocationForGatewayDiagnostics(
-                           request.RequestContext.LocationEndpointToRoute,
-                           out string regionName))
+                if (request.ResourceType.Equals(ResourceType.Document) &&
+                    this.endpointManager.TryGetLocationForGatewayDiagnostics(
+                        request.RequestContext.LocationEndpointToRoute,
+                        out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;
                 }
@@ -96,21 +90,20 @@ namespace Microsoft.Azure.Cosmos
                     physicalAddress,
                     cancellationToken);
             }
-            catch (DocumentClientException exception)
+            catch (DocumentClientException ex)
             {
-                if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
-                    (exception.StatusCode == HttpStatusCode.PreconditionFailed
-                     || exception.StatusCode == HttpStatusCode.Conflict
-                     || (exception.StatusCode == HttpStatusCode.NotFound
-                         && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType) &&
+                    (ex.StatusCode == HttpStatusCode.PreconditionFailed
+                     || ex.StatusCode == HttpStatusCode.Conflict
+                     || (ex.StatusCode == HttpStatusCode.NotFound
+                         && ex.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
                     await this.CaptureSessionTokenAndHandleSplitAsync(
-                        exception.StatusCode,
-                        exception.GetSubStatus(),
+                        ex.StatusCode,
+                        ex.GetSubStatus(),
                         request,
-                        exception.Headers);
+                        ex.Headers);
                 }
-
                 throw;
             }
 
@@ -123,35 +116,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        private async Task CaptureSessionTokenAndHandleSplitAsync(
-            HttpStatusCode? statusCode,
-            SubStatusCodes subStatusCode,
-            DocumentServiceRequest request,
-            INameValueCollection responseHeaders)
-        {
-            await StoreModelHelper.CaptureSessionTokenAndHandleSplitAsync(
-                this.sessionContainer,
-                this.partitionKeyRangeCache,
-                statusCode,
-                subStatusCode,
-                request,
-                responseHeaders);
-        }
-
-        public void SetCaches(
-            PartitionKeyRangeCache partitionKeyRangeCache,
-            ClientCollectionCache clientCollectionCache)
-        {
-            this.clientCollectionCache = clientCollectionCache;
-            this.partitionKeyRangeCache = partitionKeyRangeCache;
-        }
-
-        public void Dispose()
-        {
-            this.Dispose(true);
-        }
-
-        private void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -163,41 +128,19 @@ namespace Microsoft.Azure.Cosmos
                     }
                     catch (Exception exception)
                     {
-                        DefaultTrace.TraceWarning(
-                            "Exception {0} thrown during dispose of HttpClient...",
+                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
                             exception);
                     }
-
                     this.proxyStoreClient = null;
                 }
             }
+            base.Dispose(disposing);
         }
 
-        private Uri GetEntityUri(DocumentServiceRequest entity)
+        public new void Dispose()
         {
-            string contentLocation = entity.Headers[HttpConstants.HttpHeaders.ContentLocation];
-            if (!string.IsNullOrEmpty(contentLocation))
-            {
-                return new Uri(
-                    this.endpointManager.ResolveServiceEndpoint(entity),
-                    new Uri(contentLocation).AbsolutePath);
-            }
-
-            return new Uri(
-                this.endpointManager.ResolveServiceEndpoint(entity),
-                PathsHelper.GeneratePath(entity.ResourceType, entity, false));
-        }
-
-        private Uri GetFeedUri(DocumentServiceRequest request)
-        {
-            return new Uri(
-                this.endpointManager.ResolveServiceEndpoint(request),
-                PathsHelper.GeneratePath(request.ResourceType, request, true));
-        }
-
-        public Task OpenConnectionsToAllReplicasAsync(string databaseName, string containerLinkUri, CancellationToken cancellationToken = default)
-        {
-            return Task.CompletedTask;
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }
