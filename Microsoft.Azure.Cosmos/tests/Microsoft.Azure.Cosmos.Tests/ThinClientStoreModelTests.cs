@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Arrange
             bool disposeCalled = false;
 
-            ProxyStoreClient proxyStoreClient = new MockProxyStoreClient(
+            ThinClientStoreClient proxyStoreClient = new MockProxyStoreClient(
                 invokeAsyncFunc: (request, resourceType, uri, cancellationToken) => throw new NotImplementedException(),
                 onDispose: () => disposeCalled = true);
 
@@ -208,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         // Helper method to inject the ProxyStoreClient into ThinClientStoreModel
-        private static void ReplaceProxyStoreClientField(ThinClientStoreModel model, ProxyStoreClient newClient)
+        private static void ReplaceProxyStoreClientField(ThinClientStoreModel model, ThinClientStoreClient newClient)
         {
             FieldInfo field = typeof(ThinClientStoreModel).GetField(
                 "proxyStoreClient",
@@ -217,7 +217,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             field.SetValue(model, newClient);
         }
 
-        internal class MockProxyStoreClient : ProxyStoreClient
+        internal class MockProxyStoreClient : ThinClientStoreClient
         {
             private readonly Func<DocumentServiceRequest, ResourceType, Uri, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc;
             private readonly Action onDispose;

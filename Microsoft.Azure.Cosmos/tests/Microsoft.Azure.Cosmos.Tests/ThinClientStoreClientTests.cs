@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class ProxyStoreClientTests
+    public class ThinClientStoreClientTests
     {
         [TestInitialize]
         public void TestInitialize()
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(notFoundResponse));
 
-            ProxyStoreClient proxyClient = new ProxyStoreClient(
+            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(serverErrorResponse));
 
-            ProxyStoreClient proxyClient = new ProxyStoreClient(
+            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(forbiddenHtml));
 
-            ProxyStoreClient proxyClient = new ProxyStoreClient(
+            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),
@@ -158,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(successResponse));
 
-            ProxyStoreClient proxyClient = new ProxyStoreClient(
+            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 proxyEndpoint: new Uri("https://mock.proxy.com"),

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly IGlobalEndpointManager endpointManager;
         private readonly ConsistencyLevel defaultConsistencyLevel;
         private readonly DocumentClientEventSource eventSource;
-        private ProxyStoreClient proxyStoreClient;
+        private ThinClientStoreClient proxyStoreClient;
 
         public ThinClientStoreModel(
             IGlobalEndpointManager endpointManager,
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
 
-            this.proxyStoreClient = new ProxyStoreClient(
+            this.proxyStoreClient = new ThinClientStoreClient(
                 httpClient,
                 this.eventSource,
                 proxyEndpoint,
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
-                Uri physicalAddress = ProxyStoreClient.IsFeedRequest(request.OperationType)
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                     ? this.GetFeedUri(request)
                     : this.GetEntityUri(request);
 

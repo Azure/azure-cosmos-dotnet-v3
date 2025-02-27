@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        protected internal PartitionKeyRangeCache partitionKeyRangeCache;
-        protected internal ClientCollectionCache clientCollectionCache;
-        protected internal ISessionContainer sessionContainer;
+        internal PartitionKeyRangeCache partitionKeyRangeCache;
+        internal ClientCollectionCache clientCollectionCache;
+        internal ISessionContainer sessionContainer;
 
         public GatewayStoreModel(
             IGlobalEndpointManager endpointManager,
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
-        protected internal async Task CaptureSessionTokenAndHandleSplitAsync(
+        internal async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
@@ -466,7 +466,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        protected internal Uri GetEntityUri(DocumentServiceRequest entity)
+        internal Uri GetEntityUri(DocumentServiceRequest entity)
         {
             string contentLocation = entity.Headers[HttpConstants.HttpHeaders.ContentLocation];
 
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos
             return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
         }
 
-        protected internal Uri GetFeedUri(DocumentServiceRequest request)
+        internal Uri GetFeedUri(DocumentServiceRequest request)
         {
             return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
         }

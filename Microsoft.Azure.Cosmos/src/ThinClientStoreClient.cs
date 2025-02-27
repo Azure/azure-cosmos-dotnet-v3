@@ -20,13 +20,13 @@ namespace Microsoft.Azure.Cosmos
     /// A TransportClient that sends requests to proxy endpoint. 
     /// And then processes the response back into DocumentServiceResponse objects.
     /// </summary>
-    internal class ProxyStoreClient : GatewayStoreClient
+    internal class ThinClientStoreClient : GatewayStoreClient
     {
         private readonly Uri proxyEndpoint;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly string globalDatabaseAccountName;
 
-        public ProxyStoreClient(
+        public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
             Uri proxyEndpoint,
@@ -50,13 +50,13 @@ namespace Microsoft.Azure.Cosmos
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellationToken))
             {
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
-                return await ProxyStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
+                return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
             }
         }
 
         internal override async Task<StoreResponse> InvokeStoreAsync(Uri baseAddress, ResourceOperation resourceOperation, DocumentServiceRequest request)
         {
-            Uri physicalAddress = ProxyStoreClient.IsFeedRequest(request.OperationType) ?
+            Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ?
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            CancellationToken cancellationToken)
         {
-            DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ProxyStoreClient), request.OperationType, request.ResourceType);
+            DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ThinClientStoreClient), request.OperationType, request.ResourceType);
 
             return base.httpClient.SendHttpAsync(
                 () => this.PrepareRequestForProxyAsync(request, physicalAddress),

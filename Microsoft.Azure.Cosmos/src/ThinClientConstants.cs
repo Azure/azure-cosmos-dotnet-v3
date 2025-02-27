@@ -15,5 +15,6 @@ namespace Microsoft.Azure.Cosmos
 
         public const string ProxyOperationType = "x-ms-thinclient-proxy-operation-type";
         public const string ProxyResourceType = "x-ms-thinclient-proxy-resource-type";
+        public const string EffectivePartitionKey = "x-ms-effective-partition-key";
     }
 }

@@ -29,8 +29,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 RequestUri = new Uri("https://localhost/dbs/TestDb/colls/TestColl/docs/TestDoc")
             };
-            message.Headers.Add("x-ms-thinclient-proxy-operation-type", OperationType.Read.ToString());
-            message.Headers.Add("x-ms-thinclient-proxy-resource-type", ResourceType.Document.ToString());
+            message.Headers.Add(ThinClientConstants.ProxyOperationType, OperationType.Read.ToString());
+            message.Headers.Add(ThinClientConstants.ProxyResourceType, ResourceType.Document.ToString());
             message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString()); // required
 
             ThinClientTransportSerializer.BufferProviderWrapper bufferProvider = new();
@@ -52,8 +52,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Content = new StringContent("Test Body"),
                 RequestUri = new Uri("https://localhost/dbs/TestDb/colls/TestColl/docs/TestDoc")
             };
-            message.Headers.Add("x-ms-thinclient-proxy-operation-type", OperationType.Read.ToString());
-            message.Headers.Add("x-ms-thinclient-proxy-resource-type", ResourceType.Document.ToString());
+            message.Headers.Add(ThinClientConstants.ProxyOperationType, OperationType.Read.ToString());
+            message.Headers.Add(ThinClientConstants.ProxyResourceType, ResourceType.Document.ToString());
             message.Headers.TryAddWithoutValidation(HttpConstants.HttpHeaders.PartitionKey, "[\"SamplePk\"]");
             message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
 

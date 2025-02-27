@@ -33,12 +33,7 @@ namespace Microsoft.Azure.Cosmos
             HashV2SinglePath.Paths.Add("/id");
         }
 
-        /// <summary>
-        /// Wrapper to expose a public bufferprovider for the RNTBD stack.
-        /// </summary>
-#pragma warning disable CA1034 // Nested types should not be visible
         public sealed class BufferProviderWrapper
-#pragma warning restore CA1034 // Nested types should not be visible
         {
             internal BufferProvider Provider { get; set; } = new ();
         }
@@ -89,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
 
                 request.Properties = new Dictionary<string, object>
                 {
-                    { "x-ms-effective-partition-key", HexStringUtility.HexStringToBytes(epk) }
+                    { ThinClientConstants.EffectivePartitionKey, HexStringUtility.HexStringToBytes(epk) }
                 };
             }
             else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null)
