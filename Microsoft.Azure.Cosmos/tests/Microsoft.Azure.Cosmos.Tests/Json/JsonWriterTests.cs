@@ -35,6 +35,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -55,6 +56,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -75,6 +77,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
         #endregion
 
@@ -99,6 +102,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -121,6 +125,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -143,6 +148,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -165,6 +171,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -187,6 +194,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -209,6 +217,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -231,6 +240,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -256,6 +266,7 @@
 
             this.VerifyWriter(tokensToWrite, numberValueString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -291,6 +302,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -558,6 +570,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -580,6 +593,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -608,6 +622,7 @@
 
                 this.VerifyWriter(tokensToWrite, expectedString);
                 this.VerifyWriter(tokensToWrite, binaryOutput);
+                this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
                 systemStringId++;
             }
         }
@@ -8008,6 +8023,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutput, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -8075,6 +8091,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, new JsonStringDictionary(capacity: 100));
         }
 
         [TestMethod]
@@ -8277,6 +8294,7 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
+            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, new JsonStringDictionary(capacity: 100));
         }
         #endregion
 
@@ -8696,6 +8714,15 @@
             foreach (bool writeAsUtf8String in new bool[] { false, true })
             {
                 IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, JsonWriteOptions.None, 256);
+                this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
+            }
+        }
+
+        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, JsonStringDictionary jsonStringDictionary, Exception expectedException = null)
+        {
+            foreach (bool writeAsUtf8String in new bool[] { false, true })
+            {
+                IJsonWriter jsonWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
                 this.VerifyWriter(jsonWriter, tokensToWrite, binaryOutput, JsonSerializationFormat.Binary, writeAsUtf8String, expectedException);
             }
         }

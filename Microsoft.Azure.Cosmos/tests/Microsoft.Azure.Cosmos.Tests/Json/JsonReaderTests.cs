@@ -622,6 +622,72 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
+        [Owner("brchon")]
+        public void UserStringTest()
+        {
+            // Object with 33 field names. This creates a user string with 2 byte type marker.
+
+            List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
+            StringBuilder textInput = new StringBuilder("{");
+            List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength, };
+            List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength };
+
+            const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
+            for (int i = 0; i < OneByteCount + 1; i++)
+            {
+                string userEncodedString = "a" + i.ToString();
+
+                expectedTokens.Add(JsonToken.FieldName(userEncodedString));
+                expectedTokens.Add(JsonToken.String(userEncodedString));
+
+                if (i > 0)
+                {
+                    textInput.Append(",");
+                }
+
+                textInput.Append($@"""{userEncodedString}"":""{userEncodedString}""");
+
+                for (int j = 0; j < 2; j++)
+                {
+                    binaryInput.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
+                    binaryInput.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
+                }
+
+                if (i < OneByteCount)
+                {
+                    binaryInputWithEncoding.Add((byte)(JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin + i));
+                }
+                else
+                {
+                    int twoByteOffset = i - OneByteCount;
+                    binaryInputWithEncoding.Add((byte)((twoByteOffset / 0xFF) + JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin));
+                    binaryInputWithEncoding.Add((byte)(twoByteOffset % 0xFF));
+                }
+
+                binaryInputWithEncoding.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
+                binaryInputWithEncoding.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
+            }
+
+            expectedTokens.Add(JsonToken.ObjectEnd());
+            textInput.Append("}");
+            binaryInput.Insert(2, (byte)(binaryInput.Count() - 2));
+            binaryInputWithEncoding.Insert(2, (byte)(binaryInputWithEncoding.Count() - 2));
+
+            this.VerifyReader(textInput.ToString(), expectedTokens.ToArray());
+            this.VerifyReader(binaryInput.ToArray(), expectedTokens.ToArray());
+
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            for (int i = 0; i < OneByteCount + 1; i++)
+            {
+                string userEncodedString = "a" + i.ToString();
+                Assert.IsTrue(jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userEncodedString), out int index));
+                Assert.AreEqual(i, index);
+            }
+
+            this.VerifyReader(binaryInputWithEncoding.ToArray(), expectedTokens.ToArray(), jsonStringDictionary);
+        }
+
+        [TestMethod]
         [Owner("mayapainter")]
         public void NumberAsStringTest()
         {
@@ -2257,7 +2323,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 }
                 };
-
                 List<byte[]> elements = new List<byte[]>
                 {
                     new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "GlossDiv".Length), 71, 108, 111, 115, 115, 68, 105, 118 },
@@ -2305,6 +2370,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("title", out int index2));
+            this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
         [TestMethod]
@@ -2501,6 +2570,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
+
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            Assert.IsTrue(jsonStringDictionary.TryAddString("double", out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("int", out int index2));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("string", out int index3));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("boolean", out int index4));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("null", out int index5));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("datetime", out int index6));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("spatialPoint", out int index7));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("text", out int index8));
+            this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
         [TestMethod]
@@ -3142,10 +3222,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 expectedException);
         }
 
-        private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, Exception expectedException = null)
+        private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
-            this.VerifyReader(() => JsonReader.Create(input), expectedTokens, expectedException);
+            this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
         }
 
         /// <summary>

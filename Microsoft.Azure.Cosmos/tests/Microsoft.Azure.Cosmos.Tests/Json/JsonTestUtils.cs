@@ -6,8 +6,6 @@
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
@@ -15,17 +13,17 @@
 
     internal class JsonTestUtils
     {
-        public static byte[] ConvertTextToBinary(string text)
+        public static byte[] ConvertTextToBinary(string text, JsonStringDictionary jsonStringDictionary = null)
         {
-            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
             textReader.WriteAll(binaryWriter);
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary)
+        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, JsonStringDictionary jsonStringDictionary = null)
         {
-            IJsonReader binaryReader = JsonReader.Create(binary);
+            IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             binaryReader.WriteAll(textWriter);
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
