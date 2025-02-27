@@ -95,7 +95,15 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
-        public int PreferredLocationCount => this.connectionPolicy.PreferredLocations != null ? this.connectionPolicy.PreferredLocations.Count : 0;
+        public int PreferredLocationCount
+        {
+            get
+            {
+                IList<string> effectivePreferredLocations = this.GetEffectivePreferredLocations();
+
+                return effectivePreferredLocations.Count;
+            }
+        }
 
         public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
@@ -273,8 +281,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         return;
                     }
 
-                    await this.GetAndUpdateAccountPropertiesAsync(
-                        endpoint: serviceEndpoint);
+                    await this.GetAndUpdateAccountPropertiesAsync(endpoint: serviceEndpoint);
                 }
             }
 
@@ -539,14 +546,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// Determines whether the current configuration and state of the service allow for supporting multiple write locations.
         /// This method returns True is the AvailableWriteLocations in LocationCache is more than 1. Otherwise, it returns False.
         /// </summary>
-        /// <param name="request">The document service request for which the write location support is being evaluated.</param>
+        /// <param name="resourceType"> resource type of the request</param>
+        /// <param name="operationType"> operation type of the request</param>
         /// <returns>A boolean flag indicating if the available write locations are more than one.</returns>
-        public bool CanSupportMultipleWriteLocations(DocumentServiceRequest request)
+        public bool CanSupportMultipleWriteLocations(
+            ResourceType resourceType,
+            OperationType operationType)
         {
             return this.locationCache.CanUseMultipleWriteLocations()
-                && this.locationCache.GetAvailableWriteLocations()?.Count > 1
-                && (request.ResourceType == ResourceType.Document ||
-                (request.ResourceType == ResourceType.StoredProcedure && request.OperationType == OperationType.Execute));
+                && this.locationCache.GetAvailableAccountLevelWriteLocations()?.Count > 1
+                && (resourceType == ResourceType.Document ||
+                (resourceType == ResourceType.StoredProcedure && operationType == OperationType.Execute));
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods
@@ -647,7 +657,10 @@ namespace Microsoft.Azure.Cosmos.Routing
             try
             {
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
-                this.locationCache.OnDatabaseAccountRead(await this.GetDatabaseAccountAsync(true));
+                AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
+
+                this.locationCache.OnDatabaseAccountRead(accountProperties);
+
             }
             catch (Exception ex)
             {
@@ -671,7 +684,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                               obsoleteValue: null,
                               singleValueInitFunc: () => GlobalEndpointManager.GetDatabaseAccountFromAnyLocationsAsync(
                                   this.defaultEndpoint,
-                                  this.connectionPolicy.PreferredLocations,
+                                  this.GetEffectivePreferredLocations(),
                                   this.connectionPolicy.AccountInitializationCustomEndpoints,
                                   this.GetDatabaseAccountAsync,
                                   this.cancellationTokenSource.Token),
@@ -689,6 +702,17 @@ namespace Microsoft.Azure.Cosmos.Routing
             TimeSpan timeSinceLastRefresh = DateTime.UtcNow - this.LastBackgroundRefreshUtc;
             return (this.isAccountRefreshInProgress || this.MinTimeBetweenAccountRefresh > timeSinceLastRefresh)
                 && !forceRefresh;
+        }
+
+        public IList<string> GetEffectivePreferredLocations()
+        {
+            if (this.connectionPolicy.PreferredLocations != null && this.connectionPolicy.PreferredLocations.Count > 0)
+            {
+                return this.connectionPolicy.PreferredLocations;
+            }
+
+            return this.connectionPolicy.PreferredLocations?.Count > 0 ? 
+                this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
         }
     }
 }

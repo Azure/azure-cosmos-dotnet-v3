@@ -15,8 +15,8 @@ namespace Microsoft.Azure.Cosmos.Json
             internal static readonly Action<IJsonWriter> Null = (jsonWriter) => { jsonWriter.WriteNullValue(); };
             internal static readonly Action<IJsonWriter> True = (jsonWriter) => { jsonWriter.WriteBoolValue(true); };
             internal static readonly Action<IJsonWriter> False = (jsonWriter) => { jsonWriter.WriteBoolValue(false); };
-            internal static readonly Action<IJsonWriter> Number64Integer = (jsonWriter) => { jsonWriter.WriteNumber64Value(123); };
-            internal static readonly Action<IJsonWriter> Number64Double = (jsonWriter) => { jsonWriter.WriteNumber64Value(6.0221409e+23); };
+            internal static readonly Action<IJsonWriter> Number64Integer = (jsonWriter) => { jsonWriter.WriteNumberValue(123); };
+            internal static readonly Action<IJsonWriter> Number64Double = (jsonWriter) => { jsonWriter.WriteNumberValue(6.0221409e+23); };
             internal static readonly Action<IJsonWriter> String = (jsonWriter) => { jsonWriter.WriteStringValue("Hello World"); };
             internal static readonly Action<IJsonWriter> Array = (jsonWriter) => { jsonWriter.WriteArrayStart(); jsonWriter.WriteArrayEnd(); };
             internal static readonly Action<IJsonWriter> Object = (jsonWriter) => { jsonWriter.WriteObjectStart(); jsonWriter.WriteObjectEnd(); };

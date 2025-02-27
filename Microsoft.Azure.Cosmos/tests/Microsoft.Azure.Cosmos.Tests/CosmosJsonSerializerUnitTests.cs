@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
             // Verify all the user types use the user specified version
             ItemResponse<ToDoActivity> itemResponseFromFactory = cosmosResponseFactory.CreateItemResponse<ToDoActivity>(itemResponse);
             Assert.IsNotNull(itemResponseFromFactory.Diagnostics);
-            Assert.IsNotNull(itemResponseFromFactory.Resource); 
+            Assert.IsNotNull(itemResponseFromFactory.Resource);
             Assert.AreEqual(HttpStatusCode.OK, itemResponseFromFactory.StatusCode);
 
             // Throw if the setups were not called
@@ -297,7 +297,7 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 
             foreach ((SqlQueryResumeValue resumeValue, string resumeString) in testValues)
             {
-                foreach(string rid in new string[] { "rid", null})
+                foreach (string rid in new string[] { "rid", null })
                 {
                     SqlQuerySpec querySpec = new SqlQuerySpec(
                         queryText,

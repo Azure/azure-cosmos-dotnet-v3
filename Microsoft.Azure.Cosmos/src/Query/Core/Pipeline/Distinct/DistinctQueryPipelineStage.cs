@@ -18,9 +18,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
     internal class DistinctQueryPipelineStage : QueryPipelineStageBase
     {
-        private static readonly string DisallowContinuationTokenMessage = "DISTINCT queries only return continuation tokens when there is a matching ORDER BY clause." +
-            "For example if your query is 'SELECT DISTINCT VALUE c.name FROM c', then rewrite it as 'SELECT DISTINCT VALUE c.name FROM c ORDER BY c.name'.";
-
         private readonly DistinctQueryType distinctQueryType;
 
         /// <summary>
@@ -114,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     activityId: sourcePage.ActivityId,
                     cosmosQueryExecutionInfo: sourcePage.CosmosQueryExecutionInfo,
                     distributionPlanSpec: default,
-                    disallowContinuationTokenMessage: DistinctQueryPipelineStage.DisallowContinuationTokenMessage,
+                    disallowContinuationTokenMessage: DisallowContinuationTokenMessages.Distinct,
                     additionalHeaders: sourcePage.AdditionalHeaders,
                     state: null,
                     streaming: sourcePage.Streaming);

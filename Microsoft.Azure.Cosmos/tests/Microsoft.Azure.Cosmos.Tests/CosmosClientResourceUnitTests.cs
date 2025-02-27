@@ -6,12 +6,15 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Net.Http;
     using System.Net.Security;
-    using System.Security.Cryptography.X509Certificates;
     using System.Security.Cryptography;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using System.Globalization;
@@ -56,9 +59,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
             options.PopulateRequestOptions(httpRequest);
-
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out _));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out _));
         }
 
         [TestMethod]
@@ -89,9 +91,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
             options.PopulateRequestOptions(httpRequest);
-
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out _));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out _));
         }
 
         [TestMethod]
@@ -108,9 +109,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
                 new Uri("/dbs/testdb/colls/testcontainer/docs/testId", UriKind.Relative));
 
             options.PopulateRequestOptions(httpRequest);
-
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out string preTriggerHeader));
-            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out string postTriggerHeader));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PreTriggerInclude, out _));
+            Assert.IsTrue(httpRequest.Headers.TryGetValue(HttpConstants.HttpHeaders.PostTriggerInclude, out _));
         }
 
         [TestMethod]

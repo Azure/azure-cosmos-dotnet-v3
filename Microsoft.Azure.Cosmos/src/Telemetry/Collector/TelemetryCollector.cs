@@ -13,6 +13,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 
     internal class TelemetryCollector : ITelemetryCollector
     {
+        private static readonly char[] pathSeparators = new char[] { '/' };
+
         private readonly ClientTelemetry clientTelemetry = null;
         private readonly ConnectionPolicy connectionPolicy = null;
 
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry.Collector
 
         private static void GetDatabaseAndCollectionName(string path, out string databaseName, out string collectionName)
         {
-            string[] segments = path.Split(new char[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] segments = path.Split(pathSeparators, StringSplitOptions.RemoveEmptyEntries);
 
             PathsHelper.ParseDatabaseNameAndCollectionNameFromUrlSegments(segments, out databaseName, out collectionName);
         }

@@ -106,13 +106,25 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <remarks>
         /// <para> 
-        /// PopulateIndexMetrics is used to obtain the index metrics to understand how the query engine used existing indexes 
+        /// <c>PopulateIndexMetrics</c> is used to obtain the index metrics to understand how the query engine used existing indexes 
         /// and how it could use potential new indexes.
-        /// The results will be displayed in FeedResponse.IndexMetrics. Please note that this options will incur overhead, so it should be 
+        /// The results will be displayed in <c>FeedResponse.IndexMetrics</c>. Please note that this options will incur overhead, so it should be 
         /// enabled only when debugging slow queries.
         /// </para>
         /// </remarks>
         public bool? PopulateIndexMetrics { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="PopulateQueryAdvice"/> request option for document query requests in the Azure Cosmos DB service.
+        /// </summary>
+        /// <remarks>
+        /// <para> 
+        /// <c>PopulateQueryAdvice</c> is used to obtain the query advice to understand aspect of the query that can be optimized.
+        /// The results will be displayed in <c>FeedResponse.QueryAdvice</c>. Please note that this options will incur overhead, so it should be 
+        /// enabled only when debugging queries.
+        /// </para>
+        /// </remarks>
+        internal bool? PopulateQueryAdvice { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the request in the Azure Cosmos DB service.
@@ -170,6 +182,13 @@ namespace Microsoft.Azure.Cosmos
         /// These options have no effect otherwise.
         /// </summary>
         public DedicatedGatewayRequestOptions DedicatedGatewayRequestOptions { get; set; }
+
+        /// <summary>
+        /// Enables printing query in Traces db.query.text attribute. By default, query is not printed.
+        /// Users have the option to enable printing parameterized or all queries, 
+        /// but has to beware that customer data may be shown when the later option is chosen. It's the user's responsibility to sanitize the queries if necessary.
+        /// </summary>
+        public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
 
         /// <summary>
         /// Enables printing query in Traces db.query.text attribute. By default, query is not printed.
@@ -279,6 +298,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.PopulateIndexMetrics.HasValue)
             {
                 request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateIndexMetricsV2, this.PopulateIndexMetrics.ToString());
+            }
+
+            if (this.PopulateQueryAdvice.HasValue)
+            {
+                request.Headers.CosmosMessageHeaders.Add(HttpConstants.HttpHeaders.PopulateQueryAdvice, this.PopulateQueryAdvice.ToString());
             }
 
             DedicatedGatewayRequestOptions.PopulateMaxIntegratedCacheStalenessOption(this.DedicatedGatewayRequestOptions, request);

@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 ChangeFeedMode.Incremental,
                 new ChangeFeedRequestOptions(),
                 ChangeFeedStartFrom.Beginning(),
-                this.MockClientContext(), 
+                this.MockClientContext(),
                 container: null);
 
             int count = 0;
@@ -219,9 +219,9 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
         {
             CosmosException exception = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
             IDocumentContainer documentContainer = await CreateDocumentContainerAsync(
-                numItems:0,
+                numItems: 0,
                 failureConfigs: new FlakyDocumentContainer.FailureConfigs(
-                    inject429s: false, 
+                    inject429s: false,
                     injectEmptyPages: false,
                     returnFailure: exception));
 
@@ -482,11 +482,11 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<ResponseMessage>>>(),
-                It.IsAny<Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<ResponseMessage, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, Tuple<string, Func<ResponseMessage, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<ResponseMessage>>, (string OperationName, Func<ResponseMessage, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
                 (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;

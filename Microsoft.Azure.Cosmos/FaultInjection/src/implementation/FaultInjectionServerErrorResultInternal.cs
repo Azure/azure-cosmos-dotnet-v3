@@ -5,6 +5,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Globalization;
+    using System.Net;
+    using System.Net.Http.Headers;
     using System.Text;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -148,7 +150,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = goneHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -160,7 +162,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 449,
                         Headers = retryWithHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Retry With, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -175,7 +177,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 429,
                         Headers = tooManyRequestsHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Too Many Requests, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Too Many Requests, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -188,12 +190,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 408,
                         Headers = timeoutHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))
                     };
 
                     return storeResponse;
 
-                case FaultInjectionServerErrorType.InternalServerEror:
+                case FaultInjectionServerErrorType.InternalServerError:
                     INameValueCollection internalServerErrorHeaders = args.RequestHeaders;
                     internalServerErrorHeaders.Set(WFConstants.BackendHeaders.LocalLSN, lsn);
 
@@ -201,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 500,
                         Headers = internalServerErrorHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -219,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 404,
                         Headers = readSessionHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -233,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = partitionMigrationHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Migrating, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Partition Migrating, rule: {ruleId}"))
                     };
                     
                     return storeResponse;
@@ -247,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 410,
                         Headers = partitionSplitting,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Partition Splitting, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Partition Splitting, rule: {ruleId}"))
                     };
 
                     return storeResponse;
@@ -259,13 +261,266 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     {
                         Status = 503,
                         Headers = serviceUnavailableHeaders,
-                        ResponseBody = new MemoryStream(Encoding.UTF8.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))
+                        ResponseBody = new MemoryStream(FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))
                     };
 
                     return storeResponse;
 
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
+            }
+        }
+
+        /// <summary>
+        /// Get server error to be injected
+        /// </summary>
+        /// <param name="dsr"></param>
+        /// <param name="ruleId"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public HttpResponseMessage GetInjectedServerError(DocumentServiceRequest dsr, string ruleId)
+        {
+            HttpResponseMessage httpResponse;
+            //Global or Local lsn?
+            string lsn = dsr.RequestContext.QuorumSelectedLSN.ToString(CultureInfo.InvariantCulture);
+            INameValueCollection headers = dsr.Headers;
+
+            switch (this.serverErrorType)
+            {
+                case FaultInjectionServerErrorType.Gone:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.Gone,
+                        Content = new FauntInjectionHttpContent(
+                        new MemoryStream(
+                            FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Gone, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.ServerGenerated410).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.TooManyRequests:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.TooManyRequests,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: TooManyRequests, rule: {ruleId}"))),
+                    };
+
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.RetryAfter = new RetryConditionHeaderValue(TimeSpan.FromMilliseconds(500));
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus, 
+                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.Timeout:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.RequestTimeout,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Timeout, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.InternalServerError:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.InternalServerError,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Internal Server Error, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.ReadSessionNotAvailable:
+                    
+                    const string badSesstionToken = "1:1#1#1=1#1=1";
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.NotFound,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Read Session Not Available, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.ReadSessionNotAvailable).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(HttpConstants.HttpHeaders.SessionToken, badSesstionToken);
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.PartitionIsMigrating:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.Gone,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsMigrating, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.CompletingPartitionMigration).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.PartitionIsSplitting:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.Gone,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: PartitionIsSplitting, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.CompletingSplit).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.ServiceUnavailable:
+
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.ServiceUnavailable,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: Service Unavailable, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.DatabaseAccountNotFound:
+                    
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.NotFound,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.DatabaseAccountNotFound).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                default:
+                    throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
+            }
+        }
+
+        internal class FauntInjectionHttpContent : HttpContent
+        {
+            private readonly Stream content;
+
+            public FauntInjectionHttpContent(Stream content)
+            {
+                this.content = content;
+            }
+
+            protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context)
+            {
+                return this.content.CopyToAsync(stream);
+            }
+
+            protected override bool TryComputeLength(out long length)
+            {
+                length = this.content.Length;
+                return true;
+            }
+        }
+
+        internal static class  FaultInjectionResponseEncoding
+        {
+            private static readonly UTF8Encoding Encoding = new UTF8Encoding(false);
+
+            public static byte[] GetBytes(string value)
+            {
+                return Encoding.GetBytes(value);
             }
         }
     }

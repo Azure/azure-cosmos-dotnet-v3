@@ -238,10 +238,7 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<DocumentServiceRequest>(),
                     It.Is<bool>(forceRefresh => forceRefresh == false),
                     It.IsAny<CancellationToken>()))
-                    .Callback((DocumentServiceRequest dsr, bool refresh, CancellationToken ct) =>
-                    {
-                        dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" };
-                    })
+                    .Callback((DocumentServiceRequest dsr, bool refresh, CancellationToken ct) => dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0" })
                     .ReturnsAsync(new PartitionAddressInformation(addressInformation));
 
             // Return HttpRequestException for address refresh

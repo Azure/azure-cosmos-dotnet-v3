@@ -16,7 +16,7 @@ pr:
 
 variables:
   DebugArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
-  ReleaseArguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional" --verbosity normal '
+  ReleaseArguments: ' --filter "TestCategory!=Quarantine" --verbosity normal '
   VmImage: windows-latest # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
 
 
@@ -51,8 +51,9 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
-    IncludePerformance: false
-    IncludeCoverage: false
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    IncludePerformance: true
+    IncludeCoverage: true
 
 - template:  templates/build-internal.yml
   parameters:

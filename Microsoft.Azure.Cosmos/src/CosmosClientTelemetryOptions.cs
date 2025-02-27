@@ -53,5 +53,38 @@ namespace Microsoft.Azure.Cosmos
         /// but has to beware that customer data may be shown when the later option is chosen. It's the user's responsibility to sanitize the queries if necessary.
         /// </summary>
         public QueryTextMode QueryTextMode { get; set; } = QueryTextMode.None;
+
+        /// <summary>
+        /// Indicates whether client-side metrics collection is enabled or disabled. 
+        /// When set to true, the application will capture and report client metrics such as request counts, latencies, errors, and other key performance indicators. 
+        /// If false, no metrics related to the client will be gathered or reported.
+        /// <remarks>Metrics data can be published to a monitoring system like Prometheus or Azure Monitor, depending on the configured metrics provider.</remarks>
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool IsClientMetricsEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configuration for operation-level metrics.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        OperationMetricsOptions OperationMetricsOptions { get; set; }
+
+        /// <summary>
+        /// Gets or sets the configuration for network-level metrics.
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        NetworkMetricsOptions NetworkMetricsOptions { get; set; }
     }
 }

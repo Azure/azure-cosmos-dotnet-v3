@@ -84,6 +84,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
         private Collection<ComputedProperty> computedProperties;
 
+        [JsonProperty(PropertyName = "fullTextPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        private FullTextPolicy fullTextPolicyInternal;
+
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
@@ -306,12 +309,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        VectorEmbeddingPolicy VectorEmbeddingPolicy
+        public VectorEmbeddingPolicy VectorEmbeddingPolicy
         {
             get => this.vectorEmbeddingPolicyInternal;
 
@@ -332,12 +330,7 @@ namespace Microsoft.Azure.Cosmos
         /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
         /// </value>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        Collection<ComputedProperty> ComputedProperties
+        public Collection<ComputedProperty> ComputedProperties
         {
             get
             {
@@ -358,6 +351,30 @@ namespace Microsoft.Azure.Cosmos
 
                 this.computedProperties = value;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the full text search paths for items in the container.
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// By default, FullTextPolicy is set to null meaning the feature is turned off for the container.
+        /// </value>
+        /// <remarks>
+        /// <para>
+        /// The <see cref="Cosmos.FullTextPolicy"/> will be applied to all the items in the container.
+        /// </para>
+        /// </remarks>
+        [JsonIgnore]
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        FullTextPolicy FullTextPolicy
+        {
+            get => this.fullTextPolicyInternal;
+            set => this.fullTextPolicyInternal = value;
         }
 
         /// <summary>

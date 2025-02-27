@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly RequestHandler invalidPartitionExceptionRetryHandler;
         private readonly RequestHandler transportHandler;
         private readonly TelemetryHandler telemetryHandler;
+        private readonly int? requestedClientThroughputBucket;
 
         private IReadOnlyCollection<RequestHandler> customHandlers;
         private RequestHandler retryHandler;
@@ -29,11 +30,13 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel? requestedClientConsistencyLevel,
             PriorityLevel? requestedClientPriorityLevel,
             IReadOnlyCollection<RequestHandler> customHandlers,
-            TelemetryToServiceHelper telemetryToServiceHelper)
+            TelemetryToServiceHelper telemetryToServiceHelper,
+            int? requestedClientThroughputBucket)
         {
             this.client = client ?? throw new ArgumentNullException(nameof(client));
             this.requestedClientConsistencyLevel = requestedClientConsistencyLevel;
             this.requestedPriorityLevel = requestedClientPriorityLevel;
+            this.requestedClientThroughputBucket = requestedClientThroughputBucket;
             this.transportHandler = new TransportHandler(client);
             Debug.Assert(this.transportHandler.InnerHandler == null, nameof(this.transportHandler));
 
@@ -153,7 +156,8 @@ namespace Microsoft.Azure.Cosmos
             RequestInvokerHandler root = new RequestInvokerHandler(
                 this.client,
                 this.requestedClientConsistencyLevel,
-                this.requestedPriorityLevel);
+                this.requestedPriorityLevel,
+                this.requestedClientThroughputBucket);
 
             RequestHandler current = root;
             if (this.CustomHandlers != null && this.CustomHandlers.Any())

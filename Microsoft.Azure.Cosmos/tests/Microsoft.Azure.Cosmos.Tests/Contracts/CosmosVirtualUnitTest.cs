@@ -4,14 +4,14 @@
 
 namespace Microsoft.Azure.Cosmos.Tests.Contracts
 {
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class CosmosVirtualUnitTest
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Contracts
 
             Mock<CosmosClient> mockClient = new Mock<CosmosClient>();
             mockClient.Setup(x => x.CreateDatabaseAsync(
-                    It.IsAny<string>(), 
+                    It.IsAny<string>(),
                     It.IsAny<int?>(),
                     It.IsAny<RequestOptions>(),
                     It.IsAny<CancellationToken>()))
