@@ -8,14 +8,9 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     /// <summary>
@@ -297,11 +292,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
-            /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="enableNumberArrays">Determines whether to enable writing of uniform number arrays.</param>
             /// <param name="enableUint64Values">Determines whether to enable writing of full-precision unsigned 64-bit integer values</param>
             /// <param name="enableEncodedStrings">Determines whether to enable reference string encoding.</param>
+            /// <param name="jsonStringDictionary">The optional JSON string dictionary used for user string encoding.</param>
             public JsonBinaryWriter(
                 int initialCapacity,
                 bool enableNumberArrays,

@@ -21,7 +21,7 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TestBasicCase()
         {
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
@@ -40,24 +40,41 @@
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TestDictionarySizeLimit()
         {
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 0);
-            Assert.IsFalse(jsonStringDictionary.TryAddString("hello", out int index));
+            Assert.IsFalse(jsonStringDictionary.TryAddString("hello", out int _));
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void TestDifferentLengthStrings()
         {
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 256);
-            for (int replicationCount = 0; replicationCount < 128; replicationCount++)
+            for (int stringLength = 4; stringLength < 128; stringLength++)
             {
                 JsonStringDictionaryTests.AddAndValidate(
                     jsonStringDictionary,
-                    expectedString: new string('a', replicationCount),
-                    expectedIndex: replicationCount);
+                    expectedString: new string('a', stringLength),
+                    expectedIndex: stringLength - 4);
+            }
+
+            int[] stringLengths = { 0, 1, 2, 3, 129, 130, 1500 };
+            foreach (int stringLength in stringLengths)
+            {
+                Assert.IsFalse(jsonStringDictionary.TryAddString(new string('a', stringLength), out int _));
+            }
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void TestAddSystemString()
+        {
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 256);
+            foreach (UtfAllString systemString in JsonBinaryEncoding.SystemStrings.Strings)
+            {
+                Assert.IsFalse(jsonStringDictionary.TryAddString(systemString.ToString(), out int _));
             }
         }
 

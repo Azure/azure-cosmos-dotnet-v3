@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Json
     sealed class JsonStringDictionary : IReadOnlyJsonStringDictionary, IEquatable<JsonStringDictionary>
     {
         private const int MaxStackAllocSize = 4 * 1024;
+        private const int MinUserStringLength = 4;
+        private const int MaxUserStringLength = 128;
 
         private readonly UtfAllString[] strings;
         private readonly Trie<byte, int> utf8StringToIndex;
@@ -48,14 +50,21 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public bool TryAddString(Utf8Span value, out int index)
         {
-            // If the string already exists, then just return that index.
+            // If the string already exists, return that index.
             if (this.utf8StringToIndex.TryGetValue(value.Span, out index))
             {
                 return true;
             }
 
-            // If we are at capacity just return false.
-            if (this.size == this.strings.Length)
+            // Return false for following scenarios
+            // 1. Dictionary already at capacity.
+            // 2. String exists as sytem string.
+            // 3. String shorter than min size.
+            // 4. String longer than max size.
+            if ((this.size == this.strings.Length)
+                || JsonBinaryEncoding.SystemStrings.Strings.Contains(UtfAllString.Create(value.ToString())) //Todo mayapainter find out why this is failing
+                || (value.Length < MinUserStringLength)
+                || (value.Length > MaxUserStringLength))
             {
                 index = default;
                 return false;
