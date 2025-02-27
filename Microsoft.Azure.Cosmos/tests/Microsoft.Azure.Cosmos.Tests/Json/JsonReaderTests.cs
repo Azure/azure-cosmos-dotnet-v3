@@ -622,15 +622,15 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
-        [Owner("brchon")]
+        [Owner("mayapainter")]
         public void UserStringTest()
         {
             // Object with 33 field names. This creates a user string with 2 byte type marker.
 
             List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
             StringBuilder textInput = new StringBuilder("{");
-            List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength, };
-            List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Object1ByteLength };
+            List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Obj1, };
+            List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.Obj1 };
 
             const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
             for (int i = 0; i < OneByteCount + 1; i++)
@@ -2323,6 +2323,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     new byte[] { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 }
                 };
+
                 List<byte[]> elements = new List<byte[]>
                 {
                     new byte[] { (byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + "GlossDiv".Length), 71, 108, 111, 115, 115, 68, 105, 118 },
@@ -3225,7 +3226,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, JsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
-            this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException, Encoding.UTF8);
+            this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException);
         }
 
         /// <summary>
