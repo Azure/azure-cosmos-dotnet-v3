@@ -1099,7 +1099,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else if (this.isThinClientEnabled)
             {
-                ThinClientStoreModel thinClientStoreModel = new(
+                ThinClientStoreModel thinClientStoreModel = new (
                     endpointManager: this.GlobalEndpointManager,
                     this.sessionContainer,
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
