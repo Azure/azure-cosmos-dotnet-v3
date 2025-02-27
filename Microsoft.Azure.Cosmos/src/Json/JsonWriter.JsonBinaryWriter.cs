@@ -1781,11 +1781,11 @@ namespace Microsoft.Azure.Cosmos.Json
                             {
                                 this.WriteObjectStart();
 
-                            foreach (JsonBinaryEncoding.Enumerator.ObjectProperty property in JsonBinaryEncoding.Enumerator.GetObjectProperties(rootBuffer, valueOffset))
-                            {
-                                this.ForceRewriteRawJsonValue(rootBuffer, property.NameOffset, externalArrayInfo: default, isFieldName: true, jsonStringDictionary: this.jsonStringDictionary);
-                                this.ForceRewriteRawJsonValue(rootBuffer, property.ValueOffset, externalArrayInfo: default, isFieldName: false, jsonStringDictionary: this.jsonStringDictionary);
-                            }
+                                foreach (JsonBinaryEncoding.Enumerator.ObjectProperty property in JsonBinaryEncoding.Enumerator.GetObjectProperties(rootBuffer, valueOffset))
+                                {
+                                    this.ForceRewriteRawJsonValue(rootBuffer, property.NameOffset, externalArrayInfo: default, isFieldName: true, jsonStringDictionary: this.jsonStringDictionary);
+                                    this.ForceRewriteRawJsonValue(rootBuffer, property.ValueOffset, externalArrayInfo: default, isFieldName: false, jsonStringDictionary: this.jsonStringDictionary);
+                                }
 
                                 this.WriteObjectEnd();
                             }
