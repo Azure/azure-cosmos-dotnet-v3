@@ -391,13 +391,8 @@ namespace Microsoft.Azure.Cosmos.Json
             IReadOnlyJsonStringDictionary jsonStringDictionary,
             out UtfAllString encodedUserStringValue)
         {
-            if (jsonStringDictionary == null)
-            {
-                encodedUserStringValue = default;
-                return false;
-            }
-
-            if (!JsonBinaryEncoding.TryGetUserStringId(stringToken, out int userStringId))
+            if ((jsonStringDictionary == null)
+                || (!JsonBinaryEncoding.TryGetUserStringId(stringToken, out int userStringId)))
             {
                 encodedUserStringValue = default;
                 return false;

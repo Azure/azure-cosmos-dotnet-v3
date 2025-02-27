@@ -8,18 +8,6 @@
     {
         private const byte BinaryFormat = 128;
 
-        [TestInitialize]
-        public void TestInitialize()
-        {
-            // Put test init code here
-        }
-
-        [ClassInitialize]
-        public static void Initialize(TestContext textContext)
-        {
-            // put class init code here
-        }
-
         [TestMethod]
         [Owner("mayapainter")]
         public void TestBasicCase()
@@ -74,7 +62,7 @@
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 256);
             foreach (UtfAllString systemString in JsonBinaryEncoding.SystemStrings.Strings)
             {
-                Assert.IsFalse(jsonStringDictionary.TryAddString(systemString.ToString(), out int _));
+                Assert.IsFalse(jsonStringDictionary.TryAddString(systemString.Utf16String, out int _));
             }
         }
 

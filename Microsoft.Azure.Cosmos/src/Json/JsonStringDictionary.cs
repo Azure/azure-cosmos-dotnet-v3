@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Cosmos.Core.Utf8;
@@ -62,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Json
             // 3. String shorter than min size.
             // 4. String longer than max size.
             if ((this.size == this.strings.Length)
-                || JsonBinaryEncoding.SystemStrings.Strings.Contains(UtfAllString.Create(value.ToString())) //Todo mayapainter find out why this is failing
+                || JsonBinaryEncoding.SystemStrings.Strings.Contains(UtfAllString.Create(value.ToString()))
                 || (value.Length < MinUserStringLength)
                 || (value.Length > MaxUserStringLength))
             {
