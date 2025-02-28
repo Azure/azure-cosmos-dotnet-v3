@@ -21,8 +21,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public Action<HttpRequestMessage, Exception> ExceptionIntercepter { get; set; }
 
-        public Action<HttpRequestMessage, Exception> ExceptionIntercepter { get; set; }
-
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             HttpResponseMessage httpResponse = null;

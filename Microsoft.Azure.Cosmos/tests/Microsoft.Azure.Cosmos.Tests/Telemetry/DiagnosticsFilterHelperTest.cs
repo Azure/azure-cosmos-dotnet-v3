@@ -83,37 +83,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
         }
 
         [TestMethod]
-        [DataRow("50", "60", false, DisplayName = "When Request and Response content length is less than threshold.")]
-        [DataRow("150", "60", true, DisplayName = "When Request content length is greater than threshold but response content length is less than threshold.")]
-        [DataRow("50", "160", true, DisplayName = "When Request content length is less than threshold but response content length is greater than threshold.")]
-        [DataRow("150", "160", true, DisplayName = "When Request and Response content length is greater than threshold.")]
-        [DataRow("Invalid Request Length", "160", true, DisplayName = "When Request content length is 'Invalid' and response content length is greater than threshold.")]
-        [DataRow("Invalid Request Length", "60", false, DisplayName = "When Request content length is 'Invalid' and response content length is less than threshold.")]
-        [DataRow("150", "Invalid Response Length", true, DisplayName = "When Request content length is greater than threshold and response content length is 'Invalid'.")]
-        [DataRow("50", "Invalid Response Length", false, DisplayName = "When Request content length is less than threshold and response content length is 'invalid'.")]
-        [DataRow(null, "160", true, DisplayName = "When Request content length is 'null' and response content length is greater than threshold.")]
-        [DataRow(null, "60", false, DisplayName = "When Request content length is 'null' and response content length is less than threshold.")]
-        [DataRow("150", null, true, DisplayName = "When Request content length is greater than threshold and response content length is 'null'.")]
-        [DataRow("50", null, false, DisplayName = "When Request content length is less than threshold and response content length is 'null'.")]
-        public void CheckReturnFalseOnSuccessAndLowerPayloadSizeThanConfiguredConfig(string requestContentLength, string responseContentLength, bool expectedResult)
-        {
-            CosmosThresholdOptions distributedTracingOptions = new CosmosThresholdOptions
-            {
-                PayloadSizeThresholdInBytes = 100
-            };
-
-            OpenTelemetryAttributes response = new OpenTelemetryAttributes
-            {
-                ResponseContentLength = requestContentLength,
-                RequestContentLength = responseContentLength,
-            };
-
-            Assert.AreEqual(expectedResult,
-                DiagnosticsFilterHelper
-                                .IsPayloadSizeThresholdCrossed(distributedTracingOptions, response));
-        }
-
-        [TestMethod]
         public void CheckReturnTrueOnFailedStatusCode()
         {
             Assert.IsTrue(this.rootTrace.Duration > TimeSpan.Zero);

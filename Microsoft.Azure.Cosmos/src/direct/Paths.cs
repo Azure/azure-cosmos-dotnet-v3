@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Documents
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
+        public const string Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions = "getdatabaseaccountartifactpermissions";
         public const string Operations_GetGraphDatabaseAccountConfiguration = "getgraphdatabaseaccountconfiguration";
         public const string Operations_GetStorageServiceConfigurations = "getstorageserviceconfigurations";
         public const string Operations_GetStorageAccountKey = "getstorageaccountkey";
@@ -411,22 +412,6 @@ namespace Microsoft.Azure.Documents
         public const string DatabaseAccountResourceSegment = "databaseAccountResource";
         public const string DatabaseAccountResourceSegment_Root = DatabaseAccountType_Root + "/{" + DatabaseAccountResourceSegment + "}";
 
-        // ----------------- Native Control Plane RBAC for Cassandra -----------------
-
-        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions
-        public const string CassandraRoleDefinitionResourceType = "cassandraRoleDefinitions";
-        public const string CassandraRoleDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + CassandraRoleDefinitionResourceType;
-
-        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions/{cassandraRoleDefinitionResource}
-        public const string CassandraRoleDefinitionResourceSegment = "cassandraRoleDefinitionResource";
-        public const string CassandraRoleDefinitionResourceSegment_Root = CassandraRoleDefinitionResourceType_Root + "/{" + CassandraRoleDefinitionResourceSegment + "}";
-
-        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions/{cassandraRoleDefinitionResource}/operationResults
-        public const string CassandraRoleDefinitionOperationResultsSegment_Root = CassandraRoleDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
-
-        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
-        public const string CassandraRoleDefinitionOperationResultSegment_Root = CassandraRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
-
         // ----------------- Native Control Plane RBAC for Mongo -----------------
 
         // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbRoleDefinitions
@@ -457,6 +442,22 @@ namespace Microsoft.Azure.Documents
         // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongodbUserDefinitions/{mongodbUserDefinitionResource}/operationResults/{operationId}
         public const string MongoDbUserDefinitionOperationResultSegment_Root = MongoDbUserDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
 
+        // ----------------- Native Control Plane RBAC for Cassandra -----------------
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions
+        public const string CassandraRoleDefinitionResourceType = "cassandraRoleDefinitions";
+        public const string CassandraRoleDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + CassandraRoleDefinitionResourceType;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions/{cassandraRoleDefinitionResource}
+        public const string CassandraRoleDefinitionResourceSegment = "cassandraRoleDefinitionResource";
+        public const string CassandraRoleDefinitionResourceSegment_Root = CassandraRoleDefinitionResourceType_Root + "/{" + CassandraRoleDefinitionResourceSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions/{cassandraRoleDefinitionResource}/operationResults
+        public const string CassandraRoleDefinitionOperationResultsSegment_Root = CassandraRoleDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/cassandraRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
+        public const string CassandraRoleDefinitionOperationResultSegment_Root = CassandraRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
+
         // ----------------- Native Control Plane RBAC for Table -----------------
 
         // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/tableRoleDefinitions
@@ -472,5 +473,41 @@ namespace Microsoft.Azure.Documents
 
         // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/tableRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
         public const string TableRoleDefinitionOperationResultSegment_Root = TableRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
+
+        // ----------------- Native Control Plane RBAC for Gremlin -----------------
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/gremlinRoleDefinitions
+        public const string GremlinRoleDefinitionResourceType = "gremlinRoleDefinitions";
+        public const string GremlinRoleDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + GremlinRoleDefinitionResourceType;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/gremlinRoleDefinitions/{gremlinRoleDefinitionResource}
+        public const string GremlinRoleDefinitionResourceSegment = "gremlinRoleDefinitionResource";
+        public const string GremlinRoleDefinitionResourceSegment_Root = GremlinRoleDefinitionResourceType_Root + "/{" + GremlinRoleDefinitionResourceSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/gremlinRoleDefinitions/{gremlinRoleDefinitionResource}/operationResults
+        public const string GremlinRoleDefinitionOperationResultsSegment_Root = GremlinRoleDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/gremlinRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
+        public const string GremlinRoleDefinitionOperationResultSegment_Root = GremlinRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
+
+        // ----------------- Native Control Plane RBAC for MongoMI -----------------
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongoMIRoleDefinitions
+        public const string MongoMIRoleDefinitionResourceType = "mongoMIRoleDefinitions";
+        public const string MongoMIRoleDefinitionResourceType_Root = DatabaseAccountResourceSegment_Root + "/" + MongoMIRoleDefinitionResourceType;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongoMIRoleDefinitions/{mongoMIRoleDefinitionResource}
+        public const string MongoMIRoleDefinitionResourceSegment = "mongoMIRoleDefinitionResource";
+        public const string MongoMIRoleDefinitionResourceSegment_Root = MongoMIRoleDefinitionResourceType_Root + "/{" + MongoMIRoleDefinitionResourceSegment + "}";
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongoMIRoleDefinitions/{mongoMIRoleDefinitionResource}/operationResults
+        public const string MongoMIRoleDefinitionOperationResultsSegment_Root = MongoMIRoleDefinitionResourceSegment_Root + "/" + OperationResultsSegment;
+
+        // /subscriptions/{subscriptionId}/resourceGroups/{resourceGroup}/providers/Microsoft.DocumentDB/databaseAccounts/{databaseAccountResource}/mongoMIRoleDefinitions/{mongoRoleDefinitionResource}/operationResults/{operationId}
+        public const string MongoMIRoleDefinitionOperationResultSegment_Root = MongoMIRoleDefinitionOperationResultsSegment_Root + "/{" + OperationIdSegment + "}";
+
+        // /stsresourcetoken
+        public const string STSResourceTokenSegment = "stsResourceToken";
+        public const string STSResourceToken_Root = Root + "/" + STSResourceTokenSegment + "/";
     }
 }

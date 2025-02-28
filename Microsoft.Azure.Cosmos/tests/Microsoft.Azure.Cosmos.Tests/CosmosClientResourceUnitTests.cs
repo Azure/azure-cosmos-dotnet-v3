@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;
-    using System.Globalization;
     using System.Net.Http;
     using System.Net.Security;
     using System.Security.Cryptography;
@@ -14,12 +13,8 @@ namespace Microsoft.Azure.Cosmos.Core.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using System.Globalization;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Documents.Collections;
 
     [TestClass]
     public class CosmosClientResourceUnitTests

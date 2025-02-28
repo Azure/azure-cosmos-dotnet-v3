@@ -853,51 +853,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [Ignore]
-        [TestMethod]
-        public async Task WithComputedProperties()
-        {
-            string containerName = Guid.NewGuid().ToString();
-            string partitionKeyPath = "/users";
-
-            var definitions = new[]
-                {
-                    new { Name = "lowerName", Query = "SELECT VALUE LOWER(c.name) FROM c" },
-                    new { Name = "estimatedTax", Query = "SELECT VALUE c.salary * 0.2 FROM c" }
-                };
-            ContainerResponse containerResponse =
-                await this.database.DefineContainer(containerName, partitionKeyPath)
-                    .WithComputedProperties()
-                        .WithComputedProperty(definitions[0].Name, definitions[0].Query)
-                        .WithComputedProperty(definitions[1].Name, definitions[1].Query)
-                        .Attach()
-                    .CreateAsync();
-
-            Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
-            Assert.AreEqual(containerName, containerResponse.Resource.Id);
-            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-
-            Assert.AreEqual(2, containerResponse.Resource.ComputedProperties.Count);
-            Assert.AreEqual(definitions[0].Name, containerResponse.Resource.ComputedProperties[0].Name);
-            Assert.AreEqual(definitions[0].Query, containerResponse.Resource.ComputedProperties[0].Query);
-            Assert.AreEqual(definitions[1].Name, containerResponse.Resource.ComputedProperties[1].Name);
-            Assert.AreEqual(definitions[1].Query, containerResponse.Resource.ComputedProperties[1].Query);
-
-            Container container = containerResponse;
-            containerResponse = await container.ReadContainerAsync();
-            Assert.AreEqual(HttpStatusCode.OK, containerResponse.StatusCode);
-            Assert.AreEqual(containerName, containerResponse.Resource.Id);
-            Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
-
-            Assert.AreEqual(2, containerResponse.Resource.ComputedProperties.Count);
-            Assert.AreEqual(definitions[0].Name, containerResponse.Resource.ComputedProperties[0].Name);
-            Assert.AreEqual(definitions[0].Query, containerResponse.Resource.ComputedProperties[0].Query);
-            Assert.AreEqual(definitions[1].Name, containerResponse.Resource.ComputedProperties[1].Name);
-            Assert.AreEqual(definitions[1].Query, containerResponse.Resource.ComputedProperties[1].Query);
-
-            containerResponse = await containerResponse.Container.DeleteContainerAsync();
-            Assert.AreEqual(HttpStatusCode.NoContent, containerResponse.StatusCode);
-        }
 
         [TestMethod]
         public async Task ThroughputTest()

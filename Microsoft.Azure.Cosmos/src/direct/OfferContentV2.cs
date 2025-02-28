@@ -22,6 +22,8 @@ namespace Microsoft.Azure.Documents
         private OfferMinimumThroughputParameters minimumThroughputParameters;
         private Collection<PhysicalPartitionThroughputInfo> physicalPartitionThroughputInfo;
         private ThroughputDistributionPolicyType? throughputDistributionPolicy;
+        private Collection<ThroughputBucket> throughputBuckets;
+        private int? offerTargetThroughput;
 #endif
 
         /// <summary>
@@ -84,6 +86,18 @@ namespace Microsoft.Azure.Documents
                     this.OfferAutopilotSettings = new AutopilotSettings(autopilotSettings);
                 }
                 this.ThroughputDistributionPolicy = content.ThroughputDistributionPolicy;
+
+                Collection<ThroughputBucket> throughputBuckets = content.ThroughputBuckets;
+                if (throughputBuckets != null)
+                {
+                    this.ThroughputBuckets = throughputBuckets;
+                }
+
+                int? offerTargetThroughput = content.OfferTargetThroughput;
+                if (offerTargetThroughput.HasValue)
+                {
+                    this.OfferTargetThroughput = offerTargetThroughput.Value;
+                }
             }
 #endif
         }
@@ -116,6 +130,18 @@ namespace Microsoft.Azure.Documents
                     this.OfferAutopilotSettings = new AutopilotSettings(autopilotSettings);
                 }
                 this.ThroughputDistributionPolicy = content.ThroughputDistributionPolicy;
+
+                Collection<ThroughputBucket> throughputBuckets = content.ThroughputBuckets;
+                if (throughputBuckets != null)
+                {
+                    this.ThroughputBuckets = throughputBuckets;
+                }
+
+                int? offerTargetThroughput = content.OfferTargetThroughput;
+                if (offerTargetThroughput.HasValue)
+                {
+                    this.OfferTargetThroughput = offerTargetThroughput.Value;
+                }
             }
 #endif
         }
@@ -134,11 +160,76 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Constructor accepting autopilot settings.
+        /// Constructor accepting autopilot settings and a reference offer content
+        /// </summary>
+        /// <param name="offerAutopilotSettings">offer autopilot settings</param>
+        internal OfferContentV2(OfferContentV2 content, AutopilotSettings offerAutopilotSettings)
+        {
+            if (content != null)
+            {
+                Collection<ThroughputBucket> throughputBuckets = content.ThroughputBuckets;
+                if (throughputBuckets != null)
+                {
+                    this.ThroughputBuckets = throughputBuckets;
+                }
+            }
+
+            if (offerAutopilotSettings != null)
+            {
+                this.OfferAutopilotSettings = new AutopilotSettings(offerAutopilotSettings);
+            }
+        }
+
+        /// <summary>
+        /// Constructor accepting autopilot settings, throughput buckets and a reference offer content
+        /// </summary>
+        /// <param name="offerAutopilotSettings">offer autopilot settings</param>
+        /// <param name="throughputBuckets">offer autopilot settings</param>
+        internal OfferContentV2(OfferContentV2 content, AutopilotSettings offerAutopilotSettings, Collection<ThroughputBucket> throughputBuckets)
+        {
+            if (offerAutopilotSettings != null)
+            {
+                this.OfferAutopilotSettings = new AutopilotSettings(offerAutopilotSettings);
+            }
+
+            if (throughputBuckets != null)
+            {
+                this.ThroughputBuckets = throughputBuckets;
+            }
+        }
+
+        /// <summary>
+        /// Constructor accepting autopilot settings and throughput buckets.
+        /// </summary>
+        /// <param name="offerAutopilotSettings">offer autopilot settings</param>
+        /// <param name="throughputBuckets">throughput buckets</param>
+        internal OfferContentV2(
+            AutopilotSettings offerAutopilotSettings,
+            Collection<ThroughputBucket> throughputBuckets)
+        {
+            if (offerAutopilotSettings != null)
+            {
+                this.OfferAutopilotSettings = new AutopilotSettings(offerAutopilotSettings);
+            }
+
+            if(throughputBuckets != null)
+            {
+                this.ThroughputBuckets = throughputBuckets;
+            }
+        }
+
+        /// <summary>
+        /// Constructor accepting autopilot settings, bgTaskMaxAllowedThroughputPercent, throughput distribution policy and throughput buckets
         /// </summary>
         /// <param name="offerAutopilotSettings">offer autopilot settings</param>
         /// <param name="bgTaskMaxAllowedThroughputPercent">offer bg-task percentage settings</param>
-        internal OfferContentV2(AutopilotSettings offerAutopilotSettings, double? bgTaskMaxAllowedThroughputPercent, ThroughputDistributionPolicyType? throughputDistributionPolicy)
+        /// <param name="throughputDistributionPolicy">throughput distribution policy</param>
+        /// <param name="throughputBuckets">throughput buckets</param>
+        internal OfferContentV2(
+            AutopilotSettings offerAutopilotSettings,
+            double? bgTaskMaxAllowedThroughputPercent,
+            ThroughputDistributionPolicyType? throughputDistributionPolicy,
+            Collection<ThroughputBucket> throughputBuckets)
         {
             if (offerAutopilotSettings != null)
             {
@@ -154,10 +245,16 @@ namespace Microsoft.Azure.Documents
             {
                 this.ThroughputDistributionPolicy = throughputDistributionPolicy;
             }
+
+            if (throughputBuckets != null)
+            {
+                this.ThroughputBuckets = throughputBuckets;
+            }
         }
 
         /// <summary>
-        /// Internal constructor accepting offer throughput, autopilot settings and minimum throughput parameters
+        /// Internal constructor accepting offer throughput, autopilot settings, minimum throughput parameters,
+        /// throughput distribution policy and throughput buckets
         /// </summary>
         internal OfferContentV2(
             OfferContentV2 contentV2,
@@ -165,7 +262,8 @@ namespace Microsoft.Azure.Documents
             bool? offerIsAutoScaleV1Enabled,
             AutopilotSettings autopilotSettings,
             OfferMinimumThroughputParameters minThroughputParameters,
-            ThroughputDistributionPolicyType? throughputDistributionPolicy)
+            ThroughputDistributionPolicyType? throughputDistributionPolicy,
+            Collection<ThroughputBucket> throughputBuckets)
         {
             this.OfferThroughput = contentV2.OfferThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -185,10 +283,22 @@ namespace Microsoft.Azure.Documents
             {
                 this.ThroughputDistributionPolicy = throughputDistributionPolicy;
             }
+
+            if (throughputBuckets != null)
+            {
+                this.ThroughputBuckets = throughputBuckets;
+            }
+
+            int? offerTargetThroughput = contentV2.OfferTargetThroughput;
+            if (offerTargetThroughput.HasValue)
+            {
+                this.OfferTargetThroughput = offerTargetThroughput.Value;
+            }
         }
 
         /// <summary>
-        /// Internal constructor accepting offer throughput, autopilot settings, minimum throughput parameters, bg task throughput percent
+        /// Internal constructor accepting offer throughput, autopilot settings, minimum throughput parameters, bg task throughput percent,
+        /// throughput distribution policy, throughput buckets, and target throughput
         /// </summary>
         internal OfferContentV2(
             int offerThroughput,
@@ -197,7 +307,9 @@ namespace Microsoft.Azure.Documents
             AutopilotSettings autopilotSettings,
             OfferMinimumThroughputParameters minThroughputParameters,
             double? bgTaskMaxAllowedThroughputPercent,
-            ThroughputDistributionPolicyType? throughputDistributionPolicy)
+            ThroughputDistributionPolicyType? throughputDistributionPolicy,
+            Collection<ThroughputBucket> throughputBuckets,
+            int? offerTargetThroughput = null)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -222,6 +334,16 @@ namespace Microsoft.Azure.Documents
             {
                 this.ThroughputDistributionPolicy = throughputDistributionPolicy;
             }
+
+            if (throughputBuckets != null)
+            {
+                this.ThroughputBuckets = throughputBuckets;
+            }
+
+            if (offerTargetThroughput.HasValue)
+            {
+                this.OfferTargetThroughput = offerTargetThroughput.Value;
+            }
         }
 
         internal OfferContentV2(
@@ -238,6 +360,18 @@ namespace Microsoft.Azure.Documents
                 if (autopilotSettings != null)
                 {
                     this.OfferAutopilotSettings = new AutopilotSettings(autopilotSettings);
+                }
+
+                Collection<ThroughputBucket> throughputBuckets = content.ThroughputBuckets;
+                if (throughputBuckets != null)
+                {
+                    this.ThroughputBuckets = throughputBuckets;
+                }
+
+                int? offerTargetThroughput = content.OfferTargetThroughput;
+                if (offerTargetThroughput.HasValue)
+                {
+                    this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
             }
         }
@@ -422,7 +556,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Represents settings related to auto scale of a collection/database offer.
         /// <remark>
-        /// Don't cache this property like we did for CollectionThroughputInfo and OffferMinimumThroughputParameters
+        /// Don't cache this property like we did for CollectionThroughputInfo and OfferMinimumThroughputParameters
         /// as it would result in not deserializing autoscale settings correctly.
         /// </remark>
         /// </summary>
@@ -455,6 +589,47 @@ namespace Microsoft.Azure.Documents
             {
                 this.physicalPartitionThroughputInfo = value;
                 base.SetObjectCollection<PhysicalPartitionThroughputInfo>(Constants.Properties.PhysicalPartitionThroughputInfo, value);
+            }
+        }
+
+        [JsonProperty(PropertyName = Constants.Properties.ThroughputBuckets, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal Collection<ThroughputBucket> ThroughputBuckets
+        {
+            get
+            {
+                if (this.throughputBuckets == null)
+                {
+                    this.throughputBuckets = base.GetObjectCollection<ThroughputBucket>(Constants.Properties.ThroughputBuckets);
+                }
+
+                return this.throughputBuckets;
+            }
+            set
+            {
+                this.throughputBuckets = value;
+                base.SetObjectCollection<ThroughputBucket>(Constants.Properties.ThroughputBuckets, value);
+            }
+        }
+
+        /// <summary>
+        /// Represents target max throughput offer should operate at once offer is no longer in pending state.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.OfferTargetThroughput, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal int? OfferTargetThroughput
+        {
+            get
+            {
+                if (this.offerTargetThroughput == null)
+                {
+                    this.offerTargetThroughput = base.GetValue<int?>(Constants.Properties.OfferTargetThroughput);
+                }
+
+                return this.offerTargetThroughput;
+            }
+            private set
+            {
+                this.offerTargetThroughput = value;
+                base.SetValue(Constants.Properties.OfferTargetThroughput, this.offerTargetThroughput);
             }
         }
 

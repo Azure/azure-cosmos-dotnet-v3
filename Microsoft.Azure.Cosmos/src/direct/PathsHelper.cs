@@ -340,7 +340,6 @@ namespace Microsoft.Azure.Documents
         /// <param name="resourceUrl">Resource URL.</param>
         /// <param name="resourcePath">Indicates resource path. For collection level it will be <see cref="Paths.CollectionsPathSegment"/>.</param>
         /// <param name="resourceIdOrFullName">Resource name or resourceId. Always trimmed.</param>
-        /// <param name="isNameBased">Resource is name based.</param>
         /// <param name="databaseName">Database name extracted from the URL.</param>
         /// <param name="collectionName">Collection name extracted from the URL.</param>
         /// <param name="resourceType">Resource type mapped for the operation.</param>
@@ -350,7 +349,9 @@ namespace Microsoft.Azure.Documents
             string resourceUrl,
             out string resourcePath,
             out string resourceIdOrFullName,
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             out bool isNameBased,
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             out string databaseName,
             out string collectionName,
             out ResourceType resourceType,
@@ -1468,6 +1469,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
+                case OperationType.GetDatabaseAccountArtifactPermissions:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions;
                 case OperationType.XPDatabaseAccountMetaData:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_XPDatabaseAccountMetaData;
                 case OperationType.GetGraphDatabaseAccountConfiguration:
@@ -1584,6 +1587,7 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountSas, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetDatabaseAccountConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_XPDatabaseAccountMetaData, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetUnwrappedDek, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetDekProperties, StringComparison.OrdinalIgnoreCase) ||

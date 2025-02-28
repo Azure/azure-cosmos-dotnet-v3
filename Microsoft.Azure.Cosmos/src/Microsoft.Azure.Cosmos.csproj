@@ -129,6 +129,7 @@
 	<ItemGroup>
 		<PackageReference Include="Azure.Core" Version="1.44.1" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0" />
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
 		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />

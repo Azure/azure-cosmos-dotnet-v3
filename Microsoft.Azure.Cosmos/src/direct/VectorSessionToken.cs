@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class VectorSessionToken : ISessionToken
     {
-        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
+        private const string SessionTokenFalseProgressMergeDisabled = "AZURE_COSMOS_SESSION_TOKEN_FALSE_PROGRESS_MERGE_DISABLED";
         private const char SegmentSeparator = '#';
         private const string SegmentSeparatorString = "#";
         private const char RegionProgressSeparator = '=';
@@ -35,6 +35,9 @@ namespace Microsoft.Azure.Documents
         private readonly long globalLsn;
 #pragma warning restore IDE0032 // Use auto property
         private readonly IReadOnlyDictionary<uint, long> localLsnByRegion;
+        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
+        private static bool isFalseProgressMergeDisabled = string.Equals(Environment.GetEnvironmentVariable(SessionTokenFalseProgressMergeDisabled), "true",
+                StringComparison.OrdinalIgnoreCase);
 
         private VectorSessionToken(long version, long globalLsn, IReadOnlyDictionary<uint, long> localLsnByRegion, string sessionToken = null)
         {
@@ -121,9 +124,21 @@ namespace Microsoft.Azure.Documents
                 throw new ArgumentNullException(nameof(otherSessionToken));
             }
 
-            if (other.version < this.version || other.globalLsn < this.globalLsn)
+            if (isFalseProgressMergeDisabled)
             {
-                return false;
+                if(other.version < this.version ||
+                   other.globalLsn < this.globalLsn)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (other.version < this.version ||
+                   (other.version == this.version && other.globalLsn < this.globalLsn))
+                {
+                    return false;
+                }
             }
 
             if (other.version == this.version && other.localLsnByRegion.Count != this.localLsnByRegion.Count)
@@ -240,10 +255,12 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
-            return new VectorSessionToken(
-                Math.Max(this.version, other.version),
-                Math.Max(this.globalLsn, other.globalLsn),
-                highestLocalLsnByRegion);
+            long version = Math.Max(this.version, other.version);
+
+            long globalLsn = (this.version == other.version || isFalseProgressMergeDisabled) ? Math.Max(this.globalLsn, other.globalLsn) : sessionTokenWithHigherVersion.globalLsn;
+
+            return new VectorSessionToken(version, globalLsn, highestLocalLsnByRegion);
+
         }
 
         string ISessionToken.ConvertToString()

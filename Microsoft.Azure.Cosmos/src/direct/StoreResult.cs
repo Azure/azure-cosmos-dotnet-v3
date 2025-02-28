@@ -450,6 +450,12 @@ namespace Microsoft.Azure.Documents
                     throw new InternalServerErrorException(RMResources.InternalServerError);
                 }
 
+                if (!string.IsNullOrWhiteSpace(this.StorePhysicalAddress?.AbsoluteUri))
+                {
+                    (string partitionId, string replicaId) = GetPartitionIdReplicaIdFromAddress(StorePhysicalAddress.AbsoluteUri);
+                    this.Exception.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
+                }
+
                 throw this.Exception;
             }
 

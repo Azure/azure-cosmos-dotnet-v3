@@ -1112,7 +1112,7 @@ If you would like to serve this query through continuation tokens, then please r
     <value>Request for Read DatabaseAccount is blocked because principal [{0}] does not have required RBAC permissions to perform action [{1}] on any scope. Learn more: https://aka.ms/cosmos-native-rbac.</value>
   </data>
   <data name="AadAuthGroupExpansionNeeded" xml:space="preserve">
-    <value>This could be because the user's group memberships were not present in the AAD token.</value>
+    <value> This could be because the user's group memberships were not present in the AAD token.</value>
   </data>
   <data name="AadAuthActionNotSupported" xml:space="preserve">
     <value>The given request [{0} {1}] cannot be authorized by AAD token in data plane. Learn more: https://aka.ms/cosmos-native-rbac.</value>
@@ -1439,5 +1439,20 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="ServiceUnavailableErrorAtCmkFastScanner" xml:space="preserve">
     <value>Hit a Service Unavailable error while trying to scan documents for CMK Migration. Please Retry. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys-existing-accounts</value>
+  </data>
+  <data name="InvalidThroughputBuckets" xml:space="preserve">
+    <value>Invalid Values for Throughput Buckets.</value>
+  </data>
+  <data name="ThroughputBucketingNotEnabled" xml:space="preserve">
+    <value>Throughput Bucketing is not enabled on the account. Please reach out to support to enable.</value>
+  </data>
+  <data name="MinimalTlsVersionDeprecated" xml:space="preserve">
+    <value>Please upgrade the minimalTlsVersion property to Tls12 or higher. The values Tls and Tls11 are deprecated. More info: https://azure.microsoft.com/en-us/updates/azure-support-tls-will-end-by-31-october-2024-2/</value>
+  </data>
+  <data name="UpdateKeyVaultKeyUriNotSupported" xml:space="preserve">
+    <value>Updating KeyVaultKeyUri is not supported</value>
+  </data>
+  <data name="DisableCmkNotSupported" xml:space="preserve">
+    <value>Cannot provide an empty KeyVaultKeyUri to an account with CMK Enabled. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys?tabs=azure-portal</value>
   </data>
 </root>

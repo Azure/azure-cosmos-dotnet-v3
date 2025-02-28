@@ -62,6 +62,7 @@ namespace Microsoft.Azure.Documents
     class Database : Resource
     {
         private InAccountRestoreParameters restoreParameters;
+        private SoftDeletionMetadata softDeletionMetadata;
         
         /// <summary>
         /// Initializes a new instance of the <see cref="Database"/> class for the Azure Cosmos DB service.
@@ -179,6 +180,32 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
+        /// Gets or sets the <see cref="RestoreParameters"/> for triggering the InAccountRestore of the database
+        /// </summary>
+        /// <value>
+        /// It is an optional property.
+        /// A valid value should have both RestoreSource and RestoreTimestampInUtc
+        /// </value>
+        [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal SoftDeletionMetadata SoftDeletionMetadata
+        {
+            get
+            {
+                if (this.softDeletionMetadata == null)
+                {
+                    this.softDeletionMetadata = base.GetObject<SoftDeletionMetadata>(Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata);
+                }
+
+                return this.softDeletionMetadata;
+            }
+            set
+            {
+                this.softDeletionMetadata = value;
+                base.SetObject<SoftDeletionMetadata>(Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, value);
+            }
+        }
+
         internal override void Validate()
         {
             base.Validate();
@@ -190,6 +217,12 @@ namespace Microsoft.Azure.Documents
             {
                 this.restoreParameters.OnSave();
                 base.SetObject(Constants.Properties.RestoreParams, this.restoreParameters);
+            }
+
+            if (this.softDeletionMetadata != null)
+            {
+                this.softDeletionMetadata.OnSave();
+                base.SetObject(Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, this.softDeletionMetadata);
             }
         }
     }

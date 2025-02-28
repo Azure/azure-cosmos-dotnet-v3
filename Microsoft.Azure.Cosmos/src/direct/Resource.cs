@@ -43,7 +43,9 @@ namespace Microsoft.Azure.Documents
         }
 
 
-        /// <summary>
+        
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+/// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
@@ -56,7 +58,7 @@ namespace Microsoft.Azure.Documents
         /// When working with document resources, they too have this settable Id property. 
         /// If an Id is not supplied by the user the SDK will automatically generate a new GUID and assign its value to this property before
         /// persisting the document in the database. 
-        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the "Microsoft.Azure.Documents.Client.DocumentClient"/> instance to true.
+        /// You can override this auto Id generation by setting the disableAutomaticIdGeneration parameter on the <see cref="Microsoft.Azure.Documents.Client.DocumentClient"/> instance to true.
         /// This will prevent the SDK from generating new Ids. 
         /// </para>
         /// <para>
@@ -65,6 +67,7 @@ namespace Microsoft.Azure.Documents
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         public virtual string Id
         {
             get

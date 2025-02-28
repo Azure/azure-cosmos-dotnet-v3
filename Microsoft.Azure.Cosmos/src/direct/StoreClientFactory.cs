@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Documents
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
-        private ConnectionStateListener connectionStateListener = null;
+        private IConnectionStateListener connectionStateListener;
 
         public StoreClientFactory(
             Protocol protocol,
@@ -45,7 +45,6 @@ namespace Microsoft.Azure.Documents
             RetryWithConfiguration retryWithConfiguration = null,
             RntbdConstants.CallerId callerId = RntbdConstants.CallerId.Anonymous, // replicatedResourceClient
             bool enableTcpConnectionEndpointRediscovery = false,
-            IAddressResolver addressResolver = null, // globalAddressResolver
             TimeSpan localRegionOpenTimeout = default,
             bool enableChannelMultiplexing = false,
             int rntbdMaxConcurrentOpeningConnectionCount = ushort.MaxValue, // Optional for Rntbd
@@ -62,6 +61,7 @@ namespace Microsoft.Azure.Documents
                 throw new ArgumentOutOfRangeException(nameof(idleTimeoutInSeconds));
             }
 
+            this.connectionStateListener = new ConnectionStateMuxListener(enableTcpConnectionEndpointRediscovery && protocol == Protocol.Tcp);
             if (protocol == Protocol.Https)
             {
                 if (eventSource == null)
@@ -194,11 +194,6 @@ namespace Microsoft.Azure.Documents
                     sendHangDetectionTimeSeconds = maxSendHangDetectionTimeSeconds;
                 }
 
-                if (enableTcpConnectionEndpointRediscovery && addressResolver != null)
-                {
-                    this.connectionStateListener = new ConnectionStateListener(addressResolver);
-                }
-
                 StoreClientFactory.ValidateRntbdMaxConcurrentOpeningConnectionCount(ref rntbdMaxConcurrentOpeningConnectionCount);
 
                 this.transportClient = new Rntbd.TransportClient(
@@ -272,7 +267,7 @@ namespace Microsoft.Azure.Documents
             RetryWithConfiguration retryWithConfiguration,
             TransportClient transportClient,
             TransportClient fallbackTransportClient,
-            ConnectionStateListener connectionStateListener)
+            IConnectionStateListener connectionStateListener)
         {
             this.protocol = protocol;
             this.retryWithConfiguration = retryWithConfiguration;
@@ -286,9 +281,9 @@ namespace Microsoft.Azure.Documents
             return new StoreClientFactory(
                 this.protocol,
                 this.retryWithConfiguration,
-                this.transportClient,
-                this.fallbackTransportClient,
-                this.connectionStateListener);
+                transportClient: this.transportClient,
+                fallbackTransportClient: this.fallbackTransportClient,
+                connectionStateListener: this.connectionStateListener);
         }
 
         // Interceptor factory (used in V3 SDK by compute to intercept transport interactions for chargeback) 
@@ -303,6 +298,11 @@ namespace Microsoft.Azure.Documents
             this.fallbackTransportClient = transportClientHandlerFactory(this.fallbackTransportClient);
         }
 
+        public IConnectionStateListener GetConnectionStateListener()
+        {
+            return this.connectionStateListener;
+        }
+
         public StoreClient CreateStoreClient(
             IAddressResolver addressResolver,
             ISessionContainer sessionContainer,
@@ -313,7 +313,8 @@ namespace Microsoft.Azure.Documents
             bool useFallbackClient = true,
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
-            bool enableReplicaValidation = false)
+            bool enableReplicaValidation = false,
+            AccountConfigurationProperties accountConfigurationProperties = null)
         {
             this.ThrowIfDisposed();
             if (useFallbackClient && this.fallbackTransportClient != null)
@@ -332,7 +333,8 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                accountConfigurationProperties: accountConfigurationProperties);
             }
 
             return new StoreClient(
@@ -340,6 +342,7 @@ namespace Microsoft.Azure.Documents
                 sessionContainer: sessionContainer,
                 serviceConfigurationReader: serviceConfigurationReader,
                 userTokenProvider: authorizationTokenProvider,
+                accountConfigurationProperties: accountConfigurationProperties,
                 protocol: this.protocol,
                 transportClient: this.transportClient,
                 enableRequestDiagnostics: enableRequestDiagnostics,

@@ -113,7 +113,10 @@ namespace Microsoft.Azure.Documents
         QueryStoredProc = 66,
         Other = 67,
         Count = 68,
-        Last = 69,
+
+        RelocateLeakedTentativeWrites = 70,
+
+        Last = 71,
 #endif
 
         // These names make it unclear what they map to in RequestOperationType.
@@ -145,6 +148,7 @@ namespace Microsoft.Azure.Documents
         ControllerBatchReportChargesV2 = -26,
         ControllerBatchGetOutputV2 = -27,
         ControllerBatchWatchdogHealthCheckPing = -28,
+        GetDatabaseAccountArtifactPermissions = -29,
 #endif
     }
 
@@ -153,6 +157,10 @@ namespace Microsoft.Azure.Documents
         private static readonly Dictionary<int, string> OperationTypeNames = new Dictionary<int, string>();
 
         private static readonly Dictionary<string, OperationType> OperationTypesMapping = new Dictionary<string, OperationType>();
+
+#if !COSMOSCLIENT
+        internal static readonly List<OperationType> operationTypesToSkipWriteBarrierCheck = new List<OperationType>() { OperationType.ForceConfigRefresh, OperationType.GetSplitPoint };
+#endif
 
         static OperationTypeExtensions()
         {
@@ -249,7 +257,8 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.Pause ||
                    type == OperationType.Resume ||
                    type == OperationType.UpdatePartitionThroughput ||
-                   type == OperationType.Truncate
+                   type == OperationType.Truncate ||
+                   type == OperationType.RelocateLeakedTentativeWrites
 #endif
                    ;
         }
@@ -279,6 +288,15 @@ namespace Microsoft.Azure.Documents
                    type == OperationType.GetStorageAuthToken
 #endif
                    ;
+        }
+
+        public static bool IsSkippedForWriteBarrier(this OperationType type)
+        {
+            return
+#if !COSMOSCLIENT
+                OperationTypeExtensions.operationTypesToSkipWriteBarrierCheck.Contains(type) ||
+#endif
+             false;
         }
     }
 }

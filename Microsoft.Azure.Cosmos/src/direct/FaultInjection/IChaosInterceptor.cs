@@ -3,9 +3,10 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.FaultInjection
 {
-    using Microsoft.Azure.Documents.Rntbd;
     using System;
+    using System.Net.Http;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Documents.Rntbd;
 
     /// <summary>
     /// Interface for Chaos Interceptor
@@ -18,6 +19,12 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <param name="args"></param>
         /// <returns></returns>
         public Task<(bool, StoreResponse)> OnRequestCallAsync(ChannelCallArguments args);
+
+        /// <summary>
+        /// Used to inject faults on request call for GatewayCalls
+        /// </summary>
+        /// <param name="request"></param>
+        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request);
 
         /// <summary>
         /// Used to inject faults on channel open
@@ -42,10 +49,22 @@ namespace Microsoft.Azure.Documents.FaultInjection
         public Task OnBeforeConnectionWriteAsync(ChannelCallArguments args);
 
         /// <summary>
+        /// Used to inject faults before connection writes for gateway
+        /// </summary>
+        /// <param name="request"></param>
+        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request);
+
+        /// <summary>
         /// Used to inject faults after connection writes
         /// </summary>
         /// <param name="args"></param>
         public Task OnAfterConnectionWriteAsync(ChannelCallArguments args);
+
+        /// <summary>
+        /// Used to inject faults after connection writes for gateway
+        /// </summary>
+        /// <param name="request"></param>
+        public Task OnAfterHttpSendAsync(DocumentServiceRequest request);
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id

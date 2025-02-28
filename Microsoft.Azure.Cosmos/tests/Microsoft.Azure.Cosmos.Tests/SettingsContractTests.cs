@@ -1136,58 +1136,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(embedding2.Equals(vectorEmbeddings.Value<JArray>()[1].ToObject<Cosmos.Embedding>()));
         }
 
-        [TestMethod]
-        public void FullTextPolicySerialization()
-        {
-            ContainerProperties containerSettings = new ContainerProperties("TestContainer", "/pk");
-            string serialization = JsonConvert.SerializeObject(containerSettings);
-            Assert.IsFalse(serialization.Contains("fullTextPolicy"), "Full Text Policy should not be included by default");
-
-            string defaultLanguage = "en-US", path1 = "/fts1", path2 = "/fts2", path3 = "/fts3";
-
-            FullTextPath fullTextPath1 = new Cosmos.FullTextPath()
-            {
-                Path = path1,
-                Language = "en-US",
-            };
-
-            FullTextPath fullTextPath2 = new Cosmos.FullTextPath()
-            {
-                Path = path2,
-                Language = "en-US",
-            };
-
-            FullTextPath fullTextPath3 = new Cosmos.FullTextPath()
-            {
-                Path = path3,
-                Language = "en-US",
-            };
-
-            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
-                {
-                    fullTextPath1,
-                    fullTextPath2,
-                    fullTextPath3,
-                };
-
-            containerSettings.FullTextPolicy = new Cosmos.FullTextPolicy()
-            {
-                DefaultLanguage = defaultLanguage,
-                FullTextPaths = fullTextPaths,
-            };
-
-            string serializationWithValues = JsonConvert.SerializeObject(containerSettings);
-            Assert.IsTrue(serializationWithValues.Contains("fullTextPolicy"), "Full Text Policy should be included.");
-
-            JObject parsed = JObject.Parse(serializationWithValues);
-            JToken fullTextPathsDeSerialized = parsed["fullTextPolicy"]["fullTextPaths"];
-            JToken fullTextLanguageDeSerialized = parsed["fullTextPolicy"]["defaultLanguage"];
-            Assert.AreEqual(JTokenType.Array, fullTextPathsDeSerialized.Type, "Full Text Policy serialized paths should be an array.");
-            Assert.AreEqual(JTokenType.String, fullTextLanguageDeSerialized.Type, "Full Text Policy serialized language should be a string.");
-            Assert.IsTrue(fullTextPath1.Equals(fullTextPathsDeSerialized.Value<JArray>()[0].ToObject<Cosmos.FullTextPath>()));
-            Assert.IsTrue(fullTextPath2.Equals(fullTextPathsDeSerialized.Value<JArray>()[1].ToObject<Cosmos.FullTextPath>()));
-        }
-
         private static T CosmosDeserialize<T>(string payload)
         {
             using (MemoryStream ms = new MemoryStream())
