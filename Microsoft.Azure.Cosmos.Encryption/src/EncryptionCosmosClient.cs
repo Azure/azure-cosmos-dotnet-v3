@@ -196,12 +196,6 @@ namespace Microsoft.Azure.Cosmos.Encryption
             return this.cosmosClient.ReadAccountAsync();
         }
 
-        /// <inheritdoc/>
-        protected override void Dispose(bool disposing)
-        {
-            this.cosmosClient.Dispose();
-        }
-
         public async Task<ClientEncryptionKeyProperties> GetClientEncryptionKeyPropertiesAsync(
             string clientEncryptionKeyId,
             EncryptionContainer encryptionContainer,
@@ -250,6 +244,12 @@ namespace Microsoft.Azure.Cosmos.Encryption
                 async () => await this.FetchClientEncryptionKeyPropertiesAsync(encryptionContainer, clientEncryptionKeyId, requestOptions, cancellationToken),
                 cancellationToken,
                 forceRefresh: shouldForceRefresh);
+        }
+
+        /// <inheritdoc/>
+        protected override void Dispose(bool disposing)
+        {
+            this.cosmosClient.Dispose();
         }
 
         private async Task<ClientEncryptionKeyProperties> FetchClientEncryptionKeyPropertiesAsync(

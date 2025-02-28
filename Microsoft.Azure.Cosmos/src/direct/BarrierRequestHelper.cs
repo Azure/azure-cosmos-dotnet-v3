@@ -210,11 +210,13 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
+#pragma warning disable CS1570 // XML comment has badly formed XML
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// <summary>
         /// Used to determine the appropriate back-off time between barrier requests based
         /// on the responses to previous barrier requests. The substatus code of HEAD requests
         /// indicate the gap - like how far the targeted LSN/GCLSN was missed.
-        /// As a very naive rule-of-thumb the assumption is that even for small documents less than 1 KB
+        /// As a very naive rule-of-thumb the assumpiton is that even for small documents < 1 KB
         /// only about 2000 write trasnactions can possibly be committed on a single phsyical
         /// partition (10,000 RU / 5 RU at least per write operation). The allowed
         /// throughput per physical partition could grow and the min. RU per write operations
@@ -236,6 +238,8 @@ namespace Microsoft.Azure.Documents
         /// A flag indicating whether a delay before the next barrier request should be injected.
         /// </returns>
         internal static bool ShouldDelayBetweenHeadRequests(
+#pragma warning restore CS1570 // XML comment has badly formed XML
+#pragma warning restore CS1570 // XML comment has badly formed XML
             TimeSpan previousHeadRequestLatency,
             IList<ReferenceCountedDisposable<StoreResult>> responses,
             TimeSpan minDelay,

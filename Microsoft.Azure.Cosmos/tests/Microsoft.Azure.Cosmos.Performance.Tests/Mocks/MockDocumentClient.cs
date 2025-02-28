@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Kind = PartitionKind.Hash,
@@ -41,65 +42,17 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         };
 
         string[] dummyHeaderNames;
-        private IComputeHash authKeyHashFunction;
+        private readonly IComputeHash authKeyHashFunction;
 
         public static CosmosClient CreateMockCosmosClient(
             bool useCustomSerializer = false,
-            bool? isClientTelemetryEnabled = null,
             Action < CosmosClientBuilder> customizeClientBuilder = null)
         {
-            ConnectionPolicy policy = new ConnectionPolicy();
-
-            if (isClientTelemetryEnabled.HasValue)
-            {
-                policy = new ConnectionPolicy
-                {
-                    CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions
-                    {
-                        DisableSendingMetricsToService = !isClientTelemetryEnabled.Value
-                    }
-                };
-            }
-
-            MockDocumentClient documentClient = new MockDocumentClient(policy);
+            MockDocumentClient documentClient = new MockDocumentClient(new ConnectionPolicy());
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", Convert.ToBase64String(Guid.NewGuid().ToByteArray()));
             cosmosClientBuilder.WithConnectionModeDirect();
 
             Uri telemetryServiceEndpoint = new Uri("https://dummy.endpoint.com/");
-
-            if (isClientTelemetryEnabled.HasValue)
-            {
-                // mock external calls
-                HttpClientHandlerHelper httpHandler = new HttpClientHandlerHelper
-                {
-                    RequestCallBack = (request, cancellation) =>
-                    {
-                        if (request.RequestUri.AbsoluteUri.Equals(telemetryServiceEndpoint.AbsoluteUri))
-                        {
-                            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NoContent));  // In Emulator test, send hardcoded response status code as there is no real communication happens with client telemetry service
-                        }
-                        else if (request.RequestUri.AbsoluteUri.Contains(Paths.ClientConfigPathSegment))
-                        {
-                            HttpResponseMessage result = new HttpResponseMessage(HttpStatusCode.OK);
-                            AccountClientConfiguration clientConfigProperties = new AccountClientConfiguration
-                            {
-                                ClientTelemetryConfiguration = new ClientTelemetryConfiguration
-                                {
-                                    IsEnabled = isClientTelemetryEnabled.Value,
-                                    Endpoint = isClientTelemetryEnabled.Value?telemetryServiceEndpoint.AbsoluteUri: null
-                                }
-                            };
-                            string payload = JsonConvert.SerializeObject(clientConfigProperties);
-                            result.Content = new StringContent(payload, Encoding.UTF8, "application/json");
-                            return Task.FromResult(result);
-                        }
-
-                        return null;
-                    }
-                };
-
-                cosmosClientBuilder.WithHttpClientFactory(() => new HttpClient(httpHandler));
-            }
 
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
@@ -295,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         mockServiceConfigReader.Object,
                         mockAuthorizationTokenProvider.Object,
                         Protocol.Tcp,
-                        this.GetMockTransportClient(addressInformation),
+                        this.GetMockTransportClient(),
                         enableRequestDiagnostics: true));
         }
 
@@ -334,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return addressInformation;
         }
 
-        private TransportClient GetMockTransportClient(AddressInformation[] addressInformation)
+        private TransportClient GetMockTransportClient()
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
@@ -354,6 +307,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 _ = dsr.Headers[this.dummyHeaderNames[i]];
             }
 
+            if (ConfigurationManager.IsBinaryEncodingEnabled() && IsPointOperationSupportedForBinaryEncoding(dsr))
+            {
+                dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = SupportedSerializationFormats.CosmosBinary.ToString();
+            }
+
             return true;
         }
 
@@ -368,6 +326,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         Task.FromResult(MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest)));
 
             return gatewayStoreModel.Object;
+        }
+
+        private static bool IsPointOperationSupportedForBinaryEncoding(DocumentServiceRequest request)
+        {
+            return request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
     }
 }

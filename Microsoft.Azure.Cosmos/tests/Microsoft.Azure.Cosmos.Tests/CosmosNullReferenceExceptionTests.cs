@@ -23,7 +23,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 throw new NullReferenceException(message);
             }
-            catch(NullReferenceException nre)
+            catch (NullReferenceException nre)
             {
                 nullReferenceException = nre;
             }

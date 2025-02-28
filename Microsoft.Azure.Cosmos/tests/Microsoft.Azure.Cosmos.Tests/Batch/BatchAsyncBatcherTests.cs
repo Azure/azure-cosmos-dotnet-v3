@@ -278,22 +278,22 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     if (index == 0)
                     {
-                                // First operation is fine
-                                results.Add(
-                            new TransactionalBatchOperationResult(HttpStatusCode.OK)
-                            {
-                                ETag = operation.Id
-                            });
+                        // First operation is fine
+                        results.Add(
+                    new TransactionalBatchOperationResult(HttpStatusCode.OK)
+                    {
+                        ETag = operation.Id
+                    });
                     }
                     else
                     {
-                                // second operation is too big
-                                results.Add(
-                            new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge)
-                            {
-                                SubStatusCode = (SubStatusCodes)3402,
-                                ETag = operation.Id
-                            });
+                        // second operation is too big
+                        results.Add(
+                    new TransactionalBatchOperationResult(HttpStatusCode.RequestEntityTooLarge)
+                    {
+                        SubStatusCode = (SubStatusCodes)3402,
+                        ETag = operation.Id
+                    });
                     }
 
                     arrayOperations[index++] = operation;
@@ -762,12 +762,12 @@ namespace Microsoft.Azure.Cosmos.Tests
                 It.IsAny<OperationType>(),
                 It.IsAny<RequestOptions>(),
                 It.IsAny<Func<ITrace, Task<object>>>(),
-                It.IsAny<Tuple<string, Func<object, OpenTelemetryAttributes>>>(),
+                It.IsAny<(string OperationName, Func<object, OpenTelemetryAttributes> GetAttributes)?>(),
                 It.IsAny<ResourceType?>(),
                 It.IsAny<TraceComponent>(),
                 It.IsAny<TraceLevel>()))
-               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, Tuple<string, Func<object, OpenTelemetryAttributes>>, ResourceType?, TraceComponent, TraceLevel>(
-                (operationName, containerName, databaseName, operationType,requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
+               .Returns<string, string, string, OperationType, RequestOptions, Func<ITrace, Task<object>>, (string OperationName, Func<object, OpenTelemetryAttributes> GetAttributes)?, ResourceType?, TraceComponent, TraceLevel>(
+                (operationName, containerName, databaseName, operationType, requestOptions, func, oTelFunc, resourceType, comp, level) => func(NoOpTrace.Singleton));
 
             return mockContext.Object;
         }

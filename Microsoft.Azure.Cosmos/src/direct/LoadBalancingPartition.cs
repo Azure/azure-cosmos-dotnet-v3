@@ -235,54 +235,98 @@ namespace Microsoft.Azure.Documents.Rntbd
         internal Task OpenChannelAsync(Guid activityId)
         {
             IChannel channel = null;
+            bool isHealthyChannelExists = false;
             this.capacityLock.EnterUpgradeableReadLock();
             try
             {
-                if (this.capacity < this.maxCapacity)
+                // Deterministically clean up all the un-healthy channel states from the list of open channels. Otherwise
+                // this might end up acquiring more memory for the unhealthy connections, and it's get even worse when we
+                // validate the replica by establishing a new channel/ connection but the reference to the unhealthy ones
+                // remains present in the open channels.
+                List<LbChannelState> unhealthyChannelStates = new ();
+                foreach (LbChannelState channelState in this.openChannels)
                 {
-                    foreach (LbChannelState channelState in this.openChannels)
+                    if (!channelState.DeepHealthy)
                     {
-                        if (channelState.DeepHealthy)
+                        bool lastCallerCandidate = channelState.Exit();
+
+                        if (lastCallerCandidate)
+                        {
+                            channelState.Dispose();
+                            unhealthyChannelStates.Add(channelState);
+                            DefaultTrace.TraceInformation("OpenChannelAsync: Closed an unhealthy channel: {0}", channelState.Channel);
+                        }
+                    }
+                    else
+                    {
+                        isHealthyChannelExists = true;
+                    }
+                }
+
+                if (unhealthyChannelStates.Count > 0 || !isHealthyChannelExists)
+                {
+                    this.capacityLock.EnterWriteLock();
+
+                    try
+                    {
+                        // Unhealthy channel state clean up.
+                        foreach (LbChannelState channelState in unhealthyChannelStates)
+                        {
+                            if (this.openChannels.Remove(channelState))
+                            {
+                                this.capacity -= this.channelProperties.MaxRequestsPerChannel;
+                            }
+
+                            Debug.Assert(
+                                this.capacity ==
+                                this.openChannels.Count *
+                                this.channelProperties.MaxRequestsPerChannel);
+
+                            DefaultTrace.TraceInformation("OpenChannelAsync: Removed an unhealthy channel state from openChannels: {0}", channelState.Channel);
+                        }
+
+                        if (isHealthyChannelExists)
                         {
                             return Task.FromResult(0);
                         }
-                    }
 
-                    this.capacityLock.EnterWriteLock();
-                    try
-                    {
-                        channel = this.OpenChannelAndIncrementCapacity(
-                            activityId: activityId);
+                        if (this.capacity < this.maxCapacity)
+                        {
+                            channel = this.OpenChannelAndIncrementCapacity(
+                                activityId: activityId);
+                        }
+                        else
+                        {
+                            string errorMessage = $"Failed to open channels to server {this.serverUri} because the current channel capacity {this.capacity} has exceeded the maaximum channel capacity limit: {this.maxCapacity}";
+
+                            // Converting the error into invalid operation exception. Note that the OpenChannelAsync() method is used today, by the open connection flow
+                            // in RntbdOpenConnectionHandler that is primarily used for the replica validation. Because the replica validation is done deterministically
+                            // to open the Rntbd connections with best effort, throwing an exception from this place won't impact the replica validation flow because it
+                            // will be caught and swallowed by the RntbdOpenConnectionHandler and the replica validation flow will continue.
+                            throw new InvalidOperationException(
+                                message: errorMessage);
+                        }
                     }
                     finally
                     {
                         this.capacityLock.ExitWriteLock();
                     }
-                }
-                else
-                {
-                    string errorMessage = $"Failed to open channels to server {this.serverUri} because the current channel capacity {this.capacity} has exceeded the maaximum channel capacity limit: {this.maxCapacity}";
 
-                    // Converting the error into invalid operation exception. Note that the OpenChannelAsync() method is used today, by the open connection flow
-                    // in RntbdOpenConnectionHandler that is primarily used for the replica validation. Because the replica validation is done deterministically
-                    // to open the Rntbd connections with best effort, throwing an exception from this place won't impact the replica validation flow because it
-                    // will be caught and swallowed by the RntbdOpenConnectionHandler and the replica validation flow will continue.
-                    throw new InvalidOperationException(
-                        message: errorMessage);
+                    if (channel == null)
+                    {
+                        throw new InvalidOperationException(
+                            message: $"Could not open a channel to server {this.serverUri} because a channel instance didn't get created.");
+                    }
+
+                    return channel.OpenChannelAsync(activityId);
                 }
+
+                return Task.FromResult(0);
             }
             finally
             {
                 this.capacityLock.ExitUpgradeableReadLock();
             }
-
-            if (channel == null)
-            {
-                throw new InvalidOperationException(
-                    message: $"Could not open a channel to server {this.serverUri} because a channel instance didn't get created.");
-            }
-
-            return channel.OpenChannelAsync(activityId);
         }
 
         public void Dispose()

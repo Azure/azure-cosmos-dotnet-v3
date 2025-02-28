@@ -72,7 +72,6 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Clones a ComputedProperty object
         /// </summary>
-        /// <returns></returns>
         public object Clone()
         {
             return new ComputedProperty

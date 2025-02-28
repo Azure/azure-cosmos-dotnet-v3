@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Documents
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
     /// <summary>
@@ -144,6 +145,7 @@ namespace Microsoft.Azure.Documents
             bool isRetryWith = false;
             if (!GoneAndRetryWithRequestRetryPolicy<TResponse>.IsBaseGone(response, exception) &&
                 !GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithLeaseNotFound(response, exception) &&
+                !(request.DisableArchivalPartitionNotFoundRetry && GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithArchivalPartitionNotPresent(response, exception)) &&
                 !(exception is RetryWithException) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsPartitionIsMigrating(response, exception) && (request.ServiceIdentity == null || request.ServiceIdentity.IsMasterService)) &&
                 !(GoneAndRetryWithRequestRetryPolicy<TResponse>.IsInvalidPartition(response, exception) && (request.PartitionKeyRangeIdentity == null || request.PartitionKeyRangeIdentity.CollectionRid == null)) &&
@@ -181,6 +183,20 @@ namespace Microsoft.Azure.Documents
                     SubStatusCodes.LeaseNotFound,
                     innerException: exception);
 
+                this.durationTimer.Stop();
+
+                shouldRetryResult = ShouldRetryResult.NoRetry(exceptionToThrow);
+                return true;
+            }
+            else if (request.DisableArchivalPartitionNotFoundRetry &&
+                 GoneAndRetryWithRequestRetryPolicy<TResponse>.IsGoneWithArchivalPartitionNotPresent(response, exception))
+            {
+                DefaultTrace.TraceInformation(
+                    "The GoneAndRetryWithRequestRetryPolicy has hit 410 with archival partition not present exception. Converting it to 503.");
+
+                exceptionToThrow = ServiceUnavailableException.Create(
+                    SubStatusCodes.ArchivalPartitionNotPresent,
+                    innerException: exception);
                 this.durationTimer.Stop();
 
                 shouldRetryResult = ShouldRetryResult.NoRetry(exceptionToThrow);
@@ -416,7 +432,7 @@ namespace Microsoft.Azure.Documents
         private static bool IsBaseGone(TResponse response, Exception exception)
         {
             return exception is GoneException 
-                || (response?.StatusCode == HttpStatusCode.Gone && 
+                || (response?.StatusCode == HttpStatusCode.Gone &&
                    (response?.SubStatusCode == SubStatusCodes.Unknown || (response != null && response.SubStatusCode.IsSDKGeneratedSubStatus())));
         }
 
@@ -449,6 +465,13 @@ namespace Microsoft.Azure.Documents
             return exception is LeaseNotFoundException
                 || (response?.StatusCode == HttpStatusCode.Gone &&
                    (response?.SubStatusCode == SubStatusCodes.LeaseNotFound));
+        }
+
+        private static bool IsGoneWithArchivalPartitionNotPresent(TResponse response, Exception exception)
+        {
+            return exception is ArchivalPartitionNotPresentException
+                  || (response?.StatusCode == HttpStatusCode.Gone &&
+                     (response?.SubStatusCode == SubStatusCodes.ArchivalPartitionNotPresent));
         }
 
         private static void ClearRequestContext(DocumentServiceRequest request)

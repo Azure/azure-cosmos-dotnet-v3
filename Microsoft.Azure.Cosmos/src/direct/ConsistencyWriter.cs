@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Documents
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-
     /*
 
 ConsistencyWriter has two modes for writing - local quorum-acked write and globally strong write.
@@ -65,7 +64,8 @@ For globally strong write:
             IServiceConfigurationReader serviceConfigReader,
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
-            bool enableReplicaValidation)
+            bool enableReplicaValidation,
+            AccountConfigurationProperties accountConfigurationProperties)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
@@ -260,7 +260,7 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
-                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target))
+                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target, request.OperationType))
                 {
                     long lsn = storeResult.Target.LSN;
                     long globalCommittedLsn = storeResult.Target.GlobalCommittedLSN;
@@ -313,8 +313,13 @@ For globally strong write:
             return request.RequestContext.GlobalStrongWriteStoreResult.Target.ToResponse();
         }
 
-        private bool ShouldPerformWriteBarrierForGlobalStrong(StoreResult storeResult)
+        internal bool ShouldPerformWriteBarrierForGlobalStrong(StoreResult storeResult, OperationType operationType)
         {
+            if (operationType.IsSkippedForWriteBarrier())
+            {
+                return false;
+            }
+
             if (storeResult.StatusCode < StatusCodes.StartingErrorCode ||
                 storeResult.StatusCode == StatusCodes.Conflict ||
                 (storeResult.StatusCode == StatusCodes.NotFound && storeResult.SubStatusCode != SubStatusCodes.ReadSessionNotAvailable) ||
@@ -407,7 +412,7 @@ For globally strong write:
 
             int writeBarrierRetryCount = 0;
             long maxGlobalCommittedLsnReceived = 0;
-            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
+            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
 

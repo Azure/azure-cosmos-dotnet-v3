@@ -325,13 +325,16 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
+        
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+/// <summary>
         /// Gets the effective health status of the transport address uri.
         /// </summary>
         /// <param name="addressUri">An instance of the <see cref="TransportAddressUri"/> containing the replica address.</param>
         /// <param name="failedEndpoints">A set containing the failed endpoints.</param>
-        /// <returns>An instance of TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
+        /// <returns>An instance of <see cref="TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
         private static TransportAddressHealthState.HealthStatus GetEffectiveStatus(
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
             TransportAddressUri addressUri,
             HashSet<TransportAddressUri> failedEndpoints)
         {

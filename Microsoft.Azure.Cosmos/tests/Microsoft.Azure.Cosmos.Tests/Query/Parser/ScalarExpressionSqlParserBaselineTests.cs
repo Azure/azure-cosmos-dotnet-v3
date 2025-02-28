@@ -18,7 +18,7 @@
                 CreateInput(description: "case insensitive", scalarExpression: "aLl(SELECT *)"),
                 CreateInput(description: "nested", scalarExpression:"ALL( SELECT * WHERE ALL( SELECT *))"),
                 CreateInput(
-                    description: "multiple nested", 
+                    description: "multiple nested",
                     scalarExpression:
                 "ALL( "                         +
                 "   SELECT * "                  +

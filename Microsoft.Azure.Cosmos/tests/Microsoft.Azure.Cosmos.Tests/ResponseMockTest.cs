@@ -5,11 +5,11 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System.Linq;
+    using System.Net;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using System.Linq;
-    using System.Net;
 
     [TestClass]
     public class ResponseMockTest
@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<ItemResponse<dynamic>> itemResponseMock = new Mock<ItemResponse<dynamic>>();
             itemResponseMock.SetupGet(x => x.RequestCharge).Returns(5);
-            itemResponseMock.SetupGet(x => x.Resource).Returns(new { id = "TestItem"});
-            itemResponseMock.SetupGet(x => x.Headers).Returns(new Headers() { ETag = "TestEtag"});
+            itemResponseMock.SetupGet(x => x.Resource).Returns(new { id = "TestItem" });
+            itemResponseMock.SetupGet(x => x.Headers).Returns(new Headers() { ETag = "TestEtag" });
             itemResponseMock.SetupGet(x => x.StatusCode).Returns(HttpStatusCode.Found);
             itemResponseMock.SetupGet(x => x.ActivityId).Returns("TestActivityId");
 
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             Mock<ContainerResponse> itemResponseMock = new Mock<ContainerResponse>();
             itemResponseMock.SetupGet(x => x.RequestCharge).Returns(5);
-            itemResponseMock.SetupGet(x => x.Resource).Returns(new ContainerProperties(){Id = "TestContainer"});
+            itemResponseMock.SetupGet(x => x.Resource).Returns(new ContainerProperties() { Id = "TestContainer" });
             itemResponseMock.SetupGet(x => x.Headers).Returns(new Headers() { ETag = "TestEtag" });
             itemResponseMock.SetupGet(x => x.StatusCode).Returns(HttpStatusCode.Found);
             itemResponseMock.SetupGet(x => x.ActivityId).Returns("TestActivityId");

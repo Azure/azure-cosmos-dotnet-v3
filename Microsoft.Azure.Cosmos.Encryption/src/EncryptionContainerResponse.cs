@@ -38,9 +38,9 @@ namespace Microsoft.Azure.Cosmos.Encryption
         public override HttpStatusCode StatusCode => this.containerResponse.StatusCode;
 
         /// <summary>
-        /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="EncryptionContainerResponse"/>
+        /// Get <see cref="Cosmos.Container"/> implicitly from <see cref="EncryptionContainerResponse"/>.
         /// </summary>
-        /// <param name="response">ContainerResponse</param>
+        /// <param name="response">ContainerResponse.</param>
         public static implicit operator Container(EncryptionContainerResponse response)
         {
             return response.Container;

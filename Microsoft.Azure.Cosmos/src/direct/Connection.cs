@@ -993,7 +993,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// Used unless internal clients provide a version that might override decision to use IPv6 addresses.
         /// </summary>
         /// <param name="hostName"></param>
-        /// <returns></returns>
         private static Task<IPAddress> ResolveHostIncludingIPv6AddressesAsync(string hostName) => Connection.ResolveHostAsync(hostName, includeIPv6Addresses: true);
 
         internal static async Task<IPAddress> ResolveHostAsync(string hostName, bool includeIPv6Addresses)

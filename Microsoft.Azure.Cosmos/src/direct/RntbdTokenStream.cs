@@ -31,8 +31,10 @@ namespace Microsoft.Azure.Documents
 
         public abstract int RequiredTokenCount { get; }
 
-        /// <summary>
-        /// Gets a byte[] of at least"/> bytes from a pool.
+        
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+/// <summary>
+        /// Gets a byte[] of at least <see cref="length"/> bytes from a pool.
         /// </summary>
         /// <param name="length">The length of bytes to retrieve</param>
         /// <remarks>
@@ -40,6 +42,7 @@ namespace Microsoft.Azure.Documents
         /// Typically this is done when the request is returned to a shared pool of RNTBD requests.
         /// </remarks>
         public byte[] GetBytes(int length)
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
 #if COSMOSCLIENT
             byte[] bytes = this.arrayPool.Rent(length);

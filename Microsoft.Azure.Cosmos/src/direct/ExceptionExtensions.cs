@@ -13,12 +13,12 @@ namespace Microsoft.Azure.Documents
     using System.Text;
 
     /// <summary>
-    /// Contains extensions to the base Exception class. 
+    /// Contains extensions to the base Exception class.
     /// </summary>
     internal static class ExceptionExtensions
     {
         // Iterates through the top level properties of the exception object and
-        // converts them to a string so output to logging can be more meaningful. 
+        // converts them to a string so output to logging can be more meaningful.
         public static string ToLoggingString(this Exception exception)
         {
             PropertyInfo[] properties = exception.GetType().GetProperties();
@@ -79,6 +79,24 @@ namespace Microsoft.Azure.Documents
                     sb.Append(Environment.NewLine);
                     sb.Append(data);
                 }
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Creates and returns a string representation of the current exception without a stack.
+        /// </summary>
+        /// <param name="exception">Exception.</param>
+        /// <returns>String similar to <see cref="Exception.ToString"/> without a stack.</returns>
+        public static string ToFlattenedMessageString(this Exception exception)
+        {
+            StringBuilder sb = new StringBuilder($"{exception.GetType().Name}: {exception.Message}");
+
+            while (exception.InnerException != null)
+            {
+                exception = exception.InnerException;
+                sb.Append($" ---> {exception.GetType().Name}: {exception.Message}");
             }
 
             return sb.ToString();

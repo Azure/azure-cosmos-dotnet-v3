@@ -105,6 +105,33 @@ namespace Microsoft.Azure.Documents
                 }
             }
 
+            // If innerException is already a DocumentClientException, capture the  headers.
+            if (innerException is DocumentClientException innerDocumentClientException)
+            {
+                // loop on the headers property it is an IEnumerable<>>
+                if (innerDocumentClientException.Headers != null)
+                {
+                    foreach (string key in innerDocumentClientException.Headers)
+                    {
+                        if (string.IsNullOrWhiteSpace(this.responseHeaders[key]))
+                        {
+                            this.responseHeaders[key] = innerDocumentClientException.Headers[key];
+                        }
+                    }
+                }
+
+                if (innerDocumentClientException.ResponseHeaders != null)
+                {
+                    foreach (string key in innerDocumentClientException.ResponseHeaders)
+                    {
+                        if (string.IsNullOrWhiteSpace(this.responseHeaders[key]))
+                        {
+                            this.responseHeaders[key] = innerDocumentClientException.ResponseHeaders[key];
+                        }
+                    }
+                }
+            }
+
             // Update SubStatus in the headers if present
             this.substatus = substatusCode;
             if (this.substatus.HasValue)

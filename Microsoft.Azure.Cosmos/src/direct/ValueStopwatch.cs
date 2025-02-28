@@ -26,8 +26,10 @@ namespace Microsoft.Azure.Documents
         public static readonly long Frequency = Stopwatch.Frequency;
         /// <seealso cref="Stopwatch.IsHighResolution"/>
         public static readonly bool IsHighResolution = Stopwatch.IsHighResolution;
-
-        /// <summary>
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// <remarks>
         /// We pack everything into a single long, so using this doesn't inflate any objects with it as a field.
         /// 
         /// State is interpreted as follows
@@ -36,15 +38,17 @@ namespace Microsoft.Azure.Documents
         ///     * We have never started
         ///   - state > 0
         ///     * IsRunning == true
-        ///   - state &lt; 0
+        ///   - state < 0
         ///     * IsRunning == false
         ///     * We have been started and stopped
         ///     * ElapsedTicks == Math.Abs(state)
         ///
         /// We handle restarting the timer by backdating our start
         /// to account for any existing duration.
-        /// </summary>
+        /// </remarks>
         private long state;
+#pragma warning restore CS1570 // XML comment has badly formed XML
+#pragma warning restore CS1570 // XML comment has badly formed XML
 
         /// <seealso cref="Stopwatch.IsRunning"/>
         public readonly bool IsRunning

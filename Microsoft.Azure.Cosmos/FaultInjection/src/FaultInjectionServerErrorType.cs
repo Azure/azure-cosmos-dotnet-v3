@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     public enum FaultInjectionServerErrorType
     {
         /// <summary>
-        /// 410: Gone from server
+        /// 410: Gone from server. Only Applicable for Direct mode calls.
         /// </summary>
         Gone,
 
@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// 500: Internal Server Error from server
         /// </summary>
-        InternalServerEror,
+        InternalServerError,
 
         /// <summary>
         /// 429:Too Many Requests from server
@@ -69,6 +69,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <summary>
         /// 503: Service Unavailable from server
         /// </summary>
-        ServiceUnavailable
+        ServiceUnavailable,
+
+        /// <summary>
+        /// 404:1008 Database account not found from gateway
+        /// </summary>
+        DatabaseAccountNotFound,
     }
 }

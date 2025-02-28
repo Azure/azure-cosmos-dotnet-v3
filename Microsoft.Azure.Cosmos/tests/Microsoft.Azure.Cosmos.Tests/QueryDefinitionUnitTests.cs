@@ -39,9 +39,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(newParamValue, sqlParameter.Value);
 
             query = "select * from s where s.Account = @account and s.Name = @name";
-            SqlParameterCollection sqlParameters = new SqlParameterCollection();
-            sqlParameters.Add(new SqlParameter("@account", "12345"));
-            sqlParameters.Add(new SqlParameter("@name", "ABC"));
+            SqlParameterCollection sqlParameters = new SqlParameterCollection
+            {
+                new SqlParameter("@account", "12345"),
+                new SqlParameter("@name", "ABC")
+            };
             sqlQuerySpec = new SqlQuerySpec(query, sqlParameters);
             sqlQueryDefinition = QueryDefinition.CreateFromQuerySpec(sqlQuerySpec);
             Assert.AreEqual(sqlQueryDefinition.QueryText, sqlQuerySpec.QueryText);

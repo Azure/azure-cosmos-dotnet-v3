@@ -218,7 +218,8 @@
                 ResourceType.Document,
                 OperationType.Query,
                 "42",
-                uri1.Uri);
+                uri1.Uri,
+                "region1");
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats", datum);
@@ -431,7 +432,8 @@
                 resourceType: default,
                 operationType: default,
                 requestSessionToken: default,
-                locationEndpoint: default);
+                locationEndpoint: default,
+                region: "region1");
 
             TraceWriterBaselineTests.GetPrivateField<List<StoreResponseStatistics>>(datum, "storeResponseStatistics").Add(storeResponseStatistics);
             rootTrace.AddDatum("Client Side Request Stats Default", datum);
@@ -565,7 +567,8 @@
                 HttpMethod.Get,
                 ResourceType.Document,
                 new HttpResponseMessage(System.Net.HttpStatusCode.OK) { ReasonPhrase = "Success" },
-                exception: null);
+                exception: null,
+                region: "region1");
 
             TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatistics);
 
@@ -576,7 +579,8 @@
                 HttpMethod.Get,
                 ResourceType.Document,
                 responseMessage: null,
-                exception: new OperationCanceledException());
+                exception: new OperationCanceledException(),
+                region: "region1");
             TraceWriterBaselineTests.GetPrivateField<List<HttpResponseStatistics>>(datum, "httpResponseStatistics").Add(httpResponseStatisticsException);
 
             rootTrace.AddDatum("Client Side Request Stats", datum);

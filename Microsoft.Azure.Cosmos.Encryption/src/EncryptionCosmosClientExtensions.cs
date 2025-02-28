@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Encryption
     /// <summary>
     /// Extension methods for <see cref="CosmosClient"/> to support client-side encryption.
     /// </summary>
+    [CLSCompliant(false)]
     public static class EncryptionCosmosClientExtensions
     {
         /// <summary>

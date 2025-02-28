@@ -15,9 +15,5 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             bool forceRefreshPartitionAddresses,
             CancellationToken cancellationToken);
-
-        Task UpdateAsync(
-           ServerKey serverKey,
-           CancellationToken cancellationToken = default(CancellationToken));
     }
 }

@@ -7,14 +7,14 @@
 namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 {
     using System;
-    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
+    using System.Collections.Generic;
+    using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.SqlObjects;
+    using Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
-    using System.Collections.Generic;
 
     /// <summary>
     /// JTokenEqualityComparerUnitTests Class.

@@ -233,6 +233,17 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// This is a flag that indicates whether the DocumentClient internally
+        /// throws exceptions for 403 status code
+        /// the status codes as part of the result for failures.
+        /// </summary>
+        public bool UseStatusCodeFor403 { get; set; }
+
+        // Configuration property to specify if there should be an internal retry when
+        // Gone exception with ArchivalPartitionNotFound occurs.
+        public bool DisableArchivalPartitionNotFoundRetry { get; set; }
+
+        /// <summary>
+        /// This is a flag that indicates whether the DocumentClient internally
         /// throws exceptions for 429 status codes
         /// the status codes as part of the result for failures.
         /// </summary>
@@ -609,6 +620,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetFederationConfigurations:
                 case OperationType.GetDatabaseAccountConfigurations:
                 case OperationType.GetStorageServiceConfigurations:
+                case OperationType.GetDatabaseAccountArtifactPermissions:
                 case OperationType.ForcePartitionBackup:
                 case OperationType.MasterInitiatedProgressCoordination:
                 case OperationType.CreateSystemSnapshot:
@@ -620,6 +632,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.UpdatePartitionThroughput:
                 case OperationType.XPDatabaseAccountMetaData:
                 case OperationType.Truncate:
+                case OperationType.RelocateLeakedTentativeWrites:
                     return HttpConstants.HttpMethods.Post;
 
                 case OperationType.EnsureSnapshotOperation:
@@ -647,7 +660,13 @@ namespace Microsoft.Azure.Documents
             set;
         }
 
-#region Test hooks
+        internal HashSet<RntbdConstants.RequestIdentifiers> RntbdRequestFieldsDebug
+        {
+            get;
+            set;
+        }
+
+        #region Test hooks
 
         public uint? DefaultReplicaIndex
         {
@@ -1155,7 +1174,8 @@ namespace Microsoft.Azure.Documents
                UseStatusCodeForFailures = this.UseStatusCodeForFailures,
                UseStatusCodeFor429 = this.UseStatusCodeFor429,
                DatabaseName = this.DatabaseName,
-               CollectionName = this.CollectionName
+               CollectionName = this.CollectionName,
+               DisableArchivalPartitionNotFoundRetry = this.DisableArchivalPartitionNotFoundRetry,
             };
         }
 

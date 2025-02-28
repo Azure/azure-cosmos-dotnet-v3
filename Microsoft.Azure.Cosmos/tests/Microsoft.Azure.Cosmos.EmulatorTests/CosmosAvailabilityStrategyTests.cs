@@ -4,133 +4,57 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System;
     using System.Collections.Generic;
     using System.Data;
-    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
-    using global::Azure.Core.Serialization;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
+    using CosmosSystemTextJsonSerializer = MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer;
     using Database = Database;
     using PartitionKey = PartitionKey;
 
     [TestClass]
     public class CosmosAvailabilityStrategyTests
     {
-        private const string centralUS = "Central US";
-        private const string northCentralUS = "North Central US";
-        private const string eastUs = "East US";
-        private const string dbName = "availabilityStrategyTestDb";
-        private const string containerName = "availabilityStrategyTestContainer";
-        private const string changeFeedContainerName = "availabilityStrategyTestChangeFeedContainer";
-
         private CosmosClient client;
         private Database database;
         private Container container;
         private Container changeFeedContainer;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
         private string connectionString;
-        
 
-        [TestCleanup]
-        public void TestCleanup()
-        {
-            //Do not delete the resources, georeplication is slow and we want to reuse the resources
-            this.client?.Dispose();
-        }
+        private static string region1; 
+        private static string region2;
+        private static string region3;
 
-        private static readonly FaultInjectionCondition readConditon = new FaultInjectionConditionBuilder()
-            .WithRegion("Central US")
-            .WithOperationType(FaultInjectionOperationType.ReadItem)
-            .Build();
-        private static readonly FaultInjectionCondition queryConditon = new FaultInjectionConditionBuilder()
-            .WithRegion("Central US")
-            .WithOperationType(FaultInjectionOperationType.QueryItem)
-            .Build();
-        private static readonly FaultInjectionCondition readManyCondition = new FaultInjectionConditionBuilder()
-            .WithRegion("Central US")
-            .WithOperationType(FaultInjectionOperationType.QueryItem)
-            .Build();
-        private static readonly FaultInjectionCondition changeFeedCondtion = new FaultInjectionConditionBuilder()
-            .WithRegion("Central US")
-            .WithOperationType(FaultInjectionOperationType.All)
-            .Build();
+        private static FaultInjectionCondition readConditon;
+        private static FaultInjectionCondition queryConditon;
+        private static FaultInjectionCondition readManyCondition;
+        private static FaultInjectionCondition changeFeedCondtion;
 
-        private static readonly FaultInjectionCondition readConditonStep = new FaultInjectionConditionBuilder()
-            .WithRegion("North Central US")
-            .WithOperationType(FaultInjectionOperationType.ReadItem)
-            .Build();
-        private static readonly FaultInjectionCondition queryConditonStep = new FaultInjectionConditionBuilder()
-            .WithRegion("North Central US")
-            .WithOperationType(FaultInjectionOperationType.QueryItem)
-            .Build();
-        private static readonly FaultInjectionCondition readManyConditionStep = new FaultInjectionConditionBuilder()
-            .WithRegion("North Central US")
-            .WithOperationType(FaultInjectionOperationType.QueryItem)
-            .Build();
-        private static readonly FaultInjectionCondition changeFeedCondtionStep = new FaultInjectionConditionBuilder()
-            .WithRegion("North Central US")
-            .WithOperationType(FaultInjectionOperationType.ReadFeed)
-            .Build();
+        private static FaultInjectionCondition readConditonStep;
+        private static FaultInjectionCondition queryConditonStep;
+        private static FaultInjectionCondition readManyConditionStep;
+        private static FaultInjectionCondition changeFeedCondtionStep;
 
-        private static readonly IFaultInjectionResult goneResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.Gone)
-            .Build();
-        private static readonly IFaultInjectionResult retryWithResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.RetryWith)
-            .Build();
-        private static readonly IFaultInjectionResult internalServerErrorResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.InternalServerEror)
-            .Build();
-        private static readonly IFaultInjectionResult readSessionNotAvailableResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
-            .Build();
-        private static readonly IFaultInjectionResult timeoutResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.Timeout)
-            .Build();
-        private static readonly IFaultInjectionResult partitionIsSplittingResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.PartitionIsSplitting)
-            .Build();
-        private static readonly IFaultInjectionResult partitionIsMigratingResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.PartitionIsMigrating)
-            .Build();
-        private static readonly IFaultInjectionResult serviceUnavailableResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
-            .Build();
-        private static readonly IFaultInjectionResult responseDelayResult = FaultInjectionResultBuilder
-            .GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-            .WithDelay(TimeSpan.FromMilliseconds(4000))
-            .Build();
+        private static IFaultInjectionResult retryWithResult;
+        private static IFaultInjectionResult internalServerErrorResult;
+        private static IFaultInjectionResult readSessionNotAvailableResult;
+        private static IFaultInjectionResult timeoutResult;
+        private static IFaultInjectionResult partitionIsSplittingResult;
+        private static IFaultInjectionResult partitionIsMigratingResult;
+        private static IFaultInjectionResult serviceUnavailableResult;
+        private static IFaultInjectionResult responseDelayResult;
+        private static IFaultInjectionResult tooManyRequestsResult;
 
-        private readonly Dictionary<string, FaultInjectionCondition> conditions = new Dictionary<string, FaultInjectionCondition>()
-        {
-            { "Read", readConditon },
-            { "Query", queryConditon },
-            { "ReadMany", readManyCondition },
-            { "ChangeFeed", changeFeedCondtion },
-            { "ReadStep", readConditonStep },
-            { "QueryStep", queryConditonStep },
-            { "ReadManyStep", readManyConditionStep },
-            { "ChangeFeedStep", changeFeedCondtionStep}
-        };
-
-        private readonly Dictionary<string, IFaultInjectionResult> results = new Dictionary<string, IFaultInjectionResult>()
-        {
-            { "Gone", goneResult },
-            { "RetryWith", retryWithResult },
-            { "InternalServerError", internalServerErrorResult },
-            { "ReadSessionNotAvailable", readSessionNotAvailableResult },
-            { "Timeout", timeoutResult },
-            { "PartitionIsSplitting", partitionIsSplittingResult },
-            { "PartitionIsMigrating", partitionIsMigratingResult },
-            { "ServiceUnavailable", serviceUnavailableResult },
-            { "ResponseDelay", responseDelayResult }
-        };
+        private Dictionary<string, FaultInjectionCondition> conditions;
+        private Dictionary<string, IFaultInjectionResult> results;
 
         [TestInitialize]
         public async Task TestInitAsync()
@@ -141,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
             };
-            this.cosmosSystemTextJsonSerializer = new CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
@@ -155,17 +79,137 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
 
             (this.database, this.container, this.changeFeedContainer) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
+
+            IDictionary<string, Uri> readRegions = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation();
+            Assert.IsTrue(readRegions.Count() >= 3);
+
+            region1 = readRegions.Keys.ElementAt(0);
+            region2 = readRegions.Keys.ElementAt(1);
+            region3 = readRegions.Keys.ElementAt(2);
+
+            this.CreateRules();
+        }
+
+        [TestCleanup]
+        public void TestCleanup()
+        {
+            try
+            {
+                this.container.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
+            }
+            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+            {
+                // Ignore
+            }
+            finally
+            {
+                //Do not delete the resources (except MM Write test object), georeplication is slow and we want to reuse the resources
+                this.client?.Dispose();
+            }
+        }
+
+        private void CreateRules()
+        {
+            readConditon = new FaultInjectionConditionBuilder()
+                .WithRegion(region1)
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+            queryConditon = new FaultInjectionConditionBuilder()
+                .WithRegion(region1)
+                .WithOperationType(FaultInjectionOperationType.QueryItem)
+                .Build();
+            readManyCondition = new FaultInjectionConditionBuilder()
+                .WithRegion(region1)
+                .WithOperationType(FaultInjectionOperationType.QueryItem)
+                .Build();
+            changeFeedCondtion = new FaultInjectionConditionBuilder()
+                .WithRegion(region1)
+                .WithOperationType(FaultInjectionOperationType.ReadFeed)
+                .Build();
+
+            readConditonStep = new FaultInjectionConditionBuilder()
+                .WithRegion(region2)
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+            queryConditonStep = new FaultInjectionConditionBuilder()
+                .WithRegion(region2)
+                .WithOperationType(FaultInjectionOperationType.QueryItem)
+                .Build();
+            readManyConditionStep = new FaultInjectionConditionBuilder()
+                .WithRegion(region2)
+                .WithOperationType(FaultInjectionOperationType.QueryItem)
+                .Build();
+            changeFeedCondtionStep = new FaultInjectionConditionBuilder()
+                .WithRegion(region2)
+                .WithOperationType(FaultInjectionOperationType.ReadFeed)
+                .Build();
+
+            retryWithResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.RetryWith)
+                .Build();
+            internalServerErrorResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.InternalServerError)
+                .Build();
+            readSessionNotAvailableResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+                .Build();
+            timeoutResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.Timeout)
+                .Build();
+            partitionIsSplittingResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.PartitionIsSplitting)
+                .Build();
+            partitionIsMigratingResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.PartitionIsMigrating)
+                .Build();
+            serviceUnavailableResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                .Build();
+            responseDelayResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                .WithDelay(TimeSpan.FromMilliseconds(4000))
+                .Build();
+            tooManyRequestsResult = FaultInjectionResultBuilder
+                .GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                .Build();
+
+            this.conditions = new Dictionary<string, FaultInjectionCondition>()
+            {
+                { "Read", readConditon },
+                { "Query", queryConditon },
+                { "ReadMany", readManyCondition },
+                { "ChangeFeed", changeFeedCondtion },
+                { "ReadStep", readConditonStep },
+                { "QueryStep", queryConditonStep },
+                { "ReadManyStep", readManyConditionStep },
+                { "ChangeFeedStep", changeFeedCondtionStep}
+            };
+
+            this.results = new Dictionary<string, IFaultInjectionResult>()
+            {
+                { "RetryWith", retryWithResult },
+                { "InternalServerError", internalServerErrorResult },
+                { "ReadSessionNotAvailable", readSessionNotAvailableResult },
+                { "Timeout", timeoutResult },
+                { "PartitionIsSplitting", partitionIsSplittingResult },
+                { "PartitionIsMigrating", partitionIsMigratingResult },
+                { "ServiceUnavailable", serviceUnavailableResult },
+                { "ResponseDelay", responseDelayResult },
+                { "TooManyRequests", tooManyRequestsResult }
+            };
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyNoTriggerTest()
+        public async Task AvailabilityStrategyNoTriggerTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("Central US")
+                        .WithRegion(region1)
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -179,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("North Central US")
+                        .WithRegion(region2)
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -197,7 +241,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(300),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -208,38 +252,51 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>("testId", new PartitionKey("pk"));
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
                 Assert.IsNotNull(responseRegion);
-                Assert.AreEqual(CosmosAvailabilityStrategyTests.centralUS, (string)responseRegion);
+                Assert.AreEqual(region1, (string)responseRegion);
 
                 //Should send out hedge request but original should be returned
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
                 IReadOnlyCollection<string> hedgeContextList;
                 hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                Assert.AreEqual(2, hedgeContextList.Count);
-                Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.centralUS));
-                Assert.IsTrue(hedgeContextList.Contains(CosmosAvailabilityStrategyTests.northCentralUS));
+
+                if (isPreferredLocationsEmpty)
+                {
+                    Assert.AreEqual(3, hedgeContextList.Count);
+                    Assert.IsTrue(hedgeContextList.Contains(region1));
+                    Assert.IsTrue(hedgeContextList.Contains(region2));
+                    Assert.IsTrue(hedgeContextList.Contains(region3));
+                }
+                else
+                {
+                    Assert.AreEqual(2, hedgeContextList.Count);
+                    Assert.IsTrue(hedgeContextList.Contains(region1));
+                    Assert.IsTrue(hedgeContextList.Contains(region2));
+                }
             };
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyRequestOptionsTriggerTest()
+        public async Task AvailabilityStrategyRequestOptionsTriggerTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("Central US")
+                        .WithRegion(region1)
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -257,7 +314,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty? new List<string>() : new List<string>() { region1, region2 },
                 Serializer = this.cosmosSystemTextJsonSerializer
             };
 
@@ -265,8 +322,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
 
@@ -276,7 +333,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50))
                 };
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                     "testId",
                     new PartitionKey("pk"),
                     requestOptions);
@@ -285,19 +342,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                Assert.AreEqual(region2, (string)hedgeContext);
             }
         }
 
         [TestMethod]
+        [DataRow(false, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest with preferred regions.")]
+        [DataRow(true, DisplayName = "ValidateAvailabilityStrategyNoTriggerTest w/o preferred regions.")]
         [TestCategory("MultiRegion")]
-        public async Task AvailabilityStrategyDisableOverideTest()
+        public async Task AvailabilityStrategyDisableOverideTest(bool isPreferredLocationsEmpty)
         {
             FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
                 id: "responseDely",
                 condition:
                     new FaultInjectionConditionBuilder()
-                        .WithRegion("Central US")
+                        .WithRegion(region1)
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .Build(),
                 result:
@@ -316,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() : new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -327,8 +386,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 responseDelay.Enable();
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -336,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     AvailabilityStrategy = new DisabledAvailabilityStrategy()
                 };
 
-                ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                     "testId",
                     new PartitionKey("pk"),
                     requestOptions);
@@ -350,52 +409,97 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataTestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("Read", "Read", "Gone", DisplayName = "Read | Gone")]
-        [DataRow("Read", "Read", "RetryWith", DisplayName = "Read | RetryWith")]
-        [DataRow("Read", "Read", "InternalServerError", DisplayName = "Read | InternalServerError")]
-        [DataRow("Read", "Read", "ReadSessionNotAvailable", DisplayName = "Read | ReadSessionNotAvailable")]
-        [DataRow("Read", "Read", "Timeout", DisplayName = "Read | Timeout")]
-        [DataRow("Read", "Read", "PartitionIsSplitting", DisplayName = "Read | PartitionIsSplitting")]
-        [DataRow("Read", "Read", "PartitionIsMigrating", DisplayName = "Read | PartitionIsMigrating")]
-        [DataRow("Read", "Read", "ServiceUnavailable", DisplayName = "Read | ServiceUnavailable")]
-        [DataRow("Read", "Read", "ResponseDelay", DisplayName = "Read | ResponseDelay")]
-        [DataRow("SinglePartitionQuery", "Query", "Gone", DisplayName = "SinglePartitionQuery | Gone")]
-        [DataRow("SinglePartitionQuery", "Query", "RetryWith", DisplayName = "SinglePartitionQuery | RetryWith")]
-        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", DisplayName = "SinglePartitionQuery | InternalServerError")]
-        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable")]
-        [DataRow("SinglePartitionQuery", "Query", "Timeout", DisplayName = "SinglePartitionQuery | Timeout")]
-        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "SinglePartitionQuery | PartitionIsSplitting")]
-        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", DisplayName = "SinglePartitionQuery | PartitionIsMigrating")]
-        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", DisplayName = "SinglePartitionQuery | ServiceUnavailable")]
-        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", DisplayName = "SinglePartitionQuery | ResponseDelay")]
-        [DataRow("CrossPartitionQuery", "Query", "Gone", DisplayName = "CrossPartitionQuery | Gone")]
-        [DataRow("CrossPartitionQuery", "Query", "RetryWith", DisplayName = "CrossPartitionQuery | RetryWith")]
-        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", DisplayName = "CrossPartitionQuery | InternalServerError")]
-        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable")]
-        [DataRow("CrossPartitionQuery", "Query", "Timeout", DisplayName = "CrossPartitionQuery | Timeout")]
-        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", DisplayName = "CrossPartitionQuery | PartitionIsSplitting")]
-        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", DisplayName = "CrossPartitionQuery | PartitionIsMigrating")]
-        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", DisplayName = "CrossPartitionQuery | ServiceUnavailable")]
-        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", DisplayName = "CrossPartitionQuery | ResponseDelay")]
-        [DataRow("ReadMany", "ReadMany", "Gone", DisplayName = "ReadMany | Gone")]
-        [DataRow("ReadMany", "ReadMany", "RetryWith", DisplayName = "ReadMany | RetryWith")]
-        [DataRow("ReadMany", "ReadMany", "InternalServerError", DisplayName = "ReadMany | InternalServerError")]
-        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", DisplayName = "ReadMany | ReadSessionNotAvailable")]
-        [DataRow("ReadMany", "ReadMany", "Timeout", DisplayName = "ReadMany | Timeout")]
-        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", DisplayName = "ReadMany | PartitionIsSplitting")]
-        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", DisplayName = "ReadMany | PartitionIsMigrating")]
-        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", DisplayName = "ReadMany | ServiceUnavailable")]
-        [DataRow("ReadMany", "ReadMany", "ResponseDelay", DisplayName = "ReadMany | ResponseDelay")]
-        [DataRow("ChangeFeed", "ChangeFeed", "Gone", DisplayName = "ChangeFeed | Gone")]
-        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", DisplayName = "ChangeFeed | RetryWith")]
-        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", DisplayName = "ChangeFeed | InternalServerError")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", DisplayName = "ChangeFeed | ReadSessionNotAvailable")]
-        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", DisplayName = "ChangeFeed | Timeout")]
-        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", DisplayName = "ChangeFeed | PartitionIsSplitting")]
-        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", DisplayName = "ChangeFeed | PartitionIsMigrating")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", DisplayName = "ChangeFeed | ServiceUnavailable")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", DisplayName = "ChangeFeed | ResponseDelay")]
-        public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName)
+        [DataRow("Read", "Read", "RetryWith", false, DisplayName = "Read | RetryWith | With Preferred Regions")]
+        [DataRow("Read", "Read", "InternalServerError", false, DisplayName = "Read | InternalServerError | With Preferred Regions")]
+        [DataRow("Read", "Read", "ReadSessionNotAvailable", false, DisplayName = "Read | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("Read", "Read", "Timeout", false, DisplayName = "Read | Timeout | With Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsSplitting", false, DisplayName = "Read | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsMigrating", false, DisplayName = "Read | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("Read", "Read", "ServiceUnavailable", false, DisplayName = "Read | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("Read", "Read", "ResponseDelay", false, DisplayName = "Read | ResponseDelay | With Preferred Regions")]
+        [DataRow("Read", "Read", "TooManyRequests", false, DisplayName = "Read | TooManyRequests | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "RetryWith", false, DisplayName = "SinglePartitionQuery | RetryWith | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", false, DisplayName = "SinglePartitionQuery | InternalServerError | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Timeout", false, DisplayName = "SinglePartitionQuery | Timeout | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", false, DisplayName = "SinglePartitionQuery | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "SinglePartitionQuery | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", false, DisplayName = "SinglePartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "TooManyRequests", false, DisplayName = "SinglePartitionQuery | TooManyRequests | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "RetryWith", false, DisplayName = "CrossPartitionQuery | RetryWith | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", false, DisplayName = "CrossPartitionQuery | InternalServerError | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", false, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Timeout", false, DisplayName = "CrossPartitionQuery | Timeout | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", false, DisplayName = "CrossPartitionQuery | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", false, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", false, DisplayName = "CrossPartitionQuery | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", false, DisplayName = "CrossPartitionQuery | ResponseDelay | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "TooManyRequests", false, DisplayName = "CrossPartitionQuery | TooManyRequests | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "RetryWith", false, DisplayName = "ReadMany | RetryWith | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "InternalServerError", false, DisplayName = "ReadMany | InternalServerError | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", false, DisplayName = "ReadMany | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Timeout", false, DisplayName = "ReadMany | Timeout | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", false, DisplayName = "ReadMany | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", false, DisplayName = "ReadMany | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", false, DisplayName = "ReadMany | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ResponseDelay", false, DisplayName = "ReadMany | ResponseDelay | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "TooManyRequests", false, DisplayName = "ReadMany | TooManyRequests | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", false, DisplayName = "ChangeFeed | RetryWith | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", false, DisplayName = "ChangeFeed | InternalServerError | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", false, DisplayName = "ChangeFeed | ReadSessionNotAvailable | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", false, DisplayName = "ChangeFeed | Timeout | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", false, DisplayName = "ChangeFeed | PartitionIsSplitting | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", false, DisplayName = "ChangeFeed | PartitionIsMigrating | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", false, DisplayName = "ChangeFeed | ServiceUnavailable | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", false, DisplayName = "ChangeFeed | ResponseDelay | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "TooManyRequests", false, DisplayName = "ChangeFeed | TooManyRequests | With Preferred Regions")]
+        [DataRow("Read", "Read", "RetryWith", true, DisplayName = "Read | RetryWith | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "InternalServerError", true, DisplayName = "Read | InternalServerError | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ReadSessionNotAvailable", true, DisplayName = "Read | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "Timeout", true, DisplayName = "Read | Timeout | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsSplitting", true, DisplayName = "Read | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "PartitionIsMigrating", true, DisplayName = "Read | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ServiceUnavailable", true, DisplayName = "Read | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "ResponseDelay", true, DisplayName = "Read | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("Read", "Read", "TooManyRequests", true, DisplayName = "Read | TooManyRequests | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "RetryWith", true, DisplayName = "SinglePartitionQuery | RetryWith | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "InternalServerError", true, DisplayName = "SinglePartitionQuery | InternalServerError | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "SinglePartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "Timeout", true, DisplayName = "SinglePartitionQuery | Timeout | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsSplitting", true, DisplayName = "SinglePartitionQuery | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "SinglePartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "SinglePartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "ResponseDelay", true, DisplayName = "SinglePartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "TooManyRequests", true, DisplayName = "SinglePartitionQuery | TooManyRequests | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "RetryWith", true, DisplayName = "CrossPartitionQuery | RetryWith | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "InternalServerError", true, DisplayName = "CrossPartitionQuery | InternalServerError | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ReadSessionNotAvailable", true, DisplayName = "CrossPartitionQuery | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "Timeout", true, DisplayName = "CrossPartitionQuery | Timeout | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsSplitting", true, DisplayName = "CrossPartitionQuery | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "PartitionIsMigrating", true, DisplayName = "CrossPartitionQuery | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ServiceUnavailable", true, DisplayName = "CrossPartitionQuery | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "ResponseDelay", true, DisplayName = "CrossPartitionQuery | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "TooManyRequests", true, DisplayName = "CrossPartitionQuery | TooManyRequests | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "RetryWith", true, DisplayName = "ReadMany | RetryWith | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "InternalServerError", true, DisplayName = "ReadMany | InternalServerError | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadSessionNotAvailable", true, DisplayName = "ReadMany | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "Timeout", true, DisplayName = "ReadMany | Timeout | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsSplitting", true, DisplayName = "ReadMany | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "PartitionIsMigrating", true, DisplayName = "ReadMany | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ServiceUnavailable", true, DisplayName = "ReadMany | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ResponseDelay", true, DisplayName = "ReadMany | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "TooManyRequests", true, DisplayName = "ReadMany | TooManyRequests | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "RetryWith", true, DisplayName = "ChangeFeed | RetryWith | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "InternalServerError", true, DisplayName = "ChangeFeed | InternalServerError | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ReadSessionNotAvailable", true, DisplayName = "ChangeFeed | ReadSessionNotAvailable | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "Timeout", true, DisplayName = "ChangeFeed | Timeout | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsSplitting", true, DisplayName = "ChangeFeed | PartitionIsSplitting | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "PartitionIsMigrating", true, DisplayName = "ChangeFeed | PartitionIsMigrating | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ServiceUnavailable", true, DisplayName = "ChangeFeed | ServiceUnavailable | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ResponseDelay", true, DisplayName = "ChangeFeed | ResponseDelay | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "TooManyRequests", true, DisplayName = "ChangeFeed | TooManyRequests | W/O Preferred Regions")]
+        public async Task AvailabilityStrategyAllFaultsTests(string operation, string conditonName, string resultName, bool isPreferredLocationsEmpty)
         {
             FaultInjectionCondition conditon = this.conditions[conditonName];
             IFaultInjectionResult result = this.results[resultName];
@@ -415,7 +519,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US" },
+                ApplicationPreferredRegions = isPreferredLocationsEmpty ? new List<string>() :new List<string>() { region1, region2 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -426,8 +530,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -437,16 +541,24 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     case "Read":
                         rule.Enable();
 
-                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                        ItemRequestOptions itemRequestOptions = new ItemRequestOptions();
+
+                        if (isPreferredLocationsEmpty)
+                        {
+                            itemRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
+                        ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                             "testId",
-                            new PartitionKey("pk"));
+                            new PartitionKey("pk"),
+                            itemRequestOptions);
 
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                        Assert.AreEqual(region2, (string)hedgeContext);
 
                         break;
 
@@ -458,7 +570,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             PartitionKey = new PartitionKey("pk"),
                         };
 
-                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        if (isPreferredLocationsEmpty)
+                        {
+                            requestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
+                        FeedIterator<CosmosIntegrationTestObject> queryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(queryString),
                             requestOptions: requestOptions);
 
@@ -466,35 +583,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (queryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await queryIterator.ReadNextAsync();
 
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                            Assert.AreEqual(region2, (string)hedgeContext);
                         }
 
                         break;
 
                     case "CrossPartitionQuery":
                         string crossPartitionQueryString = "SELECT * FROM c";
-                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
-                            new QueryDefinition(crossPartitionQueryString));
+
+                        QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+                        
+                        if (isPreferredLocationsEmpty)
+                        {
+                            queryRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+                        
+                        FeedIterator<CosmosIntegrationTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
+                            new QueryDefinition(crossPartitionQueryString),
+                            null,
+                            queryRequestOptions);
 
                         rule.Enable();
 
                         while (crossPartitionQueryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
 
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                            Assert.AreEqual(region2, (string)hedgeContext);
                         }
 
                         break;
@@ -502,27 +629,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     case "ReadMany":
                         rule.Enable();
 
-                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                        ReadManyRequestOptions readManyRequestOptions = new ReadManyRequestOptions();
+                        
+                        if (isPreferredLocationsEmpty)
+                        {
+                            readManyRequestOptions.ExcludeRegions = new List<string>() { "East US" };
+                        }
+
+                        FeedResponse<CosmosIntegrationTestObject> readManyResponse = await container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
                             ("testId2", new PartitionKey("pk2")),
                             ("testId3", new PartitionKey("pk3")),
                             ("testId4", new PartitionKey("pk4"))
-                            });
+                            },
+                            readManyRequestOptions);
 
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+                        Assert.AreEqual(region2, (string)hedgeContext);
 
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
-                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                        Container leaseContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<CosmosIntegrationTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesAsync)
                             .WithInstanceName("test")
@@ -531,13 +666,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await changeFeedProcessor.StartAsync();
                         await Task.Delay(1000);
 
-                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        CosmosIntegrationTestObject testObject = new CosmosIntegrationTestObject
                         {
                             Id = "item4",
                             Pk = "pk4",
                             Other = Guid.NewGuid().ToString()
                         };
-                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
+                        await container.UpsertItemAsync<CosmosIntegrationTestObject>(testObject);
 
                         rule.Enable();
 
@@ -562,12 +697,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [DataTestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("Read", "Read", "ReadStep", DisplayName = "Read | ReadStep")]
-        [DataRow("SinglePartitionQuery", "Query", "QueryStep", DisplayName = "Query | SinglePartitionQueryStep")]
-        [DataRow("CrossPartitionQuery", "Query", "QueryStep", DisplayName = "Query | CrossPartitionQueryStep")]
-        [DataRow("ReadMany", "ReadMany", "ReadManyStep", DisplayName = "ReadMany | ReadManyStep")]
-        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", DisplayName = "ChangeFeed | ChangeFeedStep")]
-        public async Task AvailabilityStrategyStepTests(string operation, string conditonName1, string conditionName2)
+        [DataRow("Read", "Read", "ReadStep", false, DisplayName = "Read | ReadStep | With Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "QueryStep", false, DisplayName = "Query | SinglePartitionQueryStep | With Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "QueryStep", false, DisplayName = "Query | CrossPartitionQueryStep | With Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadManyStep", false, DisplayName = "ReadMany | ReadManyStep | With Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", false, DisplayName = "ChangeFeed | ChangeFeedStep | With Preferred Regions")]
+        [DataRow("Read", "Read", "ReadStep", true, DisplayName = "Read | ReadStep | W/O Preferred Regions")]
+        [DataRow("SinglePartitionQuery", "Query", "QueryStep", true, DisplayName = "Query | SinglePartitionQueryStep | W/O Preferred Regions")]
+        [DataRow("CrossPartitionQuery", "Query", "QueryStep", true, DisplayName = "Query | CrossPartitionQueryStep | W/O Preferred Regions")]
+        [DataRow("ReadMany", "ReadMany", "ReadManyStep", true, DisplayName = "ReadMany | ReadManyStep | W/O Preferred Regions")]
+        [DataRow("ChangeFeed", "ChangeFeed", "ChangeFeedStep", true, DisplayName = "ChangeFeed | ChangeFeedStep | W/O Preferred Regions")]
+        public async Task AvailabilityStrategyStepTests(string operation, string conditonName1, string conditionName2, bool isPreferredRegionsEmpty)
         {
             FaultInjectionCondition conditon1 = this.conditions[conditonName1];
             FaultInjectionCondition conditon2 = this.conditions[conditionName2];
@@ -596,7 +736,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 ConnectionMode = ConnectionMode.Direct,
-                ApplicationPreferredRegions = new List<string>() { "Central US", "North Central US", "East US" },
+                ApplicationPreferredRegions = isPreferredRegionsEmpty ? new List<string>() : new List<string>() { region1, region2, region3 },
                 AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                         threshold: TimeSpan.FromMilliseconds(100),
                         thresholdStep: TimeSpan.FromMilliseconds(50)),
@@ -607,8 +747,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
             {
-                Database database = faultInjectionClient.GetDatabase(CosmosAvailabilityStrategyTests.dbName);
-                Container container = database.GetContainer(CosmosAvailabilityStrategyTests.containerName);
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -619,7 +759,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         rule1.Enable();
                         rule2.Enable();
 
-                        ItemResponse<AvailabilityStrategyTestObject> ir = await container.ReadItemAsync<AvailabilityStrategyTestObject>(
+                        ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>(
                             "testId",
                             new PartitionKey("pk"));
 
@@ -627,7 +767,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+                        Assert.AreEqual(region3, (string)hedgeContext);
 
                         break;
 
@@ -639,7 +779,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             PartitionKey = new PartitionKey("pk"),
                         };
 
-                        FeedIterator<AvailabilityStrategyTestObject> queryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        FeedIterator<CosmosIntegrationTestObject> queryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(queryString),
                             requestOptions: requestOptions);
 
@@ -648,20 +788,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (queryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await queryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await queryIterator.ReadNextAsync();
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+                            Assert.AreEqual(region3, (string)hedgeContext);
                         }
 
                         break;
 
                     case "CrossPartitionQuery":
                         string crossPartitionQueryString = "SELECT * FROM c";
-                        FeedIterator<AvailabilityStrategyTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<AvailabilityStrategyTestObject>(
+                        FeedIterator<CosmosIntegrationTestObject> crossPartitionQueryIterator = container.GetItemQueryIterator<CosmosIntegrationTestObject>(
                             new QueryDefinition(crossPartitionQueryString));
 
                         rule1.Enable();
@@ -669,13 +809,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         while (crossPartitionQueryIterator.HasMoreResults)
                         {
-                            FeedResponse<AvailabilityStrategyTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
+                            FeedResponse<CosmosIntegrationTestObject> feedResponse = await crossPartitionQueryIterator.ReadNextAsync();
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+                            Assert.AreEqual(region3, (string)hedgeContext);
                         }
 
                         break;
@@ -684,7 +824,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         rule1.Enable();
                         rule2.Enable();
 
-                        FeedResponse<AvailabilityStrategyTestObject> readManyResponse = await container.ReadManyItemsAsync<AvailabilityStrategyTestObject>(
+                        FeedResponse<CosmosIntegrationTestObject> readManyResponse = await container.ReadManyItemsAsync<CosmosIntegrationTestObject>(
                             new List<(string, PartitionKey)>()
                             {
                             ("testId", new PartitionKey("pk")),
@@ -697,13 +837,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(CosmosAvailabilityStrategyTests.eastUs, (string)hedgeContext);
+                        Assert.AreEqual(region3, (string)hedgeContext);
 
                         break;
 
                     case "ChangeFeed":
-                        Container leaseContainer = database.GetContainer(CosmosAvailabilityStrategyTests.changeFeedContainerName);
-                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<AvailabilityStrategyTestObject>(
+                        Container leaseContainer = database.GetContainer(MultiRegionSetupHelpers.changeFeedContainerName);
+                        ChangeFeedProcessor changeFeedProcessor = container.GetChangeFeedProcessorBuilder<CosmosIntegrationTestObject>(
                             processorName: "AvialabilityStrategyTest",
                             onChangesDelegate: HandleChangesStepAsync)
                             .WithInstanceName("test")
@@ -712,13 +852,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         await changeFeedProcessor.StartAsync();
                         await Task.Delay(1000);
 
-                        AvailabilityStrategyTestObject testObject = new AvailabilityStrategyTestObject
+                        CosmosIntegrationTestObject testObject = new CosmosIntegrationTestObject
                         {
                             Id = "item4",
                             Pk = "pk4",
                             Other = Guid.NewGuid().ToString()
                         };
-                        await container.UpsertItemAsync<AvailabilityStrategyTestObject>(testObject);
+                        await container.UpsertItemAsync<CosmosIntegrationTestObject>(testObject);
 
                         rule1.Enable();
                         rule2.Enable();
@@ -742,9 +882,411 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteBeforeTest()
+        {
+            FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
+                id: "sendDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region1)
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { sendDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            sendDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2 },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                sendDelay.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: true)
+                };
+
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
+                {
+                    Id = "deleteMe",
+                    Pk = "MMWrite",
+                    Other = "test"
+                };
+
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
+                    requestOptions: requestOptions);
+
+                sendDelay.Disable();
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(region2, (string)hedgeContext);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteAfterTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region1)
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2 },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                responseDelay.Enable();
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: true)
+                };
+
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
+                {
+                    Id = "deleteMe",
+                    Pk = "MMWrite",
+                    Other = "test"
+                };
+
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
+                    requestOptions: requestOptions);
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode);
+
+                    CosmosTraceDiagnostics traceDiagnostic = ex.Diagnostics as CosmosTraceDiagnostics;
+                    Assert.IsNotNull(traceDiagnostic);
+                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                    Assert.IsNotNull(hedgeContext);
+                    Assert.AreEqual(region2, (string)hedgeContext);
+                }
+                finally
+                {
+                    responseDelay.Disable();
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteBeforeStepTest()
+        {
+            FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
+                id: "sendDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region1)
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            FaultInjectionRule sendDelay2 = new FaultInjectionRuleBuilder(
+                id: "sendDelay2",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region2)
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { sendDelay, sendDelay2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            sendDelay.Disable();
+            sendDelay2.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2, region3 },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: true)
+                };
+
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
+                {
+                    Id = "deleteMe",
+                    Pk = "MMWrite",
+                    Other = "test"
+                };
+
+                try
+                {
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                        CosmosIntegrationTestObject.Id,
+                        new PartitionKey(CosmosIntegrationTestObject.Pk));
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+
+                sendDelay.Enable();
+                sendDelay2.Enable();
+
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
+                    requestOptions: requestOptions);
+
+                sendDelay.Disable();
+                sendDelay2.Disable();
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(region3, (string)hedgeContext);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task AvailabilityStrategyMultiMasterWriteAfterStepTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDelay",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region1)
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            FaultInjectionRule responseDelay2 = new FaultInjectionRuleBuilder(
+                id: "responseDelay2",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region2)
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay, responseDelay2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+            responseDelay2.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2, region3 },
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: true)
+                };
+
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
+                {
+                    Id = "deleteMe",
+                    Pk = "MMWrite",
+                    Other = "test"
+                };
+
+                try
+                {
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(
+                        CosmosIntegrationTestObject.Id,
+                        new PartitionKey(CosmosIntegrationTestObject.Pk));
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+
+                responseDelay.Enable();
+                responseDelay2.Enable();
+
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
+                    requestOptions: requestOptions);
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.AreEqual(HttpStatusCode.Conflict, ex.StatusCode);
+
+                    CosmosTraceDiagnostics traceDiagnostic = ex.Diagnostics as CosmosTraceDiagnostics;
+                    Assert.IsNotNull(traceDiagnostic);
+                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                    Assert.IsNotNull(hedgeContext);
+                    Assert.AreEqual(region3, (string)hedgeContext);
+                }
+                finally
+                {
+                    responseDelay.Disable();
+                    responseDelay2.Disable();
+                }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task AvailabilityStrategyWithCancellationTokenThrowsExceptionTest()
+        {
+            FaultInjectionRule responseDelay = new FaultInjectionRuleBuilder(
+                id: "responseDely",
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithRegion(region1)
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(6000))
+                        .Build())
+                .WithDuration(TimeSpan.FromMinutes(90))
+                .WithHitLimit(2)
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { responseDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            responseDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2 },
+                AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                        threshold: TimeSpan.FromMilliseconds(300),
+                        thresholdStep: null),
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.Cancel();
+
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                CosmosOperationCanceledException cancelledException = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
+                        container.ReadItemAsync<CosmosIntegrationTestObject>(
+                            "testId",
+                            new PartitionKey("pk"), cancellationToken: cts.Token
+                    ));
+
+            }
+
+        }
+
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
-            IReadOnlyCollection<AvailabilityStrategyTestObject> changes,
+            IReadOnlyCollection<CosmosIntegrationTestObject> changes,
             CancellationToken cancellationToken)
         {
             if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
@@ -756,13 +1298,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.centralUS, (string)hedgeContext);
+            Assert.AreNotEqual(region1, (string)hedgeContext);
             await Task.Delay(1);
         }
 
         private static async Task HandleChangesStepAsync(
             ChangeFeedProcessorContext context,
-            IReadOnlyCollection<AvailabilityStrategyTestObject> changes,
+            IReadOnlyCollection<CosmosIntegrationTestObject> changes,
             CancellationToken cancellationToken)
         {
             if (context.Diagnostics.GetClientElapsedTime() > TimeSpan.FromSeconds(1))
@@ -774,59 +1316,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.centralUS, (string)hedgeContext);
-            Assert.AreNotEqual(CosmosAvailabilityStrategyTests.northCentralUS, (string)hedgeContext);
+            Assert.AreNotEqual(region1, (string)hedgeContext);
+            Assert.AreNotEqual(region2, (string)hedgeContext);
             await Task.Delay(1);
-        }
-
-        internal class AvailabilityStrategyTestObject
-        {
-
-            [JsonPropertyName("id")]
-            public string Id { get; set; }
-
-            [JsonPropertyName("pk")]
-            public string Pk { get; set; }
-
-            [JsonPropertyName("other")]
-            public string Other { get; set; }
-        }
-
-        private class CosmosSystemTextJsonSerializer : CosmosSerializer
-        {
-            private readonly JsonObjectSerializer systemTextJsonSerializer;
-
-            public CosmosSystemTextJsonSerializer(JsonSerializerOptions jsonSerializerOptions)
-            {
-                this.systemTextJsonSerializer = new JsonObjectSerializer(jsonSerializerOptions);
-            }
-
-            public override T FromStream<T>(Stream stream)
-            {
-                using (stream)
-                {
-                    if (stream.CanSeek
-                           && stream.Length == 0)
-                    {
-                        return default;
-                    }
-
-                    if (typeof(Stream).IsAssignableFrom(typeof(T)))
-                    {
-                        return (T)(object)stream;
-                    }
-
-                    return (T)this.systemTextJsonSerializer.Deserialize(stream, typeof(T), default);
-                }
-            }
-
-            public override Stream ToStream<T>(T input)
-            {
-                MemoryStream streamPayload = new MemoryStream();
-                this.systemTextJsonSerializer.Serialize(streamPayload, input, input.GetType(), default);
-                streamPayload.Position = 0;
-                return streamPayload;
-            }
         }
     }
 }

@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         internal OpenTelemetryAttributes(RequestMessage requestMessage)
         {
             this.RequestContentLength = requestMessage?.Headers?.ContentLength;
+            this.ConsistencyLevel = requestMessage?.Headers?.ConsistencyLevel;
+
             if (requestMessage != null)
             {
                 this.OperationType = requestMessage.OperationType;
@@ -65,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// SubStatusCode
         /// </summary>
         internal int SubStatusCode { get; set; }
-
+        
         /// <summary>
         /// ActivityId
         /// </summary>
@@ -95,5 +97,10 @@ namespace Microsoft.Azure.Cosmos.Telemetry
         /// Query Spec with Query Text and Parameters
         /// </summary>
         internal SqlQuerySpec QuerySpec { get; set; }
+
+        /// <summary>
+        /// Consistency Level
+        /// </summary>
+        internal string ConsistencyLevel { get; set; }
     }
 }

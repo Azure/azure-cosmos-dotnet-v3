@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
 #else
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
 #endif
@@ -767,6 +767,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to The value of throughput buckets specified is invalid.
+        /// </summary>
+        internal static string InvalidThroughputBuckets
+        {
+            get
+            {
+                return ResourceManager.GetString("InvalidThroughputBuckets", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to The value of offer throughput policy specified is invalid.
         /// </summary>
         internal static string InvalidThroughputPolicy
@@ -1310,10 +1321,10 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
-        ///   Looks up a localized string similar to The backend response was not in the correct format..
-        /// </summary>
-        internal static string InvalidBackendResponse
+		/// <summary>
+		///   Looks up a localized string similar to The backend response was not in the correct format..
+		/// </summary>
+		internal static string InvalidBackendResponse
         {
             get
             {
@@ -3651,6 +3662,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Throughput Bucketing is not enabled.
+        /// </summary>
+        internal static string ThroughputBucketingNotEnabled
+        {
+            get
+            {
+                return ResourceManager.GetString("ThroughputBucketingNotEnabled", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Network timeout or connectivity failure.
         /// </summary>
         internal static string TimeoutGenerated410
@@ -4915,6 +4937,39 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("ServiceUnavailableErrorAtCmkFastScanner", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to MinimalTlsVersionDeprecated for minimalTlsVersion updates.
+        /// </summary>
+        internal static string MinimalTlsVersionDeprecated
+        {
+            get
+            {
+                return ResourceManager.GetString("MinimalTlsVersionDeprecated", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to UpdateKeyVaultKeyUriNotSupported if keyUri is not valid to update on an account.
+        /// </summary>
+        internal static string UpdateKeyVaultKeyUriNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("UpdateKeyVaultKeyUriNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to DisableCmkNotSupported if keyUri is not valid to update on an account.
+        /// </summary>
+        internal static string DisableCmkNotSupported
+        {
+            get
+            {
+                return ResourceManager.GetString("DisableCmkNotSupported", resourceCulture);
             }
         }
     }
