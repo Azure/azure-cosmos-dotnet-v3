@@ -629,14 +629,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
             StringBuilder textInput = new StringBuilder("{");
+            List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, };
+            List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 };
 
-            List<byte> binaryInput = new List<byte>();
-            List<byte> binaryInputWithEncoding = new List<byte>();
             const byte OneByteCount = JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMax - JsonBinaryEncoding.TypeMarker.UserString1ByteLengthMin;
-
             for (int i = 0; i < OneByteCount + 1; i++)
             {
-                string userEncodedString = "abc" + i.ToString();
+                string userEncodedString = "a" + i.ToString();
 
                 expectedTokens.Add(JsonToken.FieldName(userEncodedString));
                 expectedTokens.Add(JsonToken.String(userEncodedString));
@@ -674,24 +673,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             binaryInput.Insert(2, (byte)(binaryInput.Count() - 2));
             binaryInputWithEncoding.Insert(2, (byte)(binaryInputWithEncoding.Count() - 2));
 
-            List<byte> binaryCompleteInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, (byte)binaryInput.Count() };
-            binaryCompleteInput.AddRange(binaryInput);
-
-            List<byte> binaryCompleteInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, (byte)binaryInputWithEncoding.Count() };
-            binaryCompleteInputWithEncoding.AddRange(binaryInputWithEncoding);
-
             this.VerifyReader(textInput.ToString(), expectedTokens.ToArray());
-            this.VerifyReader(binaryCompleteInput.ToArray(), expectedTokens.ToArray());
+            this.VerifyReader(binaryInput.ToArray(), expectedTokens.ToArray());
 
             JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
             for (int i = 0; i < OneByteCount + 1; i++)
             {
-                string userEncodedString = "abc" + i.ToString();
+                string userEncodedString = "a" + i.ToString();
                 Assert.IsTrue(jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userEncodedString), out int index));
                 Assert.AreEqual(i, index);
             }
 
-            this.VerifyReader(binaryCompleteInputWithEncoding.ToArray(), expectedTokens.ToArray(), jsonStringDictionary);
+            this.VerifyReader(binaryInputWithEncoding.ToArray(), expectedTokens.ToArray(), jsonStringDictionary);
         }
 
         [TestMethod]

@@ -531,6 +531,8 @@ namespace Microsoft.Azure.Cosmos
             ReadOnlyMemory<byte> content = memoryStream.TryGetBuffer(out ArraySegment<byte> buffer) ? buffer : (ReadOnlyMemory<byte>)memoryStream.ToArray();
             IJsonNavigator jsonNavigator = JsonNavigator.Create(content);
 
+            // TODO mayapainter user string support
+
             string resourceName = resourceType switch
             {
                 ResourceType.Collection => "DocumentCollections",

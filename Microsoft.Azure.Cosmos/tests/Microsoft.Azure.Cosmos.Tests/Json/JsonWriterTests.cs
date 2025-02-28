@@ -657,7 +657,7 @@
                 binaryOutput[1] = JsonBinaryEncoding.TypeMarker.Obj1;
                 binaryOutput[2] = typeMarker;
                 userString.Utf8String.Span.Span.CopyTo(binaryOutput.AsSpan(3));
-                binaryOutput[3 + utf8Length] = BinaryFormat; // TODO maya: why is last value binary format?
+                binaryOutput[3 + utf8Length] = BinaryFormat;
 
                 byte[] binaryOutputUserStrings =
                 {
