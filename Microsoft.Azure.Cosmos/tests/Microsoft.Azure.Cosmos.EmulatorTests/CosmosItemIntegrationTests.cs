@@ -148,12 +148,13 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("10", DisplayName = "Scenario whtn the circuit breaker consecutive failure threshold is set to 10.")]
-        [DataRow("20", DisplayName = "Scenario whtn the circuit breaker consecutive failure threshold is set to 20.")]
-        [DataRow("30", DisplayName = "Scenario whtn the circuit breaker consecutive failure threshold is set to 30.")]
+        [DataRow("15", "10", DisplayName = "Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow("25", "20", DisplayName = "Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow("35", "30", DisplayName = "Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
         [Owner("dkunda")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
+            string iterationCount,
             string circuitBreakerConsecutiveFailureCount)
         {
             // Arrange.
@@ -205,7 +206,9 @@
                 await Task.Delay(3000);
 
                 int consecutiveFailureCount = int.Parse(circuitBreakerConsecutiveFailureCount);
-                for (int attemptCount = 1; attemptCount <= consecutiveFailureCount; attemptCount++)
+                int totalIterations = int.Parse(iterationCount);
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
                 {
                     try
                     {
@@ -220,33 +223,186 @@
                             expected: HttpStatusCode.OK,
                             actual: readResponse.StatusCode);
 
-                        Assert.IsTrue(attemptCount > consecutiveFailureCount / 2);
                         Assert.IsNotNull(contactedRegions);
 
-                        if (attemptCount == (consecutiveFailureCount / 2) + 1)
+                        if (attemptCount > consecutiveFailureCount + 1)
                         {
-                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request succeeds after failover, the partition was failed over to the next region, after the failures reaches the threshold.");
-                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent read request/s were successful on the next region.");
+                            Assert.IsTrue(contactedRegions.Contains(region2));
                         }
                         else
                         {
-                            Assert.IsTrue(contactedRegions.Count == 1);
-                            Assert.IsTrue(contactedRegions.Contains(region2));
+                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
                         }
                     }
-                    catch (CosmosException ex)
+                    catch (CosmosException)
                     {
-                        Assert.AreEqual(
-                            expected: HttpStatusCode.ServiceUnavailable,
-                            actual: ex.StatusCode);
+                        Assert.Fail("Read Item operation should succeed.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Unhandled Exception was thrown during ReadItemAsync call. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
 
-                        Assert.IsTrue(attemptCount <= consecutiveFailureCount / 2);
+                await this.TryDeleteItems(itemsList);
+            }
+        }
 
-                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = ex.Diagnostics.GetContactedRegions();
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Owner("dkunda")]
+        [Timeout(70000)]
+        public async Task ReadItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceivedFromTwoRegions_ShouldApplyPartitionLevelOverrideToThridRegion()
+        {
+            // Arrange.
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, "10");
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId1 = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule1 = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId1,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(10))
+                        .Build())
+                .Build();
+
+            string serviceUnavailableRuleId2 = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule2 = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId2,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(region2)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(10))
+                        .Build())
+                .Build();
+
+            serviceUnavailableRule1.Disable();
+            serviceUnavailableRule2.Disable();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule1, serviceUnavailableRule2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new (connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                bool isRegion1Available = true;
+                bool isRegion2Available = true;
+
+                int thresholdCounter = 0;
+                int totalIterations = 40;
+                int ppcbDefaultThreshold = 10;
+                int firstRegionServiceUnavailableAttempt = 3;
+                int secondRegionServiceUnavailableAttempt = 28;
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+                {
+                    try
+                    {
+                        ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                            id: itemsList[0].Id,
+                            partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
                         HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
 
-                        Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when a 503 Service Unavailable happens, the partition was not failed over to the next region, until the failures reaches the threshold.");
-                        Assert.IsTrue(contactedRegions.Contains(region1));
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.OK,
+                            actual: readResponse.StatusCode);
+
+                        Assert.IsNotNull(contactedRegions);
+
+                        if (isRegion1Available && isRegion2Available)
+                        {
+                            Assert.IsTrue(contactedRegions.Count == 1, "Assert that, when no failure happened, the read request is being served from region 1.");
+                            Assert.IsTrue(contactedRegions.Contains(region1));
+
+                            // Simulating service unavailable on region 1.
+                            if (attemptCount == firstRegionServiceUnavailableAttempt)
+                            {
+                                isRegion1Available = false;
+                                serviceUnavailableRule1.Enable();
+                            }
+                        }
+                        else if (isRegion2Available) 
+                        {
+                            if (thresholdCounter <= ppcbDefaultThreshold)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request succeeds before the consecutive failure count reaches the threshold, the partition didn't fail over to the next region, and the request was retried.");
+                                Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                                thresholdCounter++;
+                            }
+                            else
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent read request/s were successful on the next region.");
+                                Assert.IsTrue(contactedRegions.Contains(region2));
+                            }
+
+                            // Simulating service unavailable on region 2.
+                            if (attemptCount == secondRegionServiceUnavailableAttempt)
+                            {
+                                isRegion2Available = false;
+                                serviceUnavailableRule2.Enable();
+                            }
+                        }
+                        else
+                        {
+                            if (thresholdCounter <= ppcbDefaultThreshold + 1)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request fails on the second region, the partition did over to the next region, and the request was retried on the next region.");
+                                Assert.IsTrue(contactedRegions.Contains(region2) && contactedRegions.Contains(region3));
+                                thresholdCounter++;
+                            }
+                            else
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the third region, and the subsequent read request/s were successful on the third region.");
+                                Assert.IsTrue(contactedRegions.Contains(region3));
+                            }
+                        }
+                    }
+                    catch (CosmosException)
+                    {
+                        Assert.Fail("Read Item operation should succeed.");
                     }
                     catch (Exception ex)
                     {
@@ -437,12 +593,13 @@
         [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiMaster")]
-        [DataRow("10", DisplayName = "Scenario when the circuit breaker consecutive failure threshold is set to 10.")]
-        [DataRow("20", DisplayName = "Scenario when the circuit breaker consecutive failure threshold is set to 20.")]
-        [DataRow("30", DisplayName = "Scenario when the circuit breaker consecutive failure threshold is set to 30.")]
+        [DataRow("15", "10", DisplayName = "Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow("25", "20", DisplayName = "Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow("35", "30", DisplayName = "Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
         [Timeout(70000)]
         public async Task CreateItemAsync_WithCircuitBreakerEnabledAndMultiMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
-                string circuitBreakerConsecutiveFailureCount)
+            string iterationCount,
+            string circuitBreakerConsecutiveFailureCount)
         {
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
@@ -480,12 +637,14 @@
             try
             {
                 // Act and Assert.
+                int totalIterations = int.Parse(iterationCount);
                 int consecutiveFailureCount = int.Parse(circuitBreakerConsecutiveFailureCount);
+
                 using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
                 Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
-                for (int attemptCount = 1; attemptCount <= consecutiveFailureCount; attemptCount++)
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
                 {
                     try
                     {
@@ -506,30 +665,20 @@
                         HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
                         Assert.IsNotNull(contactedRegions);
 
-                        if (attemptCount == (consecutiveFailureCount / 2) + 1)
+                        if (attemptCount > consecutiveFailureCount + 1)
                         {
-                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the write succeeds after failover, the partition was failed over to the next region, after the failure count reaches the threshold.");
-                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent write request/s were successful on the next region.");
+                            Assert.IsTrue(contactedRegions.Contains(region2));
                         }
                         else
                         {
-                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the first write request succeeds after failover, the partition was indeed failed over to the next region and the subsequent writes will be routed to the next region.");
-                            Assert.IsTrue(contactedRegions.Contains(region2));
+                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the write requests succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
                         }
                     }
-                    catch (CosmosException ex)
+                    catch (CosmosException)
                     {
-                        Assert.AreEqual(
-                            expected: HttpStatusCode.ServiceUnavailable,
-                            actual: ex.StatusCode);
-
-                        Assert.IsTrue(attemptCount <= consecutiveFailureCount / 2);
-
-                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = ex.Diagnostics.GetContactedRegions();
-                        HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
-
-                        Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when a 503 Service Unavailable happens, the partition was not failed over to the next region, until the failures reaches the threshold.");
-                        Assert.IsTrue(contactedRegions.Contains(region1));
+                        Assert.Fail("Create Item operation should succeed.");
                     }
                     catch (Exception ex)
                     {

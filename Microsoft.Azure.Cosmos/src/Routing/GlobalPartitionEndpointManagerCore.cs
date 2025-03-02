@@ -473,6 +473,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                     partitionKeyRange,
                     out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
             {
+                if ((request.IsReadOnlyRequest || this.IsWriteRequestEligibleForPartitionLevelCircuitBreaker(request))
+                    && !partitionKeyRangeFailover.CanCircuitBreakerTriggerPartitionFailOver())
+                {
+                    return false;
+                }
+
                 string triggeredBy = this.isPartitionLevelFailoverEnabled ? "Automatic Failover" : "Circuit Breaker";
                 DefaultTrace.TraceInformation("Attempting to route request for partition level override triggered by {0}, for operation type: {1}. URI: {2}, PartitionKeyRange: {3}",
                     triggeredBy,
