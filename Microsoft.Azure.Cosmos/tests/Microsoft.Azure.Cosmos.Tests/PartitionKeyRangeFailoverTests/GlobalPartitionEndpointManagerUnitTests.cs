@@ -165,6 +165,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             using DocumentServiceRequest readRequest = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             readRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
             readRequest.RequestContext.RouteToLocation(routeToLocation);
+
+            // Simulate 11 consecutive failures.
+            GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(failoverManager, readRequest);
+
             Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
                 readRequest));
             Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(
@@ -227,6 +231,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
             createRequest.RequestContext.RouteToLocation(routeToLocation);
+
+            // Simulate 11 consecutive failures.
+            GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(failoverManager, createRequest);
 
             if (circuitBreakerEnabled)
             {
@@ -342,6 +349,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 createRequest.RequestContext.RouteToLocation(routeToLocation);
                 createRequest.RequestContext.ResolvedCollectionRid = collectionRid;
 
+                // Simulate 11 consecutive failures.
+                GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(failoverManager, createRequest);
+
                 Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(createRequest));
                 Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(createRequest));
                 Assert.AreEqual(new Uri("https://localhost:1"), createRequest.RequestContext.LocationEndpointToRoute);
@@ -369,6 +379,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                 await Task.Delay(TimeSpan.FromMilliseconds(1));
 
                 pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
+            }
+        }
+
+        private static void SimulateConsecutiveFailures(
+            GlobalPartitionEndpointManagerCore failoverManager,
+            DocumentServiceRequest requestMessage)
+        {
+            for (int i = 0; i < 11; i++)
+            {
+                failoverManager.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(requestMessage);
             }
         }
     }
