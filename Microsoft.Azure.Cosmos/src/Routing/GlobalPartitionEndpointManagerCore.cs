@@ -352,7 +352,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// This is a recursive method that will be called every minute to refresh the connection to the failed backend replicas.
+        /// This method that will run a continious loop with a delay of one minute to refresh the connection to the failed backend replicas.
+        /// The loop will break, when a cancellation is requested.
         /// Note that the refresh interval can configured by the end user using the environment variable:
         /// AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS.
         /// </summary>
@@ -360,38 +361,33 @@ namespace Microsoft.Azure.Cosmos.Routing
         private async void InitiateCircuitBreakerFailbackLoop()
 #pragma warning restore VSTHRD100 // Avoid async void methods
         {
-            if (this.cancellationTokenSource.IsCancellationRequested)
+            while (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                return;
-            }
+                DefaultTrace.TraceInformation("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() trying to get address and open connections for failed locations.");
 
-            DefaultTrace.TraceInformation("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() trying to get address and open connections for failed locations.");
-
-            try
-            {
-                await Task.Delay(
-                    TimeSpan.FromSeconds(this.backgroundConnectionInitTimeIntervalInSeconds),
-                    this.cancellationTokenSource.Token);
-
-                if (this.cancellationTokenSource.IsCancellationRequested)
+                try
                 {
-                    return;
-                }
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(this.backgroundConnectionInitTimeIntervalInSeconds),
+                        this.cancellationTokenSource.Token);
 
-                await this.TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync();
-            }
-            catch (Exception ex)
-            {
-                if (this.cancellationTokenSource.IsCancellationRequested && (ex is OperationCanceledException || ex is ObjectDisposedException))
+                    if (this.cancellationTokenSource.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    await this.TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync();
+                }
+                catch (Exception ex)
                 {
-                    return;
+                    if (this.cancellationTokenSource.IsCancellationRequested && (ex is OperationCanceledException || ex is ObjectDisposedException))
+                    {
+                        break;
+                    }
+
+                    DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() - Unable to get address and open connections. Exception: {0}", ex.ToString());
                 }
-
-                DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() - Unable to get address and open connections. Exception: {0}", ex.ToString());
             }
-
-            // Call itself to create a loop to continuously do background refresh every 5 minutes
-            this.InitiateCircuitBreakerFailbackLoop();
         }
 
         /// <summary>
