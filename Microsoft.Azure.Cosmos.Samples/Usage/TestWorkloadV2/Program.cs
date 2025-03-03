@@ -194,7 +194,7 @@
                 Console.Write($"{DateTime.UtcNow.ToLongTimeString()}> In progress for {stopwatch.Elapsed}. Triggered: {taskTriggeredCounter} Processed: {taskCompleteCounter}");
                 if (this.configuration.TotalRequestCount.HasValue)
                 {
-                    Console.Write(", Pending: {totalRequestCount - taskCompleteCounter}");
+                    Console.Write($", Pending: {totalRequestCount - taskCompleteCounter}");
                 }
 
                 int nonFailedCount = 0;

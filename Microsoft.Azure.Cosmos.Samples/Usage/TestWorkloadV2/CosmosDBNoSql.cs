@@ -66,9 +66,14 @@
                 throw;
             }
 
+            int partitionKeyCount = this.configuration.PartitionKeyCount;
+            if (this.configuration.TotalRequestCount.HasValue)
+            {
+                partitionKeyCount = Math.Min(partitionKeyCount, this.configuration.TotalRequestCount.Value);
+            }
 
-            this.partitionKeys = new PartitionKey[this.configuration.PartitionKeyCount];
-            for (int pkIndex = 0; pkIndex < this.configuration.PartitionKeyCount; pkIndex++)
+            this.partitionKeys = new PartitionKey[partitionKeyCount];
+            for (int pkIndex = 0; pkIndex < partitionKeyCount; pkIndex++)
             {
                 this.partitionKeys[pkIndex] = new PartitionKey(this.dataSource.PartitionKeyStrings[pkIndex]);
             }
