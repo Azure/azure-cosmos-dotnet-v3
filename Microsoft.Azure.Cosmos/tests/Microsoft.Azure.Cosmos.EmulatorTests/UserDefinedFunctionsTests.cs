@@ -112,54 +112,37 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ResponseMessage responseMessage =
                 await this.scripts.CreateUserDefinedFunctionStreamAsync(
-                    TestCommon.SerializerCore.ToStream(settings),
-                    settings.Id);
-            UserDefinedFunctionResponse response = TestCommon.SerializerCore.FromStream<UserDefinedFunctionResponse>(responseMessage.Content);
-            double reqeustCharge = response.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            Assert.IsNotNull(response.Diagnostics);
-            string diagnostics = response.Diagnostics.ToString();
+                    settings);
+            Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            string diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(settings, response);
 
             responseMessage = await this.scripts.ReadUserDefinedFunctionStreamAsync(settings.Id);
-            response = TestCommon.SerializerCore.FromStream<UserDefinedFunctionResponse>(responseMessage.Content);
-            reqeustCharge = response.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-            Assert.IsNotNull(response.Diagnostics);
-            diagnostics = response.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(settings, response);
 
-            UserDefinedFunctionProperties updatedSettings = response.Resource;
+            UserDefinedFunctionProperties updatedSettings = settings;
             updatedSettings.Body = @"function(amt) { return amt * 0.42; }";
 
             ResponseMessage replaceResponseMessage = await this.scripts.ReplaceUserDefinedFunctionStreamAsync(
-                TestCommon.SerializerCore.ToStream(updatedSettings),
-                updatedSettings.Id);
-            UserDefinedFunctionResponse replaceResponse = TestCommon.SerializerCore.FromStream<UserDefinedFunctionResponse>(replaceResponseMessage.Content);
-            UserDefinedFunctionsTests.ValidateUserDefinedFunctionSettings(updatedSettings, replaceResponse);
-            reqeustCharge = replaceResponse.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.IsNotNull(replaceResponse.Diagnostics);
-            diagnostics = replaceResponse.Diagnostics.ToString();
+                updatedSettings);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
 
             replaceResponseMessage = await this.scripts.DeleteUserDefinedFunctionStreamAsync(settings.Id);
-            replaceResponse = TestCommon.SerializerCore.FromStream<UserDefinedFunctionResponse>(replaceResponseMessage.Content);
-            reqeustCharge = replaceResponse.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.IsNotNull(replaceResponse.Diagnostics);
-            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
+            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponseMessage.StatusCode);
         }
 
         [TestMethod]

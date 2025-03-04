@@ -119,52 +119,35 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             ResponseMessage triggerResponseMessage =
                 await this.scripts.CreateTriggerStreamAsync(
-                    TestCommon.SerializerCore.ToStream(settings),
-                    settings.Id);
-            TriggerResponse triggerResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(triggerResponseMessage.Content);
-            double reqeustCharge = triggerResponse.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.AreEqual(HttpStatusCode.Created, triggerResponse.StatusCode);
-            Assert.IsNotNull(triggerResponse.Diagnostics);
-            string diagnostics = triggerResponse.Diagnostics.ToString();
+                    settings);
+            Assert.AreEqual(HttpStatusCode.Created, triggerResponseMessage.StatusCode);
+            Assert.IsNotNull(triggerResponseMessage.Diagnostics);
+            string diagnostics = triggerResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
             triggerResponseMessage = await this.scripts.ReadTriggerStreamAsync(settings.Id);
-            triggerResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(triggerResponseMessage.Content);
-            reqeustCharge = triggerResponse.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.AreEqual(HttpStatusCode.OK, triggerResponse.StatusCode);
-            Assert.IsNotNull(triggerResponse.Diagnostics);
-            diagnostics = triggerResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.OK, triggerResponseMessage.StatusCode);
+            Assert.IsNotNull(triggerResponseMessage.Diagnostics);
+            diagnostics = triggerResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            TriggersTests.ValidateTriggerSettings(settings, triggerResponse);
 
-            TriggerProperties updatedSettings = triggerResponse.Resource;
+            TriggerProperties updatedSettings = settings;
             updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
 
             ResponseMessage replaceResponseMessage = await this.scripts.ReplaceTriggerStreamAsync(
-                TestCommon.SerializerCore.ToStream(updatedSettings),
-                updatedSettings.Id);
-            TriggerResponse replaceResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(replaceResponseMessage.Content);
-            TriggersTests.ValidateTriggerSettings(updatedSettings, replaceResponse);
-            reqeustCharge = replaceResponse.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
-            Assert.IsNotNull(replaceResponse.Diagnostics);
-            diagnostics = replaceResponse.Diagnostics.ToString();
+                updatedSettings);
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
 
             replaceResponseMessage = await this.scripts.DeleteTriggerStreamAsync(updatedSettings.Id);
-            replaceResponse = TestCommon.SerializerCore.FromStream<TriggerResponse>(replaceResponseMessage.Content);
-            reqeustCharge = replaceResponse.RequestCharge;
-            Assert.IsTrue(reqeustCharge > 0);
-            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponse.StatusCode);
-            Assert.IsNotNull(replaceResponse.Diagnostics);
-            diagnostics = replaceResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
         }

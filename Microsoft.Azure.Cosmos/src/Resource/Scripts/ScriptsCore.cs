@@ -26,18 +26,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
 
         protected CosmosClientContext ClientContext { get; }
 
-        public async Task<ResponseMessage> CreateStoredProcedureStreamAsync(
-            Stream streamPayload,
-            string id,
+        public Task<ResponseMessage> CreateStoredProcedureStreamAsync(
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            return await this.ProcessStoredProcedureOperationStreamAsync(
-                id: id,
+            return this.ProcessStreamOperationAsync(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Create,
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: this.ClientContext.SerializerCore.ToStream(storedProcedureProperties),
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -139,11 +140,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessStoredProcedureOperationStreamAsync(
-                id: id,
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Read,
-                streamPayload: null,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -169,17 +177,23 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<ResponseMessage> ReplaceStoredProcedureStreamAsync(
-            Stream streamPayload,
-            string id,
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            return this.ProcessStoredProcedureOperationStreamAsync(
-                id: id,
+            string linkUri = this.ClientContext.CreateLink(
+                   parentLink: this.container.LinkUri,
+                   uriPathSegment: Paths.StoredProceduresPathSegment,
+                   id: storedProcedureProperties.Id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Replace,
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: this.ClientContext.SerializerCore.ToStream(storedProcedureProperties),
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -210,11 +224,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessStoredProcedureOperationStreamAsync(
-                id: id,
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.StoredProceduresPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.StoredProcedure,
                 operationType: OperationType.Delete,
-                streamPayload: null,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -313,22 +334,33 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<ResponseMessage> CreateTriggerStreamAsync(
-            Stream streamPayload,
-            string id,
+            TriggerProperties triggerProperties,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(id))
+            if (triggerProperties == null)
             {
-                throw new ArgumentNullException(nameof(id));
+                throw new ArgumentNullException(nameof(triggerProperties));
             }
 
-            return this.ProcessTriggerOperationStreamAsync(
-                id: id,
+            if (string.IsNullOrEmpty(triggerProperties.Id))
+            {
+                throw new ArgumentNullException(nameof(triggerProperties.Id));
+            }
+
+            if (string.IsNullOrEmpty(triggerProperties.Body))
+            {
+                throw new ArgumentNullException(nameof(triggerProperties.Body));
+            }
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.Trigger,
                 operationType: OperationType.Create,
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties),
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -445,11 +477,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessTriggerOperationStreamAsync(
-                id: id,
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.TriggersPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.Trigger,
                 operationType: OperationType.Read,
-                streamPayload: null,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -475,22 +514,38 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<ResponseMessage> ReplaceTriggerStreamAsync(
-            Stream streamPayload,
-            string id,
+            TriggerProperties triggerProperties,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(id))
+            if (triggerProperties == null)
             {
-                throw new ArgumentNullException(nameof(id));
+                throw new ArgumentNullException(nameof(triggerProperties));
             }
 
-            return this.ProcessTriggerOperationStreamAsync(
-                id: id,
+            if (string.IsNullOrEmpty(triggerProperties.Id))
+            {
+                throw new ArgumentNullException(nameof(triggerProperties.Id));
+            }
+
+            if (string.IsNullOrEmpty(triggerProperties.Body))
+            {
+                throw new ArgumentNullException(nameof(triggerProperties.Body));
+            }
+
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.TriggersPathSegment,
+                id: triggerProperties.Id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.Trigger,
                 operationType: OperationType.Replace,
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties),
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -535,11 +590,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
             {
                 throw new ArgumentNullException(nameof(id));
             }
-            return this.ProcessTriggerOperationStreamAsync(
-                id: id,
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.TriggersPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.Trigger,
                 operationType: OperationType.Delete,
-                streamPayload: null,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -565,22 +627,33 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<ResponseMessage> CreateUserDefinedFunctionStreamAsync(
-            Stream streamPayload,
-            string id,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(id))
+            if (userDefinedFunctionProperties == null)
             {
-                throw new ArgumentNullException(nameof(id));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties));
             }
 
-            return this.ProcessUserDefinedFunctionOperationStreamAsync(
-                id: id,
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Id))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Id));
+            }
+
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Body))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
+            }
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: this.container.LinkUri,
+                resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.Create,
-                streamPayload: streamPayload,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -697,11 +770,18 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 throw new ArgumentNullException(nameof(id));
             }
 
-            return this.ProcessUserDefinedFunctionOperationStreamAsync(
-                id: id,
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.Read,
-                streamPayload: null,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -727,24 +807,40 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public Task<ResponseMessage> ReplaceUserDefinedFunctionStreamAsync(
-            Stream streamPayload,
-            string id,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions,
             ITrace trace,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(id))
+            if (userDefinedFunctionProperties == null)
             {
-                throw new ArgumentNullException(nameof(id));
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties));
             }
 
-            return this.ProcessUserDefinedFunctionOperationStreamAsync(
-                id: id,
-                operationType: OperationType.Replace,
-                streamPayload: streamPayload,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Id))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Id));
+            }
+
+            if (string.IsNullOrEmpty(userDefinedFunctionProperties.Body))
+            {
+                throw new ArgumentNullException(nameof(userDefinedFunctionProperties.Body));
+            }
+
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
+                id: userDefinedFunctionProperties.Id);
+
+            return this.ProcessStreamOperationAsync(
+               resourceUri: linkUri,
+               resourceType: ResourceType.UserDefinedFunction,
+               operationType: OperationType.Replace,
+               requestOptions: requestOptions,
+               partitionKey: null,
+               streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
+               trace: trace,
+               cancellationToken: cancellationToken);
         }
 
         public Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
@@ -787,11 +883,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
             {
                 throw new ArgumentNullException(nameof(id));
             }
-            return this.ProcessUserDefinedFunctionOperationStreamAsync(
-                id: id,
+
+            string linkUri = this.ClientContext.CreateLink(
+                parentLink: this.container.LinkUri,
+                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
+                id: id);
+
+            return this.ProcessStreamOperationAsync(
+                resourceUri: linkUri,
+                resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.Delete,
-                streamPayload: null,
                 requestOptions: requestOptions,
+                partitionKey: null,
+                streamPayload: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
         }
@@ -814,36 +918,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
-        }
-
-        private async Task<ResponseMessage> ProcessStoredProcedureOperationStreamAsync(
-            string id,
-            OperationType operationType,
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            if (trace == null)
-            {
-                throw new ArgumentNullException(nameof(trace));
-            }
-
-            string linkUri = this.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            return await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.StoredProcedure,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                trace: trace,
-                cancellationToken: cancellationToken);
-
         }
 
         private async Task<StoredProcedureResponse> ProcessStoredProcedureOperationAsync(
@@ -870,36 +944,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
-        }
-
-        private async Task<ResponseMessage> ProcessTriggerOperationStreamAsync(
-            string id,
-            OperationType operationType,
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            if (trace == null)
-            {
-                throw new ArgumentNullException(nameof(trace));
-            }
-
-            string linkUri = this.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            return await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.Trigger,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                trace: trace,
-                cancellationToken: cancellationToken);
-
         }
 
         private async Task<TriggerResponse> ProcessTriggerOperationAsync(
@@ -972,36 +1016,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
 
             return responseFunc(response);
-        }
-
-        private async Task<ResponseMessage> ProcessUserDefinedFunctionOperationStreamAsync(
-            string id,
-            OperationType operationType,
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            if (trace == null)
-            {
-                throw new ArgumentNullException(nameof(trace));
-            }
-
-            string linkUri = this.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri,
-                uriPathSegment: Paths.StoredProceduresPathSegment,
-                id: id);
-
-            return await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.UserDefinedFunction,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                trace: trace,
-                cancellationToken: cancellationToken);
-
         }
 
         private async Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(

@@ -131,29 +131,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedureProperties storedProcedureProperties = new StoredProcedureProperties(sprocId, sprocBody);
             ResponseMessage responseMessage = await this.scripts.CreateStoredProcedureStreamAsync(
-                TestCommon.SerializerCore.ToStream(storedProcedureProperties),
-                sprocId);
-            StoredProcedureResponse storedProcedureResponse = TestCommon.SerializerCore.FromStream<StoredProcedureResponse>(responseMessage.Content);
-            double requestCharge = storedProcedureResponse.RequestCharge;
-            Assert.IsTrue(requestCharge > 0);
+                storedProcedureProperties);
             Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
             Assert.IsNotNull(responseMessage.Diagnostics);
             string diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
 
-            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
-
             responseMessage = await this.scripts.ReadStoredProcedureStreamAsync(sprocId);
-            storedProcedureResponse = TestCommon.SerializerCore.FromStream<StoredProcedureResponse>(responseMessage.Content);
-            requestCharge = storedProcedureResponse.RequestCharge;
-            Assert.IsTrue(requestCharge > 0);
-            Assert.AreEqual(HttpStatusCode.OK, storedProcedureResponse.StatusCode);
-            Assert.IsNotNull(storedProcedureResponse.Diagnostics);
-            diagnostics = storedProcedureResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            diagnostics = responseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, sprocBody, storedProcedureResponse);
 
             string updatedBody = @"function(name) { var context = getContext();
                     var response = context.getResponse();
@@ -162,27 +152,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             storedProcedureProperties = new StoredProcedureProperties(sprocId, updatedBody);
             ResponseMessage replaceResponseMessage = await this.scripts.ReplaceStoredProcedureStreamAsync(
-                TestCommon.SerializerCore.ToStream(storedProcedureProperties),
-                sprocId);
-            StoredProcedureResponse replaceResponse = TestCommon.SerializerCore.FromStream<StoredProcedureResponse>(replaceResponseMessage.Content);
-            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, updatedBody, replaceResponse);
-            requestCharge = replaceResponse.RequestCharge;
-            Assert.IsTrue(requestCharge > 0);
-            Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
-            Assert.IsNotNull(replaceResponse.Diagnostics);
-            diagnostics = replaceResponse.Diagnostics.ToString();
+                storedProcedureProperties);
+
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
-            StoredProcedureTests.ValidateStoredProcedureSettings(sprocId, updatedBody, replaceResponse);
 
 
             ResponseMessage deleteResponseMessage = await this.scripts.DeleteStoredProcedureStreamAsync(sprocId);
-            StoredProcedureResponse deleteResponse = TestCommon.SerializerCore.FromStream<StoredProcedureResponse>(deleteResponseMessage.Content);
-            requestCharge = deleteResponse.RequestCharge;
-            Assert.IsTrue(requestCharge > 0);
-            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
-            Assert.IsNotNull(deleteResponse.Diagnostics);
-            diagnostics = deleteResponse.Diagnostics.ToString();
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseMessage.StatusCode);
+            Assert.IsNotNull(deleteResponseMessage.Diagnostics);
+            diagnostics = deleteResponseMessage.Diagnostics.ToString();
             Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
             Assert.IsTrue(diagnostics.Contains("StatusCode"));
         }

@@ -23,16 +23,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> CreateStoredProcedureStreamAsync(
-            Stream streamPayload,
-            string id,
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> func(ITrace trace)
             {
                 return base.CreateStoredProcedureStreamAsync(
-                    streamPayload,
-                    id,
+                    storedProcedureProperties,
                     requestOptions,
                     trace,
                     cancellationToken);
@@ -151,16 +149,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> ReplaceStoredProcedureStreamAsync(
-            Stream streamPayload,
-            string id,
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> func(ITrace trace)
             {
                 return base.ReplaceStoredProcedureStreamAsync(
-                    streamPayload,
-                    id,
+                    storedProcedureProperties,
                     requestOptions,
                     trace,
                     cancellationToken);
@@ -281,16 +277,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> CreateTriggerStreamAsync(
-            Stream streamPayload,
-            string id,
+            TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> func(ITrace trace)
             {
                 return base.CreateTriggerStreamAsync(
-                    streamPayload,
-                    id,
+                    triggerProperties,
                     requestOptions,
                     trace,
                     cancellationToken);
@@ -409,16 +403,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> ReplaceTriggerStreamAsync(
-            Stream streamPayload,
-            string id,
+            TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> func(ITrace trace)
             {
                 return base.ReplaceTriggerStreamAsync(
-                    streamPayload,
-                    id,
+                    triggerProperties,
                     requestOptions,
                     trace,
                     cancellationToken);
@@ -489,16 +481,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> CreateUserDefinedFunctionStreamAsync(
-            Stream streamPayload,
-            string id,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> func(ITrace trace)
             {
                 return base.CreateUserDefinedFunctionStreamAsync(
-                    streamPayload,
-                    id,
+                    userDefinedFunctionProperties,
                     requestOptions,
                     trace,
                     cancellationToken);
@@ -617,16 +607,14 @@ namespace Microsoft.Azure.Cosmos.Scripts
         }
 
         public override Task<ResponseMessage> ReplaceUserDefinedFunctionStreamAsync(
-            Stream streamPayload,
-            string id,
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
             Task<ResponseMessage> func(ITrace trace)
             {
                 return base.ReplaceUserDefinedFunctionStreamAsync(
-                    streamPayload,
-                    id,
+                    userDefinedFunctionProperties,
                     requestOptions,
                     trace,
                     cancellationToken);
