@@ -155,6 +155,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(null, DisplayName = "Case when the byte array is null.")]
+        [DataRow(new byte[] { }, DisplayName = "Case when the byte array is empty.")]
+        [DataRow(new byte[] { 1, 2, 3, 4, 5 }, DisplayName = "Case when the byte array has valid elements.")]
+        public void ByteArrayTest(
+            byte[] byteArray)
+        {
+            NewtonsoftInteropTests.VerifyNewtonsoftInterop<byte[]>(byteArray);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void NestedArrayTest()
         {
