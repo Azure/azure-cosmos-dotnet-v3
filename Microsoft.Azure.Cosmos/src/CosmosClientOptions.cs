@@ -1220,6 +1220,11 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
             }
 
+            if (this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
+            }
+
             if (featureFlag == 0)
             {
                 return this.ApplicationName;
