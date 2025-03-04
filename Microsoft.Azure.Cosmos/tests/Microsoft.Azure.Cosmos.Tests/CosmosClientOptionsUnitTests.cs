@@ -285,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
 
                 Assert.AreEqual(
-                    expected: "ApplicationPreferredRegions is required when EnablePartitionLevelFailover is enabled.",
+                    expected: "ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
                     actual: exception.Message);
             }
             finally
@@ -509,6 +509,58 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(userAgentSuffix, connectionPolicy.UserAgentSuffix);
             Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
             Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+        }
+
+        [TestMethod]
+        [Owner("ntripician")]
+        [DataRow(true, DisplayName = "With ApplicationName")]
+        [DataRow(false, DisplayName = "Without ApplicationName")]
+        public void UserAgentContainsPPAFInformation(bool appName)
+        {
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            string userAgentSuffix = "testSuffix";
+            if (appName)
+            {
+                cosmosClientOptions.ApplicationName = userAgentSuffix;
+            }
+
+            cosmosClientOptions.EnablePartitionLevelFailover = true;
+            cosmosClientOptions.ApplicationRegion = Regions.WestUS;
+            if (appName)
+            {
+                Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+            }
+            else
+            {
+                Assert.IsNull(cosmosClientOptions.ApplicationName);
+            }
+
+            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
+            Console.WriteLine(userAgentContainer.UserAgent);
+            if (appName)
+            {
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith("F1"));
+            }
+            
+            Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.Contains("F1"));
+            if (appName)
+            {
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith("F1"));
+            }
         }
 
         [TestMethod]
@@ -1132,6 +1184,61 @@ namespace Microsoft.Azure.Cosmos.Tests
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
 #nullable disable
+        }
+
+        [TestMethod]
+        public void PPAFClientApplicationRegionCreationTest()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                ApplicationRegion = Regions.WestUS2,
+                EnablePartitionLevelFailover = true
+            };
+
+            CosmosClient cosmosClient = new CosmosClient(ConnectionString, cosmosClientOptions);
+            Assert.AreEqual(Regions.WestUS2, cosmosClient.ClientOptions.ApplicationRegion);
+            Assert.IsTrue(cosmosClient.ClientOptions.EnablePartitionLevelFailover);
+        }
+
+        [TestMethod]
+        public void PPAFClientApplicationPreferredRegionCreationTest()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
+                EnablePartitionLevelFailover = true
+            };
+
+            CosmosClient cosmosClient = new CosmosClient(ConnectionString, cosmosClientOptions);
+            Assert.AreEqual(Regions.WestUS2, cosmosClient.ClientOptions.ApplicationPreferredRegions[0]);
+            Assert.AreEqual(Regions.EastUS2, cosmosClient.ClientOptions.ApplicationPreferredRegions[1]);
+            Assert.IsTrue(cosmosClient.ClientOptions.EnablePartitionLevelFailover);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PPAFClientAppRegionAndAppPreferredRegionTest()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                EnablePartitionLevelFailover = true,
+                ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
+                ApplicationRegion = Regions.AustraliaCentral
+            };
+
+            _ = new CosmosClient(ConnectionString, cosmosClientOptions);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void PPAFClientNoRegionsTest()
+        {
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
+            {
+                EnablePartitionLevelFailover = true
+            };
+
+            _ = new CosmosClient(ConnectionString, cosmosClientOptions);
         }
 
         private class TestWebProxy : IWebProxy

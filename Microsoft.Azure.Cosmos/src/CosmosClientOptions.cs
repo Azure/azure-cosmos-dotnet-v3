@@ -1138,9 +1138,10 @@ namespace Microsoft.Azure.Cosmos
         private void ValidatePartitionLevelFailoverSettings()
         {
             if (this.EnablePartitionLevelFailover
-                && (this.ApplicationPreferredRegions == null || this.ApplicationPreferredRegions.Count == 0))
+                && string.IsNullOrEmpty(this.ApplicationRegion)
+                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
             {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
+                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 
@@ -1202,7 +1203,25 @@ namespace Microsoft.Azure.Cosmos
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: this.ApplicationName);
+                        suffix: this.GetUserAgentSuffix());
+        }
+
+        internal string GetUserAgentSuffix()
+        {
+            int featureFlag = 0;
+            if (this.EnablePartitionLevelFailover)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (featureFlag == 0)
+            {
+                return this.ApplicationName;
+            }
+
+            return string.IsNullOrEmpty(this.ApplicationName) ?
+                $"F{featureFlag:X}" :
+                $"F{featureFlag:X}|{this.ApplicationName}";
         }
 
         /// <summary>
