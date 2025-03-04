@@ -1209,7 +1209,25 @@ namespace Microsoft.Azure.Cosmos
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: this.ApplicationName);
+                        suffix: this.GetUserAgentSuffix());
+        }
+
+        internal string GetUserAgentSuffix()
+        {
+            int featureFlag = 0;
+            if (this.EnablePartitionLevelFailover)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (featureFlag == 0)
+            {
+                return this.ApplicationName;
+            }
+
+            return string.IsNullOrEmpty(this.ApplicationName) ?
+                $"F{featureFlag:X}" :
+                $"F{featureFlag:X}|{this.ApplicationName}";
         }
 
         /// <summary>
