@@ -9,6 +9,7 @@
 SELECT VALUE root 
 FROM root 
 WHERE FullTextContains(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -21,6 +22,7 @@ WHERE FullTextContains(root["StringField"], "test")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContains(root["StringField"], "test1") OR FullTextContains(root["StringField"], "test2"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -33,6 +35,7 @@ WHERE (FullTextContains(root["StringField"], "test1") OR FullTextContains(root["
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContains(root["StringField"], "test1") AND FullTextContains(root["StringField"], "test2"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -44,6 +47,7 @@ WHERE (FullTextContains(root["StringField"], "test1") AND FullTextContains(root[
       <SqlQuery><![CDATA[
 SELECT VALUE FullTextContains(root["StringField"], "test") 
 FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -69,6 +73,7 @@ ORDER BY FullTextContains(root["StringField"], "test") ASC]]></SqlQuery>
 SELECT VALUE FullTextContains(root["StringField"], "test") 
 FROM root 
 GROUP BY FullTextContains(root["StringField"], "test") ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -82,6 +87,7 @@ SELECT VALUE number0
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
 WHERE FullTextContains(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -94,6 +100,7 @@ WHERE FullTextContains(root["StringField"], "test")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE FullTextContainsAll(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -106,6 +113,7 @@ WHERE FullTextContainsAll(root["StringField"], "test")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE FullTextContainsAll(root["StringField"], "test1", "test2", "test3")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -118,6 +126,7 @@ WHERE FullTextContainsAll(root["StringField"], "test1", "test2", "test3")]]></Sq
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContainsAll(root["StringField"], "test") OR FullTextContainsAll(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -130,6 +139,7 @@ WHERE (FullTextContainsAll(root["StringField"], "test") OR FullTextContainsAll(r
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContainsAll(root["StringField"], "test") AND FullTextContainsAll(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -141,6 +151,7 @@ WHERE (FullTextContainsAll(root["StringField"], "test") AND FullTextContainsAll(
       <SqlQuery><![CDATA[
 SELECT VALUE FullTextContainsAll(root["StringField"], "test") 
 FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -166,6 +177,7 @@ ORDER BY FullTextContainsAll(root["StringField"], "test") ASC]]></SqlQuery>
 SELECT VALUE FullTextContainsAll(root["StringField"], "test") 
 FROM root 
 GROUP BY FullTextContainsAll(root["StringField"], "test") ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -179,6 +191,7 @@ SELECT VALUE number0
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
 WHERE FullTextContainsAll(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -191,6 +204,7 @@ WHERE FullTextContainsAll(root["StringField"], "test")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE FullTextContainsAny(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -203,6 +217,7 @@ WHERE FullTextContainsAny(root["StringField"], "test")]]></SqlQuery>
 SELECT VALUE root 
 FROM root 
 WHERE FullTextContainsAny(root["StringField"], "test1", "test2", "test3")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -215,6 +230,7 @@ WHERE FullTextContainsAny(root["StringField"], "test1", "test2", "test3")]]></Sq
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContainsAny(root["StringField"], "test") OR FullTextContainsAny(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -227,6 +243,7 @@ WHERE (FullTextContainsAny(root["StringField"], "test") OR FullTextContainsAny(r
 SELECT VALUE root 
 FROM root 
 WHERE (FullTextContainsAny(root["StringField"], "test") AND FullTextContainsAny(root["StringField"], "test1", "test2", "test3"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -238,6 +255,7 @@ WHERE (FullTextContainsAny(root["StringField"], "test") AND FullTextContainsAny(
       <SqlQuery><![CDATA[
 SELECT VALUE FullTextContainsAny(root["StringField"], "test") 
 FROM root]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -263,6 +281,7 @@ ORDER BY FullTextContainsAny(root["StringField"], "test") ASC]]></SqlQuery>
 SELECT VALUE FullTextContainsAny(root["StringField"], "test") 
 FROM root 
 GROUP BY FullTextContainsAny(root["StringField"], "test") ]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -276,6 +295,7 @@ SELECT VALUE number0
 FROM root 
 JOIN number0 IN root["EnumerableField"] 
 WHERE FullTextContainsAny(root["StringField"], "test")]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest]]></ErrorMessage>
     </Output>
   </Result>
 </Results>
