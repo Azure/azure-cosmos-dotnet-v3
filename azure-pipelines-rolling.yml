@@ -28,6 +28,7 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
     IncludeEncryption: true
     IncludePerformance: true
     IncludeCoverage: true
