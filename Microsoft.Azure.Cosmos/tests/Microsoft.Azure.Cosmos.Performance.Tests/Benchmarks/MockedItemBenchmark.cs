@@ -4,10 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 {
+    using System;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Columns;
     using BenchmarkDotNet.Configs;
+    using Microsoft.Azure.Cosmos.Json;
 
     public enum ScenarioType
     {
@@ -15,49 +17,111 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
         OfT = 1,
         OfTCustom = 2,
         OfTWithDiagnosticsToString = 3,
-        OfTWithClientTelemetryEnabled = 4
+        OfTWithDistributedTracingEnabled = 4,
+        OfTWithClientMetricsEnabled = 5
     }
 
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
-        public static readonly IItemBenchmark[] IterParameters = new IItemBenchmark[]
-            {
-                new MockedItemStreamBenchmark(),
-                new MockedItemOfTBenchmark() { BenchmarkHelper = new MockedItemBenchmarkHelper() },
-                new MockedItemOfTBenchmark() { 
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: true) },
-                new MockedItemOfTBenchmark() { 
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: false, 
-                        includeDiagnosticsToString: true) },
-                new MockedItemOfTBenchmark() { 
-                    BenchmarkHelper = new MockedItemBenchmarkHelper(
-                        useCustomSerializer: false, 
-                        includeDiagnosticsToString: false,
-                        isClientTelemetryEnabled: true) }
-            };
+        // Removed array initialization here — we'll do it in GlobalSetup instead
+        public static IItemBenchmark[] IterParameters;
 
         [Params(
-            ScenarioType.Stream, 
-            ScenarioType.OfT, 
-            ScenarioType.OfTWithDiagnosticsToString, 
+            ScenarioType.Stream,
+            ScenarioType.OfT,
             ScenarioType.OfTCustom,
-            ScenarioType.OfTWithClientTelemetryEnabled)]
-        public ScenarioType Type
-        {
-            get;
-            set;
-        }
+            ScenarioType.OfTWithDiagnosticsToString,
+            ScenarioType.OfTWithDistributedTracingEnabled,
+            ScenarioType.OfTWithClientMetricsEnabled)]
+        public ScenarioType Type { get; set; }
+
+        [Params(true, false)]
+        public bool EnableBinaryResponseOnPointOperations { get; set; }
 
         private IItemBenchmark CurrentBenchmark => MockedItemBenchmark.IterParameters[(int)this.Type];
+
+        [GlobalSetup]
+        public void GlobalSetup()
+        {
+            // Set the environment variable based on the parameter
+            Environment.SetEnvironmentVariable(
+                ConfigurationManager.BinaryEncodingEnabled,
+                this.EnableBinaryResponseOnPointOperations.ToString());
+
+            // Determine the serialization format
+            JsonSerializationFormat serializationFormat = this.EnableBinaryResponseOnPointOperations
+                ? JsonSerializationFormat.Binary
+                : JsonSerializationFormat.Text;
+
+            IterParameters = new IItemBenchmark[]
+            {
+                // Stream scenario
+                new MockedItemStreamBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat)
+                },
+
+                // OfT scenario
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(serializationFormat: serializationFormat)
+                },
+
+                // OfTCustom scenario
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: true,
+                        serializationFormat: serializationFormat)
+                },
+
+                // OfTWithDiagnosticsToString
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false,
+                        includeDiagnosticsToString: true,
+                        serializationFormat: serializationFormat)
+                },
+
+                // OfTWithDistributedTracingEnabled
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false,
+                        includeDiagnosticsToString: false,
+                        isDistributedTracingEnabled: true,
+                        serializationFormat: serializationFormat)
+                },
+
+                // OfTWithClientMetricsEnabled
+                new MockedItemOfTBenchmark
+                {
+                    BenchmarkHelper = new MockedItemBenchmarkHelper(
+                        useCustomSerializer: false,
+                        includeDiagnosticsToString: false,
+                        isClientMetricsEnabled: true,
+                        serializationFormat: serializationFormat)
+                }
+            };
+        }
 
         [Benchmark]
         [BenchmarkCategory("GateBenchmark")]
         public async Task CreateItem()
         {
             await this.CurrentBenchmark.CreateItem();
+        }
+
+        [Benchmark]
+        [BenchmarkCategory("GateBenchmark")]
+        public async Task CreateStreamItem_EnableBinaryResponseOnPointOperations_False()
+        {
+            if (this.CurrentBenchmark is MockedItemStreamBenchmark streamBenchmark)
+            {
+                await streamBenchmark.CreateStreamItem_SetBinaryResponseOnPointOperationsFalse_ReturnsText();
+            }
         }
 
         [Benchmark]

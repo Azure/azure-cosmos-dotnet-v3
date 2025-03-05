@@ -4,25 +4,25 @@
 
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System;
+    using System.Collections.Generic;
     using System.IO;
     using System.Net;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Common;
+    using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.Azure.Cosmos.Diagnostics;
-    using TraceLevel = Cosmos.Tracing.TraceLevel;
-    using Newtonsoft.Json.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
-    using System;
-    using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Newtonsoft.Json.Linq;
+    using TraceLevel = Cosmos.Tracing.TraceLevel;
 
     /// <summary>
     /// Unit Tests for <see cref="PartitionKeyRangeCache"/>.
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
                 mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-                using GlobalEndpointManager endpointManager = new (mockDocumentClient.Object, new ConnectionPolicy());
+                using GlobalEndpointManager endpointManager = new(mockDocumentClient.Object, new ConnectionPolicy());
 
                 mockStoreModel.SetupSequence(x => x.ProcessMessageAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>()))
                      .ReturnsAsync(new DocumentServiceResponse(new MemoryStream(singlePkCollectionCacheByte),

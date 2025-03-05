@@ -112,6 +112,12 @@ namespace Microsoft.Azure.Cosmos
         public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
+        /// Collection of spatial index definitions to be used
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
+        public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
+
+        /// <summary>
         /// Gets the vector indexes for additional indexes
         /// </summary>
         /// <example>
@@ -132,23 +138,35 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        internal Collection<VectorIndexPath> VectorIndexes
-        {
-            get => this.VectorIndexesInternal ??= new Collection<VectorIndexPath>();
-            set => this.VectorIndexesInternal = value;
-        }
-
-        /// <summary>
-        /// Collection of spatial index definitions to be used
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
-        public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
-
-        /// <summary>
-        /// Gets or Sets an internal placeholder collection to hold the vector indexes.
-        /// </summary>
         [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
-        internal Collection<VectorIndexPath> VectorIndexesInternal { get; set; }
+        public Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
+
+        /// <summary>
+        /// Gets the full text indexes
+        /// </summary>
+        /// <example>
+        /// <![CDATA[
+        /// "fullTextIndexes": [
+        ///  {
+        ///    "path": "/v1",
+        ///  },
+        ///  {
+        ///    "path": "/v2",
+        ///  },
+        ///  {
+        ///    "path": "/v3",
+        ///  }
+        /// ]
+        /// ]]>
+        /// </example>
+        [JsonProperty(PropertyName = "fullTextIndexes", NullValueHandling = NullValueHandling.Ignore)]
+#if PREVIEW
+
+        public
+#else
+        internal
+#endif
+        Collection<FullTextIndexPath> FullTextIndexes{ get; set; } = new Collection<FullTextIndexPath>();
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

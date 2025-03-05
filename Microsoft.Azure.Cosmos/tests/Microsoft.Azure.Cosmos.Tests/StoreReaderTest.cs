@@ -387,25 +387,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (overshootLsnDuringBarrier)
                 {
-                    if (overshootGlobalCommittedLsnDuringBarrier)
-                    {
-                        finalResponse = mockStoreResponse5;
-                    }
-                    else
-                    {
-                        finalResponse = mockStoreResponse3;
-                    }
+                    finalResponse = overshootGlobalCommittedLsnDuringBarrier ? mockStoreResponse5 : mockStoreResponse3;
                 }
                 else
                 {
-                    if (overshootGlobalCommittedLsnDuringBarrier)
-                    {
-                        finalResponse = mockStoreResponse4;
-                    }
-                    else
-                    {
-                        finalResponse = mockStoreResponse2;
-                    }
+                    finalResponse = overshootGlobalCommittedLsnDuringBarrier ? mockStoreResponse4 : mockStoreResponse2;
                 }
             }
 
@@ -613,13 +599,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 TransportClient mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, false, false);
                 StoreReader storeReader = new StoreReader(mockTransportClient, addressSelector, new AddressEnumerator(), sessionContainer, false);
-                ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                ConsistencyWriter consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
                 StoreResponse response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
                 Assert.AreEqual(100, response.LSN);
 
                 //globalCommittedLsn never catches up in this case
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, true, false, false);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
                 try
                 {
                     response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
@@ -630,17 +616,17 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, true, false);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
                 response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
                 Assert.AreEqual(100, response.LSN);
 
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, true, true);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
                 response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
                 Assert.AreEqual(100, response.LSN);
 
                 mockTransportClient = this.GetMockTransportClientForGlobalStrongWrites(addressInformation, i, false, false, true);
-                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false);
+                consistencyWriter = new ConsistencyWriter(addressSelector, sessionContainer, mockTransportClient, mockServiceConfigReader.Object, mockAuthorizationTokenProvider.Object, false, false, accountConfigurationProperties: null);
                 response = consistencyWriter.WriteAsync(entity, new TimeoutHelper(TimeSpan.FromSeconds(30)), false).Result;
                 Assert.AreEqual(100, response.LSN);
             }

@@ -66,10 +66,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             this.delimiter = delimiter;
         }
 
-        public int Length
-        {
-            get { return this.tokens.Count(); }
-        }
+        public int Length => this.tokens.Count();
 
         public static Path CreateFromString(string stringPath, string delimiter = ".")
         {
@@ -93,16 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             Path path = new Path(delimiter);
             foreach (string token in tokens)
             {
-                PathToken pathToken;
-                if (int.TryParse(token, out int index))
-                {
-                    pathToken = index;
-                }
-                else
-                {
-                    pathToken = token;
-                }
-
+                PathToken pathToken = int.TryParse(token, out int index) ? (PathToken)index : (PathToken)token;
                 path.ExtendPath(pathToken);
             }
 
@@ -173,10 +161,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
             int hashCode = 0;
             foreach (object token in this.tokens)
             {
-                hashCode = hashCode ^ token.GetHashCode();
+                hashCode ^= token.GetHashCode();
             }
 
-            hashCode = hashCode ^ this.delimiter.GetHashCode();
+            hashCode ^= this.delimiter.GetHashCode();
 
             return hashCode;
         }

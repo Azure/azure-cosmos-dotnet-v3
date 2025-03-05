@@ -16,13 +16,13 @@
                            .AddJsonFile("AppSettings.json")
                            .Build();
 
-            string endpoint = configuration["EndPointUrl"];
+            string? endpoint = configuration["EndPointUrl"];
             if (string.IsNullOrEmpty(endpoint))
             {
                 throw new ArgumentNullException("Please specify a valid CosmosDBEndPointUrl in the appSettings.json");
             }
 
-            string authKey = configuration["AuthorizationKey"];
+            string? authKey = configuration["AuthorizationKey"];
             if (string.IsNullOrEmpty(authKey) || string.Equals(authKey, "Super secret key"))
             {
                 throw new ArgumentException("Please specify a valid CosmosDBAuthorizationKey in the appSettings.json");
@@ -35,7 +35,11 @@
 
             CosmosClientOptions options = new CosmosClientOptions()
             {
-                IsDistributedTracingEnabled = true // Defaults to true, set to false to disable
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                {
+                    // Defaults to false, set to true to disable
+                    DisableDistributedTracing = false,
+                }
             };
             using (CosmosClient client = new CosmosClient(endpoint, authKey, options))
             {

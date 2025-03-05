@@ -34,7 +34,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elements = await GroupByQueryPipelineStageTests.CreateAndDrainAsync(
                 pages: pages,
-                executionEnvironment: ExecutionEnvironment.Compute,
                 continuationToken: null,
                 groupByAliasToAggregateType: new Dictionary<string, AggregateOperator?>() { { "name", null }, { "count", AggregateOperator.Sum } },
                 orderedAliases: new List<string>() { "name", "count" },
@@ -47,7 +46,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<List<CosmosElement>> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType,
             IReadOnlyList<string> orderedAliases,
@@ -56,8 +54,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateGroupByStage = GroupByQueryPipelineStage.MonadicCreate(
-                executionEnvironment: executionEnvironment,
-                continuationToken: continuationToken,
+                requestContinuation: continuationToken,
                 monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source),
                 aggregates: new AggregateOperator[] { },
                 groupByAliasToAggregateType: groupByAliasToAggregateType,

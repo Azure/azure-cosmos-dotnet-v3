@@ -15,28 +15,37 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
 
     internal sealed class CosmosHttpClientCore : CosmosHttpClient
     {
+        private const string FautInjecitonId = "FaultInjectionId";
+
         private readonly HttpClient httpClient;
         private readonly ICommunicationEventSource eventSource;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         private bool disposedValue;
 
         private CosmosHttpClientCore(
             HttpClient httpClient,
             HttpMessageHandler httpMessageHandler,
-            ICommunicationEventSource eventSource)
+            ICommunicationEventSource eventSource,
+            IChaosInterceptor chaosInterceptor = null)
         {
             this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
             this.eventSource = eventSource ?? throw new ArgumentNullException(nameof(eventSource));
             this.HttpMessageHandler = httpMessageHandler;
+            this.chaosInterceptor = chaosInterceptor;
         }
+
+        public override bool IsFaultInjectionClient => this.chaosInterceptor is not null;
 
         public override HttpMessageHandler HttpMessageHandler { get; }
 
@@ -46,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
             ConnectionPolicy connectionPolicy,
             HttpMessageHandler httpMessageHandler,
             EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
-            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs)
+            EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs,
+            IChaosInterceptor faultInjectionchaosInterceptor = null)
         {
             if (connectionPolicy == null)
             {
@@ -97,7 +107,8 @@ namespace Microsoft.Azure.Cosmos
                 requestTimeout: connectionPolicy.RequestTimeout,
                 userAgentContainer: connectionPolicy.UserAgentContainer,
                 apiType: apiType,
-                eventSource: eventSource);
+                eventSource: eventSource,
+                chaosInterceptor: faultInjectionchaosInterceptor);
         }
 
         public static HttpMessageHandler CreateHttpClientHandler(
@@ -225,7 +236,8 @@ namespace Microsoft.Azure.Cosmos
             TimeSpan requestTimeout,
             UserAgentContainer userAgentContainer,
             ApiType apiType,
-            ICommunicationEventSource eventSource)
+            ICommunicationEventSource eventSource,
+            IChaosInterceptor chaosInterceptor = null)
         {
             if (httpClient == null)
             {
@@ -253,7 +265,8 @@ namespace Microsoft.Azure.Cosmos
             return new CosmosHttpClientCore(
                 httpClient,
                 httpMessageHandler,
-                eventSource);
+                eventSource,
+                chaosInterceptor);
         }
 
         public override Task<HttpResponseMessage> GetAsync(
@@ -262,7 +275,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null)
         {
             if (uri == null)
             {
@@ -293,7 +307,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                documentServiceRequest);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
@@ -301,7 +316,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null)
         {
             if (createRequestMessageAsync == null)
             {
@@ -313,7 +329,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                documentServiceRequest);
         }
 
         private async Task<HttpResponseMessage> SendHttpHelperAsync(
@@ -321,7 +338,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest)
         {
             DateTime startDateTimeUtc = DateTime.UtcNow;
             IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> timeoutEnumerator = timeoutPolicy.GetTimeoutEnumerator();
@@ -339,10 +357,26 @@ namespace Microsoft.Azure.Cosmos
                     DateTime requestStartTime = DateTime.UtcNow;
                     try
                     {
+                        if (this.chaosInterceptor != null && documentServiceRequest != null)
+                        {
+                            (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
+                            if (hasFault)
+                            {
+                                return fiResponseMessage;
+                            }
+                        }
+
                         HttpResponseMessage responseMessage = await this.ExecuteHttpHelperAsync(
                             requestMessage,
                             resourceType,
                             cancellationTokenSource.Token);
+
+                        if (this.chaosInterceptor != null && documentServiceRequest != null)
+                        {
+                            CancellationToken fiToken = cancellationTokenSource.Token;
+                            fiToken.ThrowIfCancellationRequested();
+                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest);
+                        }
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
                         {
@@ -431,6 +465,31 @@ namespace Microsoft.Azure.Cosmos
                     await Task.Delay(delayForNextRequest);
                 }
             }
+        }
+
+        private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(
+            CancellationTokenSource cancellationTokenSource, 
+            DocumentServiceRequest documentServiceRequest, 
+            HttpRequestMessage requestMessage)
+        {
+            CancellationToken fiToken = cancellationTokenSource.Token;
+            fiToken.ThrowIfCancellationRequested();
+
+            //Set a request fault injeciton id for rule limit tracking
+            if (string.IsNullOrEmpty(documentServiceRequest.Headers.Get(CosmosHttpClientCore.FautInjecitonId)))
+            {
+                documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
+            }
+            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
+
+            (bool hasFault,
+                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+
+            if (hasFault)
+            {
+                fiResponseMessage.RequestMessage = requestMessage;
+            }
+            return (hasFault, fiResponseMessage);
         }
 
         private static bool IsOutOfRetries(

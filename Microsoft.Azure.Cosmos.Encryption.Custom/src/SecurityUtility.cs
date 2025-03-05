@@ -24,13 +24,11 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             Debug.Assert(key != null && plainText != null);
             Debug.Assert(hash.Length != 0 && hash.Length <= MaxSHA256HashBytes);
 
-            using (HMACSHA256 hmac = new HMACSHA256(key))
-            {
-                byte[] computedHash = hmac.ComputeHash(plainText);
+            using HMACSHA256 hmac = new (key);
+            byte[] computedHash = hmac.ComputeHash(plainText);
 
-                // Truncate the hash if needed
-                Buffer.BlockCopy(computedHash, 0, hash, 0, hash.Length);
-            }
+            // Truncate the hash if needed
+            Buffer.BlockCopy(computedHash, 0, hash, 0, hash.Length);
         }
 
         /// <summary>
@@ -44,7 +42,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
 
             using (SHA256 sha256 = SHA256.Create())
             {
+#pragma warning disable CA1850 // Prefer static 'HashData' method over 'ComputeHash'
                 byte[] hashValue = sha256.ComputeHash(input);
+#pragma warning restore CA1850 // Prefer static 'HashData' method over 'ComputeHash'
                 return GetHexString(hashValue);
             }
         }
@@ -56,10 +56,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         internal static void GenerateRandomBytes(byte[] randomBytes)
         {
             // Generate random bytes cryptographically.
-            using (RNGCryptoServiceProvider rngCsp = new RNGCryptoServiceProvider())
-            {
-                rngCsp.GetBytes(randomBytes);
-            }
+#if NET8_0_OR_GREATER
+            RandomNumberGenerator.Fill(randomBytes);
+#else
+            using RNGCryptoServiceProvider rngCsp = new ();
+            rngCsp.GetBytes(randomBytes);
+#endif
         }
 
         /// <summary>
@@ -67,8 +69,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </summary>
         /// <param name="buffer1">input buffer</param>
         /// <param name="buffer2">another buffer to be compared against</param>
-        /// <param name="buffer2Index"></param>
-        /// <param name="lengthToCompare"></param>
+        /// <param name="buffer2Index">index in second buffer</param>
+        /// <param name="lengthToCompare">length to compare</param>
         /// <returns>returns true if both the arrays have the same byte values else returns false</returns>
         internal static bool CompareBytes(byte[] buffer1, byte[] buffer2, int buffer2Index, int lengthToCompare)
         {
@@ -103,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         {
             Debug.Assert(input != null);
 
-            StringBuilder str = new StringBuilder();
+            StringBuilder str = new ();
             foreach (byte b in input)
             {
                 str.AppendFormat(b.ToString(@"X2"));

@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                     count += documents.Count;
                     continuationToken = message.ContinuationToken;
                 }
-                else if((int)message.StatusCode == 429)
+                else if ((int)message.StatusCode == 429)
                 {
                     Assert.IsNull(message.ContinuationToken);
                     needsToRetry = true;
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
             while (iterator.HasMoreResults)
             {
                 ResponseMessage message = await iterator.ReadNextAsync();
-                CosmosArray documents = GetDocuments(message.Content);
+                _ = GetDocuments(message.Content);
 
                 Assert.IsTrue(message.Headers.AllKeys().Contains("test-header"));
             }
@@ -189,7 +189,7 @@ namespace Microsoft.Azure.Cosmos.Tests.FeedRange
                 documentContainer,
                 queryRequestOptions: null,
                 continuationToken: continuationToken,
-                readFeedPaginationOptions: new ReadFeedPaginationOptions(pageSizeHint: pageSize),
+                readFeedPaginationOptions: new ReadFeedExecutionOptions(pageSizeHint: pageSize),
                 cancellationToken: default,
                 container: null);
         }

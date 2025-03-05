@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
     using Microsoft.Azure.Cosmos.Telemetry.Diagnostics;
 
     /// <summary>
-    /// This class is used to generate events with Azure.Cosmos.Operation Source Name
+    /// This class is used to generate events with Azure-Cosmos-Operation-Request-Diagnostics Source Name
     /// </summary>
     [EventSource(Name = EventSourceName)]
     internal sealed class CosmosDbEventSource : AzureEventSource
@@ -35,6 +35,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             Documents.OperationType operationType,
             OpenTelemetryAttributes response)
         {
+            if (response.Diagnostics == null)
+            {
+                return;
+            }
+
             if (CosmosDbEventSource.IsEnabled(EventLevel.Warning))
             {
                 if (!DiagnosticsFilterHelper.IsSuccessfulResponse(

@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.IO;
     using System.Net;
@@ -12,18 +14,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
-    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Common;
-    using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Moq;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tests;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Collections;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
     using Newtonsoft.Json;
-    using System.Collections.ObjectModel;
 
     /// <summary>
     /// Tests for <see cref="GatewayStoreModel"/>.
@@ -35,9 +35,15 @@ namespace Microsoft.Azure.Cosmos
         {
             public Action<string> Callback { get; set; }
             public override bool IsThreadSafe => true;
-            public override void Write(string message) => this.Callback(message);
-            public override void WriteLine(string message) => this.Callback(message);
+            public override void Write(string message)
+            {
+                this.Callback(message);
+            }
 
+            public override void WriteLine(string message)
+            {
+                this.Callback(message);
+            }
         }
 
         /// <summary>
@@ -99,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
             }
             finally
             {
-                
+
                 DefaultTrace.TraceSource.Listeners.Remove(testTraceListener);
             }
         }
@@ -183,7 +189,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 #pragma warning restore CS0618 // Type or member is obsolete
 
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) );
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
             };
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
@@ -409,7 +415,7 @@ namespace Microsoft.Azure.Cosmos
                                                         AuthorizationTokenType.PrimaryMasterKey,
                                                         new RequestNameValueCollection() { { WFConstants.BackendHeaders.PartitionKeyRangeId, new PartitionKeyRangeIdentity(partitionKeyRangeId).ToHeader() } });
 
-                       
+
                         SessionContainer sessionContainer = new SessionContainer(string.Empty);
                         sessionContainer.SetSessionToken(
                                 ResourceId.NewDocumentCollectionId(42, 129).DocumentCollectionId.ToString(),
@@ -532,10 +538,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task TestErrorResponsesProvideBody()
         {
             string testContent = "Content";
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
-            {
-                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) });
-            };
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request => Task.FromResult(new HttpResponseMessage(HttpStatusCode.Conflict) { Content = new StringContent(testContent) });
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
@@ -594,10 +597,7 @@ namespace Microsoft.Azure.Cosmos
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
             const string updatedSessionToken = "0:1#100#1=20#2=5#3=31";
 
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
-            {
-                throw ex;
-            };
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request => throw ex;
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
@@ -658,10 +658,7 @@ namespace Microsoft.Azure.Cosmos
         {
             const string originalSessionToken = "0:1#100#1=20#2=5#3=30";
 
-            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request =>
-            {
-                throw ex;
-            };
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc = request => throw ex;
 
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
@@ -867,8 +864,8 @@ namespace Microsoft.Azure.Cosmos
             HttpMessageHandler mockMessageHandler = new MockMessageHandler(sendFunc);
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(mockMessageHandler),
                                                                                     DocumentClientEventSource.Instance);
-            
-            using(ITrace trace = Tracing.Trace.GetRootTrace(nameof(GatewayStatsDurationTest)))
+
+            using (ITrace trace = Tracing.Trace.GetRootTrace(nameof(GatewayStatsDurationTest)))
             {
 
                 Tracing.TraceData.ClientSideRequestStatisticsTraceDatum clientSideRequestStatistics = new Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
@@ -979,7 +976,7 @@ namespace Microsoft.Azure.Cosmos
                     "dbs/db1/colls/coll1",
                     new RequestNameValueCollection() { { HttpConstants.HttpHeaders.SessionToken, "range_1:1#9#4=8#5=7" } });
 
-            using (DocumentServiceRequest dsr = DocumentServiceRequest.Create(OperationType.Query, 
+            using (DocumentServiceRequest dsr = DocumentServiceRequest.Create(OperationType.Query,
                                                     ResourceType.Document,
                                                     new Uri("https://foo.com/dbs/db1/colls/coll1", UriKind.Absolute),
                                                     AuthorizationTokenType.PrimaryMasterKey))
@@ -1021,7 +1018,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // pkrange 3 : Split scenario where session token exists for parent of pk range
                 Collection<string> parents = new Collection<string> { "range_1" };
-                dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_3", Parents =  parents };
+                dsr.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_3", Parents = parents };
                 await GatewayStoreModel.ApplySessionTokenAsync(dsr,
                                                 ConsistencyLevel.Session,
                                                 sessionContainer,
@@ -1040,7 +1037,7 @@ namespace Microsoft.Azure.Cosmos
         [DataRow("0", "1", true)]
         public async Task GatewayStoreModel_OnSplitRefreshesPKRanges(string originalPKRangeId, string splitPKRangeId, bool shouldCallRefresh)
         {
-            string originalSessionToken = originalPKRangeId+ ":1#100#1=20#2=5#3=30";
+            string originalSessionToken = originalPKRangeId + ":1#100#1=20#2=5#3=30";
             string updatedSessionToken = splitPKRangeId + ":1#100#1=20#2=5#3=31";
 
             Task<HttpResponseMessage> sendFunc(HttpRequestMessage request)

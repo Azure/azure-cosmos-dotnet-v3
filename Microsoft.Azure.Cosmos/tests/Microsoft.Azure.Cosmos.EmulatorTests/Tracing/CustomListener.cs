@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
+    using Microsoft.Azure.Cosmos.Telemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     /// <summary>
@@ -32,23 +33,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             "az.schema_url",
             "kind",
             "az.namespace",
+            "db.operation.name",
             "db.operation",
             "db.system",
+            "db.system.name",
             "server.address",
+            "db.namespace",
             "db.name",
-            "db.cosmosdb.container",
-            "db.cosmosdb.connection_mode",
-            "db.cosmosdb.operation_type",
-            "db.cosmosdb.regions_contacted",
-            "rntbd.sub_status_code",
-            "rntbd.status_code",
-            "error.type"
+            "db.collection.name",
+            "azure.cosmosdb.connection.mode",
+            "azure.cosmosdb.contacted_regions",
+            "azure.cosmosdb.consistency.level",
+            "db.operation.batch.size",
+            "db.query.text",
+            "error.type",
+            AppInsightClassicAttributeKeys.ContainerName,
+            AppInsightClassicAttributeKeys.ServerAddress,
         };
 
         private static readonly List<string> TagsToSkip = new List<string>
         {
-             "db.cosmosdb.request_content_length_bytes",
-             "db.cosmosdb.response_content_length_bytes"
+             OpenTelemetryAttributeKeys.ResponseContentLength,
+             OpenTelemetryAttributeKeys.RequestContentLength,
+             AppInsightClassicAttributeKeys.ResponseContentLength,
+             AppInsightClassicAttributeKeys.RequestContentLength
         };
 
         private ConcurrentBag<IDisposable> subscriptions = new();

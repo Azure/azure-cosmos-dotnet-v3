@@ -47,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     NullValueHandling = NullValueHandling.Ignore
                 })).WithConnectionModeGateway();
             });
+            await Util.DeleteAllDatabasesAsync(cosmosClient);
 
             string dbName = $"{nameof(LinqTranslationBaselineTests)}-{Guid.NewGuid().ToString("N")}";
             testDb = await cosmosClient.CreateDatabaseAsync(dbName);
@@ -292,6 +293,28 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestDocumentIdBuiltinFunction()
+        {
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("In Select clause", b => getQuery(b).Select(doc => doc.DocumentId())),
+                new LinqTestInput("In Filter clause", b => getQuery(b).Where(doc => doc.DocumentId() > 123)),
+                new LinqTestInput("With non root term", b => getQuery(b).Where(doc => doc.BooleanField.DocumentId() > 123)),
+                new LinqTestInput("With JOIN", b => getQuery(b).SelectMany(doc => doc.EnumerableField
+                    .Where(number => doc.DocumentId() > 0)
+                    .Select(number => number))),
+                // Negative case
+                new LinqTestInput("In Order by clause", b => getQuery(b).OrderBy(doc => doc.DocumentId())),
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestRegexMatchFunction()
         {
             // Similar to the type checking function, RegexMatch are not supported client side.
@@ -319,6 +342,49 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("RegexMatch with conditional 4", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abc")).Where(doc => !doc.StringField2.RegexMatch("abc"))),
 
                 new LinqTestInput("RegexMatch with 2nd argument invalid string options", b => getQuery(b).Where(doc => doc.StringField.RegexMatch("abcd", "this should error out on the back end"))),
+            };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestFullTextContainsFunction()
+        {
+            // Similar to the type checking function, FullTextContains/FullTextContainsAll/FullTextContainsAny are not supported client side.
+            // Therefore this method is verified with baseline only.
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // FullTextContains
+                new LinqTestInput("FullTextContains with 1 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContains("test"))),
+                new LinqTestInput("FullTextContains with conditional", b => getQuery(b).Where(doc => doc.StringField.FullTextContains("test1") || doc.StringField.FullTextContains("test2"))),
+                new LinqTestInput("FullTextContains with conditional 2", b => getQuery(b).Where(doc => doc.StringField.FullTextContains("test1")).Where(doc => doc.StringField.FullTextContains("test2"))),
+                new LinqTestInput("FullTextContains with projection", b => getQuery(b).Select(doc => doc.StringField.FullTextContains("test"))),
+                new LinqTestInput("FullTextContains with order by", b => getQuery(b).OrderBy(doc => doc.StringField.FullTextContains("test"))),
+                new LinqTestInput("FullTextContains with group by", b => getQuery(b).GroupBy(doc => doc.StringField.FullTextContains("test"), value => value)),
+                new LinqTestInput("FullTextContains with SelectMany", b => getQuery(b).SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContains("test")).Select(number => number))),
+
+                // FullTextContainsAll
+                new LinqTestInput("FullTextContainsAll with 1 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test"))),
+                new LinqTestInput("FullTextContainsAll with 3 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAll with conditional", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test") || doc.StringField.FullTextContainsAll("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAll with conditional 2", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAll("test")).Where(doc => doc.StringField.FullTextContainsAll("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAll with projection", b => getQuery(b).Select(doc => doc.StringField.FullTextContainsAll("test"))),
+                new LinqTestInput("FullTextContainsAll with order by", b => getQuery(b).OrderBy(doc => doc.StringField.FullTextContainsAll("test"))),
+                new LinqTestInput("FullTextContainsAll with group by", b => getQuery(b).GroupBy(doc => doc.StringField.FullTextContainsAll("test"), value => value)),
+                new LinqTestInput("FullTextContainsAll with SelectMany", b => getQuery(b).SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContainsAll("test")).Select(number => number))),
+
+                // FullTextContainsAny
+                new LinqTestInput("FullTextContainsAny with 1 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test"))),
+                new LinqTestInput("FullTextContainsAny with 3 argument", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAny with conditional", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test") || doc.StringField.FullTextContainsAny("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAny with conditional 2", b => getQuery(b).Where(doc => doc.StringField.FullTextContainsAny("test")).Where(doc => doc.StringField.FullTextContainsAny("test1", "test2", "test3"))),
+                new LinqTestInput("FullTextContainsAny with projection", b => getQuery(b).Select(doc => doc.StringField.FullTextContainsAny("test"))),
+                new LinqTestInput("FullTextContainsAny with order by", b => getQuery(b).OrderBy(doc => doc.StringField.FullTextContainsAny("test"))),
+                new LinqTestInput("FullTextContainsAny with group by", b => getQuery(b).GroupBy(doc => doc.StringField.FullTextContainsAny("test"), value => value)),
+                new LinqTestInput("FullTextContainsAny with SelectMany", b => getQuery(b).SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContainsAny("test")).Select(number => number))),
             };
             this.ExecuteTestSuite(inputs);
         }

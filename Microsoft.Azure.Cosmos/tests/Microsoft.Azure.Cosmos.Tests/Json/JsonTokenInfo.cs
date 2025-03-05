@@ -6,19 +6,19 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
+    using System.Collections.Generic;
     using System.Linq;
     using Microsoft.Azure.Cosmos.Json;
 
     internal abstract class JsonToken
     {
-        protected JsonToken(JsonTokenType jsonTokenType)
+        public JsonTokenType JsonTokenType { get; }
+        public bool IsNumberArray { get; }
+
+        protected JsonToken(JsonTokenType jsonTokenType, bool isNumberArray = default)
         {
             this.JsonTokenType = jsonTokenType;
-        }
-
-        public JsonTokenType JsonTokenType
-        {
-            get;
+            this.IsNumberArray = isNumberArray;
         }
 
         public static JsonToken ArrayStart()
@@ -44,6 +44,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public static JsonToken Number(Number64 number)
         {
             return new JsonNumberToken(number);
+        }
+
+        public static JsonToken Number(ulong value)
+        {
+            return new JsonUInt64NumberToken(value);
         }
 
         public static JsonToken Boolean(bool value)
@@ -109,6 +114,41 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public static JsonToken Binary(ReadOnlyMemory<byte> value)
         {
             return new JsonBinaryToken(value);
+        }
+
+        public static JsonToken UInt8NumberArray(IReadOnlyList<byte> values)
+        {
+            return new JsonNumberArrayToken<byte>(JsonTokenType.UInt8, values);
+        }
+
+        public static JsonToken Int8NumberArray(IReadOnlyList<sbyte> values)
+        {
+            return new JsonNumberArrayToken<sbyte>(JsonTokenType.Int8, values);
+        }
+
+        public static JsonToken Int16NumberArray(IReadOnlyList<short> values)
+        {
+            return new JsonNumberArrayToken<short>(JsonTokenType.Int16, values);
+        }
+
+        public static JsonToken Int32NumberArray(IReadOnlyList<int> values)
+        {
+            return new JsonNumberArrayToken<int>(JsonTokenType.Int32, values);
+        }
+
+        public static JsonToken Int64NumberArray(IReadOnlyList<long> values)
+        {
+            return new JsonNumberArrayToken<long>(JsonTokenType.Int64, values);
+        }
+
+        public static JsonToken Float32NumberArray(IReadOnlyList<float> values)
+        {
+            return new JsonNumberArrayToken<float>(JsonTokenType.Float32, values);
+        }
+
+        public static JsonToken Float64NumberArray(IReadOnlyList<double> values)
+        {
+            return new JsonNumberArrayToken<double>(JsonTokenType.Float64, values);
         }
     }
 
@@ -213,7 +253,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
     }
 
-    internal sealed class JsonNumberToken : JsonToken
+    internal class JsonNumberToken : JsonToken
     {
         public JsonNumberToken(Number64 value)
             : base(JsonTokenType.Number)
@@ -234,6 +274,35 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             }
 
             return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
+    }
+
+    internal sealed class JsonUInt64NumberToken : JsonNumberToken
+    {
+        public JsonUInt64NumberToken(ulong value)
+            : base(value <= long.MaxValue ? (Number64)(long)value : (Number64)(double)value)
+        {
+            this.Value = value;
+        }
+
+        public new ulong Value
+        {
+            get;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonUInt64NumberToken other)
+            {
+                return this.Value == other.Value;
+            }
+
+            return base.Equals(obj);
         }
 
         public override int GetHashCode()
@@ -545,6 +614,32 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             if (obj is JsonBinaryToken other)
             {
                 return this.Value.Span.SequenceEqual(other.Value.Span);
+            }
+
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
+    }
+
+    internal sealed class JsonNumberArrayToken<T> : JsonToken
+    {
+        public JsonNumberArrayToken(JsonTokenType jsonTokenType, IReadOnlyList<T> values)
+            : base(jsonTokenType, isNumberArray: true)
+        {
+            this.Values = values;
+        }
+
+        public IReadOnlyList<T> Values { get; }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is JsonNumberArrayToken<T> other)
+            {
+                return this.Values.Equals(other.Values);
             }
 
             return false;

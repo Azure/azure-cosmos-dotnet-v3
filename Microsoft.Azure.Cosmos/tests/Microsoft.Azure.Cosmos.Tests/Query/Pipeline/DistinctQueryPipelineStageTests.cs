@@ -26,17 +26,17 @@
             CosmosUndefined.Create(),
 
             CosmosNull.Create(),
-            
+
             CosmosBoolean.Create(true),
             CosmosBoolean.Create(false),
-            
+
             CosmosNumber64.Create(0),
             CosmosNumber64.Create(42),
             CosmosNumber64.Create(-1),
             CosmosNumber64.Create(100010),
             CosmosNumber64.Create(3.141619),
             CosmosNumber64.Create(Math.PI),
-            
+
             CosmosString.Create(string.Empty),
             CosmosString.Create("Hello World"),
             CosmosString.Create(string.Join(',', Enumerable.Repeat("Hello World", 75))),
@@ -44,7 +44,7 @@
             CosmosString.Create("敏捷的棕色狐狸跳过了懒狗"),
             CosmosString.Create(string.Join(',', Enumerable.Repeat("敏捷的棕色狐狸跳过了懒狗", 50))),
             CosmosString.Create(string.Join(',', Enumerable.Repeat("敏捷的棕色狐狸跳过了懒狗", 60))),
-            
+
             CosmosArray.Create(),
             CosmosArray.Create(new CosmosElement[]
             {
@@ -73,7 +73,7 @@
                 CosmosNumber64.Create(100010),
                 CosmosNumber64.Create(3.141619),
             }),
-            
+
             CosmosObject.Create(new Dictionary<string, CosmosElement>()),
             CosmosObject.Create(new Dictionary<string, CosmosElement>
             {
@@ -95,13 +95,13 @@
                 ["فوق"] = CosmosNumber64.Create(100010),
                 ["g"] = CosmosNumber64.Create(3.141619),
             }),
-            
+
             CosmosGuid.Create(Guid.Parse("D29F71E3-2D43-4573-A0E6-16D7E03FDEB5")),
             CosmosGuid.Create(Guid.Parse("D29F71E3-2D43-4573-B0E6-16D7E03FDEB5")),
             CosmosGuid.Create(Guid.Parse("D29F71E3-2D43-4573-C0E6-16D7E03FDEB5")),
             CosmosGuid.Create(Guid.Parse("D29F71E3-2D43-4573-D0E6-16D7E03FDEB5")),
             CosmosGuid.Create(Guid.Parse("D29F71E3-2D43-4573-E0E6-16D7E03FDEB5")),
-            
+
             CosmosBinary.Create(Guid.Parse("D29F71E3-2D43-4573-A0E6-16D7E03FDEB5").ToByteArray()),
             CosmosBinary.Create(Guid.Parse("D29F71E3-2D43-4573-B0E6-16D7E03FDEB5").ToByteArray()),
             CosmosBinary.Create(Guid.Parse("D29F71E3-2D43-4573-C0E6-16D7E03FDEB5").ToByteArray()),
@@ -175,7 +175,7 @@
                 IEnumerator<CosmosElement> enumerator = testCase.Input.GetEnumerator();
                 int pageSize = 0;
                 List<List<CosmosElement>> pages = new List<List<CosmosElement>>() { new List<CosmosElement>() };
-                while(enumerator.MoveNext())
+                while (enumerator.MoveNext())
                 {
                     if (pageSize > testCase.PageSize)
                     {
@@ -183,41 +183,35 @@
                         pages.Add(new List<CosmosElement>());
                     }
 
-                    pages[pages.Count - 1].Add(enumerator.Current);
+                    pages[^1].Add(enumerator.Current);
                     ++pageSize;
                 }
-    
-                foreach (ExecutionEnvironment env in new[] { ExecutionEnvironment.Compute, ExecutionEnvironment.Client })
-                {
-                    IEnumerable<CosmosElement> elements = await DistinctQueryPipelineStageTests.CreateAndDrainAsync(
-                        pages: pages,
-                        executionEnvironment: env,
-                        continuationToken: null,
-                        distinctQueryType: DistinctQueryType.Unordered);
 
-                    List<string> actual = elements
-                        .Select(value => value.ToString())
-                        .ToList();
+                IEnumerable<CosmosElement> elements = await DistinctQueryPipelineStageTests.CreateAndDrainAsync(
+                    pages: pages,
+                    continuationToken: null,
+                    distinctQueryType: DistinctQueryType.Unordered);
 
-                    List<string> expected = testCase.Expected
-                        .Select(value => value.ToString())
-                        .ToList();
+                List<string> actual = elements
+                    .Select(value => value.ToString())
+                    .ToList();
 
-                    CollectionAssert.AreEquivalent(expected, actual);
-                }
+                List<string> expected = testCase.Expected
+                    .Select(value => value.ToString())
+                    .ToList();
+
+                CollectionAssert.AreEquivalent(expected, actual);
             }
         }
 
         private static async Task<IEnumerable<CosmosElement>> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             DistinctQueryType distinctQueryType)
         {
             IQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateDistinctQueryPipelineStage = DistinctQueryPipelineStage.MonadicCreate(
-                executionEnvironment: executionEnvironment,
                 requestContinuation: continuationToken,
                 distinctQueryType: distinctQueryType,
                 monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));

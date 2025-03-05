@@ -225,6 +225,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.CosmosMessageHeaders.IndexUtilization = value;
         }
 
+        internal virtual string QueryAdvice
+        {
+            get => this.CosmosMessageHeaders.QueryAdvice;
+            set => this.CosmosMessageHeaders.QueryAdvice = value;
+        }
+
         internal virtual string BackendRequestDurationMilliseconds
         {
             get => this.CosmosMessageHeaders.BackendRequestDurationMilliseconds;
@@ -285,6 +291,11 @@ namespace Microsoft.Azure.Cosmos
                 HttpResponseHeadersWrapper httpResponseHeaders => httpResponseHeaders,
                 _ => new NameValueResponseHeaders(nameValueCollection),
             };
+        }
+
+        internal Headers(CosmosMessageHeadersInternal cosmosMessageHeaders)
+        {
+            this.CosmosMessageHeaders = cosmosMessageHeaders;
         }
 
         /// <summary>
@@ -403,6 +414,21 @@ namespace Microsoft.Azure.Cosmos
         public virtual T GetHeaderValue<T>(string headerName)
         {
             return this.CosmosMessageHeaders.GetHeaderValue<T>(headerName);
+        }
+
+        /// <summary>
+        /// Clones the current <see cref="Headers"/>.
+        /// </summary>
+        /// <returns>a cloned copy of the current <see cref="Headers"/></returns>
+        internal Headers Clone()
+        {
+            Headers clone = new Headers();
+            foreach (string key in this.CosmosMessageHeaders.AllKeys())
+            {
+                clone.Add(key, this.CosmosMessageHeaders.Get(key));
+            }
+
+            return clone;
         }
 
         /// <summary>

@@ -2,10 +2,9 @@
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
-using System.Net.Http;
-
 namespace Microsoft.Azure.Cosmos.Tests
 {
+    using System.Net.Http;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -44,7 +43,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             DocumentClient documentClient = accountConsistencyLevel.HasValue ? new MockDocumentClient(accountConsistencyLevel.Value, policy) : new MockDocumentClient(policy);
             CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder("http://localhost", MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey);
-            
+
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
             return cosmosClientBuilder.Build(documentClient);
         }
@@ -77,10 +76,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<HttpClient> httpClient,
             DocumentClientEventSource eventSource = null)
         {
-            if (eventSource == null)
-            {
-                eventSource = DocumentClientEventSource.Instance;
-            }
+            eventSource ??= DocumentClientEventSource.Instance;
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -128,12 +124,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             List<Address> addresses = new List<Address>();
             for (int i = 0; i < physicalUris.Count; i++)
             {
-                addresses.Add(new Address() 
-                { 
-                    IsPrimary = i == 0, 
-                    PhysicalUri = physicalUris[i], 
-                    Protocol = RuntimeConstants.Protocols.RNTBD, 
-                    PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA==" 
+                addresses.Add(new Address()
+                {
+                    IsPrimary = i == 0,
+                    PhysicalUri = physicalUris[i],
+                    Protocol = RuntimeConstants.Protocols.RNTBD,
+                    PartitionKeyRangeId = "YxM9ANCZIwABAAAAAAAAAA=="
                 });
             };
 

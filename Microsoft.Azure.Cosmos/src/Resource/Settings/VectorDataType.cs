@@ -8,14 +8,8 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Defines the target data type of a vector index specification in the Azure Cosmos DB service.
     /// </summary>
-    internal enum VectorDataType
+    public enum VectorDataType
     {
-        /// <summary>
-        /// Represent a float16 data type.
-        /// </summary>
-        [EnumMember(Value = "float16")]
-        Float16,
-
         /// <summary>
         /// Represent a float32 data type.
         /// </summary>

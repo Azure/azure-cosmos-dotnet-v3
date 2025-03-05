@@ -3,19 +3,19 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using System.Xml;
-    using Microsoft.Azure.Documents;
-    using Microsoft.Azure.Documents.Routing;
-    using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Test.BaselineTest;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using System.Linq;
+    using System.Text;
+    using System.Xml;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow.Schemas;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Test.BaselineTest;
+    using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.Routing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="QueryPartitionProvider"/>.
@@ -60,6 +60,16 @@
                 Hash(
                 @"COUNT Field",
                 @"SELECT VALUE COUNT(c.blah) FROM c",
+                @"/key"),
+
+                Hash(
+                @"MAKELIST",
+                @"SELECT VALUE MAKELIST(c.blah) FROM c",
+                @"/key"),
+
+                Hash(
+                @"MAKESET",
+                @"SELECT VALUE MAKESET(c.blah) FROM c",
                 @"/key"),
 
                 Hash(
@@ -114,7 +124,9 @@
                 "COUNT",
                 "MIN",
                 "MAX",
-                "AVG"
+                "AVG",
+                "MAKELIST",
+                "MAKESET"
             };
 
             List<QueryPlanBaselineTestInput> testVariations = new List<QueryPlanBaselineTestInput>();
@@ -1132,6 +1144,56 @@
                 Hash(
                 @"TOP with GROUP BY",
                 @"SELECT TOP 5 VALUE c.name FROM c GROUP BY c.name",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond lower range",
+                @"SELECT TOP -1 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value at lower range",
+                @"SELECT TOP 0 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value at upper range (client)",
+                @"SELECT TOP 2147483647 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (client)",
+                @"SELECT TOP 2147483648 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (Interop)",
+                @"SELECT TOP 4294967296 c.name FROM c",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond lower range - hybrid search",
+                @"SELECT TOP -1 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value at lower range - hybrid search",
+                @"SELECT TOP 0 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value at upper range (client) - hybrid search",
+                @"SELECT TOP 2147483647 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (client) - hybrid search",
+                @"SELECT TOP 2147483648 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
+                @"/key"),
+
+                Hash(
+                @"TOP value beyond upper range (Interop) - hybrid search",
+                @"SELECT TOP 4294967296 c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) ",
                 @"/key")
             };
 
@@ -1194,6 +1256,106 @@
                 Hash(
                     @"OFFSET LIMIT and partition filter but group by",
                     @"SELECT c.name FROM c WHERE c.key = 5 GROUP BY c.name OFFSET 1 LIMIT 2",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond lower range",
+                    @"SELECT c.name FROM c OFFSET -1 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at lower range",
+                    @"SELECT c.name FROM c OFFSET 0 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 2147483647 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 2147483648 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (Interop)",
+                    @"SELECT c.name FROM c OFFSET 4294967296 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET -1 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 0 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value at upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 2147483647 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 2147483648 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"OFFSET value beyond upper range (Interop) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 4294967296 LIMIT 10",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond lower range",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT -1",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at lower range",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 0",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 2147483647",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (client)",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 2147483648",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (Interop)",
+                    @"SELECT c.name FROM c OFFSET 10 LIMIT 4294967296",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT -1",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at lower range - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 0",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value at upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 2147483647",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (client) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 2147483648",
+                    @"/key"),
+
+                Hash(
+                    @"LIMIT value beyond upper range (Interop) - hybrid search",
+                    @"SELECT c.name FROM c ORDER BY RANK FullTextScore(c.text, ['swim']) OFFSET 10 LIMIT 4294967296",
                     @"/key"),
             };
 
@@ -1342,14 +1504,103 @@
                         PartitionKeyDefinition pkDefinitions = CreateHashPartitionKey("/key");
                         return new List<QueryPlanBaselineTestInput>
                         {
-                            new QueryPlanBaselineTestInput($"{variation.Description} Geography", pkDefinitions, new SqlQuerySpec(variation.Query)) { GeospatialType = Cosmos.GeospatialType.Geography },
-                            new QueryPlanBaselineTestInput($"{variation.Description} Geometry", pkDefinitions, new SqlQuerySpec(variation.Query)) { GeospatialType = Cosmos.GeospatialType.Geometry }
+                            new QueryPlanBaselineTestInput($"{variation.Description} Geography", pkDefinitions, vectorEmbeddingPolicy: null, new SqlQuerySpec(variation.Query), Cosmos.GeospatialType.Geography),
+                            new QueryPlanBaselineTestInput($"{variation.Description} Geometry", pkDefinitions, vectorEmbeddingPolicy : null, new SqlQuerySpec(variation.Query), Cosmos.GeospatialType.Geometry)
                         };
                     })
                 .ToList();
 
             this.ExecuteTestSuite(testVariations);
         }
+
+        [TestMethod]
+        [Owner("ndeshpan")]
+        public void VectorSearch()
+        {
+            List<QueryPlanBaselineTestInput> testCases = new List<QueryPlanBaselineTestInput>
+            {
+                MakeVectorTest("Euclidean Distance with query parameter", Cosmos.DistanceFunction.Euclidean),
+                MakeVectorTest("Cosine Similarity with query parameter", Cosmos.DistanceFunction.Cosine),
+                MakeVectorTest("Dot Product with query parameter", Cosmos.DistanceFunction.DotProduct),
+                MakeInlineVectorQueryTest("Euclidean Distance with inline vector", Cosmos.DistanceFunction.Euclidean),
+                MakeInlineVectorQueryTest("Cosine Similarity with inline vector", Cosmos.DistanceFunction.Cosine),
+                MakeInlineVectorQueryTest("Dot Product with inline vector", Cosmos.DistanceFunction.DotProduct),
+            };
+
+            this.ExecuteTestSuite(testCases);
+        }
+
+        private static QueryPlanBaselineTestInput MakeInlineVectorQueryTest(string description, Cosmos.DistanceFunction distanceFunction)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = CreateHashPartitionKey("/PartitionKey");
+
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(new Collection<Cosmos.Embedding>
+            {
+                new Cosmos.Embedding
+                {
+                    Path = "/embedding",
+                    DataType = Cosmos.VectorDataType.Float32,
+                    Dimensions = 8,
+                    DistanceFunction = distanceFunction
+                }
+            });
+
+            string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.embedding, [0.0039695268496870995, 0.027338456362485886, -0.005676387343555689, -0.013547309674322605, -0.002445543883368373, 0.01579204574227333, -0.016796082258224487, -0.012471556663513184], true) AS SimilarityScore
+                                 FROM c
+                                 ORDER BY VectorDistance(c.embedding, [0.0039695268496870995, 0.027338456362485886, -0.005676387343555689, -0.013547309674322605, -0.002445543883368373, 0.01579204574227333, -0.016796082258224487, -0.012471556663513184], true)";
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(queryText);
+
+            QueryPlanBaselineTestInput testInput = new QueryPlanBaselineTestInput(
+                description,
+                partitionKeyDefinition,
+                vectorEmbeddingPolicy,
+                sqlQuerySpec,
+                Cosmos.GeospatialType.Geography);
+
+            return testInput;
+        }
+
+        private static QueryPlanBaselineTestInput MakeVectorTest(string description, Cosmos.DistanceFunction distanceFunction)
+        {
+            PartitionKeyDefinition partitionKeyDefinition = CreateHashPartitionKey("/PartitionKey");
+
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy = new Cosmos.VectorEmbeddingPolicy(new Collection<Cosmos.Embedding>
+            {
+                new Cosmos.Embedding
+                {
+                    Path = "/embedding",
+                    DataType = Cosmos.VectorDataType.Float32,
+                    Dimensions = 8,
+                    DistanceFunction = distanceFunction
+                }
+            });
+
+            string queryText = @"SELECT TOP 10 c.title AS Title, VectorDistance(c.embedding, @vectorEmbedding, true) AS SimilarityScore
+                                 FROM c
+                                 ORDER BY VectorDistance(c.embedding, @vectorEmbedding, true)";
+
+            SqlQuerySpec sqlQuerySpec = new SqlQuerySpec(
+                queryText,
+                new SqlParameterCollection(new SqlParameter[] { new SqlParameter("@vectorEmbedding", VectorEmbedding) }));
+
+            return new QueryPlanBaselineTestInput(
+                description,
+                partitionKeyDefinition,
+                vectorEmbeddingPolicy,
+                sqlQuerySpec,
+                Cosmos.GeospatialType.Geography);
+        }
+
+        private static readonly double[] VectorEmbedding = new double[] {
+            0.0039695268496870995,
+            0.027338456362485886,
+            -0.005676387343555689,
+            -0.013547309674322605,
+            -0.002445543883368373,
+            0.01579204574227333,
+            -0.016796082258224487,
+            -0.012471556663513184 };
 
         private static PartitionKeyDefinition CreateHashPartitionKey(
             params string[] partitionKeys) => new PartitionKeyDefinition()
@@ -1440,6 +1691,7 @@
             TryCatch<PartitionedQueryExecutionInfoInternal> info = QueryPartitionProviderTestInstance.Object.TryGetPartitionedQueryExecutionInfoInternal(
                 JsonConvert.SerializeObject(input.SqlQuerySpec),
                 input.PartitionKeyDefinition,
+                input.VectorEmbeddingPolicy,
                 requireFormattableOrderByQuery: true,
                 isContinuationExpected: false,
                 allowNonValueAggregateQuery: true,
@@ -1459,18 +1711,36 @@
 
     public sealed class QueryPlanBaselineTestInput : BaselineTestInput
     {
-        internal PartitionKeyDefinition PartitionKeyDefinition { get; set; }
-        internal SqlQuerySpec SqlQuerySpec { get; set; }
-        internal Cosmos.GeospatialType? GeospatialType { get; set; }
+        internal PartitionKeyDefinition PartitionKeyDefinition { get; }
+
+        internal Cosmos.VectorEmbeddingPolicy VectorEmbeddingPolicy { get; }
+
+        internal SqlQuerySpec SqlQuerySpec { get; }
+
+        internal Cosmos.GeospatialType? GeospatialType { get; }
 
         internal QueryPlanBaselineTestInput(
             string description,
             PartitionKeyDefinition partitionKeyDefinition,
             SqlQuerySpec sqlQuerySpec)
-            : base(description)
+            : this(description, partitionKeyDefinition, vectorEmbeddingPolicy: null, sqlQuerySpec, geospatialType: null)
         {
             this.PartitionKeyDefinition = partitionKeyDefinition;
             this.SqlQuerySpec = sqlQuerySpec;
+        }
+
+        internal QueryPlanBaselineTestInput(
+            string description,
+            PartitionKeyDefinition partitionKeyDefinition,
+            Cosmos.VectorEmbeddingPolicy vectorEmbeddingPolicy,
+            SqlQuerySpec sqlQuerySpec,
+            Cosmos.GeospatialType? geospatialType)
+            : base(description)
+        {
+            this.PartitionKeyDefinition = partitionKeyDefinition;
+            this.VectorEmbeddingPolicy = vectorEmbeddingPolicy;
+            this.SqlQuerySpec = sqlQuerySpec;
+            this.GeospatialType = geospatialType;
         }
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
@@ -1567,7 +1837,16 @@
 
         public override void SerializeAsXml(XmlWriter xmlWriter)
         {
-            xmlWriter.WriteElementString(nameof(this.Exception), this.Exception.Message);
+            StringBuilder stringBuilder = new StringBuilder();
+
+            Exception ex = this.Exception;
+            while (ex != null)
+            {
+                stringBuilder.AppendLine($"{ex.GetType()} : {ex.Message}");
+                ex = ex.InnerException;
+            }
+
+            xmlWriter.WriteElementString(nameof(this.Exception), stringBuilder.ToString());
         }
 
         public Exception Exception { get; }
@@ -1589,9 +1868,9 @@
             xmlWriter.WriteEndElement();
         }
 
-        private static void WriteQueryInfoAsXML(QueryInfo queryInfo, XmlWriter writer)
+        private static void WriteQueryInfoAsXML(QueryInfo queryInfo, XmlWriter writer, string elementName, bool includeRewrittenQuery)
         {
-            writer.WriteStartElement(nameof(QueryInfo));
+            writer.WriteStartElement(elementName);
             writer.WriteElementString(nameof(queryInfo.DistinctType), queryInfo.DistinctType.ToString());
             writer.WriteElementString(nameof(queryInfo.Top), queryInfo.Top.ToString());
             writer.WriteElementString(nameof(queryInfo.Offset), queryInfo.Offset.ToString());
@@ -1636,6 +1915,12 @@
             }
             writer.WriteEndElement();
             writer.WriteElementString(nameof(queryInfo.HasSelectValue), queryInfo.HasSelectValue.ToString());
+
+            if (includeRewrittenQuery && queryInfo.RewrittenQuery != null)
+            {
+                WriteRewrittenQueryAsXML(queryInfo.RewrittenQuery, writer);
+            }
+
             writer.WriteEndElement();
         }
 
@@ -1671,7 +1956,7 @@
         {
             if (info.QueryInfo != null)
             {
-                WriteQueryInfoAsXML(info.QueryInfo, writer);
+                WriteQueryInfoAsXML(info.QueryInfo, writer, elementName: nameof(QueryInfo), includeRewrittenQuery: false);
             }
 
             if (info.QueryRanges != null)
@@ -1679,10 +1964,60 @@
                 WriteQueryRangesAsXML(info.QueryRanges, writer);
             }
 
-            if (info.QueryInfo.RewrittenQuery != null)
+            if (info.QueryInfo?.RewrittenQuery != null)
             {
                 WriteRewrittenQueryAsXML(info.QueryInfo.RewrittenQuery, writer);
             }
+
+            if(info.HybridSearchQueryInfo != null)
+            {
+                WriteHybridQueryInfoAsXML(info.HybridSearchQueryInfo, writer);
+            }
+        }
+
+        private static void WriteHybridQueryInfoAsXML(HybridSearchQueryInfo hybridsearchQueryInfo, XmlWriter writer)
+        {
+            writer.WriteStartElement(nameof(HybridSearchQueryInfo));
+
+            if (hybridsearchQueryInfo.GlobalStatisticsQuery != null)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.GlobalStatisticsQuery), hybridsearchQueryInfo.GlobalStatisticsQuery);
+            }
+
+            if (hybridsearchQueryInfo.ComponentQueryInfos != null)
+            {
+                foreach (QueryInfo componentQueryInfo in hybridsearchQueryInfo.ComponentQueryInfos)
+                {
+                    WriteQueryInfoAsXML(componentQueryInfo, writer, elementName: "componentQueryInfo", includeRewrittenQuery: true);
+                }
+            }
+
+            if (hybridsearchQueryInfo.ComponentWithoutPayloadQueryInfos != null)
+            {
+                foreach (QueryInfo componentWithoutPayloadQueryInfo in hybridsearchQueryInfo.ComponentWithoutPayloadQueryInfos)
+                {
+                    WriteQueryInfoAsXML(componentWithoutPayloadQueryInfo, writer, elementName: "componentWithoutPayloadQueryInfos", includeRewrittenQuery: true);
+                }
+            }
+
+            if (hybridsearchQueryInfo.ProjectionQueryInfo != null)
+            {
+                WriteQueryInfoAsXML(hybridsearchQueryInfo.ProjectionQueryInfo, writer, elementName: "projectionQueryInfo", includeRewrittenQuery: true);
+            }
+
+            if (hybridsearchQueryInfo.Skip.HasValue)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.Skip), hybridsearchQueryInfo.Skip.ToString());
+            }
+
+            if (hybridsearchQueryInfo.Take.HasValue)
+            {
+                writer.WriteElementString(nameof(hybridsearchQueryInfo.Take), hybridsearchQueryInfo.Take.ToString());
+            }
+
+            writer.WriteElementString(nameof(hybridsearchQueryInfo.RequiresGlobalStatistics), hybridsearchQueryInfo.RequiresGlobalStatistics.ToString());
+
+            writer.WriteEndElement();
         }
     }
 }

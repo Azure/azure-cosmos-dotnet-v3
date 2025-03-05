@@ -1,17 +1,17 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
-    using Microsoft.Azure.Cosmos.Tracing;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Documents;
-    using System.Reflection;
-    using System.Linq;
     using System.Collections.Generic;
-    using Microsoft.Azure.Cosmos.Tracing.TraceData;
-    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
-    using Microsoft.Azure.Cosmos.Json;
+    using System.Linq;
+    using System.Reflection;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Json;
+    using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
+    using Microsoft.Azure.Documents;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum;
 
     [TestClass]
     public class TraceTests
@@ -109,7 +109,8 @@
                             ResourceType.Document,
                             OperationType.Query,
                             "42",
-                            new Uri("http://someUri1.com"));
+                            new Uri("http://someUri1.com"),
+                            "region1");
 
             ((List<StoreResponseStatistics>)datum.GetType().GetField("storeResponseStatistics", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(datum)).Add(storeResponseStatistics);
 

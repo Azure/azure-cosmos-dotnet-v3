@@ -65,10 +65,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                     targetRanges: ranges,
                     partitionKey: null,
                     orderByColumns: OrderByColumns,
-                    queryPaginationOptions: new QueryPaginationOptions(pageSizeHint: EndUserPageSize),
+                    queryPaginationOptions: new QueryExecutionOptions(pageSizeHint: EndUserPageSize),
                     maxConcurrency: MaxConcurrency,
                     nonStreamingOrderBy: nonStreamingOrderBy,
-                    continuationToken: null);
+                    continuationToken: null,
+                    containerQueryProperties: new Cosmos.Query.Core.QueryClient.ContainerQueryProperties(),
+                    emitRawOrderByPayload: false);
 
             IQueryPipelineStage pipeline = pipelineStage.Result;
 
@@ -199,7 +201,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                 return document;
             }
 
-            public Task<ChangeFeedPage> ChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedPaginationOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<ChangeFeedPage> ChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedExecutionOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }
@@ -232,7 +234,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedPaginationOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(FeedRangeState<ChangeFeedState> feedRangeState, ChangeFeedExecutionOptions changeFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }
@@ -266,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public async Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryPaginationOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public async Task<TryCatch<QueryPage>> MonadicQueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 CosmosElement state = feedRangeState.State?.Value ?? CosmosNull.Create();
                 QueryPage queryPage = this.pages[feedRangeState.FeedRange][state];
@@ -275,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                 return TryCatch<QueryPage>.FromResult(queryPage);
             }
 
-            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedPaginationOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<TryCatch<ReadFeedPage>> MonadicReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedExecutionOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }
@@ -295,12 +297,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
                 throw new NotImplementedException();
             }
 
-            public Task<QueryPage> QueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryPaginationOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<QueryPage> QueryAsync(SqlQuerySpec sqlQuerySpec, FeedRangeState<QueryState> feedRangeState, QueryExecutionOptions queryPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }
 
-            public Task<ReadFeedPage> ReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedPaginationOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
+            public Task<ReadFeedPage> ReadFeedAsync(FeedRangeState<ReadFeedState> feedRangeState, ReadFeedExecutionOptions readFeedPaginationOptions, ITrace trace, CancellationToken cancellationToken)
             {
                 throw new NotImplementedException();
             }

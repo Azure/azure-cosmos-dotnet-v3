@@ -8,13 +8,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.DCount;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
-    using PageList = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.CosmosElements.CosmosElement>>;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using PageList = System.Collections.Generic.IReadOnlyList<System.Collections.Generic.IReadOnlyList<Microsoft.Azure.Cosmos.CosmosElements.CosmosElement>>;
 
     [TestClass]
     public sealed class DCountQueryPipelineStageTests
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             long[] values = new long[] { 42, 1337, 1337, 42 };
             PageList pages = values
-                .Select(value => new List<CosmosElement>(){ CosmosElement.Parse($"{{\"item\": {value}}}") })
+                .Select(value => new List<CosmosElement>() { CosmosElement.Parse($"{{\"item\": {value}}}") })
                 .ToList();
             result.Add((pages, values.Distinct().Count(), new[] { DistinctQueryType.Unordered }));
 
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             foreach ((PageList pages, int expectedCount, DistinctQueryType[] distinctQueryTypes) in testCases)
             {
-                foreach(string dcountAlias in new[] {null, string.Empty, "$1", "expectedCount" })
+                foreach (string dcountAlias in new[] { null, string.Empty, "$1", "expectedCount" })
                 {
                     foreach (DistinctQueryType distinctQueryType in distinctQueryTypes)
                     {
@@ -87,7 +87,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         {
             List<CosmosElement> elementsCompute = await CreateAndDrainAsync(
                 pages: pages,
-                executionEnvironment: ExecutionEnvironment.Compute,
                 continuationToken: null,
                 distinctQueryType: distinctQueryType,
                 dcountAlias: dcountAlias);
@@ -96,7 +95,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             List<CosmosElement> elementsClient = await CreateAndDrainWithoutStateAsync(
                 pages: pages,
-                executionEnvironment: ExecutionEnvironment.Client,
                 continuationToken: null,
                 distinctQueryType: distinctQueryType,
                 dcountAlias: dcountAlias);
@@ -124,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
             else
             {
-                CosmosNumber result = ((CosmosObject) actual[0])[dcountAlias] as CosmosNumber;
+                CosmosNumber result = ((CosmosObject)actual[0])[dcountAlias] as CosmosNumber;
                 actualCount = Number64.ToLong(result.Value);
             }
 
@@ -133,21 +131,18 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<List<CosmosElement>> CreateAndDrainAsync(
             PageList pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             DistinctQueryType distinctQueryType,
             string dcountAlias)
         {
             List<CosmosElement> resultWithoutState = await CreateAndDrainWithoutStateAsync(
                 pages: pages,
-                executionEnvironment: executionEnvironment,
                 continuationToken: continuationToken,
                 distinctQueryType: distinctQueryType,
                 dcountAlias: dcountAlias);
 
             List<CosmosElement> resultWithState = await CreateAndDrainWithStateAsync(
                 pages: pages,
-                executionEnvironment: executionEnvironment,
                 continuationToken: continuationToken,
                 distinctQueryType: distinctQueryType,
                 dcountAlias: dcountAlias);
@@ -159,7 +154,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<List<CosmosElement>> CreateAndDrainWithoutStateAsync(
             PageList pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             DistinctQueryType distinctQueryType,
             string dcountAlias)
@@ -167,7 +161,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             List<CosmosElement> elements = new List<CosmosElement>();
             IQueryPipelineStage stage = Create(
                 pages: pages,
-                executionEnvironment: executionEnvironment,
                 requestContinuationToken: continuationToken,
                 distinctQueryType: distinctQueryType,
                 dcountAlias: dcountAlias);
@@ -183,7 +176,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static async Task<List<CosmosElement>> CreateAndDrainWithStateAsync(
             PageList pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement continuationToken,
             DistinctQueryType distinctQueryType,
             string dcountAlias)
@@ -195,12 +187,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             {
                 IQueryPipelineStage stage = Create(
                     pages: pages,
-                    executionEnvironment: executionEnvironment,
                     requestContinuationToken: state,
                     distinctQueryType: distinctQueryType,
                     dcountAlias: dcountAlias);
-                
-                if(!await stage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
+
+                if (!await stage.MoveNextAsync(NoOpTrace.Singleton, cancellationToken: default))
                 {
                     break;
                 }
@@ -217,7 +208,6 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
         private static IQueryPipelineStage Create(
             PageList pages,
-            ExecutionEnvironment executionEnvironment,
             CosmosElement requestContinuationToken,
             DistinctQueryType distinctQueryType,
             string dcountAlias)
@@ -225,15 +215,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             MonadicCreatePipelineStage source = (CosmosElement continuationToken) =>
                 TryCatch<IQueryPipelineStage>.FromResult(MockQueryPipelineStage.Create(pages, continuationToken));
 
-            MonadicCreatePipelineStage createDistinctQueryPipelineStage = (CosmosElement continuationToken) => 
+            MonadicCreatePipelineStage createDistinctQueryPipelineStage = (CosmosElement continuationToken) =>
                 DistinctQueryPipelineStage.MonadicCreate(
-                    executionEnvironment: executionEnvironment,
                     requestContinuation: continuationToken,
                     distinctQueryType: distinctQueryType,
                     monadicCreatePipelineStage: source);
 
             TryCatch<IQueryPipelineStage> tryCreateDCountQueryPipelineStage = DCountQueryPipelineStage.MonadicCreate(
-                executionEnvironment: executionEnvironment,
                 continuationToken: requestContinuationToken,
                 info: new DCountInfo { DCountAlias = dcountAlias },
                 monadicCreatePipelineStage: createDistinctQueryPipelineStage);

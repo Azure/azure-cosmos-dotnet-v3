@@ -32,7 +32,6 @@
             {
                 (List<CosmosElement> elements, _) = await TakeQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,
-                    executionEnvironment: ExecutionEnvironment.Compute,
                     takeCount: takeCount,
                     continuationToken: null);
 
@@ -67,11 +66,10 @@
         [TestMethod]
         public async Task BasicTests()
         {
-            foreach((PageList pages, int takeCount, long expectedPageIndex) in TestCases())
+            foreach ((PageList pages, int takeCount, long expectedPageIndex) in TestCases())
             {
                 (List<CosmosElement> elements, long pageIndex) = await TakeQueryPipelineStageTests.CreateAndDrainAsync(
                     pages: pages,
-                    executionEnvironment: ExecutionEnvironment.Compute,
                     takeCount: takeCount,
                     continuationToken: null);
 
@@ -82,14 +80,12 @@
 
         private static async Task<(List<CosmosElement>, long)> CreateAndDrainAsync(
             IReadOnlyList<IReadOnlyList<CosmosElement>> pages,
-            ExecutionEnvironment executionEnvironment,
             int takeCount,
             CosmosElement continuationToken)
         {
             MockQueryPipelineStage source = new MockQueryPipelineStage(pages);
 
             TryCatch<IQueryPipelineStage> tryCreateSkipQueryPipelineStage = TakeQueryPipelineStage.MonadicCreateLimitStage(
-                executionEnvironment: executionEnvironment,
                 limitCount: takeCount,
                 requestContinuationToken: continuationToken,
                 monadicCreatePipelineStage: (CosmosElement continuationToken) => TryCatch<IQueryPipelineStage>.FromResult(source));

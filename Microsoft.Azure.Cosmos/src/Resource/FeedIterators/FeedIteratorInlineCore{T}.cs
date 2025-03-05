@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
     using Microsoft.Azure.Cosmos.Tracing;
 
     internal sealed class FeedIteratorInlineCore<T> : FeedIteratorInternal<T>
@@ -27,8 +28,7 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal;
             this.clientContext = clientContext;
 
-            this.container = feedIteratorInternal.container;
-            this.databaseName = feedIteratorInternal.databaseName;
+            this.SetupInfoForTelemetry(feedIteratorInternal);
         }
 
         internal FeedIteratorInlineCore(
@@ -38,8 +38,7 @@ namespace Microsoft.Azure.Cosmos
             this.feedIteratorInternal = feedIteratorInternal ?? throw new ArgumentNullException(nameof(feedIteratorInternal));
             this.clientContext = clientContext;
 
-            this.container = feedIteratorInternal.container;
-            this.databaseName = feedIteratorInternal.databaseName;
+            this.SetupInfoForTelemetry(feedIteratorInternal);
         }
 
         public override bool HasMoreResults => this.feedIteratorInternal.HasMoreResults;
@@ -51,19 +50,27 @@ namespace Microsoft.Azure.Cosmos
                         containerName: this.container?.Id,
                         databaseName: this.container?.Database.Id ?? this.databaseName,
                         operationType: Documents.OperationType.ReadFeed,
-                        requestOptions: null,
+                        requestOptions: new RequestOptions()
+                        {
+                            OperationMetricsOptions = this.operationMetricsOptions,
+                            NetworkMetricsOptions = this.networkMetricsOptions,
+                        },
                         task: trace => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken),
-                        openTelemetry: (response) => new OpenTelemetryResponse<T>(responseMessage: response));
+                        openTelemetry: new (this.feedIteratorInternal.operationName, (response) =>
+                        {
+                            OpenTelemetryResponse<T> openTelemetryResponse = new OpenTelemetryResponse<T>(responseMessage: response, querySpec: this.querySpec);
+
+                            if (this.operationType.HasValue)
+                            {
+                                openTelemetryResponse.OperationType = this.operationType.Value;
+                            }
+                            return openTelemetryResponse;
+                        }));
         }
 
         public override Task<FeedResponse<T>> ReadNextAsync(ITrace trace, CancellationToken cancellationToken)
         {
             return TaskHelper.RunInlineIfNeededAsync(() => this.feedIteratorInternal.ReadNextAsync(trace, cancellationToken));
-        }
-
-        public override CosmosElement GetCosmosElementContinuationToken()
-        {
-            return this.feedIteratorInternal.GetCosmosElementContinuationToken();
         }
 
         protected override void Dispose(bool disposing)

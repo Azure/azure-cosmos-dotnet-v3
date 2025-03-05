@@ -4,9 +4,16 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
+    using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query;
 
     [TestClass]
     [TestCategory("Query")]
@@ -71,6 +78,146 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
                 Documents,
                 RunVectorDistanceTestsAsync);
+        }
+
+        [TestMethod]
+        public async Task QueryFeatureFlagTests()
+        {
+            using EnvironmentVariable nonStreamingOrderByDisabled = new EnvironmentVariable(
+                ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled);
+
+            static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
+            {
+                ContainerInlineCore containerCore = container as ContainerInlineCore;
+
+                SupportedQueryFeaturesValidator validator = new SupportedQueryFeaturesValidator
+                {
+                    ExpectNonStreamingOrderBy = true
+                };
+
+                CosmosQueryClient cosmosQueryClient = new MockCosmosQueryClient(
+                    containerCore.ClientContext,
+                    containerCore,
+                    bypassQueryParsing: true,
+                    validator);
+
+                ContainerProperties containerProperties = await containerCore.GetCachedContainerPropertiesAsync(
+                    forceRefresh: false,
+                    Cosmos.Tracing.NoOpTrace.Singleton,
+                    cancellationToken: default);
+
+                IReadOnlyList<QueryFeaturesTest> testCases = new List<QueryFeaturesTest>
+                {
+                    MakeQueryFeaturesTest(
+                        environmentVariable: null,
+                        requestOption: null,
+                        expectNonStreamingOrderBy: true),
+                    MakeQueryFeaturesTest(
+                        environmentVariable: true,
+                        requestOption: null,
+                        expectNonStreamingOrderBy: false),
+                    MakeQueryFeaturesTest(
+                        environmentVariable: null,
+                        requestOption: true,
+                        expectNonStreamingOrderBy: false),
+                    MakeQueryFeaturesTest(
+                        environmentVariable: false,
+                        requestOption: null,
+                        expectNonStreamingOrderBy: true),
+                    MakeQueryFeaturesTest(
+                        environmentVariable: null,
+                        requestOption: false,
+                        expectNonStreamingOrderBy: true),
+                };
+
+                int validationCount = validator.InvocationCount;
+                foreach (QueryFeaturesTest testCase in testCases)
+                {
+                    if (testCase.EnvironmentVariable.HasValue)
+                    {
+                        Environment.SetEnvironmentVariable(
+                            ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled,
+                            testCase.EnvironmentVariable.Value.ToString());
+                    }
+                    else
+                    {
+                        Environment.SetEnvironmentVariable(
+                            ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled,
+                            null);
+                    }
+
+                    QueryRequestOptions requestOptions = new QueryRequestOptions
+                    {
+                        EnableOptimisticDirectExecution = false,
+                    };
+
+                    if (testCase.RequestOption.HasValue)
+                    {
+                        requestOptions.IsNonStreamingOrderByQueryFeatureDisabled = testCase.RequestOption.Value;
+                    }
+
+                    validator.ExpectNonStreamingOrderBy = testCase.ExpectNonStreamingOrderBy;
+                    ++validationCount;
+
+                    DebugTraceHelpers.TraceSupportedFeaturesTestCase(testCase);
+
+                    QueryIterator iterator = QueryIterator.Create(
+                        containerCore,
+                        cosmosQueryClient,
+                        containerCore.ClientContext,
+                        new SqlQuerySpec("SELECT * FROM c"),
+                        continuationToken: null,
+                        feedRangeInternal: FeedRangeEpk.FullRange,
+                        requestOptions,
+                        resourceLink: containerProperties.SelfLink,
+                        isContinuationExpected: true,
+                        allowNonValueAggregateQuery: true,
+                        partitionedQueryExecutionInfo: null,
+                        resourceType: Azure.Documents.ResourceType.Document);
+
+                    Assert.IsTrue(iterator.HasMoreResults);
+                    ResponseMessage responseMessage = await iterator.ReadNextAsync();
+
+                    if (responseMessage.StatusCode != System.Net.HttpStatusCode.OK)
+                    {
+                        Trace.WriteLine("Failed test case:");
+                        Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectNonStreamingOrderBy: {testCase.ExpectNonStreamingOrderBy}");
+                        Trace.WriteLine($"Unexpected response: {responseMessage.StatusCode}");
+                        Trace.WriteLine(responseMessage.Content.ReadAsString());
+                        Trace.Flush();
+                        Assert.Fail();
+                    }
+
+                    Assert.AreEqual(validationCount, validator.InvocationCount);
+                }
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                new List<string>(),
+                ImplementationAsync);
+        }
+
+        private static QueryFeaturesTest MakeQueryFeaturesTest(bool? environmentVariable, bool? requestOption, bool expectNonStreamingOrderBy)
+        {
+            return new QueryFeaturesTest(environmentVariable, requestOption, expectNonStreamingOrderBy);
+        }
+
+        private sealed class QueryFeaturesTest
+        {
+            public bool? EnvironmentVariable { get; }
+
+            public bool? RequestOption { get; }
+
+            public bool ExpectNonStreamingOrderBy { get; }
+
+            public QueryFeaturesTest(bool? environmentVariable, bool? requestOption, bool expectNonStreamingOrderBy)
+            {
+                this.EnvironmentVariable = environmentVariable;
+                this.RequestOption = requestOption;
+                this.ExpectNonStreamingOrderBy = expectNonStreamingOrderBy;
+            }
         }
 
         private static async Task RunVectorDistanceTestsAsync(Container container, IReadOnlyList<CosmosObject> _)
@@ -173,6 +320,155 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public string Id { get; set; }
             public string Word { get; set; }
+        }
+
+        private static class DebugTraceHelpers
+        {
+#pragma warning disable CS0162, CS0649 // Unreachable code detected
+            private const bool Enabled = false;
+
+            public static void TraceSupportedFeaturesString(string supportedQueryFeatures)
+            {
+                if (Enabled)
+                {
+                    Trace.WriteLine($"Supported query features header: {supportedQueryFeatures}");
+                }
+            }
+
+            public static void TraceSupportedFeaturesTestCase(QueryFeaturesTest testCase)
+            {
+                if (Enabled)
+                {
+                    Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectNonStreamingOrderBy: {testCase.ExpectNonStreamingOrderBy}");
+                }
+            }
+#pragma warning restore CS0162 // Unreachable code detected
+        }
+
+        private sealed class EnvironmentVariable : IDisposable
+        {
+            private readonly string name;
+            private readonly string value;
+
+            public EnvironmentVariable(string name)
+            {
+                this.name = name;
+                this.value = Environment.GetEnvironmentVariable(name);
+            }
+
+            public void Dispose()
+            {
+                Environment.SetEnvironmentVariable(this.name, this.value);
+            }
+        }
+
+        private sealed class SupportedQueryFeaturesValidator
+        {
+            public int InvocationCount { get; private set; }
+
+            public bool ExpectNonStreamingOrderBy { get; set;}
+
+            public void Validate(string supportedQueryFeatures)
+            {
+                DebugTraceHelpers.TraceSupportedFeaturesString(supportedQueryFeatures);
+                ++this.InvocationCount;
+                bool hasNonStreamingOrderBy = supportedQueryFeatures.Contains(QueryFeatures.NonStreamingOrderBy.ToString());
+                Assert.AreEqual(this.ExpectNonStreamingOrderBy, hasNonStreamingOrderBy);
+            }
+        }
+
+        private sealed class MockCosmosQueryClient : CosmosQueryClientCore
+        {
+            private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
+                QueryFeatures.Aggregate
+                | QueryFeatures.Distinct
+                | QueryFeatures.GroupBy
+                | QueryFeatures.MultipleOrderBy
+                | QueryFeatures.MultipleAggregates
+                | QueryFeatures.OffsetAndLimit
+                | QueryFeatures.OrderBy
+                | QueryFeatures.Top
+                | QueryFeatures.NonValueAggregate
+                | QueryFeatures.DCount;
+
+            private static readonly string SupportedQueryFeaturesString = SupportedQueryFeaturesWithoutNonStreamingOrderBy.ToString();
+
+            private readonly bool bypassQueryParsing;
+
+            private readonly SupportedQueryFeaturesValidator validator;
+
+            public MockCosmosQueryClient(
+                CosmosClientContext clientContext,
+                ContainerInternal cosmosContainerCore,
+                bool bypassQueryParsing,
+                SupportedQueryFeaturesValidator validateSupportedQueryFeatures)
+                : base(clientContext, cosmosContainerCore)
+            {
+                this.bypassQueryParsing = bypassQueryParsing;
+                this.validator = validateSupportedQueryFeatures;
+            }
+
+            public override bool BypassQueryParsing()
+            {
+                return this.bypassQueryParsing;
+            }
+
+            public override Task<PartitionedQueryExecutionInfo> ExecuteQueryPlanRequestAsync(
+                string resourceUri,
+                Documents.ResourceType resourceType,
+                Documents.OperationType operationType,
+                SqlQuerySpec sqlQuerySpec,
+                Cosmos.PartitionKey? partitionKey,
+                string supportedQueryFeatures,
+                Guid clientQueryCorrelationId,
+                Cosmos.Tracing.ITrace trace,
+                CancellationToken cancellationToken)
+            {
+                this.validator.Validate(supportedQueryFeatures);
+
+                if (this.validator.ExpectNonStreamingOrderBy)
+                {
+                    // older emulator in the github repo does not support non-streaming order by, and will send back 400
+                    supportedQueryFeatures = SupportedQueryFeaturesString;
+                }
+
+                return base.ExecuteQueryPlanRequestAsync(
+                    resourceUri,
+                    resourceType,
+                    operationType,
+                    sqlQuerySpec,
+                    partitionKey,
+                    supportedQueryFeatures,
+                    clientQueryCorrelationId,
+                    trace,
+                    cancellationToken);
+            }
+
+            public override Task<TryCatch<QueryPage>> ExecuteItemQueryAsync(
+                string resourceUri,
+                Documents.ResourceType resourceType,
+                Documents.OperationType operationType,
+                FeedRange feedRange,
+                QueryRequestOptions requestOptions,
+                AdditionalRequestHeaders additionalRequestHeaders,
+                SqlQuerySpec sqlQuerySpec,
+                string continuationToken,
+                int pageSize,
+                Cosmos.Tracing.ITrace trace,
+                CancellationToken cancellationToken)
+            {
+                QueryPage queryPage = new QueryPage(
+                    documents: new List<CosmosElement>(),
+                    requestCharge: 0,
+                    activityId: Guid.NewGuid().ToString(),
+                    cosmosQueryExecutionInfo: null,
+                    distributionPlanSpec: null,
+                    disallowContinuationTokenMessage: null,
+                    additionalHeaders: null,
+                    state: null,
+                    streaming: false);
+                return Task.FromResult(TryCatch<QueryPage>.FromResult(queryPage));
+            }
         }
     }
 }

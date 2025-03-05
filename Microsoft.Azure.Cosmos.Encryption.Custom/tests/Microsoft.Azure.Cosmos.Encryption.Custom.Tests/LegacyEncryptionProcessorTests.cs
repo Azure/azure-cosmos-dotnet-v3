@@ -26,7 +26,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         private const string dekId = "dekId";
 
         [ClassInitialize]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The ClassInitialize method takes a single parameter of type TestContext.")]
         public static void ClassInitialize(TestContext testContext)
         {
             _ = testContext;
@@ -50,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         public async Task InvalidPathToEncrypt()
         {
             TestDoc testDoc = TestDoc.Create();
-            EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new EncryptionOptions()
+            EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new ()
             {
                 DataEncryptionKeyId = LegacyEncryptionProcessorTests.dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.AEAes256CbcHmacSha256Randomized,
@@ -209,7 +208,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             
             Assert.IsNotNull(decryptionContext);
             Assert.IsNotNull(decryptionContext.DecryptionInfoList);
-            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList.First();
+            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList[0];
             Assert.AreEqual(LegacyEncryptionProcessorTests.dekId, decryptionInfo.DataEncryptionKeyId);
             Assert.AreEqual(pathCount, decryptionInfo.PathsDecrypted.Count);
 

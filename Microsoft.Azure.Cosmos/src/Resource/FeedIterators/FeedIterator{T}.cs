@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Query.Core;
 
     /// <summary>
     /// Cosmos Result set iterator that keeps track of the continuation token when retrieving results form a query.
@@ -123,5 +124,37 @@ namespace Microsoft.Azure.Cosmos
         /// Collect database name if container information not available in open telemetry attributes
         /// </summary>
         internal string databaseName;
+
+        /// <summary>
+        /// Operation Name used for open telemetry traces
+        /// </summary>
+        internal string operationName;
+
+        /// <summary>
+        /// Operation Type used for open telemetry traces
+        /// </summary>
+        internal Documents.OperationType? operationType;
+
+        /// <summary>
+        /// collect SQL query Specs for tracing
+        /// </summary>
+        internal SqlQuerySpec querySpec;
+
+        internal OperationMetricsOptions operationMetricsOptions;
+
+        internal NetworkMetricsOptions networkMetricsOptions;
+
+        internal void SetupInfoForTelemetry(FeedIterator<T> feedIteratorInternal)
+        {
+            this.container = feedIteratorInternal.container;
+            this.databaseName = feedIteratorInternal.databaseName;
+
+            this.operationName = feedIteratorInternal.operationName;
+            this.operationType = feedIteratorInternal.operationType;
+
+            this.querySpec = feedIteratorInternal.querySpec;
+            this.operationMetricsOptions = feedIteratorInternal.operationMetricsOptions;
+            this.networkMetricsOptions = feedIteratorInternal.networkMetricsOptions;
+        }
     }
 }
