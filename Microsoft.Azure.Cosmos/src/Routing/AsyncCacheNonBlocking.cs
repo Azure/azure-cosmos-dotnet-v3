@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 try
                 {
-                    TValue cachedResult = await initialLazyValue.GetValueAsync();
+                    TValue cachedResult = await initialLazyValue.GetValueAsync(singleValueInitFunc);
                     if (forceRefresh == null || !forceRefresh(cachedResult))
                     {
                         return cachedResult;
@@ -129,7 +129,7 @@ namespace Microsoft.Azure.Cosmos
             // The AsyncLazyWithRefreshTask is lazy and won't create the task until GetValue is called.
             // It's possible multiple threads will call the GetOrAdd for the same key. The current asyncLazy may
             // not be used if another thread adds it first.
-            AsyncLazyWithRefreshTask<TValue> asyncLazy = new AsyncLazyWithRefreshTask<TValue>(singleValueInitFunc, this.cancellationTokenSource.Token);
+            AsyncLazyWithRefreshTask<TValue> asyncLazy = new AsyncLazyWithRefreshTask<TValue>(this.cancellationTokenSource.Token);
             AsyncLazyWithRefreshTask<TValue> result = this.values.GetOrAdd(
                 key,
                 asyncLazy);
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
             // Another thread async lazy was inserted. Just await on the inserted lazy object.
             if (!object.ReferenceEquals(asyncLazy, result))
             {
-                return await result.GetValueAsync();
+                return await result.GetValueAsync(singleValueInitFunc);
             }
 
             // This means the current caller async lazy was inserted into the concurrent dictionary.
@@ -145,7 +145,7 @@ namespace Microsoft.Azure.Cosmos
             // the concurrent dictionary.
             try
             {
-                return await result.GetValueAsync();
+                return await result.GetValueAsync(singleValueInitFunc);
             }
             catch (Exception e)
             {
@@ -257,7 +257,6 @@ namespace Microsoft.Azure.Cosmos
             private readonly object removedFromCacheLock = new ();
 
             private bool removedFromCache = false;
-            private Func<T, Task<T>> createValueFunc;
             private Task<T> value;
             private Task<T> refreshInProgress;
 
@@ -266,24 +265,22 @@ namespace Microsoft.Azure.Cosmos
                 CancellationToken cancellationToken)
             {
                 this.cancellationToken = cancellationToken;
-                this.createValueFunc = null;
                 this.value = Task.FromResult(value);
                 this.refreshInProgress = null;
             }
 
             public AsyncLazyWithRefreshTask(
-                Func<T, Task<T>> taskFactory,
                 CancellationToken cancellationToken)
             {
                 this.cancellationToken = cancellationToken;
-                this.createValueFunc = taskFactory;
                 this.value = null;
                 this.refreshInProgress = null;
             }
 
             public bool IsValueCreated => this.value != null;
 
-            public Task<T> GetValueAsync()
+            public Task<T> GetValueAsync(
+                Func<T, Task<T>> createValueFunc)
             {
                 // The task was already created so just return it.
                 Task<T> valueSnapshot = this.value;
@@ -303,8 +300,7 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     this.cancellationToken.ThrowIfCancellationRequested();
-                    this.value = this.createValueFunc(default);
-                    this.createValueFunc = null;
+                    this.value = createValueFunc(default);
                     return this.value;
                 }
             }
