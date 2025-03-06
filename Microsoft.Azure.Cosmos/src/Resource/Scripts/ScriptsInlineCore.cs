@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
-    using Microsoft.Azure.Cosmos.Tracing;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
     internal sealed class ScriptsInlineCore : ScriptsCore
@@ -27,22 +26,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.CreateStoredProcedureStreamAsync(
-                    storedProcedureProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(CreateStoredProcedureStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.CreateStoredProcedureStreamAsync(
+                    storedProcedureProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateStoredProcedure, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -114,22 +108,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.ReadStoredProcedureStreamAsync(
-                    id,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReadStoredProcedureStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.ReadStoredProcedureStreamAsync(
+                    id,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadStoredProcedure, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -153,21 +142,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.ReplaceStoredProcedureStreamAsync(
-                    storedProcedureProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReplaceStoredProcedureStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.ReplaceStoredProcedureStreamAsync(
+                    storedProcedureProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceStoredProcedure, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -191,22 +176,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.DeleteStoredProcedureStreamAsync(
-                    id,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(DeleteStoredProcedureStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.DeleteStoredProcedureStreamAsync(
+                    id,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteStoreProcedure, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -281,22 +261,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.CreateTriggerStreamAsync(
-                    triggerProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(CreateTriggerStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.CreateTriggerStreamAsync(
+                    triggerProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateTrigger, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -368,22 +343,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.ReadTriggerStreamAsync(
-                    id,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReadTriggerStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.ReadTriggerStreamAsync(
+                    id,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadTrigger, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -407,22 +377,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.ReplaceTriggerStreamAsync(
-                    triggerProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReplaceTriggerStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.ReplaceTriggerStreamAsync(
+                    triggerProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceTrigger, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -446,22 +411,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.DeleteTriggerStreamAsync(
-                    id,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(DeleteTriggerStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.DeleteTriggerStreamAsync(
+                    id,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteTrigger, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -485,22 +445,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.CreateUserDefinedFunctionStreamAsync(
-                    userDefinedFunctionProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(CreateUserDefinedFunctionStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.CreateUserDefinedFunctionStreamAsync(
+                    userDefinedFunctionProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateUserDefinedFunction, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -572,22 +527,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.ReadUserDefinedFunctionStreamAsync(
-                    id,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReadUserDefinedFunctionStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Read,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.ReadUserDefinedFunctionStreamAsync(
+                    id,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadUserDefinedFunction, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -611,21 +561,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.ReplaceUserDefinedFunctionStreamAsync(
-                    userDefinedFunctionProperties,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
             return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(ReplaceUserDefinedFunctionStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.ReplaceUserDefinedFunctionStreamAsync(
+                    userDefinedFunctionProperties,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceUserDefinedFunctions, (response) => new OpenTelemetryResponse(response)));
         }
 
@@ -649,22 +595,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
         {
-            Task<ResponseMessage> func(ITrace trace)
-            {
-                return base.DeleteUserDefinedFunctionStreamAsync(
-                    id,
-                    requestOptions,
-                    trace,
-                    cancellationToken);
-            }
-
-            return this.ClientContext.OperationHelperAsync(
+           return this.ClientContext.OperationHelperAsync(
                 operationName: nameof(DeleteUserDefinedFunctionStreamAsync),
                 containerName: this.container.Id,
                 databaseName: this.container.Database.Id,
                 operationType: Documents.OperationType.Delete,
                 requestOptions: requestOptions,
-                task: func,
+                task: (trace) => base.DeleteUserDefinedFunctionStreamAsync(
+                    id,
+                    requestOptions,
+                    trace,
+                    cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteUserDefinedFunctions, (response) => new OpenTelemetryResponse(response)));
         }
 
