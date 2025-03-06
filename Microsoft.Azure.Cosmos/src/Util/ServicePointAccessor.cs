@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
 
         private void TrySetConnectionLimit(int connectionLimit)
         {
-            if (ServicePointAccessor.IsSupported)
+            if (!ServicePointAccessor.IsSupported)
             {
                 // Workaround for WebAssembly.
                 // WebAssembly currently throws a SynchronizationLockException and not a PlatformNotSupportedException.
