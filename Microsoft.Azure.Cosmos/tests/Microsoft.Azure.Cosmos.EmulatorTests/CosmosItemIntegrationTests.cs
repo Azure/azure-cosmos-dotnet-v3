@@ -6,6 +6,7 @@
     using System.Net;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -111,7 +112,7 @@
             {
                 ConnectionMode = ConnectionMode.Direct,
                 ConsistencyLevel = ConsistencyLevel.Strong,
-                //Serializer = this.cosmosSystemTextJsonSerializer,
+                Serializer = this.cosmosSystemTextJsonSerializer,
                 FaultInjector = injector,
             };
 
@@ -147,6 +148,64 @@
         }
 
         [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task AddressRefreshTimeoutTest()
+        {
+            FaultInjectionRule gatewayRule = new FaultInjectionRuleBuilder(
+                id: "gatewayRule",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataRefreshAddresses)
+                    .WithRegion(region1)
+                    .Build(),
+                result: new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                    .WithDelay(TimeSpan.FromSeconds(65))
+                    .Build())
+                .Build();
+
+            gatewayRule.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { gatewayRule });
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ConnectionMode = ConnectionMode.Direct,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(1),
+
+            };
+
+            using (CosmosClient fiClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: cosmosClientOptions))
+            {
+                Database fidb = fiClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container fic = fidb.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                gatewayRule.Enable();
+
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> o = await fic.ReadItemAsync<CosmosIntegrationTestObject>(
+                        "testId", 
+                        new PartitionKey("pk"));
+                    Assert.IsTrue(o.StatusCode == HttpStatusCode.OK);
+                }
+                catch (Exception ex)
+                {
+                    Assert.Fail(ex.ToString());
+                }
+                finally
+                {
+                    gatewayRule.Disable();
+                    Assert.IsTrue(gatewayRule.GetHitCount() >= 3);
+
+                    fiClient.Dispose();
+                }
+            }
+        }
+          
         [Owner("dkunda")]
         [TestCategory("MultiRegion")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
