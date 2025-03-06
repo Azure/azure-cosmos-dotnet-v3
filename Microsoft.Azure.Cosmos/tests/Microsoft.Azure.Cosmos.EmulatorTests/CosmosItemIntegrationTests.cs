@@ -247,7 +247,7 @@
         {
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
-            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, circuitBreakerConsecutiveFailureCount);
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, circuitBreakerConsecutiveFailureCount);
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
@@ -337,7 +337,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
 
                 await this.TryDeleteItems(itemsList);
             }
@@ -351,7 +351,7 @@
         {
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
-            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, "10");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, "10");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
             string serviceUnavailableRuleId1 = "503-rule-" + Guid.NewGuid().ToString();
@@ -501,7 +501,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
 
                 await this.TryDeleteItems(itemsList);
             }
@@ -593,7 +593,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
 
                 await this.TryDeleteItems(itemsList);
             }
@@ -608,7 +608,7 @@
             // Arrange.
             int circuitBreakerConsecutiveFailureCount = 10;
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
-            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, $"{circuitBreakerConsecutiveFailureCount}");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, $"{circuitBreakerConsecutiveFailureCount}");
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
@@ -674,7 +674,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
             }
         }
 
@@ -685,13 +685,14 @@
         [DataRow("25", "20", DisplayName = "Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
         [DataRow("35", "30", DisplayName = "Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
         [Timeout(70000)]
+        [DoNotParallelize]
         public async Task CreateItemAsync_WithCircuitBreakerEnabledAndMultiMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
             string iterationCount,
             string circuitBreakerConsecutiveFailureCount)
         {
             // Arrange.
             Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
-            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, circuitBreakerConsecutiveFailureCount);
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForWrites, circuitBreakerConsecutiveFailureCount);
 
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
@@ -711,6 +712,7 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
+            Random random = new ();
             List<CosmosIntegrationTestObject> itemsCleanupList = new();
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new()
@@ -738,8 +740,8 @@
                     {
                         CosmosIntegrationTestObject testItem = new()
                         {
-                            Id = $"mmTestId{attemptCount}",
-                            Pk = $"mmpk{attemptCount}"
+                            Id = $"mmTestId{random.Next()}",
+                            Pk = $"mmpk{random.Next()}"
                         };
 
                         ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem);
@@ -777,7 +779,150 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCount, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
+
+                foreach (CosmosIntegrationTestObject item in itemsCleanupList)
+                {
+                    await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(item.Id, new PartitionKey(item.Pk));
+                }
+            }
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        [TestCategory("MultiMaster")]
+        [Timeout(70000)]
+        [DoNotParallelize]
+        public async Task CreateAndReadItemAsync_WithCircuitBreakerEnabledAndMultiMasterAccountAndDefaultThresholdServiceUnavailableReceived_ShouldApplyPartitionLevelOverride()
+        {
+            // Arrange.
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId1 = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule1 = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId1,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .WithRegion(region1)
+                       .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(2))
+                        .Build())
+                .Build();
+
+            string serviceUnavailableRuleId2 = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule2 = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId2,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(region1)
+                       .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(2))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule1, serviceUnavailableRule2 };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            List<CosmosIntegrationTestObject> itemsCleanupList = new();
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            try
+            {
+                // Act and Assert.
+                Random random = new ();
+                int totalIterations = 20;
+                int consecutiveFailureCountForReads = 10;
+                int consecutiveFailureCountForWrites = 5;
+
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+                {
+                    try
+                    {
+                        CosmosIntegrationTestObject testItem = new()
+                        {
+                            Id = $"mmTestId{random.Next()}",
+                            Pk = $"mmpk{random.Next()}"
+                        };
+
+                        ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem);
+                        itemsCleanupList.Add(testItem);
+                        Console.WriteLine(createResponse.Diagnostics);
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.Created,
+                            actual: createResponse.StatusCode);
+
+                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMappingForWrites = createResponse.Diagnostics.GetContactedRegions();
+                        HashSet<string> contactedRegionsForWrite = new(contactedRegionMappingForWrites.Select(r => r.regionName));
+                        Assert.IsNotNull(contactedRegionsForWrite);
+
+                        if (attemptCount > consecutiveFailureCountForWrites + 1)
+                        {
+                            Assert.IsTrue(contactedRegionsForWrite.Count == 1, "Asserting that when the consecutive failure count reaches the write threshold, the partition was failed over to the next region, and the subsequent write request/s were successful on the next region.");
+                            Assert.IsTrue(contactedRegionsForWrite.Contains(region2));
+                        }
+                        else
+                        {
+                            Assert.IsTrue(contactedRegionsForWrite.Count == 2, "Asserting that when the write requests succeeds before the consecutive failure count reaches the write threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                            Assert.IsTrue(contactedRegionsForWrite.Contains(region1) && contactedRegionsForWrite.Contains(region2));
+                        }
+
+                        ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                            id: testItem.Id,
+                            partitionKey: new PartitionKey(testItem.Pk));
+
+                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMappingForReads = readResponse.Diagnostics.GetContactedRegions();
+                        HashSet<string> contactedRegionsForReads = new(contactedRegionMappingForReads.Select(r => r.regionName));
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.OK,
+                            actual: readResponse.StatusCode);
+
+                        Assert.IsNotNull(contactedRegionsForReads);
+
+                        if (attemptCount > consecutiveFailureCountForReads + 1)
+                        {
+                            Assert.IsTrue(contactedRegionsForReads.Count == 1, "Asserting that when the consecutive failure count reaches the read threshold, the partition was failed over to the next region, and the subsequent read request/s were successful on the next region.");
+                            Assert.IsTrue(contactedRegionsForReads.Contains(region2));
+                        }
+                        else
+                        {
+                            Assert.IsTrue(contactedRegionsForReads.Count == 2, "Asserting that when the read request succeeds before the consecutive failure count reaches the read threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                            Assert.IsTrue(contactedRegionsForReads.Contains(region1) && contactedRegionsForReads.Contains(region2));
+                        }
+                    }
+                    catch (CosmosException ex)
+                    {
+                        Assert.Fail($"Create and Read Item operations should succeed. Message: { ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Unhandled Exception was thrown during CreateItemAsync call. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
 
                 foreach (CosmosIntegrationTestObject item in itemsCleanupList)
                 {
