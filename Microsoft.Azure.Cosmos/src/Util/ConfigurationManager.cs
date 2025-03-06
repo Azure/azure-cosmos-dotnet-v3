@@ -44,7 +44,13 @@ namespace Microsoft.Azure.Cosmos
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
-        internal static readonly string CircuitBreakerConsecutiveFailureCount = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT";
+        internal static readonly string CircuitBreakerConsecutiveFailureCountForReads = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_READS";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for capturing the consecutive failure count for writes, before triggering per partition
+        /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
+        /// </summary>
+        internal static readonly string CircuitBreakerConsecutiveFailureCountForWrites = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES";
 
         /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
@@ -172,16 +178,32 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the consecutive failure count for reads before triggering the per partition circuit breaker flow.
         /// The default value for this interval is 10 consecutive requests within a 1-minute window.
-        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_BASED' to override the value.
+        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_READS' to override the value.
         /// </summary>
         /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
         /// <returns>An integer representing the consecutive failure count for reads.</returns>
-        public static int GetCircuitBreakerConsecutiveFailureCount(
+        public static int GetCircuitBreakerConsecutiveFailureCountForReads(
             int defaultValue)
         {
             return ConfigurationManager
                     .GetEnvironmentVariable(
-                        variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCount,
+                        variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the consecutive failure count for writes (applicable for multi master accounts) before triggering
+        /// the per partition circuit breaker flow. The default value for this interval is 5 consecutive requests within a 1-minute window.
+        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES' to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
+        /// <returns>An integer representing the consecutive failure count for writes.</returns>
+        public static int GetCircuitBreakerConsecutiveFailureCountForWrites(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCountForWrites,
                         defaultValue: defaultValue);
         }
 

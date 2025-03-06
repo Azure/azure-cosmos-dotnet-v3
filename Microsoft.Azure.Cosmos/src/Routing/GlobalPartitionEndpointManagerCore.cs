@@ -222,9 +222,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                     failedLocation));
 
             partionFailover.IncrementRequestFailureCounts(
+                isReadOnlyRequest: request.IsReadOnlyRequest,
                 currentTime: DateTime.UtcNow);
 
-            return partionFailover.CanCircuitBreakerTriggerPartitionFailOver();
+            return partionFailover.CanCircuitBreakerTriggerPartitionFailOver(
+                isReadOnlyRequest: request.IsReadOnlyRequest);
         }
 
         /// <summary>
@@ -363,8 +365,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             while (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                DefaultTrace.TraceInformation("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() trying to get address and open connections for failed locations.");
-
                 try
                 {
                     await Task.Delay(
@@ -376,6 +376,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         break;
                     }
 
+                    DefaultTrace.TraceInformation("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() trying to get address and open connections for failed locations.");
                     await this.TryOpenConnectionToUnhealthyEndpointsAndInitiateFailbackAsync();
                 }
                 catch (Exception ex)
@@ -470,7 +471,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
             {
                 if ((request.IsReadOnlyRequest || this.IsWriteRequestEligibleForPartitionLevelCircuitBreaker(request))
-                    && !partitionKeyRangeFailover.CanCircuitBreakerTriggerPartitionFailOver())
+                    && !partitionKeyRangeFailover.CanCircuitBreakerTriggerPartitionFailOver(request.IsReadOnlyRequest))
                 {
                     return false;
                 }
@@ -578,9 +579,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             private readonly object timestampLock = new ();
             private readonly ConcurrentDictionary<Uri, DateTime> FailedLocations;
             private readonly TimeSpan TimeoutCounterResetWindowInMinutes;
-            private readonly int RequestFailureCounterThreshold;
+            private readonly int ReadRequestFailureCounterThreshold;
+            private readonly int WriteRequestFailureCounterThreshold;
             private DateTime LastRequestFailureTime;
-            private int ConsecutiveRequestFailureCount;
+            private int ConsecutiveReadRequestFailureCount;
+            private int ConsecutiveWriteRequestFailureCount;
 
             public PartitionKeyRangeFailoverInfo(
                 string collectionRid,
@@ -590,8 +593,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.Current = currentLocation;
                 this.FirstFailedLocation = currentLocation;
                 this.FailedLocations = new ConcurrentDictionary<Uri, DateTime>();
-                this.ConsecutiveRequestFailureCount = 0;
-                this.RequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCount(10);
+                this.ConsecutiveReadRequestFailureCount = 0;
+                this.ConsecutiveWriteRequestFailureCount = 0;
+                this.ReadRequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForReads(10);
+                this.WriteRequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForWrites(5);
                 this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
                 this.FirstRequestFailureTime = DateTime.UtcNow;
                 this.LastRequestFailureTime = DateTime.UtcNow;
@@ -644,15 +649,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            public bool CanCircuitBreakerTriggerPartitionFailOver()
+            public bool CanCircuitBreakerTriggerPartitionFailOver(
+                bool isReadOnlyRequest) 
             {
                 this.SnapshotConsecutiveRequestFailureCount(
-                    out int consecutiveRequestFailureCount);
+                    out int consecutiveReadRequestFailureCount,
+                    out int consecutiveWriteRequestFailureCount);
 
-                return consecutiveRequestFailureCount > this.RequestFailureCounterThreshold;
+                return isReadOnlyRequest
+                    ? consecutiveReadRequestFailureCount > this.ReadRequestFailureCounterThreshold
+                    : consecutiveWriteRequestFailureCount > this.WriteRequestFailureCounterThreshold;
             }
 
             public void IncrementRequestFailureCounts(
+                bool isReadOnlyRequest,
                 DateTime currentTime)
             {
                 this.SnapshotPartitionFailoverTimestamps(
@@ -661,10 +671,20 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                 if (currentTime - lastRequestFailureTime > this.TimeoutCounterResetWindowInMinutes)
                 {
-                    Interlocked.Exchange(ref this.ConsecutiveRequestFailureCount, 0);
+                    Interlocked.Exchange(ref this.ConsecutiveReadRequestFailureCount, 0);
+                    Interlocked.Exchange(ref this.ConsecutiveWriteRequestFailureCount, 0);
                 }
 
-                Interlocked.Increment(ref this.ConsecutiveRequestFailureCount);
+                if (isReadOnlyRequest)
+                {
+                    Interlocked.Increment(ref this.ConsecutiveReadRequestFailureCount);
+                }
+                else
+                {
+                    Interlocked.Increment(ref this.ConsecutiveWriteRequestFailureCount);
+
+                }
+
                 this.LastRequestFailureTime = currentTime;
             }
 
@@ -686,12 +706,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             public void SnapshotConsecutiveRequestFailureCount(
-                out int consecutiveRequestFailureCount)
+                out int consecutiveReadRequestFailureCount,
+                out int consecutiveWriteRequestFailureCount)
             {
                 Debug.Assert(!Monitor.IsEntered(this.counterLock));
                 lock (this.counterLock)
                 {
-                    consecutiveRequestFailureCount = this.ConsecutiveRequestFailureCount;
+                    consecutiveReadRequestFailureCount = this.ConsecutiveReadRequestFailureCount;
+                    consecutiveWriteRequestFailureCount = this.ConsecutiveWriteRequestFailureCount;
                 }
             }
         }
