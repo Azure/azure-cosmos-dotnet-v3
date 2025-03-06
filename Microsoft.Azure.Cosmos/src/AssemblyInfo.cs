@@ -33,6 +33,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.NetFramework.Tests" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Analytics.Core" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.Analytics.Core" + AssemblyKeys.TestPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle" + AssemblyKeys.ProductPublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.Azure.Cosmos.QueryOracle" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.ProductPublicKey)]
 [assembly: InternalsVisibleTo("CosmosCTL" + AssemblyKeys.TestPublicKey)]
 [assembly: InternalsVisibleTo("CosmosBenchmark" + AssemblyKeys.ProductPublicKey)]
