@@ -4228,14 +4228,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public class ToDoActivityAfterMigration
         {
-#pragma warning disable IDE1006 // Naming Styles
             public string id { get; set; }
             public int taskNum { get; set; }
             public double cost { get; set; }
             public string description { get; set; }
             [JsonProperty(PropertyName = "_partitionKey")]
             public string partitionKey { get; set; }
-#pragma warning restore IDE1006 // Naming Styles
         }
 
         private ToDoActivityAfterMigration CreateRandomToDoActivityAfterMigration(string pk = null, string id = null)
