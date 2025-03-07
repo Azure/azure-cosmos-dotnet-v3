@@ -106,6 +106,53 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CRUDStreamTest()
+        {
+            TriggerProperties settings = new TriggerProperties
+            {
+                Id = Guid.NewGuid().ToString(),
+                Body = TriggersTests.GetTriggerFunction(".05"),
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
+            };
+
+
+            ResponseMessage triggerResponseMessage =
+                await this.scripts.CreateTriggerStreamAsync(
+                    settings);
+            Assert.AreEqual(HttpStatusCode.Created, triggerResponseMessage.StatusCode);
+            Assert.IsNotNull(triggerResponseMessage.Diagnostics);
+            string diagnostics = triggerResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            triggerResponseMessage = await this.scripts.ReadTriggerStreamAsync(settings.Id);
+            Assert.AreEqual(HttpStatusCode.OK, triggerResponseMessage.StatusCode);
+            Assert.IsNotNull(triggerResponseMessage.Diagnostics);
+            diagnostics = triggerResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            TriggerProperties updatedSettings = settings;
+            updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
+
+            ResponseMessage replaceResponseMessage = await this.scripts.ReplaceTriggerStreamAsync(
+                updatedSettings);
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            replaceResponseMessage = await this.scripts.DeleteTriggerStreamAsync(updatedSettings.Id);
+            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+        }
+
+        [TestMethod]
         [DataRow(TriggerOperation.Create)]
         [DataRow(TriggerOperation.Upsert)]
         public async Task ValidatePreTriggerTest(TriggerOperation triggerOperation)
