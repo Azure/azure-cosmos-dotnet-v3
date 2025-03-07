@@ -1159,6 +1159,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.PushMethod(inputExpression);
 
             Type declaringType = inputExpression.Method.DeclaringType;
+
             if ((declaringType != typeof(Queryable) && declaringType != typeof(Enumerable) /*LINQ Methods*/
                  && declaringType != typeof(CosmosLinqExtensions) /*OrderByRank*/)
                 || !inputExpression.Method.IsStatic /*Other extansion method*/)

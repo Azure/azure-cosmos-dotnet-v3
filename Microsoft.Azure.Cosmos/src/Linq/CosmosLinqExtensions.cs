@@ -319,7 +319,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static Func<TSource, object> FullTextScore<TSource>(this TSource obj, string[] terms)
         {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented); //Todo: change this to LINQNotImplemented once the FTContains PR is checked in
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }
 
         /// <summary>
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static Func<TSource, object> RRF<TSource>(this object obj, params Func<TSource, object>[] scoringFunctions)
         {
-            throw new NotImplementedException(ClientResources.TypeCheckExtensionFunctionsNotImplemented); //Todo: change this to LINQNotImplemented once the FTContains PR is checked in
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }
 
         /// <summary>
