@@ -136,13 +136,13 @@ namespace Microsoft.Azure.Cosmos
 
             if (responseMessage.StatusCode != (HttpStatusCode)status)
             {
-                throw new InternalServerErrorException("Status code mismatch");
+                throw new InternalServerErrorException($"Status code mismatch: Expected {(int)status}, but received {(int)responseMessage.StatusCode}.");
             }
 
             Rntbd.BytesDeserializer bytesDeserializer = new Rntbd.BytesDeserializer(metadata, metadata.Length);
             if (!Documents.Rntbd.HeadersTransportSerialization.TryParseMandatoryResponseHeaders(ref bytesDeserializer, out bool payloadPresent, out _))
             {
-                throw new InternalServerErrorException("Length mismatch");
+                throw new InternalServerErrorException("Response metadata length mismatch: Unable to parse mandatory headers.");
             }
 
             MemoryStream bodyStream = null;
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Cosmos
 
                 if (totalLength < headerLength)
                 {
-                    throw new InternalServerErrorException("Length mismatch");
+                    throw new InternalServerErrorException("Header length mismatch: Total length is smaller than expected.");
                 }
 
                 int metadataLength = (int)totalLength - headerLength;
