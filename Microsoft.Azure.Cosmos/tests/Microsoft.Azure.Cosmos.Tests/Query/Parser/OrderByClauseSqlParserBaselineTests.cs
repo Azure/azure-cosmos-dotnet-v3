@@ -46,6 +46,45 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
             this.ExecuteTestSuite(inputs);
         }
 
+        [TestMethod]
+        public void SingleOrderByRank()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                // Positive
+                CreateInput(description: "Basic", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"])"),
+                CreateInput(description: "Ascending", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"]) ASC"),
+                CreateInput(description: "Descending", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"]) DESC"),
+                CreateInput(description: "Case Insensitive", orderByClause: "OrDeR By rANk FullTextScore(c.text, [\"keyword\"]) DeSc"),
+
+                // Negative
+                CreateInput(description: "No spaces", orderByClause: "ORDERBYRANK FullTextScore(c.text, [\"keyword\"])"),
+                CreateInput(description: "Wrong Keyword", orderByClause: "ORDER BY RANKS FullTextScore(c.text, [\"keyword\"])"),
+                CreateInput(description: "Not a function call", orderByClause: "ORDER BY RANK 1")
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void MultiOrderByRank()
+        {
+            List<SqlParserBaselineTestInput> inputs = new List<SqlParserBaselineTestInput>()
+            {
+                // Positive
+                CreateInput(description: "Basic", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"]), FullTextScore(c.text2, [\"keyword\"]), FullTextScore(c.text3, [\"keyword\"])"),
+                CreateInput(description: "Only one sort order", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"]) ASC, FullTextScore(c.text2, [\"keyword\"]) ASC, FullTextScore(c.text3, [\"keyword\"]) ASC"),
+                CreateInput(description: "All sort order", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"]) ASC, FullTextScore(c.text2, [\"keyword\"]) DESC, FullTextScore(c.text3, [\"keyword\"]) ASC"),
+
+                // Negative
+                CreateInput(description: "Trailing comma", orderByClause: "ORDER BY RANK FullTextScore(c.text, [\"keyword\"]) ASC,"),
+                CreateInput(description: "All fields not function call", orderByClause: "ORDER BY RANK 1, 2, 3"),
+                CreateInput(description: "Some fields not function call", orderByClause: "ORDER BY RANK RANK FullTextScore(c.text, [\"keyword\"]) ASC, 2, 3 ASC")
+            };
+
+            this.ExecuteTestSuite(inputs);
+        }
+
         public static SqlParserBaselineTestInput CreateInput(string description, string orderByClause)
         {
             return new SqlParserBaselineTestInput(description, $"SELECT * {orderByClause}");
