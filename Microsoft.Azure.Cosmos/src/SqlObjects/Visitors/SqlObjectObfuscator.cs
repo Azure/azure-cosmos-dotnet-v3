@@ -277,13 +277,26 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override SqlObject Visit(SqlOrderByClause sqlOrderByClause)
         {
-            SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderByItems.Length];
-            for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
+            if (sqlOrderByClause.Rank)
             {
-                items[i] = sqlOrderByClause.OrderByItems[i].Accept(this) as SqlOrderByItem;
-            }
+                SqlScoreExpressionOrderByItem[] items = new SqlScoreExpressionOrderByItem[sqlOrderByClause.ScoreExpressionOrderByItems.Length];
+                for (int i = 0; i < sqlOrderByClause.ScoreExpressionOrderByItems.Length; i++)
+                {
+                    items[i] = sqlOrderByClause.ScoreExpressionOrderByItems[i].Accept(this) as SqlScoreExpressionOrderByItem;
+                }
 
-            return SqlOrderByClause.Create(items);
+                return SqlOrderByClause.Create(items);
+            }
+            else
+            {
+                SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderByItems.Length];
+                for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
+                {
+                    items[i] = sqlOrderByClause.OrderByItems[i].Accept(this) as SqlOrderByItem;
+                }
+
+                return SqlOrderByClause.Create(items);
+            }
         }
 
         public override SqlObject Visit(SqlOrderByItem sqlOrderByItem)
@@ -337,6 +350,13 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
                 sqlQuery.OrderByClause?.Accept(this) as SqlOrderByClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
+        }
+
+        public override SqlObject Visit(SqlScoreExpressionOrderByItem sqlScoreOrderByItem)
+        {
+            return SqlScoreExpressionOrderByItem.Create(
+                sqlScoreOrderByItem.Expression.Accept(this) as SqlFunctionCallScalarExpression,
+                sqlScoreOrderByItem.IsDescending);
         }
 
         public override SqlObject Visit(SqlSelectClause sqlSelectClause)

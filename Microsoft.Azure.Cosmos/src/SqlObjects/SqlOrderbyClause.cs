@@ -22,14 +22,30 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             {
                 if (sqlOrderbyItem == null)
                 {
-                    throw new ArgumentException($"{nameof(sqlOrderbyItem)} must have have null items.");
+                    throw new ArgumentException($"{nameof(sqlOrderbyItem)} must not have null items.");
                 }
             }
 
             this.OrderByItems = orderByItems;
+            this.Rank = false;
+        }
+
+        private SqlOrderByClause(ImmutableArray<SqlScoreExpressionOrderByItem> scoreExpressionOrderByItems)
+        {
+            foreach (SqlScoreExpressionOrderByItem sqlOrderbyItem in scoreExpressionOrderByItems)
+            {
+                if (sqlOrderbyItem == null)
+                {
+                    throw new ArgumentException($"{nameof(sqlOrderbyItem)} must not have null items.");
+                }
+            }
+
+            this.Rank = true;
         }
 
         public ImmutableArray<SqlOrderByItem> OrderByItems { get; }
+        public ImmutableArray<SqlScoreExpressionOrderByItem> ScoreExpressionOrderByItems { get; }
+        public bool Rank { get; }
 
         public static SqlOrderByClause Create(params SqlOrderByItem[] orderByItems)
         {
@@ -37,6 +53,16 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         }
 
         public static SqlOrderByClause Create(ImmutableArray<SqlOrderByItem> orderByItems)
+        {
+            return new SqlOrderByClause(orderByItems);
+        }
+
+        public static SqlOrderByClause Create(params SqlScoreExpressionOrderByItem[] orderByItems)
+        {
+            return new SqlOrderByClause(orderByItems.ToImmutableArray());
+        }
+
+        public static SqlOrderByClause Create(ImmutableArray<SqlScoreExpressionOrderByItem> orderByItems)
         {
             return new SqlOrderByClause(orderByItems);
         }
