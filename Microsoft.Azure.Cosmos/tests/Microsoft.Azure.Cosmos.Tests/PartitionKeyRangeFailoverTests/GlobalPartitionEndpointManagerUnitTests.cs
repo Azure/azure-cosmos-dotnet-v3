@@ -295,7 +295,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 shouldPartitionFailOver = failoverManager.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(createRequest);
             }
 
-            if (failureCount < 10)
+            // The default value for the write threshold is 5.
+            if (failureCount < 5)
             {
                 Assert.IsFalse(shouldPartitionFailOver);
             }

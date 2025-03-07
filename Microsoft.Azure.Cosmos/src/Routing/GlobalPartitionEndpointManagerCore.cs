@@ -16,9 +16,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     /// <summary>
     /// This class is used to failover single partitions to different regions.
-    /// The client retry policy will mark a partition as down. The PartitionKeyRangeToLocationForWrite
+    /// The client retry policy will mark a partition as down. The PartitionKeyRangeToLocationForReadAndWrite
     /// will add an override to the next read region. When the request is retried it will 
-    /// override the default location with the new region from the PartitionKeyRangeToLocationForWrite.
+    /// override the default location with the new region from the PartitionKeyRangeToLocationForReadAndWrite.
     /// </summary>
     internal sealed class GlobalPartitionEndpointManagerCore : GlobalPartitionEndpointManager, IDisposable
     {
