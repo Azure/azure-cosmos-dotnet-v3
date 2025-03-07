@@ -81,7 +81,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         internal static CosmosClientBuilder GetDefaultConfiguration(
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
-            string accountEndpointOverride = null)
+            string accountEndpointOverride = null,
+            bool enableBinaryEncoding = false)
         {
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             CosmosClientBuilder clientBuilder = new CosmosClientBuilder(
@@ -89,7 +90,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 authKeyOrResourceToken: authKey);
             if (useCustomSeralizer)
             {
-                clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer());
+                clientBuilder.WithCustomSerializer(new CosmosJsonDotNetSerializer(enableBinaryEncoding));
             }
 
             if (validatePartitionKeyRangeCalls)
@@ -104,9 +105,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Action<CosmosClientBuilder> customizeClientBuilder = null,
             bool useCustomSeralizer = true,
             bool validatePartitionKeyRangeCalls = false,
-            string accountEndpointOverride = null)
+            string accountEndpointOverride = null,
+            bool binaryEncodingEnabled = false)
         {
-            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls, accountEndpointOverride);
+            CosmosClientBuilder cosmosClientBuilder = GetDefaultConfiguration(useCustomSeralizer, validatePartitionKeyRangeCalls, accountEndpointOverride, binaryEncodingEnabled);
             customizeClientBuilder?.Invoke(cosmosClientBuilder);
 
             CosmosClient client = cosmosClientBuilder.Build();
