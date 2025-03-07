@@ -54,6 +54,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     switch (methodCallExpression.Method.Name)
                     {
                         case nameof(CosmosLinqExtensions.RegexMatch):
+                        case nameof(CosmosLinqExtensions.FullTextContains):
+                        case nameof(CosmosLinqExtensions.FullTextContainsAll):
+                        case nameof(CosmosLinqExtensions.FullTextContainsAny):
                             return StringBuiltinFunctions.Visit(methodCallExpression, context);
                         case nameof(CosmosLinqExtensions.DocumentId):
                         case nameof(CosmosLinqExtensions.RRF):

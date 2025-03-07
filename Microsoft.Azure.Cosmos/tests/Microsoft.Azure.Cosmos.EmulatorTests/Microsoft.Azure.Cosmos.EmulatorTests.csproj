@@ -247,6 +247,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestRRFOrderByRankFunction.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestFullTextContainsFunction.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestSelectTop.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

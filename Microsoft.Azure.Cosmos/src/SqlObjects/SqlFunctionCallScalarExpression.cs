@@ -86,6 +86,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Exp, Identifiers.Exp },
             { Names.Floor, Identifiers.Floor },
             { Names.FullTextScore, Identifiers.FullTextScore },
+            { Names.FullTextContains, Identifiers.FullTextContains },
+            { Names.FullTextContainsAll, Identifiers.FullTextContainsAll },
+            { Names.FullTextContainsAny, Identifiers.FullTextContainsAny },
             { Names.GetCurrentDateTime, Identifiers.GetCurrentDateTime },
             { Names.GetCurrentTicks, Identifiers.GetCurrentTicks },
             { Names.GetCurrentTimestamp, Identifiers.GetCurrentTimestamp },
@@ -296,6 +299,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Endswith = "ENDSWITH";
             public const string Exp = "EXP";
             public const string Floor = "FLOOR";
+            public const string FullTextContains = "FullTextContains";
+            public const string FullTextContainsAll = "FullTextContainsAll";
+            public const string FullTextContainsAny = "FullTextContainsAny";
             public const string FullTextScore = "FullTextScore";
             public const string GetCurrentDateTime = "GetCurrentDateTime";
             public const string GetCurrentTicks = "GetCurrentTicks";
@@ -441,6 +447,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Endswith = SqlIdentifier.Create(Names.Endswith);
             public static readonly SqlIdentifier Exp = SqlIdentifier.Create(Names.Exp);
             public static readonly SqlIdentifier Floor = SqlIdentifier.Create(Names.Floor);
+            public static readonly SqlIdentifier FullTextContains = SqlIdentifier.Create(Names.FullTextContains);
+            public static readonly SqlIdentifier FullTextContainsAll = SqlIdentifier.Create(Names.FullTextContainsAll);
+            public static readonly SqlIdentifier FullTextContainsAny = SqlIdentifier.Create(Names.FullTextContainsAny);
             public static readonly SqlIdentifier FullTextScore = SqlIdentifier.Create(Names.FullTextScore);
             public static readonly SqlIdentifier GetCurrentDateTime = SqlIdentifier.Create(Names.GetCurrentDateTime);
             public static readonly SqlIdentifier GetCurrentTicks = SqlIdentifier.Create(Names.GetCurrentTicks);

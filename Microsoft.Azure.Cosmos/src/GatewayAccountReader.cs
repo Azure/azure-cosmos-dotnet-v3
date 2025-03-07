@@ -52,16 +52,23 @@ namespace Microsoft.Azure.Cosmos
 
                 try
                 {
-                    using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
-                        uri: serviceEndpoint,
-                        additionalHeaders: headers,
+                    using (DocumentServiceRequest request = DocumentServiceRequest.Create(
+                        operationType: OperationType.Read,
                         resourceType: ResourceType.DatabaseAccount,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
-                        clientSideRequestStatistics: stats,
-                        cancellationToken: default))
-                    using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                        authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey))
                     {
-                        return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                        using (HttpResponseMessage responseMessage = await this.httpClient.GetAsync(
+                            uri: serviceEndpoint,
+                            additionalHeaders: headers,
+                            resourceType: ResourceType.DatabaseAccount,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRead.Instance,
+                            clientSideRequestStatistics: stats,
+                            cancellationToken: default,
+                            documentServiceRequest: request))
+                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                         {
+                          return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                         }
                     }
                 }
                 catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)

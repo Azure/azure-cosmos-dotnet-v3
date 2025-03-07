@@ -63,29 +63,29 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
             }
 
-            //protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
-            //{
-            //    if (methodCallExpression.Arguments.Count == 2
-            //        && methodCallExpression.Arguments[1] is NewArrayExpression argumentsExpressions)
-            //    {
-            //        // For RRF, We don't need to care about the first argument, it is the object itself and have no relevance to the computation
-            //        ReadOnlyCollection<Expression> functionListExpression = argumentsExpressions.Expressions;
-            //        List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
-            //        foreach (Expression argument in functionListExpression)
-            //        {
-            //            arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
-            //        }
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count == 2
+                    && methodCallExpression.Arguments[1] is NewArrayExpression argumentsExpressions)
+                {
+                    // For RRF, We don't need to care about the first argument, it is the object itself and have no relevance to the computation
+                    ReadOnlyCollection<Expression> functionListExpression = argumentsExpressions.Expressions;
+                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
+                    foreach (Expression argument in functionListExpression)
+                    {
+                        arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
+                    }
 
-            //        return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RRF, arguments.ToImmutableArray());
-            //    }
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RRF, arguments.ToImmutableArray());
+                }
 
-            //    return null;
-            //}
+                return null;
+            }
 
-            //protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
-            //{
-            //    return null;
-            //}
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
         }
 
         private static Dictionary<string, BuiltinFunctionVisitor> FunctionsDefinitions { get; set; }

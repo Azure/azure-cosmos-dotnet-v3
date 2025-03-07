@@ -54,6 +54,31 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         ReadFeed,
 
         /// <summary>
+        /// Metadata operations for containers.
+        /// </summary>
+        MetadataContainer,
+
+        /// <summary>
+        /// Metadata operations for databases.
+        /// </summary>
+        MetadataDatabaseAccount,
+
+        /// <summary>
+        /// Metadata operations for partition key ranges.
+        /// </summary>
+        MetadataPartitionKeyRange,
+
+        /// <summary>
+        /// Metadata operations for addresses.
+        /// </summary>
+        MetadataRefreshAddresses,
+
+        /// <summary>
+        /// Metadata operations for query plan.
+        /// </summary>
+        MetadataQueryPlan,
+
+        /// <summary>
         /// All operation types. Default value.
         /// </summary>
         All,
