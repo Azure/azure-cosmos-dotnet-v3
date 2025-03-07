@@ -60,10 +60,11 @@ group_by_clause : K_GROUP K_BY scalar_expression_list ;
 /*--------------------------------------------------------------------------------*/
 order_by_clause 
     : K_ORDER K_BY order_by_items 
-    | K_ORDER K_BY K_RANK score_expression_order_by_items;
+    | K_ORDER K_BY K_RANK score_expression_order_by_items
+    ;
 
-score_expression_order_by_items: score_expression_order_by_item (',', score_order_by_item);
-score_expression_order_by_items: function_call_scalar_expression sort_order?;
+score_expression_order_by_items : score_expression_order_by_item (',' score_expression_order_by_item)* ;
+score_expression_order_by_item : function_call_scalar_expression sort_order? ;
 
 order_by_items : order_by_item (',' order_by_item)* ;
 order_by_item : scalar_expression sort_order? ;
