@@ -17,9 +17,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosSerializerCore
     {
+        private readonly bool isBinaryEncodingEnabled;
+        private static readonly CosmosSerializer binarySerializer = new CosmosJsonSerializerWrapper(
+            new CosmosJsonDotNetSerializer(binaryEncodingEnabled: true));
+
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(
-            new CosmosJsonDotNetSerializer(
-                ConfigurationManager.IsBinaryEncodingEnabled()));
+            new CosmosJsonDotNetSerializer());
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
@@ -28,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
         {
+            this.isBinaryEncodingEnabled = ConfigurationManager.IsBinaryEncodingEnabled();
             if (customSerializer == null)
             {
                 this.customSerializer = null;
@@ -71,19 +75,22 @@ namespace Microsoft.Azure.Cosmos
 
         internal T FromStream<T>(Stream stream)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>();
+            CosmosSerializer serializer = this.GetSerializer<T>(
+                isBinaryEncodingEnabled: this.isBinaryEncodingEnabled);
             return serializer.FromStream<T>(stream);
         }
 
         internal T[] FromFeedStream<T>(Stream stream)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>();
+            CosmosSerializer serializer = this.GetSerializer<T>(
+                isBinaryEncodingEnabled: false);
             return serializer.FromStream<T[]>(stream);
         }
 
         internal Stream ToStream<T>(T input)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>();
+            CosmosSerializer serializer = this.GetSerializer<T>(
+                isBinaryEncodingEnabled: this.isBinaryEncodingEnabled);
             return serializer.ToStream<T>(input);
         }
 
@@ -119,23 +126,23 @@ namespace Microsoft.Azure.Cosmos
             return CosmosSerializerCore.propertiesSerializer;
         }
 
-        private CosmosSerializer GetSerializer<T>()
+        private CosmosSerializer GetSerializer<T>(
+            bool isBinaryEncodingEnabled)
         {
             Type inputType = typeof(T);
             if (inputType == typeof(PatchSpec))
             {
-                if (this.patchOperationSerializer == null)
-                {
-                    this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
+                this.patchOperationSerializer ??= PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                         cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
                         propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
-                }
                 return this.patchOperationSerializer;
             }
 
             if (this.customSerializer == null)
             {
-                return CosmosSerializerCore.propertiesSerializer;
+                return isBinaryEncodingEnabled
+                    ? CosmosSerializerCore.binarySerializer
+                    : CosmosSerializerCore.propertiesSerializer;
             }
 
             if (CosmosSerializerCore.IsInputTypeInternal(inputType))
