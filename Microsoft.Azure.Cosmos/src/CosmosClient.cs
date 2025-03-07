@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
+    using ResourceType = Documents.ResourceType;
 
     /// <summary>
     /// Provides a client-side logical representation of the Azure Cosmos DB account.
@@ -1437,6 +1438,8 @@ namespace Microsoft.Azure.Cosmos
             // In case dispose is called multiple times. Check if at least 1 active client is there
             if (NumberOfActiveClients > 0)
             {
+                CosmosDbOperationMeter.RemoveInstanceCount(this.Endpoint);
+
                 return Interlocked.Decrement(ref NumberOfActiveClients);
             }
 

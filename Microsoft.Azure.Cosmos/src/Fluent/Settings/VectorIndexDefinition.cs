@@ -10,12 +10,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
     /// Vector index fluent definition.
     /// </summary>
     /// <seealso cref="VectorIndexPath"/>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    class VectorIndexDefinition<T>
+    public class VectorIndexDefinition<T>
     {
         private readonly VectorIndexPath vectorIndexPath = new ();
         private readonly T parent;
@@ -52,6 +47,61 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.vectorIndexPath.Path = path;
             this.vectorIndexPath.Type = indexType;
 
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the quantization byte size for the current <see cref="VectorIndexPath"/> definition.
+        /// </summary>
+        /// <param name="quantizationByteSize">
+        /// The number of bytes used in product quantization of the vectors. This is an optional parameter and applies to index
+        /// types DiskANN and quantizedFlat. Note that, the allowed range for this parameter is between 1 and 3.
+        /// </param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<T> WithQuantizationByteSize(
+            int quantizationByteSize)
+        {
+            this.vectorIndexPath.QuantizationByteSize = quantizationByteSize;
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the indexing search list size for the current <see cref="VectorIndexPath"/> definition.
+        /// </summary>
+        /// <param name="indexingSearchListSize">
+        /// This represents the size of the candidate list of approximate neighbors stored while building the DiskANN index as part of the optimization processes.
+        /// This is an optional parameter and applies to index type DiskANN only. The allowed range for this parameter is between 25 and 500.
+        /// </param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        VectorIndexDefinition<T> WithIndexingSearchListSize(
+            int indexingSearchListSize)
+        {
+            this.vectorIndexPath.IndexingSearchListSize = indexingSearchListSize;
+            return this;
+        }
+
+        /// <summary>
+        /// Configures the vector index shard key for the current <see cref="VectorIndexPath"/> definition.
+        /// </summary>
+        /// <param name="vectorIndexShardKey">
+        /// A string array containing the shard keys used for partitioning the vector indexes. This is an optional parameter and
+        /// applies to index types DiskANN and quantizedFlat.
+        /// </param>
+        /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
+        internal VectorIndexDefinition<T> WithVectorIndexShardKey(
+            string[] vectorIndexShardKey)
+        {
+            this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));
             return this;
         }
 

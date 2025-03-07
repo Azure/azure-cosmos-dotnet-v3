@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly SemaphoreSlim semaphore;
         private readonly CosmosHttpClient httpClient;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly IConnectionStateListener connectionStateListener;
 
         private Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation> masterPartitionAddressCache;
         private DateTime suboptimalMasterPartitionTimestamp;
@@ -67,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IServiceConfigurationReader serviceConfigReader,
             CosmosHttpClient httpClient,
             IOpenConnectionsHandler openConnectionsHandler,
+            IConnectionStateListener connectionStateListener,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false,
             bool replicaAddressValidationEnabled = false)
@@ -81,6 +83,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.serverPartitionAddressToPkRangeIdMap = new ConcurrentDictionary<ServerKey, HashSet<PartitionKeyRangeIdentity>>();
             this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
+            this.connectionStateListener = connectionStateListener;
 
             this.suboptimalPartitionForceRefreshIntervalInSeconds = suboptimalPartitionForceRefreshIntervalInSeconds;
 
@@ -496,6 +499,13 @@ namespace Microsoft.Azure.Cosmos.Routing
         public async Task MarkAddressesToUnhealthyAsync(
             ServerKey serverKey)
         {
+            if (this.disposedValue)
+            {
+                // Will enable Listener to un-register in-case of un-graceful dispose
+                // <see cref="ConnectionStateMuxListener.NotifyAsync(ServerKey, ConcurrentDictionary{Func{ServerKey, Task}, object})"/>
+                throw new ObjectDisposedException(nameof(GatewayAddressCache));
+            }
+
             if (serverKey == null)
             {
                 throw new ArgumentNullException(nameof(serverKey));
@@ -538,6 +548,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
                         address.SetUnhealthy();
                     }
+
+                    // Update the health status
+                    this.CaptureTransportAddressUriHealthStates(addressInfo, transportAddresses);
                 }
             }
         }
@@ -828,9 +841,21 @@ namespace Microsoft.Azure.Cosmos.Routing
                        partitionKeyRangeIdentity.PartitionKeyRangeId,
                        addressInfo.PhysicalUri);
 
+                    HashSet<PartitionKeyRangeIdentity> createdValue = null;
+                    ServerKey serverKey = new ServerKey(new Uri(addressInfo.PhysicalUri));
                     HashSet<PartitionKeyRangeIdentity> pkRangeIdSet = this.serverPartitionAddressToPkRangeIdMap.GetOrAdd(
-                        new ServerKey(new Uri(addressInfo.PhysicalUri)),
-                        (_) => new HashSet<PartitionKeyRangeIdentity>());
+                        serverKey,
+                        (_) =>
+                        {
+                            createdValue = new HashSet<PartitionKeyRangeIdentity>();
+                            return createdValue;
+                        });
+
+                    if (object.ReferenceEquals(pkRangeIdSet, createdValue))
+                    {
+                        this.connectionStateListener.Register(serverKey, this.MarkAddressesToUnhealthyAsync);
+                    }
+
                     lock (pkRangeIdSet)
                     {
                         pkRangeIdSet.Add(partitionKeyRangeIdentity);
@@ -893,7 +918,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static Protocol ProtocolFromString(string protocol)
         {
-            return (protocol.ToLowerInvariant()) switch
+            return protocol.ToLowerInvariant() switch
             {
                 RuntimeConstants.Protocols.HTTPS => Protocol.Https,
                 RuntimeConstants.Protocols.RNTBD => Protocol.Tcp,
@@ -903,7 +928,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static string ProtocolString(Protocol protocol)
         {
-            return ((int)protocol) switch
+            return (int)protocol switch
             {
                 (int)Protocol.Https => RuntimeConstants.Protocols.HTTPS,
                 (int)Protocol.Tcp => RuntimeConstants.Protocols.RNTBD,
@@ -1071,11 +1096,18 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (this.disposedValue)
             {
+                DefaultTrace.TraceInformation("GatewayAddressCache is already disposed {0}", this.GetHashCode());
                 return;
             }
 
             if (disposing)
             {
+                // Unregister the server-key
+                foreach (ServerKey serverKey in this.serverPartitionAddressToPkRangeIdMap.Keys)
+                {
+                    this.connectionStateListener.UnRegister(serverKey, this.MarkAddressesToUnhealthyAsync);
+                }
+
                 this.serverPartitionAddressCache?.Dispose();
             }
 

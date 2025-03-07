@@ -12,7 +12,6 @@ namespace Microsoft.Data.Encryption.Cryptography.Serializers
     /// <summary>
     /// Contains the methods for serializing and deserializing <see cref="uint"/>? type data objects.
     /// </summary>
-    [CLSCompliant(false)]
     internal class NullableUInt32Serializer : Serializer<uint?>
     {
         private static readonly UInt32Serializer serializer = new UInt32Serializer();

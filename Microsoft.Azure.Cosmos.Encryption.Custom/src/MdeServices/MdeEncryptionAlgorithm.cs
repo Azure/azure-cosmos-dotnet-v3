@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
     using Microsoft.Data.Encryption.Cryptography;
 
     /// <summary>
-    /// Encryption Algorithm provided by MDE Encryption Package
+    /// Encryption Algorithm provided by MDE Encryption Package.
     /// </summary>
     internal sealed class MdeEncryptionAlgorithm : DataEncryptionKey
     {
@@ -27,9 +27,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see> .
         /// More specifically this implements AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
         /// </summary>
-        /// <param name="dekProperties"> Data Encryption Key properties</param>
-        /// <param name="encryptionType"> Encryption type </param>
-        /// <param name="encryptionKeyStoreProvider"> EncryptionKeyStoreProvider for wrapping and unwrapping </param>
         public MdeEncryptionAlgorithm(
             DataEncryptionKeyProperties dekProperties,
             Data.Encryption.Cryptography.EncryptionType encryptionType,
@@ -37,6 +34,10 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             TimeSpan? cacheTimeToLive,
             bool withRawKey = false)
         {
+#if NET8_0_OR_GREATER
+            ArgumentNullException.ThrowIfNull(dekProperties);
+            ArgumentNullException.ThrowIfNull(encryptionKeyStoreProvider);
+#else
             if (dekProperties == null)
             {
                 throw new ArgumentNullException(nameof(dekProperties));
@@ -46,6 +47,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
             {
                 throw new ArgumentNullException(nameof(encryptionKeyStoreProvider));
             }
+#endif
 
             KeyEncryptionKey keyEncryptionKey = KeyEncryptionKey.GetOrCreate(
                 dekProperties.EncryptionKeyWrapMetadata.Name,
@@ -92,8 +94,6 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// <see href="http://tools.ietf.org/html/draft-mcgrew-aead-aes-cbc-hmac-sha2-05">here</see> .
         /// More specifically this implements AEAD_AES_256_CBC_HMAC_SHA256 algorithm.
         /// </summary>
-        /// <param name="dataEncryptionKey"> Data Encryption Key </param>
-        /// <param name="encryptionType"> Encryption type </param>
         public MdeEncryptionAlgorithm(
             byte[] rawkey,
             Data.Encryption.Cryptography.DataEncryptionKey dataEncryptionKey,

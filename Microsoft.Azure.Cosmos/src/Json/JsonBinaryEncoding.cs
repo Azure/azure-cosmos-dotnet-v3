@@ -86,10 +86,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public static bool TryGetGuidValue(
             ReadOnlySpan<byte> guidToken,
-            out Guid guidValue) => JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
+            out Guid guidValue)
+        {
+            return JsonBinaryEncoding.TryGetFixedWidthValue<Guid>(
                 guidToken,
                 JsonBinaryEncoding.TypeMarker.Guid,
                 out guidValue);
+        }
 
         public static ReadOnlyMemory<byte> GetBinaryValue(ReadOnlyMemory<byte> binaryToken)
         {
@@ -167,12 +170,12 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Gets the length of a particular value given it's typemarker
+        /// Gets the length of a particular value given its TypeMarker.
         /// </summary>
         /// <param name="buffer">The buffer to read from as input.</param>
         /// <returns>
         /// - Positive Value: The length of the value including its TypeMarker
-        /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following the TypeMarker byte
+        /// - Negative Value: The length is encoded as an integer of size equals to abs(value) following The TypeMarker byte
         /// - Zero Value: The length is unknown (for instance an unassigned type marker)
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -188,12 +191,12 @@ namespace Microsoft.Azure.Cosmos.Json
         }
 
         /// <summary>
-        /// Gets the length of a particular string given it's typemarker.
+        /// Gets the length of a particular string given its TypeMarker.
         /// </summary>
         /// <param name="typeMarker">The type marker as input</param>
         /// <returns>
         /// - Non-Negative Value: The TypeMarker encodes the string length
-        /// - Negative Value: System or user dictionary encoded string, or encoded string length that follows the TypeMarker
+        /// - Negative Value: System or user dictionary encoded string, or encoded string length that follows The TypeMarker
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetStringLengths(byte typeMarker)
@@ -204,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <summary>
         /// Gets the offset of the first item in an array or object
         /// </summary>
-        /// <param name="typeMarker">The typemarker as input.</param>
+        /// <param name="typeMarker">The TypeMarker as input.</param>
         /// <returns>The offset of the first item in an array or object</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetFirstValueOffset(byte typeMarker)
@@ -253,7 +256,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public static TFixedType GetFixedSizedValue<TFixedType>(ReadOnlySpan<byte> buffer)
             where TFixedType : struct
         {
-            return MemoryMarshal.Cast<byte, TFixedType>(buffer)[0];
+            return MemoryMarshal.Read<TFixedType>(buffer);
         }
 
         public static string HexDump(byte[] bytes, int bytesPerLine = 16)
@@ -291,7 +294,11 @@ namespace Microsoft.Azure.Cosmos.Json
             public byte Byte2 { get; }
             public byte Byte3 { get; }
 
-            public static implicit operator int(UInt24 value) => (value.Byte3 << 16) | (value.Byte2 << 8) | (value.Byte1 << 0);
+            public static implicit operator int(UInt24 value)
+            {
+                return (value.Byte3 << 16) | (value.Byte2 << 8) | (value.Byte1 << 0);
+            }
+
             public static explicit operator UInt24(int value)
             {
                 if ((value & 0xFF000000) != 0)

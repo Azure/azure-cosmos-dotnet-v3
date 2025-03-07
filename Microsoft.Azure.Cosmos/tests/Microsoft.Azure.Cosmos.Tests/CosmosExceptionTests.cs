@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Diagnostics.Tracing;
     using System.IO;
     using System.Net;
     using System.Security.Cryptography;
@@ -101,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         public void VerifyNullHeaderLogic()
         {
             string testMessage = "Test" + Guid.NewGuid().ToString();
-            
+
             CosmosException exception = new CosmosException(
                 statusCode: HttpStatusCode.BadRequest,
                 message: testMessage,
@@ -334,7 +336,7 @@ namespace Microsoft.Azure.Cosmos
             foreach ((HttpStatusCode statusCode, CosmosException exception) in exceptionsToStatusCodes)
             {
                 this.ValidateExceptionInfo(
-                    exception, 
+                    exception,
                     statusCode,
                     substatus,
                     testMessage,
@@ -421,6 +423,40 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        [TestMethod]
+        public void GenerateEventWithDiagnosticWithFilterOnStatusCodeTest()
+        {
+            using (TestEventListener listener = new TestEventListener())
+            {
+                CosmosException exception = new CosmosException(
+                   statusCode: HttpStatusCode.BadRequest,
+                   message: "testmessage",
+                   stackTrace: null,
+                   headers: null,
+                   trace: NoOpTrace.Singleton,
+                   error: null,
+                   innerException: null);
+
+                CosmosException.RecordOtelAttributes(exception, default);
+
+                Assert.AreEqual(1, TestEventListener.CapturedEvents.Count);
+
+                TestEventListener.CapturedEvents.Clear();
+
+                exception = new CosmosException(
+                   statusCode: HttpStatusCode.NotFound,
+                   message: "testmessage",
+                   stackTrace: null,
+                   headers: null,
+                   trace: NoOpTrace.Singleton,
+                   error: null,
+                   innerException: null);
+
+                CosmosException.RecordOtelAttributes(exception, default);
+                Assert.AreEqual(0, TestEventListener.CapturedEvents.Count);
+            }
+        }
+
         private void ValidateExceptionInfo(
             CosmosException exception,
             HttpStatusCode httpStatusCode,
@@ -443,7 +479,7 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsTrue(exception.ToString().Contains(message));
             string expectedMessage = $"Response status code does not indicate success: {httpStatusCode} ({(int)httpStatusCode}); Substatus: {substatus}; ActivityId: {exception.ActivityId}; Reason: ({message});";
 
-            if(httpStatusCode == HttpStatusCode.RequestTimeout
+            if (httpStatusCode == HttpStatusCode.RequestTimeout
                 || httpStatusCode == HttpStatusCode.InternalServerError
                 || httpStatusCode == HttpStatusCode.ServiceUnavailable
                 || (httpStatusCode == HttpStatusCode.NotFound && exception.Headers.SubStatusCode == SubStatusCodes.ReadSessionNotAvailable))
@@ -472,6 +508,26 @@ namespace Microsoft.Azure.Cosmos
             exception.Headers.RetryAfterLiteral = retryAfter.ToString();
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.RetryAfter);
             Assert.AreEqual(TimeSpan.FromMilliseconds(retryAfter), exception.Headers.RetryAfter);
+        }
+    }
+
+    internal class TestEventListener : EventListener
+    {
+        public static List<EventWrittenEventArgs> CapturedEvents { get; } = new List<EventWrittenEventArgs>();
+
+        protected override void OnEventWritten(EventWrittenEventArgs eventData)
+        {
+            // Add captured event to the list
+            CapturedEvents.Add(eventData);
+        }
+
+        protected override void OnEventSourceCreated(EventSource eventSource)
+        {
+            // Enable events from the SampleEventSource
+            if (eventSource.Name == "Azure-Cosmos-Operation-Request-Diagnostics")
+            {
+                this.EnableEvents(eventSource, EventLevel.LogAlways, EventKeywords.All);
+            }
         }
     }
 }

@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Runtime.InteropServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;

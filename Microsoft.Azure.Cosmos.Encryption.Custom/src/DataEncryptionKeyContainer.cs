@@ -4,8 +4,10 @@
 
 namespace Microsoft.Azure.Cosmos.Encryption.Custom
 {
+    using System;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
 
     /// <summary>
     /// Container for data encryption keys. Provides methods to create, re-wrap, read and enumerate data encryption keys.
@@ -132,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </code>
         /// </example>
         /// <remarks>
-        /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
+        /// <see cref="DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
         public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
             string queryText = null,
@@ -167,7 +169,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
         /// </code>
         /// </example>
         /// <remarks>
-        /// <see cref="DataEncryptionKey.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
+        /// <see cref="DataEncryptionKeyContainer.ReadDataEncryptionKeyAsync" /> is recommended for single data encryption key look-up.
         /// </remarks>
         public abstract FeedIterator<T> GetDataEncryptionKeyQueryIterator<T>(
             QueryDefinition queryDefinition,

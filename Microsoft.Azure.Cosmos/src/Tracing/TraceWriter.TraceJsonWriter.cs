@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     writer.WriteStringValue(trace.StartTime.ToString(TraceWriter.DateTimeFormatString));
                 }
                 writer.WriteFieldName("duration in milliseconds");
-                writer.WriteNumber64Value(trace.Duration.TotalMilliseconds);
+                writer.WriteNumberValue(trace.Duration.TotalMilliseconds);
 
                 if (trace.Data.Any())
                 {
@@ -96,11 +96,11 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
             else if (value is double doubleValue)
             {
-                writer.WriteNumber64Value(doubleValue);
+                writer.WriteNumberValue(doubleValue);
             }
             else if (value is long longValue)
             {
-                writer.WriteNumber64Value(longValue);
+                writer.WriteNumberValue(longValue);
             }
             else if (value is IEnumerable<object> enumerable)
             {
@@ -162,13 +162,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteDateTimeStringValue(pointOperationStatisticsTraceDatum.ResponseTimeUtc);
 
                 this.jsonWriter.WriteFieldName("StatusCode");
-                this.jsonWriter.WriteNumber64Value((int)pointOperationStatisticsTraceDatum.StatusCode);
+                this.jsonWriter.WriteNumberValue((int)pointOperationStatisticsTraceDatum.StatusCode);
 
                 this.jsonWriter.WriteFieldName("SubStatusCode");
-                this.jsonWriter.WriteNumber64Value((int)pointOperationStatisticsTraceDatum.SubStatusCode);
+                this.jsonWriter.WriteNumberValue((int)pointOperationStatisticsTraceDatum.SubStatusCode);
 
                 this.jsonWriter.WriteFieldName("RequestCharge");
-                this.jsonWriter.WriteNumber64Value(pointOperationStatisticsTraceDatum.RequestCharge);
+                this.jsonWriter.WriteNumberValue(pointOperationStatisticsTraceDatum.RequestCharge);
 
                 this.jsonWriter.WriteFieldName("RequestUri");
                 this.WriteStringValueOrNull(pointOperationStatisticsTraceDatum.RequestUri);
@@ -245,7 +245,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteDateTimeStringValue(stat.RequestStartTime);
 
                 jsonWriter.WriteFieldName("DurationInMs");
-                jsonWriter.WriteNumber64Value(stat.Duration.TotalMilliseconds);
+                jsonWriter.WriteNumberValue(stat.Duration.TotalMilliseconds);
 
                 jsonWriter.WriteFieldName("RequestUri");
                 jsonWriter.WriteStringValue(stat.RequestUri.ToString());
@@ -326,7 +326,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 if (storeResponseStatistics.RequestStartTime.HasValue)
                 {
                     TimeSpan latency = storeResponseStatistics.RequestResponseTime - storeResponseStatistics.RequestStartTime.Value;
-                    this.jsonWriter.WriteNumber64Value(latency.TotalMilliseconds);
+                    this.jsonWriter.WriteNumberValue(latency.TotalMilliseconds);
                 }
                 else
                 {
@@ -397,34 +397,34 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(storeResult.SubStatusCode.ToString());
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.LSN));
-                this.jsonWriter.WriteNumber64Value(storeResult.LSN);
+                this.jsonWriter.WriteNumberValue(storeResult.LSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.PartitionKeyRangeId));
                 this.WriteStringValueOrNull(storeResult.PartitionKeyRangeId);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.GlobalCommittedLSN));
-                this.jsonWriter.WriteNumber64Value(storeResult.GlobalCommittedLSN);
+                this.jsonWriter.WriteNumberValue(storeResult.GlobalCommittedLSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.ItemLSN));
-                this.jsonWriter.WriteNumber64Value(storeResult.ItemLSN);
+                this.jsonWriter.WriteNumberValue(storeResult.ItemLSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.UsingLocalLSN));
                 this.jsonWriter.WriteBoolValue(storeResult.UsingLocalLSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.QuorumAckedLSN));
-                this.jsonWriter.WriteNumber64Value(storeResult.QuorumAckedLSN);
+                this.jsonWriter.WriteNumberValue(storeResult.QuorumAckedLSN);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.SessionToken));
                 this.WriteStringValueOrNull(storeResult.SessionToken?.ConvertToString());
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.CurrentWriteQuorum));
-                this.jsonWriter.WriteNumber64Value(storeResult.CurrentWriteQuorum);
+                this.jsonWriter.WriteNumberValue(storeResult.CurrentWriteQuorum);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.CurrentReplicaSetSize));
-                this.jsonWriter.WriteNumber64Value(storeResult.CurrentReplicaSetSize);
+                this.jsonWriter.WriteNumberValue(storeResult.CurrentReplicaSetSize);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.NumberOfReadRegions));
-                this.jsonWriter.WriteNumber64Value(storeResult.NumberOfReadRegions);
+                this.jsonWriter.WriteNumberValue(storeResult.NumberOfReadRegions);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.IsValid));
                 this.jsonWriter.WriteBoolValue(storeResult.IsValid);
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteStringValueOrNull(storeResult.StorePhysicalAddress?.ToString());
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.RequestCharge));
-                this.jsonWriter.WriteNumber64Value(storeResult.RequestCharge);
+                this.jsonWriter.WriteNumberValue(storeResult.RequestCharge);
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.RetryAfterInMs));
                 this.WriteStringValueOrNull(storeResult.RetryAfterInMs);
@@ -567,7 +567,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     {
                         this.jsonWriter.WriteObjectStart();
                         this.jsonWriter.WriteFieldName("Count");
-                        this.jsonWriter.WriteNumber64Value(contactedCount.Value);
+                        this.jsonWriter.WriteNumberValue(contactedCount.Value);
                         this.jsonWriter.WriteFieldName("Uri");
                         this.WriteStringValueOrNull(contactedCount.Key.ToString());
                         this.jsonWriter.WriteObjectEnd();

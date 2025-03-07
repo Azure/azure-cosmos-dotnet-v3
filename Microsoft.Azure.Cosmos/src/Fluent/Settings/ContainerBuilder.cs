@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private ChangeFeedPolicy changeFeedPolicy;
         private ClientEncryptionPolicy clientEncryptionPolicy;
         private VectorEmbeddingPolicy vectorEmbeddingPolicy;
+        private FullTextPolicy fullTextPolicy;
 
         /// <summary>
         /// Creates an instance for unit-testing
@@ -118,22 +119,39 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Defined the vector embedding policy for this Azure Cosmos container
+        /// Defines the vector embedding policy for this Azure Cosmos container
         /// </summary>
         /// <param name="embeddings">List of vector embeddings to include in the policy definition.</param>
         /// <returns>An instance of <see cref="VectorEmbeddingPolicyDefinition"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(
+        public VectorEmbeddingPolicyDefinition WithVectorEmbeddingPolicy(
             Collection<Embedding> embeddings)
         {
             return new VectorEmbeddingPolicyDefinition(
                 this,
                 embeddings,
                 (embeddingPolicy) => this.AddVectorEmbeddingPolicy(embeddingPolicy));
+        }
+
+        /// <summary>
+        /// Defines the full text policy for this Azure Cosmos container
+        /// </summary>
+        /// <param name="defaultLanguage">A string indicating the default language.</param>
+        /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
+        /// <returns>An instance of <see cref="FullTextPolicyDefinition"/>.</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        FullTextPolicyDefinition WithFullTextPolicy(
+            string defaultLanguage,
+            Collection<FullTextPath> fullTextPaths)
+        {
+            return new FullTextPolicyDefinition(
+                this,
+                defaultLanguage,
+                fullTextPaths,
+                (fullTextPolicy) => this.AddFullTextSearchPolicy(fullTextPolicy));
         }
 
         /// <summary>
@@ -247,6 +265,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
                 containerProperties.VectorEmbeddingPolicy = this.vectorEmbeddingPolicy;
             }
 
+            if (this.fullTextPolicy != null)
+            {
+                containerProperties.FullTextPolicy = this.fullTextPolicy;
+            }
+
             return containerProperties;
         }
 
@@ -285,6 +308,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         private void AddVectorEmbeddingPolicy(VectorEmbeddingPolicy embeddingPolicy)
         {
             this.vectorEmbeddingPolicy = embeddingPolicy;
+        }
+
+        private void AddFullTextSearchPolicy(FullTextPolicy fullTextPolicy)
+        {
+            this.fullTextPolicy = fullTextPolicy;
         }
     }
 }

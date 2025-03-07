@@ -7,10 +7,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.IO.Compression;
     using System.Linq;
+#if NET8_0_OR_GREATER
+    using System.Text.Json.Nodes;
+#endif
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Encryption.Custom;
+#if NET8_0_OR_GREATER
+    using Microsoft.Azure.Cosmos.Encryption.Custom.Transformation;
+#endif
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
     using Newtonsoft.Json.Linq;
@@ -20,19 +27,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
     public class MdeEncryptionProcessorTests
     {
         private static Mock<Encryptor> mockEncryptor;
-        private static EncryptionOptions encryptionOptions;
         private const string dekId = "dekId";
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
             _ = testContext;
-            encryptionOptions = new EncryptionOptions()
-            {
-                DataEncryptionKeyId = dekId,
-                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = TestDoc.PathsToEncrypt
-            };
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+            StreamProcessor.InitialBufferSize = 16; //we force smallest possible initial buffer to make sure both secondary reads and resize paths are executed
+#endif
 
             Mock<DataEncryptionKey> DekMock = new();
             DekMock.Setup(m => m.EncryptData(It.IsAny<byte[]>()))
@@ -62,14 +66,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task InvalidPathToEncrypt()
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task InvalidPathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithInvalidPathToEncrypt = new()
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" }
+                PathsToEncrypt = new List<string>() { "/SensitiveStr", "/Invalid" },
+                JsonProcessor = jsonProcessor,
             };
 
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
@@ -97,14 +106,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DuplicatePathToEncrypt()
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task DuplicatePathToEncrypt(JsonProcessor jsonProcessor)
         {
             TestDoc testDoc = TestDoc.Create();
             EncryptionOptions encryptionOptionsWithDuplicatePathToEncrypt = new()
             {
                 DataEncryptionKeyId = dekId,
                 EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
-                PathsToEncrypt = new List<string>() { "/SensitiveStr", "/SensitiveStr" }
+                PathsToEncrypt = new List<string>() { "/SensitiveStr", "/SensitiveStr" },
+                JsonProcessor = jsonProcessor,
             };
 
             try
@@ -125,12 +139,13 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task EncryptDecryptPropertyWithNullValue()
+        [DynamicData(nameof(EncryptionOptionsCombinations))]
+        public async Task EncryptDecryptPropertyWithNullValue_VerifyByNewtonsoft(EncryptionOptions encryptionOptions)
         {
             TestDoc testDoc = TestDoc.Create();
             testDoc.SensitiveStr = null;
 
-            JObject encryptedDoc = await VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await VerifyEncryptionSucceededNewtonsoft(testDoc, encryptionOptions);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                encryptedDoc,
@@ -146,11 +161,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ValidateEncryptDecryptDocument()
+        [DynamicData(nameof(EncryptionOptionsCombinations))]
+        public async Task ValidateEncryptDecryptDocument_VerifyByNewtonsoft(EncryptionOptions encryptionOptions)
         {
             TestDoc testDoc = TestDoc.Create();
 
-            JObject encryptedDoc = await VerifyEncryptionSucceeded(testDoc);
+            JObject encryptedDoc = await VerifyEncryptionSucceededNewtonsoft(testDoc, encryptionOptions);
 
             (JObject decryptedDoc, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
                 encryptedDoc,
@@ -166,7 +182,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task ValidateDecryptStream()
+        [DynamicData(nameof(EncryptionOptionsCombinations))]
+        public async Task ValidateDecryptByNewtonsoftStream_VerifyByNewtonsoft(EncryptionOptions encryptionOptions)
         {
             TestDoc testDoc = TestDoc.Create();
 
@@ -181,6 +198,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 encryptedStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
+                JsonProcessor.Newtonsoft,
                 CancellationToken.None);
 
             JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
@@ -192,7 +210,69 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
         }
 
         [TestMethod]
-        public async Task DecryptStreamWithoutEncryptedProperty()
+        [DynamicData(nameof(EncryptionOptionsStreamTestCombinations))]
+        public async Task ValidateDecryptBySystemTextStream_VerifyByNewtonsoft(EncryptionOptions encryptionOptions, JsonProcessor decryptionJsonProcessor)
+        {
+            TestDoc testDoc = TestDoc.Create();
+
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
+                testDoc.ToStream(),
+                mockEncryptor.Object,
+                encryptionOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                encryptedStream,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                decryptionJsonProcessor,
+                CancellationToken.None);
+
+            JObject decryptedDoc = EncryptionProcessor.BaseSerializer.FromStream<JObject>(decryptedStream);
+            VerifyDecryptionSucceeded(
+                decryptedDoc,
+                testDoc,
+                TestDoc.PathsToEncrypt.Count,
+                decryptionContext);
+        }
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [TestMethod]
+        [DynamicData(nameof(EncryptionOptionsStreamTestCombinations))]
+        public async Task ValidateDecryptBySystemTextStream_VerifyBySystemText(EncryptionOptions encryptionOptions, JsonProcessor decryptionJsonProcessor)
+        {
+            TestDoc testDoc = TestDoc.Create();
+
+            Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
+                testDoc.ToStream(),
+                mockEncryptor.Object,
+                encryptionOptions,
+                new CosmosDiagnosticsContext(),
+                CancellationToken.None);
+
+            (Stream decryptedStream, DecryptionContext decryptionContext) = await EncryptionProcessor.DecryptAsync(
+                encryptedStream,
+                mockEncryptor.Object,
+                new CosmosDiagnosticsContext(),
+                decryptionJsonProcessor,
+                CancellationToken.None);
+
+            JsonNode decryptedDoc = JsonNode.Parse(decryptedStream);
+            VerifyDecryptionSucceeded(
+                decryptedDoc,
+                testDoc,
+                TestDoc.PathsToEncrypt.Count,
+                decryptionContext);
+        }
+#endif
+
+        [TestMethod]
+        [DataRow(JsonProcessor.Newtonsoft)]
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        [DataRow(JsonProcessor.Stream)]
+#endif
+        public async Task DecryptStreamWithoutEncryptedProperty(JsonProcessor processor)
         {
             TestDoc testDoc = TestDoc.Create();
             Stream docStream = testDoc.ToStream();
@@ -201,6 +281,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 docStream,
                 mockEncryptor.Object,
                 new CosmosDiagnosticsContext(),
+                processor,
                 CancellationToken.None);
 
             Assert.IsTrue(decryptedStream.CanSeek);
@@ -209,7 +290,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
             Assert.IsNull(decryptionContext);
         }
 
-        private static async Task<JObject> VerifyEncryptionSucceeded(TestDoc testDoc)
+        private static async Task<JObject> VerifyEncryptionSucceededNewtonsoft(TestDoc testDoc, EncryptionOptions encryptionOptions)
         {
             Stream encryptedStream = await EncryptionProcessor.EncryptAsync(
                  testDoc.ToStream(),
@@ -234,7 +315,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
 
             Assert.IsNotNull(encryptionProperties);
             Assert.AreEqual(dekId, encryptionProperties.DataEncryptionKeyId);
-            Assert.AreEqual(3, encryptionProperties.EncryptionFormatVersion);
+
+            int expectedVersion =
+                (encryptionOptions.CompressionOptions.Algorithm != CompressionOptions.CompressionAlgorithm.None)
+                ? 4 : 3;
+            Assert.AreEqual(expectedVersion, encryptionProperties.EncryptionFormatVersion);
+
             Assert.IsNull(encryptionProperties.EncryptedData);
             Assert.IsNotNull(encryptionProperties.EncryptedPaths);
 
@@ -284,6 +370,97 @@ namespace Microsoft.Azure.Cosmos.Encryption.Tests
                 else
                 {
                     Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+                }
+            }
+        }
+
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+        private static void VerifyDecryptionSucceeded(
+            JsonNode decryptedDoc,
+            TestDoc expectedDoc,
+            int pathCount,
+            DecryptionContext decryptionContext,
+            bool invalidPathsConfigured = false)
+        {
+            AssertNullableValueKind(expectedDoc.SensitiveStr, decryptedDoc, nameof(TestDoc.SensitiveStr));
+            Assert.AreEqual(expectedDoc.SensitiveInt, decryptedDoc[nameof(TestDoc.SensitiveInt)].GetValue<long>());
+            Assert.IsNull(decryptedDoc[Constants.EncryptedInfo]);
+
+            Assert.IsNotNull(decryptionContext);
+            Assert.IsNotNull(decryptionContext.DecryptionInfoList);
+            DecryptionInfo decryptionInfo = decryptionContext.DecryptionInfoList[0];
+            Assert.AreEqual(dekId, decryptionInfo.DataEncryptionKeyId);
+            if (expectedDoc.SensitiveStr == null)
+            {
+                Assert.AreEqual(pathCount - 1, decryptionInfo.PathsDecrypted.Count);
+                Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+            }
+            else
+            {
+                Assert.AreEqual(pathCount, decryptionInfo.PathsDecrypted.Count);
+
+                if (!invalidPathsConfigured)
+                {
+                    Assert.IsFalse(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+                }
+                else
+                {
+                    Assert.IsTrue(TestDoc.PathsToEncrypt.Exists(path => !decryptionInfo.PathsDecrypted.Contains(path)));
+                }
+            }
+        }
+
+        private static void AssertNullableValueKind<T>(T expectedValue, JsonNode node, string propertyName) where T : class
+        {
+            if (expectedValue == null)
+            {
+                Assert.IsTrue(node.AsObject().ContainsKey(propertyName));
+                Assert.AreEqual(null, node[propertyName]);
+            }
+            else
+            {
+                Assert.AreEqual(expectedValue, node[propertyName].GetValue<T>());
+            }
+        }
+#endif
+
+        private static EncryptionOptions CreateEncryptionOptions(JsonProcessor processor, CompressionOptions.CompressionAlgorithm compressionAlgorithm, CompressionLevel compressionLevel)
+        {
+            return new EncryptionOptions()
+            {
+                DataEncryptionKeyId = dekId,
+                EncryptionAlgorithm = CosmosEncryptionAlgorithm.MdeAeadAes256CbcHmac256Randomized,
+                PathsToEncrypt = TestDoc.PathsToEncrypt,
+                JsonProcessor = processor,
+                CompressionOptions = new CompressionOptions()
+                {
+                    Algorithm = compressionAlgorithm,
+                    CompressionLevel = compressionLevel
+                }
+            };
+        }
+
+        public static IEnumerable<object[]> EncryptionOptionsCombinations => new[] {
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.None, CompressionLevel.NoCompression) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.Fastest) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Newtonsoft, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
+            new object[] { CreateEncryptionOptions(JsonProcessor.Stream, CompressionOptions.CompressionAlgorithm.Brotli, CompressionLevel.NoCompression) },
+#endif
+        };
+
+        public static IEnumerable<object[]> EncryptionOptionsStreamTestCombinations
+        {
+            get
+            {
+                foreach (object[] encryptionOptions in EncryptionOptionsCombinations)
+                {
+                    yield return new object[] { encryptionOptions[0], JsonProcessor.Newtonsoft };
+#if ENCRYPTION_CUSTOM_PREVIEW && NET8_0_OR_GREATER
+                    yield return new object[] { encryptionOptions[0], JsonProcessor.Stream };
+#endif
                 }
             }
         }

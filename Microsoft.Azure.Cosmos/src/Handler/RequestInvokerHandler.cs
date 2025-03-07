@@ -24,11 +24,13 @@ namespace Microsoft.Azure.Cosmos.Handlers
     internal class RequestInvokerHandler : RequestHandler
     {
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
+        private static readonly string BinarySerializationFormat = SupportedSerializationFormats.CosmosBinary.ToString();
         private static (bool, ResponseMessage) clientIsValid = (false, null);
 
         private readonly CosmosClient client;
         private readonly Cosmos.ConsistencyLevel? RequestedClientConsistencyLevel;
         private readonly Cosmos.PriorityLevel? RequestedClientPriorityLevel;
+        private readonly int? RequestedClientThroughputBucket;
 
         private bool? IsLocalQuorumConsistency;
         private Cosmos.ConsistencyLevel? AccountConsistencyLevel = null;
@@ -36,12 +38,14 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public RequestInvokerHandler(
             CosmosClient client,
             Cosmos.ConsistencyLevel? requestedClientConsistencyLevel,
-            Cosmos.PriorityLevel? requestedClientPriorityLevel)
+            Cosmos.PriorityLevel? requestedClientPriorityLevel,
+            int? requestedClientThroughputBucket)
         {
             this.client = client;
 
             this.RequestedClientConsistencyLevel = requestedClientConsistencyLevel;       
             this.RequestedClientPriorityLevel = requestedClientPriorityLevel;
+            this.RequestedClientThroughputBucket = requestedClientThroughputBucket;
         }
 
         public override async Task<ResponseMessage> SendAsync(
@@ -67,8 +71,15 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 request.Headers.Add(HttpConstants.HttpHeaders.Prefer, HttpConstants.HttpHeaderValues.PreferReturnMinimal);
             }
 
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.SupportedSerializationFormats, RequestInvokerHandler.BinarySerializationFormat);
+            }
+
             await this.ValidateAndSetConsistencyLevelAsync(request);
             this.SetPriorityLevel(request);
+            this.ValidateAndSetThroughputBucket(request);
 
             (bool isError, ResponseMessage errorResponse) = await this.EnsureValidClientAsync(request, request.Trace);
             if (isError)
@@ -92,6 +103,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
             if (request.RequestOptions?.ExcludeRegions != null)
             {
                 ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
+            }
+
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request)
+                && response.Content != null
+                && response.Content is not CloneableStream)
+            {
+                response.Content = await StreamExtension.AsClonableStreamAsync(
+                    mediaStream: response.Content,
+                    allowUnsafeDataAccess: true);
             }
 
             return response;
@@ -496,6 +517,32 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
         }
 
+        /// <summary>
+        /// Set the ThroughputBucket in the request headers
+        /// </summary>
+        /// <param name="requestMessage"></param>
+        private void ValidateAndSetThroughputBucket(RequestMessage requestMessage)
+        {
+            int? throughputBucket = this.RequestedClientThroughputBucket;
+            RequestOptions promotedRequestOptions = requestMessage.RequestOptions;
+
+            if (promotedRequestOptions?.ThroughputBucket.HasValue == true)
+            {
+                if (this.client.ClientOptions.AllowBulkExecution)
+                {
+                    throw new ArgumentException($"{nameof(requestMessage.RequestOptions.ThroughputBucket)} cannot be set in " +
+                        $"{nameof(requestMessage.RequestOptions)} when {nameof(this.client.ClientOptions.AllowBulkExecution)} is set to true. " +
+                        $"Instead, set {nameof(this.client.ClientOptions.ThroughputBucket)} only in {nameof(this.client.ClientOptions)}.");
+                }
+                throughputBucket = promotedRequestOptions.ThroughputBucket.Value;
+            }
+
+            if (throughputBucket.HasValue)
+            {
+                requestMessage.Headers.Set(HttpConstants.HttpHeaders.ThroughputBucket, throughputBucket.ToString());
+            }
+        }
+
         internal static bool ShouldSetNoContentResponseHeaders(RequestOptions requestOptions,
             CosmosClientOptions clientOptions,
             OperationType operationType,
@@ -545,6 +592,16 @@ namespace Microsoft.Azure.Cosmos.Handlers
               operationType == OperationType.Replace ||
               operationType == OperationType.Upsert ||
               operationType == OperationType.Patch);
+        }
+
+        private static bool IsPointOperationSupportedForBinaryEncoding(RequestMessage request)
+        {
+            return request.ResourceType == ResourceType.Document 
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
 
         private static bool IsClientNoResponseSet(CosmosClientOptions clientOptions, OperationType operationType)
