@@ -534,13 +534,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             int hashCode = SqlScoreExpressionOrderbyItemHashCode;
             hashCode = CombineHashes(hashCode, sqlOrderByItem.Expression.Accept(this));
-            if (sqlOrderByItem.IsDescending)
+            if (sqlOrderByItem.IsDescending.HasValue)
             {
-                hashCode = CombineHashes(hashCode, SqlScoreExpressionOrderbyItemDescendingHashCode);
-            }
-            else
-            {
-                hashCode = CombineHashes(hashCode, SqlScoreExpressionOrderbyItemAscendingHashCode);
+                hashCode = sqlOrderByItem.IsDescending.Value
+                    ? CombineHashes(hashCode, SqlScoreExpressionOrderbyItemDescendingHashCode)
+                    : CombineHashes(hashCode, SqlScoreExpressionOrderbyItemAscendingHashCode);
             }
 
             return hashCode;

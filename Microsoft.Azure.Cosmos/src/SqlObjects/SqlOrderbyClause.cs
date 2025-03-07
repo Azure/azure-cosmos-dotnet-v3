@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
                 }
             }
 
+            this.ScoreExpressionOrderByItems = scoreExpressionOrderByItems;
             this.Rank = true;
         }
 

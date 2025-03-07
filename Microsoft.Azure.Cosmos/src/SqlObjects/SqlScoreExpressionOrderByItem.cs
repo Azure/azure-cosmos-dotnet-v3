@@ -17,19 +17,19 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
     {
         private SqlScoreExpressionOrderByItem(
             SqlFunctionCallScalarExpression expression,
-            bool isDescending)
+            bool? isDescending)
         {
             this.Expression = expression ?? throw new ArgumentNullException(nameof(expression));
-            this.IsDescending = isDescending;
+            if (isDescending.HasValue) this.IsDescending = isDescending;
         }
 
         public SqlFunctionCallScalarExpression Expression { get; }
 
-        public bool IsDescending { get; }
+        public bool? IsDescending { get; }
 
         public static SqlScoreExpressionOrderByItem Create(
             SqlFunctionCallScalarExpression expression,
-            bool isDescending)
+            bool? isDescending)
         {
             return new SqlScoreExpressionOrderByItem(expression, isDescending);
         }

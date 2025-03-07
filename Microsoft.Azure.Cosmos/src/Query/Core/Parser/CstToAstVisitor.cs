@@ -410,7 +410,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             Contract.Requires(context != null);
 
             SqlFunctionCallScalarExpression expression = (SqlFunctionCallScalarExpression)this.Visit(context.function_call_scalar_expression());
-            bool isDescending = false;
+            bool? isDescending = null;
             if (context.sort_order() != null)
             {
                 if (context.sort_order().K_ASC() != null)

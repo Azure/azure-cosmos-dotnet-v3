@@ -522,13 +522,16 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public override void Visit(SqlScoreExpressionOrderByItem sqlScoreExpressionOrderByItem)
         {
             sqlScoreExpressionOrderByItem.Expression.Accept(this);
-            if (sqlScoreExpressionOrderByItem.IsDescending)
+            if (sqlScoreExpressionOrderByItem.IsDescending.HasValue)
             {
-                this.writer.Write(" DESC");
-            }
-            else
-            {
-                this.writer.Write(" ASC");
+                if (sqlScoreExpressionOrderByItem.IsDescending.Value)
+                {
+                    this.writer.Write(" DESC");
+                }
+                else
+                {
+                    this.writer.Write(" ASC");
+                }
             }
         }
 
