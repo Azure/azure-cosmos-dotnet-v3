@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
+    using RequestOptions = Microsoft.Azure.Cosmos.RequestOptions;
 
     internal abstract class ScriptsCore : Scripts
     {
