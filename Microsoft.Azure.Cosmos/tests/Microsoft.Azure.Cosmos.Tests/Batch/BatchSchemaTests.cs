@@ -129,7 +129,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new TransactionalBatchOperationResult(HttpStatusCode.Conflict),
                 new TransactionalBatchOperationResult(HttpStatusCode.OK)
                 {
-                    ResourceStream = new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
+                    ResourceStream = new CloneableStream(
+                        internalStream: new MemoryStream(new byte[] { 0x41, 0x42 }, index: 0, count: 2, writable: false, publiclyVisible: true),
+                        allowUnsafeDataAccess: true),
                     RequestCharge = 2.5,
                     ETag = "1234",
                     RetryAfter = TimeSpan.FromMilliseconds(360)
@@ -250,7 +252,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                         return false;
                     }
 
-                    return ((MemoryStream)x).GetBuffer().SequenceEqual(((MemoryStream)y).GetBuffer());
+                    return ((CloneableStream)x).GetBuffer().SequenceEqual(((CloneableStream)y).GetBuffer());
                 }
 
                 return false;

@@ -70,6 +70,7 @@ jobs:
   # The Post-Analysis build task will analyze the log files produced by the tools, and introduce a build break
   - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
     displayName: 'Post Analysis'
+    condition: eq(1,2) #disablng as nuget repo failing
     inputs:
       GdnBreakFast: true
       GdnBreakAllTools: false
