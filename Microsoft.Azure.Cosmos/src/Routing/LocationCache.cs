@@ -859,8 +859,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         private void SetServicePointConnectionLimit(Uri endpoint)
         {
 #if !NETSTANDARD16
-            ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(endpoint);
-            servicePoint.ConnectionLimit = this.connectionLimit;
+            if (ServicePointAccessor.IsSupported)
+            {
+                ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(endpoint);
+                servicePoint.ConnectionLimit = this.connectionLimit;
+            }
 #endif
         }
 
