@@ -11,6 +11,7 @@
 		<EncryptionPreviewSuffixVersion>preview4</EncryptionPreviewSuffixVersion>
 		<CustomEncryptionVersion>1.0.0-preview08</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
+    <MSTestVersion>3.7.3</MSTestVersion>
 		<LangVersion>10.0</LangVersion>
 		<AboveDirBuildProps>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</AboveDirBuildProps>
 		<DefineConstants Condition=" '$(IsNightly)' == 'true' or '$(IsPreview)' == 'true' ">$(DefineConstants);PREVIEW;ENCRYPTIONPREVIEW</DefineConstants>

@@ -583,12 +583,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         if (e.DocumentServiceRequest != null)
                         {
-                            System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest.ToString()}");
+                            System.Diagnostics.Trace.TraceInformation($"{e.DocumentServiceRequest}");
                         }
 
                         if (e.HttpRequest != null)
                         {
-                            System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest.ToString()}");
+                            System.Diagnostics.Trace.TraceInformation($"{e.HttpRequest}");
                         }
 
                         if (e.IsHttpRequest()
@@ -615,7 +615,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     try
                     {
-                        await testContainer.GetNonePartitionKeyValueAsync(NoOpTrace.Singleton, default(CancellationToken));
+                        await testContainer.GetNonePartitionKeyValueAsync(NoOpTrace.Singleton, default);
                         Assert.Fail();
                     }
                     catch (CosmosException dce) when (dce.StatusCode == HttpStatusCode.NotFound)
@@ -2222,7 +2222,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(responseMessage);
                     Assert.IsNull(responseMessage.Content);
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, responseMessage.StatusCode, responseMessage.ErrorMessage);
-                    Assert.AreNotEqual(responseMessage.Headers.ActivityId, Guid.Empty);
+                    Assert.AreNotEqual(responseMessage.Headers.ActivityId, Guid.Empty.ToString());
                     Assert.IsTrue(responseMessage.Headers.RequestCharge > 0);
                     Assert.IsFalse(string.IsNullOrEmpty(responseMessage.ErrorMessage));
                     Assert.IsTrue(responseMessage.ErrorMessage.Contains("One of the specified pre-condition is not met"));
@@ -2239,7 +2239,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     Assert.IsNotNull(e);
                     Assert.AreEqual(HttpStatusCode.PreconditionFailed, e.StatusCode, e.Message);
-                    Assert.AreNotEqual(e.ActivityId, Guid.Empty);
+                    Assert.AreNotEqual(e.ActivityId, Guid.Empty.ToString());
                     Assert.IsTrue(e.RequestCharge > 0);
                     string expectedResponseBody = $"{Environment.NewLine}Errors : [{Environment.NewLine}  \"One of the specified pre-condition is not met. Learn more: https://aka.ms/CosmosDB/sql/errors/precondition-failed\"{Environment.NewLine}]{Environment.NewLine}";
                     Assert.AreEqual(expectedResponseBody, e.ResponseBody);
@@ -2824,8 +2824,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 patchOperations: patchOperations,
                 requestOptions);
 
-            JsonSerializerSettings jsonSettings = new JsonSerializerSettings();
-            jsonSettings.DateFormatString = "dd / MM / yy hh:mm";
+            JsonSerializerSettings jsonSettings = new JsonSerializerSettings
+            {
+                DateFormatString = "dd / MM / yy hh:mm"
+            };
             string dateJson = JsonConvert.SerializeObject(patchDate, jsonSettings);
 
             Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -3264,16 +3266,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataTestMethod]
         public async Task ContainterReCreateStatelessTest(bool operationBetweenRecreate, bool isQuery)
         {
-            Func<Container, HttpStatusCode, Task> operation;
-            if (isQuery)
-            {
-                operation = ExecuteQueryAsync;
-            }
-            else
-            {
-                operation = ExecuteReadFeedAsync;
-            }
-
+            Func<Container, HttpStatusCode, Task> operation = isQuery ? ExecuteQueryAsync : ExecuteReadFeedAsync;
             using CosmosClient cc1 = TestCommon.CreateCosmosClient();
             using CosmosClient cc2 = TestCommon.CreateCosmosClient();
             Cosmos.Database db1 = null;
