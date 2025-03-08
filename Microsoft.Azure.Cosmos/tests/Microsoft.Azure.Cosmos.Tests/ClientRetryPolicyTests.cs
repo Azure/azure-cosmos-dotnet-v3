@@ -50,7 +50,7 @@
                 multimasterMetadataWriteRetryTest: true);
 
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false, false);
 
             //Creates a metadata write request
             DocumentServiceRequest request = this.CreateRequest(false, true);
@@ -112,6 +112,7 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
+                false,
                 false);
 
             // Creates a sample write request.
@@ -181,7 +182,7 @@
                isPreferredLocationsListEmpty: true);
 
             //Create Retry Policy
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false, false);
 
             CancellationToken cancellationToken = new CancellationToken();
             Exception serviceUnavailableException = new Exception();
@@ -210,7 +211,6 @@
         [TestMethod]
         [DataRow(true, DisplayName = "Case when partition level failover is enabled.")]
         [DataRow(false, DisplayName = "Case when partition level failover is disabled.")]
-
         public void HttpRequestExceptionHandelingTests(
             bool enablePartitionLevelFailover)
         {
@@ -237,7 +237,8 @@
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
                 retryOptions: new RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPertitionLevelFailoverEnabled: enablePartitionLevelFailover);
+                isPartitionLevelFailoverEnabled: enablePartitionLevelFailover,
+                isPartitionLevelCircuitBreakerEnabled: false);
 
             CancellationToken cancellationToken = new ();
             HttpRequestException httpRequestException = new (message: "Connecting to endpoint has failed.");
@@ -363,7 +364,7 @@
 
             this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, isPertitionLevelFailoverEnabled: false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, isPartitionLevelFailoverEnabled: false, isPartitionLevelCircuitBreakerEnabled: false);
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.BoundedStaleness.ToString());
@@ -439,7 +440,7 @@
             FieldInfo fieldInfo = globalPartitionEndpointManager
                 .GetType()
                 .GetField(
-                    name: "PartitionKeyRangeToLocation",
+                    name: "PartitionKeyRangeToLocationForWrite",
                     bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (fieldInfo != null)
@@ -544,7 +545,9 @@
 
             if (enablePartitionLevelFailover)
             {
-                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(endpointManager);
+                this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(
+                    globalEndpointManager: endpointManager,
+                    isPartitionLevelFailoverEnabled: enablePartitionLevelFailover);
             }
             else
             {
