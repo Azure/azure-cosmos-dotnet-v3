@@ -82,8 +82,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal T[] FromFeedStream<T>(Stream stream)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>(
-                isBinaryEncodingEnabled: false);
+            CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.FromStream<T[]>(stream);
         }
 
@@ -127,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private CosmosSerializer GetSerializer<T>(
-            bool isBinaryEncodingEnabled)
+            bool isBinaryEncodingEnabled = false)
         {
             Type inputType = typeof(T);
             if (inputType == typeof(PatchSpec))
