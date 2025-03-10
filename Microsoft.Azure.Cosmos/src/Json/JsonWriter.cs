@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Json
             JsonSerializationFormat jsonSerializationFormat,
             JsonWriteOptions writeOptions = JsonWriteOptions.None,
             int initialCapacity = 256,
-            JsonStringDictionary jsonStringDictionary = null)
+            IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             return jsonSerializationFormat switch
             {

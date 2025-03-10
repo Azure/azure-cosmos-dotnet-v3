@@ -520,7 +520,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     // Test binary + user string encoding
                     JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
                     byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
-                    if (jsonStringDictionary.TryGetStringAtIndex(index: 0, value: out _))
+                    if (jsonStringDictionary.TryGetString(index: 0, value: out _))
                     {
                         Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding");
                     }

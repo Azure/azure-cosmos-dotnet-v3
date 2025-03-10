@@ -6,7 +6,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
-    using System.Collections;
     using System.Diagnostics;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;

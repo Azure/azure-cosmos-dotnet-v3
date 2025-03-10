@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// The string dictionary used for user string encoding.
             /// </summary>
-            private readonly JsonStringDictionary jsonStringDictionary;
+            private readonly IReadOnlyJsonStringDictionary jsonStringDictionary;
 
             private readonly List<SharedStringValue> sharedStrings;
 
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 bool enableNumberArrays,
                 bool enableUint64Values,
                 bool enableEncodedStrings = true,
-                JsonStringDictionary jsonStringDictionary = null)
+                IReadOnlyJsonStringDictionary jsonStringDictionary = null)
             {
                 this.enableNumberArrays = enableNumberArrays;
                 this.enableUInt64Values = enableUint64Values;

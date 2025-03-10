@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Cosmos.Core.Utf8;
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    sealed class JsonStringDictionary : IReadOnlyJsonStringDictionary, IEquatable<JsonStringDictionary>
+    sealed class JsonStringDictionary : IJsonStringDictionary, IEquatable<JsonStringDictionary>
     {
         private const int MaxStackAllocSize = 4 * 1024;
         private const int MinUserStringLength = 4;
@@ -26,8 +25,10 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private readonly UtfAllString[] strings;
         private readonly Trie<byte, int> utf8StringToIndex;
+        private readonly bool readOnly;
 
         private int size;
+        private UInt128 checksum;
 
         public JsonStringDictionary(int capacity)
         {
@@ -38,6 +39,53 @@ namespace Microsoft.Azure.Cosmos.Json
 
             this.strings = new UtfAllString[capacity];
             this.utf8StringToIndex = new Trie<byte, int>(capacity);
+            this.readOnly = false;
+        }
+
+        public JsonStringDictionary(IReadOnlyList<string> userStrings, bool readOnly)
+        {
+            this.readOnly = readOnly;
+
+            if (userStrings == null)
+            {
+                throw new ArgumentNullException(nameof(userStrings));
+            }
+
+            for (int i = 0; i < userStrings.Count; i++)
+            {
+                string userString = userStrings[i];
+                if (!this.TryAddString(Utf8Span.TranscodeUtf16(userString), out int index))
+                {
+                    throw new ArgumentException($"Failed to add {userString} to {nameof(JsonStringDictionary)}.");
+                }
+
+                if (index != i)
+                {
+                    throw new ArgumentException($"Tried to add {userString} at index {i}, but instead it was inserted at index {index}.");
+                }
+            }
+        }
+
+        public bool TryGetString(int index, out UtfAllString value)
+        {
+            if ((index < 0) || (index >= this.size))
+            {
+                value = default;
+                return false;
+            }
+
+            value = this.strings[index];
+            return true;
+        }
+
+        public bool TryGetIndex(Utf8Span value, out int index)
+        {
+            return utf8StringToIndex.TryGetValue(value.Span, out index);
+        }
+
+        public IJsonStringDictionary AsMutableJsonStringDictionary()
+        {
+            return this.readOnly ? null : this;
         }
 
         public bool TryAddString(string value, out int index)
@@ -57,15 +105,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 return true;
             }
 
-            // Return false for following scenarios
-            // 1. Dictionary already at capacity.
-            // 2. String exists as sytem string.
-            // 3. String shorter than min size.
-            // 4. String longer than max size.
-            if ((this.size == this.strings.Length)
-                || JsonBinaryEncoding.SystemStrings.Strings.Contains(UtfAllString.Create(value.ToString()))
-                || (value.Length < MinUserStringLength)
-                || (value.Length > MaxUserStringLength))
+            // Return false if dictionary already at capacity.
+            if (this.size == this.strings.Length)
             {
                 index = default;
                 return false;
@@ -77,43 +118,6 @@ namespace Microsoft.Azure.Cosmos.Json
             this.size++;
 
             return true;
-        }
-
-        public bool TryGetStringAtIndex(int index, out UtfAllString value)
-        {
-            if ((index < 0) || (index >= this.size))
-            {
-                value = default;
-                return false;
-            }
-
-            value = this.strings[index];
-            return true;
-        }
-
-        public static JsonStringDictionary CreateFromStringArray(IReadOnlyList<string> userStrings)
-        {
-            if (userStrings == null)
-            {
-                throw new ArgumentNullException(nameof(userStrings));
-            }
-
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(userStrings.Count);
-            for (int i = 0; i < userStrings.Count; i++)
-            {
-                string userString = userStrings[i];
-                if (!jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userString), out int index))
-                {
-                    throw new ArgumentException($"Failed to add {userString} to {nameof(JsonStringDictionary)}.");
-                }
-
-                if (index != i)
-                {
-                    throw new ArgumentException($"Tried to add {userString} at index {i}, but instead it was inserted at index {index}.");
-                }
-            }
-
-            return jsonStringDictionary;
         }
 
         public bool Equals(JsonStringDictionary other)
@@ -128,20 +132,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            if (this.size != other.size)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < this.size; i++)
-            {
-                if (!this.strings[i].Equals(other.strings[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return this.checksum == other.checksum;
         }
 
         public bool Equals(IReadOnlyJsonStringDictionary other)
@@ -157,6 +148,22 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             return this.Equals(otherDictionary);
+        }
+
+        public UInt128 GetChecksum()
+        {
+            return this.checksum;
+        }
+
+        private void SetChecksum()
+        {
+            UInt128 checksum = 0;
+            for (int i = 0; i < this.size; i++)
+            {
+                checksum = MurmurHash3.Hash128(this.strings[i].Utf8String.Span.Span, checksum);
+            }
+
+            this.checksum = checksum;
         }
     }
 #if INTERNAL

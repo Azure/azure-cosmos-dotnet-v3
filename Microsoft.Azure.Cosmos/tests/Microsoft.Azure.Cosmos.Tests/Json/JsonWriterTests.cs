@@ -640,7 +640,7 @@
             Assert.IsTrue(jsonStringDictionary.TryAddString("text", out int _));
 
             int userStringId = 0;
-            while (jsonStringDictionary.TryGetStringAtIndex(userStringId, out UtfAllString userString))
+            while (jsonStringDictionary.TryGetString(userStringId, out UtfAllString userString))
             {
                 string expectedString = "{\"" + userString.Utf16String + "\":\"\"}";
                 // remove formatting on the json and also replace "/" with "\/".

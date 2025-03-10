@@ -398,7 +398,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            return jsonStringDictionary.TryGetStringAtIndex(userStringId, out encodedUserStringValue);
+            return jsonStringDictionary.TryGetString(userStringId, out encodedUserStringValue);
         }
 
         private static bool TryGetUserStringId(ReadOnlySpan<byte> stringToken, out int userStringId)
@@ -568,7 +568,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Whether or not the type marker was found.</returns>
         public static bool TryGetEncodedStringTypeMarker(
             Utf8Span utf8Span,
-            JsonStringDictionary jsonStringDictionary,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
             if (JsonBinaryEncoding.TryGetEncodedSystemStringTypeMarker(utf8Span, out multiByteTypeMarker))
@@ -617,7 +617,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>Whether or not the Encoded User String Type Marker was found.</returns>
         private static bool TryGetEncodedUserStringTypeMarker(
             Utf8Span utf8Span,
-            JsonStringDictionary jsonStringDictionary,
+            IReadOnlyJsonStringDictionary jsonStringDictionary,
             out MultiByteTypeMarker multiByteTypeMarker)
         {
             if (jsonStringDictionary == null)
@@ -634,14 +634,27 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
-            if (!jsonStringDictionary.TryAddString(utf8Span, out int index))
+            int index;
+            IJsonStringDictionary mutableStringDictionary = jsonStringDictionary.AsMutableJsonStringDictionary();
+            if (mutableStringDictionary != null)
             {
-                multiByteTypeMarker = default;
-                return false;
+                if (!mutableStringDictionary.TryAddString(utf8Span, out index))
+                {
+                    multiByteTypeMarker = default;
+                    return false;
+                }
+            }
+            else
+            {
+                if (!jsonStringDictionary.TryGetIndex(utf8Span, out index))
+                {
+                    multiByteTypeMarker = default;
+                    return false;
+                }
             }
 
             // Convert the index to a multibyte type marker
+            const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
             if (index < OneByteCount)
             {
                 multiByteTypeMarker = new MultiByteTypeMarker(

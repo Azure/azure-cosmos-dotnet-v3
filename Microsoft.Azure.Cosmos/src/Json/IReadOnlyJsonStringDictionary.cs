@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -14,6 +15,24 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     interface IReadOnlyJsonStringDictionary : IEquatable<IReadOnlyJsonStringDictionary>
     {
-        bool TryGetStringAtIndex(int index, out UtfAllString value);
+        bool TryGetString(int index, out UtfAllString value);
+
+        bool TryGetIndex(Utf8Span value, out int index);
+
+        IJsonStringDictionary AsMutableJsonStringDictionary();
+    }
+
+#if INTERNAL
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+#pragma warning disable SA1600 // Elements should be documented
+    public
+#else
+    internal
+#endif
+    interface IJsonStringDictionary : IReadOnlyJsonStringDictionary
+    {
+        bool TryAddString(string value, out int index);
+
+        bool TryAddString(Utf8Span value, out int index);
     }
 }
