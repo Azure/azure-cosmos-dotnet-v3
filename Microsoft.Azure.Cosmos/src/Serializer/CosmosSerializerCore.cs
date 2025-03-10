@@ -75,8 +75,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal T FromStream<T>(Stream stream)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>(
-                isBinaryEncodingEnabled: this.isBinaryEncodingEnabled);
+            CosmosSerializer serializer = this.GetSerializer<T>();
             return serializer.FromStream<T>(stream);
         }
 
