@@ -244,8 +244,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return await this.MoveNextAsync_DrainSingletonComponentAsync(trace, cancellationToken);
             }
 
+            IReadOnlyList<SortOrder> sortOrders = ExtractComponentSortOrders(this.hybridSearchQueryInfo.ComponentQueryInfos);
+            IReadOnlyList<double> componentWeights = (this.hybridSearchQueryInfo.ComponentWeights == null) || (this.hybridSearchQueryInfo.ComponentWeights.Count == 0) ?
+                Enumerable.Repeat(1.0, sortOrders.Count).ToList() :
+                this.hybridSearchQueryInfo.ComponentWeights;
+
             TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)> tryCollateSortedPipelineStageResults = await CollateSortedPipelineStageResultsAsync(
                 this.queryPipelineStages,
+                sortOrders,
+                componentWeights,
                 this.maxConcurrency,
                 trace,
                 cancellationToken);
@@ -393,8 +400,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<List<IQueryPipelineStage>>.FromResult(queryPipelineStages);
         }
 
+        private static IReadOnlyList<SortOrder> ExtractComponentSortOrders(IReadOnlyList<QueryInfo> queryInfos)
+        {
+            List<SortOrder> sortOrders = new List<SortOrder>(queryInfos.Count);
+            foreach (QueryInfo queryInfo in queryInfos)
+            {
+                Debug.Assert(queryInfo.HasOrderBy, "The component query should have an order by");
+                Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
+                Debug.Assert(queryInfo.OrderBy.Count == 1, "The component query should have exactly one order by expression");
+                sortOrders.Add(queryInfo.OrderBy[0]);
+            }
+
+            return sortOrders;
+        }
+
         private static async ValueTask<TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>> CollateSortedPipelineStageResultsAsync(
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
+            IReadOnlyList<SortOrder> sortOrders,
+            IReadOnlyList<double> componentWeights,
             int maxConcurrency,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -439,14 +462,16 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
 
-            foreach (List<ScoreTuple> scoreTuples in componentScores)
+            Debug.Assert(componentScores.Count == sortOrders.Count, "The number of component scores should match the number of sort orders");
+            for (int index = 0; index < componentScores.Count; ++index)
             {
-                scoreTuples.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // sort descending, since higher scores are better
+                int comparisonFactor = (sortOrders[index] == SortOrder.Ascending) ? 1 : -1;
+                componentScores[index].Sort((x, y) => comparisonFactor * x.Score.CompareTo(y.Score));
             }
 
             int[,] ranks = ComputeRanks(componentScores);
 
-            ComputeRrfScores(ranks, queryResults);
+            ComputeRrfScores(ranks, componentWeights, queryResults);
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
@@ -592,16 +617,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static void ComputeRrfScores(
             int[,] ranks,
+            IReadOnlyList<double> componentWeights,
             List<HybridSearchQueryResult> queryResults)
         {
             int componentCount = ranks.GetLength(0);
+            Debug.Assert(componentWeights.Count == componentCount, "The number of component weights should match the number of components");
 
             for (int index = 0; index < queryResults.Count; ++index)
             {
                 double rrfScore = 0;
                 for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
                 {
-                    rrfScore += 1.0 / (RrfConstant + ranks[componentIndex, index]);
+                    rrfScore += componentWeights[componentIndex] / (RrfConstant + ranks[componentIndex, index]);
                 }
 
                 queryResults[index] = queryResults[index].WithScore(rrfScore);
