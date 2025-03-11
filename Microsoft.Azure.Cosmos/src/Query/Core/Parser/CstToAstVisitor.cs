@@ -356,14 +356,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
             Contract.Requires(context != null);
 
-            List<SqlOrderByItem> orderByItems = new List<SqlOrderByItem>();
-            foreach (sqlParser.Order_by_itemContext orderByItemContext in context.order_by_items().order_by_item())
+            if (context.K_RANK != null)
             {
-                SqlOrderByItem orderByItem = (SqlOrderByItem)this.VisitOrder_by_item(orderByItemContext);
-                orderByItems.Add(orderByItem);
-            }
+                List<SqlScoreExpressionOrderByItem> orderByItems = new List<SqlScoreExpressionOrderByItem>();
+                foreach (sqlParser.Score_expression_order_by_itemContext orderByItemContext in context.score_expression_order_by_items().score_expression_order_by_item())
+                {
+                    SqlScoreExpressionOrderByItem orderByItem = (SqlScoreExpressionOrderByItem)this.VisitScore_expression_order_by_item(orderByItemContext);
+                    orderByItems.Add(orderByItem);
+                }
 
-            return SqlOrderByClause.Create(orderByItems.ToImmutableArray());
+                return SqlOrderByClause.Create(orderByItems.ToImmutableArray());
+            }
+            else
+            {
+                List<SqlOrderByItem> orderByItems = new List<SqlOrderByItem>();
+                foreach (sqlParser.Order_by_itemContext orderByItemContext in context.order_by_items().order_by_item())
+                {
+                    SqlOrderByItem orderByItem = (SqlOrderByItem)this.VisitOrder_by_item(orderByItemContext);
+                    orderByItems.Add(orderByItem);
+                }
+
+                return SqlOrderByClause.Create(orderByItems.ToImmutableArray());
+            }
         }
 
         public override SqlObject VisitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context)
@@ -389,6 +403,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
             }
 
             return SqlOrderByItem.Create(expression, isDescending);
+        }
+
+        public override SqlObject VisitScore_expression_order_by_item([NotNull] sqlParser.Score_expression_order_by_itemContext context)
+        {
+            Contract.Requires(context != null);
+
+            SqlFunctionCallScalarExpression expression = (SqlFunctionCallScalarExpression)this.Visit(context.function_call_scalar_expression());
+            bool? isDescending = null;
+            if (context.sort_order() != null)
+            {
+                if (context.sort_order().K_ASC() != null)
+                {
+                    isDescending = false;
+                }
+                else if (context.sort_order().K_DESC() != null)
+                {
+                    isDescending = true;
+                }
+                else
+                {
+                    throw new ArgumentOutOfRangeException($"Unknown sort order : {context.sort_order()}.");
+                }
+            }
+
+            return SqlScoreExpressionOrderByItem.Create(expression, isDescending);
         }
 
         #endregion
