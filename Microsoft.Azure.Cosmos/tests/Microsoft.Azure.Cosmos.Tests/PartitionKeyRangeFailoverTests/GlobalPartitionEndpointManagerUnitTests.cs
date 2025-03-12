@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
             createRequest.RequestContext.RouteToLocation(readRegions.First());
 
-            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(createRequest)).Returns(false);
+            mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(It.IsAny<ResourceType>(), It.IsAny<OperationType>())).Returns(false);
 
             foreach (Uri region in readRegions)
             {
@@ -131,6 +131,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         [DataRow(false, true, DisplayName = "Scenario when PPAF is disabled and circuit breaker is enabled.")]
         [DataRow(true, false, DisplayName = "Scenario when PPAF is enabled and circuit breaker is disabled.")]
         [DataRow(true, true, DisplayName = "Scenario when PPAF is enabled and circuit breaker is enabled.")]
+        [DataRow(false, false, DisplayName = "Scenario when PPAF is disabled and circuit breaker is disabled.")]
         [Timeout(10000)]
         public void TryMarkEndpointUnavailableForPartitionKeyRange_WithSingleMasterWriteAccount_WritesShouldNotAddOverrideWhenCircuitBreakerEnabled(
             bool ppafEnabled,
@@ -147,7 +148,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
             mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
             mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
-            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(false);
+            mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(It.IsAny<ResourceType>(), It.IsAny<OperationType>())).Returns(false);
 
             GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
                 mockEndpointManager.Object,
@@ -169,10 +170,20 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Simulate 11 consecutive failures.
             GlobalPartitionEndpointManagerUnitTests.SimulateConsecutiveFailures(failoverManager, readRequest);
 
-            Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
-                readRequest));
-            Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(
-                readRequest));
+            if (ppcbEnabled)
+            {
+                Assert.IsTrue(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    readRequest));
+                Assert.IsTrue(failoverManager.TryAddPartitionLevelLocationOverride(
+                    readRequest));
+            }
+            else
+            {
+                Assert.IsFalse(failoverManager.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    readRequest));
+                Assert.IsFalse(failoverManager.TryAddPartitionLevelLocationOverride(
+                    readRequest));
+            }
 
             using DocumentServiceRequest createRequest = DocumentServiceRequest.Create(OperationType.Create, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey);
             createRequest.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
@@ -213,7 +224,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
             mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
             mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
-            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(true);
+            mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(ResourceType.Document, OperationType.Create)).Returns(true);
 
             GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
                 mockEndpointManager.Object,
@@ -270,7 +281,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
             mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
             mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
-            mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(true);
+            mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(ResourceType.Document, OperationType.Create)).Returns(true);
 
             GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
                 mockEndpointManager.Object,
@@ -327,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 mockEndpointManager.Setup(x => x.ReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
                 mockEndpointManager.Setup(x => x.AccountReadEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
                 mockEndpointManager.Setup(x => x.WriteEndpoints).Returns(() => new ReadOnlyCollection<Uri>(readRegions));
-                mockEndpointManager.Setup(x => x.CanUseMultipleWriteLocations(It.IsAny<DocumentServiceRequest>())).Returns(true);
+                mockEndpointManager.Setup(x => x.CanSupportMultipleWriteLocations(ResourceType.Document, OperationType.Create)).Returns(true);
 
                 GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
                     mockEndpointManager.Object,
