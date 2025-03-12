@@ -31,8 +31,8 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     interface IJsonStringDictionary : IReadOnlyJsonStringDictionary
     {
-        bool TryAddString(string value, out int index);
+        bool TryAddString(string value, int maxCount, out int index);
 
-        bool TryAddString(Utf8Span value, out int index);
+        bool TryAddString(Utf8Span value, int maxCount, out int index);
     }
 }

@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
 
                     // Test binary + user string encoding
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 4096);
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
                     byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
                     if (jsonStringDictionary.TryGetString(index: 0, value: out _))
                     {

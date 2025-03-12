@@ -1,5 +1,6 @@
 ﻿namespace Microsoft.Azure.Cosmos.Tests.Json
 {
+    using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -12,7 +13,7 @@
         [Owner("mayapainter")]
         public void TestBasicCase()
         {
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            IJsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
 
             // First new string -> index 0
             JsonStringDictionaryTests.AddAndValidate(jsonStringDictionary, expectedString: "str1", expectedIndex: 0);
@@ -31,15 +32,72 @@
         [Owner("mayapainter")]
         public void TestDictionarySizeLimit()
         {
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 0);
-            Assert.IsFalse(jsonStringDictionary.TryAddString("hello", out int _));
+            JsonStringDictionary jsonStringDictionary = new();
+            Assert.IsFalse(jsonStringDictionary.TryAddString("hello", maxCount: 0, out int _));
         }
 
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void TestCreateAndAddStrings()
+        {
+            IJsonStringDictionary stringDictionary = new JsonStringDictionary();
 
-        private static void AddAndValidate(JsonStringDictionary jsonStringDictionary, string expectedString, int expectedIndex)
+            // Strings are case sensitive.
+            AddAndValidate(stringDictionary, "test0", 0);
+            AddAndValidate(stringDictionary, "Test0", 1);
+
+            // Inserting same string should return same index.
+            AddAndValidate(stringDictionary, "test0", 0);
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void TestDictionaryComparison()
+        {
+            IJsonStringDictionary stringDictionary = new JsonStringDictionary();
+
+            // Null comparison and reference-equals comparison.
+            Assert.IsFalse(stringDictionary.Equals(null));
+            Assert.IsTrue(stringDictionary.Equals(stringDictionary));
+
+            // Subset comparison
+            AddAndValidate(stringDictionary, "test0", 0);
+            AddAndValidate(stringDictionary, "test1", 1);
+            AddAndValidate(stringDictionary, "test2", 2);
+
+            IJsonStringDictionary stringDictionary1 = new JsonStringDictionary();
+            AddAndValidate(stringDictionary1, "test0", 0);
+            AddAndValidate(stringDictionary1, "test1", 1);
+            Assert.IsFalse(stringDictionary.Equals(stringDictionary1));
+
+            // Reference-equals comparison
+            AddAndValidate(stringDictionary1, "test2", 2);
+            Assert.IsTrue(stringDictionary.Equals(stringDictionary1));
+
+            // Superset comparison
+            AddAndValidate(stringDictionary1, "test3", 3);
+            Assert.IsFalse(stringDictionary.Equals(stringDictionary1));
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void TestAsMutableJsonStringDictionary()
+        {
+            IReadOnlyJsonStringDictionary stringDictionary1 = new JsonStringDictionary();
+            Assert.IsNotNull(stringDictionary1.AsMutableJsonStringDictionary());
+
+            IReadOnlyList<string> userStrings = new List<string> { "test" };
+            IReadOnlyJsonStringDictionary stringDictionary2 = new JsonStringDictionary(userStrings, readOnly: false);
+            Assert.IsNotNull(stringDictionary2.AsMutableJsonStringDictionary());
+
+            IReadOnlyJsonStringDictionary stringDictionaryReadOnly = new JsonStringDictionary(userStrings, readOnly: true);
+            Assert.IsNull(stringDictionaryReadOnly.AsMutableJsonStringDictionary());
+        }
+
+        private static void AddAndValidate(IJsonStringDictionary jsonStringDictionary, string expectedString, int expectedIndex, int capacity = 2080)
         {
             // Try to add the string.
-            if (!jsonStringDictionary.TryAddString(expectedString, out int actualIndex))
+            if (!jsonStringDictionary.TryAddString(expectedString, capacity, out int actualIndex))
             {
                 throw new AssertFailedException($"{nameof(JsonStringDictionary.TryAddString)}({expectedString}, out int {actualIndex}) failed.");
             }

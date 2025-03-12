@@ -676,11 +676,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(textInput.ToString(), expectedTokens.ToArray());
             this.VerifyReader(binaryInput.ToArray(), expectedTokens.ToArray());
 
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
             for (int i = 0; i < OneByteCount + 1; i++)
             {
                 string userEncodedString = "a" + i.ToString();
-                Assert.IsTrue(jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userEncodedString), out int index));
+                Assert.IsTrue(jsonStringDictionary.TryAddString(Utf8Span.TranscodeUtf16(userEncodedString), 100, out int index));
                 Assert.AreEqual(i, index);
             }
 
@@ -2371,9 +2371,9 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
-            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", out int index1));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("title", out int index2));
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
+            Assert.IsTrue(jsonStringDictionary.TryAddString("GlossDiv", 100, out int index1));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("title", 100, out int index2));
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
@@ -2572,14 +2572,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
 
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 100);
-            Assert.IsTrue(jsonStringDictionary.TryAddString("double", out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("string", out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("boolean", out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("null", out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("datetime", out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("spatialPoint", out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("text", out int _));
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
+            Assert.IsTrue(jsonStringDictionary.TryAddString("double", 100, out int _));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("string", 100, out int _));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("boolean", 100, out int _));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("null", 100, out int _));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("datetime", 100, out int _));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("spatialPoint", 100, out int _));
+            Assert.IsTrue(jsonStringDictionary.TryAddString("text", 100, out int _));
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 

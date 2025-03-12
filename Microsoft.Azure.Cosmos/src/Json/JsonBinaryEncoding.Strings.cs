@@ -634,11 +634,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
+            const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
+            const int MaxEncodableIndex = OneByteCount + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF) - 1;
+
             int index;
             IJsonStringDictionary mutableStringDictionary = jsonStringDictionary.AsMutableJsonStringDictionary();
             if (mutableStringDictionary != null)
             {
-                if (!mutableStringDictionary.TryAddString(utf8Span, out index))
+                if (!mutableStringDictionary.TryAddString(utf8Span, MaxEncodableIndex + 1, out index))
                 {
                     multiByteTypeMarker = default;
                     return false;
@@ -654,7 +657,6 @@ namespace Microsoft.Azure.Cosmos.Json
             }
 
             // Convert the index to a multibyte type marker
-            const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
             if (index < OneByteCount)
             {
                 multiByteTypeMarker = new MultiByteTypeMarker(
