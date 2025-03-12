@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
 
                 // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
                 // partition has been failed over to region B, when per partition automatic failover is enabled.
-                this.TryMarkEndpointUnavailableForPkRange();
+                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
 
                 // Mark both read and write requests because it gateway exception.
                 // This means all requests going to the region will fail.
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
                         StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
 
                     return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
-                        shouldMarkEndpointUnavailableForPkRange: true);
+                        isSystemResourceUnavailableForWrite: true);
                 }
 
                 ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos
                     StatusCodes.TooManyRequests, SubStatusCodes.SystemResourceUnavailable);
 
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
-                    shouldMarkEndpointUnavailableForPkRange: true);
+                    isSystemResourceUnavailableForWrite: true);
             }
 
             return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
@@ -232,7 +232,7 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
                 // Mark the partition key range as unavailable to retry future request on a new region.
-                this.TryMarkEndpointUnavailableForPkRange();
+                this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite: false);
             }
 
             // Received 403.3 on write region, initiate the endpoint rediscovery
@@ -308,7 +308,7 @@ namespace Microsoft.Azure.Cosmos
             if (statusCode == HttpStatusCode.ServiceUnavailable)
             {
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
-                    shouldMarkEndpointUnavailableForPkRange: true);
+                    isSystemResourceUnavailableForWrite: false);
             }
 
             return null;
@@ -437,20 +437,18 @@ namespace Microsoft.Azure.Cosmos
         /// Service Unavailable response is received, indicating that the service might be temporarily unavailable.
         /// It optionally marks the partition key range as unavailable, which will influence future routing decisions.
         /// </summary>
-        /// <param name="shouldMarkEndpointUnavailableForPkRange">A boolean flag indicating whether the endpoint for the
-        /// current partition key range should be marked as unavailable.</param>
+        /// <param name="isSystemResourceUnavailableForWrite">A boolean flag indicating whether the endpoint for the
+        /// current partition key range should be marked as unavailable, if the failure happened due to system
+        /// resource unavailability.</param>
         /// <returns>An instance of <see cref="ShouldRetryResult"/> indicating whether the operation should be retried.</returns>
         private ShouldRetryResult TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
-            bool shouldMarkEndpointUnavailableForPkRange)
+            bool isSystemResourceUnavailableForWrite)
         {
             DefaultTrace.TraceWarning("ClientRetryPolicy: ServiceUnavailable. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                 this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                 this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-            if (shouldMarkEndpointUnavailableForPkRange)
-            {
-                this.TryMarkEndpointUnavailableForPkRange();
-            }
+            this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite);
 
             return this.ShouldRetryOnServiceUnavailable();
         }
@@ -502,11 +500,16 @@ namespace Microsoft.Azure.Cosmos
         /// Attempts to mark the endpoint associated with the current partition key range as unavailable
         /// which will influence future routing decisions.
         /// </summary>
+        /// <param name="isSystemResourceUnavailableForWrite">A boolean flag indicating if the system resource was unavailable. If true,
+        /// the endpoint will be marked unavailable for the pk-range of a multi master write request, bypassing the circuit breaker check.</param>
         /// <returns>A boolean flag indicating whether the endpoint was marked as unavailable.</returns>
-        private bool TryMarkEndpointUnavailableForPkRange()
+        private bool TryMarkEndpointUnavailableForPkRange(
+            bool isSystemResourceUnavailableForWrite)
         {
             if (this.documentServiceRequest != null
-                && (this.IsRequestEligibleForPerPartitionAutomaticFailover() || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
+                && (isSystemResourceUnavailableForWrite
+                || this.IsRequestEligibleForPerPartitionAutomaticFailover()
+                || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
             {
                 // Mark the partition as unavailable.
                 // Let the ClientRetry logic decide if the request should be retried
