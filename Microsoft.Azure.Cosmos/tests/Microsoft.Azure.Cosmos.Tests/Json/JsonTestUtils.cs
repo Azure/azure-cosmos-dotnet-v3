@@ -13,7 +13,7 @@
 
     internal class JsonTestUtils
     {
-        public static byte[] ConvertTextToBinary(string text, JsonStringDictionary jsonStringDictionary = null)
+        public static byte[] ConvertTextToBinary(string text, IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
