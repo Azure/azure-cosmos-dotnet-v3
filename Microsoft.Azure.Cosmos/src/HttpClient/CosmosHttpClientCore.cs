@@ -45,6 +45,8 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptor = chaosInterceptor;
         }
 
+        public override bool IsFaultInjectionClient => this.chaosInterceptor is not null;
+
         public override HttpMessageHandler HttpMessageHandler { get; }
 
         public static CosmosHttpClient CreateWithConnectionPolicy(
@@ -273,7 +275,8 @@ namespace Microsoft.Azure.Cosmos
             ResourceType resourceType,
             HttpTimeoutPolicy timeoutPolicy,
             IClientSideRequestStatistics clientSideRequestStatistics,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            DocumentServiceRequest documentServiceRequest = null)
         {
             if (uri == null)
             {
@@ -304,7 +307,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 timeoutPolicy,
                 clientSideRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                documentServiceRequest);
         }
 
         public override Task<HttpResponseMessage> SendHttpAsync(
