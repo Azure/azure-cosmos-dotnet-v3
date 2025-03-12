@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// A read-only string containing the environment variable name for enabling per partition circuit breaker. The default value
         /// for this flag is false.
         /// </summary>
-        internal static readonly string PartitionLevelCircuitBreakerEnabled = "AZURE_COSMOS_PARTITION_LEVEL_CIRCUIT_BREAKER_ENABLED";
+        internal static readonly string PartitionLevelCircuitBreakerEnabled = "AZURE_COSMOS_CIRCUIT_BREAKER_ENABLED";
 
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the stale partition refresh task interval time

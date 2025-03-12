@@ -129,15 +129,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (request.IsReadOnlyRequest
-                || this.IsWriteRequestEligibleForPartitionLevelCircuitBreaker(request))
+            if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
                     request,
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
-            else if (this.IsWriteRequestEligibleForPerPartitionAutomaticFailover(request))
+            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 return this.TryRouteRequestForPartitionLevelOverride(
                     partitionKeyRange,
@@ -166,8 +165,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            if (request.IsReadOnlyRequest 
-                || this.IsWriteRequestEligibleForPartitionLevelCircuitBreaker(request))
+            if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request))
             {
                 // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
                 // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
@@ -180,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     request,
                     this.PartitionKeyRangeToLocationForReadAndWrite);
             }
-            else if (this.IsWriteRequestEligibleForPerPartitionAutomaticFailover(request))
+            else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
                 ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.AccountReadEndpoints;
@@ -227,6 +225,37 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return partionFailover.CanCircuitBreakerTriggerPartitionFailOver(
                 isReadOnlyRequest: request.IsReadOnlyRequest);
+        }
+
+        /// <summary>
+        /// Determines if a request is eligible for per-partition automatic failover.
+        /// A request is eligible if it is a write request, partition level failover is enabled,
+        /// and the global endpoint manager cannot use multiple write locations for the request.
+        /// </summary>
+        /// <param name="request">The document service request to check.</param>
+        /// <returns>True if the request is eligible for per-partition automatic failover, otherwise false.</returns>
+        public override bool IsRequestEligibleForPerPartitionAutomaticFailover(
+            DocumentServiceRequest request)
+        {
+            return this.isPartitionLevelFailoverEnabled
+                && !request.IsReadOnlyRequest
+                && !this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType);
+        }
+
+        /// <summary>
+        /// Determines if a request is eligible for partition-level circuit breaker.
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
+        /// </summary>
+        /// <returns>
+        /// True if the read request is eligible for partition-level circuit breaker, otherwise false.
+        /// </returns>
+        public override bool IsRequestEligibleForPartitionLevelCircuitBreaker(
+            DocumentServiceRequest request)
+        {
+            return this.isPartitionLevelCircuitBreakerEnabled
+                && (request.IsReadOnlyRequest
+                || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
         }
 
         /// <summary>
@@ -470,7 +499,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     partitionKeyRange,
                     out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
             {
-                if ((request.IsReadOnlyRequest || this.IsWriteRequestEligibleForPartitionLevelCircuitBreaker(request))
+                if (this.IsRequestEligibleForPartitionLevelCircuitBreaker(request)
                     && !partitionKeyRangeFailover.CanCircuitBreakerTriggerPartitionFailOver(request.IsReadOnlyRequest))
                 {
                     return false;
@@ -540,36 +569,6 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRangeToLocationMapping.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
 
             return false;
-        }
-
-        /// <summary>
-        /// Determines if a write request is eligible for partition level circuit breaker.
-        /// A request is eligible if it is not read-only, partition level circuit breaker is enabled,
-        /// and the global endpoint manager can use multiple write locations for the request.
-        /// </summary>
-        /// <param name="request">The document service request to check.</param>
-        /// <returns>True if the request is eligible for partition level circuit breaker, otherwise false.</returns>
-        private bool IsWriteRequestEligibleForPartitionLevelCircuitBreaker(
-            DocumentServiceRequest request)
-        {
-            return !request.IsReadOnlyRequest
-                && this.isPartitionLevelCircuitBreakerEnabled
-                && this.globalEndpointManager.CanUseMultipleWriteLocations(request);
-        }
-
-        /// <summary>
-        /// Determines if a write request is eligible for per-partition automatic failover.
-        /// A request is eligible if it is not read-only, partition level failover is enabled,
-        /// and the global endpoint manager cannot use multiple write locations for the request.
-        /// </summary>
-        /// <param name="request">The document service request to check.</param>
-        /// <returns>True if the request is eligible for per-partition automatic failover, otherwise false.</returns>
-        private bool IsWriteRequestEligibleForPerPartitionAutomaticFailover(
-            DocumentServiceRequest request)
-        {
-            return !request.IsReadOnlyRequest
-                && this.isPartitionLevelFailoverEnabled
-                && !this.globalEndpointManager.CanUseMultipleWriteLocations(request);
         }
 
         internal sealed class PartitionKeyRangeFailoverInfo

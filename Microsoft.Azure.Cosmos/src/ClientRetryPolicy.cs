@@ -29,7 +29,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
         private readonly bool isPartitionLevelFailoverEnabled;
-        private readonly bool isPartitionLevelCircuitBreakerEnabled;
         private int failoverRetryCount;
 
         private int sessionTokenRetryCount;
@@ -46,8 +45,7 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPartitionLevelFailoverEnabled,
-            bool isPartitionLevelCircuitBreakerEnabled)
+            bool isPartitionLevelFailoverEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
                 retryOptions.MaxRetryAttemptsOnThrottledRequests,
@@ -62,7 +60,6 @@ namespace Microsoft.Azure.Cosmos
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
-            this.isPartitionLevelCircuitBreakerEnabled = isPartitionLevelCircuitBreakerEnabled;
         }
 
         /// <summary> 
@@ -83,13 +80,9 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
-                if (this.isPartitionLevelFailoverEnabled)
-                {
-                    // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
-                    // partition has been failed over to region B, when per partition automatic failover is enabled.
-                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                         this.documentServiceRequest);
-                }
+                // In the event of the routing gateway having outage on region A, mark the partition as unavailable assuming that the
+                // partition has been failed over to region B, when per partition automatic failover is enabled.
+                this.TryMarkEndpointUnavailableForPkRange();
 
                 // Mark both read and write requests because it gateway exception.
                 // This means all requests going to the region will fail.
@@ -239,8 +232,7 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
                 // Mark the partition key range as unavailable to retry future request on a new region.
-                this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                     this.documentServiceRequest);
+                this.TryMarkEndpointUnavailableForPkRange();
             }
 
             // Received 403.3 on write region, initiate the endpoint rediscovery
@@ -457,14 +449,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (shouldMarkEndpointUnavailableForPkRange)
             {
-                if (this.documentServiceRequest != null
-                    && (this.IsRequestEligibleForPerPartitionAutomaticFailover() || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
-                {
-                    // Mark the partition as unavailable.
-                    // Let the ClientRetry logic decide if the request should be retried
-                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
-                         this.documentServiceRequest);
-                }
+                this.TryMarkEndpointUnavailableForPkRange();
             }
 
             return this.ShouldRetryOnServiceUnavailable();
@@ -514,6 +499,25 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Attempts to mark the endpoint associated with the current partition key range as unavailable
+        /// which will influence future routing decisions.
+        /// </summary>
+        /// <returns>A boolean flag indicating whether the endpoint was marked as unavailable.</returns>
+        private bool TryMarkEndpointUnavailableForPkRange()
+        {
+            if (this.documentServiceRequest != null
+                && (this.IsRequestEligibleForPerPartitionAutomaticFailover() || this.IsRequestEligibleForPartitionLevelCircuitBreaker()))
+            {
+                // Mark the partition as unavailable.
+                // Let the ClientRetry logic decide if the request should be retried
+                return this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                    request: this.documentServiceRequest);
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Returns a boolean flag indicating if the endpoint should be marked as unavailable
         /// due to a 429 response with a sub status code of 3092 (system resource unavailable).
         /// This is applicable for write requests targeted for multi master accounts.
@@ -532,21 +536,20 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Determines if the current request is a write request.
+        /// Determines if a request is eligible for per-partition automatic failover.
+        /// A request is eligible if it is a write request, partition level failover is enabled,
+        /// and the global endpoint manager cannot use multiple write locations for the request.
         /// </summary>
-        /// <returns>
-        /// True if the request is a write request; otherwise, false.
-        /// </returns>
+        /// <returns>True if the request is eligible for per-partition automatic failover, otherwise false.</returns>
         private bool IsRequestEligibleForPerPartitionAutomaticFailover()
         {
-            return !this.documentServiceRequest.IsReadOnlyRequest
-                && !this.isMultiMasterWriteRequest
-                && this.isPartitionLevelFailoverEnabled;
+            return this.partitionKeyRangeLocationCache.IsRequestEligibleForPerPartitionAutomaticFailover(
+                this.documentServiceRequest);
         }
 
         /// <summary>
-        /// Determines if a read request is eligible for partition-level circuit breaker.
-        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// Determines if a request is eligible for partition-level circuit breaker.
+        /// This method checks if the request is a read-only request or a multi master write request, if partition-level circuit breaker is enabled,
         /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
         /// </summary>
         /// <returns>
@@ -554,10 +557,8 @@ namespace Microsoft.Azure.Cosmos
         /// </returns>
         private bool IsRequestEligibleForPartitionLevelCircuitBreaker()
         {
-            return (this.documentServiceRequest.IsReadOnlyRequest || this.isMultiMasterWriteRequest)
-                        && this.isPartitionLevelCircuitBreakerEnabled
-                        && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
-                            this.documentServiceRequest);
+            return this.partitionKeyRangeLocationCache.IsRequestEligibleForPartitionLevelCircuitBreaker(this.documentServiceRequest)
+                        && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(this.documentServiceRequest);
         }
 
         private sealed class RetryContext

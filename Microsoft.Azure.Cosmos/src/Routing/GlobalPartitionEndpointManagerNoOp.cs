@@ -17,12 +17,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
         }
 
-        public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
-            DocumentServiceRequest request)
-        {
-            return false;
-        }
-
         public override void SetBackgroundConnectionPeriodicRefreshTask(
             Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task> backgroundConnectionInitTask)
         {
@@ -36,6 +30,22 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
+            DocumentServiceRequest request)
+        {
+            return false;
+        }
+
+        public override bool IsRequestEligibleForPartitionLevelCircuitBreaker(DocumentServiceRequest request)
+        {
+            return false;
+        }
+
+        public override bool IsRequestEligibleForPerPartitionAutomaticFailover(DocumentServiceRequest request)
+        {
+            return false;
+        }
+
+        public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request)
         {
             return false;
