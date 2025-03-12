@@ -6,8 +6,6 @@
     using System.IO;
     using System.Linq;
     using System.Text;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
@@ -15,17 +13,17 @@
 
     internal class JsonTestUtils
     {
-        public static byte[] ConvertTextToBinary(string text)
+        public static byte[] ConvertTextToBinary(string text, IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
-            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary);
+            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
             textReader.WriteAll(binaryWriter);
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary)
+        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, JsonStringDictionary jsonStringDictionary = null)
         {
-            IJsonReader binaryReader = JsonReader.Create(binary);
+            IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             binaryReader.WriteAll(textWriter);
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
@@ -320,9 +318,12 @@
                 (newtonsoftNavigatorCreate != null ? newtonsoftNavigatorCreate(inputJson) : null) :
                 JsonNavigator.Create(inputResult);
 
+            IReadOnlyJsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
             Func<SerializationSpec, IJsonWriter> createWriter = (SerializationSpec spec) => spec.IsNewtonsoft ?
                 NewtonsoftToCosmosDBWriter.CreateTextWriter() :
-                JsonWriter.Create(spec.SerializationFormat, spec.WriteOptions);
+                spec.UserStringEncoded ?
+                    JsonWriter.Create(spec.SerializationFormat, spec.WriteOptions, jsonStringDictionary: jsonStringDictionary) :
+                    JsonWriter.Create(spec.SerializationFormat, spec.WriteOptions);
 
             Stopwatch timer = Stopwatch.StartNew();
 
@@ -409,7 +410,7 @@
 
             StringBuilder verboseOutput = new StringBuilder();
             if (!identical &&
-                (strictComparison || !CompareResults(inputBytes, outputBytes, verboseWriter: new StringWriter(verboseOutput))))
+                (strictComparison || !CompareResults(inputBytes, outputBytes, verboseWriter: new StringWriter(verboseOutput), jsonStringDictionary)))
             {
                 string[] inputTextLines = SerializeResultBuffer(inputBytes, inputSpec.SerializationFormat);
                 string[] outputTextLines = SerializeResultBuffer(outputBytes, outputSpec.SerializationFormat);
@@ -418,9 +419,11 @@
                 Console.WriteLine();
                 Console.WriteLine($"  Input Format        : {inputSpec.SerializationFormatToString()}");
                 Console.WriteLine($"  Input Write Options : {inputSpec.WriteOptions}");
+                Console.WriteLine($"  Input User String Encoding Enabled : {inputSpec.UserStringEncoded}");
                 Console.WriteLine();
                 Console.WriteLine($"  Output Format       : {outputSpec.SerializationFormatToString()}");
                 Console.WriteLine($"  Output Write Options: {outputSpec.WriteOptions}");
+                Console.WriteLine($"  Input User String Encoding Enabled : {inputSpec.UserStringEncoded}");
                 Console.WriteLine();
                 Console.WriteLine($"Comparison Errors:");
                 Console.WriteLine(verboseOutput.ToString());
@@ -455,7 +458,8 @@
         public static bool CompareResults(
             byte[] resultBuffer1,
             byte[] resultBuffer2,
-            TextWriter verboseWriter = null)
+            TextWriter verboseWriter = null,
+            IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             Assert.IsNotNull(resultBuffer1);
             Assert.IsNotNull(resultBuffer2);
@@ -463,8 +467,8 @@
             // Fast check for identical buffers
             if (resultBuffer1.Equals(resultBuffer2)) return true;
 
-            IJsonReader reader1 = JsonReader.Create(resultBuffer1);
-            IJsonReader reader2 = JsonReader.Create(resultBuffer2);
+            IJsonReader reader1 = JsonReader.Create(resultBuffer1, jsonStringDictionary);
+            IJsonReader reader2 = JsonReader.Create(resultBuffer2, jsonStringDictionary);
 
             int tokenCount = 0;
             while (true)
@@ -797,26 +801,27 @@
 
         public class SerializationSpec
         {
-            private SerializationSpec(JsonSerializationFormat serializationFormat, JsonWriteOptions writeOptions, bool isNewtonsoft)
+            private SerializationSpec(JsonSerializationFormat serializationFormat, JsonWriteOptions writeOptions, bool isNewtonsoft, bool userStringEncoded)
             {
                 this.SerializationFormat = serializationFormat;
                 this.WriteOptions = writeOptions;
                 this.IsNewtonsoft = isNewtonsoft;
+                this.UserStringEncoded = userStringEncoded;
             }
 
             public static SerializationSpec Text(JsonWriteOptions writeOptions = JsonWriteOptions.None)
             {
-                return new SerializationSpec(JsonSerializationFormat.Text, writeOptions, false);
+                return new SerializationSpec(JsonSerializationFormat.Text, writeOptions, false, false);
             }
 
-            public static SerializationSpec Binary(JsonWriteOptions writeOptions = JsonWriteOptions.None)
+            public static SerializationSpec Binary(JsonWriteOptions writeOptions = JsonWriteOptions.None, bool userStringEncoded = false)
             {
-                return new SerializationSpec(JsonSerializationFormat.Binary, writeOptions, false);
+                return new SerializationSpec(JsonSerializationFormat.Binary, writeOptions, false, userStringEncoded);
             }
 
             public static SerializationSpec Newtonsoft()
             {
-                return new SerializationSpec(JsonSerializationFormat.Text, JsonWriteOptions.None, true);
+                return new SerializationSpec(JsonSerializationFormat.Text, JsonWriteOptions.None, true, false);
             }
 
             public string SerializationFormatToString()
@@ -827,6 +832,7 @@
             public JsonSerializationFormat SerializationFormat { get; }
             public JsonWriteOptions WriteOptions { get; }
             public bool IsNewtonsoft { get; }
+            public bool UserStringEncoded { get; }
         }
 
         public class RoundTripBaseline
