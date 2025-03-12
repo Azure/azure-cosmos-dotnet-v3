@@ -244,8 +244,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 return await this.MoveNextAsync_DrainSingletonComponentAsync(trace, cancellationToken);
             }
 
+            IReadOnlyList<ComponentWeight> componentWeights = ExtractComponentWeights(this.hybridSearchQueryInfo);
+
             TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)> tryCollateSortedPipelineStageResults = await CollateSortedPipelineStageResultsAsync(
                 this.queryPipelineStages,
+                componentWeights,
                 this.maxConcurrency,
                 trace,
                 cancellationToken);
@@ -393,8 +396,31 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             return TryCatch<List<IQueryPipelineStage>>.FromResult(queryPipelineStages);
         }
 
+        private static IReadOnlyList<ComponentWeight> ExtractComponentWeights(HybridSearchQueryInfo hybridSearchQueryInfo)
+        {
+            IReadOnlyList<double> componentWeights = (hybridSearchQueryInfo.ComponentWeights == null) || (hybridSearchQueryInfo.ComponentWeights.Count == 0) ?
+                Enumerable.Repeat(1.0, hybridSearchQueryInfo.ComponentQueryInfos.Count).ToList() :
+                hybridSearchQueryInfo.ComponentWeights;
+
+            Debug.Assert(componentWeights.Count == hybridSearchQueryInfo.ComponentQueryInfos.Count, "The number of component weights should match the number of components");
+
+            List<ComponentWeight> result = new List<ComponentWeight>(hybridSearchQueryInfo.ComponentQueryInfos.Count);
+            for (int index = 0; index < hybridSearchQueryInfo.ComponentQueryInfos.Count; ++index)
+            {
+                QueryInfo queryInfo = hybridSearchQueryInfo.ComponentQueryInfos[index];
+                Debug.Assert(queryInfo.HasOrderBy, "The component query should have an order by");
+                Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
+                Debug.Assert(queryInfo.OrderBy.Count == 1, "The component query should have exactly one order by expression");
+
+                result.Add(new ComponentWeight(componentWeights[index], queryInfo.OrderBy[0]));
+            }
+
+            return result;
+        }
+
         private static async ValueTask<TryCatch<(IReadOnlyList<HybridSearchQueryResult>, QueryPage)>> CollateSortedPipelineStageResultsAsync(
             IReadOnlyList<IQueryPipelineStage> queryPipelineStages,
+            IReadOnlyList<ComponentWeight> componentWeights,
             int maxConcurrency,
             ITrace trace,
             CancellationToken cancellationToken)
@@ -439,14 +465,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
             IReadOnlyList<List<ScoreTuple>> componentScores = tryGetComponentScores.Result;
 
-            foreach (List<ScoreTuple> scoreTuples in componentScores)
+            for (int index = 0; index < componentScores.Count; ++index)
             {
-                scoreTuples.Sort((x, y) => (-1) * x.Score.CompareTo(y.Score)); // sort descending, since higher scores are better
+                componentScores[index].Sort((x, y) => componentWeights[index].Comparison(x.Score, y.Score));
             }
 
             int[,] ranks = ComputeRanks(componentScores);
 
-            ComputeRrfScores(ranks, queryResults);
+            ComputeRrfScores(ranks, componentWeights, queryResults);
 
             HybridSearchDebugTraceHelpers.TraceQueryResultsWithRanks(queryResults, ranks);
 
@@ -578,7 +604,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 for (int index = 0; index < componentScores[componentIndex].Count; ++index)
                 {
                     // Identical scores should have the same rank
-                    if ((index > 0) && (componentScores[componentIndex][index].Score < componentScores[componentIndex][index - 1].Score))
+                    if ((index > 0) && (componentScores[componentIndex][index].Score != componentScores[componentIndex][index - 1].Score))
                     {
                         ++rank;
                     }
@@ -592,16 +618,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static void ComputeRrfScores(
             int[,] ranks,
+            IReadOnlyList<ComponentWeight> componentWeights,
             List<HybridSearchQueryResult> queryResults)
         {
             int componentCount = ranks.GetLength(0);
+            Debug.Assert(componentWeights.Count == componentCount, "The number of component weights should match the number of components");
 
             for (int index = 0; index < queryResults.Count; ++index)
             {
                 double rrfScore = 0;
                 for (int componentIndex = 0; componentIndex < componentCount; ++componentIndex)
                 {
-                    rrfScore += 1.0 / (RrfConstant + ranks[componentIndex, index]);
+                    rrfScore += componentWeights[componentIndex].Weight / (RrfConstant + ranks[componentIndex, index]);
                 }
 
                 queryResults[index] = queryResults[index].WithScore(rrfScore);
@@ -748,6 +776,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 streaming: false);
 
             return TryCatch<(GlobalFullTextSearchStatistics, QueryPage)>.FromResult((globalStatisticsAggregator.GetResult(), queryPage));
+        }
+
+        private class ComponentWeight
+        {
+            public SortOrder SortOrder { get; }
+
+            public double Weight { get; }
+
+            public Comparison<double> Comparison { get; }
+
+            public ComponentWeight(double weight, SortOrder sortOrder)
+            {
+                this.Weight = weight;
+                this.SortOrder = sortOrder;
+
+                int comparisonFactor = (this.SortOrder == SortOrder.Ascending) ? 1 : -1;
+                this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
+            }
         }
 
         private readonly struct ScoreTuple
