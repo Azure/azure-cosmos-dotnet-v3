@@ -89,7 +89,7 @@
                 SerializationFormat.Binary => JsonWriter.Create(JsonSerializationFormat.Binary),
                 SerializationFormat.BinaryWithDictionaryEncoding => JsonWriter.Create(
                     JsonSerializationFormat.Binary,
-                    jsonStringDictionary: sourceFormat == SerializationFormat.BinaryWithDictionaryEncoding ? payload.BinaryWithDictionaryEncoding.dictionary : new JsonStringDictionary(capacity: 128)),
+                    jsonStringDictionary: sourceFormat == SerializationFormat.BinaryWithDictionaryEncoding ? payload.BinaryWithDictionaryEncoding.dictionary : new JsonStringDictionary()),
                 SerializationFormat.NewtonsoftText => NewtonsoftToCosmosDBWriter.CreateTextWriter(),
                 _ => throw new ArgumentException($"Unexpected {nameof(destinationFormat)} of type: {destinationFormat}"),
             };
@@ -139,7 +139,7 @@
 
                     ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                     ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 1024);
+                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
                     ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
 
                     return new CurratedDocsPayload(

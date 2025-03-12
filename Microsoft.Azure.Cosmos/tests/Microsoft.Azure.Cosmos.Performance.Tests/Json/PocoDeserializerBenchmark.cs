@@ -109,7 +109,7 @@
             {
                 ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                 ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(capacity: 128);
+                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
                 ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
 
                 return new Payload(
