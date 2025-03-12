@@ -6697,6 +6697,7 @@ namespace Microsoft.Azure.Cosmos
                     rntbdMaxConcurrentOpeningConnectionCount: this.rntbdMaxConcurrentOpeningConnectionCount,
                     remoteCertificateValidationCallback: this.remoteCertificateValidationCallback,
                     distributedTracingOptions: distributedTracingOptions,
+                    enableChannelMultiplexing: ConfigurationManager.IsTcpChannelMultiplexingEnabled(),
                     chaosInterceptor: this.chaosInterceptor);
 
                 if (this.transportClientHandlerFactory != null)
