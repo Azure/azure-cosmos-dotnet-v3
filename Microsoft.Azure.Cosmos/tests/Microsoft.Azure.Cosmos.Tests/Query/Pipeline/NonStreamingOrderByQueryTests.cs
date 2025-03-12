@@ -321,6 +321,27 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             }
         }
 
+        [TestMethod]
+        public async Task HybridSearchWeightedRRFTests()
+        {
+            IReadOnlyList<HybridSearchTest> testCases = new List<HybridSearchTest>
+            {
+                MakeHybridSearchTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { -1.0, -1.0 },
+                    pageSize: 1000),
+            };
+
+            foreach (HybridSearchTest testCase in testCases)
+            {
+                await RunHybridSearchTest(testCase);
+            }
+        }
+
         private static async Task RunHybridSearchTest(HybridSearchTest testCase)
         {
             IReadOnlyList<FeedRangeEpk> ranges = new List<FeedRangeEpk>
@@ -340,6 +361,28 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 .Range(0, documentCount)
                 .Reverse();
 
+            PartitionedFeedMode[] feedModes = new PartitionedFeedMode[]
+            {
+                PartitionedFeedMode.NonStreamingReversed,
+                PartitionedFeedMode.NonStreamingReversed,
+            };
+
+            if (testCase.Weights != null)
+            {
+                Assert.IsTrue(testCase.Weights.All(x => x >= 0) || testCase.Weights.All(x => x <= 0));
+
+                if (testCase.Weights[0] <= 0)
+                {
+                    expectedIndices = expectedIndices.Reverse();
+
+                    feedModes = new PartitionedFeedMode[]
+                    {
+                        PartitionedFeedMode.NonStreaming,
+                        PartitionedFeedMode.NonStreaming,
+                    };
+                }
+            }
+
             if (testCase.Skip.HasValue)
             {
                 expectedIndices = expectedIndices.Skip(testCase.Skip.Value);
@@ -352,7 +395,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 
             MockDocumentContainer nonStreamingDocumentContainer = MockDocumentContainer.CreateHybridSearchContainer(
                 ranges,
-                feedModes: Enumerable.Repeat(PartitionedFeedMode.NonStreamingReversed, 2).ToArray(),
+                feedModes,
                 leafPageCount: testCase.LeafPageCount,
                 backendPageSize: testCase.BackendPageSize,
                 returnEmptyGlobalStatistics: testCase.ReturnEmptyGlobalStatistics);
@@ -638,6 +681,19 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             bool returnEmptyGlobalStatistics = false)
         {
             return new HybridSearchTest(leafPageCount, backendPageSize, requiresGlobalStatistics, skip, take, weights: null, pageSize, returnEmptyGlobalStatistics);
+        }
+
+        private static HybridSearchTest MakeHybridSearchTest(
+            int leafPageCount,
+            int backendPageSize,
+            bool requiresGlobalStatistics,
+            int? skip,
+            int? take,
+            double[] weights,
+            int pageSize,
+            bool returnEmptyGlobalStatistics = false)
+        {
+            return new HybridSearchTest(leafPageCount, backendPageSize, requiresGlobalStatistics, skip, take, weights, pageSize, returnEmptyGlobalStatistics);
         }
 
         private class HybridSearchTest
@@ -1600,6 +1656,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     sortOrders[i] = weights[i] < 0 ? SortOrder.Ascending : SortOrder.Descending;
                     sortOrderText[i] = weights[i] < 0 ? "ASC" : "DESC";
+                    weights[i] = Math.Abs(weights[i]);
                 }
             }
 
