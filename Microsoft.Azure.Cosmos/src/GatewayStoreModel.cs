@@ -26,19 +26,19 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
 
-        private readonly IGlobalEndpointManager endpointManager;
+        private readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         private readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        internal PartitionKeyRangeCache partitionKeyRangeCache;
-        internal ClientCollectionCache clientCollectionCache;
-        internal ISessionContainer sessionContainer;
+        protected PartitionKeyRangeCache partitionKeyRangeCache;
+        protected ClientCollectionCache clientCollectionCache;
+        protected ISessionContainer sessionContainer;
 
         public GatewayStoreModel(
-            IGlobalEndpointManager endpointManager,
+            GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,

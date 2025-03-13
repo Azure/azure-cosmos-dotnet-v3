@@ -22,22 +22,16 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly Uri proxyEndpoint;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
-        private readonly string globalDatabaseAccountName;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            Uri proxyEndpoint,
-            string globalDatabaseAccountName,
             JsonSerializerSettings serializerSettings = null)
             : base(httpClient,
                   eventSource,
                   serializerSettings)
         {
-            this.proxyEndpoint = proxyEndpoint;
-            this.globalDatabaseAccountName = globalDatabaseAccountName;
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
         }
 
@@ -45,9 +39,10 @@ namespace Microsoft.Azure.Cosmos
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
+           string globalDatabaseAccountName,
            CancellationToken cancellationToken)
         {
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, cancellationToken))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, globalDatabaseAccountName, cancellationToken))
             {
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
                 return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
@@ -60,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default, default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
             }
@@ -68,7 +63,8 @@ namespace Microsoft.Azure.Cosmos
 
         private async ValueTask<HttpRequestMessage> PrepareRequestForProxyAsync(
             DocumentServiceRequest request,
-            Uri physicalAddress)
+            Uri physicalAddress,
+            string globalDatabaseAccountName)
         {
             HttpRequestMessage requestMessage = base.PrepareRequestMessageAsync(request, physicalAddress).Result;
             requestMessage.Version = new Version(2, 0);
@@ -76,15 +72,28 @@ namespace Microsoft.Azure.Cosmos
             BufferProviderWrapper bufferProviderWrapper = this.bufferProviderWrapperPool.Get();
             try
             {
-                requestMessage.Headers.TryAddWithoutValidation(ThinClientConstants.ProxyOperationType, request.OperationType.ToOperationTypeString());
-                requestMessage.Headers.TryAddWithoutValidation(ThinClientConstants.ProxyResourceType, request.ResourceType.ToResourceTypeString());
-                Stream contentStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(bufferProviderWrapper, this.globalDatabaseAccountName, requestMessage);
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.ProxyOperationType,
+                    request.OperationType.ToOperationTypeString());
 
-                // force Http2, post and route to the thin client endpoint.
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.ProxyResourceType,
+                    request.ResourceType.ToResourceTypeString());
+
+                Stream contentStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
+                    bufferProviderWrapper,
+                    globalDatabaseAccountName,
+                    requestMessage);
+
+                if (!contentStream.CanSeek)
+                {
+                    throw new InvalidOperationException(
+                        $"The serializer returned a non-seekable stream ({contentStream.GetType().FullName}).");
+                }
+
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
                 requestMessage.Headers.Clear();
-                requestMessage.RequestUri = this.proxyEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 
                 return requestMessage;
@@ -99,19 +108,20 @@ namespace Microsoft.Azure.Cosmos
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
+           string globalDatabaseAccountName,
            CancellationToken cancellationToken)
         {
             DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ThinClientStoreClient), request.OperationType, request.ResourceType);
 
             return base.httpClient.SendHttpAsync(
-                () => this.PrepareRequestForProxyAsync(request, physicalAddress),
+                () => this.PrepareRequestForProxyAsync(request, physicalAddress, globalDatabaseAccountName),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken);
         }
 
-        public class ObjectPool<T>
+        internal class ObjectPool<T>
         {
             private readonly ConcurrentBag<T> Objects;
             private readonly Func<T> ObjectGenerator;

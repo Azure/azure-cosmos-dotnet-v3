@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
-        internal readonly CosmosHttpClient httpClient;
-        internal readonly JsonSerializerSettings SerializerSettings;
+        protected readonly CosmosHttpClient httpClient;
+        protected readonly JsonSerializerSettings SerializerSettings;
 
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
@@ -47,6 +47,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await GatewayStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
             }
+        }
+
+        public virtual Task<DocumentServiceResponse> InvokeAsync(
+            DocumentServiceRequest request,
+            ResourceType resourceType,
+            Uri physicalAddress,
+            string globalDatabaseAccountName,
+            CancellationToken cancellationToken)
+        {
+            return this.InvokeAsync(request, resourceType, physicalAddress, cancellationToken);
         }
 
         public static bool IsFeedRequest(OperationType requestOperationType)

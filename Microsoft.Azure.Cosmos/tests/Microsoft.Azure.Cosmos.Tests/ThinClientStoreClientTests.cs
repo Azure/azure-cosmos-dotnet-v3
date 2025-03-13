@@ -45,8 +45,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                proxyEndpoint: new Uri("https://mock.proxy.com"),
-                globalDatabaseAccountName: "MockAccount",
                 serializerSettings: null);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
@@ -82,8 +80,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                proxyEndpoint: new Uri("https://mock.proxy.com"),
-                globalDatabaseAccountName: "MockAccount",
                 serializerSettings: null);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
@@ -120,8 +116,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                proxyEndpoint: new Uri("https://mock.proxy.com"),
-                globalDatabaseAccountName: "MockAccount",
                 serializerSettings: null);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
@@ -161,8 +155,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             ThinClientStoreClient proxyClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
-                proxyEndpoint: new Uri("https://mock.proxy.com"),
-                globalDatabaseAccountName: "MockAccount",
                 serializerSettings: null);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(

@@ -15,26 +15,24 @@ namespace Microsoft.Azure.Cosmos
 
     /// <summary>
     /// An IStoreModelExtension implementation that routes operations through the ThinClient proxy. 
-    /// It applies session tokens, resolves partition key ranges, and delegates requests to ProxyStoreClient.
+    /// It applies session tokens, resolves partition key ranges, and delegates requests to ThinClientStoreClient.
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
-        private readonly IGlobalEndpointManager endpointManager;
+        private readonly GlobalEndpointManager endpointManager;
         private readonly ConsistencyLevel defaultConsistencyLevel;
         private readonly DocumentClientEventSource eventSource;
-        private ThinClientStoreClient proxyStoreClient;
+        private ThinClientStoreClient thinClientStoreClient;
 
         public ThinClientStoreModel(
-            IGlobalEndpointManager endpointManager,
+            GlobalEndpointManager endpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient,
-            Uri proxyEndpoint,
-            string globalDatabaseAccountName)
+            CosmosHttpClient httpClient)
             : base(
-                  (IGlobalEndpointManager)endpointManager,
+                  (GlobalEndpointManager)endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
                   eventSource,
@@ -45,11 +43,9 @@ namespace Microsoft.Azure.Cosmos
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
 
-            this.proxyStoreClient = new ThinClientStoreClient(
+            this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 this.eventSource,
-                proxyEndpoint,
-                globalDatabaseAccountName,
                 serializerSettings);
         }
 
@@ -68,10 +64,6 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
-                    ? this.GetFeedUri(request)
-                    : this.GetEntityUri(request);
-
                 if (request.ResourceType.Equals(ResourceType.Document) &&
                     this.endpointManager.TryGetLocationForGatewayDiagnostics(
                         request.RequestContext.LocationEndpointToRoute,
@@ -80,10 +72,12 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
-                response = await this.proxyStoreClient.InvokeAsync(
+                AccountProperties properties = await this.GetDatabaseAccountSafeAsync();
+                response = await this.thinClientStoreClient.InvokeAsync(
                     request,
                     request.ResourceType,
-                    physicalAddress,
+                    properties.ThinClientPhysicalAddress,
+                    properties.Id,
                     cancellationToken);
             }
             catch (DocumentClientException ex)
@@ -112,22 +106,42 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
+        private async Task<AccountProperties> GetDatabaseAccountSafeAsync()
+        {
+            try
+            {
+                AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
+
+                if (accountProperties == null)
+                {
+                    throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+                }
+
+                return accountProperties;
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("Exception while retrieving database account information: {0}", ex.Message);
+                throw;
+            }
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if (this.proxyStoreClient != null)
+                if (this.thinClientStoreClient != null)
                 {
                     try
                     {
-                        this.proxyStoreClient.Dispose();
+                        this.thinClientStoreClient.Dispose();
                     }
                     catch (Exception exception)
                     {
                         DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
                             exception);
                     }
-                    this.proxyStoreClient = null;
+                    this.thinClientStoreClient = null;
                 }
             }
             base.Dispose(disposing);
