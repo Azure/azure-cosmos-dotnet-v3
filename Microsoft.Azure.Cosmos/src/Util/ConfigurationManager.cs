@@ -44,6 +44,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
+        /// be removed once binary encoding is enabled by default for both preview
+        /// and GA.
+        /// </summary>
+        internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -147,6 +154,19 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.BinaryEncodingEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if channel multiplexing enabled on TCP channel.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if channel multiplexing is enabled.</returns>
+        public static bool IsTcpChannelMultiplexingEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.TcpChannelMultiplexingEnabled,
+                        defaultValue: false);
         }
     }
 }

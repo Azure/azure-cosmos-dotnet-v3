@@ -108,6 +108,19 @@ namespace Microsoft.Azure.Cosmos.Handlers
             serviceRequest.Headers[HttpConstants.HttpHeaders.Authorization] = authorization;
 
             IStoreModel storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+            if (storeProxy == null)
+            {
+                // storeProxy being null should indicate that there was a race condition and the Client was
+                // disposed between getting teh DocumentClient and calling GetStoreProxy
+                // in this case repeating this call will result in throwing an ObjectDisposedException
+                storeProxy = this.client.DocumentClient.GetStoreProxy(serviceRequest);
+
+                if (storeProxy == null)
+                {
+                    throw new InvalidOperationException("StoreProxy cannot be null");
+                }
+            }
+
             using (ITrace processMessageAsyncTrace = request.Trace.StartChild(
                             name: $"{storeProxy.GetType().FullName} Transport Request",
                             component: TraceComponent.Transport,
