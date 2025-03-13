@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
                 return this.customSerializer;
             }
 
-            return CosmosSerializerCore.propertiesSerializer;
+            return this.GetDefaultSerializer();
         }
 
         private CosmosSerializer GetSerializer<T>()
@@ -136,9 +136,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.customSerializer == null)
             {
-                return this.isBinaryEncodingEnabled
-                    ? CosmosSerializerCore.binarySerializer
-                    : CosmosSerializerCore.propertiesSerializer;
+                return this.GetDefaultSerializer();
             }
 
             if (CosmosSerializerCore.IsInputTypeInternal(inputType))
@@ -166,6 +164,13 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             return this.customSerializer;
+        }
+
+        private CosmosSerializer GetDefaultSerializer()
+        {
+            return this.isBinaryEncodingEnabled
+                ? CosmosSerializerCore.binarySerializer
+                : CosmosSerializerCore.propertiesSerializer;
         }
 
         internal static bool IsInputTypeInternal(

@@ -120,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Read,
                 requestOptions: requestOptions,
                 trace: trace,
-                targetResponseSerializationFormat: default,
+                targetResponseSerializationFormat: this.GetTargetResponseSerializationFormat(),
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
                 operationType: OperationType.Delete,
                 requestOptions: requestOptions,
                 trace: trace,
-                targetResponseSerializationFormat: default,
+                targetResponseSerializationFormat: this.GetTargetResponseSerializationFormat(),
                 cancellationToken: cancellationToken);
 
             return this.ClientContext.ResponseFactory.CreateItemResponse<T>(response);
@@ -861,7 +861,7 @@ namespace Microsoft.Azure.Cosmos
                         operationType,
                         requestOptions,
                         trace: trace,
-                        targetResponseSerializationFormat: default,
+                        targetResponseSerializationFormat: this.GetTargetResponseSerializationFormat(),
                         cancellationToken: cancellationToken);
             }
 
@@ -877,7 +877,7 @@ namespace Microsoft.Azure.Cosmos
                     operationType,
                     requestOptions,
                     trace: trace,
-                    targetResponseSerializationFormat: default,
+                    targetResponseSerializationFormat: this.GetTargetResponseSerializationFormat(),
                     cancellationToken: cancellationToken);
 
                 if (responseMessage.IsSuccessStatusCode)
@@ -1284,6 +1284,16 @@ namespace Microsoft.Azure.Cosmos
                 container: this,
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
+        }
+
+        private JsonSerializationFormat? GetTargetResponseSerializationFormat()
+        {
+            if (this.ClientContext.ClientOptions.Serializer is not CosmosJsonDotNetSerializer)
+            {
+                return JsonSerializationFormat.Text;
+            }
+
+            return default;
         }
 
         private static JsonSerializationFormat GetTargetRequestSerializationFormat()
