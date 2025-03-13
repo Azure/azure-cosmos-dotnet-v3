@@ -21,16 +21,14 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class ThinClientTransportSerializer
     {
-        private static readonly PartitionKeyDefinition HashV2SinglePath;
+        private static readonly PartitionKeyDefinition HashPartitionKeyPath;
 
         static ThinClientTransportSerializer()
         {
-            HashV2SinglePath = new PartitionKeyDefinition
+            HashPartitionKeyPath = new PartitionKeyDefinition
             {
                 Kind = PartitionKind.Hash,
-                Version = Documents.PartitionKeyDefinitionVersion.V2,
             };
-            HashV2SinglePath.Paths.Add("/id");
         }
 
         public sealed class BufferProviderWrapper
@@ -71,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
                                                 requestStream, AuthorizationTokenType.PrimaryMasterKey,
                                                 dictionaryCollection);
 
+            HashPartitionKeyPath.Paths.Add(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
             if (operationType.IsPointOperation())
             {
                 string partitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey);
@@ -121,7 +120,7 @@ namespace Microsoft.Azure.Cosmos
 
         public static string GetEffectivePartitionKeyHash(string partitionJson)
         {
-            return Documents.PartitionKey.FromJsonString(partitionJson).InternalKey.GetEffectivePartitionKeyString(HashV2SinglePath);
+            return Documents.PartitionKey.FromJsonString(partitionJson).InternalKey.GetEffectivePartitionKeyString(HashPartitionKeyPath);
         }
 
         /// <summary>
