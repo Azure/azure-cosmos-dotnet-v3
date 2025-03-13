@@ -22,8 +22,9 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
-        private readonly CosmosHttpClient httpClient;
-        private readonly JsonSerializerSettings SerializerSettings;
+        protected readonly CosmosHttpClient httpClient;
+        protected readonly JsonSerializerSettings SerializerSettings;
+
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
@@ -36,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = eventSource;
         }
 
-        public async Task<DocumentServiceResponse> InvokeAsync(
+        public virtual async Task<DocumentServiceResponse> InvokeAsync(
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
@@ -46,6 +47,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await GatewayStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
             }
+        }
+
+        public virtual Task<DocumentServiceResponse> InvokeAsync(
+            DocumentServiceRequest request,
+            ResourceType resourceType,
+            Uri physicalAddress,
+            string globalDatabaseAccountName,
+            CancellationToken cancellationToken)
+        {
+            return this.InvokeAsync(request, resourceType, physicalAddress, cancellationToken);
         }
 
         public static bool IsFeedRequest(OperationType requestOperationType)
@@ -249,7 +260,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        private async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
+        internal async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
             DocumentServiceRequest request,
             Uri physicalAddress)
         {
@@ -347,7 +358,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, regionName);
             }
-            
+
             return requestMessage;
         }
 
@@ -363,8 +374,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,
-                cancellationToken,
-                request);
+                cancellationToken);
         }
     }
 }
