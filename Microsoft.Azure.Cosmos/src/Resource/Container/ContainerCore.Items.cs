@@ -1288,7 +1288,7 @@ namespace Microsoft.Azure.Cosmos
 
         private JsonSerializationFormat? GetTargetResponseSerializationFormat()
         {
-            if (this.ClientContext.ClientOptions.Serializer is not CosmosJsonDotNetSerializer)
+            if (this.ClientContext.ClientOptions.IsCustomSerializerProvided())
             {
                 return JsonSerializationFormat.Text;
             }

@@ -51,6 +51,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, true, DisplayName = "Validates Read Many scenario with advanced replica selection enabled.")]
         [DataRow(true, false, DisplayName = "Validates Read Many scenario with advanced replica selection disabled.")]
         [DataRow(false, true, DisplayName = "Validates Read Many scenario with advanced replica selection enabled.")]

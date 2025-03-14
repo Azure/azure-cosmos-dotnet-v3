@@ -3672,6 +3672,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "CreateItemAsync - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "CreateItemAsync - Binary encoding enabled.")]
         public async Task CreateItemAsyncTest(bool binaryEncodingEnabled)
@@ -3716,6 +3717,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "UpsertItemAsync - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "UpsertItemAsync - Binary encoding enabled.")]
         public async Task UpsertItemAsyncTest(bool binaryEncodingEnabled)
@@ -3771,6 +3773,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "ReadItemAsync - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "ReadItemAsync - Binary encoding enabled.")]
         public async Task ReadItemAsyncTest(bool binaryEncodingEnabled)
@@ -3815,6 +3818,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "ReplaceItemAsync - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "ReplaceItemAsync - Binary encoding enabled.")]
         public async Task ReplaceItemAsyncTest(bool binaryEncodingEnabled)
@@ -3865,6 +3869,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "DeleteItemAsync - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "DeleteItemAsync - Binary encoding enabled.")]
         public async Task DeleteItemAsyncTest(bool binaryEncodingEnabled)
@@ -3916,6 +3921,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "QueryItemAsyncTest - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "QueryItemAsyncTest - Binary encoding enabled.")]
         public async Task QueryItemAsyncTest(bool binaryEncodingEnabled)
