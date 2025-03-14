@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Linq;
     using System.Net.Http.Headers;
+    using System.Text.RegularExpressions;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
     using Newtonsoft.Json;
@@ -43,6 +44,23 @@ namespace Microsoft.Azure.Documents
             }
 
             throw new BadRequestException(string.Format(CultureInfo.InvariantCulture, "Invalid value {0} for type{1}", enumValue.ToString(), enumValue.GetType().ToString()));
+        }
+
+        //"{ \"Properties\": { \"FederationManifestPayload\": { \"Value\": \"https://aaa.blob.core.windows.net/9731a499-4760-41f2-b79d/FederationManifests.zip?sv=2016-10-16&sr=b&sig=xxxx&st=2023-06-21T16%3A04%3A02Z&\" }, \"FabricApplicationCodeVersion\": { \"Value\": \"EN20230109_96855296\" }, \"FabricApplicationConfigVersion\": { \"Value\": \"EN20230109_96855296\" }, \"PackageVersion\": { \"Value\": \"pkgEN20230109_96855296\" }, \n \"ImageStore_ServiceFabric_RepairPolicyEngineApplication\": { \"Value\": \"https://aaa.blob.core.windows.net/9731a499-4760-41f2-b79d/RepairPolicyEngineApplication.zip?sv=2016-10-16&sr=b&sig=xxxx&st=2023-06-21T16%3A04%3A02Z&\" } }"
+        public static string RemoveSigInSASTokenForTracingPayload(string sASToken)
+        {
+            try
+            {
+                string pattern = "sig=.*?[&|\"]";
+                string replacement = "";
+
+                string result = Regex.Replace(sASToken, pattern, replacement, RegexOptions.IgnoreCase);
+                return result;
+            }
+            catch (Exception)
+            {
+                return sASToken;
+            }
         }
 
         /// <summary>

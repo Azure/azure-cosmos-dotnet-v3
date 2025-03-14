@@ -134,6 +134,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 // when it gets E_ABORT from native code.
                 cancellationToken.ThrowIfCancellationRequested();
 
+                // Clone the SourceException if it's a TaskCanceledException
+                if (exception.SourceException is TaskCanceledException)
+                {
+                    exception = ExceptionDispatchInfo.Capture(new TaskCanceledException(exception.SourceException.Message, exception.SourceException));
+                }
+
                 ShouldRetryResult result = await callShouldRetry(exception.SourceException, cancellationToken);
 
                 result.ThrowIfDoneTrying(exception);
@@ -141,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                 TimeSpan backoffTime = result.BackoffTime;
                 if (inBackoffAlternateCallbackMethod != null && result.BackoffTime >= minBackoffForInBackoffCallback)
                 {
-                    Stopwatch stopwatch = new ();
+                    Stopwatch stopwatch = new();
                     try
                     {
                         stopwatch.Start();
@@ -162,6 +168,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom
                     await Task.Delay(backoffTime, cancellationToken);
                 }
             }
+        }
+
+
+        public static Exception Clone(this Exception exception)
+        {
+            return exception switch
+            {
+                TaskCanceledException taskCanceledEx => new TaskCanceledException(taskCanceledEx.Message, taskCanceledEx),
+                TimeoutException timeoutEx => new TimeoutException(timeoutEx.Message, timeoutEx),
+                _ => exception // Return the original exception if it's not one of the two types
+            };
         }
     }
 }

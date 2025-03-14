@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Sets routing directive for GlobalEndpointManager"/> to resolve
+        /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
         /// <param name="locationIndex">Index of the location to which the request should be routed</param>
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        /// Sets location-based routing directive for GlobalEndpointManager"/> to resolve
+        /// Sets location-based routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to given <paramref name="locationEndpoint"/>
         /// </summary>
         /// <param name="locationEndpoint">Location endpoint to which the request should be routed</param>

@@ -199,6 +199,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// get a timer with timeout specified as a TimeSpan
         /// </summary>
+        /// <param name="timeoutInSeconds"></param>
         /// <returns></returns>
         public PooledTimer GetPooledTimer(TimeSpan timeout)
         {

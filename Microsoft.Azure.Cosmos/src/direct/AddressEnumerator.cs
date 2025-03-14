@@ -330,7 +330,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="addressUri">An instance of the <see cref="TransportAddressUri"/> containing the replica address.</param>
         /// <param name="failedEndpoints">A set containing the failed endpoints.</param>
-        /// <returns>An instance of TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
+        /// <returns>An instance of <see cref="TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
         private static TransportAddressHealthState.HealthStatus GetEffectiveStatus(
             TransportAddressUri addressUri,
             HashSet<TransportAddressUri> failedEndpoints)

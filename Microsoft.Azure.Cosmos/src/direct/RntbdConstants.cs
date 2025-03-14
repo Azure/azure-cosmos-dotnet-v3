@@ -126,6 +126,7 @@ namespace Microsoft.Azure.Documents
             UpdatePartitionThroughput = 0x0035,
             CreateRidRangeResources = 0x0036,
             Truncate = 0x0037,
+            RelocateLeakedTentativeWrites = 0x0039,
         }
 
         public enum ConnectionContextRequestTokenIdentifiers : ushort
@@ -135,6 +136,8 @@ namespace Microsoft.Azure.Documents
             UserAgent = 0x0002,
             CallerId = 0x0003,
             EnableChannelMultiplexing = 0x0004,
+            ThinProxySignature = 0x0005,
+            ThinProxySignatureDate = 0x0006,
         }
 
         public sealed class ConnectionContextRequest : RntbdTokenStream<ConnectionContextRequestTokenIdentifiers>
@@ -146,6 +149,8 @@ namespace Microsoft.Azure.Documents
             public RntbdToken userAgent;
             public RntbdToken callerId;
             public RntbdToken enableChannelMultiplexing;
+            public RntbdToken thinProxySignature;
+            public RntbdToken thinProxySignatureDate;
 
             public ConnectionContextRequest()
             {
@@ -154,6 +159,8 @@ namespace Microsoft.Azure.Documents
                 this.userAgent = new RntbdToken(true, RntbdTokenTypes.SmallString, (ushort)ConnectionContextRequestTokenIdentifiers.UserAgent);
                 this.callerId = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ConnectionContextRequestTokenIdentifiers.CallerId);
                 this.enableChannelMultiplexing = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)ConnectionContextRequestTokenIdentifiers.EnableChannelMultiplexing);
+                this.thinProxySignature = new RntbdToken(false, RntbdTokenTypes.String, (ushort)ConnectionContextRequestTokenIdentifiers.ThinProxySignature);
+                this.thinProxySignatureDate = new RntbdToken(false, RntbdTokenTypes.SmallString, (ushort)ConnectionContextRequestTokenIdentifiers.ThinProxySignatureDate);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -162,6 +169,8 @@ namespace Microsoft.Azure.Documents
                     this.userAgent,
                     this.callerId,
                     this.enableChannelMultiplexing,
+                    this.thinProxySignature,
+                    this.thinProxySignatureDate,
                 };
             }
         }
@@ -514,6 +523,12 @@ namespace Microsoft.Azure.Documents
             UpdateOfferStateToPendingForThroughputSplit = 0x00DC,
             PopulateBinaryEncodingMigratorProgress = 0x00DD,
             AllowUpdatingIsPhysicalMigrationInProgress = 0x00DE,
+            IncludeColdTier = 0x00DF,
+            PopulateVectorIndexProgress = 0x00E0,
+            PopulateThroughputPoolInfo = 0x00E1,
+            RetrieveUserStrings = 0x00E2,
+            PopulateVectorIndexAggregateProgress = 0x00E3,
+            AllowTopologyUpsertWithoutIntent = 0x00E4,
         }
 
         public sealed class Request : RntbdTokenStream<RequestIdentifiers>
@@ -726,6 +741,12 @@ namespace Microsoft.Azure.Documents
             public RntbdToken updateOfferStateToPendingForThroughputSplit;
             public RntbdToken populateBinaryEncodingMigratorProgress;
             public RntbdToken allowUpdatingIsPhysicalMigrationInProgress;
+            public RntbdToken includeColdTier;
+            public RntbdToken populateVectorIndexProgress;
+            public RntbdToken populateThroughputPoolInfo;
+            public RntbdToken retrieveUserStrings;
+            public RntbdToken populateVectorIndexAggregateProgress;
+            public RntbdToken allowTopologyUpsertWithoutIntent;
 
             public Request()
             {
@@ -935,6 +956,12 @@ namespace Microsoft.Azure.Documents
                 this.updateOfferStateToPendingForThroughputSplit = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.UpdateOfferStateToPendingForThroughputSplit);
                 this.populateBinaryEncodingMigratorProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateBinaryEncodingMigratorProgress);
                 this.allowUpdatingIsPhysicalMigrationInProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowUpdatingIsPhysicalMigrationInProgress);
+                this.includeColdTier = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.IncludeColdTier);
+                this.populateVectorIndexProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateVectorIndexProgress);
+                this.populateThroughputPoolInfo = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateThroughputPoolInfo);
+                this.retrieveUserStrings = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.RetrieveUserStrings);
+                this.populateVectorIndexAggregateProgress = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.PopulateVectorIndexAggregateProgress);
+                this.allowTopologyUpsertWithoutIntent = new RntbdToken(false, RntbdTokenTypes.Byte, (ushort)RequestIdentifiers.AllowTopologyUpsertWithoutIntent);
 
                 this.tokens = new RntbdToken[]
                 {
@@ -1161,6 +1188,12 @@ namespace Microsoft.Azure.Documents
                     this.updateOfferStateToPendingForThroughputSplit,
                     this.populateBinaryEncodingMigratorProgress,
                     this.allowUpdatingIsPhysicalMigrationInProgress,
+                    this.includeColdTier,
+                    this.populateVectorIndexProgress,
+                    this.populateThroughputPoolInfo,
+                    this.retrieveUserStrings,
+                    this.populateVectorIndexAggregateProgress,
+                    this.allowTopologyUpsertWithoutIntent,
                 };
             }
         }
@@ -1258,6 +1291,13 @@ namespace Microsoft.Azure.Documents
             QueryAdvice = 0x0075,
             OfferScaleCorrelationId = 0x0076,
             BinaryEncodingMigratorProgress = 0x0077,
+            GlobalNRegionCommittedGLSN = 0x0078,
+            CollectionVectorIndexProgress = 0x0079,
+            ThroughputpoolMaxConsumableRUs = 0x0080,
+            ThroughputpoolDedicatedRUs = 0x0081,
+            ResourceIdentityPrincipalId = 0x0082,
+            VectorIndexAggregateProgress = 0x0083,
+            MergeProgressBlockedReason = 0x0084,
         }
 
         //

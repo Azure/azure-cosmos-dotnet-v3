@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.InteropServices;
 
@@ -85,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Verbose, 0, message);
         }
 
-        public static void TraceVerbose(string format, params object[] args)
+        public static void TraceVerbose([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
         {
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Verbose, 0, format, args);
         }
@@ -95,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             DefaultTrace.TraceSource.TraceInformation(message);
         }
 
-        public static void TraceInformation(string format, params object[] args)
+        public static void TraceInformation([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
         {
             DefaultTrace.TraceSource.TraceInformation(format, args);
         }
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Warning, 0, message);
         }
 
-        public static void TraceWarning(string format, params object[] args)
+        public static void TraceWarning([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
         {
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Warning, 0, format, args);
         }
@@ -115,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Error, 0, message);
         }
 
-        public static void TraceError(string format, params object[] args)
+        public static void TraceError([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
         {
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Error, 0, format, args);
         }
@@ -125,7 +126,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Critical, 0, message);
         }
 
-        public static void TraceCritical(string format, params object[] args)
+        public static void TraceCritical([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object[] args)
         {
             DefaultTrace.TraceSource.TraceEvent(TraceEventType.Critical, 0, format, args);
         }

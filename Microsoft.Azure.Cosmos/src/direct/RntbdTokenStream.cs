@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Documents
         public abstract int RequiredTokenCount { get; }
 
         /// <summary>
-        /// Gets a byte[] of at least"/> bytes from a pool.
+        /// Gets a byte[] of at least <see cref="length"/> bytes from a pool.
         /// </summary>
         /// <param name="length">The length of bytes to retrieve</param>
         /// <remarks>

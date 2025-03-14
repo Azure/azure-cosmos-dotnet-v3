@@ -70,6 +70,7 @@ namespace Microsoft.Azure.Documents
             bool detectClientConnectivityIssues,
             bool disableRetryWithRetryPolicy,
             bool enableReplicaValidation,
+            AccountConfigurationProperties accountConfigurationProperties,
             RetryWithConfiguration retryWithConfiguration = null)
         {
             this.addressResolver = addressResolver;
@@ -98,7 +99,8 @@ namespace Microsoft.Azure.Documents
                 serviceConfigReader,
                 authorizationTokenProvider,
                 useMultipleWriteLocations,
-                enableReplicaValidation);
+                enableReplicaValidation,
+                accountConfigurationProperties);
             this.enableReadRequestsFallback = enableReadRequestsFallback;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.detectClientConnectivityIssues = detectClientConnectivityIssues;

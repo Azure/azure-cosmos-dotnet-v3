@@ -20,15 +20,16 @@ namespace Microsoft.Azure.Documents
         private const string RequestStageFailed = "Failed";
 
         private readonly ValueStopwatch stopwatch;
-        private readonly DateTime requestCreatedTime;
+
+        public DateTime requestCreatedTime { get; private set; }
 
         // measured in TimeSpan from start time
-        private TimeSpan? channelAcquisitionStartedTime;
-        private TimeSpan? requestPipelinedTime;
-        private TimeSpan? requestSentTime;
-        private TimeSpan? requestReceivedTime;
-        private TimeSpan? requestCompletedTime;
-        private TimeSpan? requestFailedTime;
+        public TimeSpan? channelAcquisitionStartedTime { get; private set; }
+        public TimeSpan? requestPipelinedTime { get; private set; }
+        public TimeSpan? requestSentTime { get; private set; }
+        public TimeSpan? requestReceivedTime { get; private set; }
+        public TimeSpan? requestCompletedTime { get; private set; }
+        public TimeSpan? requestFailedTime { get; private set; }
 
         // New Object created everytime in TransportClient and thus not worrying about thread safety.
         public TransportRequestStats()

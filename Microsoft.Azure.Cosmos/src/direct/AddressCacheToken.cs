@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Documents
             Uri serviceEndpoint)
         {
             this.PartitionKeyRangeIdentity = partitionKeyRangeIdentity;
-            this.ServiceEndpoint = serviceEndpoint;
+            this.ServiceEndpoint = serviceEndpoint
         }
 
         public override bool Equals(object obj)

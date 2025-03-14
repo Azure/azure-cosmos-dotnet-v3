@@ -192,8 +192,10 @@ namespace Microsoft.Azure.Documents
 
             public Int32 eGeospatialType;
 
-            // Reserve additional 32 bytes to match size with native PartitionKeyRangesApiOptions.
-            public Int64 unusedReserved1;
+            public Int32 bHybridSearchSkipOrderByRewrite;
+
+            // Reserve additional 28 bytes to match size with native PartitionKeyRangesApiOptions.
+            public Int32 unusedReserved1;
             public Int64 unusedReserved2;
             public Int64 unusedReserved3;
             public Int64 unusedReserved4;

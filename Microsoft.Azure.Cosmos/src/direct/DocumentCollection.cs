@@ -121,6 +121,9 @@ namespace Microsoft.Azure.Documents
         private Collection<ComputedProperty> computedProperties;
         private Collection<string> userStrings;
         private VectorEmbeddingPolicy vectorEmbeddingPolicy;
+        private FullTextPolicy fullTextPolicy;
+        private CollectionTieringPolicy collectionTieringPolicy;
+        private SoftDeletionMetadata softDeletionMetadata;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentCollection"/> class for the Azure Cosmos DB service.
@@ -879,6 +882,36 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Gets the <see cref="CollectionTieringPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        /// </summary>
+        /// <value>
+        /// The tiering policy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.CollectionTieringPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal CollectionTieringPolicy CollectionTieringPolicy
+        {
+            get
+            {
+                if (this.collectionTieringPolicy == null)
+                {
+                    this.collectionTieringPolicy = base.GetObject<CollectionTieringPolicy>(Constants.Properties.CollectionTieringPolicy);
+                }
+
+                return this.collectionTieringPolicy;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "CollectionTieringPolicy"));
+                }
+
+                this.collectionTieringPolicy = value;
+                base.SetObject<CollectionTieringPolicy>(Constants.Properties.CollectionTieringPolicy, value);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the schema policy on collection in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>
@@ -955,7 +988,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
+        // <summary>
         /// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -985,7 +1018,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
+        // <summary>
         /// Gets the <see cref="VectorEmbeddingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
@@ -1012,6 +1045,61 @@ namespace Microsoft.Azure.Documents
 
                 this.vectorEmbeddingPolicy = value;
                 base.SetObject<VectorEmbeddingPolicy>(Constants.Properties.VectorEmbeddingPolicy, value);
+            }
+        }
+
+        // <summary>
+        /// Gets the <see cref="FullTextPolicy"/> associated with the collection from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The FullTextPolicy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.Properties.FullTextPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal FullTextPolicy FullTextPolicy
+        {
+            get
+            {
+                if (this.fullTextPolicy == null)
+                {
+                    this.fullTextPolicy = base.GetObject<FullTextPolicy>(Constants.Properties.FullTextPolicy);
+                }
+
+                return this.fullTextPolicy;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(FullTextPolicy)));
+                }
+
+                this.fullTextPolicy = value;
+                base.SetObject<FullTextPolicy>(Constants.Properties.FullTextPolicy, value);
+            }
+        }
+
+        // <summary>
+        /// Gets the <see cref="SoftDeletionMetadata"/> associated with the collection from the Azure Cosmos DB service.
+        /// </summary>
+        /// <value>
+        /// The FullTextPolicy associated with the collection.
+        /// </value>
+        [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+        internal SoftDeletionMetadata SoftDeletionMetadata
+        {
+            get
+            {
+                if (this.softDeletionMetadata == null)
+                {
+                    this.softDeletionMetadata = base.GetObject<SoftDeletionMetadata>(Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata);
+                }
+
+                return this.softDeletionMetadata;
+            }
+            set
+            {
+                this.softDeletionMetadata = value;
+                base.SetObject<SoftDeletionMetadata>(Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, value);
             }
         }
 
@@ -1177,6 +1265,11 @@ namespace Microsoft.Azure.Documents
                 base.SetObject(Constants.Properties.CollectionBackupPolicy, this.collectionBackupPolicy);
             }
 
+            if (this.collectionTieringPolicy != null)
+            {
+                base.SetObject(Constants.Properties.CollectionTieringPolicy, this.collectionTieringPolicy);
+            }
+
             if (this.geospatialConfig != null)
             {
                 base.SetObject(Constants.Properties.GeospatialConfig, this.geospatialConfig);
@@ -1239,6 +1332,12 @@ namespace Microsoft.Azure.Documents
             {
                 this.vectorEmbeddingPolicy.OnSave();
                 base.SetObject(Constants.Properties.VectorEmbeddingPolicy, this.vectorEmbeddingPolicy);
+            }
+
+            if (this.fullTextPolicy != null)
+            {
+                this.fullTextPolicy.OnSave();
+                base.SetObject(Constants.Properties.FullTextPolicy, this.fullTextPolicy);
             }
         }
     }

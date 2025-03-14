@@ -511,6 +511,12 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ThroughputBucket, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateBinaryEncodingMigratorProgress, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowUpdatingIsPhysicalMigrationInProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IncludeColdTier, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateVectorIndexProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateThroughputPoolInfo, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RetrieveUserStrings, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowTopologyUpsertWithoutIntent, request);
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path
@@ -644,6 +650,7 @@ namespace Microsoft.Azure.Documents
                     HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfMatch, request);
                     HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfNoneMatch, request);
                     HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.IfUnmodifiedSince, request);
+                    HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.PartitionResourceFilter, request);
 
                     httpRequestMessage.RequestUri = physicalAddress;
                     httpRequestMessage.Method = HttpMethod.Post;
@@ -651,6 +658,7 @@ namespace Microsoft.Azure.Documents
                     httpRequestMessage.Content = new StreamContent(clonedStream);
                     break;
 
+                case OperationType.GetDatabaseAccountArtifactPermissions:
                 case OperationType.GetDatabaseAccountConfigurations:
                     HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.RequestHopCount, request);
                     httpRequestMessage.RequestUri = physicalAddress;
@@ -1303,6 +1311,16 @@ namespace Microsoft.Azure.Documents
                             else if ((SubStatusCodes)nSubStatus == SubStatusCodes.LeaseNotFound)
                             {
                                 exception = new LeaseNotFoundException(
+                                    string.Format(CultureInfo.CurrentUICulture,
+                                        RMResources.ExceptionMessage,
+                                        string.IsNullOrEmpty(errorMessage) ? RMResources.Gone : errorMessage),
+                                    response.Headers,
+                                    response.RequestMessage.RequestUri);
+                                break;
+                            }
+                            else if ((SubStatusCodes)nSubStatus == SubStatusCodes.ArchivalPartitionNotPresent)
+                            {
+                                exception = new ArchivalPartitionNotPresentException(
                                     string.Format(CultureInfo.CurrentUICulture,
                                         RMResources.ExceptionMessage,
                                         string.IsNullOrEmpty(errorMessage) ? RMResources.Gone : errorMessage),

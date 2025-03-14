@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Documents.Collections;
 
     [Serializable]
-    internal sealed class GoneException : DocumentClientException
+    internal class GoneException : DocumentClientException
     {
         public GoneException()
             : this(RMResources.Gone, SubStatusCodes.Unknown)
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Documents
         internal string LocalIp { get; set; }
 
 #if !NETSTANDARD16
-        private GoneException(SerializationInfo info, StreamingContext context) 
+        protected GoneException(SerializationInfo info, StreamingContext context) 
             : base(info, context, HttpStatusCode.Gone)
         {
         }
