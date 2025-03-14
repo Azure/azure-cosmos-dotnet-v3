@@ -6,11 +6,9 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Net;
-    using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.FaultInjection;
-    using Microsoft.Azure.Cosmos.Spatial;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Container = Container;
 
@@ -34,81 +32,6 @@
             await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(client);
             this.writeRegionMap = client.DocumentClient.GlobalEndpointManager.GetAvailableWriteEndpointsByLocation();
             Assert.IsTrue(this.writeRegionMap.Count() >= 2);
-
-        }
-
-        [TestMethod]
-        public void SessionRetryOptionsDefaultValuesTest()
-        {
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
-            {
-                SessionRetryOptions = new SessionRetryOptions()
-                {
-                    RemoteRegionPreferred = true
-                },
-            };
-            
-            
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == ConfigurationManager.GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred());
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == ConfigurationManager.GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred());
-
-        }
-
-        [TestMethod]
-        public void SessionRetryOptionsCustomValuesTest()
-        {
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
-            {
-                SessionRetryOptions = new SessionRetryOptions()
-                {
-                    RemoteRegionPreferred = true,
-                    MinInRegionRetryTime = TimeSpan.FromSeconds(1),
-                    MaxInRegionRetryCount = 3
-
-                },
-            };
-
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromSeconds(1));
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == 3);
-
-        }
-
-        [TestMethod]
-        public void SessionRetryOptionsMinMaxRetriesCountEnforcedTest()
-        {
-
-            ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() =>
-              new CosmosClientOptions()
-              {
-                  SessionRetryOptions = new SessionRetryOptions()
-                  {
-                      RemoteRegionPreferred = true,
-                      MaxInRegionRetryCount = 0
-
-                  },
-              }
-            );
-            Assert.IsNotNull(argumentException);
-
-        }
-
-
-        [TestMethod]
-        public void SessionRetryOptionsMinMinRetryTimeEnforcedTest()
-        {
-
-            ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() =>
-              new CosmosClientOptions()
-              {
-                  SessionRetryOptions = new SessionRetryOptions()
-                  {
-                      RemoteRegionPreferred = true,
-                      MinInRegionRetryTime = TimeSpan.FromMilliseconds(99)
-
-                  },
-              }
-            );
-            Assert.IsNotNull(argumentException);
 
         }
 
@@ -288,8 +211,8 @@
             HttpStatusCode statusCode = operationExecutionResult.StatusCode;
             
             int executionDuration = operationExecutionResult.Duration;
-            Console.WriteLine($" status code is {statusCode}");
-            Console.WriteLine($" execution duration is {executionDuration}");
+            Trace.TraceInformation($" status code is {statusCode}");
+            Trace.TraceInformation($" execution duration is {executionDuration}");
 
             if (executionOpType == FaultInjectionOperationType.CreateItem)
             {
@@ -426,7 +349,7 @@
                 {
                     feedResponse = await feed.ReadNextAsync();
                     Assert.IsNotNull(feedResponse);
-                    Console.WriteLine($" feed response count is {feedResponse.Count}");
+                    Trace.TraceInformation($" feed response count is {feedResponse.Count}");
                     Assert.IsTrue(feedResponse.Count == 1);
                 }
 

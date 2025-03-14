@@ -25,7 +25,6 @@
         Boolean RemoteRegionPreferred { get;}
 
 
-
     }
 }
 

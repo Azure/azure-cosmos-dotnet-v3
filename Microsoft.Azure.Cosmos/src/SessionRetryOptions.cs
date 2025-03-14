@@ -23,11 +23,36 @@
 
 
         /// <summary>
-        /// hints which guide SDK-internal retry policies on how early to switch retries to a different region.
+        /// hints which guide SDK-internal retry policies on how early to switch retries to a different region. If true, will retry all replicas once and add a minimum delay before switching to the next region.If false, it will
+        /// retry in the local region up to 5s
         /// </summary>
-        public Boolean RemoteRegionPreferred { get; set; } = false;
+        public bool RemoteRegionPreferred { get; set; } = false;
+
+        /// <summary>
+        /// validates the client options.
+        /// </summary>
+        public void Validate()
+        {
+            if (this.RemoteRegionPreferred)
+            {
+                if (this.MinInRegionRetryTime == null)
+                {
+                    throw new ArgumentException($"Argument 'MinInRegionRetryTime' must not be null when RemoteRegionPreferred option is selected.");
+                }
+
+                if (this.MinInRegionRetryTime.TotalMilliseconds < ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs)
+                {
+                    throw new ArgumentException($"Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of {ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs} ms");
+                }
+
+                if (this.MaxInRegionRetryCount < ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred)
+                {
+                    throw new ArgumentException($"Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of {ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred}");
+                }
+            }
+        }
 
 
-            
+
     }
 }

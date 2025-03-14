@@ -737,27 +737,7 @@ namespace Microsoft.Azure.Cosmos
             get => this.sessionRetryOptions;
             set
             {
-                if (value.RemoteRegionPreferred)
-                {
-
-                    if (value.MinInRegionRetryTime == null)
-                    {
-                        throw new ArgumentException($" Argument 'MinInRegionRetryTime' must not be null when RemoteRegionPreferred option is selected.");
-                    }
-                    
-                    if (value.MinInRegionRetryTime.TotalMilliseconds < ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs)
-                    {
-                        throw new ArgumentException($" Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of " +
-                            "{ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs} ms");
-                    }
-
-                    if (value.MaxInRegionRetryCount < ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred)
-                    {
-                        throw new ArgumentException($" Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of " +
-                            "{ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred}");
-                    }
-                }
-
+                value.Validate();
                 this.sessionRetryOptions = value;
             }
         }
