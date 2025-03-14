@@ -85,9 +85,9 @@ namespace Microsoft.Azure.Cosmos
             return serializer.FromStream<T[]>(stream);
         }
 
-        internal Stream ToStream<T>(T input)
+        internal Stream ToStream<T>(T input, bool isPointOperation = false)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>();
+            CosmosSerializer serializer = this.GetSerializer<T>(isPointOperation);
             return serializer.ToStream<T>(input);
         }
 
@@ -123,7 +123,8 @@ namespace Microsoft.Azure.Cosmos
             return this.GetDefaultSerializer();
         }
 
-        private CosmosSerializer GetSerializer<T>()
+        private CosmosSerializer GetSerializer<T>(
+            bool isPointOperation = false)
         {
             Type inputType = typeof(T);
             if (inputType == typeof(PatchSpec))
@@ -134,14 +135,14 @@ namespace Microsoft.Azure.Cosmos
                 return this.patchOperationSerializer;
             }
 
-            if (this.customSerializer == null)
-            {
-                return this.GetDefaultSerializer();
-            }
-
             if (CosmosSerializerCore.IsInputTypeInternal(inputType))
             {
                 return CosmosSerializerCore.propertiesSerializer;
+            }
+
+            if (this.customSerializer == null)
+            {
+                return this.GetDefaultSerializer(isPointOperation);
             }
 
             if (inputType == typeof(SqlQuerySpec))
@@ -166,9 +167,10 @@ namespace Microsoft.Azure.Cosmos
             return this.customSerializer;
         }
 
-        private CosmosSerializer GetDefaultSerializer()
+        private CosmosSerializer GetDefaultSerializer(
+            bool isPointOperation = false)
         {
-            return this.isBinaryEncodingEnabled
+            return this.isBinaryEncodingEnabled && isPointOperation
                 ? CosmosSerializerCore.binarySerializer
                 : CosmosSerializerCore.propertiesSerializer;
         }

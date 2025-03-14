@@ -848,7 +848,7 @@ namespace Microsoft.Azure.Cosmos
             Stream itemStream;
             using (trace.StartChild("ItemSerialize"))
             {
-                itemStream = this.ClientContext.SerializerCore.ToStream<T>(item);
+                itemStream = this.ClientContext.SerializerCore.ToStream<T>(item, isPointOperation: true);
             }
 
             // User specified PK value, no need to extract it
