@@ -73,6 +73,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task CreateDropItemWithInvalidIdCharactersTest(bool binaryEncodingEnabledInClient)
@@ -140,6 +141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task CreateDropItemTest(bool binaryEncodingEnabledInClient)
@@ -191,6 +193,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task ClientConsistencyTestAsync(bool binaryEncodingEnabledInClient)
@@ -232,6 +235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task NegativeCreateItemTest(bool binaryEncodingEnabledInClient)
@@ -288,6 +292,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task NegativeCreateDropItemTest(bool binaryEncodingEnabledInClient)
@@ -313,6 +318,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task MemoryStreamBufferIsAccessibleOnResponse(bool binaryEncodingEnabledInClient)
@@ -354,6 +360,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task CustomSerilizerTest(bool binaryEncodingEnabledInClient)
@@ -414,6 +421,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task CreateDropItemUndefinedPartitionKeyTest(bool binaryEncodingEnabledInClient)
@@ -447,6 +455,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task CreateDropItemPartitionKeyNotInTypeTest(bool binaryEncodingEnabledInClient)
@@ -495,6 +504,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task CreateDropItemMultiPartPartitionKeyTest(bool binaryEncodingEnabledInClient)
@@ -564,6 +574,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task NonPartitionKeyLookupCacheTest(bool binaryEncodingEnabledInClient)
@@ -671,6 +682,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, true, DisplayName = "Test scenario when binary encoding is enabled at client level and expected stream response type is binary.")]
         [DataRow(true, false, DisplayName = "Test scenario when binary encoding is enabled at client level and expected stream response type is text.")]
         [DataRow(false, true, DisplayName = "Test scenario when binary encoding is disabled at client level and expected stream response type is binary.")]
@@ -771,6 +783,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task UpsertItemStreamTest(bool binaryEncodingEnabledInClient)
@@ -822,6 +835,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task UpsertItemTest(bool binaryEncodingEnabledInClient)
@@ -861,6 +875,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task ReplaceItemStreamTest(bool binaryEncodingEnabledInClient)
@@ -971,6 +986,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task PartitionKeyDeleteTest(bool binaryEncodingEnabledInClient)
@@ -1038,6 +1054,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task PartitionKeyDeleteTestForSubpartitionedContainer(bool binaryEncodingEnabledInClient)
@@ -2195,6 +2212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task ItemRequestOptionAccessConditionTest(bool binaryEncodingEnabledInClient)
@@ -2259,6 +2277,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task ItemReplaceAsyncTest(bool binaryEncodingEnabledInClient)
@@ -3355,6 +3374,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task CustomPropertiesItemRequestOptionsTest(bool binaryEncodingEnabledInClient)
@@ -3412,6 +3432,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        [DoNotParallelize]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         public async Task RegionsContactedTest(bool binaryEncodingEnabledInClient)
@@ -3677,16 +3698,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, DisplayName = "CreateItemAsync - Binary encoding enabled.")]
         public async Task CreateItemAsyncTest(bool binaryEncodingEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                if (binaryEncodingEnabled)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-
                 // Create new client, db, container with binary serializer
                 (CosmosClient client, Cosmos.Database db, Container container) =
-                    await this.CreateTestResourcesAsync(binaryEncodingEnabled);
+                    await this.CreateTestResourcesAsync();
 
                 try
                 {
@@ -3722,15 +3743,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, DisplayName = "UpsertItemAsync - Binary encoding enabled.")]
         public async Task UpsertItemAsyncTest(bool binaryEncodingEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                if (binaryEncodingEnabled)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-
                 (CosmosClient client, Cosmos.Database db, Container container) =
-                    await this.CreateTestResourcesAsync(binaryEncodingEnabled);
+                    await this.CreateTestResourcesAsync();
 
                 try
                 {
@@ -3778,15 +3799,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, DisplayName = "ReadItemAsync - Binary encoding enabled.")]
         public async Task ReadItemAsyncTest(bool binaryEncodingEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                if (binaryEncodingEnabled)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-
                 (CosmosClient client, Cosmos.Database db, Container container) =
-                    await this.CreateTestResourcesAsync(binaryEncodingEnabled);
+                    await this.CreateTestResourcesAsync();
 
                 try
                 {
@@ -3823,15 +3844,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, DisplayName = "ReplaceItemAsync - Binary encoding enabled.")]
         public async Task ReplaceItemAsyncTest(bool binaryEncodingEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                if (binaryEncodingEnabled)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-
                 (CosmosClient client, Cosmos.Database db, Container container) =
-                    await this.CreateTestResourcesAsync(binaryEncodingEnabled);
+                    await this.CreateTestResourcesAsync();
 
                 try
                 {
@@ -3874,15 +3895,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, DisplayName = "DeleteItemAsync - Binary encoding enabled.")]
         public async Task DeleteItemAsyncTest(bool binaryEncodingEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                if (binaryEncodingEnabled)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-
                 (CosmosClient client, Cosmos.Database db, Container container) =
-                    await this.CreateTestResourcesAsync(binaryEncodingEnabled);
+                    await this.CreateTestResourcesAsync();
 
                 try
                 {
@@ -3926,15 +3947,15 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, DisplayName = "QueryItemAsyncTest - Binary encoding enabled.")]
         public async Task QueryItemAsyncTest(bool binaryEncodingEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                if (binaryEncodingEnabled)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-
                 (CosmosClient client, Cosmos.Database db, Container container) =
-                    await this.CreateTestResourcesAsync(binaryEncodingEnabled);
+                    await this.CreateTestResourcesAsync();
 
                 try
                 {
@@ -3973,14 +3994,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        private async Task<(CosmosClient client, Cosmos.Database db, Container container)> CreateTestResourcesAsync(
-            bool binaryEncodingEnabled)
+        private async Task<(CosmosClient client, Cosmos.Database db, Container container)> CreateTestResourcesAsync()
         {
             CosmosClient client = TestCommon.CreateCosmosClient(
                 useCustomSeralizer: false,
                 validatePartitionKeyRangeCalls: false,
-                accountEndpointOverride: null,
-                binaryEncodingEnabled: binaryEncodingEnabled);
+                accountEndpointOverride: null);
 
             Cosmos.Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
             Container container = await db.CreateContainerAsync(
