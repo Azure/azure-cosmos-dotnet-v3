@@ -848,7 +848,12 @@ namespace Microsoft.Azure.Cosmos
             Stream itemStream;
             using (trace.StartChild("ItemSerialize"))
             {
-                itemStream = this.ClientContext.SerializerCore.ToStream<T>(item, isPointOperation: true);
+                // Serializing the item to a binary stream should be avoided when triggers are present in the item request options.
+                // This is because when triggers are present in the request options, the backend will pass the stream to the javascript
+                // engine, which does not support binary encoded content at the moment. For long term, since trigger operations won't
+                // be supported in the backend, avoiding the binary encoding in such cases, will be the ideal approach.
+                bool canUseBinaryEncoding = !ContainerCore.IsTriggerPresentInRequestOptions(requestOptions);
+                itemStream = this.ClientContext.SerializerCore.ToStream<T>(item, canUseBinaryEncodingForPointOperations: canUseBinaryEncoding);
             }
 
             // User specified PK value, no need to extract it
@@ -924,7 +929,12 @@ namespace Microsoft.Azure.Cosmos
             string resourceUri = this.GetResourceUri(requestOptions, operationType, itemId);
 
             // Convert Text to Binary Stream.
-            if (ConfigurationManager.IsBinaryEncodingEnabled())
+            // Exception: Serializing a text stream to a binary stream should be avoided when triggers are present in the item request options.
+            // This is because when triggers are present in the request options, the backend will pass the stream to the javascript
+            // engine, which does not support binary encoded content at the moment. For long term, since trigger operations won't
+            // be supported in the backend, avoiding the binary encoding in such cases, will be the ideal approach.
+            if (ConfigurationManager.IsBinaryEncodingEnabled()
+                && !ContainerCore.IsTriggerPresentInRequestOptions(requestOptions))
             {
                 streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
                     targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
@@ -1617,6 +1627,17 @@ namespace Microsoft.Azure.Cosmos
             Documents.Routing.Range<string> y)
         {
             return x.Max == y.Max || x.Contains(y.Max);
+        }
+
+        /// <summary>
+        /// Checks if the request options contain any triggers (pre or post).
+        /// </summary>
+        /// <param name="requestOptions">An instance of <see cref="ItemRequestOptions"/>.</param>
+        /// <returns>A boolean flag indicating if triggers were present in the request options.</returns>
+        private static bool IsTriggerPresentInRequestOptions(
+            ItemRequestOptions requestOptions)
+        {
+            return requestOptions?.PreTriggers != null || requestOptions?.PostTriggers != null;
         }
     }
 }
