@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Documents
         {
             SDKSupportedCapabilities capabilities = SDKSupportedCapabilities.None;
             capabilities |= SDKSupportedCapabilities.PartitionMerge;
+            capabilities |= SDKSupportedCapabilities.AcceptNewRntbdTokens;
 
             SDKSupportedCapabilitiesHelpers.sdkSupportedCapabilities = (ulong)capabilities;
         }

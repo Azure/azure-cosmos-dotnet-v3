@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static System.Net.WebRequestMethods;
 
     [TestClass]
     public class ClientTests
@@ -402,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sdkSupportedCapability = sdkSupportedCapabilities.Single();
             ulong capability = ulong.Parse(sdkSupportedCapability);
 
-            Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptNewRntbdTokens),capability & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptNewRntbdTokens),$"received header value as {sdkSupportedCapability}");
         }
 
         [TestMethod]
@@ -774,7 +775,46 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "]" +
                 "}");
         }
+        
+        [TestMethod]
+        public async Task VerifySDKCapabilitites()
+        {
+            // method to ensure passing new capabilities doesnt hurt the basic operations
+            String databaseName = "verifySDKCapabilitiesTestDb";
+            using CosmosClient cosmosClient = new CosmosClient(
+                ConfigurationManager.AppSettings["GatewayEndpoint"],
+                ConfigurationManager.AppSettings["MasterKey"]
+            );
 
+            ContainerProperties containerProperties = new ContainerProperties(
+                                            id: "test",
+                                            partitionKeyPath: "/id");
+
+            try
+            {
+                await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+                Container container = await cosmosClient.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(containerProperties);
+                dynamic testObject = new
+                {
+                    id = Guid.NewGuid().ToString(),
+                    Company = "Microsoft",
+                    State = "WA"
+
+                };
+                ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(testObject);
+                Assert.IsNotNull(response);
+
+                ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(testObject.id,
+                                                                                      new Cosmos.PartitionKey(testObject.id));
+
+
+                Assert.IsNotNull(itemResponse);
+            }
+            finally
+            {
+                await cosmosClient.GetDatabase(databaseName).DeleteAsync();
+            }
+        }
 
         [TestMethod]
         public async Task VerifyNegativeWebProxySettings()
