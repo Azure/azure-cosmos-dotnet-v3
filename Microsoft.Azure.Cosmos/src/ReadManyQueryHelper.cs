@@ -304,6 +304,15 @@ namespace Microsoft.Azure.Cosmos
                     }
                     for (int j = 0; j < this.partitionKeySelectors.Count; j++)
                     {
+                        if (pkValues[j] == Undefined.Value)
+                        {
+                            queryStringBuilder.Append(" AND ");
+                            queryStringBuilder.Append("IS_DEFINED(c");
+                            queryStringBuilder.Append(this.partitionKeySelectors[j]);
+                            queryStringBuilder.Append(") = false");
+                            continue;
+                        }
+
                         queryStringBuilder.Append(" AND ");
                         queryStringBuilder.Append("c");
                         queryStringBuilder.Append(this.partitionKeySelectors[j]);
