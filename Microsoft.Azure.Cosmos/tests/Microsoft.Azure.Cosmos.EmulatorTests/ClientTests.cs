@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static System.Net.WebRequestMethods;
 
     [TestClass]
     public class ClientTests
@@ -402,7 +403,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sdkSupportedCapability = sdkSupportedCapabilities.Single();
             ulong capability = ulong.Parse(sdkSupportedCapability);
 
-            Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptUnknownRntbdTokens), capability & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptUnknownRntbdTokens), $"received header value as {sdkSupportedCapability}");
         }
 
         [TestMethod]
@@ -774,7 +775,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "]" +
                 "}");
         }
-
 
         [TestMethod]
         public async Task VerifyNegativeWebProxySettings()
