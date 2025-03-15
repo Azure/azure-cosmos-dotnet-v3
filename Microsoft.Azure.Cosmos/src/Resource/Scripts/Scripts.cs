@@ -57,6 +57,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///                         new PartitionKey(testPartitionId),
         ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
         ///                         
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
         ///     string stringResponse = await sr.ReadToEndAsync();
@@ -282,6 +287,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// ResponseMessage storedProcedure = await scripts.ReadStoredProcedureStreamAsync("ExistingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -373,6 +383,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// 
         /// Scripts scripts = this.container.Scripts;
         /// StoredProcedureResponse response = await scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties("testTriggerId", body));
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -416,6 +431,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// StoredProcedureResponse response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -527,6 +547,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///                         sprocId,
         ///                         new PartitionKey(testPartitionId),
         ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
+        /// if (!sprocResponse.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         ///                         
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
@@ -639,7 +664,13 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///         TriggerOperation = TriggerOperation.All,
         ///         TriggerType = TriggerType.Pre
         ///     });
-        ///
+        ///     
+        /// if (!triggerResponse.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// 
         /// ItemRequestOptions options = new ItemRequestOptions()
         /// {
         ///     PreTriggers = new List<string>() { "addTax" },
@@ -847,6 +878,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// ResponseMessage response = await scripts.ReadTriggerStreamAsync("ExistingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -909,6 +945,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// 
         /// Scripts scripts = this.container.Scripts;
         /// ResponseMessage response = await scripts.ReplaceTriggerStreamAsync(triggerSettigs);
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -970,6 +1011,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// TriggerResponse response = await scripts.DeleteTriggerStreamAsync("existingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1012,13 +1058,19 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <code language="c#">
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
-        /// await scripts.UserDefinedFunctions.CreateUserDefinedFunctionStreamAsync(
+        /// ResponseMessage response =await scripts.UserDefinedFunctions.CreateUserDefinedFunctionStreamAsync(
         ///     new UserDefinedFunctionProperties 
         ///     { 
         ///         Id = "calculateTax", 
         ///         Body = @"function(amt) { return amt * 0.05; }" 
         ///     });
         ///
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// 
         /// QueryDefinition sqlQuery = new QueryDefinition(
         ///     "SELECT VALUE udf.calculateTax(t.cost) FROM toDoActivity t where t.cost > @expensive and t.status = @status")
         ///     .WithParameter("@expensive", 9000)
@@ -1248,6 +1300,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// ResponseMessage response = await scripts.ReadUserDefinedFunctionStreamAsync("ExistingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1300,6 +1357,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// };
         /// 
         /// ResponseMessage response = await scripts.ReplaceUserDefinedFunctionStreamAsync(udfProperties);
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -1351,6 +1413,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// ResponseMessage response = await this.container.DeleteUserDefinedFunctionStreamAsync("existingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
