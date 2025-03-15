@@ -332,6 +332,12 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+        public bool EnablePartitionLevelCircuitBreaker
+        {
+            get;
+            set;
+        }
+
         /// <summary>
         /// Gets or sets the certificate validation callback.
         /// </summary>

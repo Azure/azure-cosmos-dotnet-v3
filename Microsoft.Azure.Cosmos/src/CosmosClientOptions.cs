@@ -732,6 +732,11 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
+        /// Enable partition level circuit breaker
+        /// </summary>
+        internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
+
+        /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
@@ -983,6 +988,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
+                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
@@ -1219,6 +1225,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.EnablePartitionLevelFailover)
             {
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
             if (featureFlag == 0)
