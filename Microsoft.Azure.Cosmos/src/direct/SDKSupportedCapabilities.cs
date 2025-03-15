@@ -12,6 +12,6 @@ namespace Microsoft.Azure.Documents
         PartitionMerge = 1 << 0,
         ChangeFeedWithStartTimePostMerge = 1 << 1,
         ThroughputBucketing = 1 << 2,
-        AcceptNewRntbdTokens = 1 << 3
+        AcceptUnknownRntbdTokens = 1 << 3
     }
 }

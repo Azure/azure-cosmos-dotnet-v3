@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
             CollectionAssert.AreEqual(Encoding.UTF8.GetBytes(HttpConstants.Versions.v2020_07_15), HttpConstants.Versions.CurrentVersionUTF8);
 
             ulong capabilitites = SDKSupportedCapabilitiesHelpers.GetSDKSupportedCapabilities();
-            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptNewRntbdTokens), capabilitites & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptNewRntbdTokens));
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptUnknownRntbdTokens), capabilitites & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.AcceptUnknownRntbdTokens));
         }
 
         [TestMethod]
