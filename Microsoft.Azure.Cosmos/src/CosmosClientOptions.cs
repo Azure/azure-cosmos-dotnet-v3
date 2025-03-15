@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
         private IFaultInjector faultInjector;
+        private bool isCustomSerializerProvided;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -625,6 +626,7 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
+                this.isCustomSerializerProvided = true;
                 this.serializerInternal = value;
             }
         }
@@ -1083,6 +1085,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return clientOptions;
+        }
+
+        internal bool IsCustomSerializerProvided()
+        {
+            return this.isCustomSerializerProvided;
         }
 
         private static T GetValueFromConnectionString<T>(string connectionString, string keyName, T defaultValue)
