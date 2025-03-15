@@ -156,7 +156,11 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
-            bool typeIsWhiteListed = inputType == typeof(Document) || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItem<>));
+            bool typeIsWhiteListed = inputType == typeof(Document)
+                || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItem<>))
+                || inputType == typeof(StoredProcedureResponse)
+                || inputType == typeof(TriggerResponse)
+                || inputType == typeof(UserDefinedFunctionResponse);
 
             if (!typeIsWhiteListed && inputIsClientOrDirect)
             {
