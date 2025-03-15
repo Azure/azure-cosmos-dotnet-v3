@@ -775,8 +775,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     "]" +
                 "}");
         }
-        
-        
 
         [TestMethod]
         public async Task VerifyNegativeWebProxySettings()
