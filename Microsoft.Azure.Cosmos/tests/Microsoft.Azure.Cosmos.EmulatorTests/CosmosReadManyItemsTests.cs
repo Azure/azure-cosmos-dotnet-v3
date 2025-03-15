@@ -51,11 +51,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true, DisplayName = "Validates Read Many scenario with advanced replica selection enabled.")]
-        [DataRow(false, DisplayName = "Validates Read Many scenario with advanced replica selection disabled.")]
+        [DataRow(true, true, DisplayName = "Validates Read Many scenario with advanced replica selection enabled.")]
+        [DataRow(true, false, DisplayName = "Validates Read Many scenario with advanced replica selection disabled.")]
+        [DataRow(false, true, DisplayName = "Validates Read Many scenario with advanced replica selection enabled.")]
+        [DataRow(false, false, DisplayName = "Validates Read Many scenario with advanced replica selection disabled.")]
         public async Task ReadManyTypedTestWithAdvancedReplicaSelection(
+            bool binaryEncodingEnabled,
             bool advancedReplicaSelectionEnabled)
         {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
             CosmosClientOptions clientOptions = new ()
             {
                 EnableAdvancedReplicaSelectionForTcp = advancedReplicaSelectionEnabled,

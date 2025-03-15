@@ -3671,6 +3671,318 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(SubStatusCodes.MalformedContinuationToken, response.Headers.SubStatusCode);
         }
 
+        [TestMethod]
+        [DataRow(false, DisplayName = "CreateItemAsync - Binary encoding disabled.")]
+        [DataRow(true, DisplayName = "CreateItemAsync - Binary encoding enabled.")]
+        public async Task CreateItemAsyncTest(bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
+            try
+            {
+                // Create new client, db, container with binary serializer
+                (CosmosClient client, Cosmos.Database db, Container container) =
+                    await this.CreateTestResourcesAsync();
+
+                try
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+                    ItemResponse<ToDoActivity> createResponse =
+                        await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+                    Assert.IsNotNull(createResponse);
+                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                    Assert.IsNotNull(createResponse.Resource);
+                    Assert.AreEqual(testItem.id, createResponse.Resource.id);
+                    Assert.IsNotNull(createResponse.Diagnostics);
+
+                    Assert.IsTrue(createResponse.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+                    Assert.AreEqual(0, createResponse.Diagnostics.GetFailedRequestCount());
+                }
+                finally
+                {
+                    await db.DeleteAsync();
+                    client.Dispose();
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "UpsertItemAsync - Binary encoding disabled.")]
+        [DataRow(true, DisplayName = "UpsertItemAsync - Binary encoding enabled.")]
+        public async Task UpsertItemAsyncTest(bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
+            try
+            {
+                (CosmosClient client, Cosmos.Database db, Container container) =
+                    await this.CreateTestResourcesAsync();
+
+                try
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+                    ItemResponse<ToDoActivity> createAsUpsertResponse =
+                        await container.UpsertItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+                    Assert.IsNotNull(createAsUpsertResponse);
+                    Assert.AreEqual(HttpStatusCode.Created, createAsUpsertResponse.StatusCode);
+                    Assert.IsNotNull(createAsUpsertResponse.Resource);
+                    Assert.AreEqual(testItem.id, createAsUpsertResponse.Resource.id);
+
+                    testItem.description = "Updated via Upsert";
+                    testItem.taskNum = 9999;
+
+                    ItemResponse<ToDoActivity> updateAsUpsertResponse =
+                        await container.UpsertItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+                    Assert.IsNotNull(updateAsUpsertResponse);
+                    Assert.AreEqual(HttpStatusCode.OK, updateAsUpsertResponse.StatusCode);
+                    Assert.IsNotNull(updateAsUpsertResponse.Resource);
+                    Assert.AreEqual(testItem.id, updateAsUpsertResponse.Resource.id);
+                    Assert.AreEqual(9999, updateAsUpsertResponse.Resource.taskNum);
+
+                    Assert.IsNotNull(updateAsUpsertResponse.Diagnostics);
+                    Assert.IsTrue(updateAsUpsertResponse.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+                    Assert.AreEqual(0, updateAsUpsertResponse.Diagnostics.GetFailedRequestCount());
+                }
+                finally
+                {
+                    await db.DeleteAsync();
+                    client.Dispose();
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "ReadItemAsync - Binary encoding disabled.")]
+        [DataRow(true, DisplayName = "ReadItemAsync - Binary encoding enabled.")]
+        public async Task ReadItemAsyncTest(bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
+            try
+            {
+                (CosmosClient client, Cosmos.Database db, Container container) =
+                    await this.CreateTestResourcesAsync();
+
+                try
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    ItemResponse<ToDoActivity> createResponse =
+                        await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+                    ItemResponse<ToDoActivity> readResponse =
+                        await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+
+                    Assert.IsNotNull(readResponse);
+                    Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                    Assert.IsNotNull(readResponse.Resource);
+                    Assert.AreEqual(testItem.id, readResponse.Resource.id);
+                    Assert.IsTrue(readResponse.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+                    Assert.AreEqual(0, readResponse.Diagnostics.GetFailedRequestCount());
+                }
+                finally
+                {
+                    await db.DeleteAsync();
+                    client.Dispose();
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "ReplaceItemAsync - Binary encoding disabled.")]
+        [DataRow(true, DisplayName = "ReplaceItemAsync - Binary encoding enabled.")]
+        public async Task ReplaceItemAsyncTest(bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
+            try
+            {
+                (CosmosClient client, Cosmos.Database db, Container container) =
+                    await this.CreateTestResourcesAsync();
+
+                try
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    ItemResponse<ToDoActivity> createResponse =
+                        await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+                    testItem.description = "Replaced description";
+                    testItem.taskNum = 1234;
+
+                    ItemResponse<ToDoActivity> replaceResponse =
+                        await container.ReplaceItemAsync(testItem, testItem.id, new Cosmos.PartitionKey(testItem.pk));
+
+                    Assert.IsNotNull(replaceResponse);
+                    Assert.AreEqual(HttpStatusCode.OK, replaceResponse.StatusCode);
+                    Assert.IsNotNull(replaceResponse.Resource);
+                    Assert.AreEqual(testItem.id, replaceResponse.Resource.id);
+                    Assert.AreEqual(1234, replaceResponse.Resource.taskNum);
+
+                    Assert.IsNotNull(replaceResponse.Diagnostics);
+                    Assert.IsTrue(replaceResponse.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+                    Assert.AreEqual(0, replaceResponse.Diagnostics.GetFailedRequestCount());
+                }
+                finally
+                {
+                    await db.DeleteAsync();
+                    client.Dispose();
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "DeleteItemAsync - Binary encoding disabled.")]
+        [DataRow(true, DisplayName = "DeleteItemAsync - Binary encoding enabled.")]
+        public async Task DeleteItemAsyncTest(bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
+            try
+            {
+                (CosmosClient client, Cosmos.Database db, Container container) =
+                    await this.CreateTestResourcesAsync();
+
+                try
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    ItemResponse<ToDoActivity> createResponse =
+                        await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+                    Assert.AreEqual(HttpStatusCode.Created, createResponse.StatusCode);
+
+                    ItemResponse<ToDoActivity> deleteResponse =
+                        await container.DeleteItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+
+                    Assert.IsNotNull(deleteResponse);
+                    Assert.AreEqual(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+                    Assert.IsNotNull(deleteResponse.Diagnostics);
+                    Assert.IsTrue(deleteResponse.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
+
+                    try
+                    {
+                        await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+                        Assert.Fail("Read should have thrown a 404, as the item was deleted.");
+                    }
+                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                    {
+                    }
+                }
+                finally
+                {
+                    await db.DeleteAsync();
+                    client.Dispose();
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "QueryItemAsyncTest - Binary encoding disabled.")]
+        [DataRow(true, DisplayName = "QueryItemAsyncTest - Binary encoding enabled.")]
+        public async Task QueryItemAsyncTest(bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
+            try
+            {
+                (CosmosClient client, Cosmos.Database db, Container container) =
+                    await this.CreateTestResourcesAsync();
+
+                try
+                {
+                    List<ToDoActivity> items = new List<ToDoActivity>();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        ToDoActivity item = ToDoActivity.CreateRandomToDoActivity($"testPartition{i}");
+                        items.Add(item);
+                        await container.CreateItemAsync(item, new Cosmos.PartitionKey(item.pk));
+                    }
+
+                    QueryDefinition query = new QueryDefinition("SELECT * FROM c");
+                    FeedIterator<ToDoActivity> feedIterator = container.GetItemQueryIterator<ToDoActivity>(query);
+
+                    int totalCount = 0;
+                    while (feedIterator.HasMoreResults)
+                    {
+                        FeedResponse<ToDoActivity> page = await feedIterator.ReadNextAsync();
+                        totalCount += page.Count;
+                    }
+
+                    Assert.AreEqual(
+                        expected: items.Count,
+                        actual: totalCount,
+                        message: "All inserted items should be returned by the query!");
+                }
+                finally
+                {
+                    await db.DeleteAsync();
+                    client.Dispose();
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
+        }
+
+        private async Task<(CosmosClient client, Cosmos.Database db, Container container)> CreateTestResourcesAsync()
+        {
+            CosmosClient client = TestCommon.CreateCosmosClient(
+                useCustomSeralizer: false,
+                validatePartitionKeyRangeCalls: false,
+                accountEndpointOverride: null);
+
+            Cosmos.Database db = await client.CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await db.CreateContainerAsync(
+                id: Guid.NewGuid().ToString(),
+                partitionKeyPath: "/pk",
+                throughput: 4000);
+
+            return (client, db, container);
+        }
+
         private static async Task GivenItemStreamAsyncWhenMissingMemberHandlingIsErrorThenExpectsCosmosExceptionTestAsync(
             Func<Container, string, string, CancellationToken, Task<ResponseMessage>> itemStreamAsync)
         {
