@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(notFoundResponse));
 
-            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
+            ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 serializerSettings: null);
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Act + Assert => Should throw DocumentClientException
             await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
-                await proxyClient.InvokeAsync(
+                await thinClientStoreClient.InvokeAsync(
                     request,
                     ResourceType.Document,
                     new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(serverErrorResponse));
 
-            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
+            ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 serializerSettings: null);
@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
 
             await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
-                await proxyClient.InvokeAsync(
+                await thinClientStoreClient.InvokeAsync(
                     request,
                     ResourceType.Document,
                     new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(forbiddenHtml));
 
-            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
+            ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 serializerSettings: null);
@@ -130,7 +130,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Act + Assert => Should throw DocumentClientException
             await Assert.ThrowsExceptionAsync<DocumentClientException>(async () =>
-                await proxyClient.InvokeAsync(
+                await thinClientStoreClient.InvokeAsync(
                     request,
                     ResourceType.Document,
                     new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
@@ -152,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosHttpClient cosmosHttpClient = MockCosmosUtil.CreateMockCosmosHttpClientFromFunc(
                 _ => Task.FromResult(successResponse));
 
-            ThinClientStoreClient proxyClient = new ThinClientStoreClient(
+            ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
                 httpClient: cosmosHttpClient,
                 eventSource: null,
                 serializerSettings: null);
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
 
             // Act
-            DocumentServiceResponse dsr = await proxyClient.InvokeAsync(
+            DocumentServiceResponse dsr = await thinClientStoreClient.InvokeAsync(
                 request,
                 ResourceType.Document,
                 new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),

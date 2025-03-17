@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Act & Assert
             await Assert.ThrowsExceptionAsync<DocumentClientException>(
                 async () => await storeModel.ProcessMessageAsync(request),
-                "Expected 404 DocumentClientException from the final proxyStore call");
+                "Expected 404 DocumentClientException from the final thinClientStore call");
         }
 
         private static void ReplaceThinClientStoreClientField(ThinClientStoreModel model, ThinClientStoreClient newClient)
