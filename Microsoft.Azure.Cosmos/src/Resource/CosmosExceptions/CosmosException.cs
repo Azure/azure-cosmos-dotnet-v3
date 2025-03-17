@@ -198,6 +198,17 @@ namespace Microsoft.Azure.Cosmos
             return responseMessage;
         }
 
+        /// <summary>
+        /// Creates a shallow copy of the current exception instance.
+        /// This ensures that the cloned exception retains the same properties but does not
+        /// excessively proliferate stack traces or deep-copy unnecessary objects.
+        /// </summary>
+        /// <returns>A shallow copy of the current <see cref="CosmosException"/>.</returns>
+        internal CosmosException ShallowObjectClone()
+        {
+            return (CosmosException)this.MemberwiseClone();
+        }
+
         private static string GetMessageHelper(
             HttpStatusCode statusCode,
             Headers headers,

@@ -27,6 +27,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
         private bool isDisposed;
 
+        private static readonly bool isStackTraceOptimizationEnabled = string.Equals(Environment.GetEnvironmentVariable(ExceptionHandlingUtility.ExceptionHandlingForStackTraceOptimizationEnabled), "true",
+        StringComparison.OrdinalIgnoreCase);
+
         public AsyncCacheNonBlocking(
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null,
@@ -116,7 +119,13 @@ namespace Microsoft.Azure.Cosmos
                             e);
                     }
 
-                    throw;
+                    if (isStackTraceOptimizationEnabled)
+                    {
+                        // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
+                        // and rethrows them, doesn't process other exceptions.
+                        ExceptionHandlingUtility.CloneAndRethrowException(e);
+                    }
+                    throw e;
                 }
 
                 return await this.UpdateCacheAndGetValueFromBackgroundTaskAsync(
