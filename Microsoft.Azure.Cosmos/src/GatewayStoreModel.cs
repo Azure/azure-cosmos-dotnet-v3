@@ -26,9 +26,9 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
 
-        private readonly GlobalEndpointManager endpointManager;
+        internal readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
-        private readonly ConsistencyLevel defaultConsistencyLevel;
+        internal readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
 

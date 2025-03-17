@@ -39,10 +39,17 @@ namespace Microsoft.Azure.Cosmos
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
+           Uri thinClientEndpoint,
            string globalDatabaseAccountName,
            CancellationToken cancellationToken)
         {
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceType, physicalAddress, globalDatabaseAccountName, cancellationToken))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(
+                request,
+                resourceType,
+                physicalAddress,
+                thinClientEndpoint,
+                globalDatabaseAccountName,
+                cancellationToken))
             {
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
                 return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
@@ -55,7 +62,13 @@ namespace Microsoft.Azure.Cosmos
                 HttpTransportClient.GetResourceFeedUri(resourceOperation.resourceType, baseAddress, request) :
                 HttpTransportClient.GetResourceEntryUri(resourceOperation.resourceType, baseAddress, request);
 
-            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(request, resourceOperation.resourceType, physicalAddress, default, default))
+            using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(
+                request,
+                resourceOperation.resourceType,
+                physicalAddress,
+                default,
+                default,
+                default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
             }
@@ -64,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
         private async ValueTask<HttpRequestMessage> PrepareRequestForProxyAsync(
             DocumentServiceRequest request,
             Uri physicalAddress,
+            Uri thinClientEndpoint,
             string globalDatabaseAccountName)
         {
             HttpRequestMessage requestMessage = base.PrepareRequestMessageAsync(request, physicalAddress).Result;
@@ -94,6 +108,7 @@ namespace Microsoft.Azure.Cosmos
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
                 requestMessage.Headers.Clear();
+                requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 
                 return requestMessage;
@@ -108,13 +123,14 @@ namespace Microsoft.Azure.Cosmos
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
+           Uri thinClientEndpoint,
            string globalDatabaseAccountName,
            CancellationToken cancellationToken)
         {
             DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ThinClientStoreClient), request.OperationType, request.ResourceType);
 
             return base.httpClient.SendHttpAsync(
-                () => this.PrepareRequestForProxyAsync(request, physicalAddress, globalDatabaseAccountName),
+                () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,

@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// This contains the thinclient endpoint value.
         /// </summary>
-        internal Uri ThinClientPhysicalAddress { get; set; }
+        internal Uri ThinClientEndpoint { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

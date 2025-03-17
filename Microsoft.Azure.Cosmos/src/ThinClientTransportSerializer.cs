@@ -28,7 +28,9 @@ namespace Microsoft.Azure.Cosmos
             HashPartitionKeyPath = new PartitionKeyDefinition
             {
                 Kind = PartitionKind.Hash,
+                Version = Documents.PartitionKeyDefinitionVersion.V2,
             };
+            HashPartitionKeyPath.Paths.Add("/id");
         }
 
         public sealed class BufferProviderWrapper
@@ -69,7 +71,6 @@ namespace Microsoft.Azure.Cosmos
                                                 requestStream, AuthorizationTokenType.PrimaryMasterKey,
                                                 dictionaryCollection);
 
-            HashPartitionKeyPath.Paths.Add(request.PartitionKeyRangeIdentity.PartitionKeyRangeId);
             if (operationType.IsPointOperation())
             {
                 string partitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey);

@@ -53,6 +53,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             ResourceType resourceType,
             Uri physicalAddress,
+            Uri endpoint,
             string globalDatabaseAccountName,
             CancellationToken cancellationToken)
         {

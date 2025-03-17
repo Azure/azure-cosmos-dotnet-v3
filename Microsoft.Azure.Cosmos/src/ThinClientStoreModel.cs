@@ -19,9 +19,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
-        private readonly GlobalEndpointManager endpointManager;
-        private readonly ConsistencyLevel defaultConsistencyLevel;
-        private readonly DocumentClientEventSource eventSource;
         private ThinClientStoreClient thinClientStoreClient;
 
         public ThinClientStoreModel(
@@ -31,21 +28,16 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient)
-            : base(
-                  (GlobalEndpointManager)endpointManager,
+            : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
                   eventSource,
                   serializerSettings,
                   httpClient)
         {
-            this.endpointManager = endpointManager;
-            this.defaultConsistencyLevel = defaultConsistencyLevel;
-            this.eventSource = eventSource;
-
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
-                this.eventSource,
+                eventSource,
                 serializerSettings);
         }
 
@@ -55,19 +47,17 @@ namespace Microsoft.Azure.Cosmos
         {
             await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
-                this.defaultConsistencyLevel,
-                this.sessionContainer,
-                this.partitionKeyRangeCache,
-                this.clientCollectionCache,
-                this.endpointManager);
+                base.defaultConsistencyLevel,
+                base.sessionContainer,
+                base.partitionKeyRangeCache,
+                base.clientCollectionCache,
+                base.endpointManager);
 
             DocumentServiceResponse response;
             try
             {
-                if (request.ResourceType.Equals(ResourceType.Document) &&
-                    this.endpointManager.TryGetLocationForGatewayDiagnostics(
-                        request.RequestContext.LocationEndpointToRoute,
-                        out string regionName))
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
+                if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;
                 }
@@ -76,24 +66,24 @@ namespace Microsoft.Azure.Cosmos
                 response = await this.thinClientStoreClient.InvokeAsync(
                     request,
                     request.ResourceType,
-                    properties.ThinClientPhysicalAddress,
+                    physicalAddress,
+                    properties.ThinClientEndpoint,
                     properties.Id,
                     cancellationToken);
             }
-            catch (DocumentClientException ex)
+            catch (DocumentClientException exception)
             {
-                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType) &&
-                    (ex.StatusCode == HttpStatusCode.PreconditionFailed
-                     || ex.StatusCode == HttpStatusCode.Conflict
-                     || (ex.StatusCode == HttpStatusCode.NotFound
-                         && ex.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
+                    (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
+                    || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
-                    await this.CaptureSessionTokenAndHandleSplitAsync(
-                        ex.StatusCode,
-                        ex.GetSubStatus(),
+                    await base.CaptureSessionTokenAndHandleSplitAsync(
+                        exception.StatusCode,
+                        exception.GetSubStatus(),
                         request,
-                        ex.Headers);
+                        exception.Headers);
                 }
+
                 throw;
             }
 
@@ -112,12 +102,12 @@ namespace Microsoft.Azure.Cosmos
             {
                 AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
 
-                if (accountProperties == null)
+                if (accountProperties != null)
                 {
-                    throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+                    return accountProperties;
                 }
 
-                return accountProperties;
+                throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
             }
             catch (Exception ex)
             {
