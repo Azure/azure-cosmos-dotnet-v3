@@ -57,7 +57,9 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
-                if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
+                if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(
+                    request.RequestContext.LocationEndpointToRoute,
+                    out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;
                 }
@@ -135,12 +137,6 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
             base.Dispose(disposing);
-        }
-
-        public new void Dispose()
-        {
-            this.Dispose(true);
-            GC.SuppressFinalize(this);
         }
     }
 }

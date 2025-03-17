@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos
             this.eventSource = eventSource;
         }
 
-        public virtual async Task<DocumentServiceResponse> InvokeAsync(
+        public async Task<DocumentServiceResponse> InvokeAsync(
            DocumentServiceRequest request,
            ResourceType resourceType,
            Uri physicalAddress,
@@ -375,7 +375,8 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                request);
         }
     }
 }

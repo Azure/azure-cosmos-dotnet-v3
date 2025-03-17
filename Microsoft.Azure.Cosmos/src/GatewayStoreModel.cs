@@ -162,9 +162,8 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
 
-        public void SetCaches(
-        PartitionKeyRangeCache partitionKeyRangeCache,
-        ClientCollectionCache clientCollectionCache)
+        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache,
+            ClientCollectionCache clientCollectionCache)
         {
             this.clientCollectionCache = clientCollectionCache;
             this.partitionKeyRangeCache = partitionKeyRangeCache;
