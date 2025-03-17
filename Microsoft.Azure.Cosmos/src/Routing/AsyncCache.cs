@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Common
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
 
         private ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
-
+        private static readonly bool isStackTraceOptimizationEnabled = false;
         public AsyncCache(IEqualityComparer<TValue> valueEqualityComparer, IEqualityComparer<TKey> keyEqualityComparer = null)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
@@ -148,11 +148,18 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 return await generator;
             }
-            catch (Exception) when (object.ReferenceEquals(actualValue, newLazyValue))
+            catch (Exception ex) when (object.ReferenceEquals(actualValue, newLazyValue))
             {
                 // If the lambda this thread added to values triggered an exception remove it from the cache.
                 this.TryRemoveValue(key, actualValue);
-                throw;
+
+                if (isStackTraceOptimizationEnabled)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
+                    // and rethrows them, doesn't process other exceptions.
+                    ExceptionHandlingUtility.CloneAndRethrowException(ex);
+                }
+                throw ex;
             }
         }
 
