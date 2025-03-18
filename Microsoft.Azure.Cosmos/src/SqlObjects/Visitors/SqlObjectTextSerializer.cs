@@ -427,26 +427,27 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 this.writer.Write("RANK ");
             }
 
-            dynamic items = sqlOrderByClause.Rank ? sqlOrderByClause.ScoreExpressionOrderByItems : sqlOrderByClause.OrderByItems;
-            items[0].Accept(this);
-
-            for (int i = 1; i < items.Length; i++)
+            sqlOrderByClause.OrderByItems[0].Accept(this);
+            for (int i = 1; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
                 this.writer.Write(", ");
-                items[i].Accept(this);
+                sqlOrderByClause.OrderByItems[i].Accept(this);
             }
         }
 
         public override void Visit(SqlOrderByItem sqlOrderByItem)
         {
             sqlOrderByItem.Expression.Accept(this);
-            if (sqlOrderByItem.IsDescending)
+            if (sqlOrderByItem.IsDescending.HasValue)
             {
-                this.writer.Write(" DESC");
-            }
-            else
-            {
-                this.writer.Write(" ASC");
+                if (sqlOrderByItem.IsDescending.Value)
+                {
+                    this.writer.Write(" DESC");
+                }
+                else
+                {
+                    this.writer.Write(" ASC");
+                }
             }
         }
 
@@ -516,22 +517,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             {
                 this.WriteDelimiter(string.Empty);
                 sqlQuery.OffsetLimitClause.Accept(this);
-            }
-        }
-
-        public override void Visit(SqlScoreExpressionOrderByItem sqlScoreExpressionOrderByItem)
-        {
-            sqlScoreExpressionOrderByItem.Expression.Accept(this);
-            if (sqlScoreExpressionOrderByItem.IsDescending.HasValue)
-            {
-                if (sqlScoreExpressionOrderByItem.IsDescending.Value)
-                {
-                    this.writer.Write(" DESC");
-                }
-                else
-                {
-                    this.writer.Write(" ASC");
-                }
             }
         }
 

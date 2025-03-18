@@ -618,22 +618,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 return false;
             }
 
-            if (first.Rank)
-            {
-                if (!SequenceEquals(first.ScoreExpressionOrderByItems, second.ScoreExpressionOrderByItems))
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (!SequenceEquals(first.OrderByItems, second.OrderByItems))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            return SequenceEquals(first.OrderByItems, second.OrderByItems);
         }
 
         public override bool Visit(SqlOrderByItem first, SqlObject secondAsObject)
@@ -764,26 +749,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             }
 
             if (!Equals(first.OffsetLimitClause, second.OffsetLimitClause))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        public override bool Visit(SqlScoreExpressionOrderByItem first, SqlObject secondAsObject)
-        {
-            if (!(secondAsObject is SqlScoreExpressionOrderByItem second))
-            {
-                return false;
-            }
-
-            if (first.IsDescending != second.IsDescending)
-            {
-                return false;
-            }
-
-            if (!Equals(first.Expression, second.Expression))
             {
                 return false;
             }

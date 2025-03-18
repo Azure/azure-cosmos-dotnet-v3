@@ -356,28 +356,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
             Contract.Requires(context != null);
 
-            if (context.K_RANK != null)
+            bool rank = context.K_RANK != null;
+            List<SqlOrderByItem> orderByItems = new List<SqlOrderByItem>();
+            if (rank)
             {
-                List<SqlScoreExpressionOrderByItem> orderByItems = new List<SqlScoreExpressionOrderByItem>();
-                foreach (sqlParser.Score_expression_order_by_itemContext orderByItemContext in context.score_expression_order_by_items().score_expression_order_by_item())
+                foreach (sqlParser.Score_expression_order_by_itemContext scoreOrderByItemContext in context.score_expression_order_by_items().score_expression_order_by_item())
                 {
-                    SqlScoreExpressionOrderByItem orderByItem = (SqlScoreExpressionOrderByItem)this.VisitScore_expression_order_by_item(orderByItemContext);
+                    SqlOrderByItem orderByItem = (SqlOrderByItem)this.VisitScore_expression_order_by_item(scoreOrderByItemContext);
                     orderByItems.Add(orderByItem);
                 }
-
-                return SqlOrderByClause.Create(orderByItems.ToImmutableArray());
             }
             else
             {
-                List<SqlOrderByItem> orderByItems = new List<SqlOrderByItem>();
                 foreach (sqlParser.Order_by_itemContext orderByItemContext in context.order_by_items().order_by_item())
                 {
                     SqlOrderByItem orderByItem = (SqlOrderByItem)this.VisitOrder_by_item(orderByItemContext);
                     orderByItems.Add(orderByItem);
                 }
-
-                return SqlOrderByClause.Create(orderByItems.ToImmutableArray());
             }
+
+            return SqlOrderByClause.Create(rank, orderByItems.ToImmutableArray());
         }
 
         public override SqlObject VisitOrder_by_item([NotNull] sqlParser.Order_by_itemContext context)
@@ -427,7 +425,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
                 }
             }
 
-            return SqlScoreExpressionOrderByItem.Create(expression, isDescending);
+            return SqlOrderByItem.Create(expression, isDescending);
         }
 
         #endregion

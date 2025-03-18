@@ -53,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract void Visit(SqlPropertyName sqlObject);
         public abstract void Visit(SqlPropertyRefScalarExpression sqlObject);
         public abstract void Visit(SqlQuery sqlObject);
-        public abstract void Visit(SqlScoreExpressionOrderByItem sqlObject);
         public abstract void Visit(SqlSelectClause sqlObject);
         public abstract void Visit(SqlSelectItem sqlObject);
         public abstract void Visit(SqlSelectListSpec sqlObject);

@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlOrderByClause : SqlObject
     {
-        private SqlOrderByClause(ImmutableArray<SqlOrderByItem> orderByItems)
+        private SqlOrderByClause(bool rank, ImmutableArray<SqlOrderByItem> orderByItems)
         {
             foreach (SqlOrderByItem sqlOrderbyItem in orderByItems)
             {
@@ -27,45 +27,30 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             }
 
             this.OrderByItems = orderByItems;
-            this.Rank = false;
-        }
-
-        private SqlOrderByClause(ImmutableArray<SqlScoreExpressionOrderByItem> scoreExpressionOrderByItems)
-        {
-            foreach (SqlScoreExpressionOrderByItem sqlOrderbyItem in scoreExpressionOrderByItems)
-            {
-                if (sqlOrderbyItem == null)
-                {
-                    throw new ArgumentException($"{nameof(sqlOrderbyItem)} must not have null items.");
-                }
-            }
-
-            this.ScoreExpressionOrderByItems = scoreExpressionOrderByItems;
-            this.Rank = true;
+            this.Rank = rank;
         }
 
         public ImmutableArray<SqlOrderByItem> OrderByItems { get; }
-        public ImmutableArray<SqlScoreExpressionOrderByItem> ScoreExpressionOrderByItems { get; }
         public bool Rank { get; }
 
         public static SqlOrderByClause Create(params SqlOrderByItem[] orderByItems)
         {
-            return new SqlOrderByClause(orderByItems.ToImmutableArray());
+            return new SqlOrderByClause(rank: false, orderByItems.ToImmutableArray());
         }
 
         public static SqlOrderByClause Create(ImmutableArray<SqlOrderByItem> orderByItems)
         {
-            return new SqlOrderByClause(orderByItems);
+            return new SqlOrderByClause(rank: false, orderByItems);
         }
 
-        public static SqlOrderByClause Create(params SqlScoreExpressionOrderByItem[] orderByItems)
+        public static SqlOrderByClause Create(bool rank, params SqlOrderByItem[] orderByItems)
         {
-            return new SqlOrderByClause(orderByItems.ToImmutableArray());
+            return new SqlOrderByClause(rank, orderByItems.ToImmutableArray());
         }
 
-        public static SqlOrderByClause Create(ImmutableArray<SqlScoreExpressionOrderByItem> orderByItems)
+        public static SqlOrderByClause Create(bool rank, ImmutableArray<SqlOrderByItem> orderByItems)
         {
-            return new SqlOrderByClause(orderByItems);
+            return new SqlOrderByClause(rank, orderByItems);
         }
 
         public override void Accept(SqlObjectVisitor visitor)

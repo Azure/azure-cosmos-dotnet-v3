@@ -53,7 +53,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TResult Visit(SqlPropertyName sqlObject);
         public abstract TResult Visit(SqlPropertyRefScalarExpression sqlObject);
         public abstract TResult Visit(SqlQuery sqlObject);
-        public abstract TResult Visit(SqlScoreExpressionOrderByItem sqlObject);
         public abstract TResult Visit(SqlSelectClause sqlObject);
         public abstract TResult Visit(SqlSelectItem sqlObject);
         public abstract TResult Visit(SqlSelectListSpec sqlObject);
