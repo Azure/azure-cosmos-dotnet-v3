@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Cosmos
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
 
         internal readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
@@ -43,13 +44,14 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            GlobalPartitionEndpointManager globalPartitionEndpointManager = null)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
             this.eventSource = eventSource;
-
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
@@ -69,12 +71,26 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
-                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
                 // Collect region name only for document resources
                 if (request.ResourceType.Equals(ResourceType.Document) && this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;
                 }
+
+                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+                {
+                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                        request: request,
+                        sessionContainer: this.sessionContainer,
+                        partitionKeyRangeCache: this.partitionKeyRangeCache,
+                        clientCollectionCache: this.clientCollectionCache,
+                        refreshCache: false);
+
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                }
+
+                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
                 response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
             }
             catch (DocumentClientException exception)
