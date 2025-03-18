@@ -5,14 +5,20 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Text;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Telemetry;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Moq;
 
     [TestClass]
     public class ThinClientTransportSerializerTests
@@ -34,12 +40,30 @@ namespace Microsoft.Azure.Cosmos.Tests
             message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString()); // required
 
             ThinClientTransportSerializer.BufferProviderWrapper bufferProvider = new();
+            Mock<ClientCollectionCache> mockClientCollectionCache = new Mock<ClientCollectionCache>(
+            new Mock<ISessionContainer>().Object,
+            new Mock<IStoreModel>().Object,
+            new Mock<ICosmosAuthorizationTokenProvider>().Object,
+            new Mock<IRetryPolicyFactory>().Object,
+            null)
+            {
+                CallBase = true
+            };
+
+            // Set up the ResolveCollectionAsync method to return a mocked ContainerProperties
+            mockClientCollectionCache
+                .Setup(m => m.ResolveCollectionAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<ITrace>()))
+                .ReturnsAsync(this.GetMockContainerProperties());
 
             // Act & Assert
             await Assert.ThrowsExceptionAsync<InternalServerErrorException>(() =>
                 ThinClientTransportSerializer.SerializeProxyRequestAsync(
                     bufferProvider,
                     "MockAccount",
+                    mockClientCollectionCache.Object,
                     message));
         }
 
@@ -58,11 +82,29 @@ namespace Microsoft.Azure.Cosmos.Tests
             message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
 
             ThinClientTransportSerializer.BufferProviderWrapper bufferProvider = new();
+            Mock<ClientCollectionCache> mockClientCollectionCache = new Mock<ClientCollectionCache>(
+            new Mock<ISessionContainer>().Object,
+            new Mock<IStoreModel>().Object,
+            new Mock<ICosmosAuthorizationTokenProvider>().Object,
+            new Mock<IRetryPolicyFactory>().Object,
+            null)
+            {
+                CallBase = true
+            };
+
+            // Set up the ResolveCollectionAsync method to return a mocked ContainerProperties
+            mockClientCollectionCache
+                .Setup(m => m.ResolveCollectionAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<ITrace>()))
+                .ReturnsAsync(this.GetMockContainerProperties());
 
             // Act
             Stream resultStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
                 bufferProvider,
                 "MockAccount",
+                mockClientCollectionCache.Object,
                 message);
 
             // Assert
@@ -77,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string pkJson = "[\"TestValue\"]"; // e.g. an array with a single PK value
 
             // Act
-            string epkHash = ThinClientTransportSerializer.GetEffectivePartitionKeyHash(pkJson);
+            string epkHash = ThinClientTransportSerializer.GetEffectivePartitionKeyHash(pkJson, this.GetMockContainerProperties().PartitionKey);
 
             // Assert
             Assert.IsNotNull(epkHash, "EPK hash should not be null for a valid JSON partition key.");
@@ -118,6 +160,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(
                 converted.Headers.Any(h => h.Key == ThinClientConstants.RoutedViaProxy),
                 "Expected 'x-ms-thinclient-route-via-proxy' header to be set in the converted response.");
+        }
+
+        private ContainerProperties GetMockContainerProperties()
+        {
+            return new ContainerProperties
+            {
+                PartitionKey = new PartitionKeyDefinition
+                {
+                    Paths = new Collection<string> { "/pk" }
+                }
+            };
         }
     }
 }

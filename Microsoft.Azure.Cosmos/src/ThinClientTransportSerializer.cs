@@ -11,7 +11,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
 
@@ -21,18 +24,6 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal static class ThinClientTransportSerializer
     {
-        private static readonly PartitionKeyDefinition HashPartitionKeyPath;
-
-        static ThinClientTransportSerializer()
-        {
-            HashPartitionKeyPath = new PartitionKeyDefinition
-            {
-                Kind = PartitionKind.Hash,
-                Version = Documents.PartitionKeyDefinitionVersion.V2,
-            };
-            HashPartitionKeyPath.Paths.Add("/id");
-        }
-
         public sealed class BufferProviderWrapper
         {
             internal BufferProvider Provider { get; set; } = new ();
@@ -47,6 +38,7 @@ namespace Microsoft.Azure.Cosmos
         public static async Task<Stream> SerializeProxyRequestAsync(
             BufferProviderWrapper bufferProvider,
             string accountName,
+            ClientCollectionCache clientCollectionCache,
             HttpRequestMessage requestMessage)
         {
             // Skip this and use the original DSR.
@@ -80,7 +72,11 @@ namespace Microsoft.Azure.Cosmos
                     throw new InternalServerErrorException();
                 }
 
-                string epk = GetEffectivePartitionKeyHash(partitionKey);
+                ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(
+                     request,
+                     CancellationToken.None,
+                     NoOpTrace.Singleton);
+                string epk = GetEffectivePartitionKeyHash(partitionKey, collection.PartitionKey);
 
                 request.Properties = new Dictionary<string, object>
                 {
@@ -119,9 +115,9 @@ namespace Microsoft.Azure.Cosmos
             return memoryStream;
         }
 
-        public static string GetEffectivePartitionKeyHash(string partitionJson)
+        public static string GetEffectivePartitionKeyHash(string partitionJson, PartitionKeyDefinition partitionKeyDefinition)
         {
-            return Documents.PartitionKey.FromJsonString(partitionJson).InternalKey.GetEffectivePartitionKeyString(HashPartitionKeyPath);
+            return Documents.PartitionKey.FromJsonString(partitionJson).InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
         }
 
         /// <summary>

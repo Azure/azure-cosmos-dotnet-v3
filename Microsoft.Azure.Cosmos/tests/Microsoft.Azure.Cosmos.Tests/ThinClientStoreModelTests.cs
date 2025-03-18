@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
-                (request, resourceType, uri, endpoint, globalDatabaseAccountName, cancellationToken) =>
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
                 {
                     Stream responseBody = successResponse.Content.ReadAsStream();
                     INameValueCollection headers = new StoreResponseNameValueCollection();
@@ -159,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             bool disposeCalled = false;
 
             ThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
-                (request, resourceType, uri, endpoint, globalDatabaseAccountName, cancellationToken) => throw new NotImplementedException(),
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) => throw new NotImplementedException(),
                 () => disposeCalled = true);
 
             ReplaceThinClientStoreClientField(this.thinClientStoreModel, thinClientStoreClient);
@@ -175,7 +175,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             // Arrange
             MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
-               (request, resourceType, uri, endpoint, globalDatabaseAccountName, cancellationToken) =>
+               (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
                    throw new DocumentClientException(
                        message: "Not Found",
                        innerException: null,
@@ -255,11 +255,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         internal class MockThinClientStoreClient : ThinClientStoreClient
         {
-            private readonly Func<DocumentServiceRequest, ResourceType, Uri, Uri, string, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc;
+            private readonly Func<DocumentServiceRequest, ResourceType, Uri, Uri, string, ClientCollectionCache, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc;
             private readonly Action onDispose;
 
             public MockThinClientStoreClient(
-                Func<DocumentServiceRequest, ResourceType, Uri, Uri, string, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc,
+                Func<DocumentServiceRequest, ResourceType, Uri, Uri, string, ClientCollectionCache, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc,
                 Action onDispose = null)
                 : base(
                     httpClient: null,
@@ -276,9 +276,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Uri physicalAddress,
                 Uri thinClientEndpoint,
                 string globalDatabaseAccountName,
+                ClientCollectionCache clientCollectionCache,
                 CancellationToken cancellationToken)
             {
-                return await this.invokeAsyncFunc(request, resourceType, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, cancellationToken);
+                return await this.invokeAsyncFunc(request, resourceType, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken);
             }
 
             public override void Dispose()

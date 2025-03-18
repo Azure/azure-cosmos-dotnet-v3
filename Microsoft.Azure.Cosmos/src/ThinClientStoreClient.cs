@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
@@ -41,6 +42,7 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            Uri thinClientEndpoint,
            string globalDatabaseAccountName,
+           ClientCollectionCache clientCollectionCache,
            CancellationToken cancellationToken)
         {
             using (HttpResponseMessage responseMessage = await this.InvokeClientAsync(
@@ -49,6 +51,7 @@ namespace Microsoft.Azure.Cosmos
                 physicalAddress,
                 thinClientEndpoint,
                 globalDatabaseAccountName,
+                clientCollectionCache,
                 cancellationToken))
             {
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
@@ -68,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
                 physicalAddress,
                 default,
                 default,
+                default,
                 default))
             {
                 return await HttpTransportClient.ProcessHttpResponse(request.ResourceAddress, string.Empty, responseMessage, physicalAddress, request);
@@ -78,7 +82,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             Uri physicalAddress,
             Uri thinClientEndpoint,
-            string globalDatabaseAccountName)
+            string globalDatabaseAccountName,
+            ClientCollectionCache clientCollectionCache)
         {
             HttpRequestMessage requestMessage = base.PrepareRequestMessageAsync(request, physicalAddress).Result;
             requestMessage.Version = new Version(2, 0);
@@ -97,6 +102,7 @@ namespace Microsoft.Azure.Cosmos
                 Stream contentStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
                     bufferProviderWrapper,
                     globalDatabaseAccountName,
+                    clientCollectionCache,
                     requestMessage);
 
                 if (!contentStream.CanSeek)
@@ -125,12 +131,12 @@ namespace Microsoft.Azure.Cosmos
            Uri physicalAddress,
            Uri thinClientEndpoint,
            string globalDatabaseAccountName,
+           ClientCollectionCache clientCollectionCache,
            CancellationToken cancellationToken)
         {
             DefaultTrace.TraceInformation("In {0}, OperationType: {1}, ResourceType: {2}", nameof(ThinClientStoreClient), request.OperationType, request.ResourceType);
-
             return base.httpClient.SendHttpAsync(
-                () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName),
+                () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache),
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(request),
                 request.RequestContext.ClientRequestStatistics,

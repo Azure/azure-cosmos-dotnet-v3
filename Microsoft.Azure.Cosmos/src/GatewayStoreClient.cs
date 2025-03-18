@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -55,6 +56,7 @@ namespace Microsoft.Azure.Cosmos
             Uri physicalAddress,
             Uri endpoint,
             string globalDatabaseAccountName,
+            ClientCollectionCache clientCollectionCache,
             CancellationToken cancellationToken)
         {
             return this.InvokeAsync(request, resourceType, physicalAddress, cancellationToken);

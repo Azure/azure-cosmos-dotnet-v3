@@ -71,6 +71,7 @@ namespace Microsoft.Azure.Cosmos
                     physicalAddress,
                     properties.ThinClientEndpoint,
                     properties.Id,
+                    base.clientCollectionCache,
                     cancellationToken);
             }
             catch (DocumentClientException exception)
