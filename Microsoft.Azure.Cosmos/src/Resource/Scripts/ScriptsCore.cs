@@ -44,20 +44,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<StoredProcedureResponse> CreateStoredProcedureAsync(
-            StoredProcedureProperties storedProcedureProperties,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.CreateStoredProcedureInternalAsync(
-                storedProcedureProperties: storedProcedureProperties,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<StoredProcedureResponse> CreateStoredProcedureInternalAsync(
+        public async Task<StoredProcedureResponse> CreateStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -168,20 +155,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<StoredProcedureResponse> ReadStoredProcedureAsync(
-            string id,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.ReadStoredProcedureInternalAsync(
-                id: id,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<StoredProcedureResponse> ReadStoredProcedureInternalAsync(
+        public async Task<StoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
             RequestOptions requestOptions,
             ITrace trace,
@@ -218,20 +192,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
-            StoredProcedureProperties storedProcedureProperties,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.ReplaceStoredProcedureInternalAsync(
-                storedProcedureProperties,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<StoredProcedureResponse> ReplaceStoredProcedureInternalAsync(
+        public async Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(
             StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -273,20 +234,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
-            string id,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.DeleteStoredProcedureInternalAsync(
-                id: id,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<StoredProcedureResponse> DeleteStoredProcedureInternalAsync(
+        public async Task<StoredProcedureResponse> DeleteStoredProcedureAsync(
             string id,
             RequestOptions requestOptions,
             ITrace trace,
@@ -406,20 +354,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<TriggerResponse> CreateTriggerAsync(
-            TriggerProperties triggerProperties,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.CreateTriggerInternalAsync(
-                triggerProperties: triggerProperties,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<TriggerResponse> CreateTriggerInternalAsync(
+        public async Task<TriggerResponse> CreateTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -530,20 +465,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<TriggerResponse> ReadTriggerAsync(
-            string id,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.ReadTriggerInternalAsync(
-                id: id,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<TriggerResponse> ReadTriggerInternalAsync(
+        public async Task<TriggerResponse> ReadTriggerAsync(
             string id,
             RequestOptions requestOptions,
             ITrace trace,
@@ -595,20 +517,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<TriggerResponse> ReplaceTriggerAsync(
-            TriggerProperties triggerProperties,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-           return this.ReplaceTriggerInternalAsync(
-                triggerProperties: triggerProperties,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<TriggerResponse> ReplaceTriggerInternalAsync(
+        public async Task<TriggerResponse> ReplaceTriggerAsync(
             TriggerProperties triggerProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -649,20 +558,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<TriggerResponse> DeleteTriggerAsync(
-            string id,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.DeleteTriggerInternalAsync(
-                id: id,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<TriggerResponse> DeleteTriggerInternalAsync(
+        public async Task<TriggerResponse> DeleteTriggerAsync(
             string id,
             RequestOptions requestOptions,
             ITrace trace,
@@ -709,20 +605,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
-            UserDefinedFunctionProperties userDefinedFunctionProperties,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-           return this.CreateUserDefinedFunctionInternalAsync(
-                userDefinedFunctionProperties: userDefinedFunctionProperties,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionInternalAsync(
+        public async Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -833,20 +716,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
-            string id,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.ReadUserDefinedFunctionInternalAsync(
-                id: id,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionInternalAsync(
+        public async Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions,
             ITrace trace,
@@ -898,20 +768,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                cancellationToken: cancellationToken);
         }
 
-        public Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
-            UserDefinedFunctionProperties userDefinedFunctionProperties,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.ReplaceUserDefinedFunctionInternalAsync(
-                userDefinedFunctionProperties: userDefinedFunctionProperties,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionInternalAsync(
+        public async Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions,
             ITrace trace,
@@ -953,20 +810,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 cancellationToken: cancellationToken);
         }
 
-        public Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
-            string id,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            return this.DeleteUserDefinedFunctionInternalAsync(
-                id: id,
-                requestOptions: requestOptions,
-                trace: trace,
-                cancellationToken: cancellationToken);
-        }
-
-        internal async Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionInternalAsync(
+        public async Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(
             string id,
             RequestOptions requestOptions,
             ITrace trace,
@@ -1007,32 +851,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ClientContext.ResponseFactory.CreateStoredProcedureResponse(response);
         }
 
-        private async Task<TriggerResponse> ProcessTriggerOperationAsync(
-            string id,
-            OperationType operationType,
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            string linkUri = this.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri,
-                uriPathSegment: Paths.TriggersPathSegment,
-                id: id);
-
-            ResponseMessage response = await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.Trigger,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                trace: trace,
-                cancellationToken: cancellationToken);
-
-            return this.ClientContext.ResponseFactory.CreateTriggerResponse(response);
-        }
-
         private Task<ResponseMessage> ProcessStreamOperationAsync(
             string resourceUri,
             ResourceType resourceType,
@@ -1054,55 +872,6 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 requestEnricher: null,
                 trace: trace,
                 cancellationToken: cancellationToken);
-        }
-
-        private async Task<T> ProcessScriptsCreateOperationAsync<T>(
-            string resourceUri,
-            ResourceType resourceType,
-            OperationType operationType,
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            Func<ResponseMessage, T> responseFunc,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            ResponseMessage response = await this.ProcessStreamOperationAsync(
-                resourceUri: resourceUri,
-                resourceType: resourceType,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: streamPayload, 
-                trace: trace,
-                cancellationToken: cancellationToken);
-
-            return responseFunc(response);
-        }
-
-        private async Task<UserDefinedFunctionResponse> ProcessUserDefinedFunctionOperationAsync(
-            string id,
-            OperationType operationType,
-            Stream streamPayload,
-            RequestOptions requestOptions,
-            ITrace trace,
-            CancellationToken cancellationToken)
-        {
-            string linkUri = this.ClientContext.CreateLink(
-                parentLink: this.container.LinkUri,
-                uriPathSegment: Paths.UserDefinedFunctionsPathSegment,
-                id: id);
-
-            ResponseMessage response = await this.ProcessStreamOperationAsync(
-                resourceUri: linkUri,
-                resourceType: ResourceType.UserDefinedFunction,
-                operationType: operationType,
-                requestOptions: requestOptions,
-                partitionKey: null,
-                streamPayload: streamPayload,
-                trace: trace,
-                cancellationToken: cancellationToken);
-
-            return this.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse(response);
         }
     }
 }
