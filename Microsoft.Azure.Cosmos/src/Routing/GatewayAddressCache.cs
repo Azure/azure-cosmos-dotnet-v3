@@ -740,7 +740,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             uri: targetEndpoint,
                             additionalHeaders: headers,
                             resourceType: resourceType,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                             clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                             cancellationToken: default,
                             documentServiceRequest: faultInjectionRequest))
@@ -756,7 +756,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     uri: targetEndpoint,
                     additionalHeaders: headers,
                     resourceType: resourceType,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                     cancellationToken: default))
                 {
@@ -846,7 +846,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             uri: targetEndpoint,
                             additionalHeaders: headers,
                             resourceType: ResourceType.Document,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                             clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                             cancellationToken: default,
                             documentServiceRequest: faultInjectionRequest))
@@ -862,7 +862,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     uri: targetEndpoint,
                     additionalHeaders: headers,
                     resourceType: ResourceType.Document,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                     cancellationToken: default))
                 {
