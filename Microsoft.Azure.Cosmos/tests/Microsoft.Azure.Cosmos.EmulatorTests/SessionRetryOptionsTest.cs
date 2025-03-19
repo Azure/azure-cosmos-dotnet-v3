@@ -46,8 +46,12 @@
             int sessionTokenMismatchRetryAttempts , Boolean remoteRegionPreferred)
         {
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
-            // if I go to first region for reading an item, I should get a 404/2002 response for 10 minutes
-            FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
+            Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
+            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
+            try
+            {
+                // if I go to first region for reading an item, I should get a 404/2002 response for 10 minutes
+                FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
                 id: "badSessionTokenRule",
                 condition:
                     new FaultInjectionConditionBuilder()
@@ -63,58 +67,59 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { badSessionTokenRule };
             FaultInjector faultInjector = new FaultInjector(rules);
             Assert.IsNotNull(faultInjector);
-
-
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                
                 SessionRetryOptions = new SessionRetryOptions()
                 {
                     RemoteRegionPreferred = remoteRegionPreferred,
-                    MinInRegionRetryTime = TimeSpan.FromMilliseconds(100),
-                    MaxInRegionRetryCount = sessionTokenMismatchRetryAttempts
                 },
+                
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,
             };
-
+            
             using (CosmosClient faultInjectionClient = new CosmosClient(
                 connectionString: this.connectionString,
                 clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
-            {
-                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
-                Container container = await database.CreateContainerIfNotExistsAsync("sessionRetryPolicy", "/id");
-                string GUID = Guid.NewGuid().ToString();
-                dynamic testObject = new
                 {
-                    id = GUID,
-                    name = "customer one",
-                    address = new
+                    Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                    Container container = await database.CreateContainerIfNotExistsAsync("sessionRetryPolicy", "/id");
+                    string GUID = Guid.NewGuid().ToString();
+                    dynamic testObject = new
                     {
-                        line1 = "45 new street",
-                        city = "mckinney",
-                        postalCode = "98989",
+                        id = GUID,
+                        name = "customer one",
+                        address = new
+                        {
+                            line1 = "45 new street",
+                            city = "mckinney",
+                            postalCode = "98989",
+                        }
+
+                    };
+
+                    ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(testObject);
+                    Assert.IsNotNull(response);
+
+                    OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, testObject);
+                    this.ValidateOperationExecutionResult(executionResult, remoteRegionPreferred);
+
+                    // For a non-write operation, the request can go to multiple replicas (upto 4 replicas)
+                    // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
+                    // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
+                    long hitCount = badSessionTokenRule.GetHitCount();
+
+                    if (remoteRegionPreferred)
+                    {
+                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4);
                     }
-
-                };
-
-                ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(testObject);
-                Assert.IsNotNull(response);
-                
-                OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, testObject);
-                this.ValidateOperationExecutionResult(executionResult, remoteRegionPreferred);
-
-                // For a non-write operation, the request can go to multiple replicas (upto 4 replicas)
-                // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
-                // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
-                long hitCount = badSessionTokenRule.GetHitCount();
-
-                if (remoteRegionPreferred)
-                {
-                    Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4); 
                 }
-                
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
             }
         }
 
@@ -135,7 +140,10 @@
         {
 
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
-            
+            Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
+            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
+
+            try { 
             FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
                 id: "badSessionTokenRule",
                 condition:
@@ -157,51 +165,52 @@
                 SessionRetryOptions = new SessionRetryOptions()
                 {
                     RemoteRegionPreferred = remoteRegionPreferred,
-                    MinInRegionRetryTime = TimeSpan.FromMilliseconds(100),
-                    MaxInRegionRetryCount = sessionTokenMismatchRetryAttempts
                 },
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,
             };
 
-            using (CosmosClient faultInjectionClient = new CosmosClient(
-                connectionString: this.connectionString,
-                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
-            {
-                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
-                Container container = await database.CreateContainerIfNotExistsAsync("sessionRetryPolicy", "/id");
-                string GUID = Guid.NewGuid().ToString();
-                dynamic testObject = new
+                using (CosmosClient faultInjectionClient = new CosmosClient(
+                    connectionString: this.connectionString,
+                    clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
                 {
-                    id = GUID,
-                    name = "customer one",
-                    address = new
+                    Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                    Container container = await database.CreateContainerIfNotExistsAsync("sessionRetryPolicy", "/id");
+                    string GUID = Guid.NewGuid().ToString();
+                    dynamic testObject = new
                     {
-                        line1 = "45 new street",
-                        city = "mckinney",
-                        postalCode = "98989",
+                        id = GUID,
+                        name = "customer one",
+                        address = new
+                        {
+                            line1 = "45 new street",
+                            city = "mckinney",
+                            postalCode = "98989",
+                        }
+
+                    };
+
+                    OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, testObject);
+                    this.ValidateOperationExecutionResult(executionResult, remoteRegionPreferred);
+
+                    // For a write operation, the request can just go to the primary replica
+                    // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
+                    // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
+                    long hitCount = badSessionTokenRule.GetHitCount();
+                    if (remoteRegionPreferred)
+                    {
+                        // higher hit count is possible while in MinRetryWaitTimeWithinRegion
+                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts);
                     }
-
-                };
-
-                OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, testObject);
-                this.ValidateOperationExecutionResult(executionResult, remoteRegionPreferred);
-
-                // For a write operation, the request can just go to the primary replica
-                // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
-                // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
-                long hitCount = badSessionTokenRule.GetHitCount();
-                if (remoteRegionPreferred)
-                {
-                    // higher hit count is possible while in MinRetryWaitTimeWithinRegion
-                    Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts);
                 }
-
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
             }
         }
-
-
 
         private void ValidateOperationExecutionResult(OperationExecutionResult operationExecutionResult, Boolean remoteRegionPreferred)
         {

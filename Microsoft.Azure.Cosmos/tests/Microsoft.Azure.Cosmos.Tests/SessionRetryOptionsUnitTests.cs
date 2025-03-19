@@ -14,77 +14,70 @@
     public class SessionRetryOptionsUnitTests
     {
         [TestMethod]
+        public void SessionRetryOptionsValidValuesTest()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "200");
+            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, "1");
+            try
+            {
+                CosmosClientOptions clientOptions = new CosmosClientOptions()
+                {
+                    SessionRetryOptions = new SessionRetryOptions()
+                    {
+                        RemoteRegionPreferred = true
+                    },
+                };
+
+                Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(200));
+                Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == 1);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
+            }
+
+        }
+
+        [TestMethod]
         public void SessionRetryOptionsDefaultValuesTest()
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
                 SessionRetryOptions = new SessionRetryOptions()
                 {
-                    RemoteRegionPreferred = true
-                },
-            };
-
-
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == ConfigurationManager.GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred());
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == ConfigurationManager.GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred());
-
-        }
-
-        [TestMethod]
-        public void SessionRetryOptionsCustomValuesTest()
-        {
-            CosmosClientOptions clientOptions = new CosmosClientOptions()
-            {
-                SessionRetryOptions = new SessionRetryOptions()
-                {
                     RemoteRegionPreferred = true,
-                    MinInRegionRetryTime = TimeSpan.FromSeconds(1),
-                    MaxInRegionRetryCount = 3
-
                 },
             };
 
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromSeconds(1));
-            Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == 3);
+            Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(500));
+            Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == 1);
 
         }
 
         [TestMethod]
-        public void SessionRetryOptionsMinMaxRetriesCountEnforcedTest()
+        public void SessionRetryOptionsInValidValuesTest()
         {
+            Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "50");
+            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, "0");
+            try
+            {
+                CosmosClientOptions clientOptions = new CosmosClientOptions()
+                {
+                    SessionRetryOptions = new SessionRetryOptions()
+                    {
+                        RemoteRegionPreferred = true
+                    },
+                };
 
-            ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() =>
-              new CosmosClientOptions()
-              {
-                  SessionRetryOptions = new SessionRetryOptions()
-                  {
-                      RemoteRegionPreferred = true,
-                      MaxInRegionRetryCount = 0
-
-                  },
-              }
-            );
-            Assert.IsNotNull(argumentException);
-
-        }
-
-
-        [TestMethod]
-        public void SessionRetryOptionsMinMinRetryTimeEnforcedTest()
-        {
-
-            ArgumentException argumentException = Assert.ThrowsException<ArgumentException>(() =>
-              new CosmosClientOptions()
-              {
-                  SessionRetryOptions = new SessionRetryOptions()
-                  {
-                      RemoteRegionPreferred = true,
-                      MinInRegionRetryTime = TimeSpan.FromMilliseconds(99)
-
-                  },
-              }
-            );
-            Assert.IsNotNull(argumentException);
+                Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(100));
+                Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == 1);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
+            }
 
         }
 
