@@ -1565,11 +1565,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
     {
         protected Scripts();
         public abstract Task<StoredProcedureResponse> CreateStoredProcedureAsync(StoredProcedureProperties storedProcedureProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> CreateStoredProcedureStreamAsync(StoredProcedureProperties storedProcedureProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<TriggerResponse> CreateTriggerAsync(TriggerProperties triggerProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> CreateTriggerStreamAsync(TriggerProperties triggerProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<UserDefinedFunctionResponse> CreateUserDefinedFunctionAsync(UserDefinedFunctionProperties userDefinedFunctionProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> CreateUserDefinedFunctionStreamAsync(UserDefinedFunctionProperties userDefinedFunctionProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<StoredProcedureResponse> DeleteStoredProcedureAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> DeleteStoredProcedureStreamAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<TriggerResponse> DeleteTriggerAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> DeleteTriggerStreamAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<UserDefinedFunctionResponse> DeleteUserDefinedFunctionAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> DeleteUserDefinedFunctionStreamAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<StoredProcedureExecuteResponse<TOutput>> ExecuteStoredProcedureAsync<TOutput>(string storedProcedureId, PartitionKey partitionKey, dynamic parameters, StoredProcedureRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(string storedProcedureId, PartitionKey partitionKey, dynamic parameters, StoredProcedureRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<ResponseMessage> ExecuteStoredProcedureStreamAsync(string storedProcedureId, Stream streamPayload, PartitionKey partitionKey, StoredProcedureRequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
@@ -1586,11 +1592,17 @@ namespace Microsoft.Azure.Cosmos.Scripts
         public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(QueryDefinition queryDefinition, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract FeedIterator GetUserDefinedFunctionQueryStreamIterator(string queryText=null, string continuationToken=null, QueryRequestOptions requestOptions=null);
         public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadStoredProcedureStreamAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<TriggerResponse> ReadTriggerAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadTriggerStreamAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReadUserDefinedFunctionStreamAsync(string id, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<StoredProcedureResponse> ReplaceStoredProcedureAsync(StoredProcedureProperties storedProcedureProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReplaceStoredProcedureStreamAsync(StoredProcedureProperties storedProcedureProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<TriggerResponse> ReplaceTriggerAsync(TriggerProperties triggerProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReplaceTriggerStreamAsync(TriggerProperties triggerProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(UserDefinedFunctionProperties userDefinedFunctionProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
+        public abstract Task<ResponseMessage> ReplaceUserDefinedFunctionStreamAsync(UserDefinedFunctionProperties userDefinedFunctionProperties, RequestOptions requestOptions=null, CancellationToken cancellationToken=default(CancellationToken));
     }
     public class StoredProcedureExecuteResponse<T> : Response<T>
     {
