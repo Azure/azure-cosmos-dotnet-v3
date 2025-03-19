@@ -301,7 +301,7 @@
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
                 retryOptions: new RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPertitionLevelFailoverEnabled: enablePartitionLevelFailover);
+                isPartitionLevelFailoverEnabled: enablePartitionLevelFailover);
 
             CancellationToken cancellationToken = new();
             OperationCanceledException operationCancelledException = new(message: "Operation was cancelled due to cancellation token expiry.");
