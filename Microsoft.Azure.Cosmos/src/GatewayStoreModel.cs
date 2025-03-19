@@ -77,7 +77,8 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
-                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType))
+                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                    && request.ResourceType.IsPartitioned())
                 {
                     (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
                         request: request,
