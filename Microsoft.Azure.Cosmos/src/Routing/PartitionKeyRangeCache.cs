@@ -36,10 +36,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             ICosmosAuthorizationTokenProvider authorizationTokenProvider,
             IStoreModel storeModel,
             CollectionCache collectionCache,
-            IGlobalEndpointManager endpointManager)
+            IGlobalEndpointManager endpointManager,
+            bool enableStackTraceOptimization = false)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
-                    keyEqualityComparer: StringComparer.Ordinal);
+                    keyEqualityComparer: StringComparer.Ordinal,
+                    enableStackTraceOptimization: enableStackTraceOptimization);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;

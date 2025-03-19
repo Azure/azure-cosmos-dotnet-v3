@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AsyncCacheNonBlocking<TKey, TValue> : IDisposable
     {
+        private readonly bool isStackTraceOptimizationEnabled;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
         private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
@@ -27,13 +28,11 @@ namespace Microsoft.Azure.Cosmos
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
         private bool isDisposed;
 
-        private static readonly bool isStackTraceOptimizationEnabled = string.Equals(Environment.GetEnvironmentVariable(ExceptionHandlingUtility.ExceptionHandlingForStackTraceOptimizationEnabled), "true",
-        StringComparison.OrdinalIgnoreCase);
-
         public AsyncCacheNonBlocking(
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            bool enableStackTraceOptimization = false)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
@@ -41,10 +40,13 @@ namespace Microsoft.Azure.Cosmos
             this.cancellationTokenSource = cancellationToken == default
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            this.isStackTraceOptimizationEnabled = enableStackTraceOptimization;
         }
 
-        public AsyncCacheNonBlocking()
-            : this(removeFromCacheOnBackgroundRefreshException: null, keyEqualityComparer: null)
+        public AsyncCacheNonBlocking(bool enableStackTraceOptimization = false)
+            : this(removeFromCacheOnBackgroundRefreshException: null,
+                  keyEqualityComparer: null,
+                  enableStackTraceOptimization: enableStackTraceOptimization)
         {
         }
 

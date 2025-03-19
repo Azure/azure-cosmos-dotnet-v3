@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos.Common
         /// </summary>
         protected class InternalCache
         {
-            internal InternalCache()
+            internal InternalCache(
+                bool enableStackTraceOptimization)
             {
                 this.collectionInfoByName = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
                 this.collectionInfoById = new AsyncCache<string, ContainerProperties>(new CollectionRidComparer());
@@ -48,11 +49,12 @@ namespace Microsoft.Azure.Cosmos.Common
         /// </summary>
         protected readonly InternalCache[] cacheByApiList;
 
-        protected CollectionCache()
+        protected CollectionCache(
+            bool enableStackTraceOptimization)
         {
             this.cacheByApiList = new InternalCache[2];
-            this.cacheByApiList[0] = new InternalCache(); // for API version < 2018-12-31
-            this.cacheByApiList[1] = new InternalCache(); // for API version >= 2018-12-31
+            this.cacheByApiList[0] = new InternalCache(enableStackTraceOptimization); // for API version < 2018-12-31
+            this.cacheByApiList[1] = new InternalCache(enableStackTraceOptimization); // for API version >= 2018-12-31
         }
 
         /// <summary>

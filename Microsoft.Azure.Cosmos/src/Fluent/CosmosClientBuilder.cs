@@ -813,5 +813,15 @@ namespace Microsoft.Azure.Cosmos.Fluent
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;
         }
+
+        /// <summary>
+        /// To enable stack trace optimization to reduce stack trace proliferation in high-concurrency scenarios where exceptions are frequently thrown.
+        /// When enabled, critical SDK components optimize exception handling to minimize performance overhead.
+        /// </summary>
+        internal CosmosClientBuilder WithStackTraceOptimizationEnabled()
+        {
+            this.clientOptions.EnableStackTraceOptimization = true;
+            return this;
+        }
     }
 }

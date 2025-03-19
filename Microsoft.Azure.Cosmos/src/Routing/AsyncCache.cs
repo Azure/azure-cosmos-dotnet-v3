@@ -20,23 +20,26 @@ namespace Microsoft.Azure.Cosmos.Common
     /// <typeparam name="TValue">Type of values.</typeparam>
     internal sealed class AsyncCache<TKey, TValue>
     {
+        private readonly bool isStackTraceOptimizationEnabled;
         private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
 
         private ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
 
-        private static readonly bool isStackTraceOptimizationEnabled = string.Equals(Environment.GetEnvironmentVariable(ExceptionHandlingUtility.ExceptionHandlingForStackTraceOptimizationEnabled), "true",
-        StringComparison.OrdinalIgnoreCase);
-
-        public AsyncCache(IEqualityComparer<TValue> valueEqualityComparer, IEqualityComparer<TKey> keyEqualityComparer = null)
+        public AsyncCache(
+            IEqualityComparer<TValue> valueEqualityComparer,
+            IEqualityComparer<TKey> keyEqualityComparer = null,
+            bool enableStackTraceOptimization = false)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);
             this.valueEqualityComparer = valueEqualityComparer;
+            this.isStackTraceOptimizationEnabled = enableStackTraceOptimization;
         }
 
-        public AsyncCache()
-            : this(EqualityComparer<TValue>.Default)
+        public AsyncCache(bool enableStackTraceOptimization = false)
+            : this(valueEqualityComparer: EqualityComparer<TValue>.Default,
+                  enableStackTraceOptimization: enableStackTraceOptimization)
         {
         }
 
@@ -156,7 +159,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 // If the lambda this thread added to values triggered an exception remove it from the cache.
                 this.TryRemoveValue(key, actualValue);
 
-                if (isStackTraceOptimizationEnabled)
+                if (this.isStackTraceOptimizationEnabled)
                 {
                     // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
                     // and rethrows them, doesn't process other exceptions.
