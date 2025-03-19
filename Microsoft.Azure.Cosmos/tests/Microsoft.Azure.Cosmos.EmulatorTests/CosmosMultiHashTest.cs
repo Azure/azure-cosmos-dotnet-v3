@@ -510,5 +510,50 @@
                 }
             }
         }
+
+        [TestMethod]
+        public async Task ReadManyNullPkValueTest()
+        {
+            Document doc = new Document { Id = "readMany" };
+            doc.SetValue("ZipCode", "10000");
+
+            await this.container.CreateItemAsync<Document>(doc);
+
+            Cosmos.PartitionKey pk = new PartitionKeyBuilder()
+                .Add("10000")
+                .AddNoneType()
+                .Build();
+
+            ItemResponse<Document> ir = await this.container.ReadItemAsync<Document>("readMany", pk);
+            Assert.IsNotNull(ir.Resource);
+            Assert.AreEqual(ir.StatusCode, HttpStatusCode.OK);
+
+            FeedResponse<Document> feedResponse = await this.container.ReadManyItemsAsync<Document>(
+                new List<(string, Cosmos.PartitionKey)> { ("readMany", pk) });
+
+            Assert.AreEqual(1, feedResponse.Count());
+        }
+
+        [TestMethod]
+        public async Task ReadManyAllNullPkValueTest()
+        {
+            Document doc = new Document { Id = "readMany" };
+
+            await this.container.CreateItemAsync<Document>(doc);
+
+            Cosmos.PartitionKey pk = new PartitionKeyBuilder()
+                .AddNoneType()
+                .AddNoneType()
+                .Build();
+
+            ItemResponse<Document> ir = await this.container.ReadItemAsync<Document>("readMany", pk);
+            Assert.IsNotNull(ir.Resource);
+            Assert.AreEqual(ir.StatusCode, HttpStatusCode.OK);
+
+            FeedResponse<Document> feedResponse = await this.container.ReadManyItemsAsync<Document>(
+                new List<(string, Cosmos.PartitionKey)> { ("readMany", pk) });
+            
+            Assert.AreEqual(1, feedResponse.Count());
+        }
     }
 }
