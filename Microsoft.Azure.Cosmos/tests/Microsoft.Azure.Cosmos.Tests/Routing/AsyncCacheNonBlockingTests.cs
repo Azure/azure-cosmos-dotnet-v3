@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [ExpectedException(typeof(NotFoundException))]
         public async Task ValidateNegativeScenario(bool forceRefresh)
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             await asyncCache.GetAsync(
                 "test",
                 async (_) =>
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public async Task ValidateMultipleBackgroundRefreshesScenario()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
 
             string expectedValue = "ResponseValue";
             string response = await asyncCache.GetAsync(
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [ExpectedException(typeof(NotFoundException))]
         public async Task ValidateNegativeNotAwaitedScenario()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             Task task1 = asyncCache.GetAsync(
                 "test",
                 async (_) =>
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task ValidateNotFoundOnBackgroundRefreshRemovesFromCacheScenario()
         {
             string value1 = "Response1Value";
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             string response1 = await asyncCache.GetAsync(
                 "test",
                 async (_) =>
@@ -171,7 +171,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateAsyncCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             string result = await asyncCache.GetAsync(
                 "test",
                 (_) => Task.FromResult("test2"),
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateCacheValueIsRemovedAfterException()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             string result = await asyncCache.GetAsync(
                 key: "test",
                 singleValueInitFunc: (_) => Task.FromResult("test2"),
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateConcurrentCreateAsyncCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             int totalLazyCalls = 0;
 
             List<Task> tasks = new List<Task>();
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateConcurrentCreateWithFailureAsyncCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             int totalLazyCalls = 0;
 
             Random random = new Random();
@@ -331,7 +331,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [Owner("jawilley")]
         public async Task ValidateExceptionScenariosCacheNonBlocking()
         {
-            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>();
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: false);
             int totalLazyCalls = 0;
 
             try
@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task Refresh_WhenRefreshRequestedForAnExistingKey_ShouldRefreshTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new();
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -437,7 +437,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task Refresh_WhenThrowsDocumentClientException_ShouldRemoveKeyFromTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new();
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(
@@ -491,7 +491,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public async Task Refresh_WhenThrowsOtherException_ShouldNotRemoveKeyFromTheCache()
         {
             // Arrange.
-            AsyncCacheNonBlocking<string, string> asyncCache = new();
+            AsyncCacheNonBlocking<string, string> asyncCache = new (enableAsyncCacheExceptionNoSharing: false);
 
             // Act and Assert.
             string result = await asyncCache.GetAsync(

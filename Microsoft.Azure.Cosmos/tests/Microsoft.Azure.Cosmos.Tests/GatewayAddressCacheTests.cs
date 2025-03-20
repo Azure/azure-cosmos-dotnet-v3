@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
             this.partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(containerProperties));
 
             string exceptionMessage = "Failed to lookup partition key ranges.";
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null, false);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = TimeSpan.FromSeconds(120)
             };
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -1644,7 +1644,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
