@@ -209,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<bool>()))
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
-            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);
 
             this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
                                                                 this.ConnectionPolicy,
