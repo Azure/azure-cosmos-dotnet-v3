@@ -37,7 +37,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             IStoreModel storeModel,
             CollectionCache collectionCache,
             IGlobalEndpointManager endpointManager,
-            bool enableAsyncCacheExceptionNoSharing)
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
