@@ -2371,7 +2371,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
-            IReadOnlyJsonStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string> { "GlossDiv", "title" });
+            IJsonReadOnlyStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string> { "GlossDiv", "title" });
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
@@ -2570,7 +2570,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             this.VerifyReader(input, expectedTokens);
             this.VerifyReader(binaryInput, expectedTokens);
 
-            IReadOnlyJsonStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string> { "double", "string", "boolean", "null", "datetime", "spatialPoint", "text" });
+            IJsonReadOnlyStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string> { "double", "string", "boolean", "null", "datetime", "spatialPoint", "text" });
             this.VerifyReader(binaryInputWithEncoding, expectedTokens, jsonStringDictionary);
         }
 
@@ -3213,7 +3213,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 expectedException);
         }
 
-        private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, IReadOnlyJsonStringDictionary jsonStringDictionary = null, Exception expectedException = null)
+        private void VerifyReader(ReadOnlyMemory<byte> input, JsonToken[] expectedTokens, IJsonReadOnlyStringDictionary jsonStringDictionary = null, Exception expectedException = null)
         {
             // Test binary reader created with the array API
             this.VerifyReader(() => JsonReader.Create(input, jsonStringDictionary), expectedTokens, expectedException);

@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <returns>A concrete JsonNavigator that can navigate the supplied buffer.</returns>
         public static IJsonNavigator Create(
             ReadOnlyMemory<byte> buffer,
-            IReadOnlyJsonStringDictionary jsonStringDictionary = null)
+            IJsonReadOnlyStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {

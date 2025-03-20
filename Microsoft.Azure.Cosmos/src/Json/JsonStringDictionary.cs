@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    sealed class JsonStringDictionary : IReadOnlyJsonStringDictionary, IEquatable<JsonStringDictionary>
+    sealed class JsonStringDictionary : IJsonReadOnlyStringDictionary, IEquatable<JsonStringDictionary>
     {
         private const int MaxStackAllocSize = 4 * 1024;
         private const int MaxDictionarySize = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return this.checksum == other.checksum;
         }
 
-        public bool Equals(IReadOnlyJsonStringDictionary other)
+        public bool Equals(IJsonReadOnlyStringDictionary other)
         {
             if (other == null)
             {

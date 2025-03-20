@@ -13,7 +13,18 @@
         [Owner("mayapainter")]
         public void TestBasicCase()
         {
-            // test case sensitive, repeat strings in cnstr
+            List<string> strings = new List<string> { "test0", "test1", "test2", "test3", "test4", "test5" };
+            JsonStringDictionary stringDictionary = new JsonStringDictionary(strings);
+            Assert.AreEqual(6, stringDictionary.GetCount());
+
+            for (int i = 0; i < stringDictionary.GetCount(); i++)
+            {
+                Assert.IsTrue(stringDictionary.TryGetString(i, out UtfAllString value));
+                Assert.AreEqual(strings[i], value.Utf16String);
+
+                Assert.IsTrue(stringDictionary.TryGetIndex(value.Utf8String.Span, out int index));
+                Assert.AreEqual(i, index);
+            }        
         }
 
         [TestMethod]
@@ -48,27 +59,27 @@
         [Owner("mayapainter")]
         public void TestDictionaryComparison()
         {
-            IReadOnlyJsonStringDictionary stringDictionary0 = new JsonStringDictionary();
+            IJsonReadOnlyStringDictionary stringDictionary0 = new JsonStringDictionary();
 
             // Null comparison and reference-equals comparison.
             Assert.IsFalse(stringDictionary0.Equals(null));
             Assert.IsTrue(stringDictionary0.Equals(stringDictionary0));
 
             // Subset comparison
-            IReadOnlyJsonStringDictionary stringDictionary1 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
-            IReadOnlyJsonStringDictionary stringDictionary2 = new JsonStringDictionary(new List<string> { "test0", "test1" });
+            IJsonReadOnlyStringDictionary stringDictionary1 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
+            IJsonReadOnlyStringDictionary stringDictionary2 = new JsonStringDictionary(new List<string> { "test0", "test1" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary2));
 
             // Value-equals comparison
-            IReadOnlyJsonStringDictionary stringDictionary3 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
+            IJsonReadOnlyStringDictionary stringDictionary3 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
             Assert.IsTrue(stringDictionary1.Equals(stringDictionary3));
 
             // Superset comparison
-            IReadOnlyJsonStringDictionary stringDictionary4 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2", "test3" });
+            IJsonReadOnlyStringDictionary stringDictionary4 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2", "test3" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary4));
 
             // Order-sensitive comparison
-            IReadOnlyJsonStringDictionary stringDictionary5 = new JsonStringDictionary(new List<string> { "test1", "test0", "test2" });
+            IJsonReadOnlyStringDictionary stringDictionary5 = new JsonStringDictionary(new List<string> { "test1", "test0", "test2" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary5));
         }
     }

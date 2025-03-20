@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    interface IReadOnlyJsonStringDictionary : IEquatable<IReadOnlyJsonStringDictionary>
+    interface IJsonReadOnlyStringDictionary : IEquatable<IJsonReadOnlyStringDictionary>
     {
         bool TryGetString(int index, out UtfAllString value);
 

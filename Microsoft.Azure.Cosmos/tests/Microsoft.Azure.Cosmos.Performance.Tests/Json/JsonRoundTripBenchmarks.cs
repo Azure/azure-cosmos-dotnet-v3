@@ -111,7 +111,7 @@
                 string name,
                 ReadOnlyMemory<byte> text,
                 ReadOnlyMemory<byte> binary,
-                (ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary dictionary) binaryWithDictionaryEncoding)
+                (ReadOnlyMemory<byte> binary, IJsonReadOnlyStringDictionary dictionary) binaryWithDictionaryEncoding)
             {
                 this.Name = name;
                 this.Text = text;
@@ -122,7 +122,7 @@
             public string Name { get; }
             public ReadOnlyMemory<byte> Text { get; }
             public ReadOnlyMemory<byte> Binary { get; }
-            internal (ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
+            internal (ReadOnlyMemory<byte> binary, IJsonReadOnlyStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
 
             public static CuratedDocsPayload CreateFromCuratedDocs(string name)
             {
@@ -139,7 +139,7 @@
 
                     ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                     ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, out IReadOnlyJsonStringDictionary jsonStringDictionary);
+                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, out IJsonReadOnlyStringDictionary jsonStringDictionary);
 
                     return new CuratedDocsPayload(
                         name: name,
