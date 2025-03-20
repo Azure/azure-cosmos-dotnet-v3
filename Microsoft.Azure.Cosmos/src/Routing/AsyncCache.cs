@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Common
     /// <typeparam name="TValue">Type of values.</typeparam>
     internal sealed class AsyncCache<TKey, TValue>
     {
-        private readonly bool isStackTraceOptimizationEnabled;
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
 
@@ -29,17 +29,17 @@ namespace Microsoft.Azure.Cosmos.Common
         public AsyncCache(
             IEqualityComparer<TValue> valueEqualityComparer,
             IEqualityComparer<TKey> keyEqualityComparer = null,
-            bool enableStackTraceOptimization = false)
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);
             this.valueEqualityComparer = valueEqualityComparer;
-            this.isStackTraceOptimizationEnabled = enableStackTraceOptimization;
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
         }
 
-        public AsyncCache(bool enableStackTraceOptimization = false)
+        public AsyncCache(bool enableStackTraceOptimization = true)
             : this(valueEqualityComparer: EqualityComparer<TValue>.Default,
-                  enableStackTraceOptimization: enableStackTraceOptimization)
+                  enableAsyncCacheExceptionNoSharing: enableStackTraceOptimization)
         {
         }
 

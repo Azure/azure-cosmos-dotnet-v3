@@ -29,15 +29,15 @@ namespace Microsoft.Azure.Cosmos.Common
         protected class InternalCache
         {
             internal InternalCache(
-                bool enableStackTraceOptimization)
+                bool enableAsyncCacheExceptionNoSharing)
             {
                 this.collectionInfoByName = new AsyncCache<string, ContainerProperties>(
                     new CollectionRidComparer(),
-                    enableStackTraceOptimization: enableStackTraceOptimization);
+                    enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing);
 
                 this.collectionInfoById = new AsyncCache<string, ContainerProperties>(
                     new CollectionRidComparer(),
-                    enableStackTraceOptimization: enableStackTraceOptimization);
+                    enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing);
 
                 this.collectionInfoByNameLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
                 this.collectionInfoByIdLastRefreshTime = new ConcurrentDictionary<string, DateTime>();
@@ -56,11 +56,11 @@ namespace Microsoft.Azure.Cosmos.Common
         protected readonly InternalCache[] cacheByApiList;
 
         protected CollectionCache(
-            bool enableStackTraceOptimization)
+            bool enableAsyncCacheExceptionNoSharing)
         {
             this.cacheByApiList = new InternalCache[2];
-            this.cacheByApiList[0] = new InternalCache(enableStackTraceOptimization); // for API version < 2018-12-31
-            this.cacheByApiList[1] = new InternalCache(enableStackTraceOptimization); // for API version >= 2018-12-31
+            this.cacheByApiList[0] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version < 2018-12-31
+            this.cacheByApiList[1] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version >= 2018-12-31
         }
 
         /// <summary>

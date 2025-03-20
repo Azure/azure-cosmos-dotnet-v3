@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
-        private readonly bool enableStackTraceOptimization;
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IConnectionStateListener connectionStateListener;
         private IOpenConnectionsHandler openConnectionsHandler;
 
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             ConnectionPolicy connectionPolicy,
             CosmosHttpClient httpClient,
             IConnectionStateListener connectionStateListener,
-            bool enableStackTraceOptimization = false)
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
 
-            this.enableStackTraceOptimization = enableStackTraceOptimization;
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.connectionStateListener,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
                         replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
-                        enableStackTraceOptimization: this.enableStackTraceOptimization);
+                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);

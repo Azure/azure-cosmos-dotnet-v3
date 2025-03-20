@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = false)
+                              bool enableAsyncCacheExceptionNoSharing = true)
         {
             if (sendingRequestEventArgs != null)
             {

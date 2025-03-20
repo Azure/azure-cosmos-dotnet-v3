@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
             ConnectionPolicy connectionPolicy,
-            bool enableStackTraceOptimization = false)
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.locationCache = new LocationCache(
                 new ReadOnlyCollection<string>(connectionPolicy.PreferredLocations),
@@ -59,7 +59,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.connectionPolicy = connectionPolicy;
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
-            this.databaseAccountCache = new AsyncCache<string, AccountProperties>(enableStackTraceOptimization);
+            this.databaseAccountCache = new AsyncCache<string, AccountProperties>(enableAsyncCacheExceptionNoSharing);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20
