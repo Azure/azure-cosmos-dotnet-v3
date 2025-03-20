@@ -51,20 +51,20 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(CosmosLinqExtensions))
                 {
                     // CosmosLinq Extensions can be RegexMatch, DocumentId or Type check functions (IsString, IsBool, etc.)
-                    if ((methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.RegexMatch)) ||
-                        (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.FullTextContains)) ||
-                        (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.FullTextContainsAll)) ||
-                        (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.FullTextContainsAny)))
+                    switch (methodCallExpression.Method.Name)
                     {
-                        return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.RegexMatch):
+                        case nameof(CosmosLinqExtensions.FullTextContains):
+                        case nameof(CosmosLinqExtensions.FullTextContainsAll):
+                        case nameof(CosmosLinqExtensions.FullTextContainsAny):
+                            return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.DocumentId):
+                        case nameof(CosmosLinqExtensions.RRF):
+                        case nameof(CosmosLinqExtensions.FullTextScore):
+                            return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
+                        default:
+                            return TypeCheckFunctions.Visit(methodCallExpression, context);
                     }
-
-                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.DocumentId))
-                    {
-                        return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
-                    }
-
-                    return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
             }
             else
