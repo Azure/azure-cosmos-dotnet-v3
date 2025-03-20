@@ -939,6 +939,86 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(properties);
         }
 
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        [Owner("amudumba")]
+        public async Task ValidateAsyncExceptionNoSharing(bool asyncCacheExceptionNoSharing)
+        {
+            TimeoutException exception = new TimeoutException("HTTP Timeout exception", new TimeoutException("Inner exception message"));
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                //Set the pre-request event handler to throw a pre-defined timeout exception.
+                SendingRequestEventArgs = (sender, e) =>
+                {
+                    if (e.IsHttpRequest())
+                    {
+                        string endWith = "partitionKeyRangeIds=0";
+                        if (e.HttpRequest.RequestUri.OriginalString.EndsWith(endWith))
+                        {
+                            if (e.HttpRequest.Method == HttpMethod.Get &&
+                            e.HttpRequest.RequestUri.OriginalString.EndsWith(endWith))
+                            {
+                                throw exception;
+                            }
+                        }
+                    }
+                },
+                EnableAsyncCacheExceptionNoSharing = asyncCacheExceptionNoSharing
+            };
+
+            Cosmos.Database db = null;
+            try
+            {
+                CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions);
+
+                db = await cosmosClient.CreateDatabaseIfNotExistsAsync("TimeoutFaultTest");
+                Container container = await db.CreateContainerIfNotExistsAsync("TimeoutFaultContainer", "/pk");
+
+                // Shared TaskCompletionSource ensures all tasks start together
+                TaskCompletionSource<object> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+                int iterations = 3;// Simulating 3 concurrent write requests
+                List<Task> createTasks = new List<Task>();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    createTasks.Add(Task.Run(async () =>
+                    {
+                        await tcs.Task; // All tasks wait before proceeding
+
+                        ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                        await container.CreateItemAsync(testItem);
+                    }));
+                }
+
+                // Signal all tasks to start
+                tcs.SetResult(null);
+
+                // Wait for all tasks to complete (they should all fail)
+                await Task.WhenAll(createTasks);
+
+
+            }
+            catch (TimeoutException tex)
+            {
+                if (asyncCacheExceptionNoSharing)
+                {
+                    //asyncCacheExceptionNoSharing feature is enabled. Shallow copies of the exception will be thrown.
+                    Assert.IsFalse(Object.ReferenceEquals(tex, exception), "Exception should not be the same");
+                }
+                else
+                {
+                    //asyncCacheExceptionNoSharing feature is disabled. Exceptions will be thrown as is.
+                    Assert.IsTrue(Object.ReferenceEquals(tex, exception), "Exception should be the same");
+                }
+            }
+            finally
+            {
+                if (db != null) await db.DeleteAsync();
+            }
+        }
+
         [TestMethod]
         [Owner("amudumba")]
         public async Task CreateItemDuringTimeoutTest()

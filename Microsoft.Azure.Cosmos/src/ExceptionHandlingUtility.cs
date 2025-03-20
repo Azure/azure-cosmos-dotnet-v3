@@ -21,24 +21,28 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public static void CloneAndRethrowException(Exception e)
         {
-            if (e is ICloneable ex)
+            Exception ex = e switch
             {
-                throw (Exception)ex.Clone();
+                ICloneable cloneableEx => (Exception)cloneableEx.Clone(),
+                TaskCanceledException taskCanceledEx => AddMessageData(new TaskCanceledException(taskCanceledEx.Message, taskCanceledEx), e),
+                TimeoutException timeoutEx => AddMessageData(new TimeoutException(timeoutEx.Message, timeoutEx), e),
+                _ => null
+            };
+
+            if (ex is not null)
+            {
+                throw ex;
+            }
+        }
+
+        private static Exception AddMessageData(Exception target, Exception source)
+        {
+            if (source.Data.Contains("Message"))
+            {
+                target.Data["Message"] = source.Data["Message"];
             }
 
-            if (e is TaskCanceledException)
-            {
-                TaskCanceledException taskCanceledEx = new TaskCanceledException(e.Message, e.InnerException);
-                taskCanceledEx.Data["Message"] = e.Data["Message"];
-                throw taskCanceledEx;
-            }
-
-            if (e is TimeoutException)
-            {
-                TimeoutException timeoutEx = new TimeoutException(e.Message, e.InnerException);
-                timeoutEx.Data["Message"] = e.Data["Message"];
-                throw timeoutEx;
-            }
+            return target;
         }
     }
 }

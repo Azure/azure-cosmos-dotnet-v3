@@ -164,8 +164,19 @@ namespace Microsoft.Azure.Cosmos.Common
                     // and rethrows them, doesn't process other exceptions.
                     ExceptionHandlingUtility.CloneAndRethrowException(ex);
                 }
-                throw ex;
+                throw;
             }
+            catch (Exception ex)
+            {
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                    // and rethrows them, doesn't process other exceptions.
+                    ExceptionHandlingUtility.CloneAndRethrowException(ex);
+                }
+                throw;
+            }
+
         }
 
         public void Remove(TKey key)

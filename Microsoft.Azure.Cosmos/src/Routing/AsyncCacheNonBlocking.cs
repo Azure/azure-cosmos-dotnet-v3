@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
                         // and rethrows them, doesn't process other exceptions.
                         ExceptionHandlingUtility.CloneAndRethrowException(e);
                     }
-                    throw e;
+                    throw;
                 }
 
                 return await this.UpdateCacheAndGetValueFromBackgroundTaskAsync(
@@ -167,6 +167,13 @@ namespace Microsoft.Azure.Cosmos
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
+
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                    // and rethrows them, doesn't process other exceptions.
+                    ExceptionHandlingUtility.CloneAndRethrowException(e);
+                }
                 throw;
             }
         }
