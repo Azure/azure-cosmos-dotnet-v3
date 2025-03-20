@@ -10,6 +10,7 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
 
     internal class JsonTestUtils
     {
@@ -60,7 +61,12 @@
             IEnumerable<ObjectProperty> properties = navigator.GetObjectProperties(node);
             foreach (ObjectProperty property in properties)
             {
-                strings.Add(navigator.GetStringValue(property.NameNode));
+                string propertyName = navigator.GetStringValue(property.NameNode);
+                if (!JsonBinaryEncoding.SystemStrings.Strings.Contains(UtfAllString.Create(propertyName)))
+                {
+                    strings.Add(propertyName);
+                }
+
                 JsonNodeType nodeType = navigator.GetNodeType(property.ValueNode);
                 if (nodeType == JsonNodeType.Array)
                 {

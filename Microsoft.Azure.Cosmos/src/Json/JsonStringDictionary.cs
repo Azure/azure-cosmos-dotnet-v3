@@ -78,6 +78,41 @@ namespace Microsoft.Azure.Cosmos.Json
             return this.utf8StringToIndex.TryGetValue(value.Span, out index);
         }
 
+        public bool Equals(JsonStringDictionary other)
+        {
+            if (object.ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (other == null)
+            {
+                return false;
+            }
+
+            return this.checksum == other.checksum;
+        }
+
+        public bool Equals(IReadOnlyJsonStringDictionary other)
+        {
+            if (other == null)
+            {
+                return false;
+            }
+
+            if (!(other is JsonStringDictionary otherDictionary))
+            {
+                throw new NotImplementedException();
+            }
+
+            return this.Equals(otherDictionary);
+        }
+
+        public int GetCount()
+        {
+            return this.strings.Count;
+        }
+
         private bool TryAddString(string value, int maxCount, out int index)
         {
             int utf8Length = Encoding.UTF8.GetByteCount(value);
@@ -110,36 +145,6 @@ namespace Microsoft.Azure.Cosmos.Json
             this.SetChecksum();
 
             return true;
-        }
-
-        public bool Equals(JsonStringDictionary other)
-        {
-            if (object.ReferenceEquals(this, other))
-            {
-                return true;
-            }
-
-            if (other == null)
-            {
-                return false;
-            }
-
-            return this.checksum == other.checksum;
-        }
-
-        public bool Equals(IReadOnlyJsonStringDictionary other)
-        {
-            if (other == null)
-            {
-                return false;
-            }
-
-            if (!(other is IReadOnlyJsonStringDictionary otherDictionary))
-            {
-                throw new NotImplementedException();
-            }
-
-            return this.Equals(otherDictionary);
         }
 
         public override int GetHashCode()

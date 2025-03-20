@@ -8140,7 +8140,9 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
-            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, new JsonStringDictionary());
+
+            IReadOnlyJsonStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, jsonStringDictionary);
         }
 
         [TestMethod]
@@ -8343,7 +8345,9 @@
 
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
-            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, new JsonStringDictionary());
+
+            IReadOnlyJsonStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
+            this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, jsonStringDictionary);
         }
         #endregion
 
