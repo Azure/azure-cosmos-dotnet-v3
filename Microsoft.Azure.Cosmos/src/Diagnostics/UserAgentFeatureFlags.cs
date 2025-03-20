@@ -16,5 +16,7 @@ namespace Microsoft.Azure.Cosmos
     internal enum UserAgentFeatureFlags
     {
         PerPartitionAutomaticFailover = 1,
+
+        PerPartitionCircuitBreaker = 2,
     }
 }

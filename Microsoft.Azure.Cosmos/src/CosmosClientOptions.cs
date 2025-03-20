@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
         private IFaultInjector faultInjector;
+        private bool isCustomSerializerProvided;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -625,6 +626,7 @@ namespace Microsoft.Azure.Cosmos
                         $"{nameof(this.Serializer)} is not compatible with {nameof(this.SerializerOptions)} or {nameof(this.UseSystemTextJsonSerializerWithOptions)}. Only one can be set.  ");
                 }
 
+                this.isCustomSerializerProvided = true;
                 this.serializerInternal = value;
             }
         }
@@ -728,6 +730,13 @@ namespace Microsoft.Azure.Cosmos
         /// Enable partition key level failover
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+
+        /// <summary>
+        /// Enable partition level circuit breaker (aka PPCB). For compute gateway use case, by default per partition automatic failover will be disabled, so does the PPCB.
+        /// If compute gateway chooses to enable PPAF, then the .NET SDK will enable PPCB by default, which will improve the read availability and latency. This would mean
+        /// when PPAF is enabled, the SDK will automatically enable PPCB as well.
+        /// </summary>
+        internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
@@ -981,6 +990,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
+                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
@@ -1083,6 +1093,11 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return clientOptions;
+        }
+
+        internal bool IsCustomSerializerProvided()
+        {
+            return this.isCustomSerializerProvided;
         }
 
         private static T GetValueFromConnectionString<T>(string connectionString, string keyName, T defaultValue)
@@ -1212,6 +1227,11 @@ namespace Microsoft.Azure.Cosmos
             if (this.EnablePartitionLevelFailover)
             {
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
             if (featureFlag == 0)
