@@ -94,7 +94,7 @@
             private Payload(
                 ReadOnlyMemory<byte> text,
                 ReadOnlyMemory<byte> binary,
-                (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) binaryWithDictionaryEncoding)
+                (ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary dictionary) binaryWithDictionaryEncoding)
             {
                 this.Text = text;
                 this.Binary = binary;
@@ -103,14 +103,13 @@
 
             public ReadOnlyMemory<byte> Text { get; }
             public ReadOnlyMemory<byte> Binary { get; }
-            public (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
+            public (ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
 
             public static Payload Create(string json)
             {
                 ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                 ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
-                ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
+                ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, out IReadOnlyJsonStringDictionary jsonStringDictionary);
 
                 return new Payload(
                     text,

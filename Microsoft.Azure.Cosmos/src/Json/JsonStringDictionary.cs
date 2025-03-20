@@ -18,14 +18,13 @@ namespace Microsoft.Azure.Cosmos.Json
 #else
     internal
 #endif
-    sealed class JsonStringDictionary : IJsonStringDictionary, IEquatable<JsonStringDictionary>
+    sealed class JsonStringDictionary : IReadOnlyJsonStringDictionary, IEquatable<JsonStringDictionary>
     {
         private const int MaxStackAllocSize = 4 * 1024;
         private const int MaxDictionarySize = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
 
         private readonly List<UtfAllString> strings;
         private readonly Trie<byte, int> utf8StringToIndex;
-        private readonly bool readOnly;
 
         private int size;
         private UInt128 checksum;
@@ -34,15 +33,13 @@ namespace Microsoft.Azure.Cosmos.Json
         {
             this.strings = new List<UtfAllString>();
             this.utf8StringToIndex = new Trie<byte, int>();
-            this.readOnly = false;
             this.SetChecksum();
         }
 
-        public JsonStringDictionary(IReadOnlyList<string> userStrings, bool readOnly)
+        public JsonStringDictionary(IReadOnlyList<string> userStrings)
         {
             this.strings = new List<UtfAllString>();
             this.utf8StringToIndex = new Trie<byte, int>();
-            this.readOnly = readOnly;
 
             if (userStrings == null)
             {
@@ -81,12 +78,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return this.utf8StringToIndex.TryGetValue(value.Span, out index);
         }
 
-        public IJsonStringDictionary AsMutableJsonStringDictionary()
-        {
-            return this.readOnly ? null : this;
-        }
-
-        public bool TryAddString(string value, int maxCount, out int index)
+        private bool TryAddString(string value, int maxCount, out int index)
         {
             int utf8Length = Encoding.UTF8.GetByteCount(value);
             Span<byte> utfString = utf8Length < JsonStringDictionary.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
@@ -95,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return this.TryAddString(Utf8Span.UnsafeFromUtf8BytesNoValidation(utfString), maxCount, out index);
         }
 
-        public bool TryAddString(Utf8Span value, int maxCount, out int index)
+        private bool TryAddString(Utf8Span value, int maxCount, out int index)
         {
             // If the string already exists, return that index.
             if (this.utf8StringToIndex.TryGetValue(value.Span, out index))
@@ -142,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            if (!(other is JsonStringDictionary otherDictionary))
+            if (!(other is IReadOnlyJsonStringDictionary otherDictionary))
             {
                 throw new NotImplementedException();
             }

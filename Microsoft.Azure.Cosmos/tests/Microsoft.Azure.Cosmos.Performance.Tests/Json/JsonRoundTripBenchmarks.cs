@@ -14,22 +14,22 @@
     {
         private static class Payloads
         {
-            //public static readonly CurratedDocsPayload CombinedScriptsData = CurratedDocsPayload.CreateFromCurratedDocs("CombinedScriptsData");
-            //public static readonly CurratedDocsPayload Countries = CurratedDocsPayload.CreateFromCurratedDocs("countries");
-            //public static readonly CurratedDocsPayload Devtestcoll = CurratedDocsPayload.CreateFromCurratedDocs("devtestcoll");
-            //public static readonly CurratedDocsPayload Lastfm = CurratedDocsPayload.CreateFromCurratedDocs("lastfm");
-            //public static readonly CurratedDocsPayload LogData = CurratedDocsPayload.CreateFromCurratedDocs("LogData");
-            //public static readonly CurratedDocsPayload MillionSong1KDocuments = CurratedDocsPayload.CreateFromCurratedDocs("MillionSong1KDocuments");
-            //public static readonly CurratedDocsPayload MsnCollection = CurratedDocsPayload.CreateFromCurratedDocs("MsnCollection");
-            public static readonly CurratedDocsPayload NutritionData = CurratedDocsPayload.CreateFromCurratedDocs("NutritionData");
-            //public static readonly CurratedDocsPayload RunsCollection = CurratedDocsPayload.CreateFromCurratedDocs("runsCollection");
-            //public static readonly CurratedDocsPayload StatesCommittees = CurratedDocsPayload.CreateFromCurratedDocs("states_committees");
-            //public static readonly CurratedDocsPayload StatesLegislators = CurratedDocsPayload.CreateFromCurratedDocs("states_legislators");
-            //public static readonly CurratedDocsPayload Store01C = CurratedDocsPayload.CreateFromCurratedDocs("store01C");
-            //public static readonly CurratedDocsPayload TicinoErrorBuckets = CurratedDocsPayload.CreateFromCurratedDocs("TicinoErrorBuckets");
-            //public static readonly CurratedDocsPayload TwitterData = CurratedDocsPayload.CreateFromCurratedDocs("twitter_data");
-            //public static readonly CurratedDocsPayload Ups1 = CurratedDocsPayload.CreateFromCurratedDocs("ups1");
-            //public static readonly CurratedDocsPayload XpertEvents = CurratedDocsPayload.CreateFromCurratedDocs("XpertEvents");
+            //public static readonly CuratedDocsPayload CombinedScriptsData = CuratedDocsPayload.CreateFromCuratedDocs("CombinedScriptsData");
+            //public static readonly CuratedDocsPayload Countries = CuratedDocsPayload.CreateFromCuratedDocs("countries");
+            //public static readonly CuratedDocsPayload Devtestcoll = CuratedDocsPayload.CreateFromCuratedDocs("devtestcoll");
+            //public static readonly CuratedDocsPayload Lastfm = CuratedDocsPayload.CreateFromCuratedDocs("lastfm");
+            //public static readonly CuratedDocsPayload LogData = CuratedDocsPayload.CreateFromCuratedDocs("LogData");
+            //public static readonly CuratedDocsPayload MillionSong1KDocuments = CuratedDocsPayload.CreateFromCuratedDocs("MillionSong1KDocuments");
+            //public static readonly CuratedDocsPayload MsnCollection = CuratedDocsPayload.CreateFromCuratedDocs("MsnCollection");
+            public static readonly CuratedDocsPayload NutritionData = CuratedDocsPayload.CreateFromCuratedDocs("NutritionData");
+            //public static readonly CuratedDocsPayload RunsCollection = CuratedDocsPayload.CreateFromCuratedDocs("runsCollection");
+            //public static readonly CuratedDocsPayload StatesCommittees = CuratedDocsPayload.CreateFromCuratedDocs("states_committees");
+            //public static readonly CuratedDocsPayload StatesLegislators = CuratedDocsPayload.CreateFromCuratedDocs("states_legislators");
+            //public static readonly CuratedDocsPayload Store01C = CuratedDocsPayload.CreateFromCuratedDocs("store01C");
+            //public static readonly CuratedDocsPayload TicinoErrorBuckets = CuratedDocsPayload.CreateFromCuratedDocs("TicinoErrorBuckets");
+            //public static readonly CuratedDocsPayload TwitterData = CuratedDocsPayload.CreateFromCuratedDocs("twitter_data");
+            //public static readonly CuratedDocsPayload Ups1 = CuratedDocsPayload.CreateFromCuratedDocs("ups1");
+            //public static readonly CuratedDocsPayload XpertEvents = CuratedDocsPayload.CreateFromCuratedDocs("XpertEvents");
         }
 
 #if false
@@ -69,7 +69,7 @@
         [Benchmark]
         [ArgumentsSource(nameof(NavigatorToWriterArguments))]
         public void NavigatorToWriter(
-            CurratedDocsPayload payload,
+            CuratedDocsPayload payload,
             SerializationFormat sourceFormat,
             SerializationFormat destinationFormat)
         {
@@ -105,13 +105,13 @@
             BinaryWithDictionaryEncoding
         }
 
-        public readonly struct CurratedDocsPayload
+        public readonly struct CuratedDocsPayload
         {
-            private CurratedDocsPayload(
+            private CuratedDocsPayload(
                 string name,
                 ReadOnlyMemory<byte> text,
                 ReadOnlyMemory<byte> binary,
-                (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) binaryWithDictionaryEncoding)
+                (ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary dictionary) binaryWithDictionaryEncoding)
             {
                 this.Name = name;
                 this.Text = text;
@@ -122,9 +122,9 @@
             public string Name { get; }
             public ReadOnlyMemory<byte> Text { get; }
             public ReadOnlyMemory<byte> Binary { get; }
-            internal (ReadOnlyMemory<byte> binary, JsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
+            internal (ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
 
-            public static CurratedDocsPayload CreateFromCurratedDocs(string name)
+            public static CuratedDocsPayload CreateFromCuratedDocs(string name)
             {
                 if (name == null)
                 {
@@ -139,10 +139,9 @@
 
                     ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                     ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
-                    JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
-                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, jsonStringDictionary);
+                    ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, out IReadOnlyJsonStringDictionary jsonStringDictionary);
 
-                    return new CurratedDocsPayload(
+                    return new CuratedDocsPayload(
                         name: name,
                         text: text,
                         binary: binary,
@@ -165,7 +164,7 @@
         {
             foreach (FieldInfo fieldInfo in typeof(Payloads).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
             {
-                CurratedDocsPayload payload = (CurratedDocsPayload)fieldInfo.GetValue(null);
+                CuratedDocsPayload payload = (CuratedDocsPayload)fieldInfo.GetValue(null);
                 foreach (SerializationFormat sourceFormat in Enum.GetValues(typeof(SerializationFormat)))
                 {
                     if (sourceFormat == SerializationFormat.NewtonsoftText)

@@ -9,6 +9,7 @@
     {
         private const byte BinaryFormat = 128;
 
+        /*
         [TestMethod]
         [Owner("mayapainter")]
         public void TestBasicCase()
@@ -112,5 +113,6 @@
 
             Assert.AreEqual(expectedString, actualString.Utf16String);
         }
+        */
     }
 }

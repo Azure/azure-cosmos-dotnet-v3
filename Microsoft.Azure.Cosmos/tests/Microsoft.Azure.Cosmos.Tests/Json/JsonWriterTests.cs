@@ -630,15 +630,8 @@
         [Owner("mayapainter")]
         public void UserStringTest()
         {
-            int maxCount = 100;
-            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
-            Assert.IsTrue(jsonStringDictionary.TryAddString("double", maxCount, out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("string", maxCount, out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("boolean", maxCount, out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("null", maxCount, out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("datetime", maxCount, out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("spatialPoint", maxCount, out int _));
-            Assert.IsTrue(jsonStringDictionary.TryAddString("text", maxCount, out int _));
+            IReadOnlyJsonStringDictionary jsonStringDictionary = 
+                new JsonStringDictionary(new List<string> { "double", "string", "boolean", "null", "datetime", "spatialPoint", "text" });
 
             int userStringId = 0;
             while (jsonStringDictionary.TryGetString(userStringId, out UtfAllString userString))
@@ -8774,7 +8767,7 @@
             }
         }
 
-        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, JsonStringDictionary jsonStringDictionary, Exception expectedException = null)
+        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, IReadOnlyJsonStringDictionary jsonStringDictionary, Exception expectedException = null)
         {
             foreach (bool writeAsUtf8String in new bool[] { false, true })
             {

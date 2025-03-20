@@ -13,6 +13,17 @@
 
     internal class JsonTestUtils
     {
+        public static byte[] ConvertTextToBinary(string text, out IReadOnlyJsonStringDictionary jsonStringDictionary)
+        {
+            IReadOnlyJsonStringDictionary stringDictionary = JsonTestUtils.PopulateStringDictionary(text);
+            IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: stringDictionary);
+            IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
+            textReader.WriteAll(binaryWriter);
+
+            jsonStringDictionary = stringDictionary;
+            return binaryWriter.GetResult().ToArray();
+        }
+
         public static byte[] ConvertTextToBinary(string text, IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
@@ -21,12 +32,53 @@
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, JsonStringDictionary jsonStringDictionary = null)
+        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, IReadOnlyJsonStringDictionary jsonStringDictionary = null)
         {
             IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
             binaryReader.WriteAll(textWriter);
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
+        }
+
+        public static IReadOnlyJsonStringDictionary PopulateStringDictionary(string text)
+        {
+            IJsonNavigator navigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(text));
+            IJsonNavigatorNode rootNode = navigator.GetRootNode();
+
+            HashSet<string> strings = new();
+            JsonNodeType nodeType = navigator.GetNodeType(rootNode);
+            if (nodeType == JsonNodeType.Object)
+            {
+                GetAllProperties(navigator, rootNode, strings);
+            }
+
+            return new JsonStringDictionary(strings.ToList());
+        }
+
+        private static void GetAllProperties(IJsonNavigator navigator, IJsonNavigatorNode node, HashSet<string> strings)
+        {
+            IEnumerable<ObjectProperty> properties = navigator.GetObjectProperties(node);
+            foreach (ObjectProperty property in properties)
+            {
+                strings.Add(navigator.GetStringValue(property.NameNode));
+                JsonNodeType nodeType = navigator.GetNodeType(property.ValueNode);
+                if (nodeType == JsonNodeType.Array)
+                {
+                    IJsonNavigatorNode[] arrayItems = navigator.GetArrayItems(property.ValueNode).ToArray();
+                    foreach(IJsonNavigatorNode arrayNode in arrayItems)
+                    {
+                        if (navigator.GetNodeType(arrayNode) == JsonNodeType.Object)
+                        {
+                            GetAllProperties(navigator, arrayNode, strings);
+                        }
+                    }
+                }
+
+                if(nodeType == JsonNodeType.Object)
+                {
+                    GetAllProperties(navigator, property.ValueNode, strings);
+                }
+            }
         }
 
         public static string LoadJsonCuratedDocument(string filename)
