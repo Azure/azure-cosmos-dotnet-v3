@@ -37,11 +37,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             IStoreModel storeModel,
             CollectionCache collectionCache,
             IGlobalEndpointManager endpointManager,
-            bool enableStackTraceOptimization = false)
+            bool enableAsyncCacheExceptionNoSharing)
         {
             this.routingMapCache = new AsyncCacheNonBlocking<string, CollectionRoutingMap>(
                     keyEqualityComparer: StringComparer.Ordinal,
-                    enableStackTraceOptimization: enableStackTraceOptimization);
+                    enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing);
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.storeModel = storeModel;
             this.collectionCache = collectionCache;

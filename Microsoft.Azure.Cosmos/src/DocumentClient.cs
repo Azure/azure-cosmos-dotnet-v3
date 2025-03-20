@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
-        private readonly bool enableStackTraceOptimization;
+        private readonly bool enableAsyncCacheExceptionNoSharing;
 
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
             this.Initialize(serviceEndpoint, connectionPolicy, desiredConsistencyLevel);
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(
                 cancellationToken: this.cancellationTokenSource.Token,
-                enableStackTraceOptimization: this.enableStackTraceOptimization);
+                enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
         }
 
@@ -447,7 +447,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="remoteCertificateValidationCallback">This delegate responsible for validating the third party certificate. </param>
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
-        /// <param name="enableStackTraceOptimization">A boolean flag indicating if stack trace optimization is enabled.</param>
+        /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableStackTraceOptimization = false)
+                              bool enableAsyncCacheExceptionNoSharing = false)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -496,13 +496,13 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse += receivedResponseEventArgs;
             }
 
-            this.enableStackTraceOptimization = enableStackTraceOptimization;
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
             this.cosmosAuthorization = cosmosAuthorization ?? throw new ArgumentNullException(nameof(cosmosAuthorization));
             this.transportClientHandlerFactory = transportClientHandlerFactory;
             this.IsLocalQuorumConsistency = isLocalQuorumConsistency;
             this.initTaskCache = new AsyncCacheNonBlocking<string, bool>(
                 cancellationToken: this.cancellationTokenSource.Token,
-                enableStackTraceOptimization: this.enableStackTraceOptimization);
+                enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
 
@@ -684,8 +684,8 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableStackTraceOptimization: this.enableStackTraceOptimization);
-                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableStackTraceOptimization);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+                this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
 
                 DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
             }
@@ -947,7 +947,7 @@ namespace Microsoft.Azure.Cosmos
             servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
 #endif
 
-            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableStackTraceOptimization);
+            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
             this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
                 ? new GlobalPartitionEndpointManagerCore(
                     this.GlobalEndpointManager,
@@ -1069,8 +1069,8 @@ namespace Microsoft.Azure.Cosmos
                     tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
-                    enableStackTraceOptimization: this.enableStackTraceOptimization);
-            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableStackTraceOptimization);
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+            this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
@@ -6733,7 +6733,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy,
                 this.httpClient,
                 this.storeClientFactory.GetConnectionStateListener(),
-                this.enableStackTraceOptimization);
+                this.enableAsyncCacheExceptionNoSharing);
 
             this.CreateStoreModel(subscribeRntbdStatus: true);
         }

@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null,
             CancellationToken cancellationToken = default,
-            bool enableStackTraceOptimization = false)
+            bool enableAsyncCacheExceptionNoSharing = false)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
@@ -40,13 +40,13 @@ namespace Microsoft.Azure.Cosmos
             this.cancellationTokenSource = cancellationToken == default
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            this.isStackTraceOptimizationEnabled = enableStackTraceOptimization;
+            this.isStackTraceOptimizationEnabled = enableAsyncCacheExceptionNoSharing;
         }
 
         public AsyncCacheNonBlocking(bool enableStackTraceOptimization = false)
             : this(removeFromCacheOnBackgroundRefreshException: null,
                   keyEqualityComparer: null,
-                  enableStackTraceOptimization: enableStackTraceOptimization)
+                  enableAsyncCacheExceptionNoSharing: enableStackTraceOptimization)
         {
         }
 
