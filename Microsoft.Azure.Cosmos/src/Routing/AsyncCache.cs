@@ -37,9 +37,9 @@ namespace Microsoft.Azure.Cosmos.Common
             this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
         }
 
-        public AsyncCache(bool enableStackTraceOptimization = true)
+        public AsyncCache(bool enableAsyncCacheExceptionNoSharing = true)
             : this(valueEqualityComparer: EqualityComparer<TValue>.Default,
-                  enableAsyncCacheExceptionNoSharing: enableStackTraceOptimization)
+                  enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing)
         {
         }
 
