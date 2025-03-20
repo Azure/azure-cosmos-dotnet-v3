@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Common
         protected class InternalCache
         {
             internal InternalCache(
-                bool enableAsyncCacheExceptionNoSharing)
+                bool enableAsyncCacheExceptionNoSharing = true)
             {
                 this.collectionInfoByName = new AsyncCache<string, ContainerProperties>(
                     new CollectionRidComparer(),
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Common
         protected readonly InternalCache[] cacheByApiList;
 
         protected CollectionCache(
-            bool enableAsyncCacheExceptionNoSharing)
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.cacheByApiList = new InternalCache[2];
             this.cacheByApiList[0] = new InternalCache(enableAsyncCacheExceptionNoSharing); // for API version < 2018-12-31
