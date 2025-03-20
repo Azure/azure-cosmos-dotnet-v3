@@ -20,6 +20,66 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
         /// </summary>
         /// <param name="storedProcedureProperties">The Stored Procedure to create.</param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the created stored procedure</returns>
+        /// <example>
+        ///  This creates and executes a stored procedure that appends a string to the first item returned from the query.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// string sprocBody = @"function simple(prefix)
+        ///    {
+        ///        var collection = getContext().getCollection();
+        ///
+        ///        // Query documents and take 1st item.
+        ///        var isAccepted = collection.queryDocuments(
+        ///        collection.getSelfLink(),
+        ///        'SELECT * FROM root r',
+        ///        function(err, feed, options) {
+        ///            if (err)throw err;
+        ///
+        ///            // Check the feed and if it's empty, set the body to 'no docs found',
+        ///            // Otherwise just take 1st element from the feed.
+        ///            if (!feed || !feed.length) getContext().getResponse().setBody(""no docs found"");
+        ///            else getContext().getResponse().setBody(prefix + JSON.stringify(feed[0]));
+        ///        });
+        ///
+        ///        if (!isAccepted) throw new Error(""The query wasn't accepted by the server. Try again/use continuation token between API and script."");
+        ///    }";
+        ///    
+        /// Scripts scripts = this.container.Scripts;
+        /// StoredProcedureProperties storedProcedure = new StoredProcedureProperties(id, sprocBody);
+        /// ResponseMessage storedProcedureResponse = await scripts.CreateStoredProcedureStreamAsync(storedProcedure);
+        /// 
+        /// // Execute the stored procedure
+        /// ResponseMessage sprocResponse = await scripts.ExecuteStoredProcedureStreamAsync(
+        ///                         sprocId,
+        ///                         new PartitionKey(testPartitionId),
+        ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
+        ///                         
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
+        /// {
+        ///     string stringResponse = await sr.ReadToEndAsync();
+        ///     Console.WriteLine(stringResponse);
+        ///  }
+        /// 
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> CreateStoredProcedureStreamAsync(
+            StoredProcedureProperties storedProcedureProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a stored procedure as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="storedProcedureProperties">The Stored Procedure to create.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="StoredProcedureProperties"/> that was created contained within a <see cref="Task"/> object representing the service response for the asynchronous operation.</returns>
@@ -217,6 +277,32 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.</returns>
+        /// /// <example>
+        ///  This reads an existing stored procedure.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage storedProcedure = await scripts.ReadStoredProcedureStreamAsync("ExistingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReadStoredProcedureStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to read.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -235,6 +321,38 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<StoredProcedureResponse> ReadStoredProcedureAsync(
             string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces a <see cref="StoredProcedureProperties"/> in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="storedProcedureProperties">The Stored Procedure to replace</param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>.</returns>
+        /// /// <example>
+        /// This examples replaces an existing stored procedure.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// //Updated body
+        /// string body = @"function AddTax() {
+        ///     var item = getContext().getRequest().getBody();
+        ///
+        ///     // Validate/calculate the tax.
+        ///     item.tax = item.cost* .15;
+        ///
+        ///     // Update the request -- this is what is going to be inserted.
+        ///     getContext().getRequest().setBody(item);
+        /// }";
+        /// 
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response = await scripts.ReplaceStoredProcedureStreamAsync(new StoredProcedureProperties("testTriggerId", body));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReplaceStoredProcedureStreamAsync(
+            StoredProcedureProperties storedProcedureProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
@@ -265,6 +383,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// 
         /// Scripts scripts = this.container.Scripts;
         /// StoredProcedureResponse response = await scripts.ReplaceStoredProcedureAsync(new StoredProcedureProperties("testTriggerId", body));
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -274,12 +397,33 @@ namespace Microsoft.Azure.Cosmos.Scripts
             CancellationToken cancellationToken = default);
 
         /// <summary>
+        /// Deletes a <see cref="StoredProcedureProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
+        /// <example>
+        /// This examples gets a reference to an existing stored procedure and deletes it.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response = await scripts.DeleteStoredProcedureStreamAsync("taxUdfId");
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> DeleteStoredProcedureStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Delete a <see cref="StoredProcedureProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
         /// <param name="id">The identifier of the Stored Procedure to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the stored procedure request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
-        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain the response to the request issued.</returns>
+        /// <returns>A <see cref="Task"/> containing a <see cref="StoredProcedureResponse"/> which will contain the response to the request issued.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions</exception>
         /// <example>
         /// This examples gets a reference to an existing stored procedure and deletes it.
@@ -287,6 +431,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <![CDATA[
         /// Scripts scripts = this.container.Scripts;
         /// StoredProcedureResponse response = await scripts.DeleteStoredProcedureAsync("taxUdfId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -398,6 +547,11 @@ namespace Microsoft.Azure.Cosmos.Scripts
         ///                         sprocId,
         ///                         new PartitionKey(testPartitionId),
         ///                         new dynamic[] {"myPrefixString", "myPostfixString"});
+        /// if (!sprocResponse.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
         ///                         
         /// using (StreamReader sr = new StreamReader(sprocResponse.Content))
         /// {
@@ -480,6 +634,57 @@ namespace Microsoft.Azure.Cosmos.Scripts
             Stream streamPayload,
             PartitionKey partitionKey,
             StoredProcedureRequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a trigger as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="triggerProperties">The <see cref="TriggerProperties"/> object.</param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A task object representing the service response for the asynchronous operation.</returns>
+        /// <example>
+        ///  This creates a trigger then uses the trigger in a create item.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage triggerResponse = await scripts.CreateTriggerStreamAsync(
+        ///     new TriggerProperties
+        ///     {
+        ///         Id = "addTax",
+        ///         Body = @"function AddTax() {
+        ///             var item = getContext().getRequest().getBody();
+        ///
+        ///             // calculate the tax.
+        ///             item.tax = item.cost * .15;
+        ///
+        ///             // Update the request -- this is what is going to be inserted.
+        ///             getContext().getRequest().setBody(item);
+        ///         }",
+        ///         TriggerOperation = TriggerOperation.All,
+        ///         TriggerType = TriggerType.Pre
+        ///     });
+        ///     
+        /// if (!triggerResponse.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// 
+        /// ItemRequestOptions options = new ItemRequestOptions()
+        /// {
+        ///     PreTriggers = new List<string>() { "addTax" },
+        /// };
+        ///
+        /// // Create a new item with trigger set in the request options
+        /// ItemResponse<dynamic> createdItem = await this.container.Items.CreateItemAsync<dynamic>(item.status, item, options);
+        /// double itemTax = createdItem.Resource.tax;
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> CreateTriggerStreamAsync(
+            TriggerProperties triggerProperties,
+            RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -663,6 +868,32 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.</returns>
+        /// <example>
+        ///  This reads an existing trigger
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response = await scripts.ReadTriggerStreamAsync("ExistingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReadTriggerStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The id of the trigger to read.</param>
         /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -682,6 +913,48 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<TriggerResponse> ReadTriggerAsync(
             string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces a <see cref="TriggerProperties"/> in the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
+        /// <param name="triggerProperties">The <see cref="TriggerProperties"/> object.</param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>containing the updated resource record.</returns>
+        /// <example>
+        /// This examples replaces an existing trigger.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// TriggerProperties triggerProperties = new TriggerProperties
+        /// {
+        ///     Id = "testTriggerId",
+        ///     Body = @"function AddTax() {
+        ///         var item = getContext().getRequest().getBody();
+        ///
+        ///         // Validate/calculate the tax.
+        ///         item.tax = item.cost* .15;
+        ///
+        ///         // Update the request -- this is what is going to be inserted.
+        ///         getContext().getRequest().setBody(item);
+        ///     }",
+        ///     TriggerOperation = TriggerOperation.All,
+        ///     TriggerType = TriggerType.Post
+        /// };
+        /// 
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response = await scripts.ReplaceTriggerStreamAsync(triggerSettigs);
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReplaceTriggerStreamAsync(
+            TriggerProperties triggerProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
@@ -728,6 +1001,32 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/>  which will contain information about the request issued.</returns>
+        /// <example>
+        /// This examples gets a reference to an existing trigger and deletes it.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// TriggerResponse response = await scripts.DeleteTriggerStreamAsync("existingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> DeleteTriggerStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete a <see cref="TriggerProperties"/> from the Azure Cosmos service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The id of the trigger to delete.</param>
         /// <param name="requestOptions">(Optional) The options for the trigger request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -744,6 +1043,56 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<TriggerResponse> DeleteTriggerAsync(
             string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Creates a user defined function as an asynchronous operation in the Azure Cosmos DB service.
+        /// </summary>
+        /// <param name="userDefinedFunctionProperties">The <see cref="UserDefinedFunctionProperties"/> object.</param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A task object representing the service response for the asynchronous operation.</returns>
+        /// <example>
+        ///  This creates a user defined function then uses the function in an item query.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response =await scripts.UserDefinedFunctions.CreateUserDefinedFunctionStreamAsync(
+        ///     new UserDefinedFunctionProperties 
+        ///     { 
+        ///         Id = "calculateTax", 
+        ///         Body = @"function(amt) { return amt * 0.05; }" 
+        ///     });
+        ///
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// 
+        /// QueryDefinition sqlQuery = new QueryDefinition(
+        ///     "SELECT VALUE udf.calculateTax(t.cost) FROM toDoActivity t where t.cost > @expensive and t.status = @status")
+        ///     .WithParameter("@expensive", 9000)
+        ///     .WithParameter("@status", "Done");
+        ///
+        /// using (FeedIterator<double> setIterator = this.container.Items.GetItemsQueryIterator<double>(
+        ///     sqlQueryDefinition: sqlQuery,
+        ///     partitionKey: "Done")
+        /// {
+        ///     while (setIterator.HasMoreResults)
+        ///     {
+        ///         foreach (var tax in await setIterator.ReadNextAsync())
+        ///         {
+        ///             Console.WriteLine(tax);
+        ///         }
+        ///     }
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> CreateUserDefinedFunctionStreamAsync(
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
@@ -941,6 +1290,32 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// <summary>
         /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the read resource record.</returns>
+        /// <example>
+        ///  This reads an existing user defined function.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response = await scripts.ReadUserDefinedFunctionStreamAsync("ExistingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReadUserDefinedFunctionStreamAsync(
+            string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Reads a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
         /// <param name="id">The id of the user defined function to read</param>
         /// <param name="requestOptions">(Optional) The options for the user defined function request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -960,6 +1335,38 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> ReadUserDefinedFunctionAsync(
             string id,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Replaces a <see cref="UserDefinedFunctionProperties"/> in the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="userDefinedFunctionProperties">The <see cref="UserDefinedFunctionProperties"/> object.</param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns> A <see cref="Task"/> containing a <see cref="ResponseMessage"/> containing the updated resource record. </returns>
+        /// <example>
+        /// This examples replaces an existing user defined function.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// UserDefinedFunctionProperties udfProperties = new UserDefinedFunctionProperties
+        /// {
+        ///     Id = "testUserDefinedFunId",
+        ///     Body = "function(amt) { return amt * 0.15; }",
+        /// };
+        /// 
+        /// ResponseMessage response = await scripts.ReplaceUserDefinedFunctionStreamAsync(udfProperties);
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> ReplaceUserDefinedFunctionStreamAsync(
+            UserDefinedFunctionProperties userDefinedFunctionProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
@@ -990,6 +1397,32 @@ namespace Microsoft.Azure.Cosmos.Scripts
         /// </example>
         public abstract Task<UserDefinedFunctionResponse> ReplaceUserDefinedFunctionAsync(
             UserDefinedFunctionProperties userDefinedFunctionProperties,
+            RequestOptions requestOptions = null,
+            CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Delete a <see cref="UserDefinedFunctionProperties"/> from the Azure Cosmos DB service as an asynchronous operation.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>A <see cref="Task"/> containing a <see cref="ResponseMessage"/> which will contain information about the request issued.</returns>
+        /// <example>
+        /// This examples gets a reference to an existing user defined function and deletes it.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// Scripts scripts = this.container.Scripts;
+        /// ResponseMessage response = await this.container.DeleteUserDefinedFunctionStreamAsync("existingId");
+        /// if (!response.IsSuccessStatusCode)
+        /// {
+        ///     //Handle and log exception
+        ///     return;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public abstract Task<ResponseMessage> DeleteUserDefinedFunctionStreamAsync(
+            string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 

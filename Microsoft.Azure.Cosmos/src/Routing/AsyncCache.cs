@@ -20,20 +20,25 @@ namespace Microsoft.Azure.Cosmos.Common
     /// <typeparam name="TValue">Type of values.</typeparam>
     internal sealed class AsyncCache<TKey, TValue>
     {
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
-
         private ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
-        private static readonly bool isStackTraceOptimizationEnabled = false;
-        public AsyncCache(IEqualityComparer<TValue> valueEqualityComparer, IEqualityComparer<TKey> keyEqualityComparer = null)
+
+        public AsyncCache(
+            IEqualityComparer<TValue> valueEqualityComparer,
+            IEqualityComparer<TKey> keyEqualityComparer = null,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazy<TValue>>(this.keyEqualityComparer);
             this.valueEqualityComparer = valueEqualityComparer;
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
         }
 
-        public AsyncCache()
-            : this(EqualityComparer<TValue>.Default)
+        public AsyncCache(bool enableAsyncCacheExceptionNoSharing = true)
+            : this(valueEqualityComparer: EqualityComparer<TValue>.Default,
+                  enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing)
         {
         }
 
@@ -153,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 // If the lambda this thread added to values triggered an exception remove it from the cache.
                 this.TryRemoveValue(key, actualValue);
 
-                if (isStackTraceOptimizationEnabled)
+                if (this.enableAsyncCacheExceptionNoSharing)
                 {
                     // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
                     // and rethrows them, doesn't process other exceptions.
