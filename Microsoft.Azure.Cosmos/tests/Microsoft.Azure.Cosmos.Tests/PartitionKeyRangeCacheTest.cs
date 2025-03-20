@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info))
             {
                 Mock<IStoreModel> mockStoreModel = new();
-                Mock<CollectionCache> mockCollectioNCache = new();
+                Mock<CollectionCache> mockCollectioNCache = new(false);
                 Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
                 NameValueCollectionWrapper headers = new()
                 {
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             using (ITrace trace = Trace.GetRootTrace(this.TestContext.TestName, TraceComponent.Unknown, TraceLevel.Info))
             {
                 Mock<IStoreModel> mockStoreModel = new();
-                Mock<CollectionCache> mockCollectioNCache = new();
+                Mock<CollectionCache> mockCollectioNCache = new(false);
                 Mock<ICosmosAuthorizationTokenProvider> mockTokenProvider = new();
                 NameValueCollectionWrapper headers = new()
                 {
