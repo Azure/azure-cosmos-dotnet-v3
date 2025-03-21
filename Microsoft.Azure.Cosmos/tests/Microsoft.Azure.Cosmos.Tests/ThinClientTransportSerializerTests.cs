@@ -10,7 +10,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Net;
     using System.Net.Http;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Routing;
@@ -37,34 +36,35 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             message.Headers.Add(ThinClientConstants.ProxyOperationType, OperationType.Read.ToString());
             message.Headers.Add(ThinClientConstants.ProxyResourceType, ResourceType.Document.ToString());
-            message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString()); // required
+            message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
 
             ThinClientTransportSerializer.BufferProviderWrapper bufferProvider = new();
-            Mock<ClientCollectionCache> mockClientCollectionCache = new Mock<ClientCollectionCache>(
-            new Mock<ISessionContainer>().Object,
-            new Mock<IStoreModel>().Object,
-            new Mock<ICosmosAuthorizationTokenProvider>().Object,
-            new Mock<IRetryPolicyFactory>().Object,
-            null)
+
+            Mock<ISessionContainer> sessionContainerMock = new Mock<ISessionContainer>();
+            Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
+            Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
+            Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
+            TelemetryToServiceHelper telemetry = null; // or mock if needed
+
+            Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
+                sessionContainerMock.Object,
+                storeModelMock.Object,
+                tokenProviderMock.Object,
+                retryPolicyFactoryMock.Object,
+                telemetry,
+                true)
             {
                 CallBase = true
             };
 
-            // Set up the ResolveCollectionAsync method to return a mocked ContainerProperties
-            mockClientCollectionCache
-                .Setup(m => m.ResolveCollectionAsync(
-                    It.IsAny<DocumentServiceRequest>(),
-                    It.IsAny<CancellationToken>(),
-                    It.IsAny<ITrace>()))
-                .ReturnsAsync(this.GetMockContainerProperties());
-
             // Act & Assert
-            await Assert.ThrowsExceptionAsync<InternalServerErrorException>(() =>
-                ThinClientTransportSerializer.SerializeProxyRequestAsync(
+            await Assert.ThrowsExceptionAsync<InternalServerErrorException>(
+                () => ThinClientTransportSerializer.SerializeProxyRequestAsync(
                     bufferProvider,
                     "MockAccount",
-                    mockClientCollectionCache.Object,
-                    message));
+                    clientCollectionCacheMock.Object,
+                    message),
+                "Expected an InternalServerErrorException for missing PartitionKey in point operation");
         }
 
         [TestMethod]
@@ -82,19 +82,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             message.Headers.Add(HttpConstants.HttpHeaders.ActivityId, Guid.NewGuid().ToString());
 
             ThinClientTransportSerializer.BufferProviderWrapper bufferProvider = new();
-            Mock<ClientCollectionCache> mockClientCollectionCache = new Mock<ClientCollectionCache>(
-            new Mock<ISessionContainer>().Object,
-            new Mock<IStoreModel>().Object,
-            new Mock<ICosmosAuthorizationTokenProvider>().Object,
-            new Mock<IRetryPolicyFactory>().Object,
-            null)
+
+            Mock<ISessionContainer> sessionContainerMock = new Mock<ISessionContainer>();
+            Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
+            Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
+            Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
+            TelemetryToServiceHelper telemetry = null;
+
+            Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
+                sessionContainerMock.Object,
+                storeModelMock.Object,
+                tokenProviderMock.Object,
+                retryPolicyFactoryMock.Object,
+                telemetry,
+                true)
             {
                 CallBase = true
             };
 
-            // Set up the ResolveCollectionAsync method to return a mocked ContainerProperties
-            mockClientCollectionCache
-                .Setup(m => m.ResolveCollectionAsync(
+            clientCollectionCacheMock
+                .Setup(c => c.ResolveCollectionAsync(
                     It.IsAny<DocumentServiceRequest>(),
                     It.IsAny<CancellationToken>(),
                     It.IsAny<ITrace>()))
@@ -104,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Stream resultStream = await ThinClientTransportSerializer.SerializeProxyRequestAsync(
                 bufferProvider,
                 "MockAccount",
-                mockClientCollectionCache.Object,
+                clientCollectionCacheMock.Object,
                 message);
 
             // Assert
@@ -116,10 +123,12 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void GetEffectivePartitionKeyHash_ShouldReturnHash()
         {
             // Arrange
-            string pkJson = "[\"TestValue\"]"; // e.g. an array with a single PK value
+            string pkJson = "[\"TestValue\"]";
 
             // Act
-            string epkHash = ThinClientTransportSerializer.GetEffectivePartitionKeyHash(pkJson, this.GetMockContainerProperties().PartitionKey);
+            string epkHash = ThinClientTransportSerializer.GetEffectivePartitionKeyHash(
+                pkJson,
+                this.GetMockContainerProperties().PartitionKey);
 
             // Assert
             Assert.IsNotNull(epkHash, "EPK hash should not be null for a valid JSON partition key.");
@@ -156,7 +165,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.Created, converted.StatusCode, "Expected matched 201 status code.");
             Assert.IsNotNull(converted.Content, "Converted response should have content.");
 
-            string bodyString = await converted.Content.ReadAsStringAsync();
             Assert.IsTrue(
                 converted.Headers.Any(h => h.Key == ThinClientConstants.RoutedViaProxy),
                 "Expected 'x-ms-thinclient-route-via-proxy' header to be set in the converted response.");

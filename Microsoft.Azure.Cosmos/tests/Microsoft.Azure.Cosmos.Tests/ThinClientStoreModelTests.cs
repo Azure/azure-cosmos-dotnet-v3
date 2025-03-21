@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
-    using System.Diagnostics;
     using System.IO;
     using System.Net;
     using System.Net.Http;
@@ -26,7 +25,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         private ThinClientStoreModel thinClientStoreModel;
         private GlobalEndpointManager endpointManager;
         private SessionContainer sessionContainer;
-
         private readonly ConsistencyLevel defaultConsistencyLevel = ConsistencyLevel.Session;
 
         [TestInitialize]
@@ -45,8 +43,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             this.endpointManager = new GlobalEndpointManager(
-                owner: mockDocumentClient.Object,
-                connectionPolicy: connectionPolicy);
+                 owner: mockDocumentClient.Object,
+                 connectionPolicy: connectionPolicy);
 
             this.thinClientStoreModel = new ThinClientStoreModel(
                 endpointManager: this.endpointManager,
@@ -131,13 +129,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 storeModel,
                 null,
                 null,
-                null).Object;
+                null,
+                false).Object;
 
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
                 null,
                 storeModel,
                 clientCollectionCache,
-                multiEndpointMgr).Object;
+                multiEndpointMgr,
+                false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -159,11 +159,11 @@ namespace Microsoft.Azure.Cosmos.Tests
             bool disposeCalled = false;
 
             ThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
-                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) => throw new NotImplementedException(),
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                    throw new NotImplementedException(),
                 () => disposeCalled = true);
 
             ReplaceThinClientStoreClientField(this.thinClientStoreModel, thinClientStoreClient);
-
             // Act
             this.thinClientStoreModel.Dispose();
             // Assert
@@ -181,17 +181,16 @@ namespace Microsoft.Azure.Cosmos.Tests
                        innerException: null,
                        responseHeaders: new StoreResponseNameValueCollection(),
                        statusCode: HttpStatusCode.NotFound,
-                       requestUri: uri));
+                        requestUri: uri));
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
-                operationType: OperationType.Read,
-                resourceType: ResourceType.Document,
-                resourceId: "NH1uAJ6ANm0=",
-                body: null,
-                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+                 operationType: OperationType.Read,
+                 resourceType: ResourceType.Document,
+                 resourceId: "NH1uAJ6ANm0=",
+                 body: null,
+                 authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
 
             Mock<IDocumentClientInternal> docClientOkay = new Mock<IDocumentClientInternal>();
-
             docClientOkay
                 .Setup(c => c.ServiceEndpoint)
                 .Returns(new Uri("https://myCosmosAccount.documents.azure.com/"));
@@ -203,11 +202,11 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             docClientOkay
                 .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(validProperties); // Always succeed with valid account properties
+                .ReturnsAsync(validProperties);
 
             ConnectionPolicy policy = new ConnectionPolicy
             {
-                UseMultipleWriteLocations = false // or true, up to your test scenario
+                UseMultipleWriteLocations = false
             };
 
             GlobalEndpointManager endpointManagerOk = new GlobalEndpointManager(docClientOkay.Object, policy);
@@ -225,13 +224,15 @@ namespace Microsoft.Azure.Cosmos.Tests
                 storeModel,
                 null,
                 null,
-                null).Object;
+                null,
+                false).Object;
 
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
                 null,
                 storeModel,
                 clientCollectionCache,
-                endpointManagerOk).Object;
+                endpointManagerOk,
+                false).Object;
 
             storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
 
@@ -246,9 +247,9 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static void ReplaceThinClientStoreClientField(ThinClientStoreModel model, ThinClientStoreClient newClient)
         {
             FieldInfo field = typeof(ThinClientStoreModel).GetField(
-                "thinClientStoreClient",
-                BindingFlags.NonPublic | BindingFlags.Instance)
-                ?? throw new InvalidOperationException("Could not find 'thinClientStoreClient' field on ThinClientStoreModel");
+                 "thinClientStoreClient",
+                 BindingFlags.NonPublic | BindingFlags.Instance)
+                 ?? throw new InvalidOperationException("Could not find 'thinClientStoreClient' field on ThinClientStoreModel");
 
             field.SetValue(model, newClient);
         }
@@ -279,7 +280,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 ClientCollectionCache clientCollectionCache,
                 CancellationToken cancellationToken)
             {
-                return await this.invokeAsyncFunc(request, resourceType, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken);
+                return await this.invokeAsyncFunc(
+                    request,
+                    resourceType,
+                    physicalAddress,
+                    thinClientEndpoint,
+                    globalDatabaseAccountName,
+                    clientCollectionCache,
+                    cancellationToken);
             }
 
             public override void Dispose()
