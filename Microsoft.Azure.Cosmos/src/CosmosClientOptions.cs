@@ -73,7 +73,6 @@ namespace Microsoft.Azure.Cosmos
         private IWebProxy webProxy;
         private Func<HttpClient> httpClientFactory;
         private string applicationName;
-        private SessionRetryOptions sessionRetryOptions;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -88,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
-            this.sessionRetryOptions = new SessionRetryOptions();
+            this.SessionRetryOptions = new SessionRetryOptions();
         }
 
         /// <summary>
@@ -115,7 +114,8 @@ namespace Microsoft.Azure.Cosmos
                 this.applicationName = value;
             }
         }
-
+        
+        internal SessionRetryOptions SessionRetryOptions { get; private set; }
         /// <summary>
         /// Get or set session container for the client
         /// </summary>
@@ -732,14 +732,10 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
         /// </summary>
-        internal SessionRetryOptions SessionRetryOptions
+        internal bool EnableRemoteRegionPreferredForSessionRetry
         {
-            get => this.sessionRetryOptions;
-            set
-            {
-                value.Validate();
-                this.sessionRetryOptions = value;
-            }
+            get => this.SessionRetryOptions.RemoteRegionPreferred;
+            set => this.SessionRetryOptions.RemoteRegionPreferred = value;
         }
         /// <summary>
         /// Enable partition key level failover

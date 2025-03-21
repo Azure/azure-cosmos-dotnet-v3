@@ -22,10 +22,7 @@
             {
                 CosmosClientOptions clientOptions = new CosmosClientOptions()
                 {
-                    SessionRetryOptions = new SessionRetryOptions()
-                    {
-                        RemoteRegionPreferred = true
-                    },
+                    EnableRemoteRegionPreferredForSessionRetry = true,
                 };
 
                 Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(200));
@@ -44,10 +41,7 @@
         {
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                SessionRetryOptions = new SessionRetryOptions()
-                {
-                    RemoteRegionPreferred = true,
-                },
+                EnableRemoteRegionPreferredForSessionRetry = true,
             };
 
             Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(500));
@@ -64,10 +58,7 @@
             {
                 CosmosClientOptions clientOptions = new CosmosClientOptions()
                 {
-                    SessionRetryOptions = new SessionRetryOptions()
-                    {
-                        RemoteRegionPreferred = true
-                    },
+                    EnableRemoteRegionPreferredForSessionRetry = true,
                 };
 
                 Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(100));

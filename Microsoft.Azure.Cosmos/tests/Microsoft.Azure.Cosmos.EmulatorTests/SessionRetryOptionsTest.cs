@@ -69,11 +69,7 @@
             Assert.IsNotNull(faultInjector);
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                SessionRetryOptions = new SessionRetryOptions()
-                {
-                    RemoteRegionPreferred = remoteRegionPreferred,
-                },
-                
+                EnableRemoteRegionPreferredForSessionRetry = remoteRegionPreferred,
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,
@@ -162,10 +158,7 @@
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
-                SessionRetryOptions = new SessionRetryOptions()
-                {
-                    RemoteRegionPreferred = remoteRegionPreferred,
-                },
+                EnableRemoteRegionPreferredForSessionRetry = remoteRegionPreferred,
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,

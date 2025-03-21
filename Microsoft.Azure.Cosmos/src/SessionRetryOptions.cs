@@ -6,7 +6,7 @@
     /// <summary>
     /// Implementation of ISessionRetryOptions interface, do not want clients to subclass.
     /// </summary>
-    public sealed class SessionRetryOptions : ISessionRetryOptions
+    internal sealed class SessionRetryOptions : ISessionRetryOptions
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionRetryOptions"/> class.
@@ -35,32 +35,6 @@
         /// retry in the local region up to 5s
         /// </summary>
         public bool RemoteRegionPreferred { get; set; } = false;
-
-        /// <summary>
-        /// validates the client options.
-        /// </summary>
-        internal void Validate()
-        {
-            if (this.RemoteRegionPreferred)
-            {
-                if (this.MinInRegionRetryTime == null)
-                {
-                    throw new ArgumentException($"Argument 'MinInRegionRetryTime' must not be null when RemoteRegionPreferred option is selected.");
-                }
-
-                if (this.MinInRegionRetryTime.TotalMilliseconds < ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs)
-                {
-                    throw new ArgumentException($"Argument 'MinInRegionRetryTime' in the SessionRetryOptions must be set and have at least a value of {ConfigurationManager.MinMinInRegionRetryTimeForWritesInMs} ms");
-                }
-
-                if (this.MaxInRegionRetryCount < ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred)
-                {
-                    throw new ArgumentException($"Argument 'MaxInRegionRetryCount' in the SessionRetryOptions must have at least a value of {ConfigurationManager.MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred}");
-                }
-            }
-        }
-
-
-
+        
     }
 }
