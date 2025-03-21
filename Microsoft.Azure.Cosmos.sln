@@ -22,6 +22,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{804C595B-D0DA-48F1-A40D-97BB014736CB}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		.globalconfig = .globalconfig
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Encryption.Custom", "Encryption.Custom", "{51F858D8-707E-4F21-BCC6-4D6123832E4F}"
