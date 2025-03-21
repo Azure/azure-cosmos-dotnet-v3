@@ -278,6 +278,7 @@
         public void CosmosOperationCancelledExceptionHandelingTests(
             bool enablePartitionLevelFailover)
         {
+            const int writeThreshold = 5;
             const bool enableEndpointDiscovery = true;
             const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
 
@@ -313,9 +314,17 @@
             // Validate that the partition key range failover info is not present before the http request exception was captured in the retry policy.
             Assert.IsNull(partitionKeyRangeFailoverInfo);
 
-            retryPolicy.OnBeforeSendRequest(request);
-            Task<ShouldRetryResult> retryStatus = retryPolicy.ShouldRetryAsync(operationCancelledException, cancellationToken);
+            Task<ShouldRetryResult> retryStatus;
 
+            // With cancellation token expiry, the retry policy should not failover the offending partition
+            // until the write threshold is met.
+            for (int i=0; i<writeThreshold; i++)
+            {
+                retryPolicy.OnBeforeSendRequest(request);
+                retryStatus = retryPolicy.ShouldRetryAsync(operationCancelledException, cancellationToken);
+            }
+
+            retryStatus = retryPolicy.ShouldRetryAsync(operationCancelledException, cancellationToken);
             Assert.IsFalse(retryStatus.Result.ShouldRetry);
 
             partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
