@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly ConcurrentDictionary<Uri, EndpointCache> addressCacheByEndpoint;
         private readonly bool enableTcpConnectionEndpointRediscovery;
         private readonly bool isReplicaAddressValidationEnabled;
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IConnectionStateListener connectionStateListener;
         private IOpenConnectionsHandler openConnectionsHandler;
 
@@ -52,7 +53,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             IServiceConfigurationReader serviceConfigReader,
             ConnectionPolicy connectionPolicy,
             CosmosHttpClient httpClient,
-            IConnectionStateListener connectionStateListener)
+            IConnectionStateListener connectionStateListener,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.endpointManager = endpointManager;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -71,6 +73,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.enableTcpConnectionEndpointRediscovery = connectionPolicy.EnableTcpConnectionEndpointRediscovery;
 
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
+
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
 
             this.maxEndpoints = maxBackupReadEndpoints + 2; // for write and alternate write endpoint (during failover)
 
@@ -344,7 +348,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         this.openConnectionsHandler,
                         this.connectionStateListener,
                         enableTcpConnectionEndpointRediscovery: this.enableTcpConnectionEndpointRediscovery,
-                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled);
+                        replicaAddressValidationEnabled: this.isReplicaAddressValidationEnabled,
+                        enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
 
                     string location = this.endpointManager.GetLocation(endpoint);
                     AddressResolver addressResolver = new AddressResolver(null, new NullRequestSigner(), location);
