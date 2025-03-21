@@ -959,7 +959,12 @@ namespace Microsoft.Azure.Cosmos
         /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-        internal int? ThroughputBucket { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
