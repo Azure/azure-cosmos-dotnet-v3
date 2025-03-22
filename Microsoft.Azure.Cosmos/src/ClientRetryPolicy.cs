@@ -135,6 +135,26 @@ namespace Microsoft.Azure.Cosmos
                 }
             }
 
+            if (exception is OperationCanceledException)
+            {
+                DefaultTrace.TraceInformation("ClientRetryPolicy: The operation was cancelled. Not retrying. Retry count = {0}, Endpoint = {1}",
+                    this.failoverRetryCount,
+                    this.locationEndpoint?.ToString() ?? string.Empty);
+
+                if (this.isPartitionLevelFailoverEnabled
+                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                        this.documentServiceRequest))
+                {
+                    // In the event of a write operation getting timed out due to cancellation token expiration on region A,
+                    // mark the partition as unavailable assuming that the partition has been failed over to region B, when
+                    // per partition automatic failover is enabled.
+                    this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
+                         this.documentServiceRequest);
+                }
+
+                return ShouldRetryResult.NoRetry();
+            }
+
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
         }
 

@@ -213,11 +213,23 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return false;
             }
 
-            PartitionKeyRangeFailoverInfo partionFailover = this.PartitionKeyRangeToLocationForReadAndWrite.Value.GetOrAdd(
-                partitionKeyRange,
-                (_) => new PartitionKeyRangeFailoverInfo(
-                    request.RequestContext.ResolvedCollectionRid,
-                    failedLocation));
+            PartitionKeyRangeFailoverInfo partionFailover;
+            if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
+            {
+                partionFailover = this.PartitionKeyRangeToLocationForWrite.Value.GetOrAdd(
+                    partitionKeyRange,
+                    (_) => new PartitionKeyRangeFailoverInfo(
+                        request.RequestContext.ResolvedCollectionRid,
+                        failedLocation));
+            }
+            else
+            {
+                partionFailover = this.PartitionKeyRangeToLocationForReadAndWrite.Value.GetOrAdd(
+                    partitionKeyRange,
+                    (_) => new PartitionKeyRangeFailoverInfo(
+                        request.RequestContext.ResolvedCollectionRid,
+                        failedLocation));
+            }
 
             partionFailover.IncrementRequestFailureCounts(
                 isReadOnlyRequest: request.IsReadOnlyRequest,
