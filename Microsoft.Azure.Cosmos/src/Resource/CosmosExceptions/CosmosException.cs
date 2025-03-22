@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Client exception
     /// </summary>
-    public class CosmosException : Exception
+    public class CosmosException : Exception, ICloneable
     {
         private readonly string stackTrace;
         private readonly Lazy<string> lazyMessage;
@@ -301,6 +301,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
             }
+        }
+
+        /// <summary>
+        /// Creates a shallow copy of the current exception instance.
+        /// This ensures that the cloned exception retains the same properties but does not
+        /// excessively proliferate stack traces or deep-copy unnecessary objects.
+        /// </summary>
+        /// <returns>A shallow copy of the current <see cref="CosmosException"/>.</returns>
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }

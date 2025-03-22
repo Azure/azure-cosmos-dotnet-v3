@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     ///  diagnostics of the operation that was canceled.
     /// </summary> 
     [Serializable]
-    public class CosmosOperationCanceledException : OperationCanceledException
+    public class CosmosOperationCanceledException : OperationCanceledException, ICloneable
     {
         private readonly OperationCanceledException originalException;
         private readonly Lazy<string> lazyMessage;
@@ -155,6 +155,17 @@ namespace Microsoft.Azure.Cosmos
             info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
             info.AddValue("lazyMessage", this.lazyMessage.Value);
             info.AddValue("toStringMessage", this.toStringMessage.Value);
+        }
+
+        /// <summary>
+        /// Creates a shallow copy of the current exception instance.
+        /// This ensures that the cloned exception retains the same properties but does not
+        /// excessively proliferate stack traces or deep-copy unnecessary objects.
+        /// </summary>
+        /// <returns>A shallow copy of the current <see cref="CosmosOperationCanceledException"/>.</returns>
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }
