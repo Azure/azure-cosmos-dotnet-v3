@@ -141,8 +141,7 @@ namespace Microsoft.Azure.Cosmos
                     this.failoverRetryCount,
                     this.locationEndpoint?.ToString() ?? string.Empty);
 
-                if (this.isPartitionLevelFailoverEnabled
-                    && this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
+                if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
                     // In the event of a write operation getting timed out due to cancellation token expiration on region A,
