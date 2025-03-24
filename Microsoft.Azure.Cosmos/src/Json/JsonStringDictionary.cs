@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos.Json
     sealed class JsonStringDictionary : IJsonReadOnlyStringDictionary, IEquatable<JsonStringDictionary>
     {
         private const int MaxStackAllocSize = 4 * 1024;
-        private const int MaxDictionarySize = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
+        private const int MaxDictionarySize = 
+            TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
 
         private readonly List<UtfAllString> strings;
         private readonly Trie<byte, int> utf8StringToIndex;
@@ -30,10 +31,8 @@ namespace Microsoft.Azure.Cosmos.Json
         private UInt128 checksum;
 
         public JsonStringDictionary()
+        : this(new List<string>())
         {
-            this.strings = new List<UtfAllString>();
-            this.utf8StringToIndex = new Trie<byte, int>();
-            this.SetChecksum();
         }
 
         public JsonStringDictionary(IReadOnlyList<string> userStrings)
@@ -59,6 +58,8 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException($"Tried to add {userString} at index {i}, but instead it was inserted at index {index}.");
                 }
             }
+
+            this.SetChecksum();
         }
 
         public bool TryGetString(int index, out UtfAllString value)
@@ -141,8 +142,6 @@ namespace Microsoft.Azure.Cosmos.Json
             this.strings.Add(UtfAllString.Create(value.ToString()));
             this.utf8StringToIndex.AddOrUpdate(value.Span, index);
             this.size++;
-
-            this.SetChecksum();
 
             return true;
         }
