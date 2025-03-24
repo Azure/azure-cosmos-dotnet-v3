@@ -144,9 +144,9 @@ namespace Microsoft.Azure.Cosmos
                 if (this.partitionKeyRangeLocationCache.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
                         this.documentServiceRequest))
                 {
-                    // In the event of a write operation getting timed out due to cancellation token expiration on region A,
-                    // mark the partition as unavailable assuming that the partition has been failed over to region B, when
-                    // per partition automatic failover is enabled.
+                    // In the event of a (ppaf + write operation) or (ppcb + read or multi-master write operation) getting timed
+                    // out due to cancellation token expiration on region A, mark the partition as unavailable assuming that
+                    // the partition has been failed over to region B, when per partition automatic failover is enabled.
                     this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                          this.documentServiceRequest);
                 }
