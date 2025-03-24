@@ -946,22 +946,30 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ValidateAsyncExceptionNoSharing(bool asyncCacheExceptionNoSharing)
         {
             TimeoutException exception = new TimeoutException("HTTP Timeout exception", new TimeoutException("Inner exception message"));
+            int expectedHandlers = 3;
+            int enteredHandlers = 0;
+            TaskCompletionSource<object> blockSendingHandlers = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
-                //Set the pre-request event handler to throw a pre-defined timeout exception.
-                SendingRequestEventArgs = (sender, e) =>
+                SendingRequestEventArgs = async (sender, e) =>
                 {
                     if (e.IsHttpRequest())
                     {
                         string endWith = "partitionKeyRangeIds=0";
-                        if (e.HttpRequest.RequestUri.OriginalString.EndsWith(endWith))
-                        {
-                            if (e.HttpRequest.Method == HttpMethod.Get &&
+                        if (e.HttpRequest.Method == HttpMethod.Get &&
                             e.HttpRequest.RequestUri.OriginalString.EndsWith(endWith))
+                        {
+                            // Wait until all expected threads are in the handler
+                            if (Interlocked.Increment(ref enteredHandlers) == expectedHandlers)
                             {
-                                throw exception;
+                                blockSendingHandlers.SetResult(null);
                             }
+
+                            await blockSendingHandlers.Task; // block here until all enter
+
+                            throw exception;
                         }
                     }
                 },
@@ -976,29 +984,20 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 db = await cosmosClient.CreateDatabaseIfNotExistsAsync("TimeoutFaultTest");
                 Container container = await db.CreateContainerIfNotExistsAsync("TimeoutFaultContainer", "/pk");
 
-                // Shared TaskCompletionSource ensures all tasks start together
-                TaskCompletionSource<object> tcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-                int iterations = 3;// Simulating 3 concurrent write requests
-                List<Task> createTasks = new List<Task>();
+                int iterations = expectedHandlers;
+                List<Task> createTasks = new();
 
                 for (int i = 0; i < iterations; i++)
                 {
                     createTasks.Add(Task.Run(async () =>
                     {
-                        await tcs.Task; // All tasks wait before proceeding
-
                         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
                         await container.CreateItemAsync(testItem);
                     }));
                 }
 
-                // Signal all tasks to start
-                tcs.SetResult(null);
-
                 // Wait for all tasks to complete (they should all fail)
                 await Task.WhenAll(createTasks);
-
-
             }
             catch (TimeoutException tex)
             {

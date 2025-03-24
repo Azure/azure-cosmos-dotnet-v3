@@ -125,7 +125,10 @@ namespace Microsoft.Azure.Cosmos
                     {
                         // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
                         // and rethrows them, doesn't process other exceptions.
-                        ExceptionHandlingUtility.CloneAndRethrowException(e);
+                        if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                        {
+                            throw clone;
+                        }
                     }
                     throw;
                 }
@@ -172,7 +175,10 @@ namespace Microsoft.Azure.Cosmos
                 {
                     // Creates a shallow copy of specific exception types to prevent stack trace proliferation
                     // and rethrows them, doesn't process other exceptions.
-                    ExceptionHandlingUtility.CloneAndRethrowException(e);
+                    if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                    {
+                        throw clone;
+                    }
                 }
                 throw;
             }

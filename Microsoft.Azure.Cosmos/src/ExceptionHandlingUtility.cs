@@ -16,12 +16,12 @@ namespace Microsoft.Azure.Cosmos
     internal static class ExceptionHandlingUtility
     {
         /// <summary>
-        /// Creates a shallow copy of specific exception types (e.g., TaskCanceledException, TimeoutException, OperationCanceledException) 
-        /// to prevent excessive stack trace growth and rethrows them. All other exceptions are not processed.
+        /// Tries to create a shallow copy of specific exception types (e.g., TaskCanceledException, TimeoutException, OperationCanceledException)
+        /// to prevent excessive stack trace growth. Returns true if the exception was cloned, otherwise false.
         /// </summary>
-        public static void CloneAndRethrowException(Exception e)
+        public static bool TryCloneException(Exception e, out Exception clonedException)
         {
-            Exception ex = e switch
+            clonedException = e switch
             {
                 ICloneable cloneableEx => (Exception)cloneableEx.Clone(),
                 TaskCanceledException taskCanceledEx => AddMessageData(new TaskCanceledException(taskCanceledEx.Message, taskCanceledEx), e),
@@ -29,10 +29,7 @@ namespace Microsoft.Azure.Cosmos
                 _ => null
             };
 
-            if (ex is not null)
-            {
-                throw ex;
-            }
+            return clonedException is not null;
         }
 
         private static Exception AddMessageData(Exception target, Exception source)

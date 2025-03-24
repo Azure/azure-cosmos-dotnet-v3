@@ -24,18 +24,17 @@ namespace Microsoft.Azure.Cosmos.Tests
             TaskCanceledException originalException = new TaskCanceledException("Task was canceled.", new TaskCanceledException("inner exception"));
 
             // Act & Assert
-            try
-            {
-                ExceptionHandlingUtility.CloneAndRethrowException(originalException);
-            }
-            catch (TaskCanceledException ex)
-            {
-                Assert.IsFalse(Object.ReferenceEquals(originalException, ex)); // Ensure a new exception was created
-                Assert.AreEqual(originalException.ToString(), ex.InnerException.ToString());
-                Assert.AreEqual(originalException.Message, ex.Message);
-                throw;
-            }
+            bool result = ExceptionHandlingUtility.TryCloneException(originalException, out Exception ex);
+
+            Assert.IsTrue(result, "Expected exception to be cloned.");
+            Assert.IsNotNull(ex, "Expected cloned exception to be not null.");
+            Assert.IsTrue(ex is TaskCanceledException, "Expected cloned exception to be of type TaskCanceledException.");
+            Assert.IsFalse(Object.ReferenceEquals(originalException, ex)); // Ensure a new exception was created
+            Assert.AreEqual(originalException.ToString(), ex.InnerException.ToString());
+            Assert.AreEqual(originalException.Message, ex.Message);
+            throw ex;
         }
+
         [TestMethod]
         [ExpectedException(typeof(TimeoutException))]
         public void CloneAndRethrow_TimeoutException()
@@ -44,17 +43,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeoutException originalException = new TimeoutException("Operation timed out.", new TimeoutException("inner exception"));
 
             // Act & Assert
-            try
-            {
-                ExceptionHandlingUtility.CloneAndRethrowException(originalException);
-            }
-            catch (TimeoutException ex)
-            {
-                Assert.IsFalse(Object.ReferenceEquals(originalException, ex)); // Ensure a new exception was created
-                Assert.AreEqual(originalException.ToString(), ex.InnerException.ToString());
-                Assert.AreEqual(originalException.Message, ex.Message);
-                throw;
-            }
+            bool result = ExceptionHandlingUtility.TryCloneException(originalException, out Exception ex);
+
+            Assert.IsTrue(result, "Expected exception to be cloned.");
+            Assert.IsNotNull(ex, "Expected cloned exception to be not null.");
+            Assert.IsTrue(ex is TimeoutException, "Expected cloned exception to be of type TimeoutException.");
+            Assert.IsFalse(Object.ReferenceEquals(originalException, ex)); // Ensure a new exception was created
+            Assert.AreEqual(originalException.ToString(), ex.InnerException.ToString());
+            Assert.AreEqual(originalException.Message, ex.Message);
+            throw ex;
         }
 
         [TestMethod]
@@ -65,17 +62,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             CosmosException originalException = CosmosExceptionFactory.CreateInternalServerErrorException("something's broken", new Headers());
 
             // Act & Assert
-            try
-            {
-                ExceptionHandlingUtility.CloneAndRethrowException(originalException);
-            }
-            catch (CosmosException ex)
-            {
-                Assert.IsFalse(Object.ReferenceEquals(originalException, ex)); // Ensure a new exception was createdAssert.AreNotSame(originalException, ex);
-                Assert.AreEqual(originalException.StatusCode, ex.StatusCode);
-                Assert.AreEqual(originalException.Message, ex.Message);
-                throw;
-            }
+            bool result = ExceptionHandlingUtility.TryCloneException(originalException, out Exception ex);
+
+            Assert.IsTrue(result, "Expected exception to be cloned.");
+            Assert.IsNotNull(ex, "Expected cloned exception to be not null.");
+            Assert.IsTrue(ex is CosmosException, "Expected cloned exception to be of type CosmosException.");
+            Assert.IsFalse(Object.ReferenceEquals(originalException, ex)); // Ensure a new exception was created
+            Assert.AreEqual(originalException.ToString(), ex.ToString());
+            Assert.AreEqual(originalException.Message, ex.Message);
+            throw ex;
         }
 
         [TestMethod]
@@ -85,16 +80,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             MalformedContinuationTokenException originalException =
                 new MalformedContinuationTokenException("malformed continuation token", new MalformedContinuationTokenException("Inner"));
 
-            try
-            {
-                // Act & Assert
-                ExceptionHandlingUtility.CloneAndRethrowException(originalException);
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail("Expected no exception to be thrown, but got: " + ex.Message);
-            }
+            // Act & Assert
+            bool result = ExceptionHandlingUtility.TryCloneException(originalException, out _);
 
+            Assert.IsFalse(result, "Expected exception to not be cloned.");
         }
     }
 }
