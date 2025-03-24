@@ -206,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
             mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-            Mock<GlobalEndpointManager> endpointManager = new Mock<GlobalEndpointManager>(mockDocumentClient.Object, new ConnectionPolicy());
+            Mock<GlobalEndpointManager> endpointManager = new Mock<GlobalEndpointManager>(mockDocumentClient.Object, new ConnectionPolicy(), false);
             endpointManager.Setup(gep => gep.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>())).Returns(new Uri("http://localhost"));
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);

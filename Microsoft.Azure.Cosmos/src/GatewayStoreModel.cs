@@ -27,16 +27,16 @@ namespace Microsoft.Azure.Cosmos
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
 
-        private readonly GlobalEndpointManager endpointManager;
+        internal readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
-        private readonly ISessionContainer sessionContainer;
-        private readonly ConsistencyLevel defaultConsistencyLevel;
+        internal readonly ConsistencyLevel defaultConsistencyLevel;
 
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
-        private ClientCollectionCache clientCollectionCache;
-        private PartitionKeyRangeCache partitionKeyRangeCache;
+        protected PartitionKeyRangeCache partitionKeyRangeCache;
+        protected ClientCollectionCache clientCollectionCache;
+        protected ISessionContainer sessionContainer;
 
         public GatewayStoreModel(
             GlobalEndpointManager endpointManager,
@@ -130,8 +130,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 long longValue;
-                IEnumerable<string> headerValues;
-                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out headerValues) &&
+                if (responseMessage.Headers.TryGetValues(HttpConstants.HttpHeaders.MaxMediaStorageUsageInMB, out IEnumerable<string> headerValues) &&
                     (headerValues.Count() != 0))
                 {
                     if (long.TryParse(headerValues.First(), out longValue))
@@ -180,8 +179,8 @@ namespace Microsoft.Azure.Cosmos
             return databaseAccount;
         }
 
-        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache, 
-                              ClientCollectionCache clientCollectionCache)
+        public void SetCaches(PartitionKeyRangeCache partitionKeyRangeCache,
+            ClientCollectionCache clientCollectionCache)
         {
             this.clientCollectionCache = clientCollectionCache;
             this.partitionKeyRangeCache = partitionKeyRangeCache;
@@ -192,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
             this.Dispose(true);
         }
 
-        private async Task CaptureSessionTokenAndHandleSplitAsync(
+        internal async Task CaptureSessionTokenAndHandleSplitAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes subStatusCode,
             DocumentServiceRequest request,
@@ -462,7 +461,7 @@ namespace Microsoft.Azure.Cosmos
                    operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
-        private void Dispose(bool disposing)
+        protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
@@ -483,7 +482,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private Uri GetEntityUri(DocumentServiceRequest entity)
+        internal Uri GetEntityUri(DocumentServiceRequest entity)
         {
             string contentLocation = entity.Headers[HttpConstants.HttpHeaders.ContentLocation];
 
@@ -495,7 +494,7 @@ namespace Microsoft.Azure.Cosmos
             return new Uri(this.endpointManager.ResolveServiceEndpoint(entity), PathsHelper.GeneratePath(entity.ResourceType, entity, false));
         }
 
-        private Uri GetFeedUri(DocumentServiceRequest request)
+        internal Uri GetFeedUri(DocumentServiceRequest request)
         {
             return new Uri(this.endpointManager.ResolveServiceEndpoint(request), PathsHelper.GeneratePath(request.ResourceType, request, true));
         }

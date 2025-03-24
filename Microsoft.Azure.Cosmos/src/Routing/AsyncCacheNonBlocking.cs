@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal sealed class AsyncCacheNonBlocking<TKey, TValue> : IDisposable
     {
+        private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly CancellationTokenSource cancellationTokenSource;
         private readonly ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>> values;
         private readonly Func<Exception, bool> removeFromCacheOnBackgroundRefreshException;
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         public AsyncCacheNonBlocking(
             Func<Exception, bool> removeFromCacheOnBackgroundRefreshException = null,
             IEqualityComparer<TKey> keyEqualityComparer = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.keyEqualityComparer = keyEqualityComparer ?? EqualityComparer<TKey>.Default;
             this.values = new ConcurrentDictionary<TKey, AsyncLazyWithRefreshTask<TValue>>(this.keyEqualityComparer);
@@ -38,10 +40,13 @@ namespace Microsoft.Azure.Cosmos
             this.cancellationTokenSource = cancellationToken == default
                 ? new CancellationTokenSource()
                 : CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            this.enableAsyncCacheExceptionNoSharing = enableAsyncCacheExceptionNoSharing;
         }
 
-        public AsyncCacheNonBlocking()
-            : this(removeFromCacheOnBackgroundRefreshException: null, keyEqualityComparer: null)
+        public AsyncCacheNonBlocking(bool enableAsyncCacheExceptionNoSharing = true)
+            : this(removeFromCacheOnBackgroundRefreshException: null,
+                  keyEqualityComparer: null,
+                  enableAsyncCacheExceptionNoSharing: enableAsyncCacheExceptionNoSharing)
         {
         }
 

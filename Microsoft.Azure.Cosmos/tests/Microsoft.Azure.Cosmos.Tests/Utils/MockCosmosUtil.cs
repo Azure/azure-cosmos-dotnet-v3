@@ -92,6 +92,30 @@ namespace Microsoft.Azure.Cosmos.Tests
                 receivedResponseEventArgs: null);
         }
 
+        public static CosmosHttpClient CreateMockCosmosHttpClientFromFunc(
+            Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc)
+        {
+            return MockCosmosUtil.CreateCosmosHttpClient(
+                () => new HttpClient(new DelegatingHttpHandler(sendFunc)));
+        }
+
+        private class DelegatingHttpHandler : HttpMessageHandler
+        {
+            private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
+
+            public DelegatingHttpHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc)
+            {
+                this.sendFunc = sendFunc;
+            }
+
+            protected override Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
+            {
+                return this.sendFunc(request);
+            }
+        }
+
         public static Mock<PartitionRoutingHelper> GetPartitionRoutingHelperMock(string partitionRangeKeyId)
         {
             Mock<PartitionRoutingHelper> partitionRoutingHelperMock = new Mock<PartitionRoutingHelper>();

@@ -808,7 +808,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="throughputBucket">The desired throughput bucket for the client.</param>
         /// <returns>The current <see cref="CosmosClientBuilder"/>.</returns>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-        internal CosmosClientBuilder WithThroughputBucket(int throughputBucket)
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithThroughputBucket(int throughputBucket)
         {
             this.clientOptions.ThroughputBucket = throughputBucket;
             return this;

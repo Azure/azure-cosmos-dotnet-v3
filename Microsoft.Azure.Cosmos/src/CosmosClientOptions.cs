@@ -447,6 +447,13 @@ namespace Microsoft.Azure.Cosmos
         internal bool? EnableAdvancedReplicaSelectionForTcp { get; set; }
 
         /// <summary>
+        /// Gets or sets stack trace optimization to reduce stack trace proliferation in high-concurrency scenarios where exceptions are frequently thrown. 
+        /// When enabled, critical SDK components optimize exception handling to minimize performance overhead.
+        /// The default value is 'true'.
+        /// </summary>
+        internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
@@ -952,7 +959,12 @@ namespace Microsoft.Azure.Cosmos
         /// If <see cref="AllowBulkExecution"/> is set to true in CosmosClientOptions, throughput bucket can only be set at client level.
         /// </remarks>
         /// <seealso href="https://aka.ms/cosmsodb-bucketing"/>
-        internal int? ThroughputBucket { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        int? ThroughputBucket { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
