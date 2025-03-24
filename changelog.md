@@ -21,16 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixes
 
-- [5024](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/5024) Query: Fixes logic to determine whether to use distributed query by adding a check for gateway connection mode
-- [5049](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/5049) .NET9: Fixes WebAssembly or browser scenarios by conditionally setting the ConnectionLimit
-- [4470](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/4470) NonBlockingAsyncCache: Fixes lambda func capturing the outer context (memory optimization)
-- [4977](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/4977) Heiarchical Partition Keys: Fixes bug for ReadMany where None Partition does not return results
+- [5024](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/5024) Query: Fixes logic to determine whether to use distributed query by adding a check for gateway connection mode
+- [5049](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/5049) .NET9: Fixes WebAssembly or browser scenarios by conditionally setting the ConnectionLimit
+- [4470](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/4470) NonBlockingAsyncCache: Fixes lambda func capturing the outer context (memory optimization)
+- [4977](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/4977) Heiarchical Partition Keys: Fixes bug for ReadMany where None Partition does not return results
 
 #### Added
 
-- [5057](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/5057) AvailabilityStrategy: Adds WithAvailabilityStrategy method to public GA SDK.
-- [5011](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/5011) Query: Adds query feature and deserialization of component weights for weighted rank fusion 
-- [4980](http://github.con/Azure/azure-cosmos-dotnet-v3/pull/4980) Query: Adds FullTextContains, FullTextContainsAll, FullTextContainsAny as LINQ extension method
+- [5057](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/5057) AvailabilityStrategy: Adds WithAvailabilityStrategy method to public GA SDK.
+- [5011](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/5011) Query: Adds query feature and deserialization of component weights for weighted rank fusion 
+- [4980](http://github.com/Azure/azure-cosmos-dotnet-v3/pull/4980) Query: Adds FullTextContains, FullTextContainsAll, FullTextContainsAny as LINQ extension method
 
 ### <a name="3.48.0-preview.2"/> [3.48.0-preview.2](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.48.0-preview.2) - 2025-2-28
 
