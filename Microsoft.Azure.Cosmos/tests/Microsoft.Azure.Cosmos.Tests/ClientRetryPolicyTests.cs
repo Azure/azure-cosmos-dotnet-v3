@@ -243,7 +243,8 @@
 
             GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
-                request.RequestContext.ResolvedPartitionKeyRange);
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: false);
 
             // Validate that the partition key range failover info is not present before the http request exception was captured in the retry policy.
             Assert.IsNull(partitionKeyRangeFailoverInfo);
@@ -255,7 +256,8 @@
 
             partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
-                request.RequestContext.ResolvedPartitionKeyRange);
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: false);
 
             if (enablePartitionLevelFailover)
             {
@@ -273,17 +275,20 @@
         /// a partition level failover is applied and the subsequent requests will be retried on the next region for the faulty partition.
         /// </summary>
         [TestMethod]
-        [DataRow(true, DisplayName = "Case when partition level failover is enabled.")]
-        [DataRow(false, DisplayName = "Case when partition level failover is disabled.")]
+        [DataRow(true, true, DisplayName = "Read Request - Case when partition level failover is enabled.")]
+        [DataRow(false, true, DisplayName = "Write Request - Case when partition level failover is enabled.")]
+        [DataRow(true, false, DisplayName = "Read Request - Case when partition level failover is disabled.")]
+        [DataRow(false, false, DisplayName = "Write Request - Case when partition level failover is disabled.")]
         public void CosmosOperationCancelledExceptionHandelingTests(
+            bool isReadOnlyRequest,
             bool enablePartitionLevelFailover)
         {
-            const int writeThreshold = 5;
+            int requestThreshold = isReadOnlyRequest ? 10 : 5;
             const bool enableEndpointDiscovery = true;
             const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
 
             //Creates a sample write request
-            DocumentServiceRequest request = this.CreateRequest(false, false);
+            DocumentServiceRequest request = this.CreateRequest(isReadOnlyRequest, false);
             request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange() { Id = "0", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
 
             //Create GlobalEndpointManager
@@ -309,7 +314,8 @@
 
             GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
-                request.RequestContext.ResolvedPartitionKeyRange);
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: isReadOnlyRequest);
 
             // Validate that the partition key range failover info is not present before the http request exception was captured in the retry policy.
             Assert.IsNull(partitionKeyRangeFailoverInfo);
@@ -318,7 +324,7 @@
 
             // With cancellation token expiry, the retry policy should not failover the offending partition
             // until the write threshold is met.
-            for (int i=0; i<writeThreshold; i++)
+            for (int i=0; i< requestThreshold; i++)
             {
                 retryPolicy.OnBeforeSendRequest(request);
                 retryStatus = retryPolicy.ShouldRetryAsync(operationCancelledException, cancellationToken);
@@ -329,7 +335,8 @@
 
             partitionKeyRangeFailoverInfo = ClientRetryPolicyTests.GetPartitionKeyRangeFailoverInfoUsingReflection(
                 this.partitionKeyRangeLocationCache,
-                request.RequestContext.ResolvedPartitionKeyRange);
+                request.RequestContext.ResolvedPartitionKeyRange,
+                isReadOnlyOrMultiMasterWriteRequest: isReadOnlyRequest);
 
             if (enablePartitionLevelFailover)
             {
@@ -508,12 +515,14 @@
 
         private static GlobalPartitionEndpointManagerCore.PartitionKeyRangeFailoverInfo GetPartitionKeyRangeFailoverInfoUsingReflection(
             GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            PartitionKeyRange pkRange)
+            PartitionKeyRange pkRange,
+            bool isReadOnlyOrMultiMasterWriteRequest)
         {
+            string fieldName = isReadOnlyOrMultiMasterWriteRequest ? "PartitionKeyRangeToLocationForReadAndWrite" : "PartitionKeyRangeToLocationForWrite";
             FieldInfo fieldInfo = globalPartitionEndpointManager
                 .GetType()
                 .GetField(
-                    name: "PartitionKeyRangeToLocationForWrite",
+                    name: fieldName,
                     bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
 
             if (fieldInfo != null)
@@ -569,6 +578,7 @@
             bool enforceSingleMasterSingleWriteLocation = false, // Some tests depend on the Initialize to create an account with multiple write locations, even when not multi master
             ReadOnlyCollection<string> preferedRegionListOverride = null,
             bool enablePartitionLevelFailover = false,
+            bool enablePartitionLevelCircuitBreaker = false,
             bool multimasterMetadataWriteRetryTest = false)
         {
             this.databaseAccount = ClientRetryPolicyTests.CreateDatabaseAccount(
@@ -620,7 +630,8 @@
             {
                 this.partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(
                     globalEndpointManager: endpointManager,
-                    isPartitionLevelFailoverEnabled: enablePartitionLevelFailover);
+                    isPartitionLevelFailoverEnabled: enablePartitionLevelFailover,
+                    isPartitionLevelCircuitBreakerEnabled: enablePartitionLevelFailover || enablePartitionLevelCircuitBreaker);
             }
             else
             {
