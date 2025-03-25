@@ -987,7 +987,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             if (asyncCacheExceptionNoSharing)
                             {
                                 //asyncCacheExceptionNoSharing feature is enabled. Shallow copies of the exception will be thrown.
-                                Assert.IsFalse(Object.ReferenceEquals(t.Exception.InnerException, exception), "Exception should not be the same");
+                                Assert.IsFalse(Object.ReferenceEquals(t.Exception, exception), "Exception should not be the same");
                             }
                             else
                             {

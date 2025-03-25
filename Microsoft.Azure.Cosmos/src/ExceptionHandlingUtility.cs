@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             clonedException = e switch
             {
                 ICloneable cloneableEx => (Exception)cloneableEx.Clone(),
-                TaskCanceledException taskCanceledEx => AddMessageData(new TaskCanceledException(taskCanceledEx.Message, taskCanceledEx), e),
+                OperationCanceledException operationCanceledException => AddMessageData((Exception)Activator.CreateInstance(operationCanceledException.GetType(), operationCanceledException.Message, operationCanceledException), e), //Handles all OperationCanceledException types
                 TimeoutException timeoutEx => AddMessageData(new TimeoutException(timeoutEx.Message, timeoutEx), e),
                 _ => null
             };

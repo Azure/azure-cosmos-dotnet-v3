@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection.Metadata;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
@@ -16,6 +17,27 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ExceptionHandlingUtilityTests
     {
+        [TestMethod]
+        [DataRow(typeof(TaskCanceledException))]
+        [DataRow(typeof(OperationCanceledException))]
+        public void CloneAndRethrow_OperationCanceledExceptionTypes(Type expectedType)
+        {
+            // Arrange
+            Exception original = expectedType == typeof(TaskCanceledException)
+                ? new TaskCanceledException("Task was canceled.", new TaskCanceledException("inner"))
+                : new OperationCanceledException("Operation was canceled.", new OperationCanceledException("inner"));
+            // Act & Assert
+            bool result = ExceptionHandlingUtility.TryCloneException(original, out Exception ex);
+
+            // Assert
+            Assert.IsTrue(result, "Expected exception to be cloned.");
+            Assert.IsNotNull(ex, "Expected cloned exception to be not null.");
+            Assert.IsTrue(ex.GetType() == original.GetType(), $"Expected cloned exception to be of type : '{expectedType.Name}'");
+            Assert.IsFalse(Object.ReferenceEquals(original, ex)); // Ensure a new exception was created
+            Assert.AreEqual(original.ToString(), ex.InnerException.ToString());
+            Assert.AreEqual(original.Message, ex.Message);
+        }
+
         [TestMethod]
         [ExpectedException(typeof(TaskCanceledException))]
         public void CloneAndRethrow_TaskCanceledException()
