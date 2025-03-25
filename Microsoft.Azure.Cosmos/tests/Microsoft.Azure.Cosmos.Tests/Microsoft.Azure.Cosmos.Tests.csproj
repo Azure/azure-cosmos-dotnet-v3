@@ -116,6 +116,12 @@
     <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.MultiOrderBy.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.MultiOrderByRank.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+      <None Update="BaselineTest\TestBaseline\OrderByClauseSqlParserBaselineTests.SingleOrderByRank.xml">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     <None Update="BaselineTest\TestBaseline\PartitionKeyHashBaselineTest.Numbers.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
