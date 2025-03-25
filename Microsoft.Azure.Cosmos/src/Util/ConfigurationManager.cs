@@ -138,10 +138,10 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the boolean value of the .
+        /// Gets the boolean value indicating whether the thin client mode is enabled based on the environment variable override.
         /// </summary>
-        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
-        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
+        /// <param name="defaultValue">A boolean field containing the default value for thin client mode.</param>
+        /// <returns>A boolean flag indicating if thin client mode is enabled.</returns>
         public static bool IsThinClientEnabled(
             bool defaultValue)
         {
