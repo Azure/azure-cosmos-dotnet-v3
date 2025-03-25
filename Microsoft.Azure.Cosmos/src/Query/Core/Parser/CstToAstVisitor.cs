@@ -356,7 +356,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Parser
         {
             Contract.Requires(context != null);
 
-            bool rank = context.K_RANK != null;
+            bool rank = context.K_RANK() != null;
             List<SqlOrderByItem> orderByItems = new List<SqlOrderByItem>();
             if (rank)
             {
