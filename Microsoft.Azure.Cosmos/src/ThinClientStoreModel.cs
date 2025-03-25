@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
-                AccountProperties properties = await this.GetDatabaseAccountSafeAsync();
+                AccountProperties properties = await this.GetDatabaseAccountPropertiesAsync();
                 response = await this.thinClientStoreClient.InvokeAsync(
                     request,
                     request.ResourceType,
@@ -99,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
-        private async Task<AccountProperties> GetDatabaseAccountSafeAsync()
+        private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {
             try
             {
