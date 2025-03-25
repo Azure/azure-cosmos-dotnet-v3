@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly Uri defaultEndpoint;
         private readonly ConnectionPolicy connectionPolicy;
         private readonly IDocumentClientInternal owner;
-        private readonly AsyncCache<string, AccountProperties> databaseAccountCache = new AsyncCache<string, AccountProperties>();
+        private readonly AsyncCache<string, AccountProperties> databaseAccountCache;
         private readonly TimeSpan MinTimeBetweenAccountRefresh = TimeSpan.FromSeconds(15);
         private readonly int backgroundRefreshLocationTimeIntervalInMS = GlobalEndpointManager.DefaultBackgroundRefreshLocationTimeIntervalInMS;
         private readonly object backgroundAccountRefreshLock = new object();
@@ -42,7 +42,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
-        public GlobalEndpointManager(IDocumentClientInternal owner, ConnectionPolicy connectionPolicy)
+        public GlobalEndpointManager(
+            IDocumentClientInternal owner,
+            ConnectionPolicy connectionPolicy,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.locationCache = new LocationCache(
                 new ReadOnlyCollection<string>(connectionPolicy.PreferredLocations),
@@ -56,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.connectionPolicy = connectionPolicy;
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
+            this.databaseAccountCache = new AsyncCache<string, AccountProperties>(enableAsyncCacheExceptionNoSharing);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
 #if NETSTANDARD20

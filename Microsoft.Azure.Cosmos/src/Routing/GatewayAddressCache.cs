@@ -71,14 +71,15 @@ namespace Microsoft.Azure.Cosmos.Routing
             IConnectionStateListener connectionStateListener,
             long suboptimalPartitionForceRefreshIntervalInSeconds = 600,
             bool enableTcpConnectionEndpointRediscovery = false,
-            bool replicaAddressValidationEnabled = false)
+            bool replicaAddressValidationEnabled = false,
+            bool enableAsyncCacheExceptionNoSharing = true)
         {
             this.addressEndpoint = new Uri(serviceEndpoint + "/" + Paths.AddressPathSegment);
             this.protocol = protocol;
             this.tokenProvider = tokenProvider;
             this.serviceEndpoint = serviceEndpoint;
             this.serviceConfigReader = serviceConfigReader;
-            this.serverPartitionAddressCache = new AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation>();
+            this.serverPartitionAddressCache = new AsyncCacheNonBlocking<PartitionKeyRangeIdentity, PartitionAddressInformation>(enableAsyncCacheExceptionNoSharing);
             this.suboptimalServerPartitionTimestamps = new ConcurrentDictionary<PartitionKeyRangeIdentity, DateTime>();
             this.serverPartitionAddressToPkRangeIdMap = new ConcurrentDictionary<ServerKey, HashSet<PartitionKeyRangeIdentity>>();
             this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
@@ -740,7 +741,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             uri: targetEndpoint,
                             additionalHeaders: headers,
                             resourceType: resourceType,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                             clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                             cancellationToken: default,
                             documentServiceRequest: faultInjectionRequest))
@@ -756,7 +757,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     uri: targetEndpoint,
                     additionalHeaders: headers,
                     resourceType: resourceType,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                     cancellationToken: default))
                 {
@@ -846,7 +847,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             uri: targetEndpoint,
                             additionalHeaders: headers,
                             resourceType: ResourceType.Document,
-                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                            timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                             clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                             cancellationToken: default,
                             documentServiceRequest: faultInjectionRequest))
@@ -862,7 +863,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     uri: targetEndpoint,
                     additionalHeaders: headers,
                     resourceType: ResourceType.Document,
-                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
+                    timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout,
                     clientSideRequestStatistics: request.RequestContext?.ClientRequestStatistics,
                     cancellationToken: default))
                 {

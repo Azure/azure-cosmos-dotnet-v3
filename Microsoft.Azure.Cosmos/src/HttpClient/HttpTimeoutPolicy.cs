@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
             //Get Addresses Requests
             if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
             //Data Plane Read
