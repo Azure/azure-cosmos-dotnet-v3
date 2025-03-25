@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void PopulateAttributes(DiagnosticScope scope, Exception exception)
         {
-            scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionMessage, exception.Message);
             scope.AddAttribute(AppInsightClassicAttributeKeys.ExceptionType, exception.GetType().Name);
 
             // If Exception is not registered with open Telemetry

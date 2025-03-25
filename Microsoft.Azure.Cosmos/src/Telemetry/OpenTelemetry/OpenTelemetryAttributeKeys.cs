@@ -225,7 +225,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void PopulateAttributes(DiagnosticScope scope, Exception exception)
         {
-            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+            scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception?.Message);
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
 
             // If Exception is not registered with open Telemetry

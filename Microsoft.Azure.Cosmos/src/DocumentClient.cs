@@ -687,7 +687,7 @@ namespace Microsoft.Azure.Cosmos
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
                 this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
 
-                DefaultTrace.TraceWarning("{0} occurred while OpenAsync. Exception Message: {1}", ex.ToString(), ex.Message);
+                DefaultTrace.TraceWarning("Exception occurred while OpenAsync. Exception Message: {0}", ex.Message);
             }
         }
 
@@ -1027,7 +1027,7 @@ namespace Microsoft.Azure.Cosmos
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
 #pragma warning disable VSTHRD110 // Observe result of async calls
-            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception?.Message), TaskContinuationOptions.OnlyOnFaulted);
 #pragma warning restore VSTHRD110 // Observe result of async calls
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);
@@ -1352,7 +1352,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (Exception exception)
                 {
                     DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                        exception);
+                        exception.Message);
                 }
 
                 this.httpClient = null;
@@ -1620,8 +1620,8 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e);
-                    childTrace.AddDatum("initializeTask failed", e);
+                    DefaultTrace.TraceWarning("EnsureValidClientAsync initializeTask failed {0}", e.Message);
+                    childTrace.AddDatum("initializeTask failed", e.Message);
                     throw;
                 }
 
