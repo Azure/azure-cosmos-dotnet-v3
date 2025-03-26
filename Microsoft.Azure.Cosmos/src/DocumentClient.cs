@@ -1030,7 +1030,9 @@ namespace Microsoft.Azure.Cosmos
             // UnobservedTaskException by using ContinueWith method w/ TaskContinuationOptions.OnlyOnFaulted
             // and accessing the Exception property on the target task.
 #pragma warning disable VSTHRD110 // Observe result of async calls
-            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception?.Message), TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
+            initTask.ContinueWith(t => DefaultTrace.TraceWarning("initializeTask failed {0}", t.Exception), TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
 #pragma warning restore VSTHRD110 // Observe result of async calls
 
             this.traceId = Interlocked.Increment(ref DocumentClient.idCounter);

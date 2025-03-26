@@ -160,7 +160,9 @@ namespace Microsoft.Azure.Cosmos
             if (requestMessage != null)
             {
                 requestMessage.Properties.Remove(nameof(DocumentClientException));
-                requestMessage.Properties.Add(nameof(DocumentClientException), documentClientException?.Message);
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
+                requestMessage.Properties.Add(nameof(DocumentClientException), documentClientException);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
             }
 
             return responseMessage;
