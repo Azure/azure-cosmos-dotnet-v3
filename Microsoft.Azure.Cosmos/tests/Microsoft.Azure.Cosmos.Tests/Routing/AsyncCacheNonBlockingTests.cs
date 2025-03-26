@@ -531,5 +531,51 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
 
             Assert.AreEqual("value1", result);
         }
+
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public async Task ValidateCacheGetAsyncExceptionPostProcessing(bool enabled)
+        {
+            // Arrange
+            Exception testException = new TimeoutException("Simulated timeout exception");
+            CancellationToken cancellationToken = CancellationToken.None;
+
+            AsyncCacheNonBlocking<string, string> asyncCache = new AsyncCacheNonBlocking<string, string>(enableAsyncCacheExceptionNoSharing: enabled);
+
+            Random random = new Random();
+            List<Task> tasks = new List<Task>();
+            for (int i = 0; i < 50; i++)
+            {
+                // Insert a random delay to simulate multiple request coming at different times
+                await Task.Delay(random.Next(0, 5));
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        await asyncCache.GetAsync(
+                            key: "testKey",
+                            singleValueInitFunc: async (_) =>
+                            {
+                                await Task.Delay(5);
+                                throw testException;
+                            },
+                            forceRefresh: (_) => false);
+                        Assert.Fail();
+                    }
+                    catch (TimeoutException dce)
+                    {
+                        if (enabled)
+                        {
+                            Assert.IsFalse(Object.ReferenceEquals(dce, testException));
+                        }
+                        else
+                        {
+                            Assert.IsTrue(Object.ReferenceEquals(dce, testException));
+                        }
+                    }
+                }));
+            }
+        }
     }
 }
