@@ -10,32 +10,57 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Reflection.Metadata;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
     public class ExceptionHandlingUtilityTests
     {
         [TestMethod]
-        [DataRow(typeof(TaskCanceledException))]
-        [DataRow(typeof(OperationCanceledException))]
-        public void CloneAndRethrow_OperationCanceledExceptionTypes(Type expectedType)
+        [DynamicData(nameof(GetTestData), DynamicDataSourceType.Method)]
+        public void CloneAndRethrow_OperationCanceledExceptionTypes(OperationCanceledException original)
         {
-            // Arrange
-            Exception original = expectedType == typeof(TaskCanceledException)
-                ? new TaskCanceledException("Task was canceled.", new TaskCanceledException("inner"))
-                : new OperationCanceledException("Operation was canceled.", new OperationCanceledException("inner"));
             // Act & Assert
             bool result = ExceptionHandlingUtility.TryCloneException(original, out Exception ex);
 
             // Assert
             Assert.IsTrue(result, "Expected exception to be cloned.");
             Assert.IsNotNull(ex, "Expected cloned exception to be not null.");
-            Assert.IsTrue(ex.GetType() == original.GetType(), $"Expected cloned exception to be of type : '{expectedType.Name}'");
+            Assert.IsTrue(ex.GetType() == original.GetType(), $"Expected cloned exception to be of type : '{original.GetType()}'");
             Assert.IsFalse(Object.ReferenceEquals(original, ex)); // Ensure a new exception was created
             Assert.AreEqual(original.ToString(), ex.InnerException.ToString());
             Assert.AreEqual(original.Message, ex.Message);
+        }
+
+        [TestMethod]
+        [DynamicData(nameof(GetTestData), DynamicDataSourceType.Method)]
+        public void CloneAndRethrow_CosmosOperationCanceledExceptionTypes(OperationCanceledException original)
+        {
+            CosmosOperationCanceledException cosmosOperationCanceledException = new CosmosOperationCanceledException(original, new CosmosTraceDiagnostics(NoOpTrace.Singleton));
+            bool result = ExceptionHandlingUtility.TryCloneException(cosmosOperationCanceledException, out Exception cloneResult);
+
+            // Assert
+            Assert.IsTrue(result, "Expected exception to be cloned.");
+            Assert.IsNotNull(cloneResult, "Expected cloned exception to be not null.");
+            Assert.IsTrue(cloneResult.GetType() == cosmosOperationCanceledException.GetType(), $"Expected cloned exception to be of type : '{cosmosOperationCanceledException.GetType()}'");
+            Assert.IsFalse(Object.ReferenceEquals(original, cloneResult)); // Ensure a new exception was created
+            Assert.AreEqual(cosmosOperationCanceledException.ToString(), cloneResult.ToString()); // IClonable
+            Assert.AreEqual(cosmosOperationCanceledException.Message, cloneResult.Message);
+
+            //Assert: Shallow copy
+            Assert.IsTrue(object.ReferenceEquals(cosmosOperationCanceledException.InnerException, cloneResult.InnerException));
+        }
+
+        private static IEnumerable<object[]> GetTestData()
+        {
+            return new List<object[]>
+            {
+                new object[] { new TaskCanceledException("Task was canceled.", new TaskCanceledException("inner")) },
+                new object[] { new OperationCanceledException("Operation was canceled.", new OperationCanceledException("inner")) },
+            };
         }
 
         [TestMethod]
