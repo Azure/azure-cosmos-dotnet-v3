@@ -541,7 +541,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     SqlOrderByItem orderByItem = sqlQuery.OrderByClause.OrderByItems[0];
                     CosmosObject parsedContinuationToken = CosmosObject.Parse(((CosmosString)feedRangeState.State.Value).Value);
                     SqlBinaryScalarExpression resumeFilter = SqlBinaryScalarExpression.Create(
-                        orderByItem.IsDescending ? SqlBinaryScalarOperatorKind.LessThan : SqlBinaryScalarOperatorKind.GreaterThan,
+                        orderByItem.IsDescending.GetValueOrDefault() ? SqlBinaryScalarOperatorKind.LessThan : SqlBinaryScalarOperatorKind.GreaterThan,
                         orderByItem.Expression,
                         parsedContinuationToken["orderByItem"].Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton));
 
@@ -588,7 +588,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
 
                         if (sortOrderCompare != 0)
                         {
-                            sortOrderCompare = orderByItem.IsDescending ? -sortOrderCompare : sortOrderCompare;
+                            sortOrderCompare = orderByItem.IsDescending.GetValueOrDefault() ? -sortOrderCompare : sortOrderCompare;
                         }
 
                         if (sortOrderCompare < 0)
