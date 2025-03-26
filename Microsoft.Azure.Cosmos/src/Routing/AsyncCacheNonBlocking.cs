@@ -121,6 +121,15 @@ namespace Microsoft.Azure.Cosmos
                             e);
                     }
 
+                    if (this.enableAsyncCacheExceptionNoSharing)
+                    {
+                        // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
+                        // and rethrows them, doesn't process other exceptions.
+                        if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                        {
+                            throw clone;
+                        }
+                    }
                     throw;
                 }
 
@@ -161,6 +170,16 @@ namespace Microsoft.Azure.Cosmos
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
+
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                    // and rethrows them, doesn't process other exceptions.
+                    if (ExceptionHandlingUtility.TryCloneException(e, out Exception clone))
+                    {
+                        throw clone;
+                    }
+                }
                 throw;
             }
         }
