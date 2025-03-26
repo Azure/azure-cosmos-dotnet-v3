@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager = null)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager)
         {
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;

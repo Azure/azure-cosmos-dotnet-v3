@@ -146,7 +146,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -205,7 +206,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -553,7 +555,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -612,7 +615,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -673,7 +677,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -821,7 +826,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -928,7 +934,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -967,7 +974,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Session,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
+                GlobalPartitionEndpointManagerNoOp.Instance);
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
             Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
 
@@ -1061,7 +1069,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Session,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
 
@@ -1267,7 +1276,8 @@ namespace Microsoft.Azure.Cosmos
                 ConsistencyLevel.Eventual,
                 eventSource,
                 null,
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false).Object;
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false).Object;
