@@ -23,7 +23,6 @@ namespace Microsoft.Azure.Cosmos.Common
         private readonly bool enableAsyncCacheExceptionNoSharing;
         private readonly IEqualityComparer<TValue> valueEqualityComparer;
         private readonly IEqualityComparer<TKey> keyEqualityComparer;
-
         private ConcurrentDictionary<TKey, AsyncLazy<TValue>> values;
 
         public AsyncCache(
@@ -154,12 +153,38 @@ namespace Microsoft.Azure.Cosmos.Common
             {
                 return await generator;
             }
-            catch (Exception) when (object.ReferenceEquals(actualValue, newLazyValue))
+            catch (Exception ex) when (object.ReferenceEquals(actualValue, newLazyValue))
             {
                 // If the lambda this thread added to values triggered an exception remove it from the cache.
                 this.TryRemoveValue(key, actualValue);
+
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation 
+                    // and rethrows them, doesn't process other exceptions.
+                    if (ExceptionHandlingUtility.TryCloneException(ex, out Exception clone))
+                    {
+                        throw clone;
+                    }
+                }
+
                 throw;
             }
+            catch (Exception ex)
+            {
+                if (this.enableAsyncCacheExceptionNoSharing)
+                {
+                    // Creates a shallow copy of specific exception types to prevent stack trace proliferation
+                    // and rethrows them, doesn't process other exceptions.
+                    if (ExceptionHandlingUtility.TryCloneException(ex, out Exception clone))
+                    {
+                        throw clone;
+                    }
+                }
+
+                throw;
+            }
+
         }
 
         public void Remove(TKey key)
