@@ -520,13 +520,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     // Test binary + empty user string dictionary
                     IJsonReadOnlyStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string>());
                     byte[] binaryWithEmptyUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
-                    Assert.IsTrue(binaryWithEmptyUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be the same with empty readonly JSON dictionary.");
+                    Assert.IsTrue(binaryWithEmptyUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be the same with empty readonly JSON dictionary.");
 
                     // Test binary + user string encoding
                     byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, out jsonStringDictionary);
                     if (jsonStringDictionary.TryGetString(index: 0, value: out _))
                     {
-                        Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary should be different with user string encoding.");
+                        Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be different with user string encoding.");
                     }
 
                     IJsonNavigator binaryNavigatorWithUserStringEncoding = JsonNavigator.Create(binaryInput, jsonStringDictionary);

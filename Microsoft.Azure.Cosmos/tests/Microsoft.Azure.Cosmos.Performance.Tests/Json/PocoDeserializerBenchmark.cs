@@ -12,6 +12,7 @@
     using Microsoft.Azure.Cosmos.Tests.Poco;
     using Newtonsoft.Json;
 
+    [MemoryDiagnoser]
     public class PocoDeserializationBenchmark
     {
         private readonly Payload peoplePayload;
