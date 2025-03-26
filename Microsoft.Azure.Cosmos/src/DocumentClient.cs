@@ -943,8 +943,11 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy = connectionPolicy ?? ConnectionPolicy.Default;
 
 #if !NETSTANDARD16
-            ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(this.ServiceEndpoint);
-            servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
+            if (ServicePointAccessor.IsSupported)
+            {
+                ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(this.ServiceEndpoint);
+                servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
+            }
 #endif
 
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
