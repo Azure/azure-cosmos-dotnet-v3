@@ -56,6 +56,9 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 this.eventSource,
                 serializerSettings);
+
+            this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
+                this.MarkEndpointsToHealthyAsync);
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
@@ -437,6 +440,30 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return new Tuple<bool, PartitionKeyRange>(true, partitonKeyRange);
+        }
+
+        /// <summary>
+        /// Attempts to mark the unhealthy endpoints for a faulty partition to healthy state, un-deterministically. This is done
+        /// specifically for the gateway mode to get the faulty partition failed back to the original location.
+        /// </summary>
+        /// <param name="pkRangeUriMappings">A dictionary mapping partition key ranges to their corresponding collection resource ID, original failed location, and health status.</param>
+        public Task MarkEndpointsToHealthyAsync(
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeUriMappings)
+        {
+            foreach (PartitionKeyRange pkRange in pkRangeUriMappings?.Keys)
+            {
+                string collectionRid = pkRangeUriMappings[pkRange].Item1;
+                Uri originalFailedLocation = pkRangeUriMappings[pkRange].Item2;
+
+                DefaultTrace.TraceVerbose("Un-deterministically marking the original failed endpoint: {0}, for the PkRange: {1}, collectionRid: {2} back to healthy.",
+                    originalFailedLocation,
+                    pkRange.Id,
+                    collectionRid);
+
+                pkRangeUriMappings[pkRange] = new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(collectionRid, originalFailedLocation, TransportAddressHealthState.HealthStatus.Connected);
+            }
+
+            return Task.CompletedTask;
         }
 
         // DEVNOTE: This can be replace with ReplicatedResourceClient.IsMasterOperation on next Direct sync
