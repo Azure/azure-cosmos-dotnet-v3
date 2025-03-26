@@ -150,8 +150,6 @@ namespace Microsoft.Azure.Cosmos
                     this.partitionKeyRangeLocationCache.TryMarkEndpointUnavailableForPartitionKeyRange(
                          this.documentServiceRequest);
                 }
-
-                return ShouldRetryResult.NoRetry();
             }
 
             return await this.throttlingRetry.ShouldRetryAsync(exception, cancellationToken);
