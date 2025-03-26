@@ -26,9 +26,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             EncryptionOptions encryptionOptions,
             CancellationToken token)
         {
-            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input);
-
-            Stream result = await this.EncryptAsync(itemJObj, encryptor, encryptionOptions, token);
+            MemoryStream result = new ();
+            await this.EncryptStreamAsync(input, result, encryptor, encryptionOptions, token);
 
 #if NET8_0_OR_GREATER
             await input.DisposeAsync();
@@ -39,8 +38,21 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             return result;
         }
 
-        public async Task<Stream> EncryptAsync(
+        public async Task EncryptStreamAsync(
+            Stream input,
+            Stream output,
+            Encryptor encryptor,
+            EncryptionOptions encryptionOptions,
+            CancellationToken token)
+        {
+            JObject itemJObj = EncryptionProcessor.BaseSerializer.FromStream<JObject>(input, leaveOpen: true);
+
+            await this.EncryptAsync(itemJObj, output, encryptor, encryptionOptions, token);
+        }
+
+        public async Task EncryptAsync(
             JObject input,
+            Stream output,
             Encryptor encryptor,
             EncryptionOptions encryptionOptions,
             CancellationToken token)
@@ -115,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             input.Add(Constants.EncryptedInfo, JObject.FromObject(encryptionProperties));
 
-            return EncryptionProcessor.BaseSerializer.ToStream(input);
+            await EncryptionProcessor.BaseSerializer.ToStreamAsync(input, output, token);
         }
 
         internal async Task<DecryptionContext> DecryptObjectAsync(
