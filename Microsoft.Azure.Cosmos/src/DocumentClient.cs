@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: this.cancellationTokenSource.Token,
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: true);
+            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
         }
 
         /// <summary>
