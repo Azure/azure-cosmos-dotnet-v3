@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
+        //THIS IS A TEST DO NOT MERGE
         private readonly ICommunicationEventSource eventSource;
         protected readonly CosmosHttpClient httpClient;
         protected readonly JsonSerializerSettings SerializerSettings;
