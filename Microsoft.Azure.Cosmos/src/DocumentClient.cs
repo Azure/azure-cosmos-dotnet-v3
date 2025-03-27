@@ -509,7 +509,7 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: true);
+            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
