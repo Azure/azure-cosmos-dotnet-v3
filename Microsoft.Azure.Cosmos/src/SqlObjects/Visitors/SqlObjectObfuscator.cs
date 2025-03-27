@@ -283,7 +283,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 items[i] = sqlOrderByClause.OrderByItems[i].Accept(this) as SqlOrderByItem;
             }
 
-            return SqlOrderByClause.Create(items);
+            return SqlOrderByClause.Create(sqlOrderByClause.Rank, items);
         }
 
         public override SqlObject Visit(SqlOrderByItem sqlOrderByItem)
