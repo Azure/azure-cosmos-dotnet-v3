@@ -31,7 +31,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.DCount
             | QueryFeatures.NonStreamingOrderBy
             | QueryFeatures.CountIf
-            | QueryFeatures.HybridSearch;
+            | QueryFeatures.HybridSearch
+            | QueryFeatures.WeightedRankFusion;
 
         private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
             SupportedQueryFeatures & (~QueryFeatures.NonStreamingOrderBy);

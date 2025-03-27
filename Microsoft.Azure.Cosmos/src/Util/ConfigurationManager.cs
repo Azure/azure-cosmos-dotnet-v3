@@ -23,6 +23,36 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string PartitionLevelFailoverEnabled = "AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for enabling per partition circuit breaker. The default value
+        /// for this flag is false.
+        /// </summary>
+        internal static readonly string PartitionLevelCircuitBreakerEnabled = "AZURE_COSMOS_CIRCUIT_BREAKER_ENABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for capturing the stale partition refresh task interval time
+        /// in seconds. The default value for this interval is 60 seconds.
+        /// </summary>
+        internal static readonly string StalePartitionUnavailabilityRefreshIntervalInSeconds = "AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for capturing the unavailability duration applicable for a failed partition
+        /// before the partition can be considered for a refresh by the background task.
+        /// </summary>
+        internal static readonly string AllowedPartitionUnavailabilityDurationInSeconds = "AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
+        /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
+        /// </summary>
+        internal static readonly string CircuitBreakerConsecutiveFailureCountForReads = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_READS";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for capturing the consecutive failure count for writes, before triggering per partition
+        /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
+        /// </summary>
+        internal static readonly string CircuitBreakerConsecutiveFailureCountForWrites = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES";
+
+        /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
         /// </summary>
         internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
@@ -43,6 +73,13 @@ namespace Microsoft.Azure.Cosmos
         /// and GA.
         /// </summary>
         internal static readonly string BinaryEncodingEnabled = "AZURE_COSMOS_BINARY_ENCODING_ENABLED";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
+        /// be removed once binary encoding is enabled by default for both preview
+        /// and GA.
+        /// </summary>
+        internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -92,6 +129,88 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.PartitionLevelFailoverEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value of the partition level circuit breaker environment variable. Note that, partition level
+        /// circuit breaker is disabled by default for both preview and GA releases. The user can set the respective
+        /// environment variable 'AZURE_COSMOS_PARTITION_LEVEL_CIRCUIT_BREAKER_ENABLED' to override the value for both preview and GA.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for partition level circuit breaker.</param>
+        /// <returns>A boolean flag indicating if partition level circuit breaker is enabled.</returns>
+        public static bool IsPartitionLevelCircuitBreakerEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.PartitionLevelCircuitBreakerEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the interval time in seconds for refreshing stale partition unavailability.
+        /// The default value for this interval is 60 seconds. The user can set the respective
+        /// environment variable 'AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS'
+        /// to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default value for the refresh interval in seconds.</param>
+        /// <returns>An integer representing the refresh interval in seconds.</returns>
+        public static int GetStalePartitionUnavailabilityRefreshIntervalInSeconds(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.StalePartitionUnavailabilityRefreshIntervalInSeconds,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the allowed partition unavailability duration in seconds.
+        /// The default value for this duration is 5 seconds. The user can set the respective
+        /// environment variable 'AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS'
+        /// to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default unavailability duration in seconds.</param>
+        /// <returns>An integer representing the allowed partition unavailability duration in seconds.</returns>
+        public static int GetAllowedPartitionUnavailabilityDurationInSeconds(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AllowedPartitionUnavailabilityDurationInSeconds,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the consecutive failure count for reads before triggering the per partition circuit breaker flow.
+        /// The default value for this interval is 10 consecutive requests within a 1-minute window.
+        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_READS' to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
+        /// <returns>An integer representing the consecutive failure count for reads.</returns>
+        public static int GetCircuitBreakerConsecutiveFailureCountForReads(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the consecutive failure count for writes (applicable for multi master accounts) before triggering
+        /// the per partition circuit breaker flow. The default value for this interval is 5 consecutive requests within a 1-minute window.
+        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES' to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
+        /// <returns>An integer representing the consecutive failure count for writes.</returns>
+        public static int GetCircuitBreakerConsecutiveFailureCountForWrites(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCountForWrites,
                         defaultValue: defaultValue);
         }
 
@@ -147,6 +266,19 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.BinaryEncodingEnabled,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if channel multiplexing enabled on TCP channel.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if channel multiplexing is enabled.</returns>
+        public static bool IsTcpChannelMultiplexingEnabled()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.TcpChannelMultiplexingEnabled,
+                        defaultValue: false);
         }
     }
 }

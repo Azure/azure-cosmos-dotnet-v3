@@ -59,9 +59,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlPropertyNameHashCode = 1262661966;
         private const int SqlPropertyRefScalarExpressionHashCode = -1586896865;
         private const int SqlQueryHashCode = 1968642960;
-        private const int SqlScoreExpressionOrderbyItemHashCode = 46457293;
-        private const int SqlScoreExpressionOrderbyItemAscendingHashCode = -5155123;
-        private const int SqlScoreExpressionOrderbyItemDescendingHashCode = 10615937;
+        private const int SqlRankHashCode = 46457293;
         private const int SqlSelectClauseHashCode = 19731870;
         private const int SqlSelectClauseDistinctHashCode = 1467616881;
         private const int SqlSelectItemHashCode = -611151157;
@@ -426,17 +424,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             int hashCode = SqlOrderbyClauseHashCode;
             if (sqlOrderByClause.Rank)
             {
-                for (int i = 0; i < sqlOrderByClause.ScoreExpressionOrderByItems.Length; i++)
-                {
-                    hashCode = CombineHashes(hashCode, sqlOrderByClause.ScoreExpressionOrderByItems[i].Accept(this));
-                }
+                hashCode = CombineHashes(hashCode, SqlRankHashCode);
             }
-            else
+
+            for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
-                for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
-                {
-                    hashCode = CombineHashes(hashCode, sqlOrderByClause.OrderByItems[i].Accept(this));
-                }
+                hashCode = CombineHashes(hashCode, sqlOrderByClause.OrderByItems[i].Accept(this));
             }
 
             return hashCode;
@@ -446,17 +439,9 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         {
             int hashCode = SqlOrderbyItemHashCode;
             hashCode = CombineHashes(hashCode, sqlOrderByItem.Expression.Accept(this));
-            if (sqlOrderByItem.IsDescending)
-            {
-                hashCode = CombineHashes(hashCode, SqlOrderbyItemDescendingHashCode);
-            }
-            else
-            {
-                hashCode = CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
-            }
-
-            return hashCode;
-        }
+            hashCode = sqlOrderByItem.IsDescending.HasValue && sqlOrderByItem.IsDescending.Value
+                ? CombineHashes(hashCode, SqlOrderbyItemDescendingHashCode)
+                : CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
 
         public override int Visit(SqlOrderByRankClause sqlOrderByRankClause)
         {

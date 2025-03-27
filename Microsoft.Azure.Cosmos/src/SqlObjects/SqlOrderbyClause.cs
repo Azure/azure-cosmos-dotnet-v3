@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
 #endif
     sealed class SqlOrderByClause : SqlObject
     {
-        private SqlOrderByClause(ImmutableArray<SqlOrderByItem> orderByItems)
+        private SqlOrderByClause(bool rank, ImmutableArray<SqlOrderByItem> orderByItems)
         {
             foreach (SqlOrderByItem sqlOrderbyItem in orderByItems)
             {
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             }
 
             this.OrderByItems = orderByItems;
-            this.Rank = false;
+            this.Rank = rank;
         }
 
         private SqlOrderByClause(ImmutableArray<SqlScoreExpressionOrderByItem> scoreExpressionOrderByItems)
@@ -45,17 +45,26 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         }
 
         public ImmutableArray<SqlOrderByItem> OrderByItems { get; }
-        public ImmutableArray<SqlScoreExpressionOrderByItem> ScoreExpressionOrderByItems { get; }
         public bool Rank { get; }
 
         public static SqlOrderByClause Create(params SqlOrderByItem[] orderByItems)
         {
-            return new SqlOrderByClause(orderByItems.ToImmutableArray());
+            return new SqlOrderByClause(rank: false, orderByItems.ToImmutableArray());
         }
 
         public static SqlOrderByClause Create(ImmutableArray<SqlOrderByItem> orderByItems)
         {
-            return new SqlOrderByClause(orderByItems);
+            return new SqlOrderByClause(rank: false, orderByItems);
+        }
+
+        public static SqlOrderByClause Create(bool rank, params SqlOrderByItem[] orderByItems)
+        {
+            return new SqlOrderByClause(rank, orderByItems.ToImmutableArray());
+        }
+
+        public static SqlOrderByClause Create(bool rank, ImmutableArray<SqlOrderByItem> orderByItems)
+        {
+            return new SqlOrderByClause(rank, orderByItems);
         }
 
         public static SqlOrderByClause Create(params SqlScoreExpressionOrderByItem[] orderByItems)
