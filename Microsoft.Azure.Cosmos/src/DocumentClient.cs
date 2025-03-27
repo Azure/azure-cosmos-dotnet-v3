@@ -1063,7 +1063,8 @@ namespace Microsoft.Azure.Cosmos
                     this.eventSource,
                     this.serializerSettings,
                     this.httpClient,
-                    this.PartitionKeyRangeLocation);
+                    this.PartitionKeyRangeLocation,
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
 
             this.GatewayStoreModel = gatewayStoreModel;
 

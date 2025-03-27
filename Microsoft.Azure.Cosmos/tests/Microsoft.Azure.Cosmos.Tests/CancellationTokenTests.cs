@@ -52,7 +52,6 @@ namespace Microsoft.Azure.Cosmos
                 Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
                 mockDocumentClient.Setup(client => client.ServiceEndpoint).Returns(new Uri("https://foo"));
 
-                GlobalPartitionEndpointManager globalPartitionEndpointManager = GlobalPartitionEndpointManagerNoOp.Instance;
                 using GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
                 ISessionContainer sessionContainer = new SessionContainer(string.Empty);
                 DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
@@ -66,7 +65,9 @@ namespace Microsoft.Azure.Cosmos
                     MockCosmosUtil.CreateCosmosHttpClient(
                         () => new HttpClient(messageHandler),
                         eventSource),
-                    globalPartitionEndpointManager);
+                    GlobalPartitionEndpointManagerNoOp.Instance);
+
+                TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
                 using (new ActivityScope(Guid.NewGuid()))
                 {
@@ -213,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer = new SessionContainer(string.Empty);
             HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
 
-            return new GatewayStoreModel(
+            GatewayStoreModel storeModel = new GatewayStoreModel(
                 endpointManager.Object,
                 sessionContainer,
                 Cosmos.ConsistencyLevel.Eventual,
@@ -221,6 +222,10 @@ namespace Microsoft.Azure.Cosmos
                 new JsonSerializerSettings(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager.Object);
+
+            return storeModel;
         }
 
         // Creates a StoreModel that will return addresses for normal requests and throw for address refresh

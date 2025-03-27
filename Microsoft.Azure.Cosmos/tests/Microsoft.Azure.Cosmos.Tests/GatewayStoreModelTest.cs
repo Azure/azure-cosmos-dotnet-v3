@@ -149,6 +149,8 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
 
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
             using (new ActivityScope(Guid.NewGuid()))
             {
                 using (DocumentServiceRequest request =
@@ -208,6 +210,8 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
             using (new ActivityScope(Guid.NewGuid()))
             {
@@ -558,6 +562,8 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
 
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
             using (new ActivityScope(Guid.NewGuid()))
             {
                 using (DocumentServiceRequest request =
@@ -617,6 +623,8 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -829,6 +837,7 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
 
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
             headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);
@@ -937,6 +946,7 @@ namespace Microsoft.Azure.Cosmos
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
                 GlobalPartitionEndpointManagerNoOp.Instance);
 
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
             headers.Set(HttpConstants.HttpHeaders.SessionToken, originalSessionToken);

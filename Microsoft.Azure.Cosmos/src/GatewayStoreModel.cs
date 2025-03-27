@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
+        private readonly bool isPartitionLevelFailoverEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
 
@@ -45,8 +46,10 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            bool isPartitionLevelFailoverEnabled = false)
         {
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
@@ -80,7 +83,9 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
-                if (!ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                // This is applicable for both per partition automatic failover and per partition circuit breaker.
+                if (this.isPartitionLevelFailoverEnabled
+                    && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
                     (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
