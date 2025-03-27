@@ -171,5 +171,86 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.Continuation));
             Assert.IsTrue(allKeys.Contains(WFConstants.BackendHeaders.SubStatus));
         }
+
+        [TestMethod]
+        public void TestHeadersClone()
+        {
+            Headers Headers = new Headers();
+            Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
+            Headers.ContinuationToken = Guid.NewGuid().ToString();
+            Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
+            Headers.Add(WFConstants.BackendHeaders.SubStatus, "1002");
+            Headers.PartitionKey = Guid.NewGuid().ToString();
+            string[] allKeys = Headers.AllKeys();
+            Assert.IsTrue(allKeys.Contains(Key));
+            Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.PartitionKey));
+            Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
+            Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.Continuation));
+            Assert.IsTrue(allKeys.Contains(WFConstants.BackendHeaders.SubStatus));
+
+            Headers clone = Headers.Clone();
+            Assert.IsNotNull(clone);
+            string[] keys = clone.AllKeys();
+            Assert.IsTrue(keys.Contains(Key));
+            Assert.IsTrue(keys.Contains(HttpConstants.HttpHeaders.PartitionKey));
+            Assert.IsTrue(keys.Contains(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
+            Assert.IsTrue(keys.Contains(HttpConstants.HttpHeaders.Continuation));
+            Assert.IsTrue(keys.Contains(WFConstants.BackendHeaders.SubStatus));
+            Assert.AreEqual(allKeys.Length, keys.Length);
+            Assert.AreEqual(
+                Headers.Get(HttpConstants.HttpHeaders.PartitionKey), 
+                clone.Get(HttpConstants.HttpHeaders.PartitionKey));
+            Assert.AreEqual(
+                Headers.Get(HttpConstants.HttpHeaders.RetryAfterInMilliseconds), 
+                clone.Get(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
+            Assert.AreEqual(
+                Headers.Get(HttpConstants.HttpHeaders.Continuation),
+                clone.Get(HttpConstants.HttpHeaders.Continuation));
+            Assert.AreEqual(
+                Headers.Get(WFConstants.BackendHeaders.SubStatus),
+                clone.Get(WFConstants.BackendHeaders.SubStatus));
+        }
+
+        [TestMethod]
+        public void TestNullHeadersClone()
+        {
+            Headers Headers = new Headers();
+            Headers.CosmosMessageHeaders[Key] = Guid.NewGuid().ToString();
+            Headers.ContinuationToken = Guid.NewGuid().ToString();
+            Headers.CosmosMessageHeaders[HttpConstants.HttpHeaders.RetryAfterInMilliseconds] = "20";
+            Headers.Add(WFConstants.BackendHeaders.SubStatus, "1002");
+            Headers.PartitionKey = "pk";
+
+            Headers.CosmosMessageHeaders["x-ms-documentdb-partitionkey"] = null;
+
+            string[] allKeys = Headers.AllKeys();
+            Assert.IsTrue(allKeys.Contains(Key));
+            Assert.IsFalse(allKeys.Contains(HttpConstants.HttpHeaders.PartitionKey));
+            Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
+            Assert.IsTrue(allKeys.Contains(HttpConstants.HttpHeaders.Continuation));
+            Assert.IsTrue(allKeys.Contains(WFConstants.BackendHeaders.SubStatus));
+
+            Headers clone = Headers.Clone();
+            Assert.IsNotNull(clone);
+            string[] keys = clone.AllKeys();
+            Assert.IsTrue(keys.Contains(Key));
+            Assert.IsFalse(keys.Contains(HttpConstants.HttpHeaders.PartitionKey));
+            Assert.IsTrue(keys.Contains(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
+            Assert.IsTrue(keys.Contains(HttpConstants.HttpHeaders.Continuation));
+            Assert.IsTrue(keys.Contains(WFConstants.BackendHeaders.SubStatus));
+            Assert.AreEqual(allKeys.Length, keys.Length);
+            Assert.AreEqual(
+                Headers.Get(HttpConstants.HttpHeaders.PartitionKey),
+                clone.Get(HttpConstants.HttpHeaders.PartitionKey));
+            Assert.AreEqual(
+                Headers.Get(HttpConstants.HttpHeaders.RetryAfterInMilliseconds),
+                clone.Get(HttpConstants.HttpHeaders.RetryAfterInMilliseconds));
+            Assert.AreEqual(
+                Headers.Get(HttpConstants.HttpHeaders.Continuation),
+                clone.Get(HttpConstants.HttpHeaders.Continuation));
+            Assert.AreEqual(
+                Headers.Get(WFConstants.BackendHeaders.SubStatus),
+                clone.Get(WFConstants.BackendHeaders.SubStatus));
+        }
     }
 }
