@@ -21,7 +21,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
             SqlOrderByClause orderByClause,
-            SqlOrderByRankClause orderByRankClause,
             SqlOffsetLimitClause offsetLimitClause)
         {
             this.SelectClause = selectClause ?? throw new ArgumentNullException(nameof(selectClause));
@@ -29,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             this.WhereClause = whereClause;
             this.GroupByClause = groupByClause;
             this.OrderByClause = orderByClause;
-            this.OrderByRankClause = orderByRankClause;
             this.OffsetLimitClause = offsetLimitClause;
         }
 
@@ -42,8 +40,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
         public SqlGroupByClause GroupByClause { get; }
 
         public SqlOrderByClause OrderByClause { get; }
-
-        public SqlOrderByRankClause OrderByRankClause { get; }
 
         public SqlOffsetLimitClause OffsetLimitClause { get; }
 
@@ -68,35 +64,15 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             SqlWhereClause whereClause,
             SqlGroupByClause groupByClause,
             SqlOrderByClause orderByClause,
-            SqlOrderByRankClause orderByRankClause,
             SqlOffsetLimitClause offsetLimitClause)
         {
             return new SqlQuery(
-                selectClause,
-                fromClause,
-                whereClause,
-                groupByClause,
-                orderByClause,
-                orderByRankClause,
-                offsetLimitClause);
-        }
-
-        public static SqlQuery Create(
-            SqlSelectClause selectClause,
-            SqlFromClause fromClause,
-            SqlWhereClause whereClause,
-            SqlGroupByClause groupByClause,
-            SqlOrderByClause orderByClause,
-            SqlOffsetLimitClause offsetLimitClause)
-        {
-            return new SqlQuery(
-                selectClause,
-                fromClause,
-                whereClause,
-                groupByClause,
-                orderByClause,
-                null /*orderByRankClause*/,
-                offsetLimitClause);
+selectClause,
+fromClause,
+whereClause,
+groupByClause,
+orderByClause,
+offsetLimitClause);
         }
     }
 }

@@ -277,23 +277,11 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
 
         public override SqlObject Visit(SqlOrderByClause sqlOrderByClause)
         {
-            if (sqlOrderByClause.Rank)
+            SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderByItems.Length];
+            for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
-                SqlScoreExpressionOrderByItem[] items = new SqlScoreExpressionOrderByItem[sqlOrderByClause.ScoreExpressionOrderByItems.Length];
-                for (int i = 0; i < sqlOrderByClause.ScoreExpressionOrderByItems.Length; i++)
-                {
-                    items[i] = sqlOrderByClause.ScoreExpressionOrderByItems[i].Accept(this) as SqlScoreExpressionOrderByItem;
-                }
-
-                return SqlOrderByClause.Create(items);
+                items[i] = sqlOrderByClause.OrderByItems[i].Accept(this) as SqlOrderByItem;
             }
-            else
-            {
-                SqlOrderByItem[] items = new SqlOrderByItem[sqlOrderByClause.OrderByItems.Length];
-                for (int i = 0; i < sqlOrderByClause.OrderByItems.Length; i++)
-                {
-                    items[i] = sqlOrderByClause.OrderByItems[i].Accept(this) as SqlOrderByItem;
-                }
 
             return SqlOrderByClause.Create(sqlOrderByClause.Rank, items);
         }
@@ -303,11 +291,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             return SqlOrderByItem.Create(
                 sqlOrderByItem.Expression.Accept(this) as SqlScalarExpression,
                 sqlOrderByItem.IsDescending);
-        }
-
-        public override SqlObject Visit(SqlOrderByRankClause sqlOrderByRankClause)
-        {
-            return SqlOrderByRankClause.Create(sqlOrderByRankClause.ScoringFunction.Accept(this) as SqlScalarExpression);
         }
 
         public override SqlObject Visit(SqlParameter sqlParameter)
@@ -353,15 +336,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.WhereClause?.Accept(this) as SqlWhereClause,
                 sqlQuery.GroupByClause?.Accept(this) as SqlGroupByClause,
                 sqlQuery.OrderByClause?.Accept(this) as SqlOrderByClause,
-                sqlQuery.OrderByRankClause?.Accept(this) as SqlOrderByRankClause,
                 sqlQuery.OffsetLimitClause?.Accept(this) as SqlOffsetLimitClause);
-        }
-
-        public override SqlObject Visit(SqlScoreExpressionOrderByItem sqlScoreOrderByItem)
-        {
-            return SqlScoreExpressionOrderByItem.Create(
-                sqlScoreOrderByItem.Expression.Accept(this) as SqlFunctionCallScalarExpression,
-                sqlScoreOrderByItem.IsDescending);
         }
 
         public override SqlObject Visit(SqlSelectClause sqlSelectClause)

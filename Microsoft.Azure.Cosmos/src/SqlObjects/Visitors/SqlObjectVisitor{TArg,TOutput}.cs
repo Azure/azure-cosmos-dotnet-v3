@@ -47,14 +47,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         public abstract TOutput Visit(SqlOffsetSpec sqlObject, TArg input);
         public abstract TOutput Visit(SqlOrderByClause sqlObject, TArg input);
         public abstract TOutput Visit(SqlOrderByItem sqlObject, TArg input);
-        public abstract TOutput Visit(SqlOrderByRankClause sqlObject, TArg input);
         public abstract TOutput Visit(SqlParameter sqlObject, TArg input);
         public abstract TOutput Visit(SqlParameterRefScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlProgram sqlObject, TArg input);
         public abstract TOutput Visit(SqlPropertyName sqlObject, TArg input);
         public abstract TOutput Visit(SqlPropertyRefScalarExpression sqlObject, TArg input);
         public abstract TOutput Visit(SqlQuery sqlObject, TArg input);
-        public abstract TOutput Visit(SqlScoreExpressionOrderByItem sqlObject, TArg input);
         public abstract TOutput Visit(SqlSelectClause sqlObject, TArg input);
         public abstract TOutput Visit(SqlSelectItem sqlObject, TArg input);
         public abstract TOutput Visit(SqlSelectListSpec sqlObject, TArg input);

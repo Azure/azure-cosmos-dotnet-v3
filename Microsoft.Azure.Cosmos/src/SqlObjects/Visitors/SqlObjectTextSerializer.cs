@@ -431,7 +431,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             for (int i = 1; i < sqlOrderByClause.OrderByItems.Length; i++)
             {
                 this.writer.Write(", ");
-                items[i].Accept(this);
+                sqlOrderByClause.OrderByItems[i].Accept(this);
             }
         }
 
@@ -513,32 +513,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 sqlQuery.OrderByClause.Accept(this);
             }
 
-            if (sqlQuery.OrderByRankClause != null)
-            {
-                this.WriteDelimiter(string.Empty);
-                sqlQuery.OrderByRankClause.Accept(this);
-            }
-
             if (sqlQuery.OffsetLimitClause != null)
             {
                 this.WriteDelimiter(string.Empty);
                 sqlQuery.OffsetLimitClause.Accept(this);
-            }
-        }
-
-        public override void Visit(SqlScoreExpressionOrderByItem sqlScoreExpressionOrderByItem)
-        {
-            sqlScoreExpressionOrderByItem.Expression.Accept(this);
-            if (sqlScoreExpressionOrderByItem.IsDescending.HasValue)
-            {
-                if (sqlScoreExpressionOrderByItem.IsDescending.Value)
-                {
-                    this.writer.Write(" DESC");
-                }
-                else
-                {
-                    this.writer.Write(" ASC");
-                }
             }
         }
 

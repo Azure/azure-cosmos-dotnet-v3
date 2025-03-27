@@ -50,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
         private const int SqlOffsetSpecHashCode = 109062001;
         private const int SqlOrderbyClauseHashCode = 1361708336;
         private const int SqlOrderbyItemHashCode = 846566057;
-        private const int SqlOrderByRankClauseHashCode = 536749207;
         private const int SqlOrderbyItemAscendingHashCode = -1123129997;
         private const int SqlOrderbyItemDescendingHashCode = -703648622;
         private const int SqlParameterHashCode = -1853999792;
@@ -443,11 +442,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
                 ? CombineHashes(hashCode, SqlOrderbyItemDescendingHashCode)
                 : CombineHashes(hashCode, SqlOrderbyItemAscendingHashCode);
 
-        public override int Visit(SqlOrderByRankClause sqlOrderByRankClause)
-        {
-            int hashCode = SqlOrderByRankClauseHashCode;
-            hashCode = CombineHashes(hashCode, sqlOrderByRankClause.ScoringFunction.Accept(this));
-            
             return hashCode;
         }
 
@@ -519,20 +513,6 @@ namespace Microsoft.Azure.Cosmos.SqlObjects.Visitors
             if (sqlQuery.OffsetLimitClause != null)
             {
                 hashCode = CombineHashes(hashCode, sqlQuery.OffsetLimitClause.Accept(this));
-            }
-
-            return hashCode;
-        }
-
-        public override int Visit(SqlScoreExpressionOrderByItem sqlOrderByItem)
-        {
-            int hashCode = SqlScoreExpressionOrderbyItemHashCode;
-            hashCode = CombineHashes(hashCode, sqlOrderByItem.Expression.Accept(this));
-            if (sqlOrderByItem.IsDescending.HasValue)
-            {
-                hashCode = sqlOrderByItem.IsDescending.Value
-                    ? CombineHashes(hashCode, SqlScoreExpressionOrderbyItemDescendingHashCode)
-                    : CombineHashes(hashCode, SqlScoreExpressionOrderbyItemAscendingHashCode);
             }
 
             return hashCode;
