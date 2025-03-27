@@ -1097,10 +1097,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
                 new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                    uriString: addressTobeMarkedUnhealthy)), true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1250,10 +1250,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's health status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
                 new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)), true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1554,10 +1554,10 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
                 new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)), true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
