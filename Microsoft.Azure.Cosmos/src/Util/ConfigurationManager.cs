@@ -41,6 +41,11 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string AllowedPartitionUnavailabilityDurationInSeconds = "AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS";
 
         /// <summary>
+        /// Environment variable name to enable thin client mode.
+        /// </summary>
+        internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
@@ -129,6 +134,20 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.PartitionLevelFailoverEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether the thin client mode is enabled based on the environment variable override.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for thin client mode.</param>
+        /// <returns>A boolean flag indicating if thin client mode is enabled.</returns>
+        public static bool IsThinClientEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
         }
 

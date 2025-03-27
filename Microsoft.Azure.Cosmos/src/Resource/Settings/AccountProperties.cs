@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// This contains the thinclient endpoint value.
         /// </summary>
-        internal Uri ThinClientEndpoint { get; set; }
+        internal Uri ThinClientEndpoint => this.GetThinClientEndpoint();
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
@@ -252,5 +252,19 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+
+        private Uri GetThinClientEndpoint()
+        {
+            if (this.AdditionalProperties != null
+                && this.AdditionalProperties.TryGetValue("thinClientWritableLocations", out JToken locationsToken)
+                && locationsToken is JArray locationsArray
+                && locationsArray.Count > 0
+                && locationsArray[0]["databaseAccountEndpoint"] != null)
+            {
+                return new Uri(locationsArray[0]["databaseAccountEndpoint"].ToString());
+            }
+
+            return null;
+        }
     }
 }

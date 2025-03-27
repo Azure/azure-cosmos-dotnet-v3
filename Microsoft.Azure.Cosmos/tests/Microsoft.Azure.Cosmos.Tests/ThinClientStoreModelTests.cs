@@ -100,10 +100,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Mock<IDocumentClientInternal> docClientMulti = new Mock<IDocumentClientInternal>();
             docClientMulti.Setup(c => c.ServiceEndpoint).Returns(new Uri("http://localhost"));
 
-            AccountProperties validAccountProperties = new AccountProperties
-            {
-                ThinClientEndpoint = new Uri("http://localhost/thinClient/")
-            };
+            AccountProperties validAccountProperties = new AccountProperties();
 
             docClientMulti
                 .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
@@ -195,10 +192,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(c => c.ServiceEndpoint)
                 .Returns(new Uri("https://myCosmosAccount.documents.azure.com/"));
 
-            AccountProperties validProperties = new AccountProperties
-            {
-                ThinClientEndpoint = new Uri("https://myThinClientEndpoint/")
-            };
+            AccountProperties validProperties = new AccountProperties();
 
             docClientOkay
                 .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
