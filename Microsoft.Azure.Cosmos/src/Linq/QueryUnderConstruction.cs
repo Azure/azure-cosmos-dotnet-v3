@@ -196,7 +196,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             SqlOffsetLimitClause offsetLimitClause = (this.offsetSpec != null) ?
                 SqlOffsetLimitClause.Create(this.offsetSpec, this.limitSpec ?? SqlLimitSpec.Create(SqlNumberLiteral.Create(int.MaxValue))) :
                 offsetLimitClause = default(SqlOffsetLimitClause);
-            SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, this.groupByClause, this.orderByClause,  offsetLimitClause);
+            SqlQuery result = SqlQuery.Create(selectClause, fromClause, this.whereClause, this.groupByClause, this.orderByClause, offsetLimitClause);
             return result;
         }
 

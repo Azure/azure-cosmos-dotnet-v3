@@ -407,6 +407,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b).Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != null)),
                 new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b).Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
             };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+            }
+
             this.ExecuteTestSuite(inputs);
         }
 
@@ -429,6 +437,13 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("RRF in WHERE clause", b => getQuery(b).Where(doc => doc.RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != null)),
                 new LinqTestInput("RRF in WHERE clause 2", b => getQuery(b).Where(doc => doc.RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != null)),
             };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+            }
 
             this.ExecuteTestSuite(inputs);
         }
