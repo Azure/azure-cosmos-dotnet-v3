@@ -67,11 +67,6 @@
 	  <PackageReference Include="System.Text.Json" Version="8.0.5" />
 	</ItemGroup>
 
-  <!-- Code Analyzers -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Codex.Analyzers" Version="1.0.5" PrivateAssets="All" />
-  </ItemGroup>
-
   <PropertyGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<SignAssembly>true</SignAssembly>
 		<DelaySign>true</DelaySign>

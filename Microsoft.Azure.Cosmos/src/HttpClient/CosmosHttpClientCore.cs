@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e);
+                    DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e.Message);
                 }
             }
             

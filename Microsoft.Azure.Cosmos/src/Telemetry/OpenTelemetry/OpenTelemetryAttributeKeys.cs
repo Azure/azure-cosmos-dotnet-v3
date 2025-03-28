@@ -225,7 +225,9 @@ namespace Microsoft.Azure.Cosmos.Telemetry
 
         public void PopulateAttributes(DiagnosticScope scope, Exception exception)
         {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionStacktrace, exception.StackTrace);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionType, exception.GetType().Name);
 
             // If Exception is not registered with open Telemetry

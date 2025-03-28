@@ -132,7 +132,7 @@ namespace Microsoft.Azure.Cosmos
                     catch (Exception exception)
                     {
                         DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception);
+                            exception.Message);
                     }
                     this.thinClientStoreClient = null;
                 }

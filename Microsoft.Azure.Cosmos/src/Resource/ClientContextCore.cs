@@ -639,7 +639,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError(ex.ToString());
+                DefaultTrace.TraceError(ex.Message);
             }
         }
 

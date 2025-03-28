@@ -49,9 +49,6 @@ namespace Microsoft.Azure.Cosmos
         public override string Message => this.originalException.Message + this.Diagnostics.ToString();
 
         /// <inheritdoc/>
-        public override string StackTrace => this.originalException.StackTrace;
-
-        /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
 
         /// <summary>

@@ -203,7 +203,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             catch (Exception ex)
             {
                 await this.monitor.NotifyErrorAsync(lease.CurrentLeaseToken, ex);
-                DefaultTrace.TraceWarning("Lease with token {0}: failed to handle gone", ex, lease.CurrentLeaseToken);
+                DefaultTrace.TraceWarning("Lease with token {0}: failed to handle gone", ex.Message, lease.CurrentLeaseToken);
             }
         }
     }

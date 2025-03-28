@@ -60,9 +60,6 @@ namespace Microsoft.Azure.Cosmos
         public override string Message { get; }
 
         /// <inheritdoc/>
-        public override string StackTrace => this.originalException.StackTrace;
-
-        /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
 
         /// <summary>
@@ -86,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics} StackTrace: {this.StackTrace}";
+            return $"{this.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
         }
 
         /// <summary>

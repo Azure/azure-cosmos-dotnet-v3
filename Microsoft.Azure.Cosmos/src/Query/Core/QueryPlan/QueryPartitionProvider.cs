@@ -381,7 +381,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 Exception exception = Marshal.GetExceptionForHR((int)errorCode);
                 if (exception != null)
                 {
-                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception);
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception?.Message);
                     return TryCatch<IntPtr>.FromException(exception);
                 }
                 
@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex);
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex.Message);
                 return TryCatch<IntPtr>.FromException(ex);
             }
         }

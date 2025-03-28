@@ -343,7 +343,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
+                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return;
                 }
                 
-                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.ToString());
+                DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
             }
 
             // Call itself to create a loop to continuously do background refresh every 5 minutes
@@ -669,7 +669,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             catch (Exception ex)
             {
                 DefaultTrace.TraceWarning("Failed to refresh database account with exception: {0}. Activity Id: '{1}'",
-                    ex,
+                    ex.Message,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
             finally

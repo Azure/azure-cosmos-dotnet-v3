@@ -83,7 +83,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     string exceptionString = e.ToString();
                     Assert.IsTrue(exceptionString.Contains(diagnostics));
                     Assert.IsTrue(exceptionString.Contains(e.Message));
-                    Assert.IsTrue(exceptionString.Contains(e.StackTrace));
                 }
             }
         }

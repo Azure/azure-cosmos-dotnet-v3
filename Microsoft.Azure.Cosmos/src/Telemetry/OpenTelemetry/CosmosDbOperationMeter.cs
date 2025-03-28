@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Failed to adjust instance count. {ex.StackTrace}");
+                DefaultTrace.TraceWarning($"Failed to adjust instance count. {ex.Message}");
             }
         }
 

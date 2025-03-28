@@ -142,7 +142,9 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                     return base.StackTrace;
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
                 }
             }
         }
@@ -261,18 +263,22 @@ namespace Microsoft.Azure.Cosmos
             if (this.InnerException != null)
             {
                 stringBuilder.Append(" ---> ");
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
                 stringBuilder.Append(this.InnerException);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
                 stringBuilder.AppendLine();
                 stringBuilder.Append("   ");
                 stringBuilder.Append("--- End of inner exception stack trace ---");
                 stringBuilder.AppendLine();
             }
 
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
             if (this.StackTrace != null)
             {
                 stringBuilder.Append(this.StackTrace);
                 stringBuilder.AppendLine();
             }
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
 
             if (this.Diagnostics != null)
             {

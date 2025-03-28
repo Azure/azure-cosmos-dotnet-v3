@@ -142,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         rangesString.Append(range.ToRange().ToString());
                         rangesString.Append(", ");
                     }
-                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString.ToString(), ex.ToString()));
+                    DefaultTrace.TraceInformation(string.Format("DocumentClientException in TryLookupAsync Collection: {0}, previousValue: {1} Exception: {2}", collectionRid, rangesString.ToString(), ex.Message));
                 }
 
                 if (ex.StatusCode == HttpStatusCode.NotFound)

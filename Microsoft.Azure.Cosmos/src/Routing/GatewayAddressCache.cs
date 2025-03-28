@@ -449,7 +449,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 DefaultTrace.TraceWarning("Failed to warm-up caches and open connections for the server addresses: {0} with exception: {1}. '{2}'",
                     collectionRid,
-                    ex,
+                    ex.Message,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
             }
         }
@@ -1015,7 +1015,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 DefaultTrace.TraceWarning("Failed to fetch the server addresses for: {0} with exception: {1}. '{2}'",
                     collectionRid,
-                    ex,
+                    ex.Message,
                     System.Diagnostics.Trace.CorrelationManager.ActivityId);
 
                 return TryCatch<DocumentServiceResponse>.FromException(ex);

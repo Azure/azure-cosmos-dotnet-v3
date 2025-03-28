@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos
                             "AsyncCacheNonBlocking Failed GetAsync. key: {0}, tryRemoved: {1}, Exception: {2}",
                             key,
                             removed,
-                            e);
+                            e.Message);
                     }
 
                     if (this.enableAsyncCacheExceptionNoSharing)
@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceError(
                             "AsyncCacheNonBlocking Failed GetAsync with key: {0}, Exception: {1}",
                             key.ToString(),
-                            e.ToString());
+                            e.Message);
 
                 // Remove the failed task from the dictionary so future requests can send other calls..
                 this.values.TryRemove(key, out _);
@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Cosmos
 
                 Task continuationTask = backgroundRefreshTask
                     .ContinueWith(
-                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception),
+                        task => DefaultTrace.TraceVerbose("Failed to refresh addresses in the background with exception: {0}", task.Exception.Message),
                         TaskContinuationOptions.OnlyOnFaulted);
             }
         }
@@ -262,7 +262,7 @@ namespace Microsoft.Azure.Cosmos
                         key,
                         operationName,
                         removed,
-                        ex);
+                        ex.Message);
                 }
 
                 throw;
@@ -439,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
                 catch (ObjectDisposedException exception)
                 {
                     // Need to access the exception to avoid unobserved exception
-                    DefaultTrace.TraceInformation($"AsyncCacheNonBlocking was already disposed: {0}", exception);
+                    DefaultTrace.TraceInformation($"AsyncCacheNonBlocking was already disposed: {0}", exception.Message);
                 }
 
                 this.isDisposed = true;
