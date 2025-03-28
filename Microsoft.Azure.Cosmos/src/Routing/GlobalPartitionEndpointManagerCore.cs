@@ -415,7 +415,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         break;
                     }
 
-                    DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() - Unable to get address and open connections. Exception: {0}", ex.ToString());
+                    DefaultTrace.TraceCritical("GlobalPartitionEndpointManagerCore: InitiateCircuitBreakerFailbackLoop() - Unable to get address and open connections. Exception: {0}", ex.Message);
                 }
             }
         }

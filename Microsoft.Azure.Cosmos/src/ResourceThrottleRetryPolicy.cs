@@ -116,14 +116,7 @@ namespace Microsoft.Azure.Cosmos
 
         private object GetExceptionMessage(Exception exception)
         {
-            if (exception is DocumentClientException dce && dce.StatusCode != null && (int)dce.StatusCode < (int)StatusCodes.InternalServerError)
-            {
-                // for client related errors, don't print out the whole call stack.
-                // simply return the message to prevent CPU overhead on ToString() 
-                return exception.Message;
-            }
-
-            return exception;
+            return exception.Message;
         }
 
         /// <summary>

@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
 
             using (ITrace child = trace.StartChild("CosmosOperationCanceledException"))
             {
-                child.AddDatum("Operation Cancelled Exception", originalException);
+                child.AddDatum("Operation Cancelled Exception", originalException.Message);
             }
             this.Diagnostics = new CosmosTraceDiagnostics(trace);
             this.tokenCancellationRequested = originalException.CancellationToken.IsCancellationRequested;
@@ -88,9 +88,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <inheritdoc/>
         public override string Message => this.lazyMessage.Value;
-
-        /// <inheritdoc/>
-        public override string StackTrace => this.originalException.StackTrace;
 
         /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
@@ -151,7 +148,7 @@ namespace Microsoft.Azure.Cosmos
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("originalException", this.originalException);
+            info.AddValue("originalException", this.originalException.Message);
             info.AddValue("tokenCancellationRequested", this.tokenCancellationRequested);
             info.AddValue("lazyMessage", this.lazyMessage.Value);
             info.AddValue("toStringMessage", this.toStringMessage.Value);
