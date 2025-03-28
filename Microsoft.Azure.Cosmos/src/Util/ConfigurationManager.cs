@@ -81,6 +81,14 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for configuring
+        /// the first timeout duration before an HTTP call is considered timed out.
+        /// Once this timeout is reached, the exponential backoff retry strategy is triggered.
+        /// Default value: <c>500ms</c>
+        /// </summary>
+        internal static readonly string HttpFirstRetryTimeoutValue = "AZURE_COSMOS_SDK_HTTP_FIRST_RETRY_TIMEOUT_VALUE_MS";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);

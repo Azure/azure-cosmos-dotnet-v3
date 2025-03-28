@@ -7,9 +7,15 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Net.Http;
     using System.Text;
+    using Microsoft.Azure.Documents;
 
     internal sealed class HttpTimeoutPolicyControlPlaneRetriableHotPath : HttpTimeoutPolicy
     {
+        /// <summary>
+        /// A read-only <see cref="TimeSpan"/> containing the default value of the first request timeout after which the request is retried.
+        /// </summary>
+        private const double firstRetryTimeoutDefault = 500;
+
         public static readonly HttpTimeoutPolicy Instance = new HttpTimeoutPolicyControlPlaneRetriableHotPath(false);
         public static readonly HttpTimeoutPolicy InstanceShouldThrow503OnTimeout = new HttpTimeoutPolicyControlPlaneRetriableHotPath(true);
         public bool shouldThrow503OnTimeout;
@@ -22,9 +28,14 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IReadOnlyList<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> TimeoutsAndDelays = new List<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)>()
         {
-            (TimeSpan.FromSeconds(.5), TimeSpan.Zero),
-            (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
-            (TimeSpan.FromSeconds(65), TimeSpan.Zero),
+                (TimeSpan.FromMilliseconds(
+                        Math.Max(100, Helpers.GetEnvironmentVariable(
+                            name: ConfigurationManager.HttpFirstRetryTimeoutValue,
+                            defaultValue: firstRetryTimeoutDefault))),
+                    TimeSpan.Zero
+                ),
+                (TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(1)),
+                (TimeSpan.FromSeconds(65), TimeSpan.Zero),
         };
 
         public override string TimeoutPolicyName => HttpTimeoutPolicyControlPlaneRetriableHotPath.Name;
