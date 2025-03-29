@@ -1299,7 +1299,7 @@ namespace Microsoft.Azure.Cosmos
 
             // A delay of 2 minute was added to make the replica unhealthy for more than one minute. This
             // will make sure the unhealthy replica gets a chance to re-validate it's health status.
-            ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
+            TestUtils.AddMinuteToDateTimeFieldUsingReflection(
                             objectName: refreshedUri.GetCurrentHealthState(),
                             fieldName: "lastUnhealthyTimestamp",
                             delayInMinutes: -2);
@@ -1450,7 +1450,7 @@ namespace Microsoft.Azure.Cosmos
                     .ReplicaTransportAddressUris
                     .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
 
-                ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
+                TestUtils.AddMinuteToDateTimeFieldUsingReflection(
                                             objectName: refreshedUri.GetCurrentHealthState(),
                                             fieldName: "lastUnhealthyTimestamp",
                                             delayInMinutes: -2 * iterationIndex);

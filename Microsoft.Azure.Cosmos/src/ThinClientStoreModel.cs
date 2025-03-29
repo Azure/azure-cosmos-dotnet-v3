@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ThinClientStoreModel(
             GlobalEndpointManager endpointManager,
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
@@ -33,7 +34,8 @@ namespace Microsoft.Azure.Cosmos
                   defaultConsistencyLevel,
                   eventSource,
                   serializerSettings,
-                  httpClient)
+                  httpClient,
+                  globalPartitionEndpointManager)
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
