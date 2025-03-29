@@ -75,11 +75,11 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 description: CosmosDbClientMetrics.OperationMetrics.Description.RequestCharge);
 
             CosmosDbOperationMeter.ActualItemHistogram ??= OperationMeter.CreateHistogram<int>(name: CosmosDbClientMetrics.OperationMetrics.Name.RowCount,
-                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Count, 
+                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Item,
                 description: CosmosDbClientMetrics.OperationMetrics.Description.RowCount);
 
             CosmosDbOperationMeter.ActiveInstanceCounter ??= OperationMeter.CreateUpDownCounter<int>(name: CosmosDbClientMetrics.OperationMetrics.Name.ActiveInstances,
-                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Count,
+                unit: CosmosDbClientMetrics.OperationMetrics.Unit.Instance,
                 description: CosmosDbClientMetrics.OperationMetrics.Description.ActiveInstances);
 
             IsEnabled = true;
