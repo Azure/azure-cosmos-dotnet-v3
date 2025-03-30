@@ -2,10 +2,10 @@
 is_global = true
 
 # Current 
-dotnet_diagnostic.CDX1000.severity = suggestion	# DontConvertExceptionToObject
-dotnet_diagnostic.CDX1001.severity = suggestion	# DontUseExceptionInInterpolation
-dotnet_diagnostic.CDX1002.severity = suggestion	# DontUseExceptionStackTrace
-dotnet_diagnostic.CDX1003.severity = suggestion	# DontUseExceptionToString
+dotnet_diagnostic.CDX1000.severity = error # DontConvertExceptionToObject
+dotnet_diagnostic.CDX1001.severity = error # DontUseExceptionInInterpolation
+dotnet_diagnostic.CDX1002.severity = error # DontUseExceptionStackTrace
+dotnet_diagnostic.CDX1003.severity = error # DontUseExceptionToString
 
 # 📊 Experimental Analyzer Features
 dotnet_diagnostic.CDX1004.severity = suggestion # Experimental - DontCreateNestedExceptions
