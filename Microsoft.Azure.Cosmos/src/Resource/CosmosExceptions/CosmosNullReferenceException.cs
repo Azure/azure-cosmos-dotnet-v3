@@ -49,6 +49,11 @@ namespace Microsoft.Azure.Cosmos
         public override string Message => this.originalException.Message + this.Diagnostics.ToString();
 
         /// <inheritdoc/>
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
+        public override string StackTrace => this.originalException.StackTrace;
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
+
+        /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
 
         /// <summary>
