@@ -36,6 +36,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 nullReferenceException,
                 trace);
 
+            Assert.AreEqual(nullReferenceException.StackTrace, cosmosNullReferenceException.StackTrace);
             Assert.AreEqual(nullReferenceException, cosmosNullReferenceException.InnerException);
             Assert.AreEqual(nullReferenceException.Data, cosmosNullReferenceException.Data);
 
