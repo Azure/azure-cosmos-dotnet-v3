@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos
                     request,
                     request.ResourceType,
                     physicalAddress,
-                    properties.ThinClientEndpoint,
+                    this.endpointManager.ResolveThinClientEndpoint(request),
                     properties.Id,
                     base.clientCollectionCache,
                     cancellationToken);
