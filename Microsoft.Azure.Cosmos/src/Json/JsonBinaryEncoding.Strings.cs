@@ -634,7 +634,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            if (!jsonStringDictionary.TryGetIndex(utf8Span, out int index))
+            if (!jsonStringDictionary.TryGetStringId(utf8Span, out int index))
             {
                 multiByteTypeMarker = default;
                 return false;

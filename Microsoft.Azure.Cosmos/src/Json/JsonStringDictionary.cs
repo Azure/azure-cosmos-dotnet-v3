@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos.Json
             return true;
         }
 
-        public bool TryGetIndex(Utf8Span value, out int index)
+        public bool TryGetStringId(Utf8Span value, out int index)
         {
             return this.utf8StringToIndex.TryGetValue(value.Span, out index);
         }

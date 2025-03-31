@@ -22,7 +22,7 @@
                 Assert.IsTrue(stringDictionary.TryGetString(i, out UtfAllString value));
                 Assert.AreEqual(strings[i], value.Utf16String);
 
-                Assert.IsTrue(stringDictionary.TryGetIndex(value.Utf8String.Span, out int index));
+                Assert.IsTrue(stringDictionary.TryGetStringId(value.Utf8String.Span, out int index));
                 Assert.AreEqual(i, index);
             }        
         }
