@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                     }
                     else if (!this.cancellationTokenSource.IsCancellationRequested)
                     {
-                        DefaultTrace.TraceWarning("Exception while calling client config {0} ", databaseAccountClientConfigs.Exception);
+                        DefaultTrace.TraceWarning("Exception while calling client config {0} ", databaseAccountClientConfigs.Exception?.Message);
                     }
 
                     await Task.Delay(
@@ -125,7 +125,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Exception while running client config job: {0}", ex);
+                DefaultTrace.TraceWarning("Exception while running client config job: {0}", ex.Message);
             }
         }
 
@@ -267,7 +267,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {0}. Hence disabling Client Telemetry", ex);
+                    DefaultTrace.TraceWarning($"Error While starting Telemetry Job : {0}. Hence disabling Client Telemetry", ex.Message);
                     this.connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService = true;
                 }
             }
@@ -300,7 +300,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Error While stopping Telemetry Job : {0}", ex);
+                DefaultTrace.TraceWarning("Error While stopping Telemetry Job : {0}", ex.Message);
             }   
         }
     }
