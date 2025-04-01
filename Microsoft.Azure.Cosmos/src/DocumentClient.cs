@@ -6823,7 +6823,8 @@ namespace Microsoft.Azure.Cosmos
                     cosmosAuthorization: this.cosmosAuthorization,
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
-                    cancellationToken: this.cancellationTokenSource.Token);
+                    cancellationToken: this.cancellationTokenSource.Token,
+                    isThinClientEnabled: this.isThinClientEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
