@@ -555,8 +555,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
-
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
 
             if (this.isBackgroundAccountRefreshActive)
