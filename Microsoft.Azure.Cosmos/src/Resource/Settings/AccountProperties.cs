@@ -143,12 +143,6 @@ namespace Microsoft.Azure.Cosmos
         internal Collection<AccountRegion> ThinClientReadableLocationsInternal { get; set; }
 
         /// <summary>
-        /// Gets or sets a value indicating whether multiple write locations are enabled.
-        /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
-        internal bool EnableMultipleWriteLocations { get; set; }
-
-        /// <summary>
         /// Gets the storage quota for media storage in the databaseAccount from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
@@ -247,6 +241,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.QueryEngineConfiguration)]
         internal string QueryEngineConfigurationString { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
+        internal bool EnableMultipleWriteLocations { get; set; }
+
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
@@ -264,7 +261,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JToken> AdditionalProperties { get; set; }
 
     }
 }
