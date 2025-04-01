@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"Failed to record metric. {ex}");
+                DefaultTrace.TraceWarning($"Failed to record metric. {ex.Message}");
             }
         }
 
