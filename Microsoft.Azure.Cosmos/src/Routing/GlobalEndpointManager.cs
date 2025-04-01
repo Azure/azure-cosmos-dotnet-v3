@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal class GlobalEndpointManager : IGlobalEndpointManager
     {
         private const int DefaultBackgroundRefreshLocationTimeIntervalInMS = 5 * 60 * 1000;
-        
+
         private const string BackgroundRefreshLocationTimeIntervalInMS = "BackgroundRefreshLocationTimeIntervalInMS";
         private const string MinimumIntervalForNonForceRefreshLocationInMS = "MinimumIntervalForNonForceRefreshLocationInMS";
         private readonly CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -344,7 +344,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.ToString());
+                    DefaultTrace.TraceInformation("GlobalEndpointManager: Fail to reach gateway endpoint {0}, {1}", endpoint, e.Message);
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
@@ -363,7 +363,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             private static bool IsNonRetriableException(Exception exception)
             {
-                if (exception is DocumentClientException dce &&
+                if (exception is DocumentClientException dce && 
                     (dce.StatusCode == HttpStatusCode.Unauthorized || dce.StatusCode == HttpStatusCode.Forbidden))
                 {
                     return true;
@@ -656,7 +656,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     return;
                 }
-
+                
                 DefaultTrace.TraceCritical("GlobalEndpointManager: StartLocationBackgroundRefreshWithTimer() - Unable to refresh database account from any serviceEndpoint. Exception: {0}", ex.Message);
             }
 
@@ -689,7 +689,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return;
             }
-
+            
             lock (this.isAccountRefreshInProgressLock)
             {
                 // Check again if should refresh after obtaining the lock
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
-            
+
             }
             catch (Exception ex)
             {
@@ -766,8 +766,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return this.connectionPolicy.PreferredLocations;
             }
 
-            return this.connectionPolicy.PreferredLocations?.Count > 0 ?
-                 this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
+            return this.connectionPolicy.PreferredLocations?.Count > 0 ? 
+                this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
         }
 
         public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)

@@ -643,12 +643,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         private void UpdateLocationCache(
-             IEnumerable<AccountRegion> writeLocations = null,
-             IEnumerable<AccountRegion> readLocations = null,
-             IEnumerable<AccountRegion> thinClientWriteLocations = null,
-             IEnumerable<AccountRegion> thinClientReadLocations = null,
-             ReadOnlyCollection<string> preferenceList = null,
-             bool? enableMultipleWriteLocations = null)
+            IEnumerable<AccountRegion> writeLocations = null,
+            IEnumerable<AccountRegion> readLocations = null,
+            IEnumerable<AccountRegion> thinClientWriteLocations = null,
+            IEnumerable<AccountRegion> thinClientReadLocations = null,
+            ReadOnlyCollection<string> preferenceList = null,
+            bool? enableMultipleWriteLocations = null)
         {
             lock (this.lockObject)
             {
@@ -722,6 +722,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     orderedLocations: nextLocationInfo.AvailableReadLocations,
                     expectedAvailableOperation: OperationType.Read,
                     fallbackEndpoint: nextLocationInfo.WriteEndpoints[0]);
+
+                nextLocationInfo.EffectivePreferredLocations = nextLocationInfo.PreferredLocations;
 
                 nextLocationInfo.ThinClientReadEndpoints = this.GetPreferredAvailableEndpoints(
                     endpointsByLocation: nextLocationInfo.ThinClientReadEndpointByLocation,
@@ -938,7 +940,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AccountReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.ReadEndpoints = new List<Uri>() { defaultEndpoint }.AsReadOnly();
                 this.EffectivePreferredLocations = new List<string>().AsReadOnly();
-
+                
                 this.ThinClientWriteLocations = new List<string>().AsReadOnly();
                 this.ThinClientReadLocations = new List<string>().AsReadOnly();
                 this.ThinClientWriteEndpointByLocation =
@@ -967,7 +969,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.AccountReadEndpoints = other.AccountReadEndpoints;
                 this.ReadEndpoints = other.ReadEndpoints;
                 this.EffectivePreferredLocations = other.EffectivePreferredLocations;
-
+                
                 this.ThinClientWriteLocations = other.ThinClientWriteLocations;
                 this.ThinClientReadLocations = other.ThinClientReadLocations;
                 this.ThinClientWriteEndpointByLocation = other.ThinClientWriteEndpointByLocation;

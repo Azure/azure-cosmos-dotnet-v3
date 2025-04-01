@@ -6535,8 +6535,6 @@ namespace Microsoft.Azure.Cosmos
                         RequestUri = serviceEndpoint
                     };
 
-                    request.Headers.Add(ThinClientConstants.EnableThinClientEndpointDiscoveryHeaderName, 
-                        this.isThinClientEnabled.ToString());
                     INameValueCollection headersCollection = new StoreResponseNameValueCollection();
                     await this.cosmosAuthorization.AddAuthorizationHeaderAsync(
                         headersCollection,
