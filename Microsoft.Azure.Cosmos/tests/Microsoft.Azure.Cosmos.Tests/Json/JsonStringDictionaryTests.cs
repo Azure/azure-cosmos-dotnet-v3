@@ -22,8 +22,8 @@
                 Assert.IsTrue(stringDictionary.TryGetString(i, out UtfAllString value));
                 Assert.AreEqual(strings[i], value.Utf16String);
 
-                Assert.IsTrue(stringDictionary.TryGetStringId(value.Utf8String.Span, out int index));
-                Assert.AreEqual(i, index);
+                Assert.IsTrue(stringDictionary.TryGetStringId(value.Utf8String.Span, out int stringId));
+                Assert.AreEqual(i, stringId);
             }        
         }
 
@@ -47,7 +47,7 @@
             try
             {
                 JsonStringDictionary jsonStringDictionary1 = new JsonStringDictionary(strings);
-                Assert.Fail("Should not be able to create JsonStringDictionary over max size");
+                Assert.Fail("Should not be able to create JsonStringDictionary over max size.");
             }
             catch(ArgumentException ex)
             {
@@ -61,7 +61,7 @@
         {
             IJsonReadOnlyStringDictionary stringDictionary0 = new JsonStringDictionary();
 
-            // Null comparison and reference-equals comparison.
+            // Null comparison and reference-equals comparison
             Assert.IsFalse(stringDictionary0.Equals(null));
             Assert.IsTrue(stringDictionary0.Equals(stringDictionary0));
 

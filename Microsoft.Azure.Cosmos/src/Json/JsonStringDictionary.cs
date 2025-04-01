@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Json
             TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
 
         private readonly List<UtfAllString> strings;
-        private readonly Trie<byte, int> utf8StringToIndex;
+        private readonly Trie<byte, int> utf8StringToStringId;
 
         private int size;
         private UInt128 checksum;
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public JsonStringDictionary(IReadOnlyList<string> userStrings)
         {
             this.strings = new List<UtfAllString>();
-            this.utf8StringToIndex = new Trie<byte, int>();
+            this.utf8StringToStringId = new Trie<byte, int>();
 
             if (userStrings == null)
             {
@@ -48,35 +48,35 @@ namespace Microsoft.Azure.Cosmos.Json
             for (int i = 0; i < userStrings.Count; i++)
             {
                 string userString = userStrings[i];
-                if (!this.TryAddString(Utf8Span.TranscodeUtf16(userString), MaxDictionarySize, out int index))
+                if (!this.TryAddString(Utf8Span.TranscodeUtf16(userString), MaxDictionarySize, out int stringId))
                 {
                     throw new ArgumentException($"Failed to add {userString} to {nameof(JsonStringDictionary)}.");
                 }
 
-                if (index != i)
+                if (stringId != i)
                 {
-                    throw new ArgumentException($"Tried to add {userString} at index {i}, but instead it was inserted at index {index}.");
+                    throw new ArgumentException($"Tried to add {userString} at stringId {i}, but instead it was inserted at stringId {stringId}.");
                 }
             }
 
             this.SetChecksum();
         }
 
-        public bool TryGetString(int index, out UtfAllString value)
+        public bool TryGetString(int stringId, out UtfAllString value)
         {
-            if ((index < 0) || (index >= this.size))
+            if ((stringId < 0) || (stringId >= this.size))
             {
                 value = default;
                 return false;
             }
 
-            value = this.strings[index];
+            value = this.strings[stringId];
             return true;
         }
 
-        public bool TryGetStringId(Utf8Span value, out int index)
+        public bool TryGetStringId(Utf8Span value, out int stringId)
         {
-            return this.utf8StringToIndex.TryGetValue(value.Span, out index);
+            return this.utf8StringToStringId.TryGetValue(value.Span, out stringId);
         }
 
         public bool Equals(JsonStringDictionary other)
@@ -114,19 +114,19 @@ namespace Microsoft.Azure.Cosmos.Json
             return this.strings.Count;
         }
 
-        private bool TryAddString(string value, int maxCount, out int index)
+        private bool TryAddString(string value, int maxCount, out int stringId)
         {
             int utf8Length = Encoding.UTF8.GetByteCount(value);
             Span<byte> utfString = utf8Length < JsonStringDictionary.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
             Encoding.UTF8.GetBytes(value, utfString);
 
-            return this.TryAddString(Utf8Span.UnsafeFromUtf8BytesNoValidation(utfString), maxCount, out index);
+            return this.TryAddString(Utf8Span.UnsafeFromUtf8BytesNoValidation(utfString), maxCount, out stringId);
         }
 
-        private bool TryAddString(Utf8Span value, int maxCount, out int index)
+        private bool TryAddString(Utf8Span value, int maxCount, out int stringId)
         {
-            // If the string already exists, return that index.
-            if (this.utf8StringToIndex.TryGetValue(value.Span, out index))
+            // If the string already exists, return that stringId.
+            if (this.utf8StringToStringId.TryGetValue(value.Span, out stringId))
             {
                 return true;
             }
@@ -134,13 +134,13 @@ namespace Microsoft.Azure.Cosmos.Json
             // Return false if dictionary already at capacity.
             if (this.size == maxCount)
             {
-                index = default;
+                stringId = default;
                 return false;
             }
 
-            index = this.size;
+            stringId = this.size;
             this.strings.Add(UtfAllString.Create(value.ToString()));
-            this.utf8StringToIndex.AddOrUpdate(value.Span, index);
+            this.utf8StringToStringId.AddOrUpdate(value.Span, stringId);
             this.size++;
 
             return true;

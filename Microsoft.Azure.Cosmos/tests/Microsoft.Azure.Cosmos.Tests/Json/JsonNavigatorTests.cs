@@ -524,7 +524,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
                     // Test binary + user string encoding
                     byte[] binaryWithUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, out jsonStringDictionary);
-                    if (jsonStringDictionary.TryGetString(index: 0, value: out _))
+                    if (jsonStringDictionary.TryGetString(stringId: 0, value: out _))
                     {
                         Assert.IsFalse(binaryWithUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be different with user string encoding.");
                     }

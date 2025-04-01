@@ -626,31 +626,23 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            const int MinStringLength = 2;
-            const int MaxStringLength = 128;
-            if ((utf8Span.Length < MinStringLength) || (utf8Span.Length > MaxStringLength))
+            if (!jsonStringDictionary.TryGetStringId(utf8Span, out int stringId))
             {
                 multiByteTypeMarker = default;
                 return false;
             }
 
-            if (!jsonStringDictionary.TryGetStringId(utf8Span, out int index))
-            {
-                multiByteTypeMarker = default;
-                return false;
-            }
-
-            // Convert the index to a multibyte type marker
+            // Convert the stringId to a multibyte type marker
             const byte OneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
-            if (index < OneByteCount)
+            if (stringId < OneByteCount)
             {
                 multiByteTypeMarker = new MultiByteTypeMarker(
                     length: 1,
-                    one: (byte)(TypeMarker.UserString1ByteLengthMin + index));
+                    one: (byte)(TypeMarker.UserString1ByteLengthMin + stringId));
             }
             else
             {
-                int twoByteOffset = index - OneByteCount;
+                int twoByteOffset = stringId - OneByteCount;
                 multiByteTypeMarker = new MultiByteTypeMarker(
                     length: 2,
                     one: (byte)((twoByteOffset / 0xFF) + TypeMarker.UserString2ByteLengthMin),
