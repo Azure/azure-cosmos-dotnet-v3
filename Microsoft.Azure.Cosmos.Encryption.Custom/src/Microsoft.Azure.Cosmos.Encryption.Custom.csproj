@@ -59,11 +59,9 @@
      <PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
   </ItemGroup>
 
-  <!-- Code Analyzers -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.Codex.Analyzers" Version="1.0.5" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
