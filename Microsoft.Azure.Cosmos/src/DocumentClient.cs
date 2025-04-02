@@ -1064,7 +1064,9 @@ namespace Microsoft.Azure.Cosmos
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.httpClient);
+                    this.httpClient,
+                    this.PartitionKeyRangeLocation,
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
