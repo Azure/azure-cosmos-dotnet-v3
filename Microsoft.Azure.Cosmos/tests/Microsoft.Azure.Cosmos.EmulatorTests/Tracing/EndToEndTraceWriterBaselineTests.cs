@@ -770,7 +770,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
             }
         }
 
-
         [TestMethod]
         public async Task ValidateInvalidCredentialsTraceAsync()
         {

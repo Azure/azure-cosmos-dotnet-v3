@@ -712,6 +712,5 @@ namespace Microsoft.Azure.Cosmos.Tracing
             }
 
         }
-
     }
 }
