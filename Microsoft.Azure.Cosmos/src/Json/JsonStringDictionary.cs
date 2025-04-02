@@ -20,10 +20,11 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     sealed class JsonStringDictionary : IJsonReadOnlyStringDictionary, IEquatable<JsonStringDictionary>
     {
-        static public int MaxDictionarySize = 
+        public static readonly int MaxDictionarySize = 
             TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
 
         private const int MaxStackAllocSize = 4 * 1024;
+        private static readonly IReadOnlyList<string> EmptyUserStringList = new List<string>();
 
         private readonly List<UtfAllString> strings;
         private readonly Trie<byte, int> utf8StringToStringId;
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Json
         private UInt128 checksum;
 
         public JsonStringDictionary()
-        : this(new List<string>())
+        : this(EmptyUserStringList)
         {
         }
 
