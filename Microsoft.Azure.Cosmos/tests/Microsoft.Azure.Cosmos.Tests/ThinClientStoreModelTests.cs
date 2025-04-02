@@ -48,6 +48,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             this.thinClientStoreModel = new ThinClientStoreModel(
                 endpointManager: this.endpointManager,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
                 sessionContainer: this.sessionContainer,
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
@@ -115,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: multiEndpointMgr,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
                 sessionContainer: this.sessionContainer,
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
@@ -207,6 +209,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: endpointManagerOk,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
                 sessionContainer: this.sessionContainer,
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
