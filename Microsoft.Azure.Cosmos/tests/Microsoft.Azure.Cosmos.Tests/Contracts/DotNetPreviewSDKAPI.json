@@ -667,10 +667,15 @@
             "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
               "Subclasses": {},
               "Members": {
-                "System.String Count": {
+                "System.String Instance": {
                   "Type": "Field",
                   "Attributes": [],
-                  "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
+                  "MethodInfo": "System.String Instance;IsInitOnly:False;IsStatic:True;"
+                },
+                "System.String Item": {
+                  "Type": "Field",
+                  "Attributes": [],
+                  "MethodInfo": "System.String Item;IsInitOnly:False;IsStatic:True;"
                 },
                 "System.String RequestUnit": {
                   "Type": "Field",
@@ -1023,10 +1028,15 @@
         "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
-            "System.String Count": {
+            "System.String Instance": {
               "Type": "Field",
               "Attributes": [],
-              "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
+              "MethodInfo": "System.String Instance;IsInitOnly:False;IsStatic:True;"
+            },
+            "System.String Item": {
+              "Type": "Field",
+              "Attributes": [],
+              "MethodInfo": "System.String Item;IsInitOnly:False;IsStatic:True;"
             },
             "System.String RequestUnit": {
               "Type": "Field",
@@ -1098,10 +1108,15 @@
     "Microsoft.Azure.Cosmos.CosmosDbClientMetrics+OperationMetrics+Unit;System.Object;IsAbstract:True;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "System.String Count": {
+        "System.String Instance": {
           "Type": "Field",
           "Attributes": [],
-          "MethodInfo": "System.String Count;IsInitOnly:False;IsStatic:True;"
+          "MethodInfo": "System.String Instance;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String Item": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String Item;IsInitOnly:False;IsStatic:True;"
         },
         "System.String RequestUnit": {
           "Type": "Field",
