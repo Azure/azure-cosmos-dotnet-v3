@@ -18,5 +18,7 @@ namespace Microsoft.Azure.Cosmos.Json
         bool TryGetString(int stringId, out UtfAllString value);
 
         bool TryGetStringId(Utf8Span value, out int stringId);
+
+        public int GetCount();
     }
 }

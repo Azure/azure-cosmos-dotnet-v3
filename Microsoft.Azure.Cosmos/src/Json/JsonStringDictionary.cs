@@ -20,9 +20,10 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     sealed class JsonStringDictionary : IJsonReadOnlyStringDictionary, IEquatable<JsonStringDictionary>
     {
-        private const int MaxStackAllocSize = 4 * 1024;
-        private const int MaxDictionarySize = 
+        static public int MaxDictionarySize = 
             TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
+
+        private const int MaxStackAllocSize = 4 * 1024;
 
         private readonly List<UtfAllString> strings;
         private readonly Trie<byte, int> utf8StringToStringId;
@@ -37,13 +38,13 @@ namespace Microsoft.Azure.Cosmos.Json
 
         public JsonStringDictionary(IReadOnlyList<string> userStrings)
         {
-            this.strings = new List<UtfAllString>();
-            this.utf8StringToStringId = new Trie<byte, int>();
-
             if (userStrings == null)
             {
                 throw new ArgumentNullException(nameof(userStrings));
             }
+
+            this.strings = new List<UtfAllString>();
+            this.utf8StringToStringId = new Trie<byte, int>();
 
             for (int i = 0; i < userStrings.Count; i++)
             {
@@ -101,17 +102,40 @@ namespace Microsoft.Azure.Cosmos.Json
                 return false;
             }
 
-            if (!(other is JsonStringDictionary otherDictionary))
+            if (other is JsonStringDictionary otherDictionary)
             {
-                throw new NotImplementedException();
+                return this.Equals(otherDictionary);
             }
+            else
+            {
+                if (other.GetCount() != this.size)
+                {
+                    return false;
+                }
 
-            return this.Equals(otherDictionary);
+                for (int i = 0; i < this.size; i++)
+                {
+                    if (this.TryGetString(i, out UtfAllString userStringThis) &&
+                        this.TryGetString(i, out UtfAllString userStringOther))
+                    {
+                        if (!userStringThis.Equals(userStringOther))
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
         }
 
         public int GetCount()
         {
-            return this.strings.Count;
+            return this.size;
         }
 
         private bool TryAddString(string value, int maxCount, out int stringId)
@@ -158,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private void SetChecksum()
         {
-            UInt128 checksum = 0;
+            UInt128 checksum = this.GetCount();
             for (int i = 0; i < this.size; i++)
             {
                 checksum = MurmurHash3.Hash128(this.strings[i].Utf8String.Span.Span, checksum);

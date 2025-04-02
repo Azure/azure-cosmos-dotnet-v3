@@ -10,7 +10,6 @@
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json.Linq;
 
     internal class JsonTestUtils
     {
@@ -475,12 +474,12 @@
 
                 Console.WriteLine($"Rewriting JSON document failed for rewrite scenario '{rewriteScenario}'.");
                 Console.WriteLine();
-                Console.WriteLine($"  Input Format        : {inputSpec.SerializationFormatToString()}");
-                Console.WriteLine($"  Input Write Options : {inputSpec.WriteOptions}");
+                Console.WriteLine($"  Input Format                       : {inputSpec.SerializationFormatToString()}");
+                Console.WriteLine($"  Input Write Options                : {inputSpec.WriteOptions}");
                 Console.WriteLine($"  Input User String Encoding Enabled : {inputSpec.UserStringEncoded}");
                 Console.WriteLine();
-                Console.WriteLine($"  Output Format       : {outputSpec.SerializationFormatToString()}");
-                Console.WriteLine($"  Output Write Options: {outputSpec.WriteOptions}");
+                Console.WriteLine($"  Output Format                      : {outputSpec.SerializationFormatToString()}");
+                Console.WriteLine($"  Output Write Options               : {outputSpec.WriteOptions}");
                 Console.WriteLine($"  Input User String Encoding Enabled : {inputSpec.UserStringEncoded}");
                 Console.WriteLine();
                 Console.WriteLine($"Comparison Errors:");

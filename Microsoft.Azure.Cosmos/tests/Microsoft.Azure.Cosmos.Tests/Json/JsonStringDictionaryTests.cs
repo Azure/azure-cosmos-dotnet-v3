@@ -31,16 +31,14 @@
         [Owner("mayapainter")]
         public void TestDictionarySizeLimit()
         {
-            int maxDictionarySize = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 0xFF);
-
             List<string> strings = new();
-            for (int i = 0; i < maxDictionarySize; i++)
+            for (int i = 0; i < JsonStringDictionary.MaxDictionarySize; i++)
             {
                 strings.Add("test" + i);
             }
 
             JsonStringDictionary jsonStringDictionary0 = new JsonStringDictionary(strings);
-            Assert.AreEqual(maxDictionarySize, jsonStringDictionary0.GetCount());
+            Assert.AreEqual(JsonStringDictionary.MaxDictionarySize, jsonStringDictionary0.GetCount());
 
             strings.Add("testString");
 
