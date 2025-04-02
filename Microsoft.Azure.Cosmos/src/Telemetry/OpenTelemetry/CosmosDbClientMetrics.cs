@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service. 
                 /// </summary>
-                public const string RowCount = "db.client.response.row_count";
+                public const string RowCount = "db.client.response.returned_rows";
 
                 /// <summary>
                 /// Number of active SDK client instances. 
@@ -63,9 +63,14 @@ namespace Microsoft.Azure.Cosmos
             public static class Unit
             {
                 /// <summary>
-                /// Unit representing a simple count
+                /// Unit representing active client instances
                 /// </summary>
-                public const string Count = "#";
+                public const string Instance = "{instance}";
+
+                /// <summary>
+                /// Unit representing count of items in response
+                /// </summary>
+                public const string Item = "{item}";
 
                 /// <summary>
                 /// Unit representing time in seconds
@@ -73,10 +78,9 @@ namespace Microsoft.Azure.Cosmos
                 public const string Sec = "s";
 
                 /// <summary>
-                /// Unit representing request units
+                /// Unit representing request units (RU)
                 /// </summary>
-                public const string RequestUnit = "# RU";
-
+                public const string RequestUnit = "{request_unit}";
             }
 
             /// <summary>

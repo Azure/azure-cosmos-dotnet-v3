@@ -1,8 +1,15 @@
-﻿|            Method |       payload | sourceFormat | destinationFormat |         Mean |      Error |     StdDev |    Gen 0 |    Gen 1 |    Gen 2 |  Allocated |
-|------------------ |-------------- |------------- |------------------ |-------------:|-----------:|-----------:|---------:|---------:|---------:|-----------:|
-| NavigatorToWriter | NutritionData |         Text |              Text |    201.48 us |   4.008 us |  11.240 us | 207.7637 | 207.2754 | 207.2754 | 1523.71 KB |
-| NavigatorToWriter | NutritionData |         Text |            Binary | 24,779.95 us | 515.386 us | 755.445 us | 875.0000 | 500.0000 | 125.0000 | 5053.33 KB |
-| NavigatorToWriter | NutritionData |         Text |    NewtonsoftText | 21,345.64 us | 424.472 us | 354.453 us | 875.0000 | 437.5000 |        - | 5208.27 KB |
-| NavigatorToWriter | NutritionData |       Binary |              Text | 10,177.14 us | 200.911 us | 231.370 us | 562.5000 | 250.0000 | 250.0000 | 2219.84 KB |
-| NavigatorToWriter | NutritionData |       Binary |            Binary |     35.25 us |   0.705 us |   1.780 us |  57.8613 |  57.5562 |  57.5562 |  269.46 KB |
-| NavigatorToWriter | NutritionData |       Binary |    NewtonsoftText | 11,517.08 us | 227.602 us | 212.899 us | 625.0000 | 296.8750 |        - | 3583.33 KB |
+﻿
+|            Method |       payload |         sourceFormat |    destinationFormat |         Mean |      Error |     StdDev |     Gen0 |     Gen1 |     Gen2 | Allocated |
+|------------------ |-------------- |--------------------- |--------------------- |-------------:|-----------:|-----------:|---------:|---------:|---------:|----------:|
+| NavigatorToWriter | NutritionData |                 Text |                 Text |     92.35 us |   1.704 us |   2.155 us | 167.1143 | 166.8701 | 166.8701 | 1247977 B |
+| NavigatorToWriter | NutritionData |                 Text |               Binary | 21,444.08 us | 421.873 us | 518.098 us | 781.2500 | 500.0000 | 187.5000 | 7269944 B |
+| NavigatorToWriter | NutritionData |                 Text |       NewtonsoftText | 17,613.40 us |  97.891 us |  81.744 us | 718.7500 | 343.7500 |        - | 7612708 B |
+| NavigatorToWriter | NutritionData |                 Text | Binar(...)oding [28] | 21,241.05 us | 274.450 us | 256.721 us | 718.7500 | 406.2500 | 125.0000 | 7029835 B |
+| NavigatorToWriter | NutritionData |               Binary |                 Text |  7,893.67 us |  76.961 us |  71.989 us | 726.5625 | 507.8125 | 500.0000 | 4368099 B |
+| NavigatorToWriter | NutritionData |               Binary |               Binary | 10,039.53 us | 195.458 us | 225.089 us | 500.0000 | 312.5000 | 218.7500 | 3762505 B |
+| NavigatorToWriter | NutritionData |               Binary |       NewtonsoftText |  9,267.23 us |  36.610 us |  32.453 us | 546.8750 | 265.6250 |        - | 5730286 B |
+| NavigatorToWriter | NutritionData |               Binary | Binar(...)oding [28] | 10,157.81 us |  27.351 us |  25.584 us | 421.8750 | 250.0000 | 140.6250 | 3522685 B |
+| NavigatorToWriter | NutritionData | Binar(...)oding [28] |                 Text |  7,769.64 us |  33.549 us |  28.015 us | 726.5625 | 507.8125 | 500.0000 | 4367899 B |
+| NavigatorToWriter | NutritionData | Binar(...)oding [28] |               Binary |           NA |         NA |         NA |        - |        - |        - |         - |
+| NavigatorToWriter | NutritionData | Binar(...)oding [28] |       NewtonsoftText |  9,184.78 us |  97.329 us |  91.041 us | 546.8750 | 265.6250 |        - | 5730286 B |
+| NavigatorToWriter | NutritionData | Binar(...)oding [28] | Binar(...)oding [28] | 10,136.68 us |  40.451 us |  37.837 us | 421.8750 | 250.0000 | 140.6250 | 3505577 B |

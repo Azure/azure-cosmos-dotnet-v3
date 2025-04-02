@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public static bool TryCloneException(Exception e, out Exception clonedException)
         {
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
             clonedException = e switch
             {
                 ICloneable cloneableEx => (Exception)cloneableEx.Clone(),
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
                 TimeoutException timeoutEx => AddMessageData(new TimeoutException(timeoutEx.Message, timeoutEx), e),
                 _ => null
             };
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
 
             return clonedException is not null;
         }
