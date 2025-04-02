@@ -1108,6 +1108,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 ThinClientStoreModel thinClientStoreModel = new (
                     endpointManager: this.GlobalEndpointManager,
+                    this.PartitionKeyRangeLocation,
                     this.sessionContainer,
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
