@@ -20,7 +20,8 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool ShouldThrow503OnTimeout => false;
 
         public static HttpTimeoutPolicy GetTimeoutPolicy(
-           DocumentServiceRequest documentServiceRequest)
+           DocumentServiceRequest documentServiceRequest,
+           bool isPartitionLevelFailoverEnabled = false)
         {
             //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
@@ -45,7 +46,9 @@ namespace Microsoft.Azure.Cosmos
             //Data Plane Read
             if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
             {
-                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                return isPartitionLevelFailoverEnabled
+                    ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeout
+                    : HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
             }
 
             //Meta Data Read

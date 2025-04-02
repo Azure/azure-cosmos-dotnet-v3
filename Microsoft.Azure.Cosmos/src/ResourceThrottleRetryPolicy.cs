@@ -123,7 +123,9 @@ namespace Microsoft.Azure.Cosmos
                 return exception.Message;
             }
 
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
             return exception;
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
         }
 
         /// <summary>

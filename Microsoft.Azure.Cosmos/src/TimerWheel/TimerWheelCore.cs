@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Timers
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning($"TimerWheel: OnTimer error : {ex.Message}\n, stack: {ex.StackTrace}");
+                DefaultTrace.TraceWarning($"TimerWheel: OnTimer error : {ex.Message}");
             }
             finally
             {
