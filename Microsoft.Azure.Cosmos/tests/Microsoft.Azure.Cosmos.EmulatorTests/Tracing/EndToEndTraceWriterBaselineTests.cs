@@ -757,12 +757,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
 
                 try
                 {
-                    ItemResponse<ToDoActivity> ir = await testContainer.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
-                    Console.WriteLine(ir.Diagnostics);
+                    ItemResponse<ToDoActivity> _ = await testContainer.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
                 }
                 catch (CosmosException ex)
                 {
-                    Console.WriteLine(ex.Diagnostics);
                     Assert.IsTrue(ex.Diagnostics.ToString().Contains("ReadSessionNotAvailable"));
                 }
                 finally
