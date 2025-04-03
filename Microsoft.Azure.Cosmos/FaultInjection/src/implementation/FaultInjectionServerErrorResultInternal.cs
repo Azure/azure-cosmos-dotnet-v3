@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     
                     httpResponse = new HttpResponseMessage
                     {
-                        StatusCode = HttpStatusCode.NotFound,
+                        StatusCode = HttpStatusCode.Forbidden,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
                                 FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),

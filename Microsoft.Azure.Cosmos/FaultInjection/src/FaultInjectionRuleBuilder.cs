@@ -149,7 +149,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 if (serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.TooManyRequests
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ResponseDelay
-                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.SendDelay)
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.SendDelay
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.DatabaseAccountNotFound
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ServiceUnavailable)
                 {
                     throw new ArgumentException($"{serverErrorResult?.GetServerErrorType()} is not supported for metadata requests.");
                 }

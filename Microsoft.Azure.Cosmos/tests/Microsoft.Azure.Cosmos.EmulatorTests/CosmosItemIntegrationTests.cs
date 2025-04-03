@@ -8,6 +8,7 @@
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
@@ -146,6 +147,67 @@
             {
                 rule.Disable();
                 fiClient.Dispose();
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task Sev1Repro()
+        {
+            FaultInjectionRule pkRangeBad = new FaultInjectionRuleBuilder(
+                id: "pkrange",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataPartitionKeyRange)
+                    .WithRegion(region1)
+                    .Build(),
+                result: new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                    .Build())
+                .Build();
+
+            pkRangeBad.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { pkRangeBad });
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ConnectionMode = ConnectionMode.Direct,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                FaultInjector = faultInjector,
+            };
+
+            using (CosmosClient fiClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: cosmosClientOptions))
+            {
+                Database fidb = fiClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container fic = fidb.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                pkRangeBad.Enable();
+
+                try
+                {
+                    FeedIterator<CosmosIntegrationTestObject> frTest = fic.GetItemQueryIterator<CosmosIntegrationTestObject>("SELECT * FROM c");
+
+                    while (frTest.HasMoreResults)
+                    {
+                        FeedResponse<CosmosIntegrationTestObject> feedres = await frTest.ReadNextAsync();
+                        Console.WriteLine(feedres.Diagnostics);
+                    }
+                }
+                catch (CosmosException ex)
+                {
+                    Console.WriteLine("EX");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.Diagnostics);
+                    throw;
+                }
+                finally
+                {
+                    Console.WriteLine(pkRangeBad.GetHitCount());
+                    pkRangeBad.Disable();
+                    fiClient.Dispose();
+                }
             }
         }
 
