@@ -13,9 +13,9 @@
 
     internal class JsonTestUtils
     {
-        public static byte[] ConvertTextToBinary(string text, out IJsonReadOnlyStringDictionary jsonStringDictionary)
+        public static byte[] ConvertTextToBinary(string text, out IJsonStringDictionary jsonStringDictionary)
         {
-            IJsonReadOnlyStringDictionary stringDictionary = JsonTestUtils.PopulateStringDictionary(text);
+            IJsonStringDictionary stringDictionary = JsonTestUtils.PopulateStringDictionary(text);
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: stringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
             textReader.WriteAll(binaryWriter);
@@ -24,7 +24,7 @@
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static byte[] ConvertTextToBinary(string text, IJsonReadOnlyStringDictionary jsonStringDictionary = null)
+        public static byte[] ConvertTextToBinary(string text, IJsonStringDictionary jsonStringDictionary = null)
         {
             IJsonWriter binaryWriter = JsonWriter.Create(JsonSerializationFormat.Binary, jsonStringDictionary: jsonStringDictionary);
             IJsonReader textReader = JsonReader.Create(Encoding.UTF8.GetBytes(text));
@@ -32,7 +32,7 @@
             return binaryWriter.GetResult().ToArray();
         }
 
-        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, IJsonReadOnlyStringDictionary jsonStringDictionary = null)
+        public static string ConvertBinaryToText(ReadOnlyMemory<byte> binary, IJsonStringDictionary jsonStringDictionary = null)
         {
             IJsonReader binaryReader = JsonReader.Create(binary, jsonStringDictionary);
             IJsonWriter textWriter = JsonWriter.Create(JsonSerializationFormat.Text);
@@ -40,7 +40,7 @@
             return Encoding.UTF8.GetString(textWriter.GetResult().ToArray());
         }
 
-        public static IJsonReadOnlyStringDictionary PopulateStringDictionary(string text)
+        public static IJsonStringDictionary PopulateStringDictionary(string text)
         {
             IJsonNavigator navigator = JsonNavigator.Create(Encoding.UTF8.GetBytes(text));
             IJsonNavigatorNode rootNode = navigator.GetRootNode();
@@ -375,7 +375,7 @@
                 (newtonsoftNavigatorCreate != null ? newtonsoftNavigatorCreate(inputJson) : null) :
                 JsonNavigator.Create(inputResult);
 
-            IJsonReadOnlyStringDictionary jsonStringDictionary = new JsonStringDictionary();
+            IJsonStringDictionary jsonStringDictionary = new JsonStringDictionary();
             Func<SerializationSpec, IJsonWriter> createWriter = (SerializationSpec spec) => spec.IsNewtonsoft ?
                 NewtonsoftToCosmosDBWriter.CreateTextWriter() :
                 spec.UserStringEncoded ?
@@ -516,7 +516,7 @@
             byte[] resultBuffer1,
             byte[] resultBuffer2,
             TextWriter verboseWriter = null,
-            IJsonReadOnlyStringDictionary jsonStringDictionary = null)
+            IJsonStringDictionary jsonStringDictionary = null)
         {
             Assert.IsNotNull(resultBuffer1);
             Assert.IsNotNull(resultBuffer2);
