@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
-    /// A static helper class providing serialization and deserialization
+    /// A static helper class providing serialization and deserialization 
     /// of requests/responses to and from the RNTBD protocol for the ThinClient scenario.
     /// </summary>
     internal static class ThinClientTransportSerializer
@@ -61,8 +61,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             using DocumentServiceRequest request = new (operationType, resourceType, requestMessage.RequestUri.PathAndQuery,
-                                               requestStream, AuthorizationTokenType.PrimaryMasterKey,
-                                               dictionaryCollection);
+                                                requestStream, AuthorizationTokenType.PrimaryMasterKey,
+                                                dictionaryCollection);
 
             if (operationType.IsPointOperation())
             {
@@ -80,9 +80,9 @@ namespace Microsoft.Azure.Cosmos
                 string epk = GetEffectivePartitionKeyHash(partitionKey, collection.PartitionKey);
 
                 request.Properties = new Dictionary<string, object>
-            {
-                { ThinClientConstants.EffectivePartitionKey, HexStringUtility.HexStringToBytes(epk) }
-            };
+                {
+                    { ThinClientConstants.EffectivePartitionKey, HexStringUtility.HexStringToBytes(epk) }
+                };
             }
             else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null)
             {
