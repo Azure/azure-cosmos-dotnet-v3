@@ -461,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
-                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
