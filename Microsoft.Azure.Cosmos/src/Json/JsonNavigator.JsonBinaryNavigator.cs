@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos.Json
         private sealed class JsonBinaryNavigator : JsonNavigator
         {
             private readonly ReadOnlyMemory<byte> rootBuffer;
-            private readonly IJsonReadOnlyStringDictionary jsonStringDictionary;
+            private readonly IJsonStringDictionary jsonStringDictionary;
             private readonly IJsonNavigatorNode rootNode;
 
             /// <summary>
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
             public JsonBinaryNavigator(
                 ReadOnlyMemory<byte> buffer,
-                IJsonReadOnlyStringDictionary jsonStringDictionary)
+                IJsonStringDictionary jsonStringDictionary)
             {
                 if (buffer.Length < 2)
                 {

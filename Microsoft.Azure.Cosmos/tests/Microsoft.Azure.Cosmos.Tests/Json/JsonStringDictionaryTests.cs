@@ -57,27 +57,27 @@
         [Owner("mayapainter")]
         public void TestDictionaryComparison()
         {
-            IJsonReadOnlyStringDictionary stringDictionary0 = new JsonStringDictionary();
+            IJsonStringDictionary stringDictionary0 = new JsonStringDictionary();
 
             // Null comparison and reference-equals comparison
             Assert.IsFalse(stringDictionary0.Equals(null));
             Assert.IsTrue(stringDictionary0.Equals(stringDictionary0));
 
             // Subset comparison
-            IJsonReadOnlyStringDictionary stringDictionary1 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
-            IJsonReadOnlyStringDictionary stringDictionary2 = new JsonStringDictionary(new List<string> { "test0", "test1" });
+            IJsonStringDictionary stringDictionary1 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
+            IJsonStringDictionary stringDictionary2 = new JsonStringDictionary(new List<string> { "test0", "test1" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary2));
 
             // Value-equals comparison
-            IJsonReadOnlyStringDictionary stringDictionary3 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
+            IJsonStringDictionary stringDictionary3 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2" });
             Assert.IsTrue(stringDictionary1.Equals(stringDictionary3));
 
             // Superset comparison
-            IJsonReadOnlyStringDictionary stringDictionary4 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2", "test3" });
+            IJsonStringDictionary stringDictionary4 = new JsonStringDictionary(new List<string> { "test0", "test1", "test2", "test3" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary4));
 
             // Order-sensitive comparison
-            IJsonReadOnlyStringDictionary stringDictionary5 = new JsonStringDictionary(new List<string> { "test1", "test0", "test2" });
+            IJsonStringDictionary stringDictionary5 = new JsonStringDictionary(new List<string> { "test1", "test0", "test2" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary5));
         }
     }
