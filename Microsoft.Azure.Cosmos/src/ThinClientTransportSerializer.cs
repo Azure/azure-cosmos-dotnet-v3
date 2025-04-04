@@ -19,11 +19,13 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
 
     /// <summary>
-    /// A static helper class providing serialization and deserialization 
+    /// A static helper class providing serialization and deserialization
     /// of requests/responses to and from the RNTBD protocol for the ThinClient scenario.
     /// </summary>
     internal static class ThinClientTransportSerializer
     {
+        private static readonly ThinClientMemoryStreamPool memoryStreamPool = ThinClientMemoryStreamPool.Instance;
+
         public sealed class BufferProviderWrapper
         {
             internal BufferProvider Provider { get; set; } = new ();
@@ -41,7 +43,6 @@ namespace Microsoft.Azure.Cosmos
             ClientCollectionCache clientCollectionCache,
             HttpRequestMessage requestMessage)
         {
-            // Skip this and use the original DSR.
             OperationType operationType = (OperationType)Enum.Parse(typeof(OperationType), requestMessage.Headers.GetValues(ThinClientConstants.ProxyOperationType).First());
             ResourceType resourceType = (ResourceType)Enum.Parse(typeof(ResourceType), requestMessage.Headers.GetValues(ThinClientConstants.ProxyResourceType).First());
 
@@ -60,8 +61,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             using DocumentServiceRequest request = new (operationType, resourceType, requestMessage.RequestUri.PathAndQuery,
-                                                requestStream, AuthorizationTokenType.PrimaryMasterKey,
-                                                dictionaryCollection);
+                                               requestStream, AuthorizationTokenType.PrimaryMasterKey,
+                                               dictionaryCollection);
 
             if (operationType.IsPointOperation())
             {
@@ -79,9 +80,9 @@ namespace Microsoft.Azure.Cosmos
                 string epk = GetEffectivePartitionKeyHash(partitionKey, collection.PartitionKey);
 
                 request.Properties = new Dictionary<string, object>
-                {
-                    { ThinClientConstants.EffectivePartitionKey, HexStringUtility.HexStringToBytes(epk) }
-                };
+            {
+                { ThinClientConstants.EffectivePartitionKey, HexStringUtility.HexStringToBytes(epk) }
+            };
             }
             else if (request.Headers[ThinClientConstants.ProxyStartEpk] != null)
             {
@@ -99,8 +100,8 @@ namespace Microsoft.Azure.Cosmos
 
             await request.EnsureBufferedBodyAsync();
 
-            using Documents.Rntbd.TransportSerialization.SerializedRequest serializedRequest =
-                Documents.Rntbd.TransportSerialization.BuildRequestForProxy(request,
+            using TransportSerialization.SerializedRequest serializedRequest =
+                TransportSerialization.BuildRequestForProxy(request,
                 new ResourceOperation(operationType, resourceType),
                 activityId,
                 bufferProvider.Provider,
@@ -108,8 +109,7 @@ namespace Microsoft.Azure.Cosmos
                 out _,
                 out _);
 
-            // TODO: consider using the SerializedRequest directly.
-            MemoryStream memoryStream = new MemoryStream(serializedRequest.RequestSize);
+            MemoryStream memoryStream = memoryStreamPool.Get(serializedRequest.RequestSize);
             await serializedRequest.CopyToStreamAsync(memoryStream);
             memoryStream.Position = 0;
             return memoryStream;
@@ -145,14 +145,14 @@ namespace Microsoft.Azure.Cosmos
             if (payloadPresent)
             {
                 int length = await ThinClientTransportSerializer.ReadBodyLengthAsync(responseStream);
-                bodyStream = new MemoryStream(length);
+                bodyStream = memoryStreamPool.Get(length);
                 await responseStream.CopyToAsync(bodyStream);
                 bodyStream.Position = 0;
             }
 
             // TODO(Perf): Clean this up.
             bytesDeserializer = new Rntbd.BytesDeserializer(metadata, metadata.Length);
-            StoreResponse storeResponse = Documents.Rntbd.TransportSerialization.MakeStoreResponse(
+            StoreResponse storeResponse = TransportSerialization.MakeStoreResponse(
                 status,
                 Guid.NewGuid(),
                 bodyStream,
@@ -264,7 +264,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 ArrayPool<byte>.Shared.Return(header);
             }
-
         }
     }
 }
