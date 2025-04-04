@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                     IJsonNavigator binaryNavigator = JsonNavigator.Create(binaryInput);
 
                     // Test binary + empty user string dictionary
-                    IJsonReadOnlyStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string>());
+                    IJsonStringDictionary jsonStringDictionary = new JsonStringDictionary(new List<string>());
                     byte[] binaryWithEmptyUserStringEncodingInput = JsonTestUtils.ConvertTextToBinary(input, jsonStringDictionary);
                     Assert.IsTrue(binaryWithEmptyUserStringEncodingInput.SequenceEqual(binaryInput), "Binary data should be the same with empty readonly JSON dictionary.");
 
