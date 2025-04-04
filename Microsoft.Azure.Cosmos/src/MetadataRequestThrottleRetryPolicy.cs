@@ -122,23 +122,10 @@ namespace Microsoft.Azure.Cosmos
                 return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
             }
 
-            if (statusCode == HttpStatusCode.ServiceUnavailable || statusCode == HttpStatusCode.InternalServerError)
-            {
-                if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
-                {
-                    return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
-                }
-            }
-
-            if (statusCode == HttpStatusCode.Gone && subStatus == SubStatusCodes.LeaseNotFound)
-            {
-                if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
-                {
-                    return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
-                }
-            }
-
-            if (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound)
+            if (statusCode == HttpStatusCode.ServiceUnavailable 
+                || statusCode == HttpStatusCode.InternalServerError
+                || (statusCode == HttpStatusCode.Gone && subStatus == SubStatusCodes.LeaseNotFound)
+                || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
             {
                 if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
                 {

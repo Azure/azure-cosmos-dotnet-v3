@@ -307,12 +307,12 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceWarning("ClientRetryPolicy: Endpoint not available for reads. Refresh cache and retry. Failed Location: {0}; ResourceAddress: {1}",
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
-
+                
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
                     markBothReadAndWriteAsUnavailable: false,
                     forceRefresh: false,
-                    retryOnPreferredLocations: false);
+                    retryOnPreferredLocations: true);
             }
 
             if (statusCode == HttpStatusCode.NotFound

@@ -158,6 +158,16 @@
         [DataRow(FaultInjectionServerErrorType.LeaseNotFound)]
         public async Task MetadataEndpointUnavailableCrossRegionalRetryTest(FaultInjectionServerErrorType serverErrorType)
         {
+            FaultInjectionRule collReadBad = new FaultInjectionRuleBuilder(
+                id: "collread",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataContainer)
+                    .WithRegion(region1)
+                    .Build(),
+                result: new FaultInjectionServerErrorResultBuilder(serverErrorType)
+                    .Build())
+                .Build();
+
             FaultInjectionRule pkRangeBad = new FaultInjectionRuleBuilder(
                 id: "pkrange",
                 condition: new FaultInjectionConditionBuilder()
@@ -168,9 +178,10 @@
                     .Build())
                 .Build();
 
+            collReadBad.Disable();
             pkRangeBad.Disable();
 
-            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { pkRangeBad });
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { pkRangeBad, collReadBad });
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
@@ -188,6 +199,7 @@
                 Container fic = fidb.GetContainer(MultiRegionSetupHelpers.containerName);
 
                 pkRangeBad.Enable();
+                collReadBad.Enable();
 
                 try
                 {
@@ -205,7 +217,8 @@
                 }
                 finally
                 {
-                    Assert.IsTrue(pkRangeBad.GetHitCount() >= 1);
+                    //Cross regional retry needs to ocur (could trigger for other metadata call to try on secondary region so rule would not trigger)
+                    Assert.IsTrue(pkRangeBad.GetHitCount() + collReadBad.GetHitCount() >= 1);
                     pkRangeBad.Disable();
                     fiClient.Dispose();
                 }
