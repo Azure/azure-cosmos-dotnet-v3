@@ -328,6 +328,17 @@ namespace Microsoft.Azure.Cosmos
                     isSystemResourceUnavailableForWrite: false);
             }
 
+            // Recieved 500 status code
+            if (statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+            {
+                return this.ShouldRetryOnUnavailavleEndpointStatusCodes();
+            }
+
+            if (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound)
+            {
+                return this.ShouldRetryOnUnavailavleEndpointStatusCodes();
+            }
+
             return null;
         }
 
@@ -467,14 +478,15 @@ namespace Microsoft.Azure.Cosmos
 
             this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite);
 
-            return this.ShouldRetryOnServiceUnavailable();
+            return this.ShouldRetryOnUnavailavleEndpointStatusCodes();
         }
 
         /// <summary>
         /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
         /// We try and retry the request only if there are other regions available. The retry logic is applicable for single master write accounts as well.
+        /// Other status codes include InternalServerError (500.0) and LeaseNotFound (410.1022).
         /// </summary>
-        private ShouldRetryResult ShouldRetryOnServiceUnavailable()
+        private ShouldRetryResult ShouldRetryOnUnavailavleEndpointStatusCodes()
         {
             if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
             {

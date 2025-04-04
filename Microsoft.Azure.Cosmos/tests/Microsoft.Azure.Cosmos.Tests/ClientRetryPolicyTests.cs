@@ -164,13 +164,16 @@
         }
 
         /// <summary>
-        /// Tests to see if different 503 substatus codes are handeled correctly
+        /// Tests to see if different 503 substatus and other similar status codes are handeled correctly
         /// </summary>
         /// <param name="testCode">The substatus code being Tested.</param>
-        [DataRow((int)SubStatusCodes.Unknown)]
-        [DataRow((int)SubStatusCodes.TransportGenerated503)]
+        [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.Unknown, "ServiceUnavailable")]
+        [DataRow((int)StatusCodes.ServiceUnavailable, (int)SubStatusCodes.TransportGenerated503, "ServiceUnavailable")]
+        [DataRow((int)StatusCodes.InternalServerError, (int)SubStatusCodes.Unknown, "InternalServerError")]
+        [DataRow((int)StatusCodes.Gone, (int)SubStatusCodes.LeaseNotFound, "LeaseNotFound")]
+        [DataRow((int)StatusCodes.Forbidden, (int)SubStatusCodes.DatabaseAccountNotFound, "DatabaseAccountNotFound")]
         [DataTestMethod]
-        public void Http503SubStatusHandelingTests(int testCode)
+        public void Http503LikeSubStatusHandelingTests(int statusCode, int SubStatusCode, string message)
         {
 
             const bool enableEndpointDiscovery = true;
@@ -187,14 +190,14 @@
             Exception serviceUnavailableException = new Exception();
             Mock<INameValueCollection> nameValueCollection = new Mock<INameValueCollection>();
 
-            HttpStatusCode serviceUnavailable = HttpStatusCode.ServiceUnavailable;
+            HttpStatusCode serviceUnavailable = (HttpStatusCode)statusCode;
 
             DocumentClientException documentClientException = new DocumentClientException(
-               message: "Service Unavailable",
+               message: message,
                innerException: serviceUnavailableException,
                responseHeaders: nameValueCollection.Object,
                statusCode: serviceUnavailable,
-               substatusCode: (SubStatusCodes)testCode,
+               substatusCode: (SubStatusCodes)SubStatusCode,
                requestUri: null
                );
 

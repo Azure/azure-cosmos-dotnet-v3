@@ -152,7 +152,11 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        public async Task Sev1Repro()
+        [DataRow(FaultInjectionServerErrorType.ServiceUnavailable)]
+        [DataRow(FaultInjectionServerErrorType.InternalServerError)]
+        [DataRow(FaultInjectionServerErrorType.DatabaseAccountNotFound)]
+        [DataRow(FaultInjectionServerErrorType.LeaseNotFound)]
+        public async Task MetadataEndpointUnavailableCrossRegionalRetryTest(FaultInjectionServerErrorType serverErrorType)
         {
             FaultInjectionRule pkRangeBad = new FaultInjectionRuleBuilder(
                 id: "pkrange",
@@ -160,7 +164,7 @@
                     .WithOperationType(FaultInjectionOperationType.MetadataPartitionKeyRange)
                     .WithRegion(region1)
                     .Build(),
-                result: new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                result: new FaultInjectionServerErrorResultBuilder(serverErrorType)
                     .Build())
                 .Build();
 
@@ -192,19 +196,16 @@
                     while (frTest.HasMoreResults)
                     {
                         FeedResponse<CosmosIntegrationTestObject> feedres = await frTest.ReadNextAsync();
-                        Console.WriteLine(feedres.Diagnostics);
+                        Assert.AreEqual(HttpStatusCode.OK, feedres.StatusCode);
                     }
                 }
                 catch (CosmosException ex)
                 {
-                    Console.WriteLine("EX");
-                    Console.WriteLine(ex.Message);
-                    Console.WriteLine(ex.Diagnostics);
-                    throw;
+                    Assert.Fail(ex.Message);
                 }
                 finally
                 {
-                    Console.WriteLine(pkRangeBad.GetHitCount());
+                    Assert.IsTrue(pkRangeBad.GetHitCount() >= 1);
                     pkRangeBad.Disable();
                     fiClient.Dispose();
                 }

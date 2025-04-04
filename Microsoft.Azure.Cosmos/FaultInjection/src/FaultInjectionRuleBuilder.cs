@@ -151,7 +151,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ResponseDelay
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.SendDelay
                     && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.DatabaseAccountNotFound
-                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ServiceUnavailable)
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ServiceUnavailable
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.InternalServerError
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.LeaseNotFound)
                 {
                     throw new ArgumentException($"{serverErrorResult?.GetServerErrorType()} is not supported for metadata requests.");
                 }

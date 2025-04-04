@@ -75,5 +75,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// 403:1008 Database account not found from gateway
         /// </summary>
         DatabaseAccountNotFound,
+
+        /// <summary>
+        /// 410:1022 Lease not Found
+        /// </summary>
+        LeaseNotFound,
     }
 }

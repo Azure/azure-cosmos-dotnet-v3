@@ -488,6 +488,28 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     return httpResponse;
 
+                case FaultInjectionServerErrorType.LeaseNotFound:
+
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.Gone,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: LeaseNotFound, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
                 default:
                     throw new ArgumentException($"Server error type {this.serverErrorType} is not supported");
             }
