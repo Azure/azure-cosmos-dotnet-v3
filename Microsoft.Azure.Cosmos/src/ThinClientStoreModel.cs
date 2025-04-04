@@ -23,6 +23,7 @@ namespace Microsoft.Azure.Cosmos
 
         public ThinClientStoreModel(
             GlobalEndpointManager endpointManager,
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
@@ -33,7 +34,8 @@ namespace Microsoft.Azure.Cosmos
                   defaultConsistencyLevel,
                   eventSource,
                   serializerSettings,
-                  httpClient)
+                  httpClient,
+                  globalPartitionEndpointManager)
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
@@ -132,7 +134,7 @@ namespace Microsoft.Azure.Cosmos
                     catch (Exception exception)
                     {
                         DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception);
+                            exception.Message);
                     }
                     this.thinClientStoreClient = null;
                 }

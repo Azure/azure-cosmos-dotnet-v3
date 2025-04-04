@@ -6,6 +6,7 @@
     using System.Runtime.InteropServices;
     using System.Text;
     using BenchmarkDotNet.Attributes;
+    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;
     using Microsoft.Azure.Cosmos.Tests.Json;
     using Microsoft.Azure.Cosmos.Tests.Poco;
@@ -58,6 +59,13 @@
                             this.peoplePayload.Binary));
                     break;
 
+                case PocoSerializationFormat.BinaryWithDictionaryEncoding:
+                    reader = new CosmosDBToNewtonsoftReader(
+                        Cosmos.Json.JsonReader.Create(
+                            this.peoplePayload.BinaryWithDictionaryEncoding.binary,
+                            this.peoplePayload.BinaryWithDictionaryEncoding.dictionary));
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(serializationFormat.ToString());
             }
@@ -79,29 +87,35 @@
             Text,
             NewtonsoftText,
             Binary,
+            BinaryWithDictionaryEncoding
         }
 
         private readonly struct Payload
         {
             private Payload(
                 ReadOnlyMemory<byte> text,
-                ReadOnlyMemory<byte> binary)
+                ReadOnlyMemory<byte> binary,
+                (ReadOnlyMemory<byte> binary, IJsonStringDictionary dictionary) binaryWithDictionaryEncoding)
             {
                 this.Text = text;
                 this.Binary = binary;
+                this.BinaryWithDictionaryEncoding = binaryWithDictionaryEncoding;
             }
 
             public ReadOnlyMemory<byte> Text { get; }
             public ReadOnlyMemory<byte> Binary { get; }
+            public (ReadOnlyMemory<byte> binary, IJsonStringDictionary dictionary) BinaryWithDictionaryEncoding { get; }
 
             public static Payload Create(string json)
             {
                 ReadOnlyMemory<byte> text = Encoding.UTF8.GetBytes(json);
                 ReadOnlyMemory<byte> binary = JsonTestUtils.ConvertTextToBinary(json);
+                ReadOnlyMemory<byte> dictionaryEncodedBinary = JsonTestUtils.ConvertTextToBinary(json, out IJsonStringDictionary jsonStringDictionary);
 
                 return new Payload(
                     text,
-                    binary);
+                    binary,
+                    (dictionaryEncodedBinary, jsonStringDictionary));
             }
         }
     }

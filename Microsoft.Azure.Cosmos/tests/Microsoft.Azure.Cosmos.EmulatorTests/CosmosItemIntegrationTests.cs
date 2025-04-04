@@ -10,6 +10,7 @@
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
     [TestClass]
@@ -24,6 +25,7 @@
         private static string region1;
         private static string region2;
         private static string region3;
+        private IDictionary<string, Uri> readRegionsMapping;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
 
         [TestInitialize]
@@ -50,12 +52,12 @@
 
             (this.database, this.container, this.changeFeedContainer) = await MultiRegionSetupHelpers.GetOrCreateMultiRegionDatabaseAndContainers(this.client);
 
-            IDictionary<string, Uri> readRegions = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation();
-            Assert.IsTrue(readRegions.Count() >= 3);
+            this.readRegionsMapping = this.client.DocumentClient.GlobalEndpointManager.GetAvailableReadEndpointsByLocation();
+            Assert.IsTrue(this.readRegionsMapping.Count() >= 3);
 
-            region1 = readRegions.Keys.ElementAt(0);
-            region2 = readRegions.Keys.ElementAt(1);
-            region3 = readRegions.Keys.ElementAt(2);
+            region1 = this.readRegionsMapping.Keys.ElementAt(0);
+            region2 = this.readRegionsMapping.Keys.ElementAt(1);
+            region3 = this.readRegionsMapping.Keys.ElementAt(2);
         }
 
         [TestCleanup]
@@ -295,12 +297,16 @@
 
         [TestMethod]
         [TestCategory("MultiRegion")]
-        [DataRow("15", "10", DisplayName = "Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
-        [DataRow("25", "20", DisplayName = "Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
-        [DataRow("35", "30", DisplayName = "Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
+        [DataRow(ConnectionMode.Direct, "15", "10", DisplayName = "Direct Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow(ConnectionMode.Direct, "25", "20", DisplayName = "Direct Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow(ConnectionMode.Direct, "35", "30", DisplayName = "Direct Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
+        [DataRow(ConnectionMode.Gateway, "15", "10", DisplayName = "Gateway Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow(ConnectionMode.Gateway, "25", "20", DisplayName = "Gateway Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow(ConnectionMode.Gateway, "35", "30", DisplayName = "Gateway Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
         [Owner("dkunda")]
         [Timeout(70000)]
         public async Task ReadItemAsync_WithCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
+            ConnectionMode connectionMode,
             string iterationCount,
             string circuitBreakerConsecutiveFailureCount)
         {
@@ -329,6 +335,7 @@
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
+                ConnectionMode = connectionMode,
                 ConsistencyLevel = ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
@@ -372,15 +379,36 @@
 
                         Assert.IsNotNull(contactedRegions);
 
+                        PartitionKeyRangeFailoverInfo failoverInfo = TestCommon.GetFailoverInfoForFirstPartitionUsingReflection(
+                            globalPartitionEndpointManager: cosmosClient.ClientContext.DocumentClient.PartitionKeyRangeLocation,
+                            isReadOnlyOrMultiMaster: true);
+
                         if (attemptCount > consecutiveFailureCount + 1)
                         {
-                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent read request/s were successful on the next region.");
-                            Assert.IsTrue(contactedRegions.Contains(region2));
+                            if (connectionMode == ConnectionMode.Direct)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent read request/s were successful on the next region.");
+                                Assert.IsTrue(contactedRegions.Contains(region2));
+                            }
+
+                            Assert.AreEqual(this.readRegionsMapping[region2], failoverInfo.Current);
                         }
                         else
                         {
-                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
-                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                            if (connectionMode == ConnectionMode.Direct)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                                Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                            }
+
+                            if (attemptCount > consecutiveFailureCount)
+                            {
+                                Assert.AreEqual(this.readRegionsMapping[region2], failoverInfo.Current);
+                            }
+                            else
+                            {
+                                Assert.AreEqual(this.readRegionsMapping[region1], failoverInfo.Current);
+                            }
                         }
                     }
                     catch (CosmosException)
@@ -740,11 +768,15 @@
         [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiMaster")]
-        [DataRow("15", "10", DisplayName = "Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
-        [DataRow("25", "20", DisplayName = "Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
-        [DataRow("35", "30", DisplayName = "Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
+        [DataRow(ConnectionMode.Direct, "15", "10", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow(ConnectionMode.Direct, "25", "20", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow(ConnectionMode.Direct, "35", "30", DisplayName = "Direct Mode - Scenario whtn the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
+        [DataRow(ConnectionMode.Gateway, "15", "10", DisplayName = "Gateway Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow(ConnectionMode.Gateway, "25", "20", DisplayName = "Gateway Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow(ConnectionMode.Gateway, "35", "30", DisplayName = "Gateway Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
         [Timeout(70000)]
         public async Task CreateItemAsync_WithCircuitBreakerEnabledAndMultiMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
+            ConnectionMode connectionMode,
             string iterationCount,
             string circuitBreakerConsecutiveFailureCount)
         {
@@ -779,7 +811,8 @@
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
-                Serializer = this.cosmosSystemTextJsonSerializer
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ConnectionMode = connectionMode,
             };
 
             try
@@ -809,19 +842,39 @@
                             expected: HttpStatusCode.Created,
                             actual: createResponse.StatusCode);
 
+                        PartitionKeyRangeFailoverInfo failoverInfo = TestCommon.GetFailoverInfoForFirstPartitionUsingReflection(
+                            globalPartitionEndpointManager: cosmosClient.ClientContext.DocumentClient.PartitionKeyRangeLocation,
+                            isReadOnlyOrMultiMaster: true);
+
                         IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = createResponse.Diagnostics.GetContactedRegions();
                         HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
                         Assert.IsNotNull(contactedRegions);
 
                         if (attemptCount > consecutiveFailureCount + 1)
                         {
-                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent write request/s were successful on the next region.");
-                            Assert.IsTrue(contactedRegions.Contains(region2));
+                            if (connectionMode == ConnectionMode.Direct)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent write request/s were successful on the next region.");
+                                Assert.IsTrue(contactedRegions.Contains(region2));
+                            }
+
+                            Assert.AreEqual(this.readRegionsMapping[region2], failoverInfo.Current);
                         }
                         else
                         {
-                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the write requests succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
-                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                            if (connectionMode == ConnectionMode.Direct)
+                            {
+                                Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the write requests succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                                Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+                            }
+                            if (attemptCount > consecutiveFailureCount)
+                            {
+                                Assert.AreEqual(this.readRegionsMapping[region2], failoverInfo.Current);
+                            }
+                            else
+                            {
+                                Assert.AreEqual(this.readRegionsMapping[region1], failoverInfo.Current);
+                            }
                         }
                     }
                     catch (CosmosException)
