@@ -630,7 +630,7 @@
         [Owner("mayapainter")]
         public void UserStringTest()
         {
-            IJsonReadOnlyStringDictionary jsonStringDictionary = 
+            IJsonStringDictionary jsonStringDictionary = 
                 new JsonStringDictionary(new List<string> { "double", "string", "boolean", "null", "datetime", "spatialPoint", "text" });
 
             int userStringId = 0;
@@ -8141,7 +8141,7 @@
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
 
-            IJsonReadOnlyStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
+            IJsonStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, jsonStringDictionary);
         }
 
@@ -8346,7 +8346,7 @@
             this.VerifyWriter(tokensToWrite, expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutput);
 
-            IJsonReadOnlyStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
+            IJsonStringDictionary jsonStringDictionary = JsonTestUtils.PopulateStringDictionary(expectedString);
             this.VerifyWriter(tokensToWrite, binaryOutputWithEncoding, jsonStringDictionary);
         }
         #endregion
@@ -8771,7 +8771,7 @@
             }
         }
 
-        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, IJsonReadOnlyStringDictionary jsonStringDictionary, Exception expectedException = null)
+        private void VerifyWriter(JsonToken[] tokensToWrite, byte[] binaryOutput, IJsonStringDictionary jsonStringDictionary, Exception expectedException = null)
         {
             foreach (bool writeAsUtf8String in new bool[] { false, true })
             {

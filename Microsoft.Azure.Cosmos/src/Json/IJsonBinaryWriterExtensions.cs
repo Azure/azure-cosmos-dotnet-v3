@@ -13,6 +13,6 @@ namespace Microsoft.Azure.Cosmos.Json
             int valueOffset,
             JsonBinaryEncoding.UniformArrayInfo externalArrayInfo,
             bool isFieldName,
-            IJsonReadOnlyStringDictionary jsonStringDictionary = null);
+            IJsonStringDictionary jsonStringDictionary = null);
     }
 }
