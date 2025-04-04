@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// <param name="buffer">The byte array (with format marker) to read from.</param>
         /// <param name="jsonStringDictionary">The dictionary to use for user string encoding.</param>
         /// <returns>A concrete JsonReader that can read the supplied byte array.</returns>
-        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, IJsonReadOnlyStringDictionary jsonStringDictionary = null)
+        public static IJsonReader Create(ReadOnlyMemory<byte> buffer, IJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos.Json
         public static IJsonReader Create(
             JsonSerializationFormat jsonSerializationFormat,
             ReadOnlyMemory<byte> buffer,
-            IJsonReadOnlyStringDictionary jsonStringDictionary = null)
+            IJsonStringDictionary jsonStringDictionary = null)
         {
             if (buffer.IsEmpty)
             {
@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Cosmos.Json
         internal static IJsonReader CreateBinaryFromOffset(
             ReadOnlyMemory<byte> buffer,
             int offset,
-            IJsonReadOnlyStringDictionary jsonStringDictionary = null)
+            IJsonStringDictionary jsonStringDictionary = null)
         {
             return new JsonBinaryReader(buffer, offset, jsonStringDictionary);
         }
