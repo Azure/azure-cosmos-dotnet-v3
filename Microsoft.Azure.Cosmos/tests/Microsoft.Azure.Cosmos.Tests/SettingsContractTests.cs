@@ -1145,25 +1145,25 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             string defaultLanguage = "en-US", path1 = "/fts1", path2 = "/fts2", path3 = "/fts3";
 
-            FullTextPath fullTextPath1 = new Cosmos.FullTextPath()
+            Cosmos.FullTextPath fullTextPath1 = new Cosmos.FullTextPath()
             {
                 Path = path1,
                 Language = "en-US",
             };
 
-            FullTextPath fullTextPath2 = new Cosmos.FullTextPath()
+            Cosmos.FullTextPath fullTextPath2 = new Cosmos.FullTextPath()
             {
                 Path = path2,
                 Language = "en-US",
             };
 
-            FullTextPath fullTextPath3 = new Cosmos.FullTextPath()
+            Cosmos.FullTextPath fullTextPath3 = new Cosmos.FullTextPath()
             {
                 Path = path3,
                 Language = "en-US",
             };
 
-            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+            Collection<Cosmos.FullTextPath> fullTextPaths = new Collection<Cosmos.FullTextPath>()
                 {
                     fullTextPath1,
                     fullTextPath2,
