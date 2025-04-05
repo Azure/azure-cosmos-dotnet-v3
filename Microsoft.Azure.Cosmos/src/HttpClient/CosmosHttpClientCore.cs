@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos
                         {
                             CancellationToken fiToken = cancellationTokenSource.Token;
                             fiToken.ThrowIfCancellationRequested();
-                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest);
+                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, fiToken);
                         }
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
@@ -480,10 +480,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
             }
-            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
+            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
 
             (bool hasFault,
-                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, fiToken);
 
             if (hasFault)
             {
