@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             string defaultLanguage = "en-US", fullTextPath1 = "/fts1", fullTextPath2 = "/fts2", fullTextPath3 = "/fts3";
 
-            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+            Collection<Cosmos.FullTextPath> fullTextPaths = new Collection<Cosmos.FullTextPath>()
                 {
                     new Cosmos.FullTextPath()
                     {
@@ -350,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 FullTextPolicy = new()
                 {
                     DefaultLanguage = defaultLanguage,
-                    FullTextPaths = new Collection<FullTextPath>()
+                    FullTextPaths = new Collection<Cosmos.FullTextPath>()
                 },
                 IndexingPolicy = new Cosmos.IndexingPolicy()
                 {
