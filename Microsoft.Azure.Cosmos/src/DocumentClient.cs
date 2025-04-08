@@ -1100,7 +1100,7 @@ namespace Microsoft.Azure.Cosmos
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
-            if (this.isThinClientEnabled)
+            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway && this.isThinClientEnabled)
             {
                 ThinClientStoreModel thinClientStoreModel = new (
                     endpointManager: this.GlobalEndpointManager,
