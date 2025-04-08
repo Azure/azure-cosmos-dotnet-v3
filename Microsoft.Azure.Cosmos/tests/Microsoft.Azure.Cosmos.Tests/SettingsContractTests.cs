@@ -18,6 +18,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using FullTextPath = Microsoft.Azure.Cosmos.FullTextPath;
 
     [TestClass]
     public class SettingsContractTests
