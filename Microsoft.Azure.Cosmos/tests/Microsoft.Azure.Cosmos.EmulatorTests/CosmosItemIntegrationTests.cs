@@ -189,6 +189,7 @@
                 ConnectionMode = ConnectionMode.Direct,
                 Serializer = this.cosmosSystemTextJsonSerializer,
                 FaultInjector = faultInjector,
+                ApplicationPreferredRegions = new List<string> { region1, region2,  region3 }
             };
 
             using (CosmosClient fiClient = new CosmosClient(
@@ -204,10 +205,10 @@
                 try
                 {
                     FeedIterator<CosmosIntegrationTestObject> frTest = fic.GetItemQueryIterator<CosmosIntegrationTestObject>("SELECT * FROM c");
-
                     while (frTest.HasMoreResults)
                     {
                         FeedResponse<CosmosIntegrationTestObject> feedres = await frTest.ReadNextAsync();
+
                         Assert.AreEqual(HttpStatusCode.OK, feedres.StatusCode);
                     }
                 }
@@ -219,7 +220,10 @@
                 {
                     //Cross regional retry needs to ocur (could trigger for other metadata call to try on secondary region so rule would not trigger)
                     Assert.IsTrue(pkRangeBad.GetHitCount() + collReadBad.GetHitCount() >= 1);
+
                     pkRangeBad.Disable();
+                    collReadBad.Disable();
+
                     fiClient.Dispose();
                 }
             }
