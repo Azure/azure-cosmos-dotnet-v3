@@ -28,6 +28,9 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal AccountProperties()
         {
+            this.ThinClientWritableLocationsInternal = new Collection<AccountRegion>();
+            this.ThinClientReadableLocationsInternal = new Collection<AccountRegion>();
+
             this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
         }
 
@@ -126,6 +129,18 @@ namespace Microsoft.Azure.Cosmos
             }
             set => this.readRegions = value;
         }
+
+        /// <summary>
+        /// Gets or sets the set of ThinClient writable locations parsed from AdditionalProperties.
+        /// </summary>
+        [JsonIgnore]
+        internal Collection<AccountRegion> ThinClientWritableLocationsInternal { get; set; }
+
+        /// <summary>
+        /// Gets or sets the set of ThinClient readable locations parsed from AdditionalProperties.
+        /// </summary>
+        [JsonIgnore]
+        internal Collection<AccountRegion> ThinClientReadableLocationsInternal { get; set; }
 
         /// <summary>
         /// Gets the storage quota for media storage in the databaseAccount from the Azure Cosmos DB service.
@@ -246,6 +261,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JToken> AdditionalProperties { get; set; }
+
     }
 }

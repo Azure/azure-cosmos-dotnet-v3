@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Json
             ReadOnlyMemory<byte> rootBuffer,
             int valueOffset,
             JsonBinaryEncoding.UniformArrayInfo externalArrayInfo,
-            bool isFieldName);
+            bool isFieldName,
+            IJsonStringDictionary jsonStringDictionary = null);
     }
 }

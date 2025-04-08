@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         Mock<ClientCollectionCache> collectionCache;
         Mock<PartitionKeyRangeCache> partitionKeyRangeCache;
         Mock<GlobalEndpointManager> globalEndpointManager;
+
         private static readonly PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition()
         {
             Kind = PartitionKind.Hash,
@@ -151,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null, null, false);
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
             containerProperties.PartitionKey = partitionKeyDefinition;
@@ -180,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     },
                 string.Empty);
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
@@ -208,7 +209,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<bool>()))
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
-            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);
 
             this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
                                                                 this.ConnectionPolicy,
@@ -247,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         mockServiceConfigReader.Object,
                         mockAuthorizationTokenProvider.Object,
                         Protocol.Tcp,
-                        this.GetMockTransportClient(addressInformation),
+                        this.GetMockTransportClient(),
                         enableRequestDiagnostics: true));
         }
 
@@ -286,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
             return addressInformation;
         }
 
-        private TransportClient GetMockTransportClient(AddressInformation[] addressInformation)
+        private TransportClient GetMockTransportClient()
         {
             Mock<TransportClient> mockTransportClient = new Mock<TransportClient>();
 
@@ -306,6 +307,11 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                 _ = dsr.Headers[this.dummyHeaderNames[i]];
             }
 
+            if (ConfigurationManager.IsBinaryEncodingEnabled() && IsPointOperationSupportedForBinaryEncoding(dsr))
+            {
+                dsr.Headers[HttpConstants.HttpHeaders.SupportedSerializationFormats] = SupportedSerializationFormats.CosmosBinary.ToString();
+            }
+
             return true;
         }
 
@@ -320,6 +326,16 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                         Task.FromResult(MockRequestHelper.GetDocumentServiceResponse(documentServiceRequest)));
 
             return gatewayStoreModel.Object;
+        }
+
+        private static bool IsPointOperationSupportedForBinaryEncoding(DocumentServiceRequest request)
+        {
+            return request.ResourceType == ResourceType.Document
+                && (request.OperationType == OperationType.Create
+                    || request.OperationType == OperationType.Replace
+                    || request.OperationType == OperationType.Delete
+                    || request.OperationType == OperationType.Read
+                    || request.OperationType == OperationType.Upsert);
         }
     }
 }

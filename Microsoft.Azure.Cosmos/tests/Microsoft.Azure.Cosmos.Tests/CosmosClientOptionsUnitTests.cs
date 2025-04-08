@@ -512,6 +512,74 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("ntripician")]
+        [DataRow(true, new string[] { nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker) }, "F2", DisplayName = "With PPCB and ApplicationName")]
+        [DataRow(true, new string[] { nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker), nameof(UserAgentFeatureFlags.PerPartitionAutomaticFailover) }, "F3", DisplayName = "With PPAF and ApplicationName")]
+        [DataRow(false, new string[] { nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker) }, "F2", DisplayName = "With PPCB and Without ApplicationName")]
+        [DataRow(false, new string[] { }, "", DisplayName = "Without Any Features and ApplicationName")]
+        public void UserAgentContainsPPAFInformation(
+            bool appName,
+            string[] featureList,
+            string expectedHexStringPostFix)
+        {
+            EnvironmentInformation environmentInformation = new EnvironmentInformation();
+            string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
+            string userAgentSuffix = "testSuffix";
+            if (appName)
+            {
+                cosmosClientOptions.ApplicationName = userAgentSuffix;
+            }
+
+            foreach(string feature in featureList)
+            {
+                if (feature.Equals(nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker)))
+                {
+                    cosmosClientOptions.EnablePartitionLevelCircuitBreaker = true;
+                }
+                else if (feature.Equals(nameof(UserAgentFeatureFlags.PerPartitionAutomaticFailover)))
+                {
+                    cosmosClientOptions.EnablePartitionLevelFailover = true;
+                }
+            }
+
+            cosmosClientOptions.ApplicationRegion = Regions.WestUS;
+            if (appName)
+            {
+                Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+            }
+            else
+            {
+                Assert.IsNull(cosmosClientOptions.ApplicationName);
+            }
+
+            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
+            Console.WriteLine(userAgentContainer.UserAgent);
+            if (appName)
+            {
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(expectedHexStringPostFix));
+            }
+            
+            Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
+
+            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
+            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.Contains(expectedHexStringPostFix));
+            if (appName)
+            {
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(expectedHexStringPostFix));
+            }
+        }
+
+        [TestMethod]
         public void ValidateThatCustomSerializerGetsOverriddenWhenSTJSerializerEnabled()
         {
             CosmosClientOptions options = new CosmosClientOptions()

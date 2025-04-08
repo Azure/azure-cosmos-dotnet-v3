@@ -162,6 +162,33 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ImplementationAsync);
         }
 
+        [TestMethod]
+        public async Task DirectModeTestsAsync()
+        {
+            using EnvironmentVariableOverride enableDistributedQueryOverride = new EnvironmentVariableOverride(
+                ConfigurationManager.DistributedQueryGatewayModeEnabled,
+                bool.TrueString);
+
+            static Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
+            {
+                TestCase[] testCases = new[]
+                {
+                    MakeTest(
+                        "SELECT VALUE COUNT(1) FROM c",
+                        PageSizes,
+                        Expectations.OneValueWithDocumentCountIsPresent),
+                };
+
+                return RunStreamIteratorTestsAsync(container, testCases);
+            }
+
+            await this.CreateIngestQueryDeleteAsync(
+                ConnectionModes.Direct,
+                CollectionTypes.MultiPartition,
+                CreateDocuments(DocumentCount),
+                ImplementationAsync);
+        }
+
         private static async Task RunPartitionedParityTestsAsync(Container container, IEnumerable<string> testCases)
         {
             IReadOnlyList<FeedRange> feedRanges = await container.GetFeedRangesAsync();
@@ -392,6 +419,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     .Where(x => x > 200)
                     .ToHashSet()
                     .SetEquals(actual);
+            }
+
+            public static bool OneValueWithDocumentCountIsPresent(List<int> actual)
+            {
+                return (actual.Count == 1) && (actual[0] == DocumentCount);
             }
         }
 
