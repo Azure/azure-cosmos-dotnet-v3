@@ -425,7 +425,7 @@ namespace Microsoft.Azure.Cosmos
             Headers clone = new Headers();
             foreach (string key in this.CosmosMessageHeaders.AllKeys())
             {
-                clone.Add(key, this.CosmosMessageHeaders.Get(key));
+                clone.CosmosMessageHeaders[key] = this.CosmosMessageHeaders.Get(key);
             }
 
             return clone;
