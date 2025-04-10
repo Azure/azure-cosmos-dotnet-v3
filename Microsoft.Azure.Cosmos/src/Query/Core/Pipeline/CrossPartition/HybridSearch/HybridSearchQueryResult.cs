@@ -54,17 +54,26 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 throw new ArgumentException($"{FieldNames.Payload} must exist.");
             }
 
-            if (!outerPayload.TryGetValue(FieldNames.Payload, out CosmosObject innerPayload))
+            if (outerPayload.TryGetValue(FieldNames.Payload, out CosmosObject innerPayload))
             {
-                throw new ArgumentException($"{FieldNames.Payload} must exist nested within the outer payload field.");
+                // Using the older format where the payload is nested.
+                if (!outerPayload.TryGetValue(FieldNames.ComponentScores, out CosmosArray componentScores))
+                {
+                    throw new ArgumentException($"{FieldNames.ComponentScores} must exist.");
+                }
+
+                return new HybridSearchQueryResult(rid, componentScores, innerPayload);
             }
 
-            if (!outerPayload.TryGetValue(FieldNames.ComponentScores, out CosmosArray componentScores))
             {
-                throw new ArgumentException($"{FieldNames.ComponentScores} must exist.");
-            }
+                // Using the newer format where the payload is not nested.
+                if (!cosmosObject.TryGetValue(FieldNames.ComponentScores, out CosmosArray componentScores))
+                {
+                    throw new ArgumentException($"{FieldNames.ComponentScores} must exist.");
+                }
 
-            return new HybridSearchQueryResult(rid, componentScores, innerPayload);
+                return new HybridSearchQueryResult(rid, componentScores, outerPayload);
+            }
         }
 
         private static class FieldNames
