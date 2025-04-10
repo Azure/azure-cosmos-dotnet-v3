@@ -91,11 +91,6 @@ namespace Microsoft.Azure.Cosmos
             BufferProviderWrapper bufferProviderWrapper = this.bufferProviderWrapperPool.Get();
             try
             {
-                ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(
-                     request,
-                     CancellationToken.None,
-                     NoOpTrace.Singleton);
-                request.ResourceId = collection.ResourceId;
                 requestMessage.Headers.TryAddWithoutValidation(
                     ThinClientConstants.ProxyOperationType,
                     request.OperationType.ToOperationTypeString());

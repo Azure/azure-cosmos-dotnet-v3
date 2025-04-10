@@ -63,6 +63,11 @@ namespace Microsoft.Azure.Cosmos
                                                 requestStream, AuthorizationTokenType.PrimaryMasterKey,
                                                 dictionaryCollection);
 
+            ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(
+                 request,
+                 CancellationToken.None,
+                 NoOpTrace.Singleton);
+
             if (operationType.IsPointOperation())
             {
                 string partitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey);
@@ -72,10 +77,6 @@ namespace Microsoft.Azure.Cosmos
                     throw new InternalServerErrorException();
                 }
 
-                ContainerProperties collection = await clientCollectionCache.ResolveCollectionAsync(
-                     request,
-                     CancellationToken.None,
-                     NoOpTrace.Singleton);
                 string epk = GetEffectivePartitionKeyHash(partitionKey, collection.PartitionKey);
 
                 request.Properties = new Dictionary<string, object>
@@ -96,6 +97,8 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers.Add(HttpConstants.HttpHeaders.StartEpk, request.Headers[ThinClientConstants.ProxyStartEpk]);
                 request.Headers.Add(HttpConstants.HttpHeaders.EndEpk, request.Headers[ThinClientConstants.ProxyEndEpk]);
             }
+            request.ResourceId = collection.ResourceId;
+            request.Headers.Add(WFConstants.BackendHeaders.CollectionRid, collection.ResourceId);
 
             await request.EnsureBufferedBodyAsync();
 

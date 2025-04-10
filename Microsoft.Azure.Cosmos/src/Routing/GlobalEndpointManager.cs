@@ -771,11 +771,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)
         {
-            bool isReadRequest = request.IsReadOnlyRequest
-                || request.OperationType == OperationType.Query
-                || request.OperationType == OperationType.ReadFeed;
-
-            return this.locationCache.ResolveThinClientEndpoint(request, isReadRequest);
+            return this.locationCache.ResolveThinClientEndpoint(request, request.IsReadOnlyRequest);
         }
     }
 }
