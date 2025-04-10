@@ -1284,6 +1284,97 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         }
 
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        public async Task HedgingCancellationTokenHandling()
+        {
+            List<FeedRange> feedRanges = (List<FeedRange>)await this.container.GetFeedRangesAsync();
+            Assert.IsTrue(feedRanges.Any());
+
+            try
+            {
+                await this.container.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
+            }
+            catch (Exception) { }
+
+
+            FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
+                             id: "sendDelay",
+                             condition:
+                                 new FaultInjectionConditionBuilder()
+                                     .WithRegion(region1)
+                                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                                     .WithEndpoint(
+                                        new FaultInjectionEndpointBuilder(
+                                            MultiRegionSetupHelpers.dbName,
+                                            MultiRegionSetupHelpers.containerName,
+                                            feedRanges[0])
+                                        .WithIncludePrimary(true)
+                                        .WithReplicaCount(4)
+                                        .Build())
+                                    .Build(),
+                            result:
+                                FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                                    .WithDelay(TimeSpan.FromMilliseconds(68000))
+                                    .Build())
+                            .WithDuration(TimeSpan.FromMinutes(90))
+                            .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { sendDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            sendDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2 },
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                RequestTimeout = TimeSpan.FromMilliseconds(5000)
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                sendDelay.Enable();
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(TimeSpan.FromSeconds(5)); // Cancellation token expiry time is 5 seconds.
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: true)
+                };
+
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
+                {
+                    Id = "deleteMe",
+                    Pk = "MMWrite",
+                    Other = "test"
+                };
+
+                ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
+                    requestOptions: requestOptions,
+                    cancellationToken: cts.Token);
+
+                sendDelay.Disable();
+
+                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                Assert.IsNotNull(hedgeContext);
+                Assert.AreEqual(region2, (string)hedgeContext);
+            }
+        }
+
         private static async Task HandleChangesAsync(
             ChangeFeedProcessorContext context,
             IReadOnlyCollection<CosmosIntegrationTestObject> changes,
