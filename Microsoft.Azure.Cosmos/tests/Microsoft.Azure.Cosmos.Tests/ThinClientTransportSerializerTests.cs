@@ -57,6 +57,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 CallBase = true
             };
 
+            clientCollectionCacheMock
+              .Setup(c => c.ResolveCollectionAsync(
+                  It.IsAny<DocumentServiceRequest>(),
+                  It.IsAny<CancellationToken>(),
+                  It.IsAny<ITrace>()))
+              .ReturnsAsync(this.GetMockContainerProperties());
+
             // Act & Assert
             await Assert.ThrowsExceptionAsync<InternalServerErrorException>(
                 () => ThinClientTransportSerializer.SerializeProxyRequestAsync(
@@ -177,7 +184,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 PartitionKey = new PartitionKeyDefinition
                 {
                     Paths = new Collection<string> { "/pk" }
-                }
+                },
+                ResourceId = "-Jlvm9pqHGk=",
             };
         }
     }
