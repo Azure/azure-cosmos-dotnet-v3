@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Linq;
     using System.Net;
     using System.Text.Json;
@@ -845,6 +846,7 @@
                 }
             }
         }
+
         [TestMethod]
         [Owner("kirankk")]
         [Timeout(700000)]
@@ -930,6 +932,71 @@
                     Assert.Fail($"Unhandled Exception was thrown during CreateItemAsync call. Message: {ex.Message}");
                 }
             }
+        }
+
+
+        [TestMethod]
+        [Owner("kirankk")]
+        [Timeout(700000)]
+        public async Task AdfTest1()
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            CosmosClientOptions cosmosClientOptions = new()
+            {
+                ConsistencyLevel = ConsistencyLevel.Eventual,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                MaxRetryAttemptsOnRateLimitedRequests = 100,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(600),
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                AllowBulkExecution = true,
+            };
+
+            // Act and Assert.
+            Random random = new();
+
+            using CosmosClient cosmosClient = new(connectionString: "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==", clientOptions: cosmosClientOptions);
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(MultiRegionSetupHelpers.dbName);
+            Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+            await database.CreateContainerIfNotExistsAsync(MultiRegionSetupHelpers.containerName, "/pk", 400);
+            Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < 10000; i++)
+            {
+                CosmosIntegrationTestObject testItem = new()
+                {
+                    Id = $"mmTestId{random.Next()}",
+                    Pk = $"mmpk{random.Next()}"
+                };
+
+                // ItemResponse<CosmosIntegrationTestObject> createResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(testItem.id, new PartitionKey(testItem.Pk));
+                // ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem, new PartitionKey(testItem.Pk));
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                Task tmp = container
+                    .CreateItemAsync<CosmosIntegrationTestObject>(testItem)
+                    .ContinueWith(e => 
+                        {
+                            if (e.Exception != null) 
+                            {
+                                Trace.TraceInformation($"Failure: {e}");
+                            }
+                            else
+                            {
+                                Trace.TraceInformation($"Success: {e.Result.StatusCode}");
+                            }
+                        });
+
+                tasks.Add(tmp);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+            }
+
+            Task.WaitAll(tasks.ToArray());
         }
 
         [TestMethod]
