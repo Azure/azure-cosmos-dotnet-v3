@@ -770,7 +770,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             // e.g. <![CDATA[Method 'id' is not supported., documentdb-dotnet-sdk/2.0.0 Host/64-bit MicrosoftWindowsNT/6.3.9600.0]]>
             msg = sdkVersion.Replace(msg, string.Empty);
 
-            // remove activity Id
+            // remove activity id
             msg = activityId.Replace(msg, string.Empty);
 
             return msg;

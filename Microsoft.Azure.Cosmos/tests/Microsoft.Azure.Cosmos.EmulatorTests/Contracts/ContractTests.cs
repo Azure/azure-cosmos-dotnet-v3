@@ -269,7 +269,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
                     {
                         FeedRange = new
                         {
-                            type = "Physical Partition Key Range Id",
+                            type = "Physical Partition Key Range id",
                             value = pkRangeIds.First()
                         },
                         State = new

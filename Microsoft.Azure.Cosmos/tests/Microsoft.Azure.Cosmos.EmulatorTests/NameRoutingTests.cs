@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
                     //{
                     //    var docQuery = from book in client.CreateDocumentQuery<Document>(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                    //                   where book.Id == doc1Id
+                    //                   where book.id == doc1Id
                     //                   select book;
 
                     //    IEnumerable<Document> enums = docQuery.AsEnumerable();
@@ -198,12 +198,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //    }
                     //    else
                     //    {
-                    //        Assert.AreEqual(enums.Single().Id, doc1Id);
+                    //        Assert.AreEqual(enums.Single().id, doc1Id);
                     //    }
                     //}
                     //{
                     //    var docQuery = from book in client.CreateDocumentQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                    //                   where book.Id == doc1Id
+                    //                   where book.id == doc1Id
                     //                   select book;
                     //    IEnumerable<dynamic> enums = docQuery.AsEnumerable();
                     //    if (enums.Count() == 0)
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     //    }
                     //    else
                     //    {
-                    //        Assert.AreEqual(enums.Single().Id, doc1Id);
+                    //        Assert.AreEqual(enums.Single().id, doc1Id);
                     //    }
                     //}
                 }
@@ -221,18 +221,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //{
                 //    Trigger mytrigger = new Trigger
                 //    {
-                //        Id = resourceRandomId,
+                //        id = resourceRandomId,
                 //        Body = "function() {var x = 10;}",
                 //        TriggerType = TriggerType.Pre,
                 //        TriggerOperation = TriggerOperation.All
                 //    };
 
                 //    Trigger trigger1 = await client.CreateTriggerAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), mytrigger);
-                //    mytrigger.Id = resourceRandom2Id;
+                //    mytrigger.id = resourceRandom2Id;
                 //    trigger1 = await client.ReplaceTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, resourceRandomId), mytrigger);
                 //    trigger1 = await client.DeleteTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, resourceRandom2Id));
 
-                //    mytrigger.Id = trigger1Id;
+                //    mytrigger.id = trigger1Id;
                 //    trigger1 = await client.CreateTriggerAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), mytrigger);
                 //    trigger1 = await client.ReadTriggerAsync(UriFactory.CreateTriggerUri(databaseId, collectionId, trigger1Id));
 
@@ -243,9 +243,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //    // query documents 
                 //    var docQuery = from book in client.CreateTriggerQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                //                   where book.Id == trigger1Id
+                //                   where book.id == trigger1Id
                 //                   select book;
-                //    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, trigger1Id);
+                //    Assert.AreEqual(docQuery.AsEnumerable().Single().id, trigger1Id);
 
                 //    bool bFound = false;
                 //    IDocumentQuery<dynamic> docServiceQuery = client.CreateTriggerQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
@@ -293,9 +293,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     // query documents 
                     //var docQuery = from book in client.CreateStoredProcedureQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                    //               where book.Id == storedProcedure1Id
+                    //               where book.id == storedProcedure1Id
                     //               select book;
-                    //Assert.AreEqual(docQuery.AsEnumerable().Single().Id, storedProcedure1Id);
+                    //Assert.AreEqual(docQuery.AsEnumerable().Single().id, storedProcedure1Id);
 
                     //bool bFound = false;
                     //IDocumentQuery<dynamic> docServiceQuery = client.CreateStoredProcedureQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
@@ -316,16 +316,16 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 //{
                 //    UserDefinedFunction myudf = new UserDefinedFunction
                 //    {
-                //        Id = resourceRandomId,
+                //        id = resourceRandomId,
                 //        Body = "function() {var x = 10;}",
                 //    };
 
                 //    UserDefinedFunction udf1 = await client.CreateUserDefinedFunctionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myudf);
-                //    myudf.Id = resourceRandom2Id;
+                //    myudf.id = resourceRandom2Id;
                 //    udf1 = await client.ReplaceUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, resourceRandomId), myudf);
                 //    udf1 = await client.DeleteUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, resourceRandom2Id));
 
-                //    myudf.Id = udf1Id;
+                //    myudf.id = udf1Id;
                 //    udf1 = await client.CreateUserDefinedFunctionAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), myudf);
                 //    udf1 = await client.ReadUserDefinedFunctionAsync(UriFactory.CreateUserDefinedFunctionUri(databaseId, collectionId, udf1Id));
 
@@ -336,9 +336,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 //    // query UserDefinedFunction 
                 //    var docQuery = from book in client.CreateUserDefinedFunctionQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId))
-                //                   where book.Id == udf1Id
+                //                   where book.id == udf1Id
                 //                   select book;
-                //    Assert.AreEqual(docQuery.AsEnumerable().Single().Id, udf1Id);
+                //    Assert.AreEqual(docQuery.AsEnumerable().Single().id, udf1Id);
 
                 //    bool bFound = false;
                 //    IDocumentQuery<dynamic> docServiceQuery = client.CreateUserDefinedFunctionQuery(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId),
@@ -482,7 +482,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public async Task CollectionDeleteAndCreateWithSameNameTest()
         {
-            // when collection name changes, the collectionName ->Id cache at the gateway need to get invalidated and refreshed.
+            // when collection name changes, the collectionName ->id cache at the gateway need to get invalidated and refreshed.
             // This test is to verify this case is working well.
             using DocumentClient client = TestCommon.CreateClient(true);
             await this.CollectionDeleteAndCreateWithSameNameTestPrivateAsync(client);
@@ -518,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Document doc1 = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc1Id });
             Document anotherdoc = await client.CreateDocumentAsync(UriFactory.CreateDocumentCollectionUri(databaseId, collectionId), new Document() { Id = doc2Id });
 
-            // doing a read, which cause the gateway has name->Id cache.
+            // doing a read, which cause the gateway has name->id cache.
             Document docIgnore = await client.ReadDocumentAsync(UriFactory.CreateDocumentUri(databaseId, collectionId, doc1Id), 
                 new RequestOptions() { PartitionKey = new PartitionKey(doc1Id) });
 
@@ -563,7 +563,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// GatewayNameIdCacheRefresh Test sequence:
         /// 1. Create 15 service and only leave 1 available
         //  2. Create follection dbs/foo/collections/foo
-        //  3. Do a read which cause the Name-Id cache in collection.
+        //  3. Do a read which cause the Name-id cache in collection.
         //  4. Delete dbs/foo/collections/foo
         /// *************With the service address is same:
         //  5. Recreate dbs/foo/collections/foo 
@@ -679,7 +679,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Document doc1 = await collFoo.CreateItemAsync<Document>(item: documentDefinition);
 
             RequestOptions requestOptions = new RequestOptions() { PartitionKey = new PartitionKey("test") };
-            // doing a read, which cause the gateway has name->Id cache (collectionFooId -> Rid)
+            // doing a read, which cause the gateway has name->id cache (collectionFooId -> Rid)
             Document docIgnore = await collFoo.ReadItemAsync<Document>(partitionKey: new Cosmos.PartitionKey("test"), id: doc1Id);
 
             // Now delete the collection so we have 1 bindable collection left
@@ -1185,7 +1185,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsFalse(isFeed);
             Assert.IsTrue(resourceType == "dbs");
 
-            // media/xxx is always Id based
+            // media/xxx is always id based
             // alEBAMZlTQABAAAAAAAAACnfXFUB (storageIndex = 1) so it is not valid resourceId but a valid mediaId
             tryParse = PathsHelper.TryParsePathSegments(new Uri(baseuri, new Uri("media/alEBAMZlTQABAAAAAAAAACnfXFUB", UriKind.Relative)).AbsolutePath, out isFeed, out resourceType, out resourceIdorFullName, out isNameBased);
             Assert.IsTrue(tryParse);
@@ -1559,7 +1559,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             //PartitionKeyRangeId is not supported reed feed from V3 SDK onwards
-            //Document document1 = new Document { Id = "doc1" };
+            //Document document1 = new Document { id = "doc1" };
             //document1.SetPropertyValue("field1", 1);
             //await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
@@ -1576,11 +1576,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             //DocumentClient otherClient = TestCommon.CreateClient(false);
             //await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
-            //await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 });
+            //await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { id = "coll1", PartitionKey = partitionKeyDefinition1 });
 
             //try
             //{
-            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[ranges.Count - 1].Id });
+            //    await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[ranges.Count - 1].id });
             //    Assert.Fail();
             //}
             //catch (DocumentClientException ex)
@@ -1589,7 +1589,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //    Assert.AreEqual(SubStatusCodes.PartitionKeyRangeGone, ex.GetSubStatus());
             //}
 
-            //await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[0].Id });
+            //await client.ReadDocumentFeedAsync("/dbs/db1/colls/coll1", new FeedOptions { PartitionKeyRangeId = ranges[0].id });
         }
 
         /// <summary>
@@ -1632,10 +1632,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
             //PartitionKeyRangeId is not supported reed feed from V3 SDK onwards
-            //await client.CreateDatabaseAsync(new Database { Id = "db1" });
-            //await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { Id = "coll1" });
+            //await client.CreateDatabaseAsync(new Database { id = "db1" });
+            //await TestCommon.CreateCollectionAsync(client, "/dbs/db1", new DocumentCollection { id = "coll1" });
 
-            //Document document1 = new Document { Id = "doc1" };
+            //Document document1 = new Document { id = "doc1" };
             //document1.SetPropertyValue("field1", 1);
             //await client.CreateDocumentAsync("/dbs/db1/colls/coll1", document1);
 
@@ -1653,7 +1653,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //DocumentClient otherClient = TestCommon.CreateClient(false);
             //await otherClient.DeleteDocumentCollectionAsync("/dbs/db1/colls/coll1");
             //PartitionKeyDefinition partitionKeyDefinition1 = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/field1" }), Kind = PartitionKind.Hash };
-            //DocumentCollection collection = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { Id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
+            //DocumentCollection collection = await TestCommon.CreateCollectionAsync(otherClient, "/dbs/db1", new DocumentCollection { id = "coll1", PartitionKey = partitionKeyDefinition1 }, new RequestOptions { OfferThroughput = 12000 });
             //var partitionKeyRangeCache = await client.GetPartitionKeyRangeCacheAsync();
             //var ranges = await partitionKeyRangeCache.TryGetOverlappingRangesAsync(
             //    collection.ResourceId,

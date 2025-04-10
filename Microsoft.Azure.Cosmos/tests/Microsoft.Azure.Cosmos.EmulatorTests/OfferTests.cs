@@ -345,7 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .AsEnumerable();
 
                     Assert.AreEqual(id, ((Offer)queriedOffers.Single()).Id,
-                        "Expect queried Id to match the Id in the offer");
+                        "Expect queried id to match the id in the offer");
 
                     string rid = offer.OfferResourceId;
                     queriedOffers =
@@ -422,7 +422,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     };
 
                     DocumentFeedResponse<Offer> response = await client.ReadOffersFeedAsync(options);
-                    Assert.IsTrue(response.Count <= pageSize, string.Format(CultureInfo.InvariantCulture, "Number of offers read {0} greater than desired value {1}. Activity Id: {2}",
+                    Assert.IsTrue(response.Count <= pageSize, string.Format(CultureInfo.InvariantCulture, "Number of offers read {0} greater than desired value {1}. Activity id: {2}",
                         response.Count, pageSize, response.ActivityId));
 
                     readOffers.AddRange(response);
@@ -747,7 +747,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .AsEnumerable();
 
                     Assert.AreEqual(id, ((Offer)queriedOffers.Single()).Id,
-                        "Expect queried Id to match the Id in the offer");
+                        "Expect queried id to match the id in the offer");
 
                     string rid = offer.OfferResourceId;
                     queriedOffers =
@@ -814,7 +814,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     }
 
                     Assert.AreEqual(1, queryResults.Count);
-                    Assert.AreEqual(id, queryResults[0].Id, "Expect queried Id to match the Id in the offer");
+                    Assert.AreEqual(id, queryResults[0].Id, "Expect queried id to match the id in the offer");
                 }
 
                 // Test pagination for query by offer resource id
@@ -1100,8 +1100,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         internal static void ValidateOfferResponseBody(Offer offer, string expectedCollLink, string expectedOfferType = null)
         {
-            Assert.IsNotNull(offer.Id, "Id cannot be null");
-            Assert.IsNotNull(offer.ResourceId, "Resource Id (Rid) cannot be null");
+            Assert.IsNotNull(offer.Id, "id cannot be null");
+            Assert.IsNotNull(offer.ResourceId, "Resource id (Rid) cannot be null");
             Assert.IsNotNull(offer.SelfLink, "Self link cannot be null");
             Assert.IsNotNull(offer.ResourceLink, "Resource Link cannot be null");
             Assert.IsNotNull(offer.Timestamp, "Timestamp cannot be null");

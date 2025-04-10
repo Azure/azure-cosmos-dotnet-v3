@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Document typedDocument = Document.FromObject(document);
             if (string.IsNullOrEmpty(typedDocument.Id))
             {
-                throw new ArgumentException("If document has to contains the Id proerty");
+                throw new ArgumentException("If document has to contains the id proerty");
             }
 
             SwapLinkIfNeeded(typedDocument);

@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
 
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                testItem.id = "Invalid#/\\?Id";
+                testItem.id = "Invalid#/\\?id";
                 await this.Container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
 
                 try

@@ -533,7 +533,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Result r;
                     switch (reader.Path)
                     {
-                        case "Id":
+                        case "id":
                             r = reader.ReadString(out string id);
                             Assert.AreEqual(Result.Success, r);
                             testDoc.Id = id;
@@ -585,7 +585,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     {
                         new Property()
                         {
-                            Path = "Id",
+                            Path = "id",
                             PropertyType = new PrimitivePropertyType()
                             {
                                 Type = TypeKind.Utf8,
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             private static Result WriteDoc(ref RowWriter writer, TypeArgument typeArg, TestDoc doc)
             {
-                Result r = writer.WriteString("Id", doc.Id);
+                Result r = writer.WriteString("id", doc.Id);
                 if (r != Result.Success)
                 {
                     return r;

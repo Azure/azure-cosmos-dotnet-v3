@@ -1012,7 +1012,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            Assert.AreEqual(1, machineId.Count, $"Multiple Machine Id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
+            Assert.AreEqual(1, machineId.Count, $"Multiple Machine id has been generated i.e {JsonConvert.SerializeObject(machineId)}");
         }
 
         private static void AssertCacheRefreshInfoInformation(

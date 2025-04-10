@@ -593,7 +593,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     this.GetClient().Endpoint.Port == computeGatewayPort ? 
                         scenario.ComputeGateway ?? scenario.Gateway : scenario.Gateway;
 
-            Console.WriteLine($"Scenario: {scenario.Name}, Id: \"{scenario.Id}\"");
+            Console.WriteLine($"Scenario: {scenario.Name}, id: \"{scenario.Id}\"");
 
             ResponseMessage response = await this.Container.CreateItemStreamAsync(
                 await CreateItemPayload(scenario.Id),

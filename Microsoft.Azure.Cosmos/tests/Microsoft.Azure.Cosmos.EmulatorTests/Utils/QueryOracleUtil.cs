@@ -742,7 +742,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 }
                 catch (DocumentClientException exc)
                 {
-                    System.Diagnostics.Trace.TraceInformation("Activity Id: {0}", exc.ActivityId);
+                    System.Diagnostics.Trace.TraceInformation("Activity id: {0}", exc.ActivityId);
                     System.Diagnostics.Trace.TraceInformation("Query String: {0}", queryString);
                     if ((int)exc.StatusCode != 429)
                     {

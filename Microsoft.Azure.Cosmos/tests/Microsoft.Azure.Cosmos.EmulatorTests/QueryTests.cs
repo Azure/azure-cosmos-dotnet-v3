@@ -206,8 +206,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentSecondaryIndexDatabase" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentsSecondaryIndexCollection" + Guid.NewGuid().ToString() };
                 collectionDefinition.IndexingPolicy.Automatic = true;
 
                 IndexingPath includedPath = new IndexingPath();
@@ -247,8 +247,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
 
                 IndexingPath includedPath = new IndexingPath();
                 includedPath.IndexType = IndexType.Hash;
@@ -283,8 +283,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
                 indexingPolicyOld.IncludedPaths.Add(new IndexingPath { IndexType = IndexType.Range, Path = @"/""NumericField""/?" });
@@ -314,8 +314,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
 
@@ -363,8 +363,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
 
@@ -390,8 +390,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" };
 
                 IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
 
@@ -421,8 +421,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" };
 
                 DocumentCollection collection = TestCommon.CreateCollectionAsync(this.client, database, collectionDefinition).Result;
                 Assert.IsTrue(collection.IndexingPolicy.IncludedPaths.Count == 1, "Unexpected included path count");
@@ -442,8 +442,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             try
             {
-                Database database = this.client.Create<Database>(null, new Database { Id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
-                DocumentCollection collectionDefinition = new DocumentCollection { Id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
+                Database database = this.client.Create<Database>(null, new Database { id = "TestQueryDocumentWithPaths" + Guid.NewGuid().ToString() });
+                DocumentCollection collectionDefinition = new DocumentCollection { id = "TestQueryDocumentWithPathsCollection" + Guid.NewGuid().ToString() };
 
                 IndexingPath includedPath = new IndexingPath();
                 includedPath.IndexType = IndexType.Hash;
@@ -477,7 +477,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     QueryDocument doc = new QueryDocument()
                     {
-                        Id = string.Format(CultureInfo.InvariantCulture, "doc{0}", index),
+                        id = string.Format(CultureInfo.InvariantCulture, "doc{0}", index),
                         NumericField = index,
                         StringField = index.ToString(CultureInfo.InvariantCulture),
                         NumericField2 = index
@@ -1477,13 +1477,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             await TestCommon.DeleteAllDatabasesAsync(originalClient);
             string guid = Guid.NewGuid().ToString();
-            Database database = await originalClient.CreateDatabaseAsync(new Database { Id = "db" + guid });
+            Database database = await originalClient.CreateDatabaseAsync(new Database { id = "db" + guid });
 
             DocumentCollection coll = await originalClient.CreateDocumentCollectionAsync(
                 database,
                 new DocumentCollection
                 {
-                    Id = "coll" + guid,
+                    id = "coll" + guid,
                     PartitionKey = new PartitionKeyDefinition
                     {
                         Paths = new Collection<string> { "/key" },
@@ -1720,12 +1720,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await TestCommon.DeleteAllDatabasesAsync(primaryClient);
 
                 string uniqDatabaseName = "ValidateUpdateCollectionIndexingPolicy_DB_" + Guid.NewGuid().ToString("N");
-                Database database = await primaryClient.CreateDatabaseAsync(new Database { Id = uniqDatabaseName });
+                Database database = await primaryClient.CreateDatabaseAsync(new Database { id = uniqDatabaseName });
 
                 string uniqCollectionName = "ValidateUpdateCollectionIndexingPolicy_COLL_" + Guid.NewGuid().ToString("N");
                 DocumentCollection collection = await primaryClient.CreateDocumentCollectionAsync(
                     database.SelfLink,
-                    new DocumentCollection { Id = uniqCollectionName },
+                    new DocumentCollection { id = uniqCollectionName },
                     new RequestOptions { OfferThroughput = 10000 });
 
                 var loadDocsTask = Task.Run(async () =>
@@ -1752,7 +1752,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await Task.WhenAll(loadDocsTask, updateIndexingPolicyTask, recycleReplicaTask);
 
                 Logger.LogLine("Final iteration: updating collection indexing policy to consistent.");
-                collection = new DocumentCollection { Id = collection.Id, SelfLink = collection.SelfLink };
+                collection = new DocumentCollection { id = collection.id, SelfLink = collection.SelfLink };
                 await TestCommon.AsyncRetryRateLimiting(() => primaryClient.ReplaceDocumentCollectionAsync(collection));
 
                 Logger.LogLine("Waiting for reindexing to finish on all the replicas.");
@@ -1789,14 +1789,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 using (await TestCommon.OverrideFederationWideConfigurationsAsync(
                     Tuple.Create<string, object>("lazyIndexForceCheckpointIntervalInSeconds", 1)))
                 {
-                    Database database = (await this.client.CreateDatabaseAsync(new Database { Id = "db01" })).Resource;
+                    Database database = (await this.client.CreateDatabaseAsync(new Database { id = "db01" })).Resource;
 
-                    DocumentCollection collection = new DocumentCollection { Id = "coll01" };
+                    DocumentCollection collection = new DocumentCollection { id = "coll01" };
                     collection.IndexingPolicy.IndexingMode = IndexingMode.Consistent;
                     collection = (await this.client.CreateDocumentCollectionAsync(database, collection)).Resource;
                     await TestQueryWithTimestampOnCollectionAsync(collection);
 
-                    collection = new DocumentCollection { Id = "coll02" };
+                    collection = new DocumentCollection { id = "coll02" };
                     collection.IndexingPolicy.IndexingMode = IndexingMode.Lazy;
                     collection = (await this.client.CreateDocumentCollectionAsync(database, collection)).Resource;
                     await TestQueryWithTimestampOnCollectionAsync(collection);

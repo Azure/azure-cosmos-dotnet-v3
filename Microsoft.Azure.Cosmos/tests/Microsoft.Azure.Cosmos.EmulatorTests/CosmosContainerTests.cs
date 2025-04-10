@@ -1644,7 +1644,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsTrue(ex.Message.Contains("Only Deterministic encryption type is supported for path: /id."), ex.Message);
             }
 
-            // failure due to policy format version 1. for Pk and Id
+            // failure due to policy format version 1. for Pk and id
             try
             {
                 Collection<ClientEncryptionIncludedPath> pathsToEncryptWithPartitionKey = new Collection<ClientEncryptionIncludedPath>()

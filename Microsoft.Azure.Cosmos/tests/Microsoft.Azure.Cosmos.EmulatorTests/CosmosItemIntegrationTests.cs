@@ -26,7 +26,7 @@
         private static string region3;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
 
-        [TestInitialize]
+        //[TestInitialize]
         public async Task TestInitAsync()
         {
             this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", null);
@@ -58,7 +58,7 @@
             region3 = readRegions.Keys.ElementAt(2);
         }
 
-        [TestCleanup]
+        //[TestCleanup]
         public void TestCleanup()
         {
             try
@@ -842,6 +842,92 @@
                 foreach (CosmosIntegrationTestObject item in itemsCleanupList)
                 {
                     await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(item.Id, new PartitionKey(item.Pk));
+                }
+            }
+        }
+        [TestMethod]
+        [Owner("kirankk")]
+        [Timeout(700000)]
+        public async Task AdfTest()
+        {
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions()
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string createRuleId = "429-create-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule createRule = new FaultInjectionRuleBuilder(
+                id: createRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                       .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithDelay(TimeSpan.FromMilliseconds(1))
+                        .Build())
+                .Build();
+            string readRuleId = "429-read-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule readRule = new FaultInjectionRuleBuilder(
+                id: readRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                       .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                        .WithDelay(TimeSpan.FromMilliseconds(1))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { createRule, readRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            CosmosClientOptions cosmosClientOptions = new()
+            {
+                ConsistencyLevel = ConsistencyLevel.Eventual,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                MaxRetryAttemptsOnRateLimitedRequests = 100,
+                MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(600),
+                Serializer = this.cosmosSystemTextJsonSerializer
+            };
+
+            // Act and Assert.
+            Random random = new();
+            int totalIterations = 1;
+
+            using CosmosClient cosmosClient = new(connectionString: "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==", clientOptions: cosmosClientOptions);
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(MultiRegionSetupHelpers.dbName);
+            Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+            await database.CreateContainerIfNotExistsAsync(MultiRegionSetupHelpers.containerName, "/pk", 400);
+            Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+            for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+            {
+                try
+                {
+                    CosmosIntegrationTestObject testItem = new()
+                    {
+                        Id = $"mmTestId{random.Next()}",
+                        Pk = $"mmpk{random.Next()}"
+                    };
+
+                    // ItemResponse<CosmosIntegrationTestObject> createResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(testItem.id, new PartitionKey(testItem.Pk));
+                    // ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem, new PartitionKey(testItem.Pk));
+                    ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem);
+
+                    Assert.AreNotEqual(HttpStatusCode.Created, createResponse.StatusCode);
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.Fail($"Create and Read Item operations should succeed. Message: {ex}");
+                }
+                catch (Exception ex)
+                {
+                    Assert.Fail($"Unhandled Exception was thrown during CreateItemAsync call. Message: {ex.Message}");
                 }
             }
         }

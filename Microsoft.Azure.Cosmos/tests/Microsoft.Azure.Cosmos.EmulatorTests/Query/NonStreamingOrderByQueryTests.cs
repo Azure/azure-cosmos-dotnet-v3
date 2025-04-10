@@ -38,32 +38,32 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private static readonly IReadOnlyList<TestCase> VectorDistanceTestCases = new List<TestCase>
         {
             MakeTest(
-                @"SELECT c.id AS Id, c.word AS Word " +
+                @"SELECT c.id AS id, c.word AS Word " +
                 @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Cosine'}}) ASC",
                 Expectations.DocumentsAreInCosineDistanceOrder()),
             MakeTest(
-                @"SELECT c.id AS Id, c.word AS Word " +
+                @"SELECT c.id AS id, c.word AS Word " +
                 @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Cosine'}}) DESC",
                 Expectations.DocumentsAreInDescendingCosineDistanceOrder()),
             MakeTest(
-                @"SELECT c.id AS Id, c.word AS Word " +
+                @"SELECT c.id AS id, c.word AS Word " +
                 @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'DotProduct'}}) ASC",
                 Expectations.DocumentsAreInDotProductDistanceOrder()),
             MakeTest(
-                @"SELECT c.id AS Id, c.word AS Word " +
+                @"SELECT c.id AS id, c.word AS Word " +
                 @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'DotProduct'}}) DESC",
                 Expectations.DocumentsAreInDescendingDotProductDistanceOrder()),
             MakeTest(
-                @"SELECT c.id AS Id, c.word AS Word " +
+                @"SELECT c.id AS id, c.word AS Word " +
                 @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Euclidean'}}) ASC",
                 Expectations.DocumentsAreInEuclideanDistanceOrder()),
             MakeTest(
-                @"SELECT c.id AS Id, c.word AS Word " +
+                @"SELECT c.id AS id, c.word AS Word " +
                 @"FROM c " +
                 @$"ORDER BY VectorDistance(""{Embedding}"", c.embedding, true, {{distanceFunction:'Euclidean'}}) DESC",
                 Expectations.DocumentsAreInDescendingEuclideanDistanceOrder())

@@ -2853,10 +2853,10 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Filter 1st children's gender -> Select his 1st pet", b => getQuery(b).Where(f => f.Children.Count() > 0 && f.Children[0].Pets.Count() > 0 && f.Children[0].Gender == "female").Select(f => f.Children[0].Pets[0])));
             inputs.Add(new LinqTestInput("Filter 1st children's gender -> Select his 2nd pet", b => getQuery(b).Where(f => f.Children.Count() > 0 && f.Children[0].Pets.Count() > 1 && f.Children[0].Gender == "female").Select(f => f.Children[0].Pets[1])));
             inputs.Add(new LinqTestInput("Select FamilyId of all children", b => getQuery(b).SelectMany(f => f.Children.Select(c => new { Id = f.FamilyId }))));
-            inputs.Add(new LinqTestInput("Filter family with null Id", b => getQuery(b).Where(f => (string)null == f.FamilyId)));
-            inputs.Add(new LinqTestInput("Filter family with null Id #2", b => getQuery(b).Where(f => f.FamilyId == (string)null)));
+            inputs.Add(new LinqTestInput("Filter family with null id", b => getQuery(b).Where(f => (string)null == f.FamilyId)));
+            inputs.Add(new LinqTestInput("Filter family with null id #2", b => getQuery(b).Where(f => f.FamilyId == (string)null)));
             inputs.Add(new LinqTestInput("Filter family with null object", b => getQuery(b).Where(f => f.NullObject == (object)null)));
-            inputs.Add(new LinqTestInput("Filter family with null Id #3", b => getQuery(b).Where(f => null == f.FamilyId)));
+            inputs.Add(new LinqTestInput("Filter family with null id #3", b => getQuery(b).Where(f => null == f.FamilyId)));
             inputs.Add(new LinqTestInput("Filter registered family", b => getQuery(b).Where(f => f.IsRegistered == false)));
             inputs.Add(new LinqTestInput("Filter family by FamilyId", b => getQuery(b).Where(f => f.FamilyId.Equals("WakefieldFamily"))));
             inputs.Add(new LinqTestInput("Filter family nullable int", b => getQuery(b).Where(f => f.NullableInt == null)));
@@ -2869,8 +2869,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("Filter int = nullInt", b => getQuery(b).Where(f => f.Int == nullIntVal)));
             inputs.Add(new LinqTestInput("Filter int < nullInt", b => getQuery(b).Where(f => f.Int < nullIntVal)));
 
-            inputs.Add(new LinqTestInput("Guid filter by Id", b => getGuidQuery(b).Where(g => g.Id == guidObject.Id)));
-            inputs.Add(new LinqTestInput("Guid filter by Id #2", b => getGuidQuery(b).Where(g => g.Id.ToString() == guidObject.Id.ToString())));
+            inputs.Add(new LinqTestInput("Guid filter by id", b => getGuidQuery(b).Where(g => g.Id == guidObject.Id)));
+            inputs.Add(new LinqTestInput("Guid filter by id #2", b => getGuidQuery(b).Where(g => g.Id.ToString() == guidObject.Id.ToString())));
             inputs.Add(new LinqTestInput("Array compare", b => getListArrayQuery(b).Where(a => a.ArrayField == arrayObject.ArrayField)));
             inputs.Add(new LinqTestInput("Array compare null", b => getListArrayQuery(b).Where(a => a.ArrayField == nullArray)));
             inputs.Add(new LinqTestInput("List compare", b => getListArrayQuery(b).Where(a => a.ListField == listObject.ListField)));

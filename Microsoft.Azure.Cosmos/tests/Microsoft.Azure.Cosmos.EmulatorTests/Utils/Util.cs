@@ -378,9 +378,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.AltLink), "AltLink for a resource cannot be null or whitespace");
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.ETag), "Etag for a resource cannot be null or whitespace");
-            Assert.IsFalse(string.IsNullOrWhiteSpace(resource.Id), "Id for a resource cannot be null or whitespace");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(resource.Id), "id for a resource cannot be null or whitespace");
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.ResourceId), "ResourceId for a resource cannot be null or whitespace");
-            Assert.AreNotSame(resource.Id, resource.ResourceId, "ResourceId and Id for a resource cannot be same");
+            Assert.AreNotSame(resource.Id, resource.ResourceId, "ResourceId and id for a resource cannot be same");
             Assert.IsFalse(string.IsNullOrWhiteSpace(resource.SelfLink), "SelfLink for a resource cannot be null or whitespace");
             Assert.AreNotSame(resource.SelfLink, resource.AltLink, "SelfLink and altLink for a resource cannot be same");
             Assert.IsTrue(resource.Timestamp > DateTime.MinValue, "Timestamp set for resource is not correct");

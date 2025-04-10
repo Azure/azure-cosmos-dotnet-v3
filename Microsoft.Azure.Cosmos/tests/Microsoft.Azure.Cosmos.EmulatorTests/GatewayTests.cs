@@ -1000,7 +1000,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //// failure test - trigger with empty body
             //Trigger triggerEmptyBody = new Trigger
             //{
-            //    Id = "triggerEmptyBody",
+            //    id = "triggerEmptyBody",
             //    Body = @"",
             //    TriggerType = TriggerType.Pre,
             //    TriggerOperation = TriggerOperation.All
@@ -1055,7 +1055,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //            // precompilation should catch errors on create
             //            Trigger triggerSyntaxError = new Trigger
             //            {
-            //                Id = "trigger" + Guid.NewGuid().ToString(),
+            //                id = "trigger" + Guid.NewGuid().ToString(),
             //                Body = @"
             //                    method() { // method is invalid identifier
             //                        for(var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
@@ -1329,21 +1329,21 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             // re-enable these tests if we re-enable multiple triggers
             //            // pre-trigger request body
-            //            Document doc5 = client.CreateDocumentAsync(collection1, new Document { Id =  "Doc5" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
-            //            Assert.AreEqual("doc5t1t3", doc5.Id);
+            //            Document doc5 = client.CreateDocumentAsync(collection1, new Document { id =  "Doc5" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t3" } }).Result.Resource;
+            //            Assert.AreEqual("doc5t1t3", doc5.id);
 
             //            // check order
-            //            Document doc6 = client.CreateDocumentAsync(collection1, new Document { Id =  "Doc6" }, new RequestOptions { PreTriggerInclude = new List<string> { "t3", "t1" } }).Result.Resource;
-            //            Assert.AreEqual("DOC6T3t1", doc6.Id);
+            //            Document doc6 = client.CreateDocumentAsync(collection1, new Document { id =  "Doc6" }, new RequestOptions { PreTriggerInclude = new List<string> { "t3", "t1" } }).Result.Resource;
+            //            Assert.AreEqual("DOC6T3t1", doc6.id);
 
             //            // multiple of same name
-            //            Document doc7 = client.CreateDocumentAsync(collection1, new Document { Id =  "Doc7" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t1", "t1" } }).Result.Resource;
-            //            Assert.AreEqual("DOC7T1T1t1", doc7.Id);
+            //            Document doc7 = client.CreateDocumentAsync(collection1, new Document { id =  "Doc7" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1", "t1", "t1" } }).Result.Resource;
+            //            Assert.AreEqual("DOC7T1T1t1", doc7.id);
 
             //            // post-trigger added headers
             //            Trigger multiple1 = new Trigger
             //            {
-            //                Id =  "multiple1",
+            //                id =  "multiple1",
             //                Body = @"function() {
             //                    var predocname = getContext().getRequest().getValue('predocname');
             //                    var postdocname = getContext().getResponse().getValue('postdocname');
@@ -1355,22 +1355,22 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //            };
             //            retrievedTrigger = CreateTriggerAndValidateAsync(client, collection1, multiple1).Result;
 
-            //            ResourceResponse<Document> docMultiple1 = client.CreateDocumentAsync(collection1, new Document { Id =  "multipleHeaders1" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } }).Result;
-            //            Assert.IsTrue(docMultiple1.Resource.Id == "MULTIPLEHEADERS1t1");
+            //            ResourceResponse<Document> docMultiple1 = client.CreateDocumentAsync(collection1, new Document { id =  "multipleHeaders1" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1" } }).Result;
+            //            Assert.IsTrue(docMultiple1.Resource.id == "MULTIPLEHEADERS1t1");
             //            Assert.IsTrue(docMultiple1.ResponseHeaders["predocname"] == "MULTIPLEHEADERS1t1response2multiple1");
             //            Assert.IsTrue(docMultiple1.ResponseHeaders["postdocname"] == "MULTIPLEHEADERS1t1response2");
             //            Assert.IsTrue(docMultiple1.ResponseHeaders["postdocnamenew"] == "MULTIPLEHEADERS1t1response2multiple1");
 
             //            // check order
-            //            ResourceResponse<Document> docMultiple2 = client.CreateDocumentAsync(collection1, new Document { Id =  "multipleHeaders2" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "multiple1", "response2" } }).Result;
-            //            Assert.IsTrue(docMultiple2.Resource.Id == "MULTIPLEHEADERS2t1");
+            //            ResourceResponse<Document> docMultiple2 = client.CreateDocumentAsync(collection1, new Document { id =  "multipleHeaders2" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "multiple1", "response2" } }).Result;
+            //            Assert.IsTrue(docMultiple2.Resource.id == "MULTIPLEHEADERS2t1");
             //            Assert.IsTrue(docMultiple2.ResponseHeaders["predocname"] == "MULTIPLEHEADERS2t1response2");
             //            Assert.IsTrue(docMultiple2.ResponseHeaders["postdocname"] == "MULTIPLEHEADERS2t1response2");
             //            Assert.IsTrue(docMultiple2.ResponseHeaders["postdocnamenew"] == "undefinedmultiple1");
 
             //            // multiple of same
-            //            ResourceResponse<Document> docMultiple3 = client.CreateDocumentAsync(collection1, new Document { Id =  "multipleHeaders3" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1", "multiple1", "multiple1" } }).Result;
-            //            Assert.IsTrue(docMultiple1.Resource.Id == "MULTIPLEHEADERS3t1");
+            //            ResourceResponse<Document> docMultiple3 = client.CreateDocumentAsync(collection1, new Document { id =  "multipleHeaders3" }, new RequestOptions { PreTriggerInclude = new List<string> { "t1" }, PostTriggerInclude = new List<string> { "response2", "multiple1", "multiple1", "multiple1" } }).Result;
+            //            Assert.IsTrue(docMultiple1.Resource.id == "MULTIPLEHEADERS3t1");
             //            Assert.IsTrue(docMultiple1.ResponseHeaders["predocname"] == "MULTIPLEHEADERS3t1response2multiple1multiple1multiple1");
             //            Assert.IsTrue(docMultiple1.ResponseHeaders["postdocname"] == "MULTIPLEHEADERS3t1response2");
             //            Assert.IsTrue(docMultiple1.ResponseHeaders["postdocnamenew"] == "MULTIPLEHEADERS3t1response2multiple1");
@@ -1537,7 +1537,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             Database database = TestCommon.CreateOrGetDatabase(client);
 
-            DocumentCollection inputCollection = new DocumentCollection { Id = "ValidateExecuteSprocs" + Guid.NewGuid().ToString() };
+            DocumentCollection inputCollection = new DocumentCollection { id = "ValidateExecuteSprocs" + Guid.NewGuid().ToString() };
 
             IndexingPolicyOld indexingPolicyOld = new IndexingPolicyOld();
             indexingPolicyOld.IndexingMode = IndexingMode.Consistent;
@@ -1561,7 +1561,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // setting response body
             StoredProcedure storedProcedureResponseSetter = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid(),
+                id = "storedProcedure" + Guid.NewGuid(),
                 Body = @"
                     function() {
                         for(var i = 0; i < 1000; i++)
@@ -1580,7 +1580,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // appending response body
             StoredProcedure storedProcedureResponseAppender = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = @"
                     function() {
                         for(var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
@@ -1595,7 +1595,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //            // precompilation should catch errors on create
             //            StoredProcedure storedProcedureResponseSyntaxError = new StoredProcedure
             //            {
-            //                Id =  "storedProcedure" + Guid.NewGuid().ToString(),
+            //                id =  "storedProcedure" + Guid.NewGuid().ToString(),
             //                Body = @"
             //                    method() { // method is invalid identifier
             //                        for(var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
@@ -1619,7 +1619,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // these fields are not lost.
             StoredProcedure storedProcedureValidateDynamicParams = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = @"
                     function(doc) {
                         getContext().getResponse().setBody({ id: doc.id, dynamicField: doc.dynamicField, });
@@ -1628,7 +1628,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedureValidateDynamicParams).Result;
             string documentWithDynamicFieldId = "doc" + Guid.NewGuid();
-            dynamic documentWithDynamicField = new Document { Id = documentWithDynamicFieldId };
+            dynamic documentWithDynamicField = new Document { id = documentWithDynamicFieldId };
             string dynamicFieldValue = "find me if you can";
             documentWithDynamicField.dynamicField = dynamicFieldValue;
             dynamic dynamicResult = GetStoredProcedureExecutionResult<dynamic>(client, retrievedStoredProcedure, documentWithDynamicField);
@@ -1639,7 +1639,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Exception with specific sub-status code.
             StoredProcedure storedProcedureSubStatusCode = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = @"function() { throw new Error(1234, 'Error 1234'); }"
             };
 
@@ -1661,7 +1661,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Exception with no sub-status code.
             StoredProcedure storedProcedureNoSubStatusCode = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = @"function() { throw new Error('Error'); }"
             };
 
@@ -1683,7 +1683,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Exception due to compile error.
             StoredProcedure storedProcedureCompileError = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = @"function() { This is to create a Compile Error! }"
             };
 
@@ -1919,7 +1919,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
 #region attachment scripts
             // create a document
-            Book book = new Book() { Id = Guid.NewGuid().ToString(), Title = "War and Peace", Author = "Leo Tolstoy" };
+            Book book = new Book() { id = Guid.NewGuid().ToString(), Title = "War and Peace", Author = "Leo Tolstoy" };
             Document document = client.CreateDocumentAsync(collection, book).Result;
             string documentSelfLink = document.SelfLink;
             string documentAltLink = document.AltLink;
@@ -1931,19 +1931,19 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string audioBookLinkName = "Audiobook" + rand.Next();
             Attachment coverPhotoAttachment = new Attachment
             {
-                Id = coverPhotoName,
+                id = coverPhotoName,
                 ContentType = "image/jpg",
                 MediaLink = "http://upload.wikimedia.org/wikipedia/commons/a/af/Tolstoy_-_War_and_Peace_-_first_edition%2C_1869.jpg"
             };
             Attachment ebookLinkAttachment = new Attachment
             {
-                Id = ebookLinkName,
+                id = ebookLinkName,
                 ContentType = "text/html",
                 MediaLink = "http://gutenberg.org/ebooks/2600"
             };
             Attachment audioBookLinkAttachment = new Attachment
             {
-                Id = audioBookLinkName,
+                id = audioBookLinkName,
                 ContentType = "text/html",
                 MediaLink = "http://www.booksshouldbefree.com/book/war-and-peace-book-01-by-leo-tolstoy"
             };
@@ -2001,7 +2001,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }};
                 client.replaceAttachment('{0}', {1}, callback);}}",
                 useNameRouting ? ebookLinkAttachment.AltLink : ebookLinkAttachment.SelfLink,
-                string.Format(CultureInfo.InvariantCulture, "{{contentType: '{0}', id:'{1}', media:'anotherLink.html'}}", ebookLinkAttachment.ContentType, ebookLinkAttachment.Id));
+                string.Format(CultureInfo.InvariantCulture, "{{contentType: '{0}', id:'{1}', media:'anotherLink.html'}}", ebookLinkAttachment.ContentType, ebookLinkAttachment.id));
             Attachment resultAttachment = GatewayTests.CreateExecuteAndDeleteProcedure<Attachment>(client, collection, script);
             Assert.AreEqual("anotherLink.html", resultAttachment.MediaLink);
 
@@ -2024,7 +2024,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 #region durable scripts
             StoredProcedure storedProcedure1 = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = string.Format(CultureInfo.InvariantCulture, @"
                     function() {{
                         var client = getContext().getCollection();                
@@ -2047,7 +2047,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedure storedProcedure2 = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid(),
+                id = "storedProcedure" + Guid.NewGuid(),
                 Body = @"function(input) {
                     getContext().getResponse().setBody('a' + input.temp);}"
             };
@@ -2058,7 +2058,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             StoredProcedure storedProcedure3 = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid(),
+                id = "storedProcedure" + Guid.NewGuid(),
                 Body = string.Format(CultureInfo.InvariantCulture, @" function(input) {{
                     var test = input;
                     var client = getContext().getCollection();                
@@ -2081,7 +2081,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // Stored procedure that doesn't return anything (does not add anything to response body).
             StoredProcedure storedProcedure4 = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid().ToString(),
+                id = "storedProcedure" + Guid.NewGuid().ToString(),
                 Body = "function(){}"
             };
             retrievedStoredProcedure = client.CreateStoredProcedureAsync(collection, storedProcedure4).Result;
@@ -2115,7 +2115,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // failure test - stored procedure without body
             StoredProcedure storedProcNoBody = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid(),
+                id = "storedProcedure" + Guid.NewGuid(),
             };
             try
             {
@@ -2131,7 +2131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             // failure test - stored procedure with empty body
             StoredProcedure storedProcEmptyBody = new StoredProcedure
             {
-                Id = "storedProcedure" + Guid.NewGuid(),
+                id = "storedProcedure" + Guid.NewGuid(),
                 Body = @""
             };
             try
@@ -2397,7 +2397,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //            // precompilation should catch errors on create
             //            UserDefinedFunction udfSyntaxError = new UserDefinedFunction
             //            {
-            //                Id = "udf" + Guid.NewGuid().ToString(),
+            //                id = "udf" + Guid.NewGuid().ToString(),
             //                Body = @"
             //                    method() { // method is invalid identifier
             //                        for(var i = 0; i < 10; i++) getContext().getResponse().appendValue('Body', i);
@@ -2663,7 +2663,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         foreach (dynamic doc in response3)
                         {
                             Assert.AreNotEqual(default(int), doc._lsn);
-                            accumulator += doc.id + ".";    // Note that here we are using 'id' instead of 'Id'.
+                            accumulator += doc.id + ".";    // Note that here we are using 'id' instead of 'id'.
                         }
                         Assert.IsNotNull(response3.ResponseContinuation);
                     } while (query3.HasMoreResults);

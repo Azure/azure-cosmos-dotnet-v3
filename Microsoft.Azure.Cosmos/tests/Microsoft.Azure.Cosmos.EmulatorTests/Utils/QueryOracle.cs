@@ -324,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle
                 }
                 catch (DocumentClientException exc)
                 {
-                    Trace.TraceInformation("Activity Id: {0}", exc.ActivityId);
+                    Trace.TraceInformation("Activity id: {0}", exc.ActivityId);
                     Trace.TraceInformation("Query String: {0}", queryString);
                     if ((int)exc.StatusCode != 429)
                     {
