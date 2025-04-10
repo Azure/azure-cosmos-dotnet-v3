@@ -101,6 +101,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
@@ -126,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
+                hybridSearchSkipOrderByRewrite: !isHybridSearchQueryPlanOptimizationDisabled,
                 geospatialType: geospatialType);
         }
 
@@ -288,7 +290,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool BypassQueryParsing()
         {
-            return CustomTypeExtensions.ByPassQueryParsing();
+            return true; // CustomTypeExtensions.ByPassQueryParsing();
         }
 
         public override void ClearSessionTokenCache(string collectionFullName)

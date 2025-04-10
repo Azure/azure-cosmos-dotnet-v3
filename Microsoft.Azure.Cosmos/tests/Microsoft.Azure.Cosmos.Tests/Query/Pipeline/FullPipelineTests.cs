@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 partitionedQueryExecutionInfo: null,
                 returnResultsInDeterministicOrder: null,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
                 testInjections: queryRequestOptions.TestSettings);
 
@@ -373,6 +373,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 It.IsAny<ResourceType>(),
                 It.IsAny<PartitionKeyDefinition>(),
                 It.IsAny<Cosmos.VectorEmbeddingPolicy>(),
+                It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
@@ -635,6 +636,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 allowNonValueAggregateQuery: true,
                 allowDCount: true,
                 hasLogicalPartitionKey: false,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 

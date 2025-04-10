@@ -83,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task QueryFeatureFlagTests()
         {
-            using EnvironmentVariable nonStreamingOrderByDisabled = new EnvironmentVariable(
-                ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled);
+            using EnvironmentVariable hybridSearchQueryPlanOptimizationDisabled = new EnvironmentVariable(
+                ConfigurationManager.HybridSearchQueryPlanOptimizationDisabled);
 
             static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
             {
@@ -136,13 +136,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     if (testCase.EnvironmentVariable.HasValue)
                     {
                         Environment.SetEnvironmentVariable(
-                            ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled,
+                            ConfigurationManager.HybridSearchQueryPlanOptimizationDisabled,
                             testCase.EnvironmentVariable.Value.ToString());
                     }
                     else
                     {
                         Environment.SetEnvironmentVariable(
-                            ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled,
+                            ConfigurationManager.HybridSearchQueryPlanOptimizationDisabled,
                             null);
                     }
 
@@ -153,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     if (testCase.RequestOption.HasValue)
                     {
-                        requestOptions.IsNonStreamingOrderByQueryFeatureDisabled = testCase.RequestOption.Value;
+                        requestOptions.IsHybridSearchQueryPlanOptimizationDisabled = testCase.RequestOption.Value;
                     }
 
                     validator.ExpectNonStreamingOrderBy = testCase.ExpectNonStreamingOrderBy;
