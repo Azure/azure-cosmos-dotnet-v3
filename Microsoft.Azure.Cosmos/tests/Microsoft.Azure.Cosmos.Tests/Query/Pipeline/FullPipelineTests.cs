@@ -393,6 +393,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 bool hasLogicalPartitionKey,
                 bool allowDCount,
                 bool useSystemPrefix,
+                bool isHybridSearchQueryPlanOptimizationDisabled,
                 Cosmos.GeospatialType geospatialType,
                 CancellationToken cancellationToken) =>
                 {
