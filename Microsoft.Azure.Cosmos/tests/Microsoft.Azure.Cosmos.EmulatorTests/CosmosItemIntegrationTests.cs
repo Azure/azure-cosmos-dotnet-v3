@@ -1000,6 +1000,88 @@
         }
 
         [TestMethod]
+        [Owner("kirankk")]
+        [Timeout(70000)]
+        public async Task TestManikQueryAsync()
+        {
+            string endpointUri = "https://localhost:8081";
+            string primaryKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==";
+            string databaseId = "samples";
+            string containerId = "container";
+
+            //CosmosClient cosmosClient = new CosmosClient(endpointUri, credential, options);
+
+            // create a cosmos client for connecting to emulator using the primary key and endpoint
+            CosmosClient cosmosClient = new CosmosClient(endpointUri, primaryKey, new CosmosClientOptions()
+            {
+                // ConnectionMode = ConnectionMode.Gateway,
+            });
+
+
+            Database database = await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseId);
+            // update contianer throughput to 15k
+            Container container = await database.CreateContainerIfNotExistsAsync(containerId, "/pk", 15000);
+
+            //get all the partition key ranges
+            var partitionKeyRanges = await container.GetFeedRangesAsync();
+            // print the partition key ranges
+            Console.WriteLine($"partitionKeyRanges: {JsonSerializer.Serialize(partitionKeyRanges)}");
+
+            // create some 1000 items
+            ////for (int i1 = 0; i1 < 1000; i1++)
+            ////{
+            ////    dynamic item = new
+            ////    {
+            ////        id = Guid.NewGuid().ToString(),
+            ////        pk = Guid.NewGuid().ToString(),
+            ////        name = "item" + i1,
+            ////        description = "description" + i1,
+            ////        createdAt = Guid.NewGuid().ToString()
+            ////    };
+            ////    await container.CreateItemAsync(item, new PartitionKey(item.pk));
+            ////}
+
+            // write an offset limit query with order by
+            //string sqlQuery = "SELECT c.id FROM c ORDER BY c.createdAt OFFSET 10 LIMIT 20";
+            // write an ordereed distinct query
+            string sqlQuery = "SELECT c.id FROM c ORDER BY c.createdAt";
+            //string sqlQuery = "SELECT c.createdAt FROM c ORDER BY c.createdAt";
+            QueryRequestOptions requestOptions = new QueryRequestOptions()
+            {
+                MaxConcurrency = 5,
+                MaxItemCount = 20,
+            };
+
+            int count = 0;
+            string continuationToken = null;
+            bool hasMoreResults = true;
+
+            while (hasMoreResults)
+            {
+                QueryDefinition queryDefinition = new QueryDefinition(sqlQuery);
+                FeedIterator<dynamic> queryResultSetIterator = container.GetItemQueryIterator<dynamic>(queryDefinition, continuationToken, requestOptions);
+                FeedResponse<dynamic> currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                // print the data and continuation token
+                foreach (var item in currentResultSet)
+                {
+                    // Console.WriteLine($"Item: {item}");
+                }
+                count += currentResultSet.Count;
+
+                // continuation tojen
+                continuationToken = currentResultSet.ContinuationToken;
+                Console.WriteLine($"continuation token: {currentResultSet.ContinuationToken}");
+                Console.WriteLine($"currentResultSet: {currentResultSet}");
+                Console.WriteLine($"hasMoreResults: {queryResultSetIterator.HasMoreResults}");
+                // Console.WriteLine($"Diagnotics: { currentResultSet.Diagnostics }");
+
+                hasMoreResults = queryResultSetIterator.HasMoreResults;
+            }
+
+            Console.WriteLine($"Total : {count}");
+        }
+
+        [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiMaster")]
         [Timeout(70000)]
