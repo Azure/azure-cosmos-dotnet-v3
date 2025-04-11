@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             {
                 if (Enabled)
                 {
-                    Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectNonStreamingOrderBy: {testCase.ExpectHybridSearchOptimizationDisabled}");
+                    Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectHybridSearchOptimizationDisabled: {testCase.ExpectHybridSearchOptimizationDisabled}");
                 }
             }
 #pragma warning restore CS0162 // Unreachable code detected
