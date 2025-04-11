@@ -454,6 +454,13 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the boolean flag to convert a text stream to binary and vice versa. When enabled, the request and response stream
+        /// would be converted to the desired target serialization type. This client option will remain internal only since the consumer of
+        /// this flag will be the internal components of the cosmos db ecosystem. The default value for this parameter is 'true'.
+        /// </summary>
+        internal bool EnableStreamConversationForBinaryEncoding { get; set; } = true;
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
