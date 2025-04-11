@@ -39,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
 
@@ -51,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 hasLogicalPartitionKey: false,
                 geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
+                isHybridSearchQueryPlanOptimizationDisabled: false,
                 NoOpTrace.Singleton));
 
             Assert.AreEqual(HttpStatusCode.BadRequest, cosmosException.StatusCode);
@@ -76,6 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(expectedException));
 
@@ -89,6 +92,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 hasLogicalPartitionKey: false,
                 geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
+                isHybridSearchQueryPlanOptimizationDisabled: false,
                 trace.Object,
                 default));
 
@@ -112,6 +116,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
                 It.IsAny<bool>(),
+                It.IsAny<bool>(),
                 It.IsAny<Cosmos.GeospatialType>(),
                 It.IsAny<CancellationToken>())).ReturnsAsync(TryCatch<PartitionedQueryExecutionInfo>.FromException(innerException));
 
@@ -124,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query
                 hasLogicalPartitionKey: false,
                 geospatialType: Cosmos.GeospatialType.Geography,
                 useSystemPrefix: false,
+                isHybridSearchQueryPlanOptimizationDisabled: false,
                 NoOpTrace.Singleton));
 
             Assert.AreEqual(HttpStatusCode.InternalServerError, cosmosException.StatusCode);
