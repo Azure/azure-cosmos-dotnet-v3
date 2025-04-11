@@ -935,7 +935,7 @@ namespace Microsoft.Azure.Cosmos
             // be supported in the backend, avoiding the binary encoding in such cases, will be the ideal approach.
             if (ConfigurationManager.IsBinaryEncodingEnabled()
                 && !ContainerCore.IsTriggerPresentInRequestOptions(requestOptions)
-                && this.ClientContext.ClientOptions.EnableStreamConversationForBinaryEncoding)
+                && !this.ClientContext.ClientOptions.EnableStreamPassThrough)
             {
                 streamPayload = CosmosSerializationUtil.TrySerializeStreamToTargetFormat(
                     targetSerializationFormat: ContainerCore.GetTargetRequestSerializationFormat(),
@@ -958,7 +958,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
 
             // Convert Binary Stream to Text.
-            if (this.ClientContext.ClientOptions.EnableStreamConversationForBinaryEncoding
+            if (!this.ClientContext.ClientOptions.EnableStreamPassThrough
                 && targetResponseSerializationFormat.HasValue
                 && (requestOptions == null || !requestOptions.EnableBinaryResponseOnPointOperations)
                 && responseMessage?.Content is CloneableStream outputCloneableStream)

@@ -772,13 +772,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [Owner("dkunda")]
-        [DataRow(true, true, DisplayName = "Test scenario when binary encoding is enabled at client level and stream conversation for binary encoding is enabled.")]
-        [DataRow(true, false, DisplayName = "Test scenario when binary encoding is enabled at client level and stream conversation for binary encoding is disabled.")]
-        [DataRow(false, true, DisplayName = "Test scenario when binary encoding is disabled at client level and stream conversation for binary encoding is enabled.")]
-        [DataRow(false, false, DisplayName = "Test scenario when binary encoding is disabled at client level and stream conversation for binary encoding is disabled.")]
+        [DataRow(true, true, DisplayName = "Test scenario when binary encoding is enabled at client level and stream conversation for binary encoding is skipped.")]
+        [DataRow(true, false, DisplayName = "Test scenario when binary encoding is enabled at client level and stream conversation for binary encoding is enabled.")]
+        [DataRow(false, true, DisplayName = "Test scenario when binary encoding is disabled at client level and stream conversation for binary encoding is skipped.")]
+        [DataRow(false, false, DisplayName = "Test scenario when binary encoding is disabled at client level and stream conversation for binary encoding is enabled.")]
         public async Task CreateItemStream_WithEnableBinaryResponseOptions_ShouldSkipStreamConversation(
             bool binaryEncodingEnabledInClient,
-            bool enableStreamConversationForBinaryEncoding)
+            bool enableStreamPassThrough)
         {
             Cosmos.Database database = null;
             Container container = null;
@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (string endpoint, string authKey) = TestCommon.GetAccountInfo();
                 CosmosClientOptions clientOptions = new CosmosClientOptions()
                 {
-                    EnableStreamConversationForBinaryEncoding = enableStreamConversationForBinaryEncoding,
+                    EnableStreamPassThrough = enableStreamPassThrough,
                 };
 
                 CosmosClient cosmosClient = new (
@@ -816,10 +816,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 {
                     if (binaryEncodingEnabledInClient)
                     {
+                        // Asserting the input stream is in binary format.
                         AssertOnResponseSerializationBinaryType(stream);
                     }
                     else
                     {
+                        // Asserting the input stream is in text format.
                         AssertOnResponseSerializationTextType(stream);
                     }
 
@@ -836,7 +838,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
                         Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-                        if (enableStreamConversationForBinaryEncoding)
+                        if (!enableStreamPassThrough)
                         {
                             AssertOnResponseSerializationTextType(response.Content);
                         }
@@ -867,7 +869,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsTrue(!string.IsNullOrEmpty(response.Diagnostics.ToString()));
                     Assert.IsTrue(response.Diagnostics.GetClientElapsedTime() > TimeSpan.Zero);
 
-                    if (enableStreamConversationForBinaryEncoding)
+                    if (!enableStreamPassThrough)
                     {
                         AssertOnResponseSerializationTextType(response.Content);
                     }
