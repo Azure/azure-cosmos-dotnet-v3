@@ -945,7 +945,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                         Assert.IsNotNull(this.cache.EffectivePreferredLocations);
                                         Assert.AreEqual(this.cache.EffectivePreferredLocations.Count, 1);
 
-                                        expectedEndpoint = LocationCacheTests.EndpointByLocation[availableWriteLocations[1]];
+                                        //If the defaut endpoint is a regional endpoint, it will be the only vaild read region for read only requests
+                                        expectedEndpoint = LocationCacheTests.EndpointByLocation[availableWriteLocations[0]];
                                     }
                                     else
                                     {

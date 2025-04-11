@@ -54,8 +54,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ifNoneMatchValues.Add(request.Headers.IfNoneMatch.ToString());
 
                 pkRangeCalls++;
-
-                if (pkRangeCalls == throwOnPkRefreshCount)
+                //account for metadata retry
+                if (pkRangeCalls == throwOnPkRefreshCount || pkRangeCalls == throwOnPkRefreshCount + 1)
                 {
                     failedIfNoneMatchValue = request.Headers.IfNoneMatch.ToString();
                     if (signalSplitException.IsSet)
@@ -132,10 +132,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             pkRangesRefreshed.Wait();
             Assert.IsFalse(causeSplitExceptionInRntbdCall);
 
-            Assert.AreEqual(4, pkRangeCalls);
+            Assert.AreEqual(5, pkRangeCalls);
 
             Assert.AreEqual(1, ifNoneMatchValues.Count(x => string.IsNullOrEmpty(x)));
-            Assert.AreEqual(3, ifNoneMatchValues.Count(x => x == failedIfNoneMatchValue), $"3 request with same if none value. 1 initial, 2 from the split errors. split exception count: {countSplitExceptions}; {string.Join(';', ifNoneMatchValues)}");
+            Assert.AreEqual(4, ifNoneMatchValues.Count(x => x == failedIfNoneMatchValue), $"4 request with same if none value. 1 initial, 2 from the split errors, 1 retry. split exception count: {countSplitExceptions}; {string.Join(';', ifNoneMatchValues)}");
 
             HashSet<string> verifyUniqueIfNoneHeaderValues = new HashSet<string>();
             foreach (string ifNoneValue in ifNoneMatchValues)
