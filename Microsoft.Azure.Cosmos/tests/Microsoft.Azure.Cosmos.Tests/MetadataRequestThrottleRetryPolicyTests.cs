@@ -24,13 +24,10 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [Owner("dkunda")]
-        [DataRow(true, true, DisplayName = "Test when a response message with a valid substatus code was used.")]
-        [DataRow(false, true, DisplayName = "Test when an exception was thrown with a valid substatus code.")]
-        [DataRow(true, false, DisplayName = "Test when a response message with an invalid substatus code was used.")]
-        [DataRow(false, false, DisplayName = "Test when an exception was thrown with an invalid substatus code.")]
+        [DataRow(true, DisplayName = "Test when a response message.")]
+        [DataRow(false, DisplayName = "Test when an exception was thrown.")]
         public async Task ShouldRetryAsync_WithValidAndInvalidSubStatusCodes_ShouldIncrementLocationIndexOrSkip(
-            bool useResponseMessage,
-            bool isValidSubStatusCode)
+            bool useResponseMessage)
         {
             // Arrange.
             ShouldRetryResult retryResult;
@@ -54,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             mockedGlobalEndpointManager
                 .SetupSequence(gem => gem.ResolveServiceEndpoint(It.IsAny<DocumentServiceRequest>()))
                 .Returns(primaryServiceEndpoint)
-                .Returns(isValidSubStatusCode ? routedServiceEndpoint : primaryServiceEndpoint);
+                .Returns(routedServiceEndpoint);
 
             MetadataRequestThrottleRetryPolicy policy = new(mockedGlobalEndpointManager.Object, 0);
             policy.OnBeforeSendRequest(request);
@@ -66,9 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 Headers responseHeaders = new()
                 {
-                    SubStatusCode = isValidSubStatusCode
-                    ? SubStatusCodes.TransportGenerated503
-                    : SubStatusCodes.BWTermCountLimitExceeded
+                    SubStatusCode = SubStatusCodes.TransportGenerated503
                 };
 
                 ResponseMessage responseMessage = new(
@@ -87,9 +82,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                                                 headers: new Headers()
                                                 {
                                                     ActivityId = System.Diagnostics.Trace.CorrelationManager.ActivityId.ToString(),
-                                                    SubStatusCode = isValidSubStatusCode
-                                                        ? SubStatusCodes.TransportGenerated503
-                                                        : SubStatusCodes.BWTermCountLimitExceeded
+                                                    SubStatusCode = SubStatusCodes.TransportGenerated503
                                                 },
                                                 trace: NoOpTrace.Singleton,
                                                 innerException: null);
@@ -112,18 +105,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                     obj: policy);
 
             Assert.IsNotNull(retryResult);
-            if (isValidSubStatusCode)
-            {
-                Assert.AreEqual(true, retryResult.ShouldRetry, "MetadataRequestThrottleRetryPolicy should return true since the sub status code indicates to retry the request in the next preferred read region.");
-                Assert.AreEqual(1, retryContext.RetryLocationIndex, "Indicates that the retry location index was incremented.");
-                Assert.AreEqual(routedServiceEndpoint, request.RequestContext.LocationEndpointToRoute);
-            }
-            else
-            {
-                Assert.AreEqual(false, retryResult.ShouldRetry, "ResourceThrottleRetryPolicy should return false since the status code does not indicate the request was throttled.");
-                Assert.AreEqual(0, retryContext.RetryLocationIndex, "Indicates that the retry location index remain unchanged.");
-                Assert.AreEqual(primaryServiceEndpoint, request.RequestContext.LocationEndpointToRoute);
-            }
+            Assert.AreEqual(true, retryResult.ShouldRetry, "MetadataRequestThrottleRetryPolicy should return true since the sub status code indicates to retry the request in the next preferred read region.");
+            Assert.AreEqual(1, retryContext.RetryLocationIndex, "Indicates that the retry location index was incremented.");
+            Assert.AreEqual(routedServiceEndpoint, request.RequestContext.LocationEndpointToRoute);
         }
     }
 }

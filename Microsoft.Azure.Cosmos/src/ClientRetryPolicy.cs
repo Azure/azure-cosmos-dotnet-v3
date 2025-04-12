@@ -291,11 +291,12 @@ namespace Microsoft.Azure.Cosmos
                     this.documentServiceRequest?.RequestContext?.LocationEndpointToRoute?.ToString() ?? string.Empty,
                     this.documentServiceRequest?.ResourceAddress ?? string.Empty);
 
+                //Retry policy will retry on the next preffered region as the original requert region is not accepting requests
                 return await this.ShouldRetryOnEndpointFailureAsync(
                     isReadRequest: this.isReadRequest,
                     markBothReadAndWriteAsUnavailable: false,
                     forceRefresh: false,
-                    retryOnPreferredLocations: false);
+                    retryOnPreferredLocations: true);
             }
 
             if (statusCode == HttpStatusCode.NotFound
@@ -309,6 +310,13 @@ namespace Microsoft.Azure.Cosmos
             {
                 return this.TryMarkEndpointUnavailableForPkRangeAndRetryOnServiceUnavailable(
                     isSystemResourceUnavailableForWrite: false);
+            }
+
+            // Recieved 500 status code or lease not found
+            if ((statusCode == HttpStatusCode.InternalServerError && this.isReadRequest)
+                || (statusCode == HttpStatusCode.Gone && subStatusCode == SubStatusCodes.LeaseNotFound))
+            {
+                return this.ShouldRetryOnUnavailableEndpointStatusCodes();
             }
 
             return null;
@@ -450,14 +458,15 @@ namespace Microsoft.Azure.Cosmos
 
             this.TryMarkEndpointUnavailableForPkRange(isSystemResourceUnavailableForWrite);
 
-            return this.ShouldRetryOnServiceUnavailable();
+            return this.ShouldRetryOnUnavailableEndpointStatusCodes();
         }
 
         /// <summary>
         /// For a ServiceUnavailable (503.0) we could be having a timeout from Direct/TCP locally or a request to Gateway request with a similar response due to an endpoint not yet available.
         /// We try and retry the request only if there are other regions available. The retry logic is applicable for single master write accounts as well.
+        /// Other status codes include InternalServerError (500.0) and LeaseNotFound (410.1022).
         /// </summary>
-        private ShouldRetryResult ShouldRetryOnServiceUnavailable()
+        private ShouldRetryResult ShouldRetryOnUnavailableEndpointStatusCodes()
         {
             if (this.serviceUnavailableRetryCount++ >= ClientRetryPolicy.MaxServiceUnavailableRetryCount)
             {
