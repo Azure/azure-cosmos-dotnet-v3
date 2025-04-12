@@ -479,6 +479,32 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
         }
+        // overloaded method, the previous Lazy<HashSet<TransportAddressUri>> will be removed in a future release
+        private static void SetTransportAddressUrisToUnhealthy(
+           PartitionAddressInformation stalePartitionAddressInformation,
+           Lazy<ConcurrentDictionary<TransportAddressUri, bool>> failedEndpoints)
+        {
+            if (stalePartitionAddressInformation == null ||
+                failedEndpoints == null ||
+                !failedEndpoints.IsValueCreated)
+            {
+                return;
+            }
+
+            IReadOnlyList<TransportAddressUri> perProtocolPartitionAddressInformation = stalePartitionAddressInformation.Get(Protocol.Tcp)?.ReplicaTransportAddressUris;
+            if (perProtocolPartitionAddressInformation == null)
+            {
+                return;
+            }
+
+            foreach (TransportAddressUri failed in perProtocolPartitionAddressInformation)
+            {
+                if (failedEndpoints.Value.ContainsKey(failed))
+                {
+                    failed.SetUnhealthy();
+                }
+            }
+        }
 
         private static void LogPartitionCacheRefresh(
             IClientSideRequestStatistics clientSideRequestStatistics,
