@@ -15,9 +15,17 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.48.0-preview.3"/> [3.48.0-preview.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.48.0-preview.3) - 2025-3-11
+### <a name="3.49.0-preview.1"/> [3.49.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.0-preview.1) - 2025-4-11
 
-### <a name="3.47.3"/> [3.47.3](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.47.3) - 2025-3-11
+### <a name="3.48.1"/> [3.48.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.48.1) - 2025-4-11
+
+#### Fixes
+
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) Metadata requests: Fixes bug where certain metadata requests are not retried with a client cold start with only query requests 
+
+### <a name="3.49.0-preview.0"/> [3.49.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.0-preview.0) - 2025-3-21
+
+### <a name="3.48.0"/> [3.48.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.48.0) - 2025-3-21
 
 #### Fixes
 
