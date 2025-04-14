@@ -8,6 +8,7 @@
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
@@ -146,6 +147,85 @@
             {
                 rule.Disable();
                 fiClient.Dispose();
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [DataRow(FaultInjectionServerErrorType.ServiceUnavailable)]
+        [DataRow(FaultInjectionServerErrorType.InternalServerError)]
+        [DataRow(FaultInjectionServerErrorType.DatabaseAccountNotFound)]
+        [DataRow(FaultInjectionServerErrorType.LeaseNotFound)]
+        public async Task MetadataEndpointUnavailableCrossRegionalRetryTest(FaultInjectionServerErrorType serverErrorType)
+        {
+            FaultInjectionRule collReadBad = new FaultInjectionRuleBuilder(
+                id: "collread",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataContainer)
+                    .WithRegion(region1)
+                    .Build(),
+                result: new FaultInjectionServerErrorResultBuilder(serverErrorType)
+                    .Build())
+                .Build();
+
+            FaultInjectionRule pkRangeBad = new FaultInjectionRuleBuilder(
+                id: "pkrange",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataPartitionKeyRange)
+                    .WithRegion(region1)
+                    .Build(),
+                result: new FaultInjectionServerErrorResultBuilder(serverErrorType)
+                    .Build())
+                .Build();
+
+            collReadBad.Disable();
+            pkRangeBad.Disable();
+
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { pkRangeBad, collReadBad });
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ConnectionMode = ConnectionMode.Direct,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                FaultInjector = faultInjector,
+                ApplicationPreferredRegions = new List<string> { region1, region2,  region3 }
+            };
+
+            using (CosmosClient fiClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: cosmosClientOptions))
+            {
+                Database fidb = fiClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container fic = fidb.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                pkRangeBad.Enable();
+                collReadBad.Enable();
+
+                try
+                {
+                    FeedIterator<CosmosIntegrationTestObject> frTest = fic.GetItemQueryIterator<CosmosIntegrationTestObject>("SELECT * FROM c");
+                    while (frTest.HasMoreResults)
+                    {
+                        FeedResponse<CosmosIntegrationTestObject> feedres = await frTest.ReadNextAsync();
+
+                        Assert.AreEqual(HttpStatusCode.OK, feedres.StatusCode);
+                    }
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.Fail(ex.Message);
+                }
+                finally
+                {
+                    //Cross regional retry needs to ocur (could trigger for other metadata call to try on secondary region so rule would not trigger)
+                    Assert.IsTrue(pkRangeBad.GetHitCount() + collReadBad.GetHitCount() >= 1);
+
+                    pkRangeBad.Disable();
+                    collReadBad.Disable();
+
+                    fiClient.Dispose();
+                }
             }
         }
 
