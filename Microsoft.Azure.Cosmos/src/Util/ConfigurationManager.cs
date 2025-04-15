@@ -73,6 +73,20 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
 
         /// <summary>
+        /// intent is If a client specify a value, we will force it to be atleast 100ms, otherwise default is going to be 500ms
+        /// </summary>
+        internal static readonly string MinInRegionRetryTimeForWritesInMs = "AZURE_COSMOS_SESSION_TOKEN_MISMATCH_IN_REGION_RETRY_TIME_IN_MILLISECONDS";
+        internal static readonly int DefaultMinInRegionRetryTimeForWritesInMs = 500;
+        internal static readonly int MinMinInRegionRetryTimeForWritesInMs = 100;
+
+        /// <summary>
+        /// intent is If a client specify a value, we will force it to be atleast 1, otherwise default is going to be 1(right now both the values are 1 but we have the provision to change them in future).
+        /// </summary>
+        internal static readonly string MaxRetriesInLocalRegionWhenRemoteRegionPreferred = "AZURE_COSMOS_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED";
+        internal static readonly int DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
+        internal static readonly int MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
+
+        /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
         /// be removed once binary encoding is enabled by default for both preview
         /// and GA.
@@ -94,6 +108,26 @@ namespace Microsoft.Azure.Cosmos
                 return defaultValue;
             }
             return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
+        {
+            return Math.Max(
+                ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: MaxRetriesInLocalRegionWhenRemoteRegionPreferred,
+                        defaultValue: DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred),
+                MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred);
+        }
+
+        public static TimeSpan GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred()
+        {
+            return TimeSpan.FromMilliseconds(Math.Max(
+                ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: MinInRegionRetryTimeForWritesInMs,
+                        defaultValue: DefaultMinInRegionRetryTimeForWritesInMs),
+                MinMinInRegionRetryTimeForWritesInMs));
         }
 
         /// <summary>
