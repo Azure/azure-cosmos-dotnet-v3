@@ -584,6 +584,22 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// </summary>
+        /// <param name="enableRemoteRegionPreferredForSessionRetry"></param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        CosmosClientBuilder WithEnableRemoteRegionPreferredForSessionRetry(bool enableRemoteRegionPreferredForSessionRetry)
+        {
+            this.clientOptions.EnableRemoteRegionPreferredForSessionRetry = enableRemoteRegionPreferredForSessionRetry;
+            return this;
+        }
+
+        /// <summary>
         /// Set a custom JSON serializer. 
         /// </summary>
         /// <param name="cosmosJsonSerializer">The custom class that implements <see cref="CosmosSerializer"/> </param>
