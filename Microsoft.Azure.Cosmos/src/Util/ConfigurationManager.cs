@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Environment variable name to disable sending non streaming order by query feature flag to the gateway.
         /// </summary>
-        internal static readonly string NonStreamingOrderByQueryFeatureDisabled = "AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED";
+        internal static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
 
         /// <summary>
         /// Environment variable name to enable distributed query gateway mode.
@@ -280,15 +280,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the boolean value indicating whether the non streaming order by query feature flag should be sent to the gateway
+        /// Gets the boolean value indicating whether the hybrid search query plan optimization feature flag should be sent to the gateway
         /// based on the environment variable override.
         /// </summary>
-        public static bool IsNonStreamingOrderByQueryFeatureDisabled(
+        public static bool IsHybridSearchQueryPlanOptimizationDisabled(
             bool defaultValue)
         {
             return ConfigurationManager
                     .GetEnvironmentVariable(
-                        variable: NonStreamingOrderByQueryFeatureDisabled,
+                        variable: HybridSearchQueryPlanOptimizationDisabled,
                         defaultValue: defaultValue);
         }
 
