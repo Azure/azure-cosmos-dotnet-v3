@@ -17,6 +17,38 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class CollectionRoutingMapTest
     {
         [TestMethod]
+        [DataRow("10FCC300A87A68CEAE01B332126DF841", "10FCC300A87A68CEAE01B332126DF841")]
+        [DataRow("10FCC300A87A68CEAE01B332126DF841", "10FCC300A87A68CEAE01B332126DF841FF")]
+        [DataRow("10FCC300A87A68CEAE01B332126DF84100", "10FCC300A87A68CEAE01B332126DF841FF")]
+        [DataRow("10FCC300A87A68CEAE01B332126DF84100000000000000000000000000000000", "10FCC300A87A68CEAE01B332126DF841FF")]
+        // [DataRow("10FCC300A87A68CEAE01B332126DF84100", "10FCC300A87A68CEAE01B332126DF841FF")]
+        public void TestIncompleteRoutingMap1(string min, string max)
+        {
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                new[]
+                    {
+                        Tuple.Create(new PartitionKeyRange{ Id = "0", MinInclusive = "", MaxExclusive = "03559A67F2724111B5E565DFA8711A00"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "1", MinInclusive = "03559A67F2724111B5E565DFA8711A00", MaxExclusive = "06AB34CFE4E482236BCACBBF50E2340014FFFD1448906439F4C00C0C9E4E5761"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "2", MinInclusive = "06AB34CFE4E482236BCACBBF50E2340014FFFD1448906439F4C00C0C9E4E5761", MaxExclusive = "0BD3FBE846AF75790CE63F78B1A81620"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "3", MinInclusive = "0BD3FBE846AF75790CE63F78B1A81620", MaxExclusive = "10FCC300A87A68CEAE01B332126DF84100000000000000000000000000000000"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "4", MinInclusive = "10FCC300A87A68CEAE01B332126DF84100000000000000000000000000000000", MaxExclusive = "110898EF2A4F576938F30DA70F59630700000000000000000000000000000000"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "5", MinInclusive = "110898EF2A4F576938F30DA70F59630700000000000000000000000000000000", MaxExclusive = "1DB2341C52E0BD28FE906DE2C038892F00000000000000000000000000000000"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "6", MinInclusive = "1DB2341C52E0BD28FE906DE2C038892F00000000000000000000000000000000", MaxExclusive = "2263C2179D569B36624FE3BDADF48A9D"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "7", MinInclusive = "2263C2179D569B36624FE3BDADF48A9D", MaxExclusive = "27155012E7CC7943C60F59989BB08C0C00000000000000000000000000000000"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "8", MinInclusive = "27155012E7CC7943C60F59989BB08C0C00000000000000000000000000000000", MaxExclusive = "338AA80973E63CA1E307ACCC4DD84605"}, (ServiceIdentity)null),
+                        Tuple.Create(new PartitionKeyRange{ Id = "9", MinInclusive = "338AA80973E63CA1E307ACCC4DD84605", MaxExclusive = "FF"}, (ServiceIdentity)null),
+                    },
+                string.Empty);
+
+            IReadOnlyList<PartitionKeyRange> result = routingMap.GetOverlappingRanges(new Documents.Routing.Range<string>(min, max, isMaxInclusive: true, isMinInclusive: true));
+
+            foreach (PartitionKeyRange pkRange in result)
+            {
+                Console.WriteLine(pkRange.ToString());
+            }
+        }
+
+        [TestMethod]
         public void TestCollectionRoutingMap()
         {
             ServiceIdentity serviceIdentity0 = new ServiceIdentity("1", new Uri("http://1"), false);
