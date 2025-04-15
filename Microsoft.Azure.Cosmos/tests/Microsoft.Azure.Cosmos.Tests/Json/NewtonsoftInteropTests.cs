@@ -202,7 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 new JProperty("string", "XCPCFXPHHF"),
                 new JProperty("boolean", true),
                 new JProperty("null", null),
-                new JProperty("datetime", DateTime.Now),
+                new JProperty("datetime", DateTime.Parse("2526-07-11T18:18:16.4520716")),
                 new JProperty("spatialPoint", new JObject(
                     new JProperty("type", "Point"),
                     new JProperty("coordinate", new double[] { 118.9897, -46.6781 }))),
