@@ -122,7 +122,10 @@ namespace Microsoft.Azure.Cosmos
         /// Get or set session container for the client
         /// </summary>
         internal ISessionContainer SessionContainer { get; set; }
-
+        
+        /// <summary>
+        /// hint which guide SDK-internal retry policies on how early to switch retries to a different region. 
+        /// </summary>
         internal SessionRetryOptions SessionRetryOptions { get; private set; }
 
         /// <summary>
