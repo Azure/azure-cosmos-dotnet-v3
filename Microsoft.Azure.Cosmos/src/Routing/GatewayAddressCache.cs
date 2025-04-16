@@ -456,7 +456,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static void SetTransportAddressUrisToUnhealthy(
             PartitionAddressInformation stalePartitionAddressInformation,
-            Lazy<HashSet<TransportAddressUri>> failedEndpoints)
+            Lazy<ConcurrentDictionary<TransportAddressUri, bool>> failedEndpoints)
         {
             if (stalePartitionAddressInformation == null ||
                 failedEndpoints == null ||
@@ -473,7 +473,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             foreach (TransportAddressUri failed in perProtocolPartitionAddressInformation)
             {
-                if (failedEndpoints.Value.Contains(failed))
+                if (failedEndpoints.Value.ContainsKey(failed))
                 {
                     failed.SetUnhealthy();
                 }
