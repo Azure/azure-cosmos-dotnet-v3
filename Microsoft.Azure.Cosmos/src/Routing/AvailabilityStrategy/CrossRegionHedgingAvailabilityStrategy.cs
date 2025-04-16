@@ -4,8 +4,10 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.ClientModel.Primitives;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Threading;
@@ -111,21 +113,64 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="sender"></param>
         /// <param name="client"></param>
         /// <param name="request"></param>
+        /// <param name="childTrace"></param>
+        /// <param name="resourceUriString"></param>
+        /// <param name="resourceType"></param>
+        /// <param name="operationType"></param>
+        /// <param name="requestOptions"></param>
+        /// <param name="cosmosContainerCore"></param>
+        /// <param name="feedRange"></param>
+        /// <param name="streamPayload"></param>
+        /// <param name="requestEnricher"></param>
+        /// <param name="trace"></param>
         /// <param name="cancellationToken"></param>
         /// <returns>The response after executing cross region hedging</returns>
         internal override async Task<ResponseMessage> ExecuteAvailabilityStrategyAsync(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
+            Func<RequestMessage, 
+                ITrace, 
+                string, 
+                ResourceType, 
+                OperationType, 
+                RequestOptions, 
+                ContainerInternal, 
+                FeedRange, 
+                Stream, 
+                Action<RequestMessage>, 
+                ITrace, CancellationToken, 
+                Task<ResponseMessage>> sender,
             CosmosClient client,
             RequestMessage request,
+            ITrace childTrace,
+            string resourceUriString,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerInternal cosmosContainerCore,
+            FeedRange feedRange,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            ITrace trace,
             CancellationToken cancellationToken)
         {
             if (!this.ShouldHedge(request, client)
                 || client.DocumentClient.GlobalEndpointManager.ReadEndpoints.Count == 1)
             {
-                return await sender(request, cancellationToken);
+                return await sender(
+                    request, 
+                    childTrace,
+                    resourceUriString,
+                    resourceType,
+                    operationType,
+                    requestOptions,
+                    cosmosContainerCore,
+                    feedRange,
+                    streamPayload,
+                    requestEnricher,
+                    trace, 
+                    cancellationToken);
             }
-            
-            ITrace trace = request.Trace;
+
+            ITrace hedgingTrace = request.Trace;
 
             using (CancellationTokenSource cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
@@ -158,10 +203,20 @@ namespace Microsoft.Azure.Cosmos
                                     primaryRequest = this.RequestSenderAndResultCheckAsync(
                                         sender,
                                         request,
+                                        childTrace,
+                                        resourceUriString,
+                                        resourceType,
+                                        operationType,
+                                        requestOptions,
+                                        cosmosContainerCore,
+                                        feedRange,
+                                        streamPayload,
+                                        requestEnricher,
+                                        trace,
                                         hedgeRegions.ElementAt(requestNumber),
                                         cancellationToken,
-                                        cancellationTokenSource, 
-                                        trace);
+                                        cancellationTokenSource,
+                                        hedgingTrace);
 
                                     requestTasks.Add(primaryRequest);
                                 }
@@ -170,10 +225,20 @@ namespace Microsoft.Azure.Cosmos
                                     Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
                                     sender: sender,
                                     request: request,
+                                    childTrace: childTrace,
+                                    resourceUriString: resourceUriString,
+                                    resourceType: resourceType,
+                                    operationType: operationType,
+                                    requestOptions: requestOptions,
+                                    cosmosContainerCore: cosmosContainerCore,
+                                    feedRange: feedRange,
+                                    streamPayload: streamPayload,
+                                    requestEnricher: requestEnricher,
+                                    trace: trace,
                                     clonedBody: clonedBody,
                                     hedgeRegions: hedgeRegions,
                                     requestNumber: requestNumber,
-                                    trace: trace,
+                                    hedgingTrace: hedgingTrace,
                                     cancellationToken: cancellationToken,
                                     cancellationTokenSource: cancellationTokenSource);
 
@@ -253,19 +318,40 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<HedgingResponse> CloneAndSendAsync(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
+            Func<RequestMessage,
+                ITrace,
+                string,
+                ResourceType,
+                OperationType,
+                RequestOptions,
+                ContainerInternal,
+                FeedRange,
+                Stream,
+                Action<RequestMessage>,
+                ITrace, CancellationToken,
+                Task<ResponseMessage>> sender,
             RequestMessage request,
+            ITrace childTrace,
+            string resourceUriString,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerInternal cosmosContainerCore,
+            FeedRange feedRange,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            ITrace trace,
             CloneableStream clonedBody,
             IReadOnlyCollection<string> hedgeRegions,
             int requestNumber,
-            ITrace trace,
+            ITrace hedgingTrace,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource)
         {
             RequestMessage clonedRequest;
 
             using (clonedRequest = request.Clone(
-                trace,
+                hedgingTrace,
                 clonedBody))
             {
                 clonedRequest.RequestOptions ??= new RequestOptions();
@@ -278,24 +364,67 @@ namespace Microsoft.Azure.Cosmos
                 return await this.RequestSenderAndResultCheckAsync(
                     sender,
                     clonedRequest,
+                    childTrace,
+                    resourceUriString,
+                    resourceType,
+                    operationType,
+                    requestOptions,
+                    cosmosContainerCore,
+                    feedRange,
+                    streamPayload,
+                    requestEnricher,
+                    trace,
                     region,
                     cancellationToken,
-                    cancellationTokenSource, 
-                    trace);
+                    cancellationTokenSource,
+                    hedgingTrace);
             }
         }
 
         private async Task<HedgingResponse> RequestSenderAndResultCheckAsync(
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender,
+            Func<RequestMessage,
+                ITrace,
+                string,
+                ResourceType,
+                OperationType,
+                RequestOptions,
+                ContainerInternal,
+                FeedRange,
+                Stream,
+                Action<RequestMessage>,
+                ITrace, CancellationToken,
+                Task<ResponseMessage>> sender,
             RequestMessage request,
+            ITrace childTrace,
+            string resourceUriString,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerInternal cosmosContainerCore,
+            FeedRange feedRange,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            ITrace trace,
             string hedgedRegion,
             CancellationToken cancellationToken,
             CancellationTokenSource cancellationTokenSource,
-            ITrace trace)
+            ITrace hedgingTrace)
         {
             try
             {
-                ResponseMessage response = await sender.Invoke(request, cancellationToken);
+                ResponseMessage response = await sender.Invoke(
+                    request, 
+                    childTrace,
+                    resourceUriString,
+                    resourceType,
+                    operationType,
+                    requestOptions,
+                    cosmosContainerCore,
+                    feedRange,
+                    streamPayload,
+                    requestEnricher,
+                    trace,
+                    cancellationToken);
                 if (IsFinalResult((int)response.StatusCode, (int)response.Headers.SubStatusCode))
                 {
                     if (!cancellationToken.IsCancellationRequested)
@@ -310,7 +439,7 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (OperationCanceledException oce ) when (cancellationTokenSource.IsCancellationRequested)
             {
-                throw new CosmosOperationCanceledException(oce, trace);
+                throw new CosmosOperationCanceledException(oce, hedgingTrace);
             }
             catch (Exception ex)
             {

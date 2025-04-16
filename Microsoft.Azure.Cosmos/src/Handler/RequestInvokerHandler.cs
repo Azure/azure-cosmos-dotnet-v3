@@ -90,20 +90,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
-            AvailabilityStrategyInternal strategy = this.AvailabilityStrategy(request);
-
-            ResponseMessage response = strategy != null && strategy.Enabled()
-                ? await strategy.ExecuteAvailabilityStrategyAsync(
-                    this.BaseSendAsync,
-                    this.client,
-                    request,
-                    cancellationToken)
-                : await this.BaseSendAsync(request, cancellationToken);
-
-            if (request.RequestOptions?.ExcludeRegions != null)
-            {
-                ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
-            }
+            ResponseMessage response = await base.SendAsync(request, cancellationToken);
 
             if (ConfigurationManager.IsBinaryEncodingEnabled()
                 && RequestInvokerHandler.IsPointOperationSupportedForBinaryEncoding(request)
@@ -137,13 +124,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
             return strategy as AvailabilityStrategyInternal;
         }
 
-        public virtual async Task<ResponseMessage> BaseSendAsync(
-            RequestMessage request,
-            CancellationToken cancellationToken)
-        {
-            return await base.SendAsync(request, cancellationToken);
-        }
-
         public virtual async Task<T> SendAsync<T>(
             string resourceUri,
             ResourceType resourceType,
@@ -175,6 +155,166 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 cancellationToken: cancellationToken);
 
             return responseCreator(responseMessage);
+        }
+
+        internal virtual async Task<ResponseMessage> SendInternalAsync(
+            RequestMessage request,
+            ITrace childTrace,
+            string resourceUriString,
+            ResourceType resourceType,
+            OperationType operationType,
+            RequestOptions requestOptions,
+            ContainerInternal cosmosContainerCore,
+            FeedRange feedRange,
+            Stream streamPayload,
+            Action<RequestMessage> requestEnricher,
+            ITrace trace,
+            CancellationToken cancellationToken)
+        {
+            if (feedRange != null)
+            {
+                if (!request.OperationType.IsPointOperation())
+                {
+                    feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
+                        feedRange: feedRange,
+                        cosmosContainerCore: cosmosContainerCore,
+                        cancellationToken: cancellationToken);
+                }
+
+                if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
+                {
+                    if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
+                    {
+                        throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
+                    }
+                    else if (feedRangePartitionKey.PartitionKey.IsNone)
+                    {
+                        try
+                        {
+                            PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(
+                                childTrace,
+                                cancellationToken);
+                            request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
+                        }
+                        catch (DocumentClientException dce)
+                        {
+                            return dce.ToCosmosResponseMessage(request);
+                        }
+                        catch (CosmosException ce)
+                        {
+                            return ce.ToCosmosResponseMessage(request);
+                        }
+                    }
+                    else
+                    {
+                        request.Headers.PartitionKey = feedRangePartitionKey.PartitionKey.ToJsonString();
+                    }
+                }
+                else if (feedRange is FeedRangeEpk feedRangeEpk)
+                {
+                    ContainerProperties collectionFromCache;
+                    try
+                    {
+                        if (cosmosContainerCore == null)
+                        {
+                            throw new ArgumentException($"The container core can not be null for FeedRangeEpk");
+                        }
+
+                        collectionFromCache = await cosmosContainerCore.GetCachedContainerPropertiesAsync(
+                            forceRefresh: false,
+                            childTrace,
+                            cancellationToken);
+                    }
+                    catch (CosmosException ex)
+                    {
+                        return ex.ToCosmosResponseMessage(request);
+                    }
+
+                    PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
+                    IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
+                        collectionFromCache.ResourceId,
+                        feedRangeEpk.Range,
+                        childTrace,
+                        forceRefresh: false);
+                    if (overlappingRanges == null)
+                    {
+                        CosmosException notFound = new CosmosException(
+                            $"Stale cache for rid '{collectionFromCache.ResourceId}'",
+                            statusCode: System.Net.HttpStatusCode.NotFound,
+                            subStatusCode: default,
+                            activityId: Guid.Empty.ToString(),
+                            requestCharge: default);
+                        return notFound.ToCosmosResponseMessage(request);
+                    }
+
+                    // For epk range filtering we can end up in one of 3 cases:
+                    if (overlappingRanges.Count > 1)
+                    {
+                        // 1) The EpkRange spans more than one physical partition
+                        // In this case it means we have encountered a split and 
+                        // we need to bubble that up to the higher layers to update their datastructures
+                        CosmosException goneException = new CosmosException(
+                            message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                            statusCode: System.Net.HttpStatusCode.Gone,
+                            subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                            activityId: Guid.NewGuid().ToString(),
+                            requestCharge: default);
+
+                        return goneException.ToCosmosResponseMessage(request);
+                    }
+                    // overlappingRanges.Count == 1
+                    else
+                    {
+                        Range<string> singleRange = overlappingRanges[0].ToRange();
+                        if ((singleRange.Min == feedRangeEpk.Range.Min) && (singleRange.Max == feedRangeEpk.Range.Max))
+                        {
+                            // 2) The EpkRange spans exactly one physical partition
+                            // In this case we can route to the physical pkrange id
+                            request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
+                        }
+                        else
+                        {
+                            // 3) The EpkRange spans less than single physical partition
+                            // In this case we route to the physical partition and 
+                            // pass the epk range headers to filter within partition
+                            request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
+                            request.Headers.ReadFeedKeyType = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
+                            request.Headers.StartEpk = feedRangeEpk.Range.Min;
+                            request.Headers.EndEpk = feedRangeEpk.Range.Max;
+                        }
+                    }
+                }
+                else
+                {
+                    request.PartitionKeyRangeId = feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange
+                        ? new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId)
+                        : throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
+                }
+            }
+
+            if (operationType == OperationType.Upsert)
+            {
+                request.Headers.IsUpsert = bool.TrueString;
+            }
+            else if (operationType == OperationType.Patch)
+            {
+                request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
+            }
+
+            if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, streamPayload != null))
+            {
+                request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
+                request.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
+            }
+
+            if (cosmosContainerCore != null)
+            {
+                request.ContainerId = cosmosContainerCore?.Id;
+                request.DatabaseId = cosmosContainerCore?.Database.Id;
+            }
+            requestEnricher?.Invoke(request);
+
+            return await this.SendAsync(request, cancellationToken);
         }
 
         public virtual async Task<ResponseMessage> SendAsync(
@@ -226,150 +366,44 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                     request.Headers.SDKSupportedCapabilities = Headers.SDKSUPPORTEDCAPABILITIES;
 
-                    if (feedRange != null)
+                    AvailabilityStrategyInternal strategy = this.AvailabilityStrategy(request);
+
+                    ResponseMessage response = strategy != null && strategy.Enabled()
+                        ? await strategy.ExecuteAvailabilityStrategyAsync(
+                            this.SendInternalAsync,
+                            this.client,
+                            request,
+                            childTrace,
+                            resourceUriString,
+                            resourceType,
+                            operationType,
+                            requestOptions,
+                            cosmosContainerCore,
+                            feedRange,
+                            streamPayload,
+                            requestEnricher,
+                            trace,
+                            cancellationToken)
+                        : await this.SendInternalAsync(
+                            request,
+                            childTrace,
+                            resourceUriString,
+                            resourceType,
+                            operationType,
+                            requestOptions,
+                            cosmosContainerCore,
+                            feedRange,
+                            streamPayload,
+                            requestEnricher,
+                            trace,
+                            cancellationToken);
+
+                    if (request.RequestOptions?.ExcludeRegions != null)
                     {
-                        if (!request.OperationType.IsPointOperation()) 
-                        {
-                            feedRange = await RequestInvokerHandler.ResolveFeedRangeBasedOnPrefixContainerAsync(
-                                feedRange: feedRange,
-                                cosmosContainerCore: cosmosContainerCore,
-                                cancellationToken: cancellationToken);
-                        }
-                        
-                        if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
-                        {
-                            if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
-                            {
-                                throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
-                            }
-                            else if (feedRangePartitionKey.PartitionKey.IsNone)
-                            {
-                                try
-                                {
-                                    PartitionKeyInternal partitionKeyInternal = await cosmosContainerCore.GetNonePartitionKeyValueAsync(
-                                        childTrace,
-                                        cancellationToken);
-                                    request.Headers.PartitionKey = partitionKeyInternal.ToJsonString();
-                                }
-                                catch (DocumentClientException dce)
-                                {
-                                    return dce.ToCosmosResponseMessage(request);
-                                }
-                                catch (CosmosException ce)
-                                {
-                                    return ce.ToCosmosResponseMessage(request);
-                                }
-                            }
-                            else
-                            {
-                                request.Headers.PartitionKey = feedRangePartitionKey.PartitionKey.ToJsonString();
-                            }
-                        }
-                        else if (feedRange is FeedRangeEpk feedRangeEpk)
-                        {
-                            ContainerProperties collectionFromCache;
-                            try
-                            {
-                                if (cosmosContainerCore == null)
-                                {
-                                    throw new ArgumentException($"The container core can not be null for FeedRangeEpk");
-                                }
-
-                                collectionFromCache = await cosmosContainerCore.GetCachedContainerPropertiesAsync(
-                                    forceRefresh: false,
-                                    childTrace,
-                                    cancellationToken);
-                            }
-                            catch (CosmosException ex)
-                            {
-                                return ex.ToCosmosResponseMessage(request);
-                            }
-
-                            PartitionKeyRangeCache routingMapProvider = await this.client.DocumentClient.GetPartitionKeyRangeCacheAsync(childTrace);
-                            IReadOnlyList<PartitionKeyRange> overlappingRanges = await routingMapProvider.TryGetOverlappingRangesAsync(
-                                collectionFromCache.ResourceId,
-                                feedRangeEpk.Range,
-                                childTrace,
-                                forceRefresh: false);
-                            if (overlappingRanges == null)
-                            {
-                                CosmosException notFound = new CosmosException(
-                                    $"Stale cache for rid '{collectionFromCache.ResourceId}'",
-                                    statusCode: System.Net.HttpStatusCode.NotFound,
-                                    subStatusCode: default,
-                                    activityId: Guid.Empty.ToString(),
-                                    requestCharge: default);
-                                return notFound.ToCosmosResponseMessage(request);
-                            }
-
-                            // For epk range filtering we can end up in one of 3 cases:
-                            if (overlappingRanges.Count > 1)
-                            {
-                                // 1) The EpkRange spans more than one physical partition
-                                // In this case it means we have encountered a split and 
-                                // we need to bubble that up to the higher layers to update their datastructures
-                                CosmosException goneException = new CosmosException(
-                                    message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                                    statusCode: System.Net.HttpStatusCode.Gone,
-                                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                                    activityId: Guid.NewGuid().ToString(),
-                                    requestCharge: default);
-
-                                return goneException.ToCosmosResponseMessage(request);
-                            }
-                            // overlappingRanges.Count == 1
-                            else
-                            {
-                                Range<string> singleRange = overlappingRanges[0].ToRange();
-                                if ((singleRange.Min == feedRangeEpk.Range.Min) && (singleRange.Max == feedRangeEpk.Range.Max))
-                                {
-                                    // 2) The EpkRange spans exactly one physical partition
-                                    // In this case we can route to the physical pkrange id
-                                    request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
-                                }
-                                else
-                                {
-                                    // 3) The EpkRange spans less than single physical partition
-                                    // In this case we route to the physical partition and 
-                                    // pass the epk range headers to filter within partition
-                                    request.PartitionKeyRangeId = new Documents.PartitionKeyRangeIdentity(overlappingRanges[0].Id);
-                                    request.Headers.ReadFeedKeyType = RntbdConstants.RntdbReadFeedKeyType.EffectivePartitionKeyRange.ToString();
-                                    request.Headers.StartEpk = feedRangeEpk.Range.Min;
-                                    request.Headers.EndEpk = feedRangeEpk.Range.Max;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            request.PartitionKeyRangeId = feedRange is FeedRangePartitionKeyRange feedRangePartitionKeyRange
-                                ? new Documents.PartitionKeyRangeIdentity(feedRangePartitionKeyRange.PartitionKeyRangeId)
-                                : throw new InvalidOperationException($"Unknown feed range type: '{feedRange.GetType()}'.");
-                        }
+                        ((CosmosTraceDiagnostics)response.Diagnostics).Value.AddOrUpdateDatum("ExcludedRegions", request.RequestOptions.ExcludeRegions);
                     }
 
-                    if (operationType == OperationType.Upsert)
-                    {
-                        request.Headers.IsUpsert = bool.TrueString;
-                    }
-                    else if (operationType == OperationType.Patch)
-                    {
-                        request.Headers.ContentType = RuntimeConstants.MediaTypes.JsonPatch;
-                    }
-
-                    if (ChangeFeedHelper.IsChangeFeedWithQueryRequest(operationType, streamPayload != null))
-                    {
-                        request.Headers.Add(HttpConstants.HttpHeaders.IsQuery, bool.TrueString);
-                        request.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
-                    }
-
-                    if (cosmosContainerCore != null)
-                    {
-                        request.ContainerId = cosmosContainerCore?.Id;
-                        request.DatabaseId = cosmosContainerCore?.Database.Id;
-                    }
-                    requestEnricher?.Invoke(request);
-
-                    return await this.SendAsync(request, cancellationToken);
+                    return response;
                 }
                 finally
                 {

@@ -1315,7 +1315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                     .Build(),
                             result:
                                 FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
-                                    .WithDelay(TimeSpan.FromMilliseconds(68000))
+                                    .WithDelay(TimeSpan.FromMilliseconds(8000))
                                     .Build())
                             .WithDuration(TimeSpan.FromMinutes(90))
                             .Build();
@@ -1360,18 +1360,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Other = "test"
                 };
 
-                ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
                     CosmosIntegrationTestObject,
                     requestOptions: requestOptions,
                     cancellationToken: cts.Token);
 
-                sendDelay.Disable();
+                    CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                    Assert.IsNotNull(traceDiagnostic);
+                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                    Assert.IsNotNull(hedgeContext);
+                    Assert.AreEqual(region2, (string)hedgeContext);
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.Fail(ex.Message);
+                }
+                
 
-                CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
-                Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
-                Assert.IsNotNull(hedgeContext);
-                Assert.AreEqual(region2, (string)hedgeContext);
+                sendDelay.Disable();
             }
         }
 
