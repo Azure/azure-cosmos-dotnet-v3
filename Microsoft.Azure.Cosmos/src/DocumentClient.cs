@@ -6800,7 +6800,8 @@ namespace Microsoft.Azure.Cosmos
                 !this.enableRntbdChannel,
                 this.UseMultipleWriteLocations && (this.accountServiceConfiguration.DefaultConsistencyLevel != Documents.ConsistencyLevel.Strong),
                 true,
-                enableReplicaValidation: this.isReplicaAddressValidationEnabled);
+                enableReplicaValidation: this.isReplicaAddressValidationEnabled,
+                sessionRetryOptions: this.ConnectionPolicy.SessionRetryOptions);
 
             if (subscribeRntbdStatus)
             {
