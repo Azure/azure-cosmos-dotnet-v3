@@ -8,6 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -89,10 +90,38 @@
             using CosmosClient mockCosmosClient = MockCosmosUtil.CreateMockCosmosClient();
             mockCosmosClient.DocumentClient.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(databaseAccount);
 
-            Func<RequestMessage, CancellationToken, Task<ResponseMessage>> sender = (request, token) => throw new OperationCanceledException("operation cancellation requested");
+            Func<RequestMessage,
+                ITrace,
+                string,
+                ResourceType,
+                OperationType,
+                RequestOptions,
+                ContainerInternal,
+                Cosmos.FeedRange,
+                Stream,
+                Action<RequestMessage>,
+                ITrace, 
+                CancellationToken,
+                Task<ResponseMessage>> sender = (request, _, _, _, _, _, _, _, _, _, _, token) => throw new OperationCanceledException("operation cancellation requested");
+
+            Action<RequestMessage> mockAction = delegate(RequestMessage message) { };
 
             CosmosOperationCanceledException cancelledException = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
-                       availabilityStrategy.ExecuteAvailabilityStrategyAsync(sender, mockCosmosClient, request, cts.Token));
+                       availabilityStrategy.ExecuteAvailabilityStrategyAsync(
+                           sender, 
+                           mockCosmosClient, 
+                           request, 
+                           request.Trace, 
+                           string.Empty, 
+                           ResourceType.Document, 
+                           OperationType.Read, 
+                           null,
+                           null,
+                           null,
+                           Stream.Null, 
+                           mockAction, 
+                           request.Trace, 
+                           cts.Token));
         }
 
        
