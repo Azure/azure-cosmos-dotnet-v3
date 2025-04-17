@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                         bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
                         bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
                         bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
-                        bHybridSearchSkipOrderByRewrite = Convert.ToInt32(!hybridSearchSkipOrderByRewrite),
+                        bHybridSearchSkipOrderByRewrite = Convert.ToInt32(hybridSearchSkipOrderByRewrite),
                         eGeospatialType = Convert.ToInt32(geospatialType),
                         ePartitionKind = Convert.ToInt32(partitionKind)
                     };
