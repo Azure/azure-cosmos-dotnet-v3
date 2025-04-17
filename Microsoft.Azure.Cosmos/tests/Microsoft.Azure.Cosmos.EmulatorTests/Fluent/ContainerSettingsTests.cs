@@ -591,7 +591,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             .WithVectorIndex()
                                 .Path(vector3Path, VectorIndexType.DiskANN)
                                 .WithQuantizationByteSize(2)
-                                .WithIndexingSearchListSize(5)
+                                .WithIndexingSearchListSize(35)
                                 .WithVectorIndexShardKey(new string[] { "/ZipCode" })
                              .Attach()
                         .Attach()
@@ -620,7 +620,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(vector3Path, containerSettings.IndexingPolicy.VectorIndexes[2].Path);
                 Assert.AreEqual(VectorIndexType.DiskANN, containerSettings.IndexingPolicy.VectorIndexes[2].Type);
                 Assert.AreEqual(2, containerSettings.IndexingPolicy.VectorIndexes[2].QuantizationByteSize);
-                Assert.AreEqual(5, containerSettings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize);
+                Assert.AreEqual(35, containerSettings.IndexingPolicy.VectorIndexes[2].IndexingSearchListSize);
                 CollectionAssert.AreEqual(new string[] { "/ZipCode" }, containerSettings.IndexingPolicy.VectorIndexes[2].VectorIndexShardKey);
             }
             finally
