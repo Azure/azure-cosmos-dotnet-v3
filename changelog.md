@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5089](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5089) WebAssembly : Fixes Guard the ServicePointAccessor call in DocumentClass with IsSupported as well
 - [5106](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5106) Diagnostics: Fixes bug where some overloaded substatus codes are displayed incorrectly in diagnostics.
+- [5139](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5139) Query: Fixes flip of boolean switch for hybridSearchSkipOrderByRewrite
 
 ### <a name="3.49.0-preview.1"/> [3.49.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.0-preview.1) - 2025-4-11
 
