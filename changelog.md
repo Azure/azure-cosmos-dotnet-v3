@@ -17,12 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="3.50.0-preview.0"/> [3.50.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0-preview.0) - 2025-4-17
 
+#### Added
+- [5136](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5136) VectorIndexing: Adds Preview APIs for VectorIndexing Policies
+
 ### <a name="3.49.0"/> [3.49.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.0) - 2025-4-17
 
 #### Added
 
 - [5077](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5077) ThroughputBucketing: Adds changes to make ThroughputBucket public for preview SDK 
 - [5069](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5069) AsyncCache: Adds support for stack trace optimization during exceptions for AsyncCache and AsyncCacheNonblocking
+- [5120](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5106) Query: Adds an environment variable for disabling the hybrid search query plan optimization
+- [5127](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5127) UnknownRntbdHeader : Adds a new SDK capability for UnknownRntbdHeaders
+- [5128](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5128) Session Consistency: Adds SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
 
 ### Fixed
 
