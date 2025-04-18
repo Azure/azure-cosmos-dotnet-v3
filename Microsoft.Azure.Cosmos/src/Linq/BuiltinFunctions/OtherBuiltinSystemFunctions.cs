@@ -21,15 +21,15 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(object), typeof(Func<object, object>[])}
+                        new Type[]{typeof(Func<object, object>[])}
                     })
             {
             }
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                if (methodCallExpression.Arguments.Count == 2
-                    && methodCallExpression.Arguments[1] is NewArrayExpression argumentsExpressions)
+                if (methodCallExpression.Arguments.Count == 1
+                    && methodCallExpression.Arguments[0] is NewArrayExpression argumentsExpressions)
                 {
                     // For RRF, We don't need to care about the first argument, it is the object itself and have no relevance to the computation
                     ReadOnlyCollection<Expression> functionListExpression = argumentsExpressions.Expressions;

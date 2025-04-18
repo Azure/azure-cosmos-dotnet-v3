@@ -354,8 +354,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
         /// </summary>
-        /// <param name="obj"></param>
-        /// <param name="scoringFunctions">Scoring functios to combinen.</param>
+        /// <param name="scoringFunctions">the scoring functions to combine.</param>
         /// <returns>Returns the the combined scores of the scoring functions.</returns>
         /// <example>
         /// <code>
@@ -364,8 +363,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static Func<TSource, object> RRF<TSource>(this object obj, params Func<TSource, object>[] scoringFunctions)
+        public static Func<TSource, object> RRF<TSource>(params Func<TSource, object>[] scoringFunctions)
         {
+            // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }
 

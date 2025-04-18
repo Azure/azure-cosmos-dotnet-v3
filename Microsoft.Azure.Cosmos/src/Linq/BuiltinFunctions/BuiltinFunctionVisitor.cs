@@ -35,9 +35,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static SqlScalarExpression VisitBuiltinFunctionCall(MethodCallExpression methodCallExpression, TranslationContext context)
         {
             Type declaringType;
-
+            bool isExtensionMethod = methodCallExpression.Method.IsExtensionMethod();
             // Method could be an extension method
-            if (methodCallExpression.Method.IsStatic && methodCallExpression.Method.IsExtensionMethod())
+            // RRF doesn't have "this" qualifier, so it's not considered an extension method by the compiler, and so needed to be checked separately
+            if (methodCallExpression.Method.IsStatic && 
+                (methodCallExpression.Method.IsExtensionMethod() 
+                || methodCallExpression.Method.Name.Equals(nameof(CosmosLinqExtensions.RRF)))) 
             {
                 if (methodCallExpression.Arguments.Count < 1)
                 {
