@@ -255,6 +255,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 responseDelay.Enable();
                 ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
@@ -324,6 +327,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 responseDelay.Enable();
 
@@ -532,6 +538,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
@@ -1285,7 +1294,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [TestCategory("MultiRegion")]
+        [TestCategory("MultiMaster")]
         public async Task HedgingCancellationTokenHandling()
         {
             List<FeedRange> feedRanges = (List<FeedRange>)await this.container.GetFeedRangesAsync();
