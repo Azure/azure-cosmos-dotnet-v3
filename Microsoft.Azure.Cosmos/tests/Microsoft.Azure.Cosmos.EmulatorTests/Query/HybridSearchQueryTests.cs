@@ -57,6 +57,21 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
 
         [TestMethod]
+        public async Task Repo()
+        {
+            List<SanityTestCase> testCases = new List<SanityTestCase>
+            {
+                MakeSanityTest(@"
+                    SELECT VALUE root[""StringField""]
+                    FROM root
+                    ORDER BY RANK RRF(FullTextScore(root.title, [""John""]), FullTextScore(root.title, [""John"", ""United States""]))",
+                    new List<List<int>>{ new List<int>{ 2, 57, 85 }, new List<int>{ 2, 85, 57 } }),
+            };
+
+            await this.RunTests(testCases);
+        }
+
+        [TestMethod]
         public async Task SanityTests()
         {
             List<SanityTestCase> testCases = new List<SanityTestCase>
