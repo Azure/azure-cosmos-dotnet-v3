@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -13,7 +14,8 @@
     [TestClass]
     public class FabricNativeIntegrationTests : BaseCosmosClientHelper
     {
-        private Container container = null;
+        private Database fabricDatabase = null;
+        private Container fabricContainer = null;
         private List<ToDoActivity> items;
         private readonly string PartitionKey = "/pk";
         private readonly string DatabaseName = "dkunda-fabric-cdb";
@@ -36,8 +38,8 @@
                 new MyTokenCredential(),
                 options);
 
-            Database database = cosmosClient.GetDatabase(this.DatabaseName);
-            this.container = await database.CreateContainerIfNotExistsAsync(this.ContainerName, this.PartitionKey);
+            this.fabricDatabase = cosmosClient.GetDatabase(this.DatabaseName);
+            this.fabricContainer = await this.fabricDatabase.CreateContainerIfNotExistsAsync(this.ContainerName, this.PartitionKey);
 
             if (this.items.Count == 0)
             {
@@ -48,7 +50,7 @@
                     ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
                     item.pk = $"pk-{id}";
                     item.id = id.ToString();
-                    ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item);
+                    ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.CreateItemAsync(item);
                     Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
 
                     this.items.Add(item);
@@ -59,14 +61,14 @@
         [TestCleanup]
         public async Task Cleanup()
         {
-            await this.container.DeleteContainerAsync();
+            await this.fabricContainer.DeleteContainerAsync();
         }
 
         [TestMethod]
         public async Task CreateItemTest()
         {
             ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
-            ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item);
+            ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.CreateItemAsync(item);
 
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
@@ -77,7 +79,7 @@
         {
             foreach (ToDoActivity item in this.items)
             {
-                ItemResponse<ToDoActivity> itemResponse = await this.container.ReadItemAsync<ToDoActivity>(
+                ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.ReadItemAsync<ToDoActivity>(
                     item.id,
                     new Cosmos.PartitionKey(item.pk));
 
@@ -87,9 +89,53 @@
         }
 
         [TestMethod]
+        public async Task UpsertItemTest()
+        {
+            foreach (ToDoActivity item in this.items)
+            {
+                item.taskNum = 506;
+                ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.UpsertItemAsync<ToDoActivity>(
+                    item,
+                    new PartitionKey(item.pk));
+
+                Assert.IsNotNull(itemResponse);
+                Assert.AreEqual(HttpStatusCode.OK, itemResponse.StatusCode);
+            }
+        }
+
+        [TestMethod]
+        public async Task DeleteItemTest()
+        {
+            ToDoActivity item = this.items.First();
+            ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.DeleteItemAsync<ToDoActivity>(
+                item.id,
+                new PartitionKey(item.pk));
+
+            Assert.IsNotNull(itemResponse);
+            Assert.AreEqual(HttpStatusCode.NoContent, itemResponse.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task QueryItemTest()
+        {
+            ToDoActivity item = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.CreateItemAsync(item);
+
+            Assert.IsNotNull(itemResponse);
+            Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
+
+            FeedIterator<ToDoActivity> queryIterator = this.fabricContainer.GetItemQueryIterator<ToDoActivity>($"SELECT * FROM c WHERE c.id = \"{item.id}\"");
+            while (queryIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedres = await queryIterator.ReadNextAsync();
+                Assert.IsNotNull(feedres.Resource);
+            }
+        }
+
+        [TestMethod]
         public async Task TriggerOperationsTest()
         {
-            Scripts scripts = this.container.Scripts;
+            Scripts scripts = this.fabricContainer.Scripts;
 
             TriggerProperties settings = new TriggerProperties
             {
@@ -158,7 +204,7 @@
                 item.pk = $"pk-{id}";
                 item.id = $"bulk-{id}";
 
-                tasks.Add(this.container.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.pk)));
+                tasks.Add(this.fabricContainer.CreateItemAsync<ToDoActivity>(item, new PartitionKey(item.pk)));
             }
 
             await Task.WhenAll(tasks);
@@ -181,7 +227,7 @@
         {
             Random random = new Random();
             string scriptId = Guid.NewGuid().ToString();
-            Scripts cosmosScripts = this.container.Scripts;
+            Scripts cosmosScripts = this.fabricContainer.Scripts;
 
             // 1. Create stored procedure for script.
             StoredProcedureResponse createSprocResponse = await cosmosScripts.CreateStoredProcedureAsync(
@@ -198,7 +244,7 @@
             item.pk = $"pk-{id}";
             item.id = $"stored-proc-{id}";
 
-            ItemResponse<ToDoActivity> itemResponse = await this.container.CreateItemAsync(item);
+            ItemResponse<ToDoActivity> itemResponse = await this.fabricContainer.CreateItemAsync(item);
             Assert.IsNotNull(itemResponse);
             Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
 
@@ -212,6 +258,66 @@
             Assert.IsNotNull(readSprocResponse);
             Assert.AreEqual(HttpStatusCode.OK, readSprocResponse.StatusCode);
             Assert.IsTrue(readSprocResponse.Resource.Contains("Hello"));
+        }
+
+        [TestMethod]
+        public async Task TestChangeFeed()
+        {
+            int changeFeedSetupTime = 1000;
+            string leaseContainerName = "myLeaseContainer";
+            string monitoredContainerName = "myMonitoredContainer";
+
+            try
+            {
+                List<ToDoActivity> receivedDocuments = new();
+
+                Container monitoredFabricContainer = await this.fabricDatabase.CreateContainerIfNotExistsAsync(monitoredContainerName, "/pk");
+                Container leaseFabricContainer = await this.fabricDatabase.CreateContainerIfNotExistsAsync(leaseContainerName, "/partitionKey");
+
+                ChangeFeedProcessor changeFeedProcessor = monitoredFabricContainer
+                    .GetChangeFeedProcessorBuilder<ToDoActivity>(processorName: "dkunda-changefeed-sample", onChangesDelegate: HandleChangesAsync)
+                        .WithInstanceName("consoleHost")
+                        .WithLeaseContainer(leaseFabricContainer)
+                        .WithLeaseConfiguration(
+                            acquireInterval: TimeSpan.FromSeconds(10),
+                            expirationInterval: TimeSpan.FromSeconds(30),
+                            renewInterval: TimeSpan.FromSeconds(20))
+                        .WithMaxItems(10)
+                        .WithPollInterval(TimeSpan.FromSeconds(2))
+                        .WithStartFromBeginning()
+                        .Build();
+
+                Random random = new();
+
+                await changeFeedProcessor.StartAsync();
+                await Task.Delay(changeFeedSetupTime);
+
+                string key = $"pk-{random.Next()}";
+                await monitoredFabricContainer.CreateItemAsync<dynamic>(new { id = $"{random.Next()}", pk = key, description = "original test" }, partitionKey: new PartitionKey(key));
+                await Task.Delay(1000);
+
+                key = $"pk-{random.Next()}";
+                await monitoredFabricContainer.UpsertItemAsync<dynamic>(new { id = $"{random.Next()}", pk = key, description = "test after replace" }, partitionKey: new PartitionKey(key));
+                await Task.Delay(1000);
+            }
+            catch (Exception ex)
+            {
+                Assert.Fail("Test failed with exception: " + ex.Message);
+            }
+        }
+
+        static async Task HandleChangesAsync(
+            ChangeFeedProcessorContext context,
+            IReadOnlyCollection<ToDoActivity> changes,
+            CancellationToken cancellationToken)
+        {
+            Assert.IsNotNull(context.LeaseToken);
+            Assert.IsNotNull(context.Headers.Session);
+            Assert.IsNotNull(context.Headers.RequestCharge);
+            Assert.IsNotNull(changes);
+            Assert.IsTrue(changes.Count == 2);
+
+            await Task.Delay(10);
         }
 
         private static string GetTriggerFunction(string taxPercentage)
