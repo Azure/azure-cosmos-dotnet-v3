@@ -801,7 +801,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.IsTrue(((List<string>)hedgeContext).Contains(region3));
+                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
                         }
 
                         break;
