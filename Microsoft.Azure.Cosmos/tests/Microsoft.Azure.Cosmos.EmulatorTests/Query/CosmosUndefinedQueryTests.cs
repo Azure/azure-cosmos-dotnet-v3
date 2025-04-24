@@ -72,8 +72,52 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private static async Task HybridSearchTests(Container container, IReadOnlyList<CosmosObject> _)
         {
-            await OrderByRankTests(container);
-            await UntypedOrderByRankTests(container);
+            UndefinedProjectionTestCase[] testCases = new[]
+            {
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT VALUE c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, ['needle']), FullTextScore(c.AnotherUndefinedField, ['needle']))",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT VALUE c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, ['needle']), FullTextScore(c.AnotherUndefinedField, ['needle']))",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle'])",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT VALUE c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle'])",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle']),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, ['needle']))",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT VALUE c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle']),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, ['needle']))",
+                    expectedCount: 0),
+            };
+
+            await RunUndefinedProjectionTests(container, testCases);
+            await RunUntypedTestsAsync(container, testCases);
         }
 
         private static Task UntypedTests(Container container)
@@ -101,21 +145,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 MakeUndefinedProjectionTest(
                     query: $"SELECT DISTINCT VALUE SUM(c.{nameof(MixedTypeDocument.MixedTypeField)}) FROM c",
                     expectedCount: 0)
-            };
-
-            return RunUntypedTestsAsync(container, undefinedProjectionTestCases);
-        }
-
-        private static Task UntypedOrderByRankTests(Container container)
-        {
-            UndefinedProjectionTestCase[] undefinedProjectionTestCases = new[]
-            {
-                MakeUndefinedProjectionTest(
-                    query: "SELECT VALUE c.AlwaysUndefinedField FROM c ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
-                    expectedCount: 0),
-                MakeUndefinedProjectionTest(
-                    query: "SELECT c.AlwaysUndefinedField FROM c ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
-                    expectedCount: DocumentCount),
             };
 
             return RunUntypedTestsAsync(container, undefinedProjectionTestCases);
@@ -162,19 +191,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             }
         }
 
-        private static async Task OrderByRankTests(Container container)
+        private static async Task RunUndefinedProjectionTests(Container container, IEnumerable<UndefinedProjectionTestCase> testCases)
         {
-            UndefinedProjectionTestCase[] undefinedProjectionTestCases = new[]
-            {
-                MakeUndefinedProjectionTest(
-                    query: "SELECT c.AlwaysUndefinedField FROM c ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
-                    expectedCount: DocumentCount),
-                MakeUndefinedProjectionTest(
-                    query: "SELECT VALUE c.AlwaysUndefinedField FROM c ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
-                    expectedCount: 0)
-            };
-
-            foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
+            foreach (UndefinedProjectionTestCase testCase in testCases)
             {
                 foreach (int pageSize in PageSizes)
                 {
