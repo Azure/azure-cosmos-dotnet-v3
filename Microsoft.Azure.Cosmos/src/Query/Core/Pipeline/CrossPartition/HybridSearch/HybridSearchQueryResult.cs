@@ -54,9 +54,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 throw new ArgumentException($"{FieldNames.Payload} must exist.");
             }
 
-            if (!outerPayload.TryGetValue(FieldNames.Payload, out CosmosObject innerPayload))
+            if (!outerPayload.TryGetValue(FieldNames.Payload, out CosmosElement innerPayload))
             {
-                throw new ArgumentException($"{FieldNames.Payload} must exist nested within the outer payload field.");
+                innerPayload = CosmosUndefined.Create();
             }
 
             if (!outerPayload.TryGetValue(FieldNames.ComponentScores, out CosmosArray componentScores))
