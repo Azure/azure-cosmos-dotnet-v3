@@ -490,7 +490,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     .WithVectorIndex()
                         .Path(vector3Path, VectorIndexType.DiskANN)
                         .WithQuantizationByteSize(2)
-                        .WithIndexingSearchListSize(5)
+                        .WithIndexingSearchListSize(35)
                         .WithVectorIndexShardKey(new string[] { "/ZipCode" })
                         .Attach()
                 .Attach()

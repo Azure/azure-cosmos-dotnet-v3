@@ -101,6 +101,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
@@ -126,6 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
+                hybridSearchSkipOrderByRewrite: !isHybridSearchQueryPlanOptimizationDisabled,
                 geospatialType: geospatialType);
         }
 
