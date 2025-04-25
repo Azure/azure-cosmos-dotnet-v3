@@ -6150,12 +6150,10 @@
           ],
           "MethodInfo": "System.Func`2[TSource,System.Object] FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "System.Func`2[TSource,System.Object] RRF[TSource](System.Object, System.Func`2[TSource,System.Object][])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Func`2[TSource,System.Object] RRF[TSource](System.Func`2[TSource,System.Object][])": {
           "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "System.Func`2[TSource,System.Object] RRF[TSource](System.Object, System.Func`2[TSource,System.Object][]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "Attributes": [],
+          "MethodInfo": "System.Func`2[TSource,System.Object] RRF[TSource](System.Func`2[TSource,System.Object][]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,System.Object]])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",

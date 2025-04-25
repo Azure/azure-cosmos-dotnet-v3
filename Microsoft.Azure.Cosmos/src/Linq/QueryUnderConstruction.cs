@@ -558,10 +558,13 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.ThenByDescending:
                 case LinqMethods.Distinct:
                     // New query is needed when there is already a Take or a non-distinct Select
+                    // Or when an Order By Rank is added to a query with an Order By clause (and vice versa)
                     shouldPackage = (this.topSpec != null) ||
                         (this.offsetSpec != null) ||
                         (this.selectClause != null && !this.selectClause.HasDistinct) || 
-                        (this.groupByClause != null);
+                        (this.groupByClause != null) || 
+                        (this.orderByClause != null && (methodName == nameof(CosmosLinqExtensions.OrderByRank))) ||
+                        (this.orderByClause != null && (this.orderByClause.Rank == true) && (methodName == LinqMethods.OrderBy));
                     break;
 
                 case LinqMethods.GroupBy:
