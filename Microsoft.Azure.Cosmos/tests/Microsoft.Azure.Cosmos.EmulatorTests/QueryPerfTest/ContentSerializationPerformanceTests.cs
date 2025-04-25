@@ -1,14 +1,13 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
     using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
-    using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    [Ignore]
+    //[Ignore]
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
@@ -45,9 +44,11 @@
         }
 
         [TestMethod]
-        public async Task ConnectEndpoint()
+        public async Task RunBenchmark()
         {
-            using (CosmosClient client = new CosmosClient(this.endpoint, this.authKey,
+            using (CosmosClient client = new CosmosClient(
+                this.endpoint,
+                this.authKey,
                 new CosmosClientOptions
                 {
                     ConnectionMode = ConnectionMode.Direct
@@ -59,22 +60,70 @@
 
         private async Task RunAsync(CosmosClient client)
         {
-            Database cosmosDatabase = client.GetDatabase(this.cosmosDatabaseId);
-            Container container = cosmosDatabase.GetContainer(this.containerId);
-            string rawDataPath = Path.GetFullPath(RawDataFileName);
+            Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
+            Container container = await database.CreateContainerIfNotExistsAsync(
+                id: this.containerId,
+                partitionKeyPath: "/myPartitionKey",
+                throughput: 400
+            );
+
+            await this.InsertRandomDocuments(container);
+
+            // TODO add warmup runs maybe?
+
             MetricsSerializer metricsSerializer = new MetricsSerializer();
             for (int i = 0; i < this.numberOfIterations; i++)
             {
                 await this.RunQueryAsync(container);
             }
 
-            Console.WriteLine("File path for raw data: ", rawDataPath);
+            string rawDataPath = Path.GetFullPath(RawDataFileName);
+            Console.WriteLine($"File path for raw data: {rawDataPath}");
             using (StreamWriter writer = new StreamWriter(new FileStream(rawDataPath, FileMode.Create, FileAccess.Write)))
             {
                 metricsSerializer.Serialize(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
             }
 
             metricsSerializer.Serialize(Console.Out, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: false);
+        }
+        private async Task InsertRandomDocuments(Container container)
+        {
+            Random random = new Random();
+
+            // update this to be configurable
+            for (int i = 0; i < 1; i++)
+            {
+                States state = new States
+                {
+                    MyPartitionKey = Guid.NewGuid().ToString(),
+                    Id = Guid.NewGuid().ToString(),
+                    Name = $"State-{i}",
+                    City = $"City-{random.Next(1000)}",
+                    PostalCode = $"{random.Next(10000, 99999)}",
+                    Region = $"Region-{random.Next(1, 10)}",
+                    UserDefinedID = random.Next(1000),
+                    WordsArray = new List<string> { "alpha", "beta", "gamma", "delta" },
+                    Tags = new Tags
+                    {
+                        Words = new List<string> { "sun", "moon", "stars", "comet" },
+                        Numbers = $"{random.Next(100)}-{random.Next(100)}-{random.Next(100)}"
+                    },
+                    RecipientList = new List<RecipientList>
+                    {
+                        new RecipientList
+                        {
+                            Name = $"Recipient-{random.Next(100)}",
+                            City = $"RecipientCity-{random.Next(1000)}",
+                            PostalCode = $"{random.Next(10000, 99999)}",
+                            Region = $"Region-{random.Next(1, 10)}",
+                            GUID = Guid.NewGuid().ToString(),
+                            Quantity = random.Next(1, 100)
+                        }
+                    }
+                };
+
+                await container.CreateItemAsync(state, new PartitionKey(state.MyPartitionKey));
+            }
         }
 
         private async Task RunQueryAsync(Container container)
@@ -109,13 +158,13 @@
         {
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Documents.ValueStopwatch totalTime = new Documents.ValueStopwatch();
-            Documents.ValueStopwatch getTraceTime = new Documents.ValueStopwatch();
+            Documents.ValueStopwatch accumulateMetricsTime = new Documents.ValueStopwatch();
             string diagnosticDataPath = Path.GetFullPath(DiagnosticsDataFileName);
             while (feedIterator.HasMoreResults)
             {
                 totalTime.Start();
                 FeedResponse<T> response = await feedIterator.ReadNextAsync();
-                getTraceTime.Start();
+                accumulateMetricsTime.Start();
                 if (response.RequestCharge != 0)
                 {
                     using (StreamWriter outputFile = new StreamWriter(path: diagnosticDataPath, append: true))
@@ -125,15 +174,17 @@
                     metricsAccumulator.ReadFromTrace(response, this.queryStatisticsDatumVisitor);
                 }
 
-                getTraceTime.Stop();
+                accumulateMetricsTime.Stop();
                 totalTime.Stop();
-                if (response.RequestCharge != 0)
+
+                if (response.RequestCharge != 0) // mayapainter: what is this?
                 {
-                    this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - getTraceTime.ElapsedMilliseconds);
+                    this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - accumulateMetricsTime.ElapsedMilliseconds);
                     this.queryStatisticsDatumVisitor.PopulateMetrics();
                 }
+
                 totalTime.Reset();
-                getTraceTime.Reset();
+                accumulateMetricsTime.Reset();
             }
         }
     }
