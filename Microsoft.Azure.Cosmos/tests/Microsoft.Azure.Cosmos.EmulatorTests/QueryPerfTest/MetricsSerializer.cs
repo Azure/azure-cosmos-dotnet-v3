@@ -7,10 +7,6 @@
 
     internal class MetricsSerializer
     {
-        private const string PrintMedian = "Median";
-        private const string PrintQueryMetrics = "QueryMetrics";
-        private const string PrintBadRequests = "BadRequest";
-
         private readonly Func<QueryStatisticsMetrics, double>[] metricsDelegate = new Func<QueryStatisticsMetrics, double>[]
         {
             metric => metric.RetrievedDocumentCount,
@@ -108,73 +104,101 @@
             return noWarmupList.ToList();
         }
 
-        public void Serialize(TextWriter textWriter, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor, int numberOfIterations, int warmupIterations, bool rawData)
+        public void Serialize(string basePath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, int warmupIterations)
         {
-            int roundTrips = queryStatisticsDatumVisitor.QueryMetricsList.Count / numberOfIterations;
-            if (rawData == false)
+            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations;
+            List<QueryStatisticsMetrics> metricsList = this.EliminateWarmupIterations(visitor.QueryMetricsList, roundTrips, warmupIterations);
+            if (roundTrips > 1)
             {
-                textWriter.WriteLine(roundTrips);
-                List<QueryStatisticsMetrics> noWarmupList = this.EliminateWarmupIterations(queryStatisticsDatumVisitor.QueryMetricsList, roundTrips, warmupIterations);
-                if (roundTrips > 1)
-                {
-                    noWarmupList = this.SumOfRoundTrips(roundTrips, noWarmupList);
-                }
-                this.CalculateAverage(noWarmupList).ForEach(textWriter.WriteLine);
-                textWriter.WriteLine();
-                textWriter.WriteLine(PrintMedian);
-                textWriter.WriteLine();
-                this.CalculateMedian(noWarmupList.ToList()).ForEach(textWriter.WriteLine);
+                metricsList = this.SumOfRoundTrips(roundTrips, metricsList);
             }
-            else
+
+            // Create output folder
+            string outputDir = Path.Combine(basePath, "metrics_output");
+            if (Directory.Exists(outputDir))
             {
-                textWriter.WriteLine();
-                textWriter.WriteLine(PrintQueryMetrics);
-                int roundTripCount = 1;
-                int iterationCount = 1;
-                textWriter.Write(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\",\"{7}\",\"{8}\",\"{9}\",\"{10}\"," +
-                                        "\"{11}\",\"{12}\",\"{13}\",\"{14}\",\"{15}\",\"{16}\",\"{17}\"", "Iteration", "RoundTrip",
-                                        "RetrievedDocumentCount", "RetrievedDocumentSize", "OutputDocumentCount", "OutputDocumentSize", "TotalQueryExecutionTime",
-                                        "DocumentLoadTime", "DocumentWriteTime", "Created", "ChannelAcquisitionStarted", "Pipelined", "TransitTime", "Received",
-                                        "Completed", "PocoTime", "GetCosmosElementResponseTime", "EndToEndTime"));
-                textWriter.WriteLine();
-                foreach (QueryStatisticsMetrics metrics in queryStatisticsDatumVisitor.QueryMetricsList)
-                {
-                    if (roundTripCount <= roundTrips)
-                    {
-                        textWriter.WriteLine(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\",\"{7}\",\"{8}\",\"{9}\",\"{10}\"," +
-                                                "\"{11}\",\"{12}\",\"{13}\",\"{14}\",\"{15}\",\"{16}\",\"{17}\"", iterationCount, roundTripCount,
-                                                metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
-                                                metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
-                                                metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined, metrics.TransitTime, metrics.Received,
-                                                metrics.Completed, metrics.PocoTime, metrics.GetCosmosElementResponseTime, metrics.EndToEndTime));
+                Directory.Delete(outputDir, recursive: true);
+            }
 
-                        roundTripCount++;
-                    }
-                    else
-                    {
-                        iterationCount++;
-                        roundTripCount = 1;
-                        textWriter.WriteLine(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\",\"{7}\",\"{8}\",\"{9}\",\"{10}\"," +
-                                                "\"{11}\",\"{12}\",\"{13}\",\"{14}\",\"{15}\",\"{16}\",\"{17}\"", iterationCount, roundTripCount,
-                                                metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
-                                                metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime, metrics.DocumentWriteTime,
-                                                metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined, metrics.TransitTime, metrics.Received,
-                                                metrics.Completed, metrics.PocoTime, metrics.GetCosmosElementResponseTime, metrics.EndToEndTime));
-                        roundTripCount++;
-                    }
-                }
+            Directory.CreateDirectory(outputDir);
 
-                textWriter.WriteLine();
-                textWriter.WriteLine(PrintBadRequests);
-                foreach (QueryStatisticsMetrics metrics in queryStatisticsDatumVisitor.BadRequestMetricsList)
+            string[] headers = {
+                "RetrievedDocumentCount", "RetrievedDocumentSize", "OutputDocumentCount", "OutputDocumentSize",
+                "TotalQueryExecutionTime", "DocumentLoadTime", "DocumentWriteTime", "Created", "ChannelAcquisitionStarted",
+                "Pipelined", "TransitTime", "Received", "Completed", "PocoTime", "GetCosmosElementResponseTime", "EndToEndTime"
+            };
+
+            // Write averages.csv
+            string averagesPath = Path.Combine(outputDir, "averages.csv");
+            List<double> averageData = this.CalculateAverage(metricsList);
+            using (StreamWriter writer = new StreamWriter(averagesPath))
+            {
+                writer.WriteLine(string.Join(",", headers));
+                writer.WriteLine(string.Join(",", averageData));
+            }
+
+            // Write medians.csv
+            string mediansPath = Path.Combine(outputDir, "medians.csv");
+            List<double> medianData = this.CalculateMedian(metricsList);
+            using (StreamWriter writer = new StreamWriter(mediansPath))
+            {
+                writer.WriteLine(string.Join(",", headers));
+                writer.WriteLine(string.Join(",", medianData));
+            }
+
+            // Write raw_data.csv
+            string metricsPath = Path.Combine(outputDir, "raw_data.csv");
+            using (StreamWriter writer = new StreamWriter(metricsPath))
+            {
+                string[] fullHeaders = new string[] { "Iteration", "RoundTrip" }.Concat(headers).ToArray();
+                writer.WriteLine(string.Join(",", fullHeaders));
+
+                int iteration = 1;
+                int roundTrip = 1;
+                foreach (QueryStatisticsMetrics metrics in visitor.QueryMetricsList)
                 {
-                    textWriter.WriteLine(string.Format("\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\"", metrics.BadRequestCreated,
-                        metrics.BadRequestChannelAcquisitionStarted, metrics.BadRequestPipelined, metrics.BadRequestTransitTime,
-                        metrics.BadRequestReceived, metrics.BadRequestCompleted));
-                    textWriter.WriteLine();
+                    object[] values = new object[]
+                    {
+                        iteration, roundTrip,
+                        metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
+                        metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime,
+                        metrics.DocumentWriteTime, metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined,
+                        metrics.TransitTime, metrics.Received, metrics.Completed, metrics.PocoTime,
+                        metrics.GetCosmosElementResponseTime, metrics.EndToEndTime
+                    };
+
+                    writer.WriteLine(string.Join(",", values));
+                    iteration++;
+                    if (iteration > numberOfIterations)
+                    {
+                        iteration = 1;
+                        roundTrip++;
+                    }
                 }
             }
-            textWriter.Flush();
+
+            // Write bad_requests.csv
+            string badRequestsPath = Path.Combine(outputDir, "bad_requests.csv");
+            using (StreamWriter writer = new StreamWriter(badRequestsPath))
+            {
+                string[] badRequestHeaders = {
+                    "BadRequestCreated", "BadRequestChannelAcquisitionStarted", "BadRequestPipelined",
+                    "BadRequestTransitTime", "BadRequestReceived", "BadRequestCompleted"
+                };
+                writer.WriteLine(string.Join(",", badRequestHeaders));
+
+                foreach (QueryStatisticsMetrics metrics in visitor.BadRequestMetricsList)
+                {
+                    double[] values = new double[]
+                    {
+                        metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted,
+                        metrics.BadRequestPipelined, metrics.BadRequestTransitTime,
+                        metrics.BadRequestReceived, metrics.BadRequestCompleted
+                    };
+                    writer.WriteLine(string.Join(",", values));
+                }
+            }
         }
+
     }
 }

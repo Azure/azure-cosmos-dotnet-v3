@@ -11,7 +11,6 @@
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
-        private const string RawDataFileName = "ContentSerializationPerformanceTestsRawData.csv";
         private const string DiagnosticsDataFileName = "ContentSerializationPerformanceTestsDiagnosticsData.txt";
 
         private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor;
@@ -19,7 +18,6 @@
         private readonly string authKey;
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
-        private readonly string contentSerialization;
         private readonly string query;
         private readonly int numberOfIterations;
         private readonly int warmupIterations;
@@ -34,7 +32,6 @@
             this.authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
             this.containerId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContainerId"];
-            this.contentSerialization = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContentSerialization"];
             this.query = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Query"];
             this.numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.NumberOfIterations"]);
             this.warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.WarmupIterations"]);
@@ -58,8 +55,18 @@
             }
         }
 
-        private async Task RunAsync(CosmosClient client)
+        [TestMethod]
+        public async Task SetupBenchmark()
         {
+            // TODO FIX THIS
+            CosmosClient client = new CosmosClient(
+                this.endpoint,
+                this.authKey,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Direct
+                });
+
             Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
             Container container = await database.CreateContainerIfNotExistsAsync(
                 id: this.containerId,
@@ -68,8 +75,19 @@
             );
 
             await this.InsertRandomDocuments(container);
+        }
 
-            // TODO add warmup runs maybe?
+        private async Task RunAsync(CosmosClient client)
+        {
+            // TODO add warmup runs here instead?
+
+            //TODO Get container directly from client
+            Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
+            Container container = await database.CreateContainerIfNotExistsAsync(
+                id: this.containerId,
+                partitionKeyPath: "/myPartitionKey",
+                throughput: 400
+            );
 
             MetricsSerializer metricsSerializer = new MetricsSerializer();
             for (int i = 0; i < this.numberOfIterations; i++)
@@ -77,21 +95,18 @@
                 await this.RunQueryAsync(container);
             }
 
-            string rawDataPath = Path.GetFullPath(RawDataFileName);
+            string rawDataPath = Path.GetFullPath(Directory.GetCurrentDirectory()); // Mayapainter fix ths
             Console.WriteLine($"File path for raw data: {rawDataPath}");
-            using (StreamWriter writer = new StreamWriter(new FileStream(rawDataPath, FileMode.Create, FileAccess.Write)))
-            {
-                metricsSerializer.Serialize(writer, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: true);
-            }
-
-            metricsSerializer.Serialize(Console.Out, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations, rawData: false);
+            metricsSerializer.Serialize(rawDataPath, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations);
         }
+
+        // TODO: make this part of "Test Setup"
         private async Task InsertRandomDocuments(Container container)
         {
             Random random = new Random();
 
             // update this to be configurable
-            for (int i = 0; i < 1; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 States state = new States
                 {
@@ -128,6 +143,7 @@
 
         private async Task RunQueryAsync(Container container)
         {
+            // TODO test both serialization options
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
                 MaxConcurrency = this.MaxConcurrency,
