@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TesteOrderByRankFunctionComposeWithOtherFunctions()
+        public void TestOrderByRankFunctionComposeWithOtherFunctions()
         {
             // Similar to the type checking function, FullTextScore are not supported client side.
             // Therefore this method is verified with baseline only.
