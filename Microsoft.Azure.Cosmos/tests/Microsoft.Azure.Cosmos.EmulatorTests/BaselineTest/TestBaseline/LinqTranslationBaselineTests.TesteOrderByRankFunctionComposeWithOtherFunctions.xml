@@ -1,0 +1,26 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextScore with 1 element array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).OrderByRank(doc => doc.FullTextScore(new [] {"test1"}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextScore with 1 element array]]></Description>
+      <Expression><![CDATA[query.Select(doc => doc.StringField).OrderBy(doc => doc)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["StringField"] 
+FROM root 
+ORDER BY root["StringField"] ASC]]></SqlQuery>
+    </Output>
+  </Result>
+</Results>

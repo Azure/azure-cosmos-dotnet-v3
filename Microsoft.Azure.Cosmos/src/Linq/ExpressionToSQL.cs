@@ -2061,11 +2061,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             {
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.OrderBy, 2, arguments.Count));
             }
-
             LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
             SqlOrderByItem scoreFuncOrderByItem = SqlOrderByItem.Create(sqlfunc, isDescending: null);
             SqlOrderByClause orderby = SqlOrderByClause.Create(rank: true, new SqlOrderByItem[] { scoreFuncOrderByItem });
+            
             return orderby;
         }
 

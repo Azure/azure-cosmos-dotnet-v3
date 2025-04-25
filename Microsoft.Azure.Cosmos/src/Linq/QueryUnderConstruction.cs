@@ -458,7 +458,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, orderByClause.OrderByItems[i].Expression);
                     substitutedItems[i] = SqlOrderByItem.Create(substituted, orderByClause.OrderByItems[i].IsDescending);
                 }
-                SqlOrderByClause result = SqlOrderByClause.Create(substitutedItems);
+                SqlOrderByClause result = SqlOrderByClause.Create(orderByClause.Rank, substitutedItems);
                 return result;
             }
 
@@ -551,6 +551,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 // Where expression parameter needs to be substituted if necessary so
                 // It is not needed in Select distinct because the Select distinct would have the necessary parameter name adjustment.
                 case LinqMethods.Any:
+                case nameof(CosmosLinqExtensions.OrderByRank):
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
                 case LinqMethods.ThenBy:
@@ -648,7 +649,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         {
             List<SqlOrderByItem> items = new List<SqlOrderByItem>(context.CurrentQuery.orderByClause.OrderByItems);
             items.AddRange(thenBy.OrderByItems);
-            context.CurrentQuery.orderByClause = SqlOrderByClause.Create(items.ToImmutableArray());
+            context.CurrentQuery.orderByClause = SqlOrderByClause.Create(context.CurrentQuery.orderByClause.Rank, items.ToImmutableArray());
 
             foreach (Binding binding in context.CurrentSubqueryBinding.TakeBindings()) context.CurrentQuery.AddBinding(binding);
 

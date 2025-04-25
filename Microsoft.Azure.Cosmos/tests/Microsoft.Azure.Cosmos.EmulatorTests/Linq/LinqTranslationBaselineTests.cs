@@ -470,32 +470,28 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
-        public void TesteOrderByRankFunctionConposeWithOtherFunctions()
+        public void TesteOrderByRankFunctionComposeWithOtherFunctions()
         {
             // Similar to the type checking function, FullTextScore are not supported client side.
             // Therefore this method is verified with baseline only.
-            //List<DataObject> data = new List<DataObject>();
-            //IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
-            //Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
+            List<DataObject> data = new List<DataObject>();
+            IOrderedQueryable<DataObject> query = testContainer.GetItemLinqQueryable<DataObject>(allowSynchronousQueryExecution: true);
+            Func<bool, IQueryable<DataObject>> getQuery = useQuery => useQuery ? query : data.AsQueryable();
 
-            //List<LinqTestInput> inputs = new List<LinqTestInput>
-            //{
-            //    new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b).OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))),
-            //    new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b).OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }))),
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b).Select(doc => doc.StringField).OrderByRank(doc => doc.FullTextScore(new string[] { "test1" }))),
+                 new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b).Select(doc => doc.StringField).OrderBy(doc => doc)),
+            };
 
-            //    // Negative case: FullTextScore in non order by clause
-            //    new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b).Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != null)),
-            //    new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b).Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
-            //};
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+            }
 
-            //foreach (LinqTestInput input in inputs)
-            //{
-            //    // OrderBy are not supported client side.
-            //    // Therefore this method is verified with baseline only.
-            //    input.skipVerification = true;
-            //}
-
-            //this.ExecuteTestSuite(inputs);
+            this.ExecuteTestSuite(inputs);
         }
 
         [TestMethod]
