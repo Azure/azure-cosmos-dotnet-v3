@@ -945,7 +945,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                                         Assert.IsNotNull(this.cache.EffectivePreferredLocations);
                                         Assert.AreEqual(this.cache.EffectivePreferredLocations.Count, 1);
 
-                                        expectedEndpoint = LocationCacheTests.EndpointByLocation[availableWriteLocations[1]];
+                                        //If the defaut endpoint is a regional endpoint, it will be the only vaild read region for read only requests
+                                        expectedEndpoint = LocationCacheTests.EndpointByLocation[availableWriteLocations[0]];
                                     }
                                     else
                                     {
@@ -1432,6 +1433,77 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             }
 
         }
+
+        [TestMethod]
+        public void ValidateThinClientLocationCacheFlowTest()
+        {
+            // Arrange: 
+            Collection<AccountRegion> normalReads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadLocation", Endpoint = "https://readlocation.documents.azure.com" }
+            };
+
+            Collection<AccountRegion> normalWrites = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteLocation", Endpoint = "https://writelocation.documents.azure.com" }
+            };
+
+            Collection<AccountRegion> thinClientReads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ThinClientReadLocation", Endpoint = "https://thinclient-read.documents.azure.com:10650/" }
+            };
+
+            Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ThinClientWriteLocation", Endpoint = "https://thinclient-write.documents.azure.com:10650/" }
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = normalReads,
+                WriteLocationsInternal = normalWrites,
+                ThinClientReadableLocationsInternal = thinClientReads,
+                ThinClientWritableLocationsInternal = thinClientWrites,
+                EnableMultipleWriteLocations = false
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>()),
+                defaultEndpoint: new Uri("https://defaultendpoint.documents.azure.com"),
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            // Act: 
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Create a read request
+            DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            Uri resolvedThinRead = cache.ResolveThinClientEndpoint(readRequest, isReadRequest: true);
+
+            // Create a write request
+            DocumentServiceRequest writeRequest = DocumentServiceRequest.Create(
+                OperationType.Create,
+                ResourceType.Document,
+                AuthorizationTokenType.PrimaryMasterKey);
+
+            Uri resolvedThinWrite = cache.ResolveThinClientEndpoint(writeRequest, isReadRequest: false);
+
+            // Assert:
+            Assert.AreEqual("https://thinclient-read.documents.azure.com:10650/", resolvedThinRead.AbsoluteUri,
+                "ThinClient read endpoint must match the one we provided in ThinClientReadableLocationsInternal");
+
+            Assert.AreEqual("https://thinclient-write.documents.azure.com:10650/", resolvedThinWrite.AbsoluteUri,
+                "ThinClient write endpoint must match the one we provided in ThinClientWritableLocationsInternal");
+
+            Assert.AreEqual("https://readlocation.documents.azure.com/", cache.ReadEndpoints[0].AbsoluteUri);
+            Assert.AreEqual("https://writelocation.documents.azure.com/", cache.WriteEndpoints[0].AbsoluteUri);
+        }
+
 
         private ReadOnlyCollection<Uri> GetApplicableRegions(bool isReadRequest, bool useMultipleWriteLocations, bool usesPreferredLocations, List<string> excludeRegions, bool isDefaultEndpointARegionalEndpoint)
         {

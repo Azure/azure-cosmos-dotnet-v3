@@ -41,6 +41,11 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string AllowedPartitionUnavailabilityDurationInSeconds = "AZURE_COSMOS_PPCB_ALLOWED_PARTITION_UNAVAILABILITY_DURATION_IN_SECONDS";
 
         /// <summary>
+        /// Environment variable name to enable thin client mode.
+        /// </summary>
+        internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
@@ -60,12 +65,26 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Environment variable name to disable sending non streaming order by query feature flag to the gateway.
         /// </summary>
-        internal static readonly string NonStreamingOrderByQueryFeatureDisabled = "AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED";
+        internal static readonly string HybridSearchQueryPlanOptimizationDisabled = "AZURE_COSMOS_HYBRID_SEARCH_QUERYPLAN_OPTIMIZATION_DISABLED";
 
         /// <summary>
         /// Environment variable name to enable distributed query gateway mode.
         /// </summary>
         internal static readonly string DistributedQueryGatewayModeEnabled = "AZURE_COSMOS_DISTRIBUTED_QUERY_GATEWAY_ENABLED";
+
+        /// <summary>
+        /// intent is If a client specify a value, we will force it to be atleast 100ms, otherwise default is going to be 500ms
+        /// </summary>
+        internal static readonly string MinInRegionRetryTimeForWritesInMs = "AZURE_COSMOS_SESSION_TOKEN_MISMATCH_IN_REGION_RETRY_TIME_IN_MILLISECONDS";
+        internal static readonly int DefaultMinInRegionRetryTimeForWritesInMs = 500;
+        internal static readonly int MinMinInRegionRetryTimeForWritesInMs = 100;
+
+        /// <summary>
+        /// intent is If a client specify a value, we will force it to be atleast 1, otherwise default is going to be 1(right now both the values are 1 but we have the provision to change them in future).
+        /// </summary>
+        internal static readonly string MaxRetriesInLocalRegionWhenRemoteRegionPreferred = "AZURE_COSMOS_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED";
+        internal static readonly int DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
+        internal static readonly int MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
@@ -89,6 +108,26 @@ namespace Microsoft.Azure.Cosmos
                 return defaultValue;
             }
             return (T)Convert.ChangeType(value, typeof(T));
+        }
+
+        public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
+        {
+            return Math.Max(
+                ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: MaxRetriesInLocalRegionWhenRemoteRegionPreferred,
+                        defaultValue: DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred),
+                MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred);
+        }
+
+        public static TimeSpan GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred()
+        {
+            return TimeSpan.FromMilliseconds(Math.Max(
+                ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: MinInRegionRetryTimeForWritesInMs,
+                        defaultValue: DefaultMinInRegionRetryTimeForWritesInMs),
+                MinMinInRegionRetryTimeForWritesInMs));
         }
 
         /// <summary>
@@ -129,6 +168,20 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.PartitionLevelFailoverEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether the thin client mode is enabled based on the environment variable override.
+        /// </summary>
+        /// <param name="defaultValue">A boolean field containing the default value for thin client mode.</param>
+        /// <returns>A boolean flag indicating if thin client mode is enabled.</returns>
+        public static bool IsThinClientEnabled(
+            bool defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.ThinClientModeEnabled,
                         defaultValue: defaultValue);
         }
 
@@ -227,15 +280,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the boolean value indicating whether the non streaming order by query feature flag should be sent to the gateway
+        /// Gets the boolean value indicating whether the hybrid search query plan optimization feature flag should be sent to the gateway
         /// based on the environment variable override.
         /// </summary>
-        public static bool IsNonStreamingOrderByQueryFeatureDisabled(
+        public static bool IsHybridSearchQueryPlanOptimizationDisabled(
             bool defaultValue)
         {
             return ConfigurationManager
                     .GetEnvironmentVariable(
-                        variable: NonStreamingOrderByQueryFeatureDisabled,
+                        variable: HybridSearchQueryPlanOptimizationDisabled,
                         defaultValue: defaultValue);
         }
 

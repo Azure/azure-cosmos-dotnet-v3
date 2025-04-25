@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// AddressCache implementation for client SDK. Supports cross region address routing based on 
@@ -501,12 +502,59 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Parse thinClientWritableLocations / thinClientReadableLocations from AdditionalProperties. 
+        /// </summary>
+        private static void ParseThinClientLocationsFromAdditionalProperties(AccountProperties databaseAccount)
+        {
+            if (databaseAccount?.AdditionalProperties != null)
+            {
+                if (databaseAccount.AdditionalProperties.TryGetValue("thinClientWritableLocations", out JToken writableToken)
+                    && writableToken is JArray writableArray)
+                {
+                    databaseAccount.ThinClientWritableLocationsInternal = ParseAccountRegionArray(writableArray);
+                }
+
+                if (databaseAccount.AdditionalProperties.TryGetValue("thinClientReadableLocations", out JToken readableToken)
+                    && readableToken is JArray readableArray)
+                {
+                    databaseAccount.ThinClientReadableLocationsInternal = ParseAccountRegionArray(readableArray);
+                }
+            }
+        }
+
+        private static Collection<AccountRegion> ParseAccountRegionArray(JArray array)
+        {
+            Collection<AccountRegion> result = new Collection<AccountRegion>();
+            foreach (JToken token in array)
+            {
+                if (token is not JObject obj)
+                {
+                    continue;
+                }
+
+                string? regionName = obj["name"]?.ToString();
+                string? endpointStr = obj["databaseAccountEndpoint"]?.ToString();
+
+                if (!string.IsNullOrEmpty(regionName) && !string.IsNullOrEmpty(endpointStr))
+                {
+                    result.Add(new AccountRegion
+                    {
+                        Name = regionName,
+                        Endpoint = endpointStr
+                    });
+                }
+            }
+            return result;
+        }
+
         public virtual void InitializeAccountPropertiesAndStartBackgroundRefresh(AccountProperties databaseAccount)
         {
             if (this.cancellationTokenSource.IsCancellationRequested)
             {
                 return;
             }
+            GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
 
@@ -663,6 +711,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.LastBackgroundRefreshUtc = DateTime.UtcNow;
                 AccountProperties accountProperties = await this.GetDatabaseAccountAsync(true);
 
+                GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
+
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
 
             }
@@ -717,6 +767,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             return this.connectionPolicy.PreferredLocations?.Count > 0 ? 
                 this.connectionPolicy.PreferredLocations : this.locationCache.EffectivePreferredLocations;
+        }
+
+        public Uri ResolveThinClientEndpoint(DocumentServiceRequest request)
+        {
+            return this.locationCache.ResolveThinClientEndpoint(request, request.IsReadOnlyRequest);
         }
     }
 }

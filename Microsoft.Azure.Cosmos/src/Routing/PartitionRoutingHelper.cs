@@ -65,6 +65,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 allowNonValueAggregateQuery: allowNonValueAggregates,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: useSystemPrefix,
                 geospatialType: geospatialType);
             if (!tryGetPartitionQueryExecutionInfo.Succeeded)

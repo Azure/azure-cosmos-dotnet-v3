@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+            this.SessionRetryOptions = new SessionRetryOptions();
         }
 
         /// <summary>
@@ -121,6 +122,11 @@ namespace Microsoft.Azure.Cosmos
         /// Get or set session container for the client
         /// </summary>
         internal ISessionContainer SessionContainer { get; set; }
+        
+        /// <summary>
+        /// hint which guide SDK-internal retry policies on how early to switch retries to a different region. 
+        /// </summary>
+        internal SessionRetryOptions SessionRetryOptions { get; private set; }
 
         /// <summary>
         /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
@@ -454,6 +460,14 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnableAsyncCacheExceptionNoSharing { get; set; } = true;
 
         /// <summary>
+        /// Gets or sets the boolean flag to skip converting a text stream to binary and vice versa. When enabled, the request and response stream
+        /// would not be converted to the desired target serialization type and will act just like a pass through. This client option will
+        /// remain internal only since the consumer of this flag will be the internal components of the cosmos db ecosystem.
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        internal bool EnableStreamPassThrough { get; set; } = false;
+
+        /// <summary>
         /// (Direct/TCP) Controls the amount of idle time after which unused connections are closed.
         /// </summary>
         /// <value>
@@ -734,6 +748,20 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool EnableRemoteRegionPreferredForSessionRetry
+        {
+            get => this.SessionRetryOptions.RemoteRegionPreferred;
+            set => this.SessionRetryOptions.RemoteRegionPreferred = value;
+        }
+
+        /// <summary>
         /// Enable partition key level failover
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
@@ -997,6 +1025,7 @@ namespace Microsoft.Azure.Cosmos
                 UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                SessionRetryOptions = this.SessionRetryOptions,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
