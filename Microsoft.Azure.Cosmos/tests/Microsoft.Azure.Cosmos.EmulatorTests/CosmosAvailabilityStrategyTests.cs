@@ -757,6 +757,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
 
