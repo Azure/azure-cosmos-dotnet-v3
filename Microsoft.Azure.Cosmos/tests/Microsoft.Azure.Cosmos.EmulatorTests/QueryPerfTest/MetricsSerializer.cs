@@ -99,7 +99,7 @@
 
         public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
         {
-            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; // mayapainter: assumes round trips always the same?
+            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; // mayapainter: assumes # of round trips always the same?
             List<QueryStatisticsMetrics> metricsList = visitor.QueryMetricsList.ToList();
             if (roundTrips > 1)
             {
@@ -107,12 +107,25 @@
             }
 
             string[] headers = {
-                "TransportSerializationFormat", "RetrievedDocumentCount", "RetrievedDocumentSize", "OutputDocumentCount", "OutputDocumentSize",
-                "TotalQueryExecutionTime", "DocumentLoadTime", "DocumentWriteTime", "Created", "ChannelAcquisitionStarted",
-                "Pipelined", "TransitTime", "Received", "Completed", "PocoTime", "GetCosmosElementResponseTime", "EndToEndTime"
+                "TransportSerializationFormat", 
+                "RetrievedDocumentCount", 
+                "RetrievedDocumentSize", 
+                "OutputDocumentCount",
+                "OutputDocumentSize",
+                "TotalQueryExecutionTime", 
+                "DocumentLoadTime",
+                "DocumentWriteTime",
+                "Created", 
+                "ChannelAcquisitionStarted",
+                "Pipelined",
+                "TransitTime", 
+                "Received", 
+                "Completed", 
+                "PocoTime", 
+                "GetCosmosElementResponseTime",
+                "EndToEndTime"
             };
 
-            // Append to averages.csv
             string averagesPath = Path.Combine(outputPath, "averages.csv");
             bool fileExists = File.Exists(averagesPath);
 
@@ -127,7 +140,6 @@
                 writer.WriteLine(serializationFormat + "," + string.Join(",", averageData));
             }
 
-            // Append to medians.csv
             string mediansPath = Path.Combine(outputPath, "medians.csv");
             fileExists = File.Exists(mediansPath);
 
@@ -142,7 +154,6 @@
                 writer.WriteLine(serializationFormat + "," + string.Join(",", medianData));
             }
 
-            // Create raw_data.csv
             string metricsPath = Path.Combine(outputPath, "raw_data.csv");
             fileExists = File.Exists(metricsPath);
 
@@ -160,12 +171,25 @@
                 {
                     object[] values = new object[]
                     {
-                        iteration, roundTrip, serializationFormat,
-                        metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
-                        metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime,
-                        metrics.DocumentWriteTime, metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined,
-                        metrics.TransitTime, metrics.Received, metrics.Completed, metrics.PocoTime,
-                        metrics.GetCosmosElementResponseTime, metrics.EndToEndTime
+                        iteration,
+                        roundTrip,
+                        serializationFormat,
+                        metrics.RetrievedDocumentCount,
+                        metrics.RetrievedDocumentSize,
+                        metrics.OutputDocumentCount,
+                        metrics.OutputDocumentSize,
+                        metrics.TotalQueryExecutionTime,
+                        metrics.DocumentLoadTime,
+                        metrics.DocumentWriteTime, 
+                        metrics.Created,
+                        metrics.ChannelAcquisitionStarted,
+                        metrics.Pipelined,
+                        metrics.TransitTime,
+                        metrics.Received,
+                        metrics.Completed,
+                        metrics.PocoTime,
+                        metrics.GetCosmosElementResponseTime,
+                        metrics.EndToEndTime
                     };
 
                     writer.WriteLine(string.Join(",", values));
@@ -183,8 +207,12 @@
             using (StreamWriter writer = new StreamWriter(badRequestsPath))
             {
                 string[] badRequestHeaders = {
-                    "BadRequestCreated", "BadRequestChannelAcquisitionStarted", "BadRequestPipelined",
-                    "BadRequestTransitTime", "BadRequestReceived", "BadRequestCompleted"
+                    "BadRequestCreated",
+                    "BadRequestChannelAcquisitionStarted",
+                    "BadRequestPipelined",
+                    "BadRequestTransitTime",
+                    "BadRequestReceived", 
+                    "BadRequestCompleted"
                 };
                 writer.WriteLine(string.Join(",", badRequestHeaders));
 
@@ -192,14 +220,16 @@
                 {
                     double[] values = new double[]
                     {
-                        metrics.BadRequestCreated, metrics.BadRequestChannelAcquisitionStarted,
-                        metrics.BadRequestPipelined, metrics.BadRequestTransitTime,
-                        metrics.BadRequestReceived, metrics.BadRequestCompleted
+                        metrics.BadRequestCreated,
+                        metrics.BadRequestChannelAcquisitionStarted,
+                        metrics.BadRequestPipelined,
+                        metrics.BadRequestTransitTime,
+                        metrics.BadRequestReceived,
+                        metrics.BadRequestCompleted
                     };
                     writer.WriteLine(string.Join(",", values));
                 }
             }
         }
-
     }
 }

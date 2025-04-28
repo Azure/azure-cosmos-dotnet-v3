@@ -1,10 +1,8 @@
 ﻿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using System.Threading;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -45,7 +43,7 @@
             int queryMetricsTraceCount = 0;
             foreach (ITrace clientSideRequestStatsTrace in clientSideRequestStatsTraces)
             {
-                Debug.Assert(clientSideRequestStatsTrace.Data.Count == 1, "Expected 1 Client Side Request Stats traceObject");
+                Debug.Assert(clientSideRequestStatsTrace.Data.Count == 1, "Expected 1 Client Side Request Stats Traces Object");
 
                 KeyValuePair<string, object> clientSideMetrics = clientSideRequestStatsTrace.Data.Single();
                 Assert.IsInstanceOfType(clientSideMetrics.Value, typeof(ClientSideRequestStatisticsTraceDatum));
