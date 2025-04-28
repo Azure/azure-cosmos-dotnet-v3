@@ -410,6 +410,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
+                 new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore("test1"))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore("test1", "test2", "test3"))
+                    .Select(doc => doc.Pk)),
                 new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b)
                     .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
                     .Select(doc => doc.Pk)),
@@ -421,7 +427,12 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
                     .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != null)),
                 new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
-                .   Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
+
+                new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore("test1") != null)),
+                new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != null)),
             };
 
             foreach (LinqTestInput input in inputs)

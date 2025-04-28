@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["Pk"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["Pk"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -24,7 +24,7 @@ ORDER BY RANK FullTextScore(root["Pk"], ["test1"])]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -40,7 +40,7 @@ ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE {"stringField": root["StringField"], "PartitionKey": root["Pk"]}["PartitionKey"] 
 FROM root 
-ORDER BY RANK FullTextScore({"stringField": root["StringField"], "PartitionKey": root["Pk"]}["stringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore({"stringField": root["StringField"], "PartitionKey": root["Pk"]}["stringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -57,7 +57,7 @@ ORDER BY RANK FullTextScore({"stringField": root["StringField"], "PartitionKey":
 SELECT VALUE doc0 
 FROM root 
 JOIN doc0 IN root["ArrayField"] 
-ORDER BY RANK FullTextScore(ToString(doc0), ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(ToString(doc0), "test1")]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":23,"end":59},"code":"SC2224","message":"The JOIN operator is not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":33,"end":59},"code":"SC2223","message":"The FROM clause with the IN operator is not allowed with the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
@@ -71,7 +71,7 @@ ORDER BY RANK FullTextScore(ToString(doc0), ["test1"])]]></SqlQuery>
 SELECT VALUE doc0 
 FROM root 
 JOIN doc0 IN root["ArrayField"] 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":23,"end":59},"code":"SC2224","message":"The JOIN operator is not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":33,"end":59},"code":"SC2223","message":"The FROM clause with the IN operator is not allowed with the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
@@ -87,7 +87,7 @@ FROM (
     SELECT VALUE root 
     FROM root 
     OFFSET 1 LIMIT 2147483647) AS r0 
-    ORDER BY RANK FullTextScore(r0["StringField"], ["test1"])
+    ORDER BY RANK FullTextScore(r0["StringField"], "test1")
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":21,"end":76},"code":"SC2225","message":"Subqueries in the FROM clause are not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":50,"end":75},"code":"SC2204","message":"'OFFSET LIMIT' clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
@@ -101,7 +101,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"]) 
+ORDER BY RANK FullTextScore(root["StringField"], "test1") 
 OFFSET 1 LIMIT 2147483647]]></SqlQuery>
       <Results><![CDATA[[]]]></Results>
     </Output>
@@ -117,7 +117,7 @@ SELECT VALUE r0
 FROM (
     SELECT TOP 1 VALUE root 
     FROM root) AS r0 
-    ORDER BY RANK FullTextScore(r0["StringField"], ["test1"])
+    ORDER BY RANK FullTextScore(r0["StringField"], "test1")
 ]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":21,"end":56},"code":"SC2225","message":"Subqueries in the FROM clause are not allowed with the ORDER BY RANK clause."},{"severity":"Error","location":{"start":29,"end":34},"code":"SC2203","message":"'TOP' is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
@@ -131,7 +131,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT TOP 1 VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test"
 ]]]></Results>
@@ -158,10 +158,10 @@ SELECT VALUE COUNT(1)
 FROM (
     SELECT VALUE root 
     FROM root 
-    ORDER BY RANK FullTextScore(root["StringField"], ["test1"])) AS r0 
+    ORDER BY RANK FullTextScore(root["StringField"], "test1")) AS r0 
     GROUP BY r0["Pk"] 
 ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":115},"code":"SC2228","message":"The ORDER BY RANK clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":56,"end":113},"code":"SC2228","message":"The ORDER BY RANK clause is not supported in subqueries."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -173,7 +173,7 @@ FROM (
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -206,7 +206,7 @@ ORDER BY root["NumericField"] ASC]]></SqlQuery>
 SELECT VALUE root["Pk"] 
 FROM root 
 WHERE (root["NumericField"] > 0) 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -223,7 +223,7 @@ ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
 SELECT VALUE root["Pk"] 
 FROM root 
 WHERE (root["NumericField"] > 0) 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"

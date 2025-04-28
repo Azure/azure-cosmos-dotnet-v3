@@ -8,7 +8,7 @@
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -24,7 +24,39 @@ ORDER BY RANK FullTextScore(root["StringField"], ["test1"])]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
-ORDER BY RANK FullTextScore(root["StringField"], ["test1", "test2", "test3"])]]></SqlQuery>
+ORDER BY RANK FullTextScore(root["StringField"], "test1", "test2", "test3")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextScore with 1 element array]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1"})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], "test1")]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[FullTextScore with 3 element array]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK FullTextScore(root["StringField"], "test1", "test2", "test3")]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -40,8 +72,8 @@ ORDER BY RANK FullTextScore(root["StringField"], ["test1", "test2", "test3"])]]>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (FullTextScore(root["StringField"], ["test1"]) != null)]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":80},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
+WHERE (FullTextScore(root["StringField"], "test1") != null)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":78},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -53,58 +85,34 @@ WHERE (FullTextScore(root["StringField"], ["test1"]) != null)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (FullTextScore(root["StringField"], ["test1", "test2", "test3"]) != null)]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":98},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
+WHERE (FullTextScore(root["StringField"], "test1", "test2", "test3") != null)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":96},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[FullTextScore in SELECT clause]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.FullTextScore(new [] {"test1"}))]]></Expression>
+      <Description><![CDATA[FullTextScore in WHERE clause]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1"}) != null))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE FullTextScore(root["StringField"], ["test1"]) 
-FROM root]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":13,"end":58},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[FullTextScore in SELECT clause 2]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}))]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE FullTextScore(root["StringField"], ["test1", "test2", "test3"]) 
-FROM root]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":13,"end":76},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[FullTextScore in GROUPBY clause]]></Description>
-      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextScore(new [] {"test1"}), (key, values) => key)]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE FullTextScore(root["StringField"], ["test1"]) 
+SELECT VALUE root 
 FROM root 
-GROUP BY FullTextScore(root["StringField"], ["test1"]) ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":78,"end":123},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":78,"end":123},"code":"SC2110","message":"Each GROUP BY expression must contain at least one property reference."},{"severity":"Error","location":{"start":13,"end":58},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
+WHERE (FullTextScore(root["StringField"], "test1") != null)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":78},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[FullTextScore in GROUPBY clause 2]]></Description>
-      <Expression><![CDATA[query.GroupBy(doc => doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}), (key, values) => key)]]></Expression>
+      <Description><![CDATA[FullTextScore in WHERE clause 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}) != null))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE FullTextScore(root["StringField"], ["test1", "test2", "test3"]) 
+SELECT VALUE root 
 FROM root 
-GROUP BY FullTextScore(root["StringField"], ["test1", "test2", "test3"]) ]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":96,"end":159},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":96,"end":159},"code":"SC2110","message":"Each GROUP BY expression must contain at least one property reference."},{"severity":"Error","location":{"start":13,"end":76},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
+WHERE (FullTextScore(root["StringField"], "test1", "test2", "test3") != null)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":96},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

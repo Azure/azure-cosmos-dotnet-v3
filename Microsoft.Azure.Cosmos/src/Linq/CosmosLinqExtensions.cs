@@ -317,7 +317,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static Func<TSource, object> FullTextScore<TSource>(this TSource obj, string[] terms)
+        public static Func<TSource, object> FullTextScore<TSource>(this TSource obj, params string[] terms)
         {
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }

@@ -62,6 +62,30 @@ namespace Microsoft.Azure.Cosmos.Linq
                     })
             {
             }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count == 2
+                    && methodCallExpression.Arguments[1] is ConstantExpression stringListArgumentExpression
+                    && ExpressionToSql.VisitConstant(stringListArgumentExpression, context) is SqlArrayCreateScalarExpression arrayScalarExpressions)
+                {
+                    List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                    {
+                        ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context)
+                    };
+
+                    arguments.AddRange(arrayScalarExpressions.Items);
+
+                    return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.FullTextScore, arguments.ToImmutableArray());
+                }
+
+                return null;
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
         }
 
         private static Dictionary<string, BuiltinFunctionVisitor> FunctionsDefinitions { get; set; }
