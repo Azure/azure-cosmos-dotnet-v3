@@ -13,7 +13,7 @@
     "MasterStalenessIntervalInSeconds": "1",
     "QueryPerformanceTests.CosmosDatabaseId": "db",
     "QueryPerformanceTests.ContainerId": "container",
-    "QueryPerformanceTests.ContentSerialization": "JsonText",
+    "QueryPerformanceTests.InsertDocumentCount": "100",
     "QueryPerformanceTests.Query": "SELECT TOP 1 c.region FROM c",
     "QueryPerformanceTests.MaxConcurrency": "-1",
     "QueryPerformanceTests.MaxItemCount": "-1",

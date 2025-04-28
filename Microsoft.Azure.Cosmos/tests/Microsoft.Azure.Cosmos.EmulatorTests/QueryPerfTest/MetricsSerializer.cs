@@ -97,52 +97,62 @@
             return sumOfRoundTripsList;
         }
 
-        private List<QueryStatisticsMetrics> EliminateWarmupIterations(IReadOnlyList<QueryStatisticsMetrics> noWarmupList, int roundTrips, int warmupIterations)
+        public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
         {
-            int iterationsToEliminate = warmupIterations * roundTrips;
-            noWarmupList = noWarmupList.Skip(iterationsToEliminate).ToList();
-            return noWarmupList.ToList();
-        }
-
-        public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, int warmupIterations, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
-        {
-            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations;
-            List<QueryStatisticsMetrics> metricsList = this.EliminateWarmupIterations(visitor.QueryMetricsList, roundTrips, warmupIterations);
+            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; // mayapainter: assumes round trips always the same?
+            List<QueryStatisticsMetrics> metricsList = visitor.QueryMetricsList.ToList();
             if (roundTrips > 1)
             {
                 metricsList = this.SumOfRoundTrips(roundTrips, metricsList);
             }
 
             string[] headers = {
-                "RetrievedDocumentCount", "RetrievedDocumentSize", "OutputDocumentCount", "OutputDocumentSize",
+                "TransportSerializationFormat", "RetrievedDocumentCount", "RetrievedDocumentSize", "OutputDocumentCount", "OutputDocumentSize",
                 "TotalQueryExecutionTime", "DocumentLoadTime", "DocumentWriteTime", "Created", "ChannelAcquisitionStarted",
                 "Pipelined", "TransitTime", "Received", "Completed", "PocoTime", "GetCosmosElementResponseTime", "EndToEndTime"
             };
 
             // Append to averages.csv
             string averagesPath = Path.Combine(outputPath, "averages.csv");
+            bool fileExists = File.Exists(averagesPath);
+
             List<double> averageData = this.CalculateAverage(metricsList);
-            using (StreamWriter writer = new StreamWriter(averagesPath))
+            using (StreamWriter writer = new StreamWriter(averagesPath, append: true))
             {
-                writer.WriteLine(string.Join(",", headers));
-                writer.WriteLine(string.Join(",", averageData));
+                if (!fileExists)
+                {
+                    writer.WriteLine(string.Join(",", headers));
+                }
+
+                writer.WriteLine(serializationFormat + "," + string.Join(",", averageData));
             }
 
             // Append to medians.csv
             string mediansPath = Path.Combine(outputPath, "medians.csv");
+            fileExists = File.Exists(mediansPath);
+
             List<double> medianData = this.CalculateMedian(metricsList);
-            using (StreamWriter writer = new StreamWriter(mediansPath))
+            using (StreamWriter writer = new StreamWriter(mediansPath, append: true))
             {
-                writer.WriteLine(string.Join(",", headers));
-                writer.WriteLine(string.Join(",", medianData));
+                if (!fileExists)
+                {
+                    writer.WriteLine(string.Join(",", headers));
+                }
+
+                writer.WriteLine(serializationFormat + "," + string.Join(",", medianData));
             }
 
             // Create raw_data.csv
             string metricsPath = Path.Combine(outputPath, "raw_data.csv");
+            fileExists = File.Exists(metricsPath);
+
             using (StreamWriter writer = new StreamWriter(metricsPath))
             {
-                string[] fullHeaders = new string[] { "Iteration", "RoundTrip" }.Concat(headers).ToArray();
-                writer.WriteLine(string.Join(",", fullHeaders));
+                if (!fileExists)
+                {
+                    string[] fullHeaders = new string[] { "Iteration", "RoundTrip" }.Concat(headers).ToArray();
+                    writer.WriteLine(string.Join(",", fullHeaders));
+                }
 
                 int iteration = 1;
                 int roundTrip = 1;
@@ -150,7 +160,7 @@
                 {
                     object[] values = new object[]
                     {
-                        iteration, roundTrip,
+                        iteration, roundTrip, serializationFormat,
                         metrics.RetrievedDocumentCount, metrics.RetrievedDocumentSize, metrics.OutputDocumentCount,
                         metrics.OutputDocumentSize, metrics.TotalQueryExecutionTime, metrics.DocumentLoadTime,
                         metrics.DocumentWriteTime, metrics.Created, metrics.ChannelAcquisitionStarted, metrics.Pipelined,

@@ -134,7 +134,7 @@
         {
             public QueryCombinedMetricsTraces(ITrace getCosmosElementTrace, ITrace queryMetricsTrace, ITrace clientSideRequestStatsTrace)
             {
-                //TODO make sure both are not null
+                Debug.Assert((getCosmosElementTrace == null) == (queryMetricsTrace == null));
                 Debug.Assert(clientSideRequestStatsTrace != null, "Client Side Request Stats cannot be null");
 
                 this.GetCosmosElementTrace = getCosmosElementTrace;

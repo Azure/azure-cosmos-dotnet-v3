@@ -8,13 +8,13 @@
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-    //[Ignore]
+    //[Ignore] TODO mayapainter undo
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
         private const string DiagnosticsDataFileName = "ContentSerializationPerformanceTestsDiagnosticsData.txt";
 
-        private readonly QueryStatisticsDatumVisitor queryStatisticsDatumVisitor;
+        private readonly Dictionary<SupportedSerializationFormats, QueryStatisticsDatumVisitor> queryStatisticsDatumVisitorMap;
         private readonly string endpoint;
         private readonly string authKey;
         private readonly string cosmosDatabaseId;
@@ -29,7 +29,11 @@
 
         public ContentSerializationPerformanceTests()
         {
-            this.queryStatisticsDatumVisitor = new();
+            this.queryStatisticsDatumVisitorMap = new Dictionary<SupportedSerializationFormats, QueryStatisticsDatumVisitor>
+            {
+                { SupportedSerializationFormats.JsonText, new QueryStatisticsDatumVisitor() },
+                { SupportedSerializationFormats.CosmosBinary, new QueryStatisticsDatumVisitor() }
+            };
             this.endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
             this.authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
@@ -44,24 +48,8 @@
         }
 
         [TestMethod]
-        public async Task RunBenchmark()
-        {
-            using (CosmosClient client = new CosmosClient(
-                this.endpoint,
-                this.authKey,
-                new CosmosClientOptions
-                {
-                    ConnectionMode = ConnectionMode.Direct
-                }))
-            {
-                await this.RunAsync(client);
-            }
-        }
-
-        [TestMethod]
         public async Task SetupBenchmark()
         {
-            // TODO FIX THIS
             CosmosClient client = new CosmosClient(
                 this.endpoint,
                 this.authKey,
@@ -80,14 +68,27 @@
             await this.InsertRandomDocuments(container);
         }
 
+        [TestMethod]
+        public async Task RunBenchmark()
+        {
+            using (CosmosClient client = new CosmosClient(
+                this.endpoint,
+                this.authKey,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Direct
+                }))
+            {
+                await this.RunAsync(client);
+            }
+        }
+
         private async Task RunAsync(CosmosClient client)
         {
-            // TODO add warmup runs here instead?
-
             Container container = client.GetContainer(this.cosmosDatabaseId, this.containerId);
             string rawDataPath = Path.GetFullPath(Directory.GetCurrentDirectory()); // Mayapainter fix ths
 
-            string outputDir = Path.Combine(rawDataPath, "metrics_output");
+            string outputDir = Path.Combine(rawDataPath, "perf_metrics_output");
             if (Directory.Exists(outputDir))
             {
                 Directory.Delete(outputDir, true);
@@ -95,21 +96,20 @@
 
             Directory.CreateDirectory(outputDir);
 
-            // Text transport format
-            MetricsSerializer metricsSerializer = new MetricsSerializer();
-            for (int i = 0; i < this.iterationCount; i++)
+            foreach (SupportedSerializationFormats serializationFormat in new[] { SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary })
             {
-                await this.RunQueryAsync(container, SupportedSerializationFormats.JsonText);
-            }
-            metricsSerializer.Serialize(outputDir, this.queryStatisticsDatumVisitor, this.iterationCount, this.warmupIterationCount, SupportedSerializationFormats.JsonText);
+                for (int i = 0; i < this.warmupIterationCount; i++)
+                {
+                    await this.RunQueryAsync(container, serializationFormat, true);
+                }
 
-            // Binary transport format
-            metricsSerializer = new MetricsSerializer();
-            for (int i = 0; i < this.iterationCount; i++)
-            {
-                await this.RunQueryAsync(container, SupportedSerializationFormats.CosmosBinary);
+                MetricsSerializer metricsSerializer = new ();
+                for (int i = 0; i < this.iterationCount; i++)
+                {
+                    await this.RunQueryAsync(container, serializationFormat, false);
+                }
+                metricsSerializer.Serialize(outputDir, this.queryStatisticsDatumVisitorMap[serializationFormat], this.iterationCount, serializationFormat);
             }
-            metricsSerializer.Serialize(outputDir, this.queryStatisticsDatumVisitor, this.iterationCount, this.warmupIterationCount, SupportedSerializationFormats.CosmosBinary);
 
             Console.WriteLine($"Output file path: {outputDir}");
             File.Delete(Path.GetFullPath(DiagnosticsDataFileName));
@@ -154,7 +154,7 @@
             }
         }
 
-        private async Task RunQueryAsync(Container container, SupportedSerializationFormats serializationFormat)
+        private async Task RunQueryAsync(Container container, SupportedSerializationFormats serializationFormat, bool isWarmup)
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
@@ -163,29 +163,45 @@
                 SupportedSerializationFormats = serializationFormat
             };
 
-            if (this.useStronglyTypedIterator)
+            if (isWarmup)
             {
-                using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
+                using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(
                     queryText: this.query,
                     requestOptions: requestOptions))
                 {
-                    await this.GetIteratorResponse(iterator);
+                    while (iterator.HasMoreResults)
+                    {
+                        await iterator.ReadNextAsync();
+                    }
                 }
             }
             else
             {
-                using (FeedIterator<dynamic> distinctQueryIterator = container.GetItemQueryIterator<dynamic>(
+                if (this.useStronglyTypedIterator)
+                {
+                    using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
                         queryText: this.query,
                         requestOptions: requestOptions))
+                    {
+                        await this.GetIteratorResponse(iterator, serializationFormat);
+                    }
+                }
+                else
                 {
-                    await this.GetIteratorResponse(distinctQueryIterator);
+                    using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(
+                            queryText: this.query,
+                            requestOptions: requestOptions))
+                    {
+                        await this.GetIteratorResponse(iterator, serializationFormat);
+                    }
                 }
             }
         }
 
-        private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator)
+        private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator, SupportedSerializationFormats serializationFormat)
         {
             string diagnosticDataPath = Path.GetFullPath(DiagnosticsDataFileName);
+            QueryStatisticsDatumVisitor visitor = this.queryStatisticsDatumVisitorMap[serializationFormat];
 
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Documents.ValueStopwatch totalTime = new Documents.ValueStopwatch();
@@ -202,7 +218,7 @@
                     {
                         outputFile.WriteLine(response.Diagnostics.ToString());
                     }
-                    metricsAccumulator.ReadFromTrace(response, this.queryStatisticsDatumVisitor);
+                    metricsAccumulator.ReadFromTrace(response, visitor);
                 }
 
                 accumulateMetricsTime.Stop();
@@ -210,8 +226,8 @@
 
                 if (response.RequestCharge != 0) // mayapainter: what is this?
                 {
-                    this.queryStatisticsDatumVisitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - accumulateMetricsTime.ElapsedMilliseconds);
-                    this.queryStatisticsDatumVisitor.PopulateMetrics();
+                    visitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - accumulateMetricsTime.ElapsedMilliseconds);
+                    visitor.PopulateMetrics();
                 }
 
                 totalTime.Reset();
