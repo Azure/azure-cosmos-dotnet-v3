@@ -5,6 +5,7 @@
     using System.IO;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     //[Ignore]
@@ -18,11 +19,12 @@
         private readonly string authKey;
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
+        private readonly int insertDocumentCount;
         private readonly string query;
-        private readonly int numberOfIterations;
-        private readonly int warmupIterations;
-        private readonly int MaxConcurrency;
-        private readonly int MaxItemCount;
+        private readonly int iterationCount;
+        private readonly int warmupIterationCount;
+        private readonly int maxConcurrency;
+        private readonly int maxItemCount;
         private readonly bool useStronglyTypedIterator;
 
         public ContentSerializationPerformanceTests()
@@ -32,11 +34,12 @@
             this.authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
             this.containerId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContainerId"];
+            this.insertDocumentCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.InsertDocumentCount"]);
             this.query = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Query"];
-            this.numberOfIterations = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.NumberOfIterations"]);
-            this.warmupIterations = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.WarmupIterations"]);
-            this.MaxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxConcurrency"]);
-            this.MaxItemCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxItemCount"]);
+            this.iterationCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.NumberOfIterations"]);
+            this.warmupIterationCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.WarmupIterations"]);
+            this.maxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxConcurrency"]);
+            this.maxItemCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxItemCount"]);
             this.useStronglyTypedIterator = bool.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.UseStronglyTypedIterator"]);
         }
 
@@ -67,7 +70,7 @@
                     ConnectionMode = ConnectionMode.Direct
                 });
 
-            Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
             Container container = await database.CreateContainerIfNotExistsAsync(
                 id: this.containerId,
                 partitionKeyPath: "/myPartitionKey",
@@ -81,32 +84,42 @@
         {
             // TODO add warmup runs here instead?
 
-            //TODO Get container directly from client
-            Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
-            Container container = await database.CreateContainerIfNotExistsAsync(
-                id: this.containerId,
-                partitionKeyPath: "/myPartitionKey",
-                throughput: 400
-            );
+            Container container = client.GetContainer(this.cosmosDatabaseId, this.containerId);
+            string rawDataPath = Path.GetFullPath(Directory.GetCurrentDirectory()); // Mayapainter fix ths
 
-            MetricsSerializer metricsSerializer = new MetricsSerializer();
-            for (int i = 0; i < this.numberOfIterations; i++)
+            string outputDir = Path.Combine(rawDataPath, "metrics_output");
+            if (Directory.Exists(outputDir))
             {
-                await this.RunQueryAsync(container);
+                Directory.Delete(outputDir, true);
             }
 
-            string rawDataPath = Path.GetFullPath(Directory.GetCurrentDirectory()); // Mayapainter fix ths
-            Console.WriteLine($"File path for raw data: {rawDataPath}");
-            metricsSerializer.Serialize(rawDataPath, this.queryStatisticsDatumVisitor, this.numberOfIterations, this.warmupIterations);
+            Directory.CreateDirectory(outputDir);
+
+            // Text transport format
+            MetricsSerializer metricsSerializer = new MetricsSerializer();
+            for (int i = 0; i < this.iterationCount; i++)
+            {
+                await this.RunQueryAsync(container, SupportedSerializationFormats.JsonText);
+            }
+            metricsSerializer.Serialize(outputDir, this.queryStatisticsDatumVisitor, this.iterationCount, this.warmupIterationCount, SupportedSerializationFormats.JsonText);
+
+            // Binary transport format
+            metricsSerializer = new MetricsSerializer();
+            for (int i = 0; i < this.iterationCount; i++)
+            {
+                await this.RunQueryAsync(container, SupportedSerializationFormats.CosmosBinary);
+            }
+            metricsSerializer.Serialize(outputDir, this.queryStatisticsDatumVisitor, this.iterationCount, this.warmupIterationCount, SupportedSerializationFormats.CosmosBinary);
+
+            Console.WriteLine($"Output file path: {outputDir}");
+            File.Delete(Path.GetFullPath(DiagnosticsDataFileName));
         }
 
-        // TODO: make this part of "Test Setup"
         private async Task InsertRandomDocuments(Container container)
         {
             Random random = new Random();
 
-            // update this to be configurable
-            for (int i = 0; i < 1000; i++)
+            for (int i = 0; i < this.insertDocumentCount; i++)
             {
                 States state = new States
                 {
@@ -137,17 +150,17 @@
                     }
                 };
 
-                await container.CreateItemAsync(state, new PartitionKey(state.MyPartitionKey));
+                await container.CreateItemAsync(state, new Cosmos.PartitionKey(state.MyPartitionKey));
             }
         }
 
-        private async Task RunQueryAsync(Container container)
+        private async Task RunQueryAsync(Container container, SupportedSerializationFormats serializationFormat)
         {
-            // TODO test both serialization options
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
-                MaxConcurrency = this.MaxConcurrency,
-                MaxItemCount = this.MaxItemCount,
+                MaxConcurrency = this.maxConcurrency,
+                MaxItemCount = this.maxItemCount,
+                SupportedSerializationFormats = serializationFormat
             };
 
             if (this.useStronglyTypedIterator)
@@ -172,10 +185,12 @@
 
         private async Task GetIteratorResponse<T>(FeedIterator<T> feedIterator)
         {
+            string diagnosticDataPath = Path.GetFullPath(DiagnosticsDataFileName);
+
             MetricsAccumulator metricsAccumulator = new MetricsAccumulator();
             Documents.ValueStopwatch totalTime = new Documents.ValueStopwatch();
             Documents.ValueStopwatch accumulateMetricsTime = new Documents.ValueStopwatch();
-            string diagnosticDataPath = Path.GetFullPath(DiagnosticsDataFileName);
+
             while (feedIterator.HasMoreResults)
             {
                 totalTime.Start();

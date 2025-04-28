@@ -104,7 +104,7 @@
             return noWarmupList.ToList();
         }
 
-        public void Serialize(string basePath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, int warmupIterations)
+        public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, int warmupIterations, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
         {
             int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations;
             List<QueryStatisticsMetrics> metricsList = this.EliminateWarmupIterations(visitor.QueryMetricsList, roundTrips, warmupIterations);
@@ -113,23 +113,14 @@
                 metricsList = this.SumOfRoundTrips(roundTrips, metricsList);
             }
 
-            // Create output folder
-            string outputDir = Path.Combine(basePath, "metrics_output");
-            if (Directory.Exists(outputDir))
-            {
-                Directory.Delete(outputDir, recursive: true);
-            }
-
-            Directory.CreateDirectory(outputDir);
-
             string[] headers = {
                 "RetrievedDocumentCount", "RetrievedDocumentSize", "OutputDocumentCount", "OutputDocumentSize",
                 "TotalQueryExecutionTime", "DocumentLoadTime", "DocumentWriteTime", "Created", "ChannelAcquisitionStarted",
                 "Pipelined", "TransitTime", "Received", "Completed", "PocoTime", "GetCosmosElementResponseTime", "EndToEndTime"
             };
 
-            // Write averages.csv
-            string averagesPath = Path.Combine(outputDir, "averages.csv");
+            // Append to averages.csv
+            string averagesPath = Path.Combine(outputPath, "averages.csv");
             List<double> averageData = this.CalculateAverage(metricsList);
             using (StreamWriter writer = new StreamWriter(averagesPath))
             {
@@ -137,8 +128,8 @@
                 writer.WriteLine(string.Join(",", averageData));
             }
 
-            // Write medians.csv
-            string mediansPath = Path.Combine(outputDir, "medians.csv");
+            // Append to medians.csv
+            string mediansPath = Path.Combine(outputPath, "medians.csv");
             List<double> medianData = this.CalculateMedian(metricsList);
             using (StreamWriter writer = new StreamWriter(mediansPath))
             {
@@ -146,8 +137,8 @@
                 writer.WriteLine(string.Join(",", medianData));
             }
 
-            // Write raw_data.csv
-            string metricsPath = Path.Combine(outputDir, "raw_data.csv");
+            // Create raw_data.csv
+            string metricsPath = Path.Combine(outputPath, "raw_data.csv");
             using (StreamWriter writer = new StreamWriter(metricsPath))
             {
                 string[] fullHeaders = new string[] { "Iteration", "RoundTrip" }.Concat(headers).ToArray();
@@ -178,7 +169,7 @@
             }
 
             // Write bad_requests.csv
-            string badRequestsPath = Path.Combine(outputDir, "bad_requests.csv");
+            string badRequestsPath = Path.Combine(outputPath, "bad_requests.csv");
             using (StreamWriter writer = new StreamWriter(badRequestsPath))
             {
                 string[] badRequestHeaders = {
