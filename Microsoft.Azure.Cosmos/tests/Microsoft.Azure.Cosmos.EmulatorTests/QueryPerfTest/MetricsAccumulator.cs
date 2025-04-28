@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Threading;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
@@ -69,24 +70,27 @@
             int traceCount = 0;
             foreach (QueryCombinedMetricsTraces combinedMetrics in combinedMetricsList)
             {
-                queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(combinedMetrics.GetCosmosElementTrace.Duration.TotalMilliseconds);
-                foreach (KeyValuePair<string, object> datum in combinedMetrics.QueryMetricsTrace.Data)
+                if (combinedMetrics.GetCosmosElementTrace != null)
                 {
-                    switch (datum.Value)
+                    queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(combinedMetrics.GetCosmosElementTrace.Duration.TotalMilliseconds);
+                    foreach (KeyValuePair<string, object> datum in combinedMetrics.QueryMetricsTrace.Data)
                     {
-                        case TraceDatum traceDatum:
-                            traceDatum.Accept(queryStatisticsDatumVisitor);
-                            break;
-                        default:
-                            Debug.Fail("Unexpected type", $"Type not supported {datum.Value.GetType()}");
-                            break;
+                        switch (datum.Value)
+                        {
+                            case TraceDatum traceDatum:
+                                traceDatum.Accept(queryStatisticsDatumVisitor);
+                                break;
+                            default:
+                                Debug.Fail("Unexpected type", $"Type not supported {datum.Value.GetType()}");
+                                break;
+                        }
                     }
-                }
 
-                // Add combinedMetrics to the list except for last roundtrip which is taken care of in ContentSerializationPerformanceTest class
-                if (traceCount < queryMetricsTraces.Count - 1)
-                {
-                    queryStatisticsDatumVisitor.PopulateMetrics();
+                    // Add combinedMetrics to the list except for last roundtrip which is taken care of in ContentSerializationPerformanceTest class
+                    if (traceCount < queryMetricsTraces.Count - 1)
+                    {
+                        queryStatisticsDatumVisitor.PopulateMetrics();
+                    }
                 }
 
                 foreach (KeyValuePair<string, object> datum in combinedMetrics.ClientSideRequestStatsTrace.Data)

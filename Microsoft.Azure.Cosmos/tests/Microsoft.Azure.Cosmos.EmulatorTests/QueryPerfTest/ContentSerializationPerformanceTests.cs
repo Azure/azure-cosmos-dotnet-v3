@@ -26,6 +26,7 @@
         private readonly int maxConcurrency;
         private readonly int maxItemCount;
         private readonly bool useStronglyTypedIterator;
+        private readonly string outputDirectory;
 
         public ContentSerializationPerformanceTests()
         {
@@ -34,6 +35,7 @@
                 { SupportedSerializationFormats.JsonText, new QueryStatisticsDatumVisitor() },
                 { SupportedSerializationFormats.CosmosBinary, new QueryStatisticsDatumVisitor() }
             };
+
             this.endpoint = Utils.ConfigurationManager.AppSettings["GatewayEndpoint"];
             this.authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
             this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
@@ -45,6 +47,7 @@
             this.maxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxConcurrency"]);
             this.maxItemCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxItemCount"]);
             this.useStronglyTypedIterator = bool.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.UseStronglyTypedIterator"]);
+            this.outputDirectory = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.OutputDirectory"];
         }
 
         [TestMethod]
@@ -86,9 +89,9 @@
         private async Task RunAsync(CosmosClient client)
         {
             Container container = client.GetContainer(this.cosmosDatabaseId, this.containerId);
-            string rawDataPath = Path.GetFullPath(Directory.GetCurrentDirectory()); // Mayapainter fix ths
+            string outputPath = Path.GetFullPath((this.outputDirectory != string.Empty) ? this.outputDirectory : Directory.GetCurrentDirectory());
 
-            string outputDir = Path.Combine(rawDataPath, "perf_metrics_output");
+            string outputDir = Path.Combine(outputPath, "perf_metrics_output");
             if (Directory.Exists(outputDir))
             {
                 Directory.Delete(outputDir, true);
@@ -224,7 +227,7 @@
                 accumulateMetricsTime.Stop();
                 totalTime.Stop();
 
-                if (response.RequestCharge != 0) // mayapainter: what is this?
+                if (response.RequestCharge != 0)
                 {
                     visitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - accumulateMetricsTime.ElapsedMilliseconds);
                     visitor.PopulateMetrics();

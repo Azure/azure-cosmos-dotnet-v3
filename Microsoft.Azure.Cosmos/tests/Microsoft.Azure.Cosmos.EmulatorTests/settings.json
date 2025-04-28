@@ -17,8 +17,9 @@
     "QueryPerformanceTests.Query": "SELECT TOP 1 c.region FROM c",
     "QueryPerformanceTests.MaxConcurrency": "-1",
     "QueryPerformanceTests.MaxItemCount": "-1",
-    "QueryPerformanceTests.NumberOfIterations": "1",
-    "QueryPerformanceTests.WarmupIterations": "0",
-    "QueryPerformanceTests.UseStronglyTypedIterator": "true"
+    "QueryPerformanceTests.NumberOfIterations": "100",
+    "QueryPerformanceTests.WarmupIterations": "10",
+    "QueryPerformanceTests.UseStronglyTypedIterator": "true",
+    "QueryPerformanceTests.OutputDirectory": ""
   }
 }
