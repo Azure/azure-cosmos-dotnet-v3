@@ -307,6 +307,9 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         Debug.Assert(hedgeResponse != null);
+                        ((CosmosTraceDiagnostics)hedgeResponse.ResponseMessage.Diagnostics).Value.AddOrUpdateDatum(
+                                    HedgeContext,
+                                    hedgeRegions);
                         return hedgeResponse.ResponseMessage;
                     }
                 }
