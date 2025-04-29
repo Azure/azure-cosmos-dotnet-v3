@@ -748,7 +748,8 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
-        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints which guide SDK-internal retry policies on how early to switch retries to a different region. 
+        /// If true, will retry all replicas once and add a minimum delay before switching to the next region.If false, it will retry in the local region up to 5s
         /// </summary>
 #if PREVIEW
         public
