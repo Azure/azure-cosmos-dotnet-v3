@@ -256,7 +256,6 @@ namespace Microsoft.Azure.Documents
                     useSessionToken: false, 
                     readMode: readMode));
                 IList<ReferenceCountedDisposable<StoreResult>> responseResult = disposableResponseResult.Value;
-                
                 responsesForLogging = new StoreResult[responseResult.Count];
                 for (int i = 0; i < responseResult.Count; i++)
                 {
@@ -860,7 +859,6 @@ namespace Microsoft.Azure.Documents
             }
 
             public ReadQuorumResultKind QuorumResult { get; private set; }
-            public StoreResult[] StoreResponses => this.storeResponses;
 
             public long SelectedLsn { get; private set; }
 

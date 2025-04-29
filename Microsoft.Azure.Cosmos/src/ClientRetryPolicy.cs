@@ -152,12 +152,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            // Only set retryContext to null if it's not the first retry to a new region
-            if (this.failoverRetryCount == 0)
-            {
-                this.retryContext = null;
-            }
-
+            this.retryContext = null;
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
                     cosmosResponseMessage?.Headers.SubStatusCode);
