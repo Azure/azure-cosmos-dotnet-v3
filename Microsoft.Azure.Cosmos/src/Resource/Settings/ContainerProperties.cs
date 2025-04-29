@@ -366,12 +366,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        FullTextPolicy FullTextPolicy
+        public FullTextPolicy FullTextPolicy
         {
             get => this.fullTextPolicyInternal;
             set => this.fullTextPolicyInternal = value;
