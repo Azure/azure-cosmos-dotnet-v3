@@ -21,6 +21,6 @@
     "QueryPerformanceTests.WarmupIterations": "0",
     "QueryPerformanceTests.UseStronglyTypedIterator": "true",
     "QueryPerformanceTests.OutputPath": "",
-    "QueryPerformanceTests.OutputDirectoryName": "perf_metrics_output_Binary"
+    "QueryPerformanceTests.OutputDirectoryName": "perf_metrics_output"
   }
 }
