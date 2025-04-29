@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -340,6 +341,11 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static IOrderedQueryable<TSource> OrderByRank<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, object>> scoreFunction)
         {
+            if (!(source is CosmosLinqQuery<TSource>))
+            {
+                throw new ArgumentException("OrderByRank is only supported on Cosmos LINQ query operations");
+            }
+
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                Expression.Call(
                 null,
