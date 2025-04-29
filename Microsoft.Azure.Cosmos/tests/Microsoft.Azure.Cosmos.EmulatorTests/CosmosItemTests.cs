@@ -733,14 +733,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
 
-                try
-                {
-                    await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
-                }
-                catch (CosmosException)
-                {
-                    // Expected as thinclient is not supported in emulator.
-                }
+                await Assert.ThrowsExceptionAsync<CosmosException>(() => container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk)));
 
                 Assert.AreEqual(3, postRequestVersions.Count, "Expected exactly 3 POST requests (DB, Container, Item).");
 
