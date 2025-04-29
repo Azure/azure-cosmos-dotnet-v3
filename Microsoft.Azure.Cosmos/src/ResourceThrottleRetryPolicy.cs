@@ -110,6 +110,7 @@ namespace Microsoft.Azure.Cosmos
                 DefaultTrace.TraceError(
                     "Operation will NOT be retried. Current attempt {0} maxAttempts {1} Cumulative delay {2} requested retryAfter {3} maxWaitTime {4}",
                     this.currentAttemptCount, this.maxAttemptCount, this.cumulativeRetryDelay, retryAfter, this.maxWaitTimeInMilliseconds);
+
                 return Task.FromResult(ShouldRetryResult.NoRetry());
             }
         }

@@ -256,7 +256,7 @@ namespace Microsoft.Azure.Documents
                     useSessionToken: false, 
                     readMode: readMode));
                 IList<ReferenceCountedDisposable<StoreResult>> responseResult = disposableResponseResult.Value;
-
+                
                 responsesForLogging = new StoreResult[responseResult.Count];
                 for (int i = 0; i < responseResult.Count; i++)
                 {
@@ -353,6 +353,17 @@ namespace Microsoft.Azure.Documents
                 requiresValidLsn: true, 
                 useSessionToken: useSessionToken);
             StoreResult storeResult = disposableStoreResult.Target;
+            if (storeResult.StatusCode == StatusCodes.TooManyRequests)
+            {
+                // Let ResourceThrottleRetryPolicy handle 429
+                // Instead of throwing an exception, return a result that indicates throttling
+                return new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                    isSuccessful: true,
+                    shouldRetryOnSecondary: false,
+                    response: disposableStoreResult.TryAddReference()); 
+            }
+
             if (!storeResult.IsValid)
             {
                 ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
@@ -849,6 +860,7 @@ namespace Microsoft.Azure.Documents
             }
 
             public ReadQuorumResultKind QuorumResult { get; private set; }
+            public StoreResult[] StoreResponses => this.storeResponses;
 
             public long SelectedLsn { get; private set; }
 
