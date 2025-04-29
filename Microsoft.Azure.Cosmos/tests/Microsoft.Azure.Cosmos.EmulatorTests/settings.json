@@ -17,8 +17,8 @@
     "QueryPerformanceTests.Queries": "[\"SELECT TOP 1 c.region FROM c\"]",
     "QueryPerformanceTests.MaxConcurrency": "-1",
     "QueryPerformanceTests.MaxItemCount": "-1",
-    "QueryPerformanceTests.NumberOfIterations": "300",
-    "QueryPerformanceTests.WarmupIterations": "50",
+    "QueryPerformanceTests.NumberOfIterations": "1",
+    "QueryPerformanceTests.WarmupIterations": "0",
     "QueryPerformanceTests.UseStronglyTypedIterator": "true",
     "QueryPerformanceTests.OutputPath": "",
     "QueryPerformanceTests.OutputDirectoryName": "perf_metrics_output_Binary"

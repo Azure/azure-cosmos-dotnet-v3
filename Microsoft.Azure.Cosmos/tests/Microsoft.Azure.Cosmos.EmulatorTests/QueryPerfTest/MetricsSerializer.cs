@@ -99,7 +99,7 @@
 
         public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, string query, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
         {
-            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; // mayapainter: assumes # of round trips always the same?
+            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; 
             List<QueryStatisticsMetrics> metricsList = visitor.QueryMetricsList.ToList();
             if (roundTrips > 1)
             {

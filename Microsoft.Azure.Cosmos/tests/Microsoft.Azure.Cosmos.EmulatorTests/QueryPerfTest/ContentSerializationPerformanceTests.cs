@@ -9,7 +9,7 @@
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
-    //[Ignore] TODO mayapainter undo
+    [Ignore]
     [TestClass]
     public class ContentSerializationPerformanceTests
     {
