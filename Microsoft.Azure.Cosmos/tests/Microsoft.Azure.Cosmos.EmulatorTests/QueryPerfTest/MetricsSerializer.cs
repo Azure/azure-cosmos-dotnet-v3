@@ -97,7 +97,7 @@
             return sumOfRoundTripsList;
         }
 
-        public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
+        public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, string query, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
         {
             int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; // mayapainter: assumes # of round trips always the same?
             List<QueryStatisticsMetrics> metricsList = visitor.QueryMetricsList.ToList();
@@ -107,7 +107,8 @@
             }
 
             string[] headers = {
-                "TransportSerializationFormat", 
+                "Query",
+                "TransportSerializationFormat",
                 "RetrievedDocumentCount", 
                 "RetrievedDocumentSize", 
                 "OutputDocumentCount",
@@ -137,7 +138,7 @@
                     writer.WriteLine(string.Join(",", headers));
                 }
 
-                writer.WriteLine(serializationFormat + "," + string.Join(",", averageData));
+                writer.WriteLine(query + "," + serializationFormat + "," + string.Join(",", averageData));
             }
 
             string mediansPath = Path.Combine(outputPath, "medians.csv");
@@ -151,7 +152,7 @@
                     writer.WriteLine(string.Join(",", headers));
                 }
 
-                writer.WriteLine(serializationFormat + "," + string.Join(",", medianData));
+                writer.WriteLine(query + "," + serializationFormat + "," + string.Join(",", medianData));
             }
 
             string metricsPath = Path.Combine(outputPath, "raw_data.csv");
@@ -171,9 +172,10 @@
                 {
                     object[] values = new object[]
                     {
+                        query,
+                        serializationFormat,
                         iteration,
                         roundTrip,
-                        serializationFormat,
                         metrics.RetrievedDocumentCount,
                         metrics.RetrievedDocumentSize,
                         metrics.OutputDocumentCount,
@@ -191,8 +193,8 @@
                         metrics.GetCosmosElementResponseTime,
                         metrics.EndToEndTime
                     };
-
                     writer.WriteLine(string.Join(",", values));
+
                     iteration++;
                     if (iteration > numberOfIterations)
                     {

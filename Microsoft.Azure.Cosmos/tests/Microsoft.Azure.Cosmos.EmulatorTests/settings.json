@@ -1,6 +1,6 @@
 ﻿{
   "AppSettings": {
-    "GatewayEndpoint": "https://127.0.0.1:8081/",
+    "GatewayEndpoint": "https://adityasa-binary.documents.azure.com:443/",
     "ComputeGatewayEndpoint": "https://localhost:8903/",
     "ComputeGatewayPort": "8903",
     "Location": "South Central US",
@@ -8,18 +8,19 @@
     "GlobalDatabaseAccountId": "globaldb",
     "DatabaseAccountId": "localhost",
     "DatabaseAccountId2": "localhost-westus",
-    "MasterKey": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+    "MasterKey": "qPKmW47TLPYtT8UQNoI81dZDgbH6dnqbKl09HXTVmm6LDQoh2X6XvRfPEnw8WnHFDVh5hFlmlHvzACDbDelWng==",
     "ServerStalenessIntervalInSeconds": "5",
     "MasterStalenessIntervalInSeconds": "1",
     "QueryPerformanceTests.CosmosDatabaseId": "db",
     "QueryPerformanceTests.ContainerId": "container",
-    "QueryPerformanceTests.InsertDocumentCount": "100",
-    "QueryPerformanceTests.Query": "SELECT TOP 1 c.region FROM c",
+    "QueryPerformanceTests.InsertDocumentCount": "10000",
+    "QueryPerformanceTests.Queries": "[\"SELECT TOP 1 c.region FROM c\"]",
     "QueryPerformanceTests.MaxConcurrency": "-1",
     "QueryPerformanceTests.MaxItemCount": "-1",
-    "QueryPerformanceTests.NumberOfIterations": "100",
-    "QueryPerformanceTests.WarmupIterations": "10",
+    "QueryPerformanceTests.NumberOfIterations": "300",
+    "QueryPerformanceTests.WarmupIterations": "50",
     "QueryPerformanceTests.UseStronglyTypedIterator": "true",
-    "QueryPerformanceTests.OutputDirectory": ""
+    "QueryPerformanceTests.OutputPath": "",
+    "QueryPerformanceTests.OutputDirectoryName": "perf_metrics_output_Binary"
   }
 }

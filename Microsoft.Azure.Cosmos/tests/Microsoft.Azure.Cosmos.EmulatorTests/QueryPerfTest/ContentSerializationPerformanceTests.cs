@@ -7,6 +7,7 @@
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     //[Ignore] TODO mayapainter undo
     [TestClass]
@@ -20,13 +21,14 @@
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
         private readonly int insertDocumentCount;
-        private readonly string query;
+        private readonly List<string> queries;
         private readonly int iterationCount;
         private readonly int warmupIterationCount;
         private readonly int maxConcurrency;
         private readonly int maxItemCount;
         private readonly bool useStronglyTypedIterator;
-        private readonly string outputDirectory;
+        private readonly string outputPath;
+        private readonly string outputDirectoryName;
 
         public ContentSerializationPerformanceTests()
         {
@@ -41,13 +43,14 @@
             this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
             this.containerId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContainerId"];
             this.insertDocumentCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.InsertDocumentCount"]);
-            this.query = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Query"];
+            this.queries = JsonConvert.DeserializeObject<List<string>>(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Queries"]);
             this.iterationCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.NumberOfIterations"]);
             this.warmupIterationCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.WarmupIterations"]);
             this.maxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxConcurrency"]);
             this.maxItemCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxItemCount"]);
             this.useStronglyTypedIterator = bool.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.UseStronglyTypedIterator"]);
-            this.outputDirectory = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.OutputDirectory"];
+            this.outputPath = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.OutputPath"];
+            this.outputDirectoryName = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.OutputDirectoryName"];
         }
 
         [TestMethod]
@@ -62,13 +65,22 @@
                 });
 
             Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
-            Container container = await database.CreateContainerIfNotExistsAsync(
+
+            Container container;
+            try
+            {
+                container = database.GetContainer(this.containerId);
+                await container.DeleteContainerAsync();
+            }
+            catch (CosmosException) { }
+
+            container = await database.CreateContainerIfNotExistsAsync(
                 id: this.containerId,
                 partitionKeyPath: "/myPartitionKey",
                 throughput: 400
             );
 
-            await this.InsertRandomDocuments(container);
+            await this.InsertDocuments(container);
         }
 
         [TestMethod]
@@ -89,75 +101,79 @@
         private async Task RunAsync(CosmosClient client)
         {
             Container container = client.GetContainer(this.cosmosDatabaseId, this.containerId);
-            string outputPath = Path.GetFullPath((this.outputDirectory != string.Empty) ? this.outputDirectory : Directory.GetCurrentDirectory());
+            string outputPath = Path.GetFullPath((this.outputPath != string.Empty) ? this.outputPath : Directory.GetCurrentDirectory());
 
-            string outputDir = Path.Combine(outputPath, "perf_metrics_output");
-            if (Directory.Exists(outputDir))
+            string fullOutputPath = Path.Combine(outputPath, this.outputDirectoryName);
+            if (!Directory.Exists(fullOutputPath))
             {
-                Directory.Delete(outputDir, true);
+                Directory.CreateDirectory(fullOutputPath);
             }
 
-            Directory.CreateDirectory(outputDir);
-
-            foreach (SupportedSerializationFormats serializationFormat in new[] { SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary })
+            foreach (string query in this.queries)
             {
-                for (int i = 0; i < this.warmupIterationCount; i++)
+                foreach (SupportedSerializationFormats serializationFormat in new[] { SupportedSerializationFormats.JsonText, SupportedSerializationFormats.CosmosBinary })
                 {
-                    await this.RunQueryAsync(container, serializationFormat, true);
-                }
+                    for (int i = 0; i < this.warmupIterationCount; i++)
+                    {
+                        await this.RunQueryAsync(container, query, serializationFormat, true);
+                    }
 
-                MetricsSerializer metricsSerializer = new ();
-                for (int i = 0; i < this.iterationCount; i++)
-                {
-                    await this.RunQueryAsync(container, serializationFormat, false);
+                    MetricsSerializer metricsSerializer = new();
+                    for (int i = 0; i < this.iterationCount; i++)
+                    {
+                        await this.RunQueryAsync(container, query, serializationFormat, false);
+                    }
+                    metricsSerializer.Serialize(fullOutputPath, this.queryStatisticsDatumVisitorMap[serializationFormat], this.iterationCount, query, serializationFormat);
                 }
-                metricsSerializer.Serialize(outputDir, this.queryStatisticsDatumVisitorMap[serializationFormat], this.iterationCount, serializationFormat);
             }
 
-            Console.WriteLine($"Output file path: {outputDir}");
+            Console.WriteLine($"Output file path: {fullOutputPath}");
             File.Delete(Path.GetFullPath(DiagnosticsDataFileName));
         }
 
-        private async Task InsertRandomDocuments(Container container)
+        private async Task InsertDocuments(Container container)
         {
-            Random random = new Random();
-
             for (int i = 0; i < this.insertDocumentCount; i++)
             {
                 States state = new States
                 {
-                    MyPartitionKey = Guid.NewGuid().ToString(),
-                    Id = Guid.NewGuid().ToString(),
+                    MyPartitionKey = $"partition-{i}",
+                    Id = $"id-{i}",
                     Name = $"State-{i}",
-                    City = $"City-{random.Next(1000)}",
-                    PostalCode = $"{random.Next(10000, 99999)}",
-                    Region = $"Region-{random.Next(1, 10)}",
-                    UserDefinedID = random.Next(1000),
+                    City = $"City-{i % 1000}",
+                    PostalCode = $"{(10000 + (i % 90000))}",
+                    Region = $"Region-{(i % 10) + 1}",
+                    UserDefinedID = i % 1000,
                     WordsArray = new List<string> { "alpha", "beta", "gamma", "delta" },
                     Tags = new Tags
                     {
                         Words = new List<string> { "sun", "moon", "stars", "comet" },
-                        Numbers = $"{random.Next(100)}-{random.Next(100)}-{random.Next(100)}"
+                        Numbers = $"{i % 100}-{(i / 2) % 100}-{(i / 3) % 100}"
                     },
                     RecipientList = new List<RecipientList>
                     {
                         new RecipientList
                         {
-                            Name = $"Recipient-{random.Next(100)}",
-                            City = $"RecipientCity-{random.Next(1000)}",
-                            PostalCode = $"{random.Next(10000, 99999)}",
-                            Region = $"Region-{random.Next(1, 10)}",
-                            GUID = Guid.NewGuid().ToString(),
-                            Quantity = random.Next(1, 100)
+                            Name = $"Recipient-{i % 100}",
+                            City = $"RecipientCity-{i % 1000}",
+                            PostalCode = $"{(20000 + (i * 7) % 80000)}",
+                            Region = $"Region-{(i % 5) + 1}",
+                            GUID = $"guid-{i}",
+                            Quantity = (i % 99) + 1
                         }
                     }
                 };
 
                 await container.CreateItemAsync(state, new Cosmos.PartitionKey(state.MyPartitionKey));
+
+                if(i % 1000 == 0)
+                {
+                    Console.WriteLine($"Number of documents inserted: " + i);
+                }
             }
         }
 
-        private async Task RunQueryAsync(Container container, SupportedSerializationFormats serializationFormat, bool isWarmup)
+        private async Task RunQueryAsync(Container container, string query, SupportedSerializationFormats serializationFormat, bool isWarmup)
         {
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
@@ -169,7 +185,7 @@
             if (isWarmup)
             {
                 using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(
-                    queryText: this.query,
+                    queryText: query,
                     requestOptions: requestOptions))
                 {
                     while (iterator.HasMoreResults)
@@ -183,7 +199,7 @@
                 if (this.useStronglyTypedIterator)
                 {
                     using (FeedIterator<States> iterator = container.GetItemQueryIterator<States>(
-                        queryText: this.query,
+                        queryText: query,
                         requestOptions: requestOptions))
                     {
                         await this.GetIteratorResponse(iterator, serializationFormat);
@@ -192,7 +208,7 @@
                 else
                 {
                     using (FeedIterator<dynamic> iterator = container.GetItemQueryIterator<dynamic>(
-                            queryText: this.query,
+                            queryText: query,
                             requestOptions: requestOptions))
                     {
                         await this.GetIteratorResponse(iterator, serializationFormat);
