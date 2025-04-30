@@ -13,8 +13,8 @@
     internal class MetricsAccumulator
     {
         private const string QueryMetricsKey = "Query Metrics";
-        private const string CientSideRequestStatsKey = "Client Side Request Stats";
-        private const string PocoMaterializationNode = "POCO Materialization";
+        private const string ClientSideRequestStatsKey = "Client Side Request Stats";
+        private const string PocoMaterializationNode = "Query Response Serialization";
         private const string GetCosmosElementResponseNode = "Get Cosmos Element Response";
         private const string TransportRequestNode = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
 
@@ -36,7 +36,7 @@
             List<ITrace> queryMetricsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: QueryMetricsKey, isKeyName: true);
 
             // Clientside request stats occur once per roundtrip for all status codes
-            List<ITrace> clientSideRequestStatsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: CientSideRequestStatsKey, isKeyName: true, currentNodeName: TransportRequestNode);
+            List<ITrace> clientSideRequestStatsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: ClientSideRequestStatsKey, isKeyName: true, currentNodeName: TransportRequestNode);
 
             List<QueryCombinedMetricsTraces> combinedMetricsList = new();
             int getCosmosElementTraceCount = 0;
