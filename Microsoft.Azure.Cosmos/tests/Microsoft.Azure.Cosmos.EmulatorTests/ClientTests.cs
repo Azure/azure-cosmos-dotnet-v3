@@ -929,7 +929,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(socketHandlerType, clientMessageHandlerType);
         }
 
-
+        // This Test is not part of this PR. It was written solely to verify the existing behaviour of 429 requests
+        // when exceptionLess is turned off for 429 errors.It still make multiple calls instead of just making call to one replica and yield.
         [TestMethod]
         public async Task AssertExisting429BehaviourByTurningOffExceptionLess()
         {
@@ -1056,6 +1057,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     testObject.id,
                     new Cosmos.PartitionKey(testObject.id));
 
+                // Print diagnostics
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(itemResponse.Diagnostics.ToString());
             }
             
             catch (CosmosException ex)
