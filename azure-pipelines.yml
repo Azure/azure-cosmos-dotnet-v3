@@ -52,6 +52,7 @@ jobs:
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
     IncludePerformance: true
     IncludeCoverage: true
 
