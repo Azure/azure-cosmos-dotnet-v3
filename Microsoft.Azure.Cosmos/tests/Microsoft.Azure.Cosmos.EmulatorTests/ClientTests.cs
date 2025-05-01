@@ -1000,6 +1000,89 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(failureRequestRetryCount > 0, "No retries were made for 429 error code.");
         }
 
+        [TestMethod]
+        public async Task AssertBarrierCallsWhenQuorumStateIsQuorumSelected()
+        {
+            int barrier429Count = 0;
+            string databaseName = "newdatabase";
+            bool isReadOperation = false;
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        // Force a barrier request on read item in strong consistency.
+                        // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                        long lsn = storeResponse.LSN - 2;
+                        if (request.OperationType == Documents.OperationType.Read)
+                        {
+                            // Simulate a barrier request by setting GLSN < LSN
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                        }
+                        // only simulate 429 errors for read operations not write
+                        if (request.OperationType == Documents.OperationType.Head && isReadOperation)
+                        {
+                            
+                            request.UseStatusCodeFor429 = false;
+                            // Simulate a 429 for barrier requests
+                            storeResponse.Status = (int)HttpStatusCode.TooManyRequests; // Simulate 429 error
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                            barrier429Count++;
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                 connectionString: "points to test environment with one read and one write region")
+                .WithTransportClientHandlerFactory(clientOptions.TransportClientHandlerFactory)
+                .WithThrottlingRetryOptions(
+                                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(5), // Maximum wait time for retries
+                                    maxRetryAttemptsOnThrottledRequests: 2) // Maximum retry attempts
+                .WithConnectionModeDirect()
+                .WithConsistencyLevel(Cosmos.ConsistencyLevel.Strong)
+                .Build();
+
+            Container container = cosmosClient.GetDatabase(databaseName).GetContainer("test");
+
+            dynamic testObject = new
+            {
+                id = Guid.NewGuid().ToString(),
+                Company = "Microsoft",
+                State = "WA"
+            };
+            await container.CreateItemAsync<dynamic>(testObject);
+
+            try
+            {
+                isReadOperation = true;
+                // Perform a read operation to trigger barrier calls
+                ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                    testObject.id,
+                    new Cosmos.PartitionKey(testObject.id));
+
+                
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(response.Diagnostics.ToString());
+            }
+            catch (CosmosException ex)
+            {
+                // Handle other Cosmos exceptions
+                Console.WriteLine($"CosmosException: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(ex.Diagnostics.ToString());
+            }
+            
+            Console.WriteLine($"Total 429 responses on barrier calls: {barrier429Count}");
+            // Assert that retries occurred
+            Assert.IsTrue(barrier429Count > 0, "No retries were made for 429 error code.");
+
+        }
+
 
         [TestMethod]
         [DataRow(5 , 2, DisplayName = "Validate Read Item operation with simulated error count < 4 * (maxRetryAttempts + 1) means we will get eventually 200 status Code")]
