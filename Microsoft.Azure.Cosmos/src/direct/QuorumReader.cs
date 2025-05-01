@@ -550,6 +550,9 @@ namespace Microsoft.Azure.Documents
                     checkMinLSN: false,
                     forceReadAll: true));
                 IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
+
+                // Check if all replicas returned 429
+                // TO DO: check with Kiran/Fabian if 429 from one replica is going to be enough to yield but that may be turn out to be flase alarm considering calls are async so the 429 state could be transient
                 if (responses.All(response => response.Target.StatusCode == StatusCodes.TooManyRequests))
                 {
                     DefaultTrace.TraceWarning("WaitForReadBarrierOldAsync: All replicas returned 429 Too Many Requests. Yielding early to ResourceThrottleRetryPolicy.");
