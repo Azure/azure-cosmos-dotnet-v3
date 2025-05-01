@@ -25,12 +25,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitAsync()
         {
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_CONNECTION_STRING");
+            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
-                Assert.Fail("Set environment variable COSMOSDB_CONNECTION_STRING to run the tests");
+                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
             }
 
             this.client = new CosmosClient(this.connectionString);
