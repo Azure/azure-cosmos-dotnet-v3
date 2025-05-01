@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Func<object, object>[])}
+                        new Type[]{typeof(double[])}
                     })
             {
             }
@@ -36,7 +36,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                     List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
                     foreach (Expression argument in functionListExpression)
                     {
-                        arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
+                        if (!(argument is MethodCallExpression functionCallExpression))
+                        {
+                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, argument.Type));
+                        }
+                        
+                        if (functionCallExpression.Method.Name != nameof(CosmosLinqExtensions.FullTextScore))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    CultureInfo.CurrentCulture,
+                                    ClientResources.BadQuery_InvalidMethodCall,
+                                    functionCallExpression.Method.Name,
+                                    nameof(CosmosLinqExtensions.FullTextScore)));
+                        }
+
+                        arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(argument, context));
                     }
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RRF, arguments.ToImmutableArray());
