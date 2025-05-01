@@ -1435,6 +1435,56 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
         }
 
         [TestMethod]
+        public void ValidateThinClientReadFallbackToWriteEndpointTest()
+        {
+            // Arrange:
+            Collection<AccountRegion> normalReads = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ReadLocation", Endpoint = "https://readlocation.documents.azure.com" }
+            };
+
+            Collection<AccountRegion> normalWrites = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "WriteLocation", Endpoint = "https://writelocation.documents.azure.com" }
+            };
+
+            Collection<AccountRegion> thinClientReads = new Collection<AccountRegion>(); // 👈 simulate NO thin client read locations
+
+            Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
+            {
+                new AccountRegion { Name = "ThinClientWriteLocation", Endpoint = "https://thinclient-write.documents.azure.com:10650/" }
+            };
+
+            AccountProperties accountProps = new AccountProperties
+            {
+                ReadLocationsInternal = normalReads,
+                WriteLocationsInternal = normalWrites,
+                ThinClientReadableLocationsInternal = thinClientReads,
+                ThinClientWritableLocationsInternal = thinClientWrites,
+                EnableMultipleWriteLocations = false
+            };
+
+            LocationCache cache = new LocationCache(
+                preferredLocations: new ReadOnlyCollection<string>(new List<string>()),
+                defaultEndpoint: new Uri("https://defaultendpoint.documents.azure.com"),
+                enableEndpointDiscovery: true,
+                connectionLimit: 50,
+                useMultipleWriteLocations: false);
+
+            cache.OnDatabaseAccountRead(accountProps);
+
+            // Act:
+            using (DocumentServiceRequest readRequest = DocumentServiceRequest.Create(OperationType.Read, ResourceType.Document, AuthorizationTokenType.PrimaryMasterKey))
+            {
+                Uri resolvedReadEndpoint = cache.ResolveThinClientEndpoint(readRequest, isReadRequest: true);
+
+                // Assert:
+                Assert.AreEqual("https://thinclient-write.documents.azure.com:10650/", resolvedReadEndpoint.AbsoluteUri,
+                    "Read request should fallback to thin client write endpoint when no thin client read endpoint is available.");
+            }
+        }
+
+        [TestMethod]
         public void ValidateThinClientLocationCacheFlowTest()
         {
             // Arrange: 
