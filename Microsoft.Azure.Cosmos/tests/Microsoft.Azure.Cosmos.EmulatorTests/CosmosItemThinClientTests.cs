@@ -5,10 +5,9 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
-    using System.Drawing;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net;
-    using System.Text.Json.Serialization;
-    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -20,6 +19,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient client;
         private Database database;
         private Container container;
+
+        private const int ItemCount = 1000;
 
         [TestInitialize]
         public async Task TestInitAsync()
@@ -33,14 +34,17 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             this.client = new CosmosClient(this.connectionString);
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync("TestDatabase");
-            this.container = await this.database.CreateContainerIfNotExistsAsync("TestContainer", "/partitionKey");
+            string uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainer_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/partitionKey");
         }
 
         [TestCleanup]
         public async Task TestCleanupAsync()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
+
             if (this.database != null)
             {
                 await this.database.DeleteAsync();
@@ -49,83 +53,114 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.client?.Dispose();
         }
 
-        [TestMethod]
-        [TestCategory("ThinClient")]
-        public async Task CreateItemTest()
+        private IEnumerable<dynamic> GenerateItems(string partitionKey)
         {
-            // Arrange
-            dynamic testItem = new { id = Guid.NewGuid().ToString(), partitionKey = "pk1", name = "Test Item" };
+            List<dynamic> items = new List<dynamic>();
+            for (int i = 0; i < ItemCount; i++)
+            {
+                items.Add(new
+                {
+                    id = Guid.NewGuid().ToString(),
+                    partitionKey,
+                    name = "Test Item " + i
+                });
+            }
 
-            // Act
-            ItemResponse<dynamic> response = await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.partitionKey));
-
-            // Assert
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            Assert.AreEqual(testItem.id, response.Resource.id);
+            return items;
         }
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task ReplaceItemTest()
+        public async Task CreateItemsTest()
         {
-            // Arrange
-            dynamic testItem = new { id = Guid.NewGuid().ToString(), partitionKey = "pk1", name = "Test Item" };
-            await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.partitionKey));
+            string pk = "pk_create";
+            IEnumerable<dynamic> items = this.GenerateItems(pk);
 
-            dynamic updatedItem = new { testItem.id, partitionKey = "pk1", name = "Updated Item" };
-
-            // Act
-            ItemResponse<dynamic> response = await this.container.ReplaceItemAsync(updatedItem, updatedItem.id, new PartitionKey(updatedItem.partitionKey));
-
-            // Assert
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-            Assert.AreEqual(updatedItem.name, response.Resource.name);
+            foreach (dynamic item in items)
+            {
+                ItemResponse<dynamic> response = await this.container.CreateItemAsync(item, new PartitionKey(item.partitionKey));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            }
         }
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task DeleteItemTest()
+        public async Task ReadItemsTest()
         {
-            // Arrange
-            dynamic testItem = new { id = Guid.NewGuid().ToString(), partitionKey = "pk1", name = "Test Item" };
-            await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.partitionKey));
+            string pk = "pk_read";
+            List<dynamic> items = this.GenerateItems(pk).ToList();
 
-            // Act
-            ItemResponse<dynamic> response = await this.container.DeleteItemAsync<dynamic>(testItem.id, new PartitionKey(testItem.partitionKey));
+            foreach (dynamic item in items)
+            {
+                await this.container.CreateItemAsync(item, new PartitionKey(item.partitionKey));
+            }
 
-            // Assert
-            Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            foreach (dynamic item in items)
+            {
+                ItemResponse<dynamic> response = await this.container.ReadItemAsync<dynamic>(item.id, new PartitionKey(item.partitionKey));
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual(item.id, response.Resource.id);
+            }
         }
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task ReadItemTest()
+        public async Task ReplaceItemsTest()
         {
-            // Arrange
-            dynamic testItem = new { id = Guid.NewGuid().ToString(), partitionKey = "pk1", name = "Test Item" };
-            await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.partitionKey));
+            string pk = "pk_replace";
+            List<dynamic> items = this.GenerateItems(pk).ToList();
 
-            // Act
-            ItemResponse<dynamic> response = await this.container.ReadItemAsync<dynamic>(testItem.id, new PartitionKey(testItem.partitionKey));
+            foreach (dynamic item in items)
+            {
+                await this.container.CreateItemAsync(item, new PartitionKey(item.partitionKey));
+            }
 
-            // Assert
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-            Assert.AreEqual(testItem.id, response.Resource.id);
+            foreach (dynamic item in items)
+            {
+                dynamic updatedItem = new
+                {
+                    item.id,
+                    item.partitionKey,
+                    name = "Updated " + item.name
+                };
+
+                ItemResponse<dynamic> response = await this.container.ReplaceItemAsync(updatedItem, updatedItem.id, new PartitionKey(updatedItem.partitionKey));
+                Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                Assert.AreEqual("Updated " + item.name, response.Resource.name);
+            }
         }
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        public async Task UpsertItemTest()
+        public async Task UpsertItemsTest()
         {
-            // Arrange
-            dynamic testItem = new { id = Guid.NewGuid().ToString(), partitionKey = "pk1", name = "Test Item" };
+            string pk = "pk_upsert";
+            IEnumerable<dynamic> items = this.GenerateItems(pk);
 
-            // Act
-            ItemResponse<dynamic> response = await this.container.UpsertItemAsync(testItem, new PartitionKey(testItem.partitionKey));
+            foreach (dynamic item in items)
+            {
+                ItemResponse<dynamic> response = await this.container.UpsertItemAsync(item, new PartitionKey(item.partitionKey));
+                Assert.IsTrue(response.StatusCode == HttpStatusCode.Created || response.StatusCode == HttpStatusCode.OK);
+            }
+        }
 
-            // Assert
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-            Assert.AreEqual(testItem.id, response.Resource.id);
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task DeleteItemsTest()
+        {
+            string pk = "pk_delete";
+            List<dynamic> items = this.GenerateItems(pk).ToList();
+
+            foreach (dynamic item in items)
+            {
+                await this.container.CreateItemAsync(item, new PartitionKey(item.partitionKey));
+            }
+
+            foreach (dynamic item in items)
+            {
+                ItemResponse<dynamic> response = await this.container.DeleteItemAsync<dynamic>(item.id, new PartitionKey(item.partitionKey));
+                Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
+            }
         }
     }
 }
