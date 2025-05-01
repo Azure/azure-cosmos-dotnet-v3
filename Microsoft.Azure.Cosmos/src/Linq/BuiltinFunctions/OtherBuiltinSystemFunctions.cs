@@ -108,6 +108,45 @@ namespace Microsoft.Azure.Cosmos.Linq
             }
         }
 
+        private class VectorDistanceVisit : SqlBuiltinFunctionVisitor
+        {
+            public VectorDistanceVisit()
+                : base("VectorDistance",
+                    true,
+                    new List<Type[]>()
+                    {
+                        new Type[]{typeof(float[]), typeof(float[]), typeof(bool), typeof(object)},
+                        new Type[]{typeof(sbyte[]), typeof(sbyte[]), typeof(bool), typeof(object)},
+                        new Type[]{typeof(byte[]), typeof(byte[]), typeof(bool), typeof(object)},
+                    })
+            {
+            }
+
+            protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                if (methodCallExpression.Arguments.Count != 4) throw new ArgumentException();
+
+                List<SqlScalarExpression> arguments = new List<SqlScalarExpression>
+                {
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[0], context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context),
+                    ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[2], context)
+                };
+
+                if (methodCallExpression.Arguments[3] is ConstantExpression optionExpression && optionExpression.Value != null)
+                {
+                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[3], context));
+                }
+
+                return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.VectorDistance, arguments.ToImmutableArray());
+            }
+
+            protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
+            {
+                return null;
+            }
+        }
+
         private static Dictionary<string, BuiltinFunctionVisitor> FunctionsDefinitions { get; set; }
 
         static OtherBuiltinSystemFunctions()
@@ -123,6 +162,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     }),
                 [nameof(CosmosLinqExtensions.RRF)] = new RRFVisit(),
                 [nameof(CosmosLinqExtensions.FullTextScore)] = new FullTextScoreVisit(),
+                [nameof(CosmosLinqExtensions.VectorDistance)] = new VectorDistanceVisit(),
             };
         }
 

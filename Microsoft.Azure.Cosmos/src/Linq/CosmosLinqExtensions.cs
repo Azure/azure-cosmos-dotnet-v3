@@ -240,6 +240,75 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Returns the similarity score between two specified vectors.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <param name="isBruteForce">A boolean specifying how the computed value is used in an ORDER BY expression. If true, then brute force is used. A value of false uses any index defined on the vector property, if it exists. </param>
+        /// <param name="options">An JSON formatted object literal used to specify options for the vector distance calculation. Valid items include distanceFunction and dataType, and searchListSizeMultiplier. A value of null uses no special options when calculating scores.</param>
+        /// <returns>Returns the similarity score between two specified vectors.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new { distanceFunction = 'cosine', dataType = 'float32'}));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double VectorDistance(this float[] vector1, float[] vector2, bool isBruteForce, object options)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns the similarity score between two specified vectors.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <param name="isBruteForce">A boolean specifying how the computed value is used in an ORDER BY expression. If true, then brute force is used. A value of false uses any index defined on the vector property, if it exists. </param>
+        /// <param name="options">An JSON formatted object literal used to specify options for the vector distance calculation. Valid items include distanceFunction and dataType, and searchListSizeMultiplier. A value of null uses no special options when calculating scores.</param>
+        /// <returns>Returns the similarity score between two specified vectors.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, {'distanceFunction':'cosine', 'dataType':'float32'}));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double VectorDistance(this byte[] vector1, byte[] vector2, bool isBruteForce, object options)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns the similarity score between two specified vectors.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <param name="isBruteForce">A boolean specifying how the computed value is used in an ORDER BY expression. If true, then brute force is used. A value of false uses any index defined on the vector property, if it exists. </param>
+        /// <param name="options">An JSON formatted object literal used to specify options for the vector distance calculation. Valid items include distanceFunction and dataType, and searchListSizeMultiplier. A value of null uses no special options when calculating scores.</param>
+        /// <returns>Returns the similarity score between two specified vectors.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, {'distanceFunction':'cosine', 'dataType':'float32'}));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double VectorDistance(this sbyte[] vector1, sbyte[] vector2, bool isBruteForce, object options)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
         /// Returns a boolean indicating whether the keyword string expression is contained in a specified property path.
         /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextcontains.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
@@ -310,7 +379,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </summary>
         /// <param name="obj"></param>
         /// <param name="terms">A nonempty array of string literals.</param>
-        /// <returns>Returns true BM25 score value that can only be used in an ORDER BY RANK clause.</returns>
+        /// <returns>Returns a BM25 score value that can only be used in an ORDER BY RANK clause.</returns>
         /// <example>
         /// <code>
         /// <![CDATA[
