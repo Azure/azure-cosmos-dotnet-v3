@@ -22,14 +22,14 @@
         {
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
 
-            // POCO Materialization occurs once per item each roundtrip for calls with status code 200
+            // POCO materialization occurs once per item each roundtrip for calls with status code 200
             List<ITrace> retrieveQueryMetricTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: PocoMaterializationNode, isKeyName: false);
             foreach (ITrace queryMetricTrace in retrieveQueryMetricTraces)
             {
                 queryStatisticsDatumVisitor.AddPocoTime(queryMetricTrace.Duration.TotalMilliseconds);
             }
 
-            // Get Cosmos Element response occurs once per roundtrip for calls with status code 200
+            // Get cosmos element response occurs once per roundtrip for calls with status code 200
             List<ITrace> getCosmosElementTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: GetCosmosElementResponseNode, isKeyName: false);
 
             // Query combinedMetrics occurs once per roundtrip for calls with status code 200

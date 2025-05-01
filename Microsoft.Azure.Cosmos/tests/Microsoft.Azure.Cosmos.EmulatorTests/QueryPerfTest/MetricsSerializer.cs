@@ -99,7 +99,8 @@
 
         public void Serialize(string outputPath, QueryStatisticsDatumVisitor visitor, int numberOfIterations, string query, Microsoft.Azure.Documents.SupportedSerializationFormats serializationFormat)
         {
-            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations; 
+            int roundTrips = visitor.QueryMetricsList.Count / numberOfIterations;
+            string formattedQuery =  $"\"{query}\"";
             List<QueryStatisticsMetrics> metricsList = visitor.QueryMetricsList.ToList();
             if (roundTrips > 1)
             {
@@ -138,7 +139,7 @@
                     writer.WriteLine(string.Join(",", headers));
                 }
 
-                writer.WriteLine(query + "," + serializationFormat + "," + string.Join(",", averageData));
+                writer.WriteLine(formattedQuery + "," + serializationFormat + "," + string.Join(",", averageData));
             }
 
             string mediansPath = Path.Combine(outputPath, "medians.csv");
@@ -152,7 +153,7 @@
                     writer.WriteLine(string.Join(",", headers));
                 }
 
-                writer.WriteLine(query + "," + serializationFormat + "," + string.Join(",", medianData));
+                writer.WriteLine(formattedQuery + "," + serializationFormat + "," + string.Join(",", medianData));
             }
 
             string metricsPath = Path.Combine(outputPath, "raw_data.csv");
@@ -172,7 +173,7 @@
                 {
                     object[] values = new object[]
                     {
-                        query,
+                        formattedQuery,
                         serializationFormat,
                         iteration,
                         roundTrip,
