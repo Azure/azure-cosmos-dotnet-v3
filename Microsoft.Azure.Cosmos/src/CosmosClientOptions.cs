@@ -76,6 +76,7 @@ namespace Microsoft.Azure.Cosmos
         private string applicationName;
         private IFaultInjector faultInjector;
         private bool isCustomSerializerProvided;
+        private bool isPartitionLevelFailoverEnabled;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -762,9 +763,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enable partition key level failover
+        /// Gets or sets a value indicating whether partition-level failover is enabled. When this feature is enabled,
+        /// the SDK by default applies a cross-region hedging strategy with a default threshold of 1 seconds.
+        /// If an availability strategy is provided explicitly, then it will be honored, and the default policy wouldn't be applied. Note that
+        /// the default availability strategy can be opted out by setting this environment variable `AZURE_COSMOS_SKIP_PPAF_DEFAULT_HEDGING` to `True`.
         /// </summary>
-        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+        internal bool EnablePartitionLevelFailover
+        {
+            get => this.isPartitionLevelFailoverEnabled;
+            set
+            {
+                if (this.AvailabilityStrategy == null && !ConfigurationManager.IsDefaultHedgingDisabledWithPartitionLevelFailover())
+                {
+                    this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                        threshold: TimeSpan.FromMilliseconds(1000),
+                        thresholdStep: TimeSpan.FromMilliseconds(1));
+                }
+
+                this.isPartitionLevelFailoverEnabled = value || ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            }
+        }
 
         /// <summary>
         /// Enable partition level circuit breaker (aka PPCB). For compute gateway use case, by default per partition automatic failover will be disabled, so does the PPCB.
@@ -1014,7 +1032,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            this.ValidatePartitionLevelFailoverSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1188,16 +1205,6 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
-            }
-        }
-
-        private void ValidatePartitionLevelFailoverSettings()
-        {
-            if (this.EnablePartitionLevelFailover
-                && string.IsNullOrEmpty(this.ApplicationRegion)
-                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 
