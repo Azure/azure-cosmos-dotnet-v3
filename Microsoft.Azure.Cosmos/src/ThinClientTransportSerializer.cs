@@ -122,8 +122,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 await serializedRequest.CopyToStreamAsync(new MemoryStream(buffer, 0, length, true, true));
 
-                MemoryStream stream = new MemoryStream(buffer, 0, length, writable: false, publiclyVisible: false);
-                return stream;
+                return new MemoryStream(buffer, 0, length, writable: false, publiclyVisible: false);
             }
             catch
             {
