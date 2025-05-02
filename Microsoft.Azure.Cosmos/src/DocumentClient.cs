@@ -6822,6 +6822,13 @@ namespace Microsoft.Azure.Cosmos
 
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
+            this.ConnectionPolicy.EnablePartitionLevelFailover = accountProperties.EnablePartitionLevelFailover;
+            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
+                ? new GlobalPartitionEndpointManagerCore(
+                    this.GlobalEndpointManager,
+                    this.ConnectionPolicy.EnablePartitionLevelFailover,
+                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+                : GlobalPartitionEndpointManagerNoOp.Instance;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);

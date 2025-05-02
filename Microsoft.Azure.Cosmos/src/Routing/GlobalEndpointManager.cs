@@ -554,6 +554,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return;
             }
+            this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover;
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
