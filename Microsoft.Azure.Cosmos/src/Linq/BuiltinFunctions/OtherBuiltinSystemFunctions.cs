@@ -38,7 +38,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         if (!(argument is MethodCallExpression functionCallExpression))
                         {
-                            throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.ExpressionTypeIsNotSupported, argument.Type));
+                            throw new ArgumentException(
+                                string.Format(
+                                    CultureInfo.CurrentCulture,
+                                    "Expressions of type {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to {1}.",
+                                    argument.Type,
+                                    nameof(CosmosLinqExtensions.FullTextScore)));
                         }
                         
                         if (functionCallExpression.Method.Name != nameof(CosmosLinqExtensions.FullTextScore))
@@ -46,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new ArgumentException(
                                 string.Format(
                                     CultureInfo.CurrentCulture,
-                                    ClientResources.BadQuery_InvalidMethodCall,
+                                    "Method {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are {1}.",
                                     functionCallExpression.Method.Name,
                                     nameof(CosmosLinqExtensions.FullTextScore)));
                         }
