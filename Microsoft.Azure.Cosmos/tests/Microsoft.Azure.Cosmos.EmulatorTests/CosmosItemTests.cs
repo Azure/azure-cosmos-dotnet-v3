@@ -671,6 +671,85 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task HttpRequestVersionIsOnePointOneWhenUsingGatewayMode()
+        {
+            Version httpVersionOnePointOne = new Version(1, 1);
+            int hitCount = 0;
+
+            using CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+            {
+                builder.WithConnectionModeGateway();
+                builder.WithSendingRequestEventArgs((sender, e) =>
+                {
+                    if (e.IsHttpRequest())
+                    {
+                        Assert.AreEqual(httpVersionOnePointOne, e.HttpRequest.Version);
+                        hitCount++;
+                    }
+                });
+            });
+
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("HttpVersionTestDb");
+            Container container = await database.CreateContainerIfNotExistsAsync("HttpVersionTestContainer", "/pk");
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync<ToDoActivity>(testItem, new Cosmos.PartitionKey(testItem.pk));
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            Assert.IsNotNull(response.Diagnostics);
+            Assert.IsTrue(hitCount > 0, "HTTP request event handler was not triggered");
+
+            await database.DeleteAsync();
+        }
+
+        [TestMethod]
+        public async Task HttpRequestVersionIsTwoPointZeroWhenUsingThinClientMode()
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+                Version expectedGatewayVersion = new(1, 1);
+                Version expectedThinClientVersion = new(2, 0);
+
+                List<Version> postRequestVersions = new();
+
+                using CosmosClient client = TestCommon.CreateCosmosClient(builder =>
+                {
+                    builder.WithConnectionModeGateway();
+                    builder.WithSendingRequestEventArgs((sender, e) =>
+                    {
+                        if (e.HttpRequest.Method == HttpMethod.Post)
+                        {
+                            postRequestVersions.Add(e.HttpRequest.Version);
+                        }
+                    });
+                });
+
+                Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("HttpVersionTestDb");
+                Container container = await database.CreateContainerIfNotExistsAsync("HttpVersionTestContainer", "/pk");
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+                await Assert.ThrowsExceptionAsync<CosmosException>(() => container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk)));
+
+                Assert.AreEqual(3, postRequestVersions.Count, "Expected exactly 3 POST requests (DB, Container, Item).");
+
+                Assert.AreEqual(expectedGatewayVersion, postRequestVersions[0], "Expected HTTP/1.1 for CreateDatabaseAsync.");
+                Assert.AreEqual(expectedGatewayVersion, postRequestVersions[1], "Expected HTTP/1.1 for CreateContainerAsync.");
+                Assert.AreEqual(expectedThinClientVersion, postRequestVersions[2], "Expected HTTP/2.0 for CreateItemAsync.");
+
+                await database.DeleteAsync();
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
+            }
+        }
+
+        [TestMethod]
         [DataRow(true, true, DisplayName = "Test scenario when binary encoding is enabled at client level and expected stream response type is binary.")]
         [DataRow(true, false, DisplayName = "Test scenario when binary encoding is enabled at client level and expected stream response type is text.")]
         [DataRow(false, true, DisplayName = "Test scenario when binary encoding is disabled at client level and expected stream response type is binary.")]
