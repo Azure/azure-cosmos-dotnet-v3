@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+            this.SessionRetryOptions = new SessionRetryOptions();
         }
 
         /// <summary>
@@ -121,6 +122,11 @@ namespace Microsoft.Azure.Cosmos
         /// Get or set session container for the client
         /// </summary>
         internal ISessionContainer SessionContainer { get; set; }
+        
+        /// <summary>
+        /// hint which guide SDK-internal retry policies on how early to switch retries to a different region. 
+        /// </summary>
+        internal SessionRetryOptions SessionRetryOptions { get; private set; }
 
         /// <summary>
         /// Gets or sets the location where the application is running. This will influence the SDK's choice for the Azure Cosmos DB service interaction.
@@ -742,6 +748,20 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// </summary>
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        bool EnableRemoteRegionPreferredForSessionRetry
+        {
+            get => this.SessionRetryOptions.RemoteRegionPreferred;
+            set => this.SessionRetryOptions.RemoteRegionPreferred = value;
+        }
+
+        /// <summary>
         /// Enable partition key level failover
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
@@ -1005,6 +1025,7 @@ namespace Microsoft.Azure.Cosmos
                 UserAgentContainer = this.CreateUserAgentContainerWithFeatures(clientId),
                 UseMultipleWriteLocations = true,
                 IdleTcpConnectionTimeout = this.IdleTcpConnectionTimeout,
+                SessionRetryOptions = this.SessionRetryOptions,
                 OpenTcpConnectionTimeout = this.OpenTcpConnectionTimeout,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,

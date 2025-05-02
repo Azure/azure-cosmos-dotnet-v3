@@ -322,7 +322,7 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="DateTime"/> value to write.</param>
         public override void WriteValue(DateTime value)
         {
-            this.WriteValue(value.ToString());
+            this.WriteValue(value.ToString("O"));
         }
 
         /// <summary>
