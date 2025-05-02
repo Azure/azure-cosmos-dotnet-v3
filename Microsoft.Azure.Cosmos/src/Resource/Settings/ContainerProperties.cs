@@ -421,7 +421,12 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// JSON path used for containers partitioning
+        /// 
+        /// For hierarchical partition keys, please use <see cref="ContainerProperties.PartitionKeyPaths"/>
         /// </summary>
+        /// <remarks>
+        /// Throws NotImplementedException for hierarchical partition keys
+        /// </remarks>
         [JsonIgnore]
         public string PartitionKeyPath
         {
