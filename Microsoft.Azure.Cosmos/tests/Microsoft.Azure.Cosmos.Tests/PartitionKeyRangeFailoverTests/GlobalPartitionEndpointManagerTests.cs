@@ -247,14 +247,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => new CosmosClient(
-                 globalEndpoint,
-                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                 cosmosClientOptions));
+            CosmosClient cosmosClient = new CosmosClient(
+                globalEndpoint,
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                cosmosClientOptions);
 
-            Assert.AreEqual(
-                expected: "ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
-                actual: exception.Message);
+            Assert.IsNotNull(cosmosClient,
+                message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
         }
 
         [TestMethod]

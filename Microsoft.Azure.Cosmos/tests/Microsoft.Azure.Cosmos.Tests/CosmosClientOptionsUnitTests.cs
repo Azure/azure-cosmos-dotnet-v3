@@ -282,11 +282,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                         .WithPartitionLevelFailoverEnabled();
                 }
 
-                ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
+                CosmosClient cosmosClient = cosmosClientBuilder.Build();
 
-                Assert.AreEqual(
-                    expected: "ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
-                    actual: exception.Message);
+                Assert.IsNotNull(cosmosClient,
+                    message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
             }
             finally
             {
@@ -1246,7 +1245,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
         public void PPAFClientNoRegionsTest()
         {
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
@@ -1254,7 +1252,9 @@ namespace Microsoft.Azure.Cosmos.Tests
                 EnablePartitionLevelFailover = true
             };
 
-            _ = new CosmosClient(ConnectionString, cosmosClientOptions);
+            CosmosClient cosmosClient = new(ConnectionString, cosmosClientOptions);
+
+            Assert.IsNotNull(cosmosClient);
         }
 
         private class TestWebProxy : IWebProxy
