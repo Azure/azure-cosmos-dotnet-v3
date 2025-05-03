@@ -1,14 +1,30 @@
 ﻿<Results>
   <Result>
     <Input>
-      <Description><![CDATA[Float VectorDistance + Order By]]></Description>
-      <Expression><![CDATA[query.OrderByRank(doc => Convert(doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, False, null), Object)).Select(doc => doc.Pk)]]></Expression>
+      <Description><![CDATA[Float VectorDistance + Order By Rank]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, False, null)).Select(doc => doc.Pk)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
 ORDER BY RANK VectorDistance(root["VectorFloatField"], [2, 3, 4], false)]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Float VectorDistance + Order By]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, False, null)).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY VectorDistance(root["VectorFloatField"], [2, 3, 4], false)]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -78,14 +94,46 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[UInt8 VectorDistance + Order By]]></Description>
-      <Expression><![CDATA[query.OrderByRank(doc => Convert(doc.VectorUInt8Field.VectorDistance(new [] {2, 3, 4}, False, null), Object)).Select(doc => doc.Pk)]]></Expression>
+      <Description><![CDATA[Float VectorDistance + RRF]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, False, null), doc.VectorFloatField.VectorDistance(new [] {3, 4, 5}, False, null)})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(VectorDistance(root["VectorFloatField"], [2, 3, 4], false), VectorDistance(root["VectorFloatField"], [3, 4, 5], false))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt8 VectorDistance + Order By Rank]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.VectorUInt8Field.VectorDistance(new [] {2, 3, 4}, False, null)).Select(doc => doc.Pk)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
 ORDER BY RANK VectorDistance(root["VectorUInt8Field"], [2, 3, 4], false)]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[UInt8 VectorDistance + Order By]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.VectorUInt8Field.VectorDistance(new [] {2, 3, 4}, False, null)).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY VectorDistance(root["VectorUInt8Field"], [2, 3, 4], false)]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -155,14 +203,46 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[Int8 VectorDistance + Order By]]></Description>
-      <Expression><![CDATA[query.OrderByRank(doc => Convert(doc.VectorInt8Field.VectorDistance(new [] {2, 3, 4}, False, null), Object)).Select(doc => doc.Pk)]]></Expression>
+      <Description><![CDATA[UInt8 VectorDistance + RRF]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.VectorUInt8Field.VectorDistance(new [] {2, 3, 4}, False, null), doc.VectorUInt8Field.VectorDistance(new [] {3, 4, 5}, False, null)})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(VectorDistance(root["VectorUInt8Field"], [2, 3, 4], false), VectorDistance(root["VectorUInt8Field"], [3, 4, 5], false))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int8 VectorDistance + Order By Rank]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => doc.VectorInt8Field.VectorDistance(new [] {2, 3, 4}, False, null)).Select(doc => doc.Pk)]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root["Pk"] 
 FROM root 
 ORDER BY RANK VectorDistance(root["VectorInt8Field"], [2, 3, 4], false)]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int8 VectorDistance + Order By]]></Description>
+      <Expression><![CDATA[query.OrderBy(doc => doc.VectorInt8Field.VectorDistance(new [] {2, 3, 4}, False, null)).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY VectorDistance(root["VectorInt8Field"], [2, 3, 4], false)]]></SqlQuery>
       <Results><![CDATA[[
   "Test",
   "Test"
@@ -217,6 +297,22 @@ GROUP BY VectorDistance(root["VectorInt8Field"], [2, 3, 4], false) ]]></SqlQuery
 SELECT VALUE VectorDistance(root["VectorInt8Field"], [2, 3, 4], true, {"distanceFunction": "euclidean", "dataType": "int8"}) 
 FROM root]]></SqlQuery>
       <Results><![CDATA[[]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Int8 VectorDistance + RRF]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.VectorInt8Field.VectorDistance(new [] {2, 3, 4}, False, null), doc.VectorInt8Field.VectorDistance(new [] {3, 4, 5}, False, null)})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(VectorDistance(root["VectorInt8Field"], [2, 3, 4], false), VectorDistance(root["VectorInt8Field"], [3, 4, 5], false))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
     </Output>
   </Result>
   <Result>
