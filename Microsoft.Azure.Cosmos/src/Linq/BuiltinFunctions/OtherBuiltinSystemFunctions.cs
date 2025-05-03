@@ -41,19 +41,22 @@ namespace Microsoft.Azure.Cosmos.Linq
                             throw new ArgumentException(
                                 string.Format(
                                     CultureInfo.CurrentCulture,
-                                    "Expressions of type {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to {1}.",
+                                    "Expressions of type {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to {1}, {2}.",
                                     argument.Type,
-                                    nameof(CosmosLinqExtensions.FullTextScore)));
+                                    nameof(CosmosLinqExtensions.FullTextScore),
+                                    nameof(CosmosLinqExtensions.VectorDistance)));
                         }
                         
-                        if (functionCallExpression.Method.Name != nameof(CosmosLinqExtensions.FullTextScore))
+                        if (functionCallExpression.Method.Name != nameof(CosmosLinqExtensions.FullTextScore) &&
+                            functionCallExpression.Method.Name != nameof(CosmosLinqExtensions.VectorDistance))
                         {
                             throw new ArgumentException(
                                 string.Format(
                                     CultureInfo.CurrentCulture,
-                                    "Method {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are {1}.",
+                                    "Method {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are {1}, {2}.",
                                     functionCallExpression.Method.Name,
-                                    nameof(CosmosLinqExtensions.FullTextScore)));
+                                    nameof(CosmosLinqExtensions.FullTextScore),
+                                    nameof(CosmosLinqExtensions.VectorDistance)));
                         }
 
                         arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(argument, context));

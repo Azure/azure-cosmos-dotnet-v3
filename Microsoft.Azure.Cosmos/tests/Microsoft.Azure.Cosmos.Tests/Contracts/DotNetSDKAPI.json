@@ -6344,6 +6344,18 @@
           ],
           "MethodInfo": "Boolean RegexMatch(System.Object, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Double FullTextScore[TSource](TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "Double RRF(Double[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Double RRF(Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Double VectorDistance(Byte[], Byte[], Boolean, System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -6364,18 +6376,6 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "Double VectorDistance(Single[], Single[], Boolean, System.Object);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "Double FullTextScore[TSource](TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "Double FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "Double RRF(Double[])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Double RRF(Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Int32 DocumentId(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
