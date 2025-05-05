@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
     [TestClass]
     public class NonStreamingOrderByQueryTests
     {
-        private const int MaxConcurrency = 0;
+        private const int MaxConcurrency = 10;
 
         private const int DocumentCount = 420;
 
