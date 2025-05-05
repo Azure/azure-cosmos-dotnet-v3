@@ -1120,6 +1120,105 @@
             }
         }
 
+        [TestMethod]
+        [Owner("dkunda")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        [DataRow(true, DisplayName = "Test scenario when PPAF is enabled at client level.")]
+        [DataRow(false, DisplayName = "Test scenario when PPAF is disabled at client level.")]
+        public async Task ReadItemAsync_WithPPAFEnabledAndSingleMasterAccountWithResponseDelay_ShouldHedgeRequestToMultipleRegions(
+            bool enablePartitionLevelFailover)
+        {
+            // Arrange.
+            if (enablePartitionLevelFailover)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+            }
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                    id: itemsList[0].Id,
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
+                HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                Assert.AreEqual(
+                    expected: HttpStatusCode.OK,
+                    actual: readResponse.StatusCode);
+
+                CosmosTraceDiagnostics traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+
+                if (cosmosClientOptions.EnablePartitionLevelFailover)
+                {
+                    Assert.IsNotNull(hedgeContext);
+                    IReadOnlyList<string> hedgedRegions = (IReadOnlyList<string>)hedgeContext;
+
+                    Assert.AreEqual(3, hedgedRegions.Count);
+                    Assert.IsTrue(hedgedRegions.Contains(region1) && hedgedRegions.Contains(region2) && hedgedRegions.Contains(region3));
+                }
+                else
+                {
+                    Assert.IsNull(hedgeContext);
+                }
+
+                Assert.IsNotNull(contactedRegions);
+                Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the read request succeeds on any region, given that there were no availability loss.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
         {
             foreach (CosmosIntegrationTestObject item in testItems)

@@ -92,6 +92,7 @@ namespace Microsoft.Azure.Cosmos
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
             this.SessionRetryOptions = new SessionRetryOptions();
+            this.InitializePartitionLevelFailoverWithDefaultHedging();
         }
 
         /// <summary>
@@ -771,17 +772,7 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelFailover
         {
             get => this.isPartitionLevelFailoverEnabled;
-            set
-            {
-                if (this.AvailabilityStrategy == null && !ConfigurationManager.IsDefaultHedgingDisabledWithPartitionLevelFailover())
-                {
-                    this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(1000),
-                        thresholdStep: TimeSpan.FromMilliseconds(1));
-                }
-
-                this.isPartitionLevelFailoverEnabled = value || ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-            }
+            set => this.InitializePartitionLevelFailoverWithDefaultHedging(isPPafEnabled: value);
         }
 
         /// <summary>
@@ -1267,6 +1258,21 @@ namespace Microsoft.Azure.Cosmos
                         features: featureString,
                         regionConfiguration: regionConfiguration,
                         suffix: this.GetUserAgentSuffix());
+        }
+
+        internal void InitializePartitionLevelFailoverWithDefaultHedging(
+            bool isPPafEnabled = false)
+        {
+            this.isPartitionLevelFailoverEnabled = isPPafEnabled || ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+
+            if (this.isPartitionLevelFailoverEnabled
+                && this.AvailabilityStrategy == null
+                && !ConfigurationManager.IsDefaultHedgingDisabledWithPartitionLevelFailover())
+            {
+                this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(1000),
+                    thresholdStep: TimeSpan.FromMilliseconds(10));
+            }
         }
 
         internal string GetUserAgentSuffix()
