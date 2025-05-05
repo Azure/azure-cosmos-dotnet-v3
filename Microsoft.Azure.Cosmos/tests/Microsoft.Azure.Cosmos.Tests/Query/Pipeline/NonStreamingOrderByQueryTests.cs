@@ -477,32 +477,31 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     weights: new double[] { 1.25, 2.0 },
                     pageSize: 10,
                     returnEmptyGlobalStatistics: true),
-
-                //MakeHybridSearchSkipOrderByRewriteTest(
-                //    leafPageCount: 4,
-                //    backendPageSize: 10,
-                //    requiresGlobalStatistics: false,
-                //    skip: null,
-                //    take: 100,
-                //    weights: new double[] { -1.0, -1.0 },
-                //    pageSize: 1000),
-                //MakeHybridSearchSkipOrderByRewriteTest(
-                //    leafPageCount: 4,
-                //    backendPageSize: 100,
-                //    requiresGlobalStatistics: true,
-                //    skip: 7,
-                //    take: 10,
-                //    weights: new double[] { -1.33, -0.45 },
-                //    pageSize: 1),
-                //MakeHybridSearchSkipOrderByRewriteTest(
-                //    leafPageCount: 0,
-                //    backendPageSize: 10,
-                //    requiresGlobalStatistics: true,
-                //    skip: 0,
-                //    take: 10,
-                //    weights: new double[] { -1.25, -2.0 },
-                //    pageSize: 10,
-                //    returnEmptyGlobalStatistics: true),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: false,
+                    skip: null,
+                    take: 100,
+                    weights: new double[] { -1.0, -1.0 },
+                    pageSize: 1000),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 4,
+                    backendPageSize: 100,
+                    requiresGlobalStatistics: true,
+                    skip: 7,
+                    take: 10,
+                    weights: new double[] { -1.33, -0.45 },
+                    pageSize: 1),
+                MakeHybridSearchSkipOrderByRewriteTest(
+                    leafPageCount: 0,
+                    backendPageSize: 10,
+                    requiresGlobalStatistics: true,
+                    skip: 0,
+                    take: 10,
+                    weights: new double[] { -1.25, -2.0 },
+                    pageSize: 10,
+                    returnEmptyGlobalStatistics: true),
             };
 
             foreach (HybridSearchTest testCase in testCases)
@@ -544,11 +543,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                 {
                     expectedIndices = expectedIndices.Reverse();
 
-                    feedModes = new PartitionedFeedMode[]
-                    {
-                        PartitionedFeedMode.NonStreaming,
-                        PartitionedFeedMode.NonStreaming,
-                    };
+                    PartitionedFeedMode feedMode = testCase.SkipOrderByRewrite?
+                        PartitionedFeedMode.NonStreamingReversed | PartitionedFeedMode.NegateScores:
+                        PartitionedFeedMode.NonStreaming;
+
+                    feedModes = new PartitionedFeedMode[] { feedMode, feedMode };
                 }
             }
 
@@ -1586,6 +1585,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             NonStreaming = 1,
             Reversed = 2,
 
+            NegateScores = 4,
+
             StreamingReversed = Streaming | Reversed,
             NonStreamingReversed = NonStreaming | Reversed,
         }
@@ -1654,7 +1655,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
                     pageSize,
                     feedModes[componentIndex],
                     componentIndex,
-                    (componentIndex, index) => CreateHybridSearchDocument(componentCount: componentCount, index:index, componentIndex: componentIndex, skipOrderByRewrite));
+                    (componentIndex, index) => CreateHybridSearchDocument(
+                        componentCount: componentCount,
+                        index: index,
+                        componentIndex: componentIndex,
+                        skipOrderByRewrite: skipOrderByRewrite,
+                        negateScores: feedModes[componentIndex].HasFlag(PartitionedFeedMode.NegateScores)));
 
                 componentPages.Add(pages);
             }
@@ -1784,15 +1790,16 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
             return globalStatistics;
         }
 
-        private static CosmosElement CreateHybridSearchDocument(int componentCount, int index, int componentIndex, bool skipOrderByRewrite)
+        private static CosmosElement CreateHybridSearchDocument(int componentCount, int index, int componentIndex, bool skipOrderByRewrite, bool negateScores)
         {
             CosmosElement indexElement = CosmosNumber64.Create(index);
             CosmosElement indexStringElement = CosmosString.Create(index.ToString("D4"));
             double[] scores = new double[componentCount];
             double delta = 0.1;
+            double factor = negateScores ? -1.0 : 1.0;
             for (int scoreIndex = 0; scoreIndex < componentCount; ++scoreIndex)
             {
-                scores[scoreIndex] = index + ((1 + scoreIndex) * delta);
+                scores[scoreIndex] = factor * (index + ((1 + scoreIndex) * delta));
             }
 
             List<CosmosElement> orderByItems = new List<CosmosElement>
