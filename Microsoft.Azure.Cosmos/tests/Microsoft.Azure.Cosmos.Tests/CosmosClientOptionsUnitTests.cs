@@ -227,13 +227,14 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
-        /// initialization should throw an argument exception and fail. This should hold true for both environment variable and CosmosClientOptions.
+        /// initialization should succeed. This should hold true for both environment variable and CosmosClientOptions.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
         [DataRow(true, DisplayName = "Validate that when environment variable is used to enable PPAF, the outcome of the test should be same.")]
         [DataRow(false, DisplayName = "Validate that when CosmosClientOptions is used to enable PPAF, the outcome of the test should be same.")]
-        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldThrowArgumentException(bool useEnvironmentVariable)
+        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldInitializeCosmosClientSuccessfully(
+            bool useEnvironmentVariable)
         {
             try
             {
