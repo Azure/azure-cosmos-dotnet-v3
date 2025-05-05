@@ -5,11 +5,13 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -298,6 +300,79 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static bool FullTextContainsAny(this object obj, params string[] searches)
         {
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a BM25 score value that can only be used in an ORDER BY RANK function to sort results from highest relevancy to lowest relevancy.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextscore.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="terms">A nonempty array of string literals.</param>
+        /// <returns>Returns true BM25 score value that can only be used in an ORDER BY RANK clause.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.Name.FullTextScore([<keyword1>], [keyword2]));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double FullTextScore<TSource>(this TSource obj, params string[] terms)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
+        }
+
+        /// <summary>
+        /// This optional ORDER BY RANK clause sorts scoring functions by their rank. It's used specifically for scoring functions like VectorDistance, FullTextScore, and RRF.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/order-by-rank.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="source"> A sequence of values to order.</param>
+        /// <param name="scoreFunction">A scoring function.</param>
+        /// <returns>Returns the sequence with the elements ordered according to the rank of the scoring functions.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.Name.FullTextScore(<keyword>));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static IOrderedQueryable<TSource> OrderByRank<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> scoreFunction)
+        {
+            if (!(source is CosmosLinqQuery<TSource>))
+            {
+                throw new ArgumentException("OrderByRank is only supported on Cosmos LINQ query operations");
+            }
+
+            return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
+               Expression.Call(
+                null,
+                typeof(CosmosLinqExtensions).GetMethod("OrderByRank").MakeGenericMethod(typeof(TSource), typeof(TKey)),
+                source.Expression,
+                Expression.Quote(scoreFunction)));
+        }
+
+        /// <summary>
+        /// This system function is used to combine two or more scores provided by other scoring functions.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/rrf.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="scoringFunctions">the scoring functions to combine. Valid functions are FullTextScore and VectorDistance</param>
+        /// <returns>Returns the the combined scores of the scoring functions.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.RRF(document.Name.FullTextScore(<keyword1>), document.Address.FullTextScore(<keyword2>)));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double RRF(params double[] scoringFunctions)
+        {
+            // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }
 
         /// <summary>

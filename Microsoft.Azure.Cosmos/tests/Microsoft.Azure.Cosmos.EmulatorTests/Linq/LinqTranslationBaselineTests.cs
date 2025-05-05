@@ -20,6 +20,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using System.Threading.Tasks;
 
+    using static Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions;
+
     [Microsoft.Azure.Cosmos.SDK.EmulatorTests.TestClass]
     public class LinqTranslationBaselineTests : BaselineTests<LinqTestInput, LinqTestOutput>
     {
@@ -386,6 +388,236 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("FullTextContainsAny with group by", b => getQuery(b).GroupBy(doc => doc.StringField.FullTextContainsAny("test"), value => value)),
                 new LinqTestInput("FullTextContainsAny with SelectMany", b => getQuery(b).SelectMany(doc => doc.EnumerableField.Where(number => doc.StringField.FullTextContainsAny("test")).Select(number => number))),
             };
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestFullTextScoreOrderByRankFunction()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                 new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore("test1"))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore("test1", "test2", "test3"))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 1 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("FullTextScore with 3 element array", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }))
+                    .Select(doc => doc.Pk)),
+
+                // Negative case: FullTextScore in non order by clause
+                new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != 123)),
+                new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != 123)),
+
+                new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore("test1") != 123)),
+                new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != 123)),
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestRRFOrderByRankFunction()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    IntField = 1,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("RRF with 2 functions", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 
+                                                doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("RRF with 3 functions", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            doc.StringField.FullTextScore(new string[] { "test1", "text2" }),
+                                            doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                    .Select(doc => doc.Pk)),
+
+                // Negative case: FullTextScore in non order by clause
+                new LinqTestInput("RRF with 1 function", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("RRF in WHERE clause", b => getQuery(b)
+                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != 123)),
+                new LinqTestInput("RRF in WHERE clause 2", b => getQuery(b)
+                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                  doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != 123)),
+
+                new LinqTestInput("RRF with non scoring function", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 123))),
+                new LinqTestInput("RRF with non scoring function 2", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.IntField * 1.0))),
+                new LinqTestInput("RRF with non scoring function 3", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.Length))),
+                new LinqTestInput("RRF with non scoring function 4", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.ArrayField.Count()))),
+                new LinqTestInput("RRF with RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            RRF(doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "test2"})))))
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
+        public void TestOrderByRankFunctionComposeWithOtherFunctions()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    NumericField = 1,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // Select
+                new LinqTestInput("Select + Order By Rank", b => getQuery(b)
+                    .Select(doc => doc.Pk)
+                    .OrderByRank(doc => doc.FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + Select", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Select + Order By Rank + Select", b => getQuery(b)
+                    .Select(doc => new { stringField = doc.StringField, PartitionKey = doc.Pk })
+                    .OrderByRank(doc => doc.stringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.PartitionKey)),
+
+                // Join
+                new LinqTestInput("SelectMany + Order By Rank", b => getQuery(b)
+                    .SelectMany(doc => doc.ArrayField)
+                    .OrderByRank(doc => doc.ToString().FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + SelectMany", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .SelectMany(doc => doc.ArrayField)),
+
+                // Skip
+                new LinqTestInput("Skip + Order By Rank", b => getQuery(b)
+                    .Skip(1)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + Skip", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Skip(1)
+                    .Select(doc => doc.Pk)),
+
+                // Take
+                new LinqTestInput("Take + Order By Rank", b => getQuery(b)
+                    .Take(1)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + Take", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Take(1)
+                    .Select(doc => doc.Pk)),
+
+                // GroupBy
+                new LinqTestInput("GroupBy + Order By Rank", b => getQuery(b)
+                    .GroupBy(doc => doc.StringField, (key, values) => values.Count())
+                    .OrderByRank(doc => doc.ToString().FullTextScore(new string[] { "test1" }))),
+
+                new LinqTestInput("Order By Rank + GroupBy", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .GroupBy(doc => doc.Pk, (key, values) => values.Count())),
+                
+                // Order By
+                // $issue-todo-leminh-20250424: There's an issue with OrderBy follows by OrderBy - the most recent order by is the only one that is applied to the query.
+                // This will be addressed in a separate PR
+                new LinqTestInput("Order By + Order By Rank", b => getQuery(b)
+                    .OrderBy(doc => doc.NumericField)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Order By Rank + Order By", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .OrderBy(doc => doc.NumericField)
+                    .Select(doc => doc.Pk)),
+
+                // Where 
+                new LinqTestInput("Where + Order By Rank", b => getQuery(b)
+                    .Where(doc => doc.NumericField > 0)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Order By Rank + Where", b => getQuery(b)
+                    .OrderByRank(doc => doc.StringField.FullTextScore(new string[] { "test1" }))
+                    .Where(doc => doc.NumericField > 0)
+                    .Select(doc => doc.Pk)),
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
             this.ExecuteTestSuite(inputs);
         }
 
@@ -1421,7 +1653,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
         public override LinqTestOutput ExecuteTest(LinqTestInput input)
         {
-            return LinqTestsCommon.ExecuteTest(input);
+            return LinqTestsCommon.ExecuteTest(input, input.serializeOutput);
         }
     }
 }

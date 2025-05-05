@@ -170,7 +170,6 @@ namespace Microsoft.Azure.Cosmos
         private IStoreClientFactory storeClientFactory;
         internal CosmosHttpClient httpClient { get; private set; }
 
-        internal CosmosHttpClient thinClientModeHttpClient { get; private set; }
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
         // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
@@ -974,17 +973,6 @@ namespace Microsoft.Azure.Cosmos
                 this.receivedResponse,
                 this.chaosInterceptor);
 
-            if (enableThinClientMode)
-            {
-                this.thinClientModeHttpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
-                    this.ApiType,
-                    DocumentClientEventSource.Instance,
-                    this.ConnectionPolicy,
-                    null,
-                    this.sendingRequest,
-                    this.receivedResponse);
-            }
-
             // Loading VM Information (non blocking call and initialization won't fail if this call fails)
             VmMetadataApiHandler.TryInitialize(this.httpClient);
 
@@ -1109,7 +1097,7 @@ namespace Microsoft.Azure.Cosmos
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.thinClientModeHttpClient);
+                    this.httpClient);
 
                 thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 

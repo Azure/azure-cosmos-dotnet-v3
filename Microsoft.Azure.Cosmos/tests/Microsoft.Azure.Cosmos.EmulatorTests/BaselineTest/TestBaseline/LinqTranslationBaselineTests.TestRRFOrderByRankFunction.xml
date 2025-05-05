@@ -1,0 +1,123 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 2 functions]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField2"], "test1", "test2", "test3"))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 3 functions]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField.FullTextScore(new [] {"test1", "text2"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField"], "test1", "text2"), FullTextScore(root["StringField2"], "test1", "test2", "test3"))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 1 function]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":34,"end":96},"code":"SC2221","message":"The ORDER BY RANK clause must be followed by a VectorDistance and/or a FullTextScore function call."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF in WHERE clause]]></Description>
+      <Expression><![CDATA[query.Where(doc => (RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"})}) != 123))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RRF(FullTextScore(root["StringField"], "test1")) != 123)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":39,"end":82},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":35,"end":38},"code":"SC2005","message":"'RRF' is not a recognized built-in function name."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF in WHERE clause 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})}) != 123))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField2"], "test1", "test2", "test3")) != 123)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":39,"end":82},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":84,"end":146},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":35,"end":38},"code":"SC2005","message":"'RRF' is not a recognized built-in function name."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with non scoring function]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), 123}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with non scoring function 2]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), (doc.IntField * 1)}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with non scoring function 3]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), Convert(doc.StringField2.Length, Double)}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with non scoring function 4]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), Convert(doc.ArrayField.Count(), Double)}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with RRF]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), RRF(new [] {doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"}), doc.StringField.FullTextScore(new [] {"test1", "test2"})})}))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[]]></SqlQuery>
+      <ErrorMessage><![CDATA[Method RRF is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are FullTextScore.]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>
