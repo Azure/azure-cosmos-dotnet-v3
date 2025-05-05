@@ -1256,7 +1256,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
         private static class DebugTraceHelpers
         {
 #pragma warning disable CS0162, CS0649 // Unreachable code detected
-            private static readonly bool Enabled = true;
+            private static readonly bool Enabled;
 
             [Conditional("DEBUG")]
             public static void TraceSplit(FeedRangeInternal feedRange)
