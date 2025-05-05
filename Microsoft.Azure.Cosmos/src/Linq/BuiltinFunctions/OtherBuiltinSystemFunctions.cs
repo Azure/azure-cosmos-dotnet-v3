@@ -21,7 +21,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(Func<object, object>[])}
+                        new Type[]{typeof(double[])}
                     })
             {
             }
@@ -36,7 +36,27 @@ namespace Microsoft.Azure.Cosmos.Linq
                     List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
                     foreach (Expression argument in functionListExpression)
                     {
-                        arguments.Add(ExpressionToSql.VisitScalarExpression(argument, context));
+                        if (!(argument is MethodCallExpression functionCallExpression))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    CultureInfo.CurrentCulture,
+                                    "Expressions of type {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to {1}.",
+                                    argument.Type,
+                                    nameof(CosmosLinqExtensions.FullTextScore)));
+                        }
+                        
+                        if (functionCallExpression.Method.Name != nameof(CosmosLinqExtensions.FullTextScore))
+                        {
+                            throw new ArgumentException(
+                                string.Format(
+                                    CultureInfo.CurrentCulture,
+                                    "Method {0} is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are {1}.",
+                                    functionCallExpression.Method.Name,
+                                    nameof(CosmosLinqExtensions.FullTextScore)));
+                        }
+
+                        arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(argument, context));
                     }
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RRF, arguments.ToImmutableArray());

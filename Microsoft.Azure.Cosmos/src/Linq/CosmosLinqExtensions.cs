@@ -318,7 +318,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static Func<TSource, object> FullTextScore<TSource>(this TSource obj, params string[] terms)
+        public static double FullTextScore<TSource>(this TSource obj, params string[] terms)
         {
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static IOrderedQueryable<TSource> OrderByRank<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, object>> scoreFunction)
+        public static IOrderedQueryable<TSource> OrderByRank<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> scoreFunction)
         {
             if (!(source is CosmosLinqQuery<TSource>))
             {
@@ -349,7 +349,7 @@ namespace Microsoft.Azure.Cosmos.Linq
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                Expression.Call(
                 null,
-                typeof(CosmosLinqExtensions).GetMethod("OrderByRank").MakeGenericMethod(typeof(TSource)),
+                typeof(CosmosLinqExtensions).GetMethod("OrderByRank").MakeGenericMethod(typeof(TSource), typeof(TKey)),
                 source.Expression,
                 Expression.Quote(scoreFunction)));
         }
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
         /// </summary>
-        /// <param name="scoringFunctions">the scoring functions to combine.</param>
+        /// <param name="scoringFunctions">the scoring functions to combine. Valid functions are FullTextScore and VectorDistance</param>
         /// <returns>Returns the the combined scores of the scoring functions.</returns>
         /// <example>
         /// <code>
@@ -369,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static Func<TSource, object> RRF<TSource>(params Func<TSource, object>[] scoringFunctions)
+        public static double RRF(params double[] scoringFunctions)
         {
             // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 

@@ -425,14 +425,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                 // Negative case: FullTextScore in non order by clause
                 new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != null)),
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != 123)),
                 new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != 123)),
 
                 new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore("test1") != null)),
+                    .Where(doc => doc.StringField.FullTextScore("test1") != 123)),
                 new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != null)),
+                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != 123)),
             };
 
             foreach (LinqTestInput input in inputs)
@@ -456,6 +456,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 DataObject obj = new DataObject
                 {
                     StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    IntField = 1,
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
                 };
@@ -466,25 +467,39 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
                 new LinqTestInput("RRF with 2 functions", b => getQuery(b)
-                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 
+                                                doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
                     .Select(doc => doc.Pk)),
 
                 new LinqTestInput("RRF with 3 functions", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
-                                            doc.StringField.FullTextScore(new string[] { "test1", "text2" }), 
+                                            doc.StringField.FullTextScore(new string[] { "test1", "text2" }),
                                             doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
                     .Select(doc => doc.Pk)),
 
                 // Negative case: FullTextScore in non order by clause
                 new LinqTestInput("RRF with 1 function", b => getQuery(b)
-                    .OrderByRank(doc => CosmosLinqExtensions.RRF(doc.StringField.FullTextScore(new string[] { "test1" })))
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })))
                     .Select(doc => doc.Pk)),
 
                 new LinqTestInput("RRF in WHERE clause", b => getQuery(b)
-                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != null)),
+                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != 123)),
                 new LinqTestInput("RRF in WHERE clause 2", b => getQuery(b)
                     .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
-                                  doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != null)),
+                                  doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != 123)),
+
+                new LinqTestInput("RRF with non scoring function", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 123))),
+                new LinqTestInput("RRF with non scoring function 2", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.IntField * 1.0))),
+                new LinqTestInput("RRF with non scoring function 3", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.Length))),
+                new LinqTestInput("RRF with non scoring function 4", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.ArrayField.Count()))),
+                new LinqTestInput("RRF with RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            RRF(doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "test2"})))))
             };
 
             foreach (LinqTestInput input in inputs)
