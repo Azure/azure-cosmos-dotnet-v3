@@ -66,52 +66,52 @@ ORDER BY RANK FullTextScore(root["StringField"], "test1", "test2", "test3")]]></
   <Result>
     <Input>
       <Description><![CDATA[FullTextScore in WHERE clause]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1"}) != null))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1"}) != 123))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (FullTextScore(root["StringField"], "test1") != null)]]></SqlQuery>
+WHERE (FullTextScore(root["StringField"], "test1") != 123)]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":78},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[FullTextScore in WHERE clause 2]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}) != null))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}) != 123))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (FullTextScore(root["StringField"], "test1", "test2", "test3") != null)]]></SqlQuery>
+WHERE (FullTextScore(root["StringField"], "test1", "test2", "test3") != 123)]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":96},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[FullTextScore in WHERE clause]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1"}) != null))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1"}) != 123))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (FullTextScore(root["StringField"], "test1") != null)]]></SqlQuery>
+WHERE (FullTextScore(root["StringField"], "test1") != 123)]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":78},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[FullTextScore in WHERE clause 2]]></Description>
-      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}) != null))]]></Expression>
+      <Expression><![CDATA[query.Where(doc => (doc.StringField.FullTextScore(new [] {"test1", "test2", "test3"}) != 123))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (FullTextScore(root["StringField"], "test1", "test2", "test3") != null)]]></SqlQuery>
+WHERE (FullTextScore(root["StringField"], "test1", "test2", "test3") != 123)]]></SqlQuery>
       <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":35,"end":96},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
