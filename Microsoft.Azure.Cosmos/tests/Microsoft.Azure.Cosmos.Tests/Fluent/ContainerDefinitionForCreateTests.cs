@@ -358,6 +358,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                     new Cosmos.FullTextPath()
                     {
                         Path = fullTextPath3,
+                        Language = "en-US",
                     },
                 };
 
@@ -411,7 +412,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Fluent
                         && fullTextPath2.Equals(settings.FullTextPolicy.FullTextPaths[1].Path)
                         && "en-US".Equals(settings.FullTextPolicy.FullTextPaths[1].Language)
                         && fullTextPath3.Equals(settings.FullTextPolicy.FullTextPaths[2].Path)
-                        && (settings.FullTextPolicy.FullTextPaths[2].Language == null)
+                        && "en-US".Equals(settings.FullTextPolicy.FullTextPaths[2].Language)
                         && fullTextPath1.Equals(settings.IndexingPolicy.FullTextIndexes[0].Path)
                         && fullTextPath2.Equals(settings.IndexingPolicy.FullTextIndexes[1].Path)
                         && fullTextPath3.Equals(settings.IndexingPolicy.FullTextIndexes[2].Path)),
