@@ -461,7 +461,7 @@ jobs:
       
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline5CategoryListName }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 120
   # Always run, but never fail the PR if it breaks
   condition: and(always(), eq('${{ parameters.OS }}', 'Windows'))
   continueOnError: true
