@@ -49,22 +49,33 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
                 throw new ArgumentException($"{FieldNames.Rid} must exist.");
             }
 
-            if (!cosmosObject.TryGetValue(FieldNames.Payload, out CosmosObject outerPayload))
+            bool outerPayloadExists = cosmosObject.TryGetValue(FieldNames.Payload, out CosmosObject outerPayload);
+
+            HybridSearchQueryResult result;
+            if (outerPayloadExists && outerPayload.TryGetValue(FieldNames.ComponentScores, out CosmosArray componentScores))
             {
-                throw new ArgumentException($"{FieldNames.Payload} must exist.");
+                // Using the older format where the payload is nested.
+                if (!outerPayload.TryGetValue(FieldNames.Payload, out CosmosElement innerPayload))
+                {
+                    innerPayload = CosmosUndefined.Create();
+                }
+
+                result = new HybridSearchQueryResult(rid, componentScores, innerPayload);
+            }
+            else
+            {
+                // Using the newer format where the payload is not nested.
+                if (!cosmosObject.TryGetValue(FieldNames.ComponentScores, out componentScores))
+                {
+                    throw new ArgumentException($"{FieldNames.ComponentScores} must exist.");
+                }
+
+                CosmosElement payload = outerPayloadExists ? outerPayload : CosmosUndefined.Create();
+
+                result = new HybridSearchQueryResult(rid, componentScores, payload);
             }
 
-            if (!outerPayload.TryGetValue(FieldNames.Payload, out CosmosElement innerPayload))
-            {
-                innerPayload = CosmosUndefined.Create();
-            }
-
-            if (!outerPayload.TryGetValue(FieldNames.ComponentScores, out CosmosArray componentScores))
-            {
-                throw new ArgumentException($"{FieldNames.ComponentScores} must exist.");
-            }
-
-            return new HybridSearchQueryResult(rid, componentScores, innerPayload);
+            return result;
         }
 
         private static class FieldNames
