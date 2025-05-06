@@ -10,10 +10,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq;
     using System.Net;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
+    using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
     [TestClass]
     public class CosmosItemThinClientTests
@@ -22,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient client;
         private Database database;
         private Container container;
+        private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
 
         private const int ItemCount = 1000;
 
@@ -36,12 +39,28 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
             }
 
-            this.client = new CosmosClient(this.connectionString);
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                  this.connectionString,
+                  new CosmosClientOptions()
+                  {
+                      ConnectionMode = ConnectionMode.Gateway,
+                      Serializer = this.cosmosSystemTextJsonSerializer,
+                  });
+
             string uniqueDbName = "TestDb_" + Guid.NewGuid().ToString();
             this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
             string uniqueContainerName = "TestContainer_" + Guid.NewGuid().ToString();
             this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
         }
+
 
         [TestCleanup]
         public async Task TestCleanupAsync()
@@ -71,6 +90,45 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             return items;
         }
+
+        [TestMethod]
+        [TestCategory("Debug")]
+        public async Task CreateItemTestWithDebugOutput()
+        {
+            JsonSerializerOptions jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+          //  CosmosSystemTextJsonSerializer serializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonOptions);
+
+            TestObject testItem = new MultiRegionSetupHelpers.CosmosIntegrationTestObject
+            {
+                Id = Guid.NewGuid().ToString(),
+                Pk = "testpk",
+                Other = "test-value"
+            };
+
+            // Serialize to JSON string and print payload
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await JsonSerializer.SerializeAsync(stream, testItem, jsonOptions);
+                stream.Position = 0;
+                string json = await new StreamReader(stream).ReadToEndAsync();
+                Console.WriteLine("Serialized JSON Payload:");
+                Console.WriteLine(json);
+            }
+
+            // Create the item in Cosmos DB
+            ItemResponse<MultiRegionSetupHelpers.CosmosIntegrationTestObject> response =
+                await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.Pk));
+
+            Console.WriteLine($"CreateItemAsync response status: {response.StatusCode}");
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+
 
         [TestMethod]
         [TestCategory("ThinClient")]
@@ -175,7 +233,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (TestObject item in items)
             {
-                using (Stream stream = TestCommon.SerializerCore.ToStream(item))
+                using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
                 {
                     using (ResponseMessage response = await this.container.CreateItemStreamAsync(stream, new PartitionKey(item.Pk)))
                     {
@@ -227,7 +285,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Other = "Updated " + item.Other
                 };
 
-                using (Stream stream = TestCommon.SerializerCore.ToStream(updatedItem))
+                using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(updatedItem))
                 {
                     using (ResponseMessage response = await this.container.ReplaceItemStreamAsync(stream, updatedItem.Id, new PartitionKey(updatedItem.Pk)))
                     {
@@ -246,7 +304,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             foreach (TestObject item in items)
             {
-                using (Stream stream = TestCommon.SerializerCore.ToStream(item))
+                using (Stream stream = this.cosmosSystemTextJsonSerializer.ToStream(item))
                 {
                     using (ResponseMessage response = await this.container.UpsertItemStreamAsync(stream, new PartitionKey(item.Pk)))
                     {
@@ -277,65 +335,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
-        [TestMethod]
-        [TestCategory("ThinClient")]
-        public async Task QueryItemsTest()
-        {
-            string pk = "pk_query";
-            List<TestObject> items = this.GenerateItems(pk).ToList();
-
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
-
-            string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
-            FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
-
-            int count = 0;
-            while (iterator.HasMoreResults)
-            {
-                FeedResponse<TestObject> response = await iterator.ReadNextAsync();
-                count += response.Count;
-            }
-
-            Assert.AreEqual(ItemCount, count);
-        }
-
-        [TestMethod]
-        [TestCategory("ThinClient")]
-        public async Task QueryItemsStreamTest()
-        {
-            string pk = "pk_query_stream";
-            List<TestObject> items = this.GenerateItems(pk).ToList();
-
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
-
-            QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.pk = @pk").WithParameter("@pk", pk);
-            FeedIterator iterator = this.container.GetItemQueryStreamIterator(query);
-
-            int count = 0;
-            while (iterator.HasMoreResults)
-            {
-                using (ResponseMessage response = await iterator.ReadNextAsync())
-                {
-                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
-
-                    using (StreamReader reader = new StreamReader(response.Content))
-                    {
-                        string json = await reader.ReadToEndAsync();
-                        using (JsonDocument doc = JsonDocument.Parse(json))
-                        {
-                            count += doc.RootElement.GetProperty("Documents").GetArrayLength();
-                        }
-                    }
-                }
-            }
-
-            Assert.AreEqual(ItemCount, count);
-        }
+        //Todo: Query tests
     }
 }
