@@ -179,16 +179,19 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
                             break;
                         case JsonTokenType.PropertyName:
-                            string propertyName = "/" + reader.GetString();
-                            if (pathsToEncrypt.Contains(propertyName))
+                            if (reader.CurrentDepth == ControlledElementsDepth)
                             {
-                                encryptPropertyName = propertyName;
+                                string propertyName = "/" + reader.GetString();
+                                if (pathsToEncrypt.Contains(propertyName))
+                                {
+                                    encryptPropertyName = propertyName;
+                                }
                             }
 
-                            currentWriter.WritePropertyName(reader.ValueSpan);
+                            currentWriter.WritePropertyName(UnescapeValue(ref reader, arrayPoolManager));
                             break;
                         case JsonTokenType.Comment:
-                            currentWriter.WriteCommentValue(reader.ValueSpan);
+                            currentWriter.WriteCommentValue(UnescapeValue(ref reader, arrayPoolManager));
                             break;
                         case JsonTokenType.String:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
@@ -201,7 +204,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             }
                             else
                             {
-                                currentWriter.WriteStringValue(reader.ValueSpan);
+                                currentWriter.WriteStringValue(UnescapeValue(ref reader, arrayPoolManager));
                             }
 
                             break;
