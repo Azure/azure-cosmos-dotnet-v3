@@ -404,12 +404,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             for (int index = 0; index < hybridSearchQueryInfo.ComponentQueryInfos.Count; ++index)
             {
                 QueryInfo queryInfo = hybridSearchQueryInfo.ComponentQueryInfos[index];
-                Debug.Assert(queryInfo.HasOrderBy, "The component query should have an order by");
-                Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
-                Debug.Assert(queryInfo.OrderBy.Count == 1, "The component query should have exactly one order by expression");
+                SortOrder sortOrder = queryInfo.HasOrderBy ? queryInfo.OrderBy[0] : SortOrder.Descending;
 
                 double componentWeight = useDefaultComponentWeight ? 1.0 : hybridSearchQueryInfo.ComponentWeights[index];
-                result.Add(new ComponentWeight(componentWeight, queryInfo.OrderBy[0]));
+                result.Add(new ComponentWeight(componentWeight, sortOrder));
             }
 
             return result;
@@ -635,14 +633,19 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static QueryInfo RewriteOrderByQueryInfo(QueryInfo queryInfo, GlobalFullTextSearchStatistics statistics, int componentCount)
         {
-            Debug.Assert(queryInfo.HasOrderBy, "The component query should have an order by");
-            Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
+            IReadOnlyList<string> rewrittenOrderByExpressions = queryInfo.OrderByExpressions;
 
-            List<string> rewrittenOrderByExpressions = new List<string>(queryInfo.OrderByExpressions.Count);
-            foreach (string orderByExpression in queryInfo.OrderByExpressions)
+            if (queryInfo.HasOrderBy)
             {
-                string rewrittenOrderByExpression = FormatComponentQueryTextWorkaround(orderByExpression, statistics, componentCount);
-                rewrittenOrderByExpressions.Add(rewrittenOrderByExpression);
+                Debug.Assert(queryInfo.HasNonStreamingOrderBy, "The component query is a non streaming order by");
+                List<string> orderByExpressions = new List<string>(queryInfo.OrderByExpressions.Count);
+                foreach (string orderByExpression in queryInfo.OrderByExpressions)
+                {
+                    string rewrittenOrderByExpression = FormatComponentQueryTextWorkaround(orderByExpression, statistics, componentCount);
+                    orderByExpressions.Add(rewrittenOrderByExpression);
+                }
+
+                rewrittenOrderByExpressions = orderByExpressions;
             }
 
             string rewrittenQuery = FormatComponentQueryTextWorkaround(queryInfo.RewrittenQuery, statistics, componentCount);
@@ -777,8 +780,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private class ComponentWeight
         {
-            public SortOrder SortOrder { get; }
-
             public double Weight { get; }
 
             public Comparison<double> Comparison { get; }
@@ -786,9 +787,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
             public ComponentWeight(double weight, SortOrder sortOrder)
             {
                 this.Weight = weight;
-                this.SortOrder = sortOrder;
 
-                int comparisonFactor = (this.SortOrder == SortOrder.Ascending) ? 1 : -1;
+                int comparisonFactor = (sortOrder == SortOrder.Ascending) ? 1 : -1;
                 this.Comparison = (x, y) => comparisonFactor * x.CompareTo(y);
             }
         }
