@@ -62,11 +62,6 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentException("Argument {0} can't be null or empty.", nameof(this.Path));
             }
 
-            if (string.IsNullOrEmpty(this.Language))
-            {
-                throw new ArgumentException("Argument {0} can't be null or empty.", nameof(this.Language));
-            }
-
             if (this.Path[0] != '/')
             {
                 throw new ArgumentException("The argument {0} is not a valid path.", this.Path);

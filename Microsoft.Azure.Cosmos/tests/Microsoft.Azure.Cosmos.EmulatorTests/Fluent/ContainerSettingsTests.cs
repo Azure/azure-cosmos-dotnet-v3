@@ -706,7 +706,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     new FullTextPath()
                     {
                         Path = fullTextPath3,
-                        Language = "en-US",
                     },
                 };
 
