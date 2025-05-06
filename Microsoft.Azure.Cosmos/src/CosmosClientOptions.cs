@@ -765,7 +765,8 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets a value indicating whether partition-level failover is enabled. When this feature is enabled,
         /// the SDK by default applies a cross-region hedging strategy with a default threshold of 1 seconds.
         /// If an availability strategy is provided explicitly, then it will be honored, and the default policy wouldn't be applied. Note that
-        /// the default availability strategy can be opted out by setting this environment variable `AZURE_COSMOS_SKIP_PPAF_DEFAULT_HEDGING` to `True`.
+        /// the default availability strategy can be opted out by setting <see cref="DisabledAvailabilityStrategy"/> as the availability strategy in
+        /// cosmos client options.
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
@@ -1260,8 +1261,12 @@ namespace Microsoft.Azure.Cosmos
             if (this.EnablePartitionLevelFailover
                 && this.AvailabilityStrategy == null)
             {
+                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                // the request timeout value provided by the end customer.
+                double defaultThresholdInMillis = Math.Min(1000, this.RequestTimeout.TotalMilliseconds / 2);
+
                 this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                    threshold: TimeSpan.FromMilliseconds(1000),
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(10));
             }
         }
