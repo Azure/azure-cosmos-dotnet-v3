@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -748,7 +748,8 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
-        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints which guide SDK-internal 
+        /// retry policies on how early to fallback to a different region.
         /// </summary>
 #if PREVIEW
         public
