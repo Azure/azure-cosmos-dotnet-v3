@@ -5,8 +5,8 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster" --verbosity normal '
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory !=ThinClient & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & TestCategory !=ThinClient" --verbosity normal '
   EmulatorPipeline3Arguments: ' --filter "TestCategory=MultiRegion" --verbosity normal '
   EmulatorPipeline4Arguments: ' --filter "TestCategory=MultiMaster" --verbosity normal '
   EmulatorPipeline5Arguments: ' --filter "TestCategory=ThinClient" --verbosity normal '
@@ -462,8 +462,7 @@ jobs:
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline5CategoryListName }}
   timeoutInMinutes: 120
-  # Always run, but never fail the PR if it breaks
-  condition: and(always(), eq('${{ parameters.OS }}', 'Windows'))
+  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   continueOnError: true
   pool: { name: 'OneES' }
 
