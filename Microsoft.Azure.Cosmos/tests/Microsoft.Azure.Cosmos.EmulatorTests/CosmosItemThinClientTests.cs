@@ -13,9 +13,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
-    using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
+    using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
 
     [TestClass]
     public class CosmosItemThinClientTests
@@ -90,45 +89,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             return items;
         }
-
-        [TestMethod]
-        [TestCategory("Debug")]
-        public async Task CreateItemTestWithDebugOutput()
-        {
-            JsonSerializerOptions jsonOptions = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = null,
-                PropertyNameCaseInsensitive = true,
-                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-            };
-
-          //  CosmosSystemTextJsonSerializer serializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonOptions);
-
-            TestObject testItem = new MultiRegionSetupHelpers.CosmosIntegrationTestObject
-            {
-                Id = Guid.NewGuid().ToString(),
-                Pk = "testpk",
-                Other = "test-value"
-            };
-
-            // Serialize to JSON string and print payload
-            using (MemoryStream stream = new MemoryStream())
-            {
-                await JsonSerializer.SerializeAsync(stream, testItem, jsonOptions);
-                stream.Position = 0;
-                string json = await new StreamReader(stream).ReadToEndAsync();
-                Console.WriteLine("Serialized JSON Payload:");
-                Console.WriteLine(json);
-            }
-
-            // Create the item in Cosmos DB
-            ItemResponse<MultiRegionSetupHelpers.CosmosIntegrationTestObject> response =
-                await this.container.CreateItemAsync(testItem, new PartitionKey(testItem.Pk));
-
-            Console.WriteLine($"CreateItemAsync response status: {response.StatusCode}");
-            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-        }
-
 
         [TestMethod]
         [TestCategory("ThinClient")]
@@ -334,7 +294,5 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
         }
-
-        //Todo: Query tests
     }
 }
