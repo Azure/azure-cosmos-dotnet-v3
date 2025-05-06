@@ -77,6 +77,12 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
+
+                if (isFinalBlock)
+                {
+                    break;
+                }
+
                 long bytesConsumed = 0;
 
                 // processing itself here
@@ -125,7 +131,16 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.String:
                             if (decryptPropertyName == null)
                             {
-                                writer.WriteStringValue(reader.ValueSpan);
+                                if (!reader.ValueIsEscaped)
+                                {
+                                    writer.WriteStringValue(reader.ValueSpan);
+                                }
+                                else
+                                {
+                                    byte[] temp = arrayPoolManager.Rent(reader.ValueSpan.Length);
+                                    int tempBytes = reader.CopyString(temp);
+                                    writer.WriteStringValue(temp.AsSpan(0, tempBytes));
+                                }
                             }
                             else
                             {
