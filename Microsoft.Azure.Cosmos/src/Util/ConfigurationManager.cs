@@ -100,12 +100,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
 
-        /// <summary>
-        /// A read-only string containing the environment variable name for disabling/ opting out the cross regional hedging
-        /// in conjunction with partition level failover.
-        /// </summary>
-        internal static readonly string SkipDefaultHedgingWithPartitionLevelFailover = "AZURE_COSMOS_SKIP_PPAF_DEFAULT_HEDGING";
-
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -337,22 +331,6 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpChannelMultiplexingEnabled,
-                        defaultValue: false);
-        }
-
-        /// <summary>
-        /// Determines whether the default hedging is disabled/ opted-out in conjunction with partition-level failover.
-        /// This method checks the environment configuration to retrieve the value of the 
-        /// AZURE_COSMOS_SKIP_PPAF_DEFAULT_HEDGING environment variable, defaulting to false if not explicitly set.
-        /// </summary>
-        /// <returns>
-        /// A boolean value indicating whether cross region hedging is disabled with partition-level failover.
-        /// </returns>
-        public static bool IsDefaultHedgingDisabledWithPartitionLevelFailover()
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.SkipDefaultHedgingWithPartitionLevelFailover,
                         defaultValue: false);
         }
     }

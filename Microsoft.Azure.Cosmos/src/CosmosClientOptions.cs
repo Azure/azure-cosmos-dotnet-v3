@@ -76,7 +76,6 @@ namespace Microsoft.Azure.Cosmos
         private string applicationName;
         private IFaultInjector faultInjector;
         private bool isCustomSerializerProvided;
-        private bool isPartitionLevelFailoverEnabled;
 
         /// <summary>
         /// Creates a new CosmosClientOptions
@@ -92,7 +91,6 @@ namespace Microsoft.Azure.Cosmos
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
             this.SessionRetryOptions = new SessionRetryOptions();
-            this.InitializePartitionLevelFailoverWithDefaultHedging();
         }
 
         /// <summary>
@@ -769,11 +767,7 @@ namespace Microsoft.Azure.Cosmos
         /// If an availability strategy is provided explicitly, then it will be honored, and the default policy wouldn't be applied. Note that
         /// the default availability strategy can be opted out by setting this environment variable `AZURE_COSMOS_SKIP_PPAF_DEFAULT_HEDGING` to `True`.
         /// </summary>
-        internal bool EnablePartitionLevelFailover
-        {
-            get => this.isPartitionLevelFailoverEnabled;
-            set => this.InitializePartitionLevelFailoverWithDefaultHedging(isPPafEnabled: value);
-        }
+        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
         /// Enable partition level circuit breaker (aka PPCB). For compute gateway use case, by default per partition automatic failover will be disabled, so does the PPCB.
@@ -1023,6 +1017,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
+            this.InitializePartitionLevelFailoverWithDefaultHedging();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1260,14 +1255,10 @@ namespace Microsoft.Azure.Cosmos
                         suffix: this.GetUserAgentSuffix());
         }
 
-        internal void InitializePartitionLevelFailoverWithDefaultHedging(
-            bool isPPafEnabled = false)
+        internal void InitializePartitionLevelFailoverWithDefaultHedging()
         {
-            this.isPartitionLevelFailoverEnabled = isPPafEnabled || ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-
-            if (this.isPartitionLevelFailoverEnabled
-                && this.AvailabilityStrategy == null
-                && !ConfigurationManager.IsDefaultHedgingDisabledWithPartitionLevelFailover())
+            if (this.EnablePartitionLevelFailover
+                && this.AvailabilityStrategy == null)
             {
                 this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
                     threshold: TimeSpan.FromMilliseconds(1000),
