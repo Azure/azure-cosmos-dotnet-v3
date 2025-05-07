@@ -10,7 +10,11 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Linq.Expressions;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SqlObjects;
+    using Newtonsoft.Json;
 
     internal static class OtherBuiltinSystemFunctions
     {
@@ -118,9 +122,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(float[]), typeof(float[]), typeof(bool), typeof(object)},
-                        new Type[]{typeof(sbyte[]), typeof(sbyte[]), typeof(bool), typeof(object)},
-                        new Type[]{typeof(byte[]), typeof(byte[]), typeof(bool), typeof(object)},
+                        new Type[]{typeof(float[]), typeof(float[]), typeof(bool), typeof(CosmosLinqExtensions.VectorDistanceOptions)},
+                        new Type[]{typeof(sbyte[]), typeof(sbyte[]), typeof(bool), typeof(CosmosLinqExtensions.VectorDistanceOptions)},
+                        new Type[]{typeof(byte[]), typeof(byte[]), typeof(bool), typeof(CosmosLinqExtensions.VectorDistanceOptions)},
                     })
             {
             }
@@ -138,7 +142,11 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (methodCallExpression.Arguments[3] is ConstantExpression optionExpression && optionExpression.Value != null)
                 {
-                    arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[3], context));
+                    string serializedConstant = System.Text.Json.JsonSerializer.Serialize(
+                        optionExpression.Value, 
+                        new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault });
+
+                    arguments.Add(CosmosElement.Parse(serializedConstant).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton));
                 }
 
                 return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.VectorDistance, arguments.ToImmutableArray());
