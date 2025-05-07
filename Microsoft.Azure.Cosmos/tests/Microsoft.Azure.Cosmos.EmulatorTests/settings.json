@@ -13,12 +13,14 @@
     "MasterStalenessIntervalInSeconds": "1",
     "QueryPerformanceTests.CosmosDatabaseId": "db",
     "QueryPerformanceTests.ContainerId": "container",
-    "QueryPerformanceTests.ContentSerialization": "JsonText",
-    "QueryPerformanceTests.Query": "SELECT TOP 1 c.region FROM c",
+    "QueryPerformanceTests.InsertDocumentCount": "10000",
+    "QueryPerformanceTests.Queries": "[\"SELECT TOP 1 c.region FROM c\"]",
     "QueryPerformanceTests.MaxConcurrency": "-1",
     "QueryPerformanceTests.MaxItemCount": "-1",
     "QueryPerformanceTests.NumberOfIterations": "1",
     "QueryPerformanceTests.WarmupIterations": "0",
-    "QueryPerformanceTests.UseStronglyTypedIterator": "true"
+    "QueryPerformanceTests.UseStronglyTypedIterator": "true",
+    "QueryPerformanceTests.OutputPath": "",
+    "QueryPerformanceTests.OutputDirectoryName": "perf_metrics_output"
   }
 }
