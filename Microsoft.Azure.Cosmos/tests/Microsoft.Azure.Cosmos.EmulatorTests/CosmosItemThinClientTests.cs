@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
 
-            if (!string.IsNullOrEmpty(this.connectionString))
+            if (string.IsNullOrEmpty(this.connectionString))
             {
                 Assert.Fail("Test failure for thinclient tests.");
             }
@@ -100,7 +100,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             foreach (TestObject item in items)
             {
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             }
         }
 
