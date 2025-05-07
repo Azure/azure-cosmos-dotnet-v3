@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets a string containing the language of the full text path.
         /// </summary>
-        [JsonProperty(PropertyName = "language")]
+        [JsonProperty(PropertyName = "language", NullValueHandling = NullValueHandling.Ignore)]
         public string Language { get; set; }
 
         /// <summary>
