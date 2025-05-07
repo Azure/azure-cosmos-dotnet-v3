@@ -2050,13 +2050,10 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
-            bool isVectorDistance = false;
-            if (sqlfunc is SqlFunctionCallScalarExpression functionCall && functionCall.Name.Value == SqlFunctionCallScalarExpression.Names.VectorDistance)
-            {
-                // Order By VectorDistance is a special case, since there is no ordering required.
-                isVectorDistance = true;
-            }
 
+            // Order By VectorDistance is a special case, since there is no ordering required.
+            bool isVectorDistance = (sqlfunc is SqlFunctionCallScalarExpression functionCall) && (functionCall.Name.Value == SqlFunctionCallScalarExpression.Names.VectorDistance);
+            
             SqlOrderByItem orderByItem = SqlOrderByItem.Create(sqlfunc, isVectorDistance ? null : isDescending);
             SqlOrderByClause orderby = SqlOrderByClause.Create(new SqlOrderByItem[] { orderByItem });
             return orderby;
