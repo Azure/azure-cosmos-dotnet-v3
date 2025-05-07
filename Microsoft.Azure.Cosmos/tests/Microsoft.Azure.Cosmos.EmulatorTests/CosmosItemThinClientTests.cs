@@ -33,9 +33,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
 
-            if (string.IsNullOrEmpty(this.connectionString))
+            if (!string.IsNullOrEmpty(this.connectionString))
             {
-                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
+                Assert.Fail("Test failure for thinclient tests.");
             }
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
