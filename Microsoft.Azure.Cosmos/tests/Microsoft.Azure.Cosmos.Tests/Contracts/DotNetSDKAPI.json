@@ -6382,6 +6382,11 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToFeedIterator[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -6556,6 +6561,155 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {
+        "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "Int32 get_SearchListSizeMultiplier()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Int32 get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Int32 SearchListSizeMultiplier[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"searchListSizeMultiplier\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "Int32 SearchListSizeMultiplier;CanRead:True;CanWrite:True;Int32 get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SearchListSizeMultiplier(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "System.String DataType;CanRead:True;CanWrite:True;System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "System.String DistanceFunction;CanRead:True;CanWrite:True;System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.String get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(), Void .ctor()]"
+            },
+            "Void set_DataType(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_DistanceFunction(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_SearchListSizeMultiplier(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_SearchListSizeMultiplier(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      }
+    },
+    "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 get_SearchListSizeMultiplier()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Int32 get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Int32 SearchListSizeMultiplier[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"searchListSizeMultiplier\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "Int32 SearchListSizeMultiplier;CanRead:True;CanWrite:True;Int32 get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SearchListSizeMultiplier(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String DataType;CanRead:True;CanWrite:True;System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.String DistanceFunction;CanRead:True;CanWrite:True;System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_DataType(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DistanceFunction(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_SearchListSizeMultiplier(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SearchListSizeMultiplier(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
