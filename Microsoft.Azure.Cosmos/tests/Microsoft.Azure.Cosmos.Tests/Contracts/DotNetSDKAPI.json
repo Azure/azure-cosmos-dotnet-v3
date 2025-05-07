@@ -5410,7 +5410,7 @@
           ],
           "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"language\")]": {
+        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"language\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"

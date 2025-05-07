@@ -806,6 +806,58 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
         }
 
+        [Ignore("Marking as ignore until emulator is updated")]
+        [TestMethod]
+        public async Task TestFullTextSearchPolicyOptionalLanguage()
+        {
+            string fullTextPath1 = "/fts1";
+            Database databaseForFullTextSearch = await this.GetClient().CreateDatabaseAsync("fullTextSearchDB",
+                cancellationToken: this.cancellationToken);
+
+            try
+            {
+                string containerName = "fullTextContainerTest";
+                string partitionKeyPath = "/pk";
+
+                ContainerResponse containerResponse =
+                    await databaseForFullTextSearch.DefineContainer(containerName, partitionKeyPath)
+                        .WithFullTextPolicy(
+                            defaultLanguage: null,
+                            fullTextPaths: new Collection<FullTextPath>() {  new FullTextPath()
+                            {
+                                Path = fullTextPath1
+                            }})
+                        .Attach()
+                        .WithIndexingPolicy()
+                            .WithFullTextIndex()
+                                .Path(fullTextPath1)
+                             .Attach()
+                        .Attach()
+                        .CreateAsync();
+
+                Assert.AreEqual(HttpStatusCode.Created, containerResponse.StatusCode);
+                Assert.AreEqual(containerName, containerResponse.Resource.Id);
+                Assert.AreEqual(partitionKeyPath, containerResponse.Resource.PartitionKey.Paths.First());
+                ContainerProperties containerSettings = containerResponse.Resource;
+
+                // Validate FullText Paths.
+                Assert.IsNotNull(containerSettings.FullTextPolicy);
+                Assert.IsNull(containerSettings.FullTextPolicy.DefaultLanguage);
+                Assert.IsNotNull(containerSettings.FullTextPolicy.FullTextPaths);
+                Assert.AreEqual(1, containerSettings.FullTextPolicy.FullTextPaths.Count());
+                Assert.IsNull(containerSettings.FullTextPolicy.FullTextPaths[0].Language);
+
+                // Validate Full Text Indexes.
+                Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+                Assert.AreEqual(1, containerSettings.IndexingPolicy.FullTextIndexes.Count());
+                Assert.AreEqual(fullTextPath1, containerSettings.IndexingPolicy.FullTextIndexes[0].Path);
+            }
+            finally
+            {
+                await databaseForFullTextSearch.DeleteAsync();
+            }
+        }
+
         [Ignore]
         [TestMethod]
         public async Task WithComputedProperties()
