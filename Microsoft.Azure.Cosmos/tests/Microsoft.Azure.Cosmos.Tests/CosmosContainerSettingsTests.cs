@@ -292,8 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                     new Cosmos.FullTextPath()
                     {
-                        Path = fullTextPath3,
-                        Language = "en-US",
+                        Path = fullTextPath3
                     },
                 };
 
@@ -333,6 +332,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(fullTextPaths.Count, fullTextPolicy.FullTextPaths.Count());
             Assert.AreEqual(fullTextPaths[0].Path, fullTextPolicy.FullTextPaths[0].Path);
             Assert.AreEqual(fullTextPaths[0].Language, fullTextPolicy.FullTextPaths[0].Language);
+            Assert.AreEqual(fullTextPaths[1].Path, fullTextPolicy.FullTextPaths[1].Path);
+            Assert.AreEqual(fullTextPaths[1].Language, fullTextPolicy.FullTextPaths[1].Language);
+            Assert.AreEqual(fullTextPaths[2].Path, fullTextPolicy.FullTextPaths[2].Path);
+            Assert.AreEqual(fullTextPaths[2].Language, fullTextPolicy.FullTextPaths[2].Language);
 
             CollectionAssert.AreEquivalent(fullTextPaths, fullTextPolicy.FullTextPaths.ToList());
 
@@ -340,6 +343,96 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("/fts1", fullTextIndexes[0].Path);
             Assert.AreEqual("/fts2", fullTextIndexes[1].Path);
             Assert.AreEqual("/fts3", fullTextIndexes[2].Path);
+            Assert.AreEqual("en-US", fullTextPolicy.FullTextPaths[0].Language);
+            Assert.AreEqual("en-US", fullTextPolicy.FullTextPaths[1].Language);
+            Assert.IsNull(fullTextPolicy.FullTextPaths[2].Language);
+        }
+
+        [TestMethod]
+        public void ValidateFullTextLanguagesOptional()
+        {
+            string fullTextPath1 = "/fts1", fullTextPath2 = "/fts2";
+
+            Collection<FullTextPath> fullTextPaths = new Collection<FullTextPath>()
+                {
+                    new Cosmos.FullTextPath()
+                    {
+                        Path = fullTextPath1
+                    },
+                    new Cosmos.FullTextPath()
+                    {
+                        Path = fullTextPath2,
+                        Language = "de-DE",
+                    }
+                };
+
+            ContainerProperties containerSettings = new ContainerProperties(id: "TestContainer", partitionKeyPath: "/partitionKey")
+            {
+                FullTextPolicy = new()
+                {
+                    FullTextPaths = fullTextPaths
+                },
+                IndexingPolicy = new Cosmos.IndexingPolicy()
+                {
+                    FullTextIndexes = new()
+                    {
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath1,
+                        },
+                        new Cosmos.FullTextIndexPath()
+                        {
+                            Path = fullTextPath2,
+                        }
+                    },
+                },
+            };
+
+            Assert.IsNotNull(containerSettings.IndexingPolicy);
+            Assert.IsNotNull(containerSettings.FullTextPolicy);
+            Assert.IsNotNull(containerSettings.IndexingPolicy.FullTextIndexes);
+
+            Cosmos.FullTextPolicy fullTextPolicy = containerSettings.FullTextPolicy;
+            Assert.IsNull(fullTextPolicy.DefaultLanguage);
+            Assert.IsNotNull(fullTextPolicy.FullTextPaths);
+            Assert.AreEqual(fullTextPaths.Count, fullTextPolicy.FullTextPaths.Count());
+            Assert.AreEqual(fullTextPaths[0].Path, fullTextPolicy.FullTextPaths[0].Path);
+            Assert.AreEqual(fullTextPaths[0].Language, fullTextPolicy.FullTextPaths[0].Language);
+            Assert.AreEqual(fullTextPaths[1].Path, fullTextPolicy.FullTextPaths[1].Path);
+            Assert.AreEqual(fullTextPaths[1].Language, fullTextPolicy.FullTextPaths[1].Language);
+
+            CollectionAssert.AreEquivalent(fullTextPaths, fullTextPolicy.FullTextPaths.ToList());
+
+            Collection<Cosmos.FullTextIndexPath> fullTextIndexes = containerSettings.IndexingPolicy.FullTextIndexes;
+            Assert.AreEqual("/fts1", fullTextIndexes[0].Path);
+            Assert.AreEqual("/fts2", fullTextIndexes[1].Path);
+            Assert.IsNull(fullTextPolicy.FullTextPaths[0].Language);
+            Assert.AreEqual("de-DE", fullTextPolicy.FullTextPaths[1].Language);
+
+            string serialized = this.Serialize(containerSettings);
+            Assert.AreEqual(@"{""indexingPolicy"":{""automatic"":true,""indexingMode"":""Consistent"",""includedPaths"":[],""excludedPaths"":[],""compositeIndexes"":[],""spatialIndexes"":[],""vectorIndexes"":[],""fullTextIndexes"":[{""path"":""/fts1""},{""path"":""/fts2""}]},""fullTextPolicy"":{""fullTextPaths"":[{""path"":""/fts1""},{""path"":""/fts2"",""language"":""de-DE""}]},""id"":""TestContainer"",""partitionKey"":{""paths"":[""/partitionKey""],""kind"":""Hash""}}", serialized);
+        }
+
+        private string Serialize(ContainerProperties containerProperties)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (StreamWriter streamWriter = new StreamWriter(ms))
+                {
+                    JsonSerializer jsonSerializer = new JsonSerializer();
+                    using (JsonWriter jsonWriter = new JsonTextWriter(streamWriter))
+                    {
+                        jsonSerializer.Serialize(jsonWriter, containerProperties);
+                        jsonWriter.Flush();
+
+                        ms.Position = 0;
+                        using (StreamReader streamReader = new StreamReader(ms))
+                        {
+                            return streamReader.ReadToEnd();
+                        }
+                    }
+                }
+            }
         }
 
         [TestMethod]
