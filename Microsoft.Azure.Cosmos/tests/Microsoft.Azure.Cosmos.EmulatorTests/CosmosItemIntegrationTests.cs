@@ -1315,7 +1315,7 @@
                 if (cosmosClientOptions.EnablePartitionLevelFailover)
                 {
                     Assert.IsNotNull(hedgeContext);
-                    IReadOnlyList<string> hedgedRegions = (IReadOnlyList<string>)hedgeContext;
+                    ICollection<string> hedgedRegions = (ICollection<string>)hedgeContext;
 
                     Assert.AreEqual(3, hedgedRegions.Count);
                     Assert.IsTrue(hedgedRegions.Contains(region1) && hedgedRegions.Contains(region2) && hedgedRegions.Contains(region3));
