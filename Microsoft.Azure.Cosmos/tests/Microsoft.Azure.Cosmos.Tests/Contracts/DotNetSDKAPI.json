@@ -4459,6 +4459,11 @@
             "EnumMemberAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction Euclidean;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.DistanceFunction None": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction None;IsInitOnly:False;IsStatic:True;"
         }
       },
       "NestedTypes": {}
@@ -6564,7 +6569,7 @@
         }
       },
       "NestedTypes": {
-        "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+        "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
           "Subclasses": {},
           "Members": {
             "Int32 get_SearchListSizeMultiplier()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -6581,52 +6586,52 @@
               ],
               "MethodInfo": "Int32 SearchListSizeMultiplier;CanRead:True;CanWrite:True;Int32 get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SearchListSizeMultiplier(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.String DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
+            "Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
               "Type": "Property",
               "Attributes": [
                 "JsonPropertyNameAttribute"
               ],
-              "MethodInfo": "System.String DataType;CanRead:True;CanWrite:True;System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.String DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
+            "Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Microsoft.Azure.Cosmos.VectorDataType DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
               "Type": "Property",
               "Attributes": [
                 "JsonPropertyNameAttribute"
               ],
-              "MethodInfo": "System.String DistanceFunction;CanRead:True;CanWrite:True;System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType DataType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorDataType get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "System.String get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "Microsoft.Azure.Cosmos.VectorDataType get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-            },
-            "System.String get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-              "Type": "Method",
-              "Attributes": [
-                "CompilerGeneratedAttribute"
-              ],
-              "MethodInfo": "System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void .ctor()": {
               "Type": "Constructor",
               "Attributes": [],
               "MethodInfo": "[Void .ctor(), Void .ctor()]"
             },
-            "Void set_DataType(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
-            "Void set_DistanceFunction(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+            "Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
               "Attributes": [
                 "CompilerGeneratedAttribute"
               ],
-              "MethodInfo": "Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+              "MethodInfo": "Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_SearchListSizeMultiplier(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -6640,7 +6645,7 @@
         }
       }
     },
-    "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+    "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
         "Int32 get_SearchListSizeMultiplier()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
@@ -6657,52 +6662,52 @@
           ],
           "MethodInfo": "Int32 SearchListSizeMultiplier;CanRead:True;CanWrite:True;Int32 get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SearchListSizeMultiplier(Int32);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
+        "Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyNameAttribute"
           ],
-          "MethodInfo": "System.String DataType;CanRead:True;CanWrite:True;System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction DistanceFunction;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
+        "Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.DistanceFunction get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyNameAttribute"
           ],
-          "MethodInfo": "System.String DistanceFunction;CanRead:True;CanWrite:True;System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType DataType;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.VectorDataType get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Microsoft.Azure.Cosmos.VectorDataType get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "System.String get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        },
-        "System.String get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "CompilerGeneratedAttribute"
-          ],
-          "MethodInfo": "System.String get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void .ctor()": {
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(), Void .ctor()]"
         },
-        "Void set_DataType(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_DataType(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_DataType(Microsoft.Azure.Cosmos.VectorDataType);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "Void set_DistanceFunction(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+        "Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "CompilerGeneratedAttribute"
           ],
-          "MethodInfo": "Void set_DistanceFunction(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Void set_DistanceFunction(Microsoft.Azure.Cosmos.DistanceFunction);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_SearchListSizeMultiplier(Int32)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -12953,6 +12958,11 @@
             "EnumMemberAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType Int8;IsInitOnly:False;IsStatic:True;"
+        },
+        "Microsoft.Azure.Cosmos.VectorDataType None": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.VectorDataType None;IsInitOnly:False;IsStatic:True;"
         },
         "Microsoft.Azure.Cosmos.VectorDataType Uint8[System.Runtime.Serialization.EnumMemberAttribute(Value = \"uint8\")]": {
           "Type": "Field",
