@@ -284,7 +284,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             {
                 // Default availability strategy values.
                 Assert.AreEqual(TimeSpan.FromMilliseconds(1000), crossRegionHedgingStrategy.Threshold);
-                Assert.AreEqual(TimeSpan.FromMilliseconds(10), crossRegionHedgingStrategy.ThresholdStep);
+                Assert.AreEqual(TimeSpan.FromMilliseconds(500), crossRegionHedgingStrategy.ThresholdStep);
             }
         }
 
