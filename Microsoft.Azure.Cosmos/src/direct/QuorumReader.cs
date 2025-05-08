@@ -5,13 +5,16 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.Diagnostics;
     using System.Globalization;
     using System.Linq;
+    using System.Net;
     using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
+    using Microsoft.Azure.Documents.Collections;
 
     //=================================================================================================================
     // Strong read logic:
@@ -110,13 +113,26 @@ namespace Microsoft.Azure.Documents
                                 this.authorizationTokenProvider, 
                                 secondaryQuorumReadResult.SelectedLsn,
                                 secondaryQuorumReadResult.GlobalCommittedSelectedLsn);
-                            if (await this.WaitForReadBarrierAsync(
-                                    barrierRequest,
-                                    allowPrimary: true,
-                                    readQuorum: readQuorumValue,
-                                    readBarrierLsn: secondaryQuorumReadResult.SelectedLsn,
-                                    targetGlobalCommittedLSN: secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
-                                    readMode: readMode))
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+                            (bool isSuccess, bool isThrottled, StoreResponse? throttledResponse) = await this.WaitForReadBarrierAsync(
+                                                barrierRequest,
+                                                allowPrimary: true,
+                                                readQuorum: readQuorumValue,
+                                                readBarrierLsn: secondaryQuorumReadResult.SelectedLsn,
+                                                targetGlobalCommittedLSN: secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
+                                                readMode: readMode);
+
+                            if (isThrottled && throttledResponse != null)
+                            {
+                                // Handle throttling by delegating to ResourceThrottleRetryPolicy
+                                DefaultTrace.TraceWarning("ReadStrongAsync: All replicas returned 429 Too Many Requests. Delegating to ResourceThrottleRetryPolicy.");
+                                
+                                // Return the real 429 response upstream
+                                return throttledResponse;
+
+                            }
+
+                            if (isSuccess)
                             {
                                 return secondaryQuorumReadResult.GetResponseAndSkipStoreResultDispose();
                             }
@@ -256,7 +272,6 @@ namespace Microsoft.Azure.Documents
                     useSessionToken: false, 
                     readMode: readMode));
                 IList<ReferenceCountedDisposable<StoreResult>> responseResult = disposableResponseResult.Value;
-
                 responsesForLogging = new StoreResult[responseResult.Count];
                 for (int i = 0; i < responseResult.Count; i++)
                 {
@@ -312,7 +327,15 @@ namespace Microsoft.Azure.Documents
 
             // ReadBarrier required
             DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(entity, this.authorizationTokenProvider, readLsn, globalCommittedLSN);
-            if (!await this.WaitForReadBarrierAsync(barrierRequest, false, readQuorum, readLsn, globalCommittedLSN, readMode))
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+            (bool isSuccess, bool isThrottled, StoreResponse? throttledRespons) = await this.WaitForReadBarrierAsync(
+                                                barrierRequest,
+                                                false,
+                                                readQuorum,
+                                                readLsn,
+                                                globalCommittedLSN,
+                                                readMode);
+            if(!isSuccess)
             {
                 return new ReadQuorumResult(
                     entity.RequestContext.RequestChargeTracker,
@@ -353,6 +376,17 @@ namespace Microsoft.Azure.Documents
                 requiresValidLsn: true, 
                 useSessionToken: useSessionToken);
             StoreResult storeResult = disposableStoreResult.Target;
+            if (storeResult.StatusCode == StatusCodes.TooManyRequests)
+            {
+                // Let ResourceThrottleRetryPolicy handle 429
+                // Instead of throwing an exception, return a result that indicates throttling
+                return new ReadPrimaryResult(
+                    requestChargeTracker: entity.RequestContext.RequestChargeTracker,
+                    isSuccessful: true,
+                    shouldRetryOnSecondary: false,
+                    response: disposableStoreResult.TryAddReference()); 
+            }
+
             if (!storeResult.IsValid)
             {
                 ExceptionDispatchInfo.Capture(storeResult.GetException()).Throw();
@@ -469,8 +503,8 @@ namespace Microsoft.Azure.Documents
 
             return PrimaryReadOutcome.QuorumNotMet;
         }
-
-        private Task<bool> WaitForReadBarrierAsync(
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+        private Task<(bool isSuccess, bool isThrottled, StoreResponse? throttledResponse)> WaitForReadBarrierAsync(
             DocumentServiceRequest barrierRequest,
             bool allowPrimary,
             int readQuorum,
@@ -490,7 +524,7 @@ namespace Microsoft.Azure.Documents
         // (Env variable 'AZURE_COSMOS_OLD_BARRIER_REQUESTS_HANDLING_ENABLED' allowing to fall back
         // This old implementation will be removed (and the environment
         // variable not been used anymore) after some bake time.
-        private async Task<bool> WaitForReadBarrierOldAsync(
+        private async Task<(bool isSuccess, bool isThrottled, StoreResponse? throttledResponse)> WaitForReadBarrierOldAsync(
             DocumentServiceRequest barrierRequest,
             bool allowPrimary,
             int readQuorum,
@@ -506,7 +540,7 @@ namespace Microsoft.Azure.Documents
             while (readBarrierRetryCount-- > 0)
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-                using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
+                using StoreResultList disposableResponses = new (await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
                     includePrimary: allowPrimary,
                     replicaCountToRead: readQuorum,
@@ -517,11 +551,18 @@ namespace Microsoft.Azure.Documents
                     forceReadAll: true));
                 IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
 
+                // Check if all replicas returned 429
+                if (responses.All(response => response.Target.StatusCode == StatusCodes.TooManyRequests))
+                {
+                    DefaultTrace.TraceWarning("WaitForReadBarrierOldAsync: All replicas returned 429 Too Many Requests. Yielding early to ResourceThrottleRetryPolicy.");
+                    return (false, true, responses.First().Target.ToResponse(null)); // Return the first 429 response
+                }
+
                 long maxGlobalCommittedLsnInResponses = responses.Count > 0 ? responses.Max(response => response.Target.GlobalCommittedLSN) : 0;
                 if ((responses.Count(response => response.Target.LSN >= readBarrierLsn) >= readQuorum) &&
                     (!(targetGlobalCommittedLSN > 0) || maxGlobalCommittedLsnInResponses >= targetGlobalCommittedLSN))
                 {
-                    return true;
+                    return (true, false, null);
                 }
 
                 maxGlobalCommittedLsn = maxGlobalCommittedLsn > maxGlobalCommittedLsnInResponses ?
@@ -547,7 +588,7 @@ namespace Microsoft.Azure.Documents
                 while (readBarrierRetryCountMultiRegion-- > 0)
                 {
                     barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
-                    using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
+                    using StoreResultList disposableResponses = new (await this.storeReader.ReadMultipleReplicaAsync(
                         barrierRequest,
                         includePrimary: allowPrimary,
                         replicaCountToRead: readQuorum,
@@ -562,7 +603,7 @@ namespace Microsoft.Azure.Documents
                     if ((responses.Count(response => response.Target.LSN >= readBarrierLsn) >= readQuorum) &&
                         maxGlobalCommittedLsnInResponses >= targetGlobalCommittedLSN)
                     {
-                        return true;
+                        return (true, false, null);
                     }
 
                     maxGlobalCommittedLsn = maxGlobalCommittedLsn > maxGlobalCommittedLsnInResponses ?
@@ -590,10 +631,11 @@ namespace Microsoft.Azure.Documents
 
             DefaultTrace.TraceInformation("QuorumReader: WaitForReadBarrierAsync - TargetGlobalCommittedLsn: {0}, MaxGlobalCommittedLsn: {1} ReadMode: {2}.",
                 targetGlobalCommittedLSN, maxGlobalCommittedLsn, readMode);
-            return false;
+            return (false, false, null);
         }
 
-        private async Task<bool> WaitForReadBarrierNewAsync(
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+        private async Task<(bool isSuccess, bool isThrottled, StoreResponse? throttledResponse)> WaitForReadBarrierNewAsync(
             DocumentServiceRequest barrierRequest,
             bool allowPrimary,
             int readQuorum,
@@ -606,11 +648,11 @@ namespace Microsoft.Azure.Documents
             long maxGlobalCommittedLsn = 0;
             bool hasConvergedOnLSN = false;
             int readBarrierRetryCount = 0;
-            while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+            while (readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();
-                using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
+                using StoreResultList disposableResponses = new (await this.storeReader.ReadMultipleReplicaAsync(
                     barrierRequest,
                     includePrimary: allowPrimary,
                     replicaCountToRead: hasConvergedOnLSN ? 1 : readQuorum, // for GCLSN a single replica is sufficient
@@ -621,11 +663,18 @@ namespace Microsoft.Azure.Documents
                     forceReadAll: !hasConvergedOnLSN)); // for GCLSN a single replica is sufficient - and requests should be issued sequentially
                 barrierRequestStopWatch.Stop();
                 IList<ReferenceCountedDisposable<StoreResult>> responses = disposableResponses.Value;
+                
+                // Check if all replicas returned 429
+                if (responses.All(response => response.Target.StatusCode == StatusCodes.TooManyRequests))
+                {
+                    DefaultTrace.TraceWarning("WaitForReadBarrierOldAsync: All replicas returned 429 Too Many Requests. Yielding early to ResourceThrottleRetryPolicy.");
+                    return (false, true, responses.First().Target.ToResponse(null));  // Yield early if all replicas return 429
+                }
                 TimeSpan previousBarrierRequestLatency = barrierRequestStopWatch.Elapsed;
 
                 int readBarrierLsnReachedCount = 0;
                 long maxGlobalCommittedLsnInResponses = 0;
-                foreach(ReferenceCountedDisposable<StoreResult> response in responses)
+                foreach (ReferenceCountedDisposable<StoreResult> response in responses)
                 {
                     maxGlobalCommittedLsnInResponses = Math.Max(maxGlobalCommittedLsnInResponses, response.Target.GlobalCommittedLSN);
                     if (!hasConvergedOnLSN && response.Target.LSN >= readBarrierLsn)
@@ -642,7 +691,7 @@ namespace Microsoft.Azure.Documents
                 if (hasConvergedOnLSN &&
                     (targetGlobalCommittedLSN <= 0 || maxGlobalCommittedLsnInResponses >= targetGlobalCommittedLSN))
                 {
-                    return true;
+                    return (true, false, null);
                 }
 
                 maxGlobalCommittedLsn = Math.Max(maxGlobalCommittedLsn, maxGlobalCommittedLsnInResponses);
@@ -670,7 +719,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else if (shouldDelay)
                 {
-                    TimeSpan delay =maxDelay < remainingDelay ? maxDelay : remainingDelay;
+                    TimeSpan delay = maxDelay < remainingDelay ? maxDelay : remainingDelay;
                     await Task.Delay(delay);
                     remainingDelay -= delay;
                 }
@@ -678,7 +727,7 @@ namespace Microsoft.Azure.Documents
 
             DefaultTrace.TraceInformation("QuorumReader: WaitForReadBarrierAsync - TargetGlobalCommittedLsn: {0}, MaxGlobalCommittedLsn: {1} ReadMode: {2}, HasLSNConverged:{3}.",
                 targetGlobalCommittedLSN, maxGlobalCommittedLsn, readMode, hasConvergedOnLSN);
-            return false;
+            return (false, false, null);
         }
 
         private bool IsQuorumMet(

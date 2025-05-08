@@ -153,7 +153,6 @@ namespace Microsoft.Azure.Cosmos
             CancellationToken cancellationToken)
         {
             this.retryContext = null;
-
             ShouldRetryResult shouldRetryResult = await this.ShouldRetryInternalAsync(
                     cosmosResponseMessage?.StatusCode,
                     cosmosResponseMessage?.Headers.SubStatusCode);
@@ -180,6 +179,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return await this.throttlingRetry.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+            
         }
 
         /// <summary>
