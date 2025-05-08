@@ -5,19 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using System.Runtime.CompilerServices;
     using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// This class provides extension methods for cosmos LINQ code.
@@ -28,20 +25,20 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// Object representing the options for vector distance calculation. All field are optional. if a field is not specified, the default value will be used. 
         /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
         /// </summary>
-        public class VectorDistanceOptions
+        public sealed class VectorDistanceOptions
         {
             /// <summary>
             /// The metric used to compute distance/similarity. Valid values are "cosine", "dotproduct", "euclidean".
             /// If not specified, the default value is what is defined in the container policy
             /// </summary>
             [JsonPropertyName("distanceFunction")]
-            public string DistanceFunction { get; set; }
+            public DistanceFunction DistanceFunction { get; set; }
 
             /// <summary>
             /// The data type of the vectors. float32, int8, uint8 values. Default value is float32.
             /// </summary>
             [JsonPropertyName("dataType")]
-            public string DataType { get; set; }
+            public VectorDataType DataType { get; set; }
 
             /// <summary>
             /// An integer specifying the size of the search list when conducting a vector search on the DiskANN index. 
@@ -282,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <example>
         /// <code>
         /// <![CDATA[
-        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = "euclidean", DataType = "int8"}));
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32}));
         /// ]]>
         /// </code>
         /// </example>
@@ -305,7 +302,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <example>
         /// <code>
         /// <![CDATA[
-        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = "euclidean", DataType = "int8"}));
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Int8}));
         /// ]]>
         /// </code>
         /// </example>
@@ -328,7 +325,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// <example>
         /// <code>
         /// <![CDATA[
-        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = "euclidean", DataType = "int8"}));
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Uint8}));
         /// ]]>
         /// </code>
         /// </example>

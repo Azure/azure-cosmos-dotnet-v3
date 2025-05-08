@@ -430,7 +430,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Float VectorDistance + GroupBy", b => getQuery(b)
                     .GroupBy(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null), (key, values) => key)),
                 new LinqTestInput("Float VectorDistance with non null fourth option", b => getQuery(b)
-                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = "cosine", DataType = "float32", SearchListSizeMultiplier = 10}))),
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32, SearchListSizeMultiplier = 10}))),
                 new LinqTestInput("Float VectorDistance + RRF", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, false, null),
                                             doc.VectorFloatField.VectorDistance(new float[] { 3, 4, 5 }, false, null)))
@@ -454,7 +454,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("UInt8 VectorDistance + GroupBy", b => getQuery(b)
                     .GroupBy(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null), (key, values) => key)),
                 new LinqTestInput("UInt8 VectorDistance with non null fourth option", b => getQuery(b)
-                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = "dotproduct", DataType = "uint8" }))),
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 }))),
                 new LinqTestInput("UInt8 VectorDistance + RRF", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
                                             doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, null)))
@@ -478,7 +478,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Int8 VectorDistance + GroupBy", b => getQuery(b)
                     .GroupBy(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null), (key, values) => key)),
                 new LinqTestInput("Int8 VectorDistance with non null fourth option", b => getQuery(b)
-                    .Select(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = "euclidean", DataType = "int8"}))),
+                    .Select(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean, DataType = VectorDataType.Int8}))),
                 new LinqTestInput("Int8 VectorDistance + RRF", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null),
                                             doc.VectorInt8Field.VectorDistance(new byte[] { 3, 4, 5 }, false, null)))
@@ -496,15 +496,11 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                 // Negative case
                 new LinqTestInput("VectorDistance with partial fourth option", b => getQuery(b)
-                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = "dotproduct" }))),
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean }))),
                 new LinqTestInput("VectorDistance with partial fourth option 2", b => getQuery(b)
                     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = 1 }))),
-                new LinqTestInput("VectorDistance with fourth option with invalid values", b => getQuery(b)
-                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = "someRandomValue" }))),
-                new LinqTestInput("VectorDistance with fourth option with invalid values 2", b => getQuery(b)
-                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = -100 }))),
-                new LinqTestInput("VectorDistance with fourth option with invalid values 3", b => getQuery(b)
-                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = "someRandomValue" }))),
+                new LinqTestInput("VectorDistance with fourth option with invalid values 1", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = -100 })))
             };
 
             foreach (LinqTestInput input in inputs)
