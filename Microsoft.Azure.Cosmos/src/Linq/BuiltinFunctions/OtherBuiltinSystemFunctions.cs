@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.SqlObjects;
-    using Newtonsoft.Json;
 
     internal static class OtherBuiltinSystemFunctions
     {
