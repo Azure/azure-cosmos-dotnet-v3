@@ -144,7 +144,6 @@ namespace Microsoft.Azure.Cosmos
 
                     List<Task> requestTasks = new List<Task>(hedgeRegions.Count + 1);
 
-                    Task<HedgingResponse> primaryRequest = null;
                     HedgingResponse hedgeResponse = null;
 
                     //Send out hedged requests
@@ -157,9 +156,7 @@ namespace Microsoft.Azure.Cosmos
                             CancellationToken timerToken = timerTokenSource.Token;
                             using (Task hedgeTimer = Task.Delay(awaitTime, timerToken))
                             {
-                                if (requestNumber == 0)
-                                {
-                                    primaryRequest = this.CloneAndSendAsync(
+                                Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
                                         sender: sender,
                                         request: request,
                                         clonedBody: clonedBody,
@@ -169,23 +166,7 @@ namespace Microsoft.Azure.Cosmos
                                         cancellationToken: cancellationToken,
                                         cancellationTokenSource: cancellationTokenSource);
 
-                                    requestTasks.Add(primaryRequest);
-                                }
-                                else
-                                {
-                                    Task<HedgingResponse> requestTask = this.CloneAndSendAsync(
-                                        sender: sender,
-                                        request: request,
-                                        clonedBody: clonedBody,
-                                        hedgeRegions: hedgeRegions,
-                                        requestNumber: requestNumber,
-                                        trace: trace,
-                                        cancellationToken: cancellationToken,
-                                        cancellationTokenSource: cancellationTokenSource);
-
-                                    requestTasks.Add(requestTask);
-                                }
-
+                                requestTasks.Add(requestTask);
                                 requestTasks.Add(hedgeTimer);
 
                                 Task completedTask = await Task.WhenAny(requestTasks);
