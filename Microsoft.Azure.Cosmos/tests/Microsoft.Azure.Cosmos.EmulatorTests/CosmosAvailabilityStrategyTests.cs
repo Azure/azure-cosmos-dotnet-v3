@@ -264,26 +264,18 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
 
-                //Should send out hedge request but original should be returned
-                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                Assert.IsNotNull(hedgeContext);
-                IReadOnlyCollection<string> hedgeContextList;
-                hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-
                 if (isPreferredLocationsEmpty)
                 {
-                    Assert.AreEqual(3, hedgeContextList.Count);
-                    Assert.IsTrue(hedgeContextList.Contains(region1));
-                    Assert.IsTrue(hedgeContextList.Contains(region2));
-                    Assert.IsTrue(hedgeContextList.Contains(region3));
+                    Assert.IsTrue(traceDiagnostic.ToString()
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
                 }
                 else
                 {
-                    Assert.AreEqual(2, hedgeContextList.Count);
-                    Assert.IsTrue(hedgeContextList.Contains(region1));
-                    Assert.IsTrue(hedgeContextList.Contains(region2));
+                    Assert.IsTrue(traceDiagnostic.ToString()
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
                 }
-            };
+            }
+            ;
         }
 
         [TestMethod]
@@ -343,9 +335,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                Assert.IsNotNull(hedgeContext);
-                Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                Assert.IsTrue(traceDiagnostic.ToString()
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
             }
         }
 
@@ -565,9 +556,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                        Assert.IsTrue(traceDiagnostic.ToString()
+                            .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
 
 
                         break;
@@ -598,9 +588,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                            Assert.IsNotNull(hedgeContext);
-                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                            Assert.IsTrue(traceDiagnostic.ToString()
+                                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
                         }
 
                         break;
@@ -629,9 +618,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                            Assert.IsNotNull(hedgeContext);
-                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                            Assert.IsTrue(traceDiagnostic.ToString()
+                                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
                         }
 
                         break;
@@ -659,9 +647,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                        Assert.IsTrue(traceDiagnostic.ToString()
+                                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
 
                         break;
 
@@ -778,9 +765,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                        Assert.IsTrue(traceDiagnostic.ToString()
+                            .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
 
                         break;
 
@@ -805,9 +791,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                            Assert.IsNotNull(hedgeContext);
-                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                            Assert.IsTrue(traceDiagnostic.ToString()
+                                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
                         }
 
                         break;
@@ -826,9 +811,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                            Assert.IsNotNull(hedgeContext);
-                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                            Assert.IsTrue(traceDiagnostic.ToString()
+                                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
                         }
 
                         break;
@@ -848,9 +832,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
-                        Assert.IsNotNull(hedgeContext);
-                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                        Assert.IsTrue(traceDiagnostic.ToString()
+                            .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
 
                         break;
 
@@ -960,9 +943,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                Assert.IsNotNull(hedgeContext);
-                Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                Assert.IsTrue(traceDiagnostic.ToString()
+                    .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
             }
         }
 
@@ -1035,9 +1017,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosTraceDiagnostics traceDiagnostic = ex.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                    Assert.IsTrue(traceDiagnostic.ToString()
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
                 }
                 finally
                 {
@@ -1139,9 +1120,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                Assert.IsNotNull(hedgeContext);
-                Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                Assert.IsTrue(traceDiagnostic.ToString()
+                    .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
             }
         }
 
@@ -1241,9 +1221,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosTraceDiagnostics traceDiagnostic = ex.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                    Assert.IsTrue(traceDiagnostic.ToString()
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
                 }
                 finally
                 {
@@ -1393,9 +1372,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-                    Assert.IsNotNull(hedgeContext);
-                    Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                    Assert.IsTrue(traceDiagnostic.ToString()
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
                 }
                 catch (CosmosException ex)
                 {
@@ -1419,9 +1397,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+            Assert.IsTrue(traceDiagnostic.ToString()
+                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
             await Task.Delay(1);
         }
 
@@ -1437,9 +1414,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
-            Assert.IsNotNull(hedgeContext);
-            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+            Assert.IsTrue(traceDiagnostic.ToString()
+                .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\",\"{region3}\"]"));
             await Task.Delay(1);
         }
     }
