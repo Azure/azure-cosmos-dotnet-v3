@@ -64,6 +64,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                         case nameof(CosmosLinqExtensions.DocumentId):
                         case nameof(CosmosLinqExtensions.RRF):
                         case nameof(CosmosLinqExtensions.FullTextScore):
+                        case nameof(CosmosLinqExtensions.VectorDistance):
                             return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
                         default:
                             return TypeCheckFunctions.Visit(methodCallExpression, context);
