@@ -568,6 +568,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
+                        Console.WriteLine(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
@@ -602,6 +603,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
+                            Console.WriteLine(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
                             hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
@@ -634,6 +636,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
+                            Console.WriteLine(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
                             hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
@@ -665,6 +668,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
+                        Console.WriteLine(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
                         hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
