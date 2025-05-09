@@ -484,6 +484,7 @@ jobs:
 
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
+    condition: succeededOrFailed()
     retryCountOnTaskFailure: 2
     inputs:
       command: test
