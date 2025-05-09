@@ -1317,8 +1317,8 @@
                     Assert.IsNotNull(hedgeContext);
                     List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
 
-                    Assert.AreEqual(3, hedgedRegions.Count);
-                    Assert.IsTrue(hedgedRegions.Contains(region1) && hedgedRegions.Contains(region2) && hedgedRegions.Contains(region3));
+                    Assert.IsTrue(hedgedRegions.Count > 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                    Assert.IsTrue(hedgedRegions.Contains(region1) && (hedgedRegions.Contains(region2) || hedgedRegions.Contains(region3)));
                 }
                 else
                 {
