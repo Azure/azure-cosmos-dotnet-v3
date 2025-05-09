@@ -57,6 +57,12 @@ namespace Microsoft.Azure.Cosmos
         private const ApiType DefaultApiType = ApiType.None;
 
         /// <summary>
+        /// Default thresholds for PPAF request hedging.
+        /// </summary>
+        private const int DefaultHedgingThresholdInMilliseconds = 1000;
+        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+
+        /// <summary>
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
@@ -762,7 +768,11 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Enable partition key level failover
+        /// Gets or sets a value indicating whether partition-level failover is enabled. When this feature is enabled,
+        /// the SDK by default applies a cross-region hedging strategy with a default threshold of 1 seconds.
+        /// If an availability strategy is provided explicitly, then it will be honored, and the default policy wouldn't be applied. Note that
+        /// the default availability strategy can be opted out by setting <see cref="DisabledAvailabilityStrategy"/> as the availability strategy in
+        /// cosmos client options.
         /// </summary>
         internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
@@ -1014,7 +1024,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            this.ValidatePartitionLevelFailoverSettings();
+            this.InitializePartitionLevelFailoverWithDefaultHedging();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
@@ -1191,16 +1201,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ValidatePartitionLevelFailoverSettings()
-        {
-            if (this.EnablePartitionLevelFailover
-                && string.IsNullOrEmpty(this.ApplicationRegion)
-                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
-            }
-        }
-
         private void ValidateDirectTCPSettings()
         {
             string settingName = string.Empty;
@@ -1260,6 +1260,21 @@ namespace Microsoft.Azure.Cosmos
                         features: featureString,
                         regionConfiguration: regionConfiguration,
                         suffix: this.GetUserAgentSuffix());
+        }
+
+        internal void InitializePartitionLevelFailoverWithDefaultHedging()
+        {
+            if (this.EnablePartitionLevelFailover
+                && this.AvailabilityStrategy == null)
+            {
+                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                // the request timeout value provided by the end customer.
+                double defaultThresholdInMillis = Math.Min(CosmosClientOptions.DefaultHedgingThresholdInMilliseconds, this.RequestTimeout.TotalMilliseconds / 2);
+
+                this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                    thresholdStep: TimeSpan.FromMilliseconds(CosmosClientOptions.DefaultHedgingThresholdStepInMilliseconds));
+            }
         }
 
         internal string GetUserAgentSuffix()
