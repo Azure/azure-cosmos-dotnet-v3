@@ -91,10 +91,6 @@ jobs:
       nugetConfigPath: NuGet.config
       testRunTitle: Microsoft.Azure.Cosmos.Tests
 
-
-- job:
-  displayName: Microsoft.Azure.Cosmos.Tests Coverage
-  condition: and(succeeded(), eq(${{ parameters.IncludeCoverage }}, true))
 - job:
   displayName: Microsoft.Azure.Cosmos.Tests Coverage
   condition: and(succeeded(), eq(${{ parameters.IncludeCoverage }}, true))
