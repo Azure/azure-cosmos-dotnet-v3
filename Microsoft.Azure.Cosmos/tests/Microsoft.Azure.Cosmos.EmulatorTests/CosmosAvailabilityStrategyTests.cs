@@ -336,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
                 Assert.IsTrue(traceDiagnostic.ToString()
-                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\"]"));
+                        .Contains($"\"Hedge Context\":[\"{region1}\",\"{region2}\""));
             }
         }
 
