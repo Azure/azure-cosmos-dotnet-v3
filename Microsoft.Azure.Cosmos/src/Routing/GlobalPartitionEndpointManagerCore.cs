@@ -44,9 +44,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int partitionUnavailabilityDurationInSeconds = ConfigurationManager.GetAllowedPartitionUnavailabilityDurationInSeconds(5);
 
         /// <summary>
-        /// A readonly integer containing the partition failback refresh interval in seconds. The default value is 60 seconds.
+        /// A readonly integer containing the partition failback refresh interval in seconds. The default value is 5 minutes.
         /// </summary>
-        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(60);
+        private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(300);
 
         /// <summary>
         /// A readonly boolean flag used to determine if partition level failover is enabled.
