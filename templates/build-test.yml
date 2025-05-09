@@ -22,11 +22,7 @@ parameters:
   IncludePerformance: true
   IncludeCoverage: true
 
-stages:
-- stage: 'GeneralTests'
-  displayName: 'General Tests'
-  condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
-  jobs:
+jobs:
   - job:
     displayName: Microsoft.Azure.Cosmos.Tests
     pool:
@@ -459,16 +455,11 @@ stages:
       env: 
         COSMOSDB_MULTI_REGION: ${{ parameters.MultiRegionMultiMasterConnectionString }}
         AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: true
-      
-- stage: 'ThinClientTests'
-  displayName: 'Thin Client Tests'
-  condition: and(always(), eq('${{ parameters.OS }}', 'Windows'))
-  jobs:
+  
   - job:
     displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline5CategoryListName }}
     timeoutInMinutes: 120
     condition: and(always(), eq('${{ parameters.OS }}', 'Windows'))
-    continueOnError: true
     pool: { name: 'OneES' }
 
     steps:
@@ -490,6 +481,7 @@ stages:
     - task: DotNetCoreCLI@2
       displayName: Microsoft.Azure.Cosmos.EmulatorTests
       condition: always()
+      continueOnError: true
       retryCountOnTaskFailure: 2
       inputs:
         command: test
