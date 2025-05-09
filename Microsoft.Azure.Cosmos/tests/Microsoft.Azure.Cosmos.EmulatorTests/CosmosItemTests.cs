@@ -68,6 +68,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestMethod]
         public void ParentResourceTest()
         {
+            Assert.IsTrue(false);
             Assert.AreEqual(this.database, this.Container.Database);
             Assert.AreEqual(this.GetClient(), this.Container.Database.Client);
         }
