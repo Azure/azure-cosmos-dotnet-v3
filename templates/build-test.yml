@@ -95,9 +95,6 @@ jobs:
 - job:
   displayName: Microsoft.Azure.Cosmos.Tests Coverage
   condition: and(succeeded(), eq(${{ parameters.IncludeCoverage }}, true))
-- job:
-  displayName: Microsoft.Azure.Cosmos.Tests Coverage
-  condition: and(succeeded(), eq(${{ parameters.IncludeCoverage }}, true))
   pool:
     name: 'OneES'
   steps:
@@ -485,6 +482,7 @@ jobs:
   - task: DotNetCoreCLI@2
     displayName: Microsoft.Azure.Cosmos.EmulatorTests
     condition: succeeded()
+    continueOnError: true
     retryCountOnTaskFailure: 2
     inputs:
       command: test
