@@ -200,11 +200,17 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
-        /// initialization should throw an argument exception and fail.
+        /// initialization should succeed without throwing any argument exception.
         /// </summary>
         [TestMethod]
-        public void CreateItemAsync_WithNoPreferredRegionsAndServiceUnavailable_ShouldThrowArgumentException()
+        [DataRow(true, DisplayName = "Validate that when an explict availability strategy is provided, the same will be honored by bypassing the default one, when PPAF is enabled.")]
+        [DataRow(false, DisplayName = "Validate that when no explict availability strategy is provided, a default availability strategy will be applied, when PPAF is enabled.")]
+        public void CreateItemAsync_WithNoPreferredRegionsAndServiceUnavailable_ShouldNotThrowArgumentException(
+            bool isExplictAvailabilityStrategyProvided)
         {
+            TimeSpan explictAvailabilityStrategyThreshold = TimeSpan.FromMilliseconds(2000);
+            TimeSpan explictAvailabilityStrategyThresholdStep = TimeSpan.FromMilliseconds(500);
+
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
@@ -247,14 +253,39 @@ namespace Microsoft.Azure.Cosmos.Tests
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
-            ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => new CosmosClient(
-                 globalEndpoint,
-                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                 cosmosClientOptions));
+            if (isExplictAvailabilityStrategyProvided)
+            {
+                cosmosClientOptions.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: explictAvailabilityStrategyThreshold,
+                    thresholdStep: explictAvailabilityStrategyThresholdStep);
+            }
 
-            Assert.AreEqual(
-                expected: "ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
-                actual: exception.Message);
+            CosmosClient cosmosClient = new CosmosClient(
+                globalEndpoint,
+                Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                cosmosClientOptions);
+
+            Assert.IsNotNull(cosmosClient,
+                message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
+
+            Assert.IsNotNull(cosmosClient.ClientOptions.AvailabilityStrategy);
+
+            CrossRegionHedgingAvailabilityStrategy crossRegionHedgingStrategy = (CrossRegionHedgingAvailabilityStrategy)cosmosClient.ClientOptions.AvailabilityStrategy;
+            
+            Assert.IsNotNull(crossRegionHedgingStrategy);
+
+            if (isExplictAvailabilityStrategyProvided)
+            {
+                // Explict availability strategy values.
+                Assert.AreEqual(explictAvailabilityStrategyThreshold, crossRegionHedgingStrategy.Threshold);
+                Assert.AreEqual(explictAvailabilityStrategyThresholdStep, crossRegionHedgingStrategy.ThresholdStep);
+            }
+            else
+            {
+                // Default availability strategy values.
+                Assert.AreEqual(TimeSpan.FromMilliseconds(1000), crossRegionHedgingStrategy.Threshold);
+                Assert.AreEqual(TimeSpan.FromMilliseconds(500), crossRegionHedgingStrategy.ThresholdStep);
+            }
         }
 
         [TestMethod]
