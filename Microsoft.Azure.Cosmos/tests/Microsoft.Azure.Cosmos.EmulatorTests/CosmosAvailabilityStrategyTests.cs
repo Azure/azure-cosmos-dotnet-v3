@@ -345,9 +345,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                IReadOnlyCollection<string> hedgeContextList;
-                hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                Assert.IsTrue(hedgeContextList.Contains(region2));
+                Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
             }
         }
 
@@ -546,7 +544,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
-                IReadOnlyCollection<string> hedgeContextList;
 
                 switch (operation)
                 {
@@ -568,11 +565,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        Console.WriteLine(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                        Assert.IsTrue(hedgeContextList.Contains(region2));
+                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
 
 
                         break;
@@ -603,11 +598,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            Console.WriteLine(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                            Assert.IsTrue(hedgeContextList.Contains(region2));
+                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
                         }
 
                         break;
@@ -636,11 +629,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            Console.WriteLine(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                            Assert.IsTrue(hedgeContextList.Contains(region2));
+                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
                         }
 
                         break;
@@ -668,11 +659,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        Console.WriteLine(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                        Assert.IsTrue(hedgeContextList.Contains(region2));
+                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
 
                         break;
 
@@ -792,8 +781,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                        Assert.IsTrue(hedgeContextList.Contains(region3));
+                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
 
                         break;
 
@@ -820,8 +808,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                            Assert.IsTrue(hedgeContextList.Contains(region3));
+                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
                         }
 
                         break;
@@ -842,8 +829,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsNotNull(traceDiagnostic);
                             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                            Assert.IsTrue(hedgeContextList.Contains(region3));
+                            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
                         }
 
                         break;
@@ -865,8 +851,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsNotNull(traceDiagnostic);
                         traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                        Assert.IsTrue(hedgeContextList.Contains(region3));
+                        Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
 
                         break;
 
@@ -978,8 +963,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                Assert.IsTrue(hedgeContextList.Contains(region2));
+                Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
             }
         }
 
@@ -1054,8 +1038,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                    Assert.IsTrue(hedgeContextList.Contains(region2));
+                    Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
                 }
                 finally
                 {
@@ -1159,8 +1142,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                Assert.IsTrue(hedgeContextList.Contains(region3));
+                IAssert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
             }
         }
 
@@ -1262,8 +1244,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Assert.IsNotNull(traceDiagnostic);
                     traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-                    Assert.IsTrue(hedgeContextList.Contains(region3));
+                    Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
                 }
                 finally
                 {
@@ -1441,8 +1422,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-            Assert.IsTrue(hedgeContextList.Contains(region2));
+            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
             await Task.Delay(1);
         }
 
@@ -1460,8 +1440,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(traceDiagnostic);
             traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
-            Assert.IsTrue(hedgeContextList.Contains(region3));
+            Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
             await Task.Delay(1);
         }
     }
