@@ -6,7 +6,6 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Text.Json;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters;
     using Microsoft.Azure.Documents;
@@ -17,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     /// The metadata of a change feed resource with <see cref="ChangeFeedMode"/> is initialized to <see cref="ChangeFeedMode.AllVersionsAndDeletes"/>.
     /// </summary>
     [System.Text.Json.Serialization.JsonConverter(typeof(ChangeFeedMetadataConverter))]
+    [JsonConverter(typeof(ChangeFeedMetadataNewtonSoftConverter))]
 #if PREVIEW
     public
 #else

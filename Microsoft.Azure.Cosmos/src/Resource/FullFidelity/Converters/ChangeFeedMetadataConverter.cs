@@ -66,7 +66,15 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                     List<(string, object)> partitionKey = new List<(string, object)>();
                     foreach (JsonProperty pk in property.Value.EnumerateObject())
                     {
-                        partitionKey.Add((pk.Name, pk.Value));
+                        object actualValue = pk.Value.ValueKind switch
+                        {
+                            JsonValueKind.String => pk.Value.GetString(),
+                            JsonValueKind.Number => pk.Value.TryGetInt64(out long longValue) ? longValue : (object)pk.Value.GetDouble(),
+                            JsonValueKind.True or JsonValueKind.False => pk.Value.GetBoolean(),
+                            JsonValueKind.Null => null,
+                            _ => throw new JsonException($"Unexpected JsonValueKind '{pk.Value.ValueKind}' for PartitionKey property."),
+                        };
+                        partitionKey.Add((pk.Name, actualValue));
                     }
                     metadata.PartitionKey = partitionKey;
                 }
@@ -99,37 +107,34 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             {
                 writer.WriteStartObject(ChangeFeedMetadataFields.PartitionKey);
 
-                foreach ((string, object) pk in value.PartitionKey)
+                foreach ((string key, object objectValue) in value.PartitionKey)
                 {
-                    JsonElement pkValue = (JsonElement)pk.Item2;
-
-                    switch (pkValue.ValueKind)
+                    switch (objectValue)
                     {
-                        case JsonValueKind.String:
-                            writer.WriteString(pk.Item1, pkValue.GetString());
+                        case string stringValue:
+                            writer.WriteString(key, stringValue);
                             break;
 
-                        case JsonValueKind.Number:
-                            writer.WriteNumber(pk.Item1, pkValue.GetDouble());
+                        case long longValue:
+                            writer.WriteNumber(key, longValue);
                             break;
 
-                        case JsonValueKind.True:
-                        case JsonValueKind.False:
-                            writer.WriteBoolean(pk.Item1, pkValue.GetBoolean());
+                        case double doubleValue:
+                            writer.WriteNumber(key, doubleValue);
                             break;
 
-                        case JsonValueKind.Null:
-                            writer.WriteNull(pk.Item1);
+                        case bool boolValue:
+                            writer.WriteBoolean(key, boolValue);
                             break;
 
-                        case JsonValueKind.Undefined:
+                        case null:
+                            writer.WriteNull(key);
                             break;
 
                         default:
-                            throw new JsonException(string.Format(CultureInfo.CurrentCulture, RMResources.JsonUnexpectedToken));
+                            throw new JsonException($"Unexpected value type '{value.GetType()}' for PartitionKey property.");
                     }
                 }
-
                 writer.WriteEndObject();
             }
 
