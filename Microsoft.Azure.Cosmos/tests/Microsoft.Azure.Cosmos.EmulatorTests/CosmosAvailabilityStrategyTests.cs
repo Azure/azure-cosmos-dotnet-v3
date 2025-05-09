@@ -534,7 +534,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 CosmosTraceDiagnostics traceDiagnostic;
-                object hedgeContext;
 
                 switch (operation)
                 {
@@ -751,7 +750,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 CosmosTraceDiagnostics traceDiagnostic;
-                object hedgeContext;
 
                 switch (operation)
                 {
