@@ -765,7 +765,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
-                IReadOnlyCollection<string> hedgeContextList;
 
                 switch (operation)
                 {
@@ -1142,7 +1141,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.IsNotNull(traceDiagnostic);
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                IAssert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
+                Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region3));
             }
         }
 
