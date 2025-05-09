@@ -213,10 +213,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Uses an in-memory container to maintain state of the leases
-        /// </summary>
-        /// <remarks>
+        /// 
         /// Using an in-memory container restricts the scaling capability to just the instance running the current processor.
-        /// </remarks>
+        /// </summary>
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public virtual ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()
         {
