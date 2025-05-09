@@ -255,14 +255,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 responseDelay.Enable();
                 ItemResponse<CosmosIntegrationTestObject> ir = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object responseRegion);
-                Assert.IsNotNull(responseRegion);
-                Assert.AreEqual(region1, (string)responseRegion);
 
                 //Should send out hedge request but original should be returned
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
@@ -325,6 +325,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 responseDelay.Enable();
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -340,9 +343,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                Assert.AreEqual(region2, (string)hedgeContext);
+                IReadOnlyCollection<string> hedgeContextList;
+                hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                Assert.IsTrue(hedgeContextList.Contains(region2));
             }
         }
 
@@ -389,6 +394,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 responseDelay.Enable();
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
@@ -403,7 +411,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
 
-                Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out _));
+                Assert.IsFalse(traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object _));
             }
         }
 
@@ -533,8 +541,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
+                IReadOnlyCollection<string> hedgeContextList;
 
                 switch (operation)
                 {
@@ -556,9 +568,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(region2, (string)hedgeContext);
+                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                        Assert.IsTrue(hedgeContextList.Contains(region2));
+
 
                         break;
 
@@ -588,9 +602,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(region2, (string)hedgeContext);
+                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                            Assert.IsTrue(hedgeContextList.Contains(region2));
                         }
 
                         break;
@@ -619,9 +634,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                             Assert.IsTrue(rule.GetHitCount() > 0);
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(region2, (string)hedgeContext);
+                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                            Assert.IsTrue(hedgeContextList.Contains(region2));
                         }
 
                         break;
@@ -649,9 +665,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         Assert.IsTrue(rule.GetHitCount() > 0);
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(region2, (string)hedgeContext);
+                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                        Assert.IsTrue(hedgeContextList.Contains(region2));
 
                         break;
 
@@ -750,8 +767,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 CosmosTraceDiagnostics traceDiagnostic;
                 object hedgeContext;
+                IReadOnlyCollection<string> hedgeContextList;
 
                 switch (operation)
                 {
@@ -765,9 +786,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(region3, (string)hedgeContext);
+                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                        Assert.IsTrue(hedgeContextList.Contains(region3));
 
                         break;
 
@@ -792,9 +814,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(region3, (string)hedgeContext);
+                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                            Assert.IsTrue(hedgeContextList.Contains(region3));
                         }
 
                         break;
@@ -813,9 +836,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                             traceDiagnostic = feedResponse.Diagnostics as CosmosTraceDiagnostics;
                             Assert.IsNotNull(traceDiagnostic);
-                            traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                             Assert.IsNotNull(hedgeContext);
-                            Assert.AreEqual(region3, (string)hedgeContext);
+                            hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                            Assert.IsTrue(hedgeContextList.Contains(region3));
                         }
 
                         break;
@@ -835,9 +859,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                         traceDiagnostic = readManyResponse.Diagnostics as CosmosTraceDiagnostics;
                         Assert.IsNotNull(traceDiagnostic);
-                        traceDiagnostic.Value.Data.TryGetValue("Response Region", out hedgeContext);
+                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out hedgeContext);
                         Assert.IsNotNull(hedgeContext);
-                        Assert.AreEqual(region3, (string)hedgeContext);
+                        hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                        Assert.IsTrue(hedgeContextList.Contains(region3));
 
                         break;
 
@@ -919,6 +944,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 sendDelay.Enable();
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -944,9 +972,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                Assert.AreEqual(region2, (string)hedgeContext);
+                IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                Assert.IsTrue(hedgeContextList.Contains(region2));
             }
         }
 
@@ -987,6 +1016,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 responseDelay.Enable();
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
@@ -1016,9 +1048,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosTraceDiagnostics traceDiagnostic = ex.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(region2, (string)hedgeContext);
+                    IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                    Assert.IsTrue(hedgeContextList.Contains(region2));
                 }
                 finally
                 {
@@ -1079,7 +1112,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
-                
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
 
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
@@ -1119,9 +1153,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
-                traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                 Assert.IsNotNull(hedgeContext);
-                Assert.AreEqual(region3, (string)hedgeContext);
+                IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                Assert.IsTrue(hedgeContextList.Contains(region3));
             }
         }
 
@@ -1177,6 +1212,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 ItemRequestOptions requestOptions = new ItemRequestOptions
                 {
                     AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
@@ -1218,9 +1256,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                     CosmosTraceDiagnostics traceDiagnostic = ex.Diagnostics as CosmosTraceDiagnostics;
                     Assert.IsNotNull(traceDiagnostic);
-                    traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
                     Assert.IsNotNull(hedgeContext);
-                    Assert.AreEqual(region3, (string)hedgeContext);
+                    IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+                    Assert.IsTrue(hedgeContextList.Contains(region3));
                 }
                 finally
                 {
@@ -1274,14 +1313,114 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
                 Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
 
+                //warm up connections read
+                ItemResponse<CosmosIntegrationTestObject> _ = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+
                 CosmosOperationCanceledException cancelledException = await Assert.ThrowsExceptionAsync<CosmosOperationCanceledException>(() =>
                         container.ReadItemAsync<CosmosIntegrationTestObject>(
                             "testId",
                             new PartitionKey("pk"), cancellationToken: cts.Token
                     ));
-
             }
+        }
 
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        public async Task HedgingCancellationTokenHandling()
+        {
+            List<FeedRange> feedRanges = (List<FeedRange>)await this.container.GetFeedRangesAsync();
+            Assert.IsTrue(feedRanges.Any());
+
+            try
+            {
+                await this.container.DeleteItemAsync<CosmosIntegrationTestObject>("deleteMe", new PartitionKey("MMWrite"));
+            }
+            catch (Exception) { }
+
+
+            FaultInjectionRule sendDelay = new FaultInjectionRuleBuilder(
+                             id: "sendDelay",
+                             condition:
+                                 new FaultInjectionConditionBuilder()
+                                     .WithRegion(region1)
+                                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
+                                     .WithEndpoint(
+                                        new FaultInjectionEndpointBuilder(
+                                            MultiRegionSetupHelpers.dbName,
+                                            MultiRegionSetupHelpers.containerName,
+                                            feedRanges[0])
+                                        .WithIncludePrimary(true)
+                                        .WithReplicaCount(4)
+                                        .Build())
+                                    .Build(),
+                            result:
+                                FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                                    .WithDelay(TimeSpan.FromMilliseconds(8000))
+                                    .Build())
+                            .WithDuration(TimeSpan.FromMinutes(90))
+                            .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { sendDelay };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            sendDelay.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ApplicationPreferredRegions = new List<string>() { region1, region2 },
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                RequestTimeout = TimeSpan.FromMilliseconds(5000)
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                sendDelay.Enable();
+
+                CancellationTokenSource cts = new CancellationTokenSource();
+                cts.CancelAfter(TimeSpan.FromSeconds(5)); // Cancellation token expiry time is 5 seconds.
+
+                ItemRequestOptions requestOptions = new ItemRequestOptions
+                {
+                    AvailabilityStrategy = new CrossRegionHedgingAvailabilityStrategy(
+                        threshold: TimeSpan.FromMilliseconds(100),
+                        thresholdStep: TimeSpan.FromMilliseconds(50),
+                        enableMultiWriteRegionHedge: true)
+                };
+
+                CosmosIntegrationTestObject CosmosIntegrationTestObject = new CosmosIntegrationTestObject
+                {
+                    Id = "deleteMe",
+                    Pk = "MMWrite",
+                    Other = "test"
+                };
+
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> ir = await container.CreateItemAsync<CosmosIntegrationTestObject>(
+                    CosmosIntegrationTestObject,
+                    requestOptions: requestOptions,
+                    cancellationToken: cts.Token);
+
+                    CosmosTraceDiagnostics traceDiagnostic = ir.Diagnostics as CosmosTraceDiagnostics;
+                    Assert.IsNotNull(traceDiagnostic);
+                    traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                    Assert.IsNotNull(hedgeContext);
+                    Assert.IsTrue(((IReadOnlyCollection<string>)hedgeContext).Contains(region2));
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.Fail(ex.Message);
+                }
+
+
+                sendDelay.Disable();
+            }
         }
 
         private static async Task HandleChangesAsync(
@@ -1296,9 +1435,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreNotEqual(region1, (string)hedgeContext);
+            IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+            Assert.IsTrue(hedgeContextList.Contains(region2));
             await Task.Delay(1);
         }
 
@@ -1314,10 +1454,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             
             CosmosTraceDiagnostics traceDiagnostic = context.Diagnostics as CosmosTraceDiagnostics;
             Assert.IsNotNull(traceDiagnostic);
-            traceDiagnostic.Value.Data.TryGetValue("Response Region", out object hedgeContext);
+            traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
             Assert.IsNotNull(hedgeContext);
-            Assert.AreNotEqual(region1, (string)hedgeContext);
-            Assert.AreNotEqual(region2, (string)hedgeContext);
+            IReadOnlyCollection<string> hedgeContextList = hedgeContext as IReadOnlyCollection<string>;
+            Assert.IsTrue(hedgeContextList.Contains(region3));
             await Task.Delay(1);
         }
     }
