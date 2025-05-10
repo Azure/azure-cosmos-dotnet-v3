@@ -244,6 +244,9 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
         internal bool EnableMultipleWriteLocations { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnablePartitionLevelFailover)]
+        internal bool EnablePartitionLevelFailover { get; set; }
+
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
