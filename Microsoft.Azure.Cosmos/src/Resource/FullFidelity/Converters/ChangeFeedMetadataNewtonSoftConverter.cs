@@ -24,9 +24,8 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             if (value is ChangeFeedMetadata metadata)
             {
                 writer.WriteStartObject();
-
                 writer.WritePropertyName(ChangeFeedMetadataFields.ConflictResolutionTimestamp);
-                serializer.Serialize(writer, metadata.ConflictResolutionTimestamp);
+                serializer.Serialize(writer, ChangeFeedMetadataNewtonSoftConverter.ToUnixTimeInSecondsFromDateTime(metadata.ConflictResolutionTimestamp));
 
                 writer.WritePropertyName(ChangeFeedMetadataFields.Lsn);
                 writer.WriteValue(metadata.Lsn);
@@ -42,13 +41,10 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 
                 writer.WritePropertyName(ChangeFeedMetadataFields.Id);
                 writer.WriteValue(metadata.Id);
-
-                writer.WritePropertyName(ChangeFeedMetadataFields.PartitionKey);
-                writer.WriteStartArray();
                 if (metadata.PartitionKey != null)
                 {
                     writer.WritePropertyName(ChangeFeedMetadataFields.PartitionKey);
-                    writer.WriteStartObject();
+                    writer.WriteStartObject(); 
 
                     foreach ((string key, object objectValue) in metadata.PartitionKey)
                     {
@@ -84,11 +80,10 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                         }
                     }
 
-                    writer.WriteEndObject();
+                    writer.WriteEndObject(); // End PartitionKey object
                 }
 
                 writer.WriteEndObject();
-
             }
             else
             {
