@@ -91,6 +91,16 @@ namespace Microsoft.Azure.Cosmos
             BufferProviderWrapper bufferProviderWrapper = this.bufferProviderWrapperPool.Get();
             try
             {
+                PartitionKeyRange partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.ProxyStartEpk,
+                    partitionKeyRange?.MinInclusive);
+
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.ProxyEndEpk,
+                    partitionKeyRange?.MaxExclusive);
+
                 requestMessage.Headers.TryAddWithoutValidation(
                     ThinClientConstants.ProxyOperationType,
                     request.OperationType.ToOperationTypeString());
