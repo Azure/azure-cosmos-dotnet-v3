@@ -70,11 +70,33 @@ ItemRequestOptions requestOptions = new ItemRequestOptions()
 };
 ```
 
-When enabled at the `CosmosClient` level, the availability strategy applies to all read requests unless explicitly disabled per request: ReadItem, Queries (single and cross partition), ReadMany, and ChangeFeed. It is not enabled for write requests.
+When enabled at the `CosmosClient` level, the availability strategy applies to all read requests unless explicitly disabled per request: ReadItem, Queries (single and cross partition), ReadMany, and ChangeFeed.
+
+## Hedging for Write Requests
+
+Availability strategies can also be used for write requests. This feature is not enabled by default, but can be enabled by setting the `enableMultiWriteRegionHedge` parameter to `true` when creating the `CrossRegionHedgingStrategy`. This will allow the SDK to send out hedged requests for write requests as well. This feature can only be used for accounts where multi region writes are enabled. Like read requssts, the SDK will only hedge for document requests, not container, database, or other write requests. Please note that all conflict resolution must be handled by the client application. Write request hedging otherwise preforms the same as read request hedging.
+
+```csharp
+CosmosClientOptions options = new CosmosClientOptions()
+{
+    AvailabilityStrategy
+     = AvailabilityStrategy.CrossRegionHedgingStrategy(
+        threshold: TimeSpan.FromSeconds(1.5),
+        thresholdStep: TimeSpan.FromSeconds(1),
+        enableMultiWriteRegionHedge: true
+     ),
+      ApplicationPreferredRegions = new List<string>() { "East US", "West US", "Central US"},
+};
+
+CosmosClient client = new CosmosClient(
+    accountEndpoint: "account endpoint",
+    authKeyOrResourceToken: "auth key or resource token",
+    clientOptions: options);
+```
 
 ## Diagnostics
 
-In the diagnostics data there are two new areas of note `Response Region` and `Hedge Context` that will appear when using this feature. `Response Region` shows the region that the request is ultimately served out of. `Hedge Context` shows all the regions requests were sent to.
+In the diagnostics data there are two new areas of note `Hedge Config` and `Hedge Context` that will appear when using this feature. `Hedge Config` shows what the configured availability strategy used is, along with whether hedging for write requests are enabled. `Hedge Context` shows all the regions requests were sent to. To find what region the request was sent to, look for the `StoreResponse` in the diagnostics data. A full example of a hedged request can be seen [here](https://github.com/Azure/azure-cosmos-dotnet-v3/tree/master/Microsoft.Azure.Cosmos.Samples/Usage/Hedging/ReadRequestDiagnosticsExample.json).
 
 ```json
 "Summary": {
@@ -105,11 +127,11 @@ In the diagnostics data there are two new areas of note `Response Region` and `H
             "ConsistencyConfig": "(consistency: NotSet, prgns:[Central US, North Central US], apprgn: )",
             "ProcessorCount": 12
         },
+        "Hedge Config": "t:100ms, s:50ms, w:False",
         "Hedge Context": [
             "Central US",
             "North Central US"
         ],
-        "Response Region": "North Central US"
     }
 ```
 
