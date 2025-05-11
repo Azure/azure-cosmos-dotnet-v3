@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
-                requestMessage.Headers.Clear();
+               
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 
