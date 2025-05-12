@@ -956,14 +956,6 @@ namespace Microsoft.Azure.Cosmos
             }
 #endif
 
-            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
-            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                ? new GlobalPartitionEndpointManagerCore(
-                    this.GlobalEndpointManager,
-                    this.ConnectionPolicy.EnablePartitionLevelFailover,
-                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
-                : GlobalPartitionEndpointManagerNoOp.Instance;
-
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
                 DocumentClientEventSource.Instance,
@@ -1063,6 +1055,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
+
+            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
+            this.PartitionKeyRangeLocation = 
+                this.ConnectionPolicy.EnablePartitionLevelFailover 
+                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
+                    ? new GlobalPartitionEndpointManagerCore(
+                        this.GlobalEndpointManager,
+                        this.ConnectionPolicy.EnablePartitionLevelFailover,
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+                    : GlobalPartitionEndpointManagerNoOp.Instance;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
@@ -6821,14 +6823,15 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
+
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
-            this.ConnectionPolicy.EnablePartitionLevelFailover = accountProperties.EnablePartitionLevelFailover;
-            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                ? new GlobalPartitionEndpointManagerCore(
-                    this.GlobalEndpointManager,
-                    this.ConnectionPolicy.EnablePartitionLevelFailover,
-                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
-                : GlobalPartitionEndpointManagerNoOp.Instance;
+
+            string ppaf = Environment.GetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled);
+            bool ppafEnabled = string.IsNullOrEmpty(ppaf)
+                ? accountProperties.EnablePartitionLevelFailover
+                : (bool)Convert.ChangeType(ppaf, typeof(bool));
+
+            this.ConnectionPolicy.EnablePartitionLevelFailover = ppafEnabled;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
 
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
