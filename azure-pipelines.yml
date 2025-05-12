@@ -73,7 +73,7 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage:  $(VmImage)
     
- - template:  templates/build-thinclient.yml
+- template:  templates/build-thinclient.yml
   parameters:
     BuildConfiguration: Release
     Arguments: $(ReleaseArguments)
