@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### <a name="3.51.0-preview.0"/> [3.51.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0-preview.0) - 2025-5-9
 
-### <a name="3.50.0"/> [3.59.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0) - 2025-5-9
+### <a name="3.50.0"/> [3.50.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0) - 2025-5-9
 
 #### Added
 
