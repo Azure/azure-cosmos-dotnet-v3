@@ -955,6 +955,7 @@ namespace Microsoft.Azure.Cosmos
                 servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
             }
 #endif
+            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
@@ -994,13 +995,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
-
-            this.retryPolicy = new RetryPolicy(
-                globalEndpointManager: this.GlobalEndpointManager,
-                connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
-
-            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
@@ -1056,7 +1050,6 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
             this.PartitionKeyRangeLocation = 
                 this.ConnectionPolicy.EnablePartitionLevelFailover 
                 || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
@@ -1065,6 +1058,13 @@ namespace Microsoft.Azure.Cosmos
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
                         this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
                     : GlobalPartitionEndpointManagerNoOp.Instance;
+
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+
+            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
