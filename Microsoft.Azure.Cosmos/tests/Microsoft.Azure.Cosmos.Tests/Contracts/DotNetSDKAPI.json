@@ -166,10 +166,10 @@
     "Microsoft.Azure.Cosmos.AvailabilityStrategy;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan])": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan], Boolean)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan], Boolean);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.AvailabilityStrategy DisabledStrategy()": {
           "Type": "Method",
@@ -5410,7 +5410,7 @@
           ],
           "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
-        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"language\")]": {
+        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"language\")]": {
           "Type": "Property",
           "Attributes": [
             "JsonPropertyAttribute"
@@ -6344,6 +6344,18 @@
           ],
           "MethodInfo": "Boolean RegexMatch(System.Object, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Double FullTextScore[TSource](TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "Double RRF(Double[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Double RRF(Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Int32 DocumentId(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -6372,24 +6384,12 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
-        "System.Func`2[TSource,System.Object] FullTextScore[TSource](TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+        "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource,TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
-          "MethodInfo": "System.Func`2[TSource,System.Object] FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Func`2[TSource,System.Object] RRF[TSource](System.Func`2[TSource,System.Object][])": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "System.Func`2[TSource,System.Object] RRF[TSource](System.Func`2[TSource,System.Object][]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
-        },
-        "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,System.Object]])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
-          "Type": "Method",
-          "Attributes": [
-            "ExtensionAttribute"
-          ],
-          "MethodInfo": "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,System.Object]]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource,TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
