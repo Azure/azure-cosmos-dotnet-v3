@@ -76,6 +76,11 @@ namespace Microsoft.Azure.Cosmos
             {
                 string partitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey);
 
+                if (string.IsNullOrEmpty(partitionKey))
+                {
+                    throw new InternalServerErrorException();
+                }
+
                 string epk = GetEffectivePartitionKeyHash(partitionKey, collection.PartitionKey);
 
                 request.Properties = new Dictionary<string, object>
