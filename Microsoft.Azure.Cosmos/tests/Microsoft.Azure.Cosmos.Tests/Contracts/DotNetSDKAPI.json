@@ -4825,10 +4825,20 @@
           "Attributes": [],
           "MethodInfo": "System.String get_IndexMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.String get_QueryAdvice()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_QueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String IndexMetrics": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.String IndexMetrics;CanRead:True;CanWrite:False;System.String get_IndexMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String QueryAdvice": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String QueryAdvice;CanRead:True;CanWrite:False;System.String get_QueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
