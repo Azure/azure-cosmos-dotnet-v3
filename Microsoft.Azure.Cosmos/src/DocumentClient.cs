@@ -201,6 +201,7 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
+        private Action<bool> initializePPAFWithDefaultHedging;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -451,6 +452,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
+        /// <param name="initializePPAFWithDefaultHedging">blabla.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -480,7 +482,8 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = true)
+                              bool enableAsyncCacheExceptionNoSharing = true,
+                              Action<bool> initializePPAFWithDefaultHedging = null)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -509,6 +512,7 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
             this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
+            this.initializePPAFWithDefaultHedging = initializePPAFWithDefaultHedging;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -6826,14 +6830,23 @@ namespace Microsoft.Azure.Cosmos
 
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
 
-            string ppaf = Environment.GetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled);
-            bool ppafEnabled = string.IsNullOrEmpty(ppaf)
-                ? accountProperties.EnablePartitionLevelFailover
-                : (bool)Convert.ChangeType(ppaf, typeof(bool));
+            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            if (accountProperties.EnablePartitionLevelFailover.HasValue)
+            {
+                isPPafEnabled = accountProperties.EnablePartitionLevelFailover.Value;
+            }
 
-            this.ConnectionPolicy.EnablePartitionLevelFailover = ppafEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
+
+            this.ConnectionPolicy.UserAgentContainer.Suffix = CosmosClientOptions.GetUserAgentSuffix(
+                applicationName: this.ConnectionPolicy.ApplicationName,
+                enablePartitionLevelFailover: this.ConnectionPolicy.EnablePartitionLevelFailover,
+                enablePartitionLevelCircuitBreaker: this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+
+            this.initializePPAFWithDefaultHedging(this.ConnectionPolicy.EnablePartitionLevelFailover);
+
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
-
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
         }
 

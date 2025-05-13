@@ -751,15 +751,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// Enabled partition level failover in the SDK
-        /// </summary>
-        internal CosmosClientBuilder WithPartitionLevelFailoverEnabled()
-        {
-            this.clientOptions.EnablePartitionLevelFailover = true;
-            return this;
-        }
-
-        /// <summary>
         /// Enables SDK to inject fault. Used for testing applications.  
         /// </summary>
         /// <param name="chaosInterceptorFactory"></param>

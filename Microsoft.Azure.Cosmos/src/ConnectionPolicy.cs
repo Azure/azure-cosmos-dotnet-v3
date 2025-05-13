@@ -546,6 +546,15 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// A string containing the application name.
+        /// </summary>
+        internal string ApplicationName
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// GlobalEndpointManager will subscribe to this event if user updates the preferredLocations list in the Azure Cosmos DB service.
         /// </summary>
         internal event NotifyCollectionChangedEventHandler PreferenceChanged

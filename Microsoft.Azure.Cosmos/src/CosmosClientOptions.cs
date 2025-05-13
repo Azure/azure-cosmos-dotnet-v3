@@ -768,15 +768,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets a value indicating whether partition-level failover is enabled. When this feature is enabled,
-        /// the SDK by default applies a cross-region hedging strategy with a default threshold of 1 seconds.
-        /// If an availability strategy is provided explicitly, then it will be honored, and the default policy wouldn't be applied. Note that
-        /// the default availability strategy can be opted out by setting <see cref="DisabledAvailabilityStrategy"/> as the availability strategy in
-        /// cosmos client options.
-        /// </summary>
-        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-
-        /// <summary>
         /// Enable partition level circuit breaker (aka PPCB). For compute gateway use case, by default per partition automatic failover will be disabled, so does the PPCB.
         /// If compute gateway chooses to enable PPAF, then the .NET SDK will enable PPCB by default, which will improve the read availability and latency. This would mean
         /// when PPAF is enabled, the SDK will automatically enable PPCB as well.
@@ -1024,10 +1015,10 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            this.InitializePartitionLevelFailoverWithDefaultHedging();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
+                ApplicationName = this.ApplicationName,
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
@@ -1040,14 +1031,13 @@ namespace Microsoft.Azure.Cosmos
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
-                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
-                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker,
+                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
-                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
             };
 
             if (this.CosmosClientTelemetryOptions != null)
@@ -1258,13 +1248,13 @@ namespace Microsoft.Azure.Cosmos
             return new UserAgentContainer(
                         clientId: clientId,
                         features: featureString,
-                        regionConfiguration: regionConfiguration,
-                        suffix: this.GetUserAgentSuffix());
+                        regionConfiguration: regionConfiguration);
         }
 
-        internal void InitializePartitionLevelFailoverWithDefaultHedging()
+        internal void InitializePartitionLevelFailoverWithDefaultHedging(
+            bool enablePartitionLevelFailover)
         {
-            if (this.EnablePartitionLevelFailover
+            if (enablePartitionLevelFailover
                 && this.AvailabilityStrategy == null)
             {
                 // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
@@ -1277,27 +1267,30 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        internal string GetUserAgentSuffix()
+        internal static string GetUserAgentSuffix(
+            string applicationName,
+            bool enablePartitionLevelFailover,
+            bool enablePartitionLevelCircuitBreaker)
         {
             int featureFlag = 0;
-            if (this.EnablePartitionLevelFailover)
+            if (enablePartitionLevelFailover)
             {
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
             }
 
-            if (this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker)
+            if (enablePartitionLevelFailover || enablePartitionLevelCircuitBreaker)
             {
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
             if (featureFlag == 0)
             {
-                return this.ApplicationName;
+                return applicationName;
             }
 
-            return string.IsNullOrEmpty(this.ApplicationName) ?
+            return string.IsNullOrEmpty(applicationName) ?
                 $"F{featureFlag:X}" :
-                $"F{featureFlag:X}|{this.ApplicationName}";
+                $"F{featureFlag:X}|{applicationName}";
         }
 
         /// <summary>

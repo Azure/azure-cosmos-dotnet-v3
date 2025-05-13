@@ -555,12 +555,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            string ppaf = Environment.GetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled);
-            bool ppafEnabled = string.IsNullOrEmpty(ppaf)
-                ? databaseAccount.EnablePartitionLevelFailover
-                : (bool)Convert.ChangeType(ppaf, typeof(bool));
+            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            if (databaseAccount.EnablePartitionLevelFailover.HasValue)
+            {
+                isPPafEnabled = databaseAccount.EnablePartitionLevelFailover.Value;
+            }
 
-            this.connectionPolicy.EnablePartitionLevelFailover = ppafEnabled;
+            this.connectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);

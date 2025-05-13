@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the featured enabled value for Per Partition Automatic Failover
         /// </summary>
         [JsonProperty(PropertyName = Constants.Properties.EnablePerPartitionFailoverBehavior)]
-        internal bool EnablePartitionLevelFailover { get; set; }
+        internal bool? EnablePartitionLevelFailover { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {
