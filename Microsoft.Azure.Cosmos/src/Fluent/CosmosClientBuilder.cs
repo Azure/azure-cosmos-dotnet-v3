@@ -584,7 +584,11 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
-        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
+        /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
+        /// With a single-write-region account the next applicable region is the write-region, with a 
+        /// multi-write-region account the next applicable region is the next region in the order of effective 
+        /// preferred regions (same order also used for read/query operations).
         /// </summary>
         /// <param name="enableRemoteRegionPreferredForSessionRetry"></param>
         /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
