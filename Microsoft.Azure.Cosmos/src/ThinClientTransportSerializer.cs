@@ -75,11 +75,6 @@ namespace Microsoft.Azure.Cosmos
             if (operationType.IsPointOperation())
             {
                 string partitionKey = request.Headers.Get(HttpConstants.HttpHeaders.PartitionKey);
-                
-                if (string.IsNullOrEmpty(partitionKey))
-                {
-                    throw new InternalServerErrorException();
-                }
 
                 string epk = GetEffectivePartitionKeyHash(partitionKey, collection.PartitionKey);
 

@@ -93,13 +93,16 @@ namespace Microsoft.Azure.Cosmos
             {
                 PartitionKeyRange partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
 
-                requestMessage.Headers.TryAddWithoutValidation(
-                    ThinClientConstants.ProxyStartEpk,
-                    partitionKeyRange?.MinInclusive);
+                if (partitionKeyRange != null)
+                {
+                   requestMessage.Headers.TryAddWithoutValidation(
+                       ThinClientConstants.ProxyStartEpk,
+                       partitionKeyRange?.MinInclusive);
 
-                requestMessage.Headers.TryAddWithoutValidation(
-                    ThinClientConstants.ProxyEndEpk,
-                    partitionKeyRange?.MaxExclusive);
+                   requestMessage.Headers.TryAddWithoutValidation(
+                       ThinClientConstants.ProxyEndEpk,
+                       partitionKeyRange?.MaxExclusive);
+                }
 
                 requestMessage.Headers.TryAddWithoutValidation(
                     ThinClientConstants.ProxyOperationType,

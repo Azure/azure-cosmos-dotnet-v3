@@ -167,9 +167,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Assert
             Assert.IsNotNull(dsr);
             Assert.AreEqual(HttpStatusCode.Created, dsr.StatusCode);
-
-            using StreamReader sr = new StreamReader(dsr.ResponseBody);
-            string responseBody = sr.ReadToEnd();
         }
 
         [TestMethod]
@@ -278,6 +275,91 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(request.ResourceType.ToResourceTypeString(), requestHeaders[ThinClientConstants.ProxyResourceType]);
         }
 
+        [TestMethod]
+        public async Task InvokeAsync_ShouldNotAddProxyEpkHeaders_WhenPartitionKeyRangeIsNull()
+        {
+            HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new ByteArrayContent(Convert.FromBase64String(base64MockResponse))
+            };
+
+            HttpRequestMessage capturedRequest = null;
+            Mock<CosmosHttpClient> mockCosmosHttpClient = new Mock<CosmosHttpClient>();
+            mockCosmosHttpClient.Setup(client => client.SendHttpAsync(
+                It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<HttpTimeoutPolicy>(),
+                It.IsAny<IClientSideRequestStatistics>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<DocumentServiceRequest>()))
+                .Callback<Func<ValueTask<HttpRequestMessage>>, ResourceType, HttpTimeoutPolicy, IClientSideRequestStatistics, CancellationToken, DocumentServiceRequest>(
+                    async (requestFactory, _, _, _, _, _) =>
+                        capturedRequest = await requestFactory())
+                .ReturnsAsync(successResponse);
+
+            ThinClientStoreClient thinClientStoreClient = new ThinClientStoreClient(
+                httpClient: mockCosmosHttpClient.Object,
+                eventSource: null,
+                serializerSettings: null);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                operationType: OperationType.Read,
+                resourceType: ResourceType.Document,
+                resourceId: "docId",
+                body: null,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            // Add partition key
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"myPartitionKey\"]";
+
+            request.RequestContext.ResolvedPartitionKeyRange = null;
+            if (request.RequestContext == null)
+            {
+                request.RequestContext = new DocumentServiceRequestContext();
+            };
+
+            Mock<ISessionContainer> sessionContainerMock = new Mock<ISessionContainer>();
+            Mock<IStoreModel> storeModelMock = new Mock<IStoreModel>();
+            Mock<ICosmosAuthorizationTokenProvider> tokenProviderMock = new Mock<ICosmosAuthorizationTokenProvider>();
+            Mock<IRetryPolicyFactory> retryPolicyFactoryMock = new Mock<IRetryPolicyFactory>();
+            TelemetryToServiceHelper telemetry = null;
+            Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
+                sessionContainerMock.Object,
+                storeModelMock.Object,
+                tokenProviderMock.Object,
+                retryPolicyFactoryMock.Object,
+                telemetry,
+                true)
+            {
+                CallBase = true
+            };
+
+            clientCollectionCacheMock
+                .Setup(c => c.ResolveCollectionAsync(
+                    It.IsAny<DocumentServiceRequest>(),
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<ITrace>()))
+                .ReturnsAsync(this.GetMockContainerProperties());
+
+            // Act
+            await thinClientStoreClient.InvokeAsync(
+                request,
+                ResourceType.Document,
+                new Uri("https://mock.cosmos.com/dbs/mockdb/colls/mockcoll/docs/mockdoc"),
+                this.thinClientEndpoint,
+                "mockaccount",
+                clientCollectionCacheMock.Object,
+                default);
+
+            // Assert
+            Assert.IsNotNull(capturedRequest, "The request was not captured");
+
+            System.Collections.Generic.Dictionary<string, string> headers = capturedRequest.Headers.ToDictionary(h => h.Key, h => h.Value.FirstOrDefault());
+
+            Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyStartEpk), "ProxyStartEpk should not be added when PKRange is null");
+            Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk should not be added when PKRange is null");
+        }
+
         private ContainerProperties GetMockContainerProperties()
         {
             ContainerProperties containerProperties = new ContainerProperties
@@ -294,6 +376,5 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             return containerProperties;
         }
-
     }
 }
