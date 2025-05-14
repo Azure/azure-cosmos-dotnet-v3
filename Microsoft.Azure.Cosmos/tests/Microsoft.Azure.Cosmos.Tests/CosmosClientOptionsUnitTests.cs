@@ -506,28 +506,43 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             string userAgentSuffix = "testSuffix";
+
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
             if (appName)
             {
-                cosmosClientOptions.ApplicationName = userAgentSuffix;
+                cosmosClientBuilder.WithApplicationName(userAgentSuffix);
             }
 
-            cosmosClientOptions.ApplicationRegion = Regions.WestUS;
+            ConnectionPolicy policy = new ConnectionPolicy()
+            {
+                EnablePartitionLevelCircuitBreaker = ppcb,
+                EnablePartitionLevelFailover = ppaf
+            };
+
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
+
+            CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
+            
             if (appName)
             {
                 Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+                cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
             }
             else
             {
                 Assert.IsNull(cosmosClientOptions.ApplicationName);
             }
 
-            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
-            userAgentContainer.AppendFeatures(ppcb ? "F2" : string.Empty);
-            userAgentContainer.AppendFeatures(ppaf ? "F3" : string.Empty);
+            cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClient.DocumentClient.GetUserAgentFeatures());
 
-            string userAgent = userAgentContainer.UserAgent;
+            string userAgent = cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
             Console.WriteLine(userAgent);
             if (appName)
             {
