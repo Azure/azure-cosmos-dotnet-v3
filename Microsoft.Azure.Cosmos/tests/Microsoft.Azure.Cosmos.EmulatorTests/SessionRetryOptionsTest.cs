@@ -41,13 +41,14 @@
         [DataRow(FaultInjectionOperationType.QueryItem, 1, true, DisplayName = "Validate Query Item operation with remote region preferred.")]
         [DataRow(FaultInjectionOperationType.ReadItem, 2, false, DisplayName = "Validate Read Item operation with local region preferred.")]
         [DataRow(FaultInjectionOperationType.QueryItem, 2, false, DisplayName = "Validate Query Item operation with local region preferred.")]
+        [DataRow(FaultInjectionOperationType.ReadItem, 0, true, DisplayName = "Validate Read Item operation with 0 sessionTokenMismatchRetryAttempts.")]
+        [DataRow(FaultInjectionOperationType.QueryItem, -1, true, DisplayName = "Validate Query Item operation with negative sessionTokenMismatchRetryAttempts.")]
         [TestCategory("MultiMaster")]
         public async Task ReadOperationWithReadSessionUnavailableTest(FaultInjectionOperationType faultInjectionOperationType,
             int sessionTokenMismatchRetryAttempts , Boolean remoteRegionPreferred)
         {
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
             Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
-            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
             try
             {
                 // if I go to first region for reading an item, I should get a 404/2002 response for 10 minutes
@@ -73,6 +74,7 @@
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,
+                MaxInRegionRetryCountForSessionRetry = sessionTokenMismatchRetryAttempts
             };
             
             using (CosmosClient faultInjectionClient = new CosmosClient(
@@ -105,17 +107,18 @@
                     // Check if the SessionTokenMismatchRetryPolicy retries on the bad / lagging region
                     // for sessionTokenMismatchRetryAttempts by tracking the badSessionTokenRule hit count
                     long hitCount = badSessionTokenRule.GetHitCount();
-
+                    Console.WriteLine($"Hit count is {hitCount}");
                     if (remoteRegionPreferred)
                     {
-                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4);
+                        int effectiveRetryAttempts = Math.Max(sessionTokenMismatchRetryAttempts, 0);
+                        Assert.IsTrue(hitCount >= effectiveRetryAttempts && hitCount <= (1 + effectiveRetryAttempts) * 4);
                     }
                 }
             }
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
+                
             }
         }
 
@@ -130,6 +133,8 @@
         [DataRow(FaultInjectionOperationType.DeleteItem, 2, false, DisplayName = "Validate Delete Item operation with local region preferred.")]
         [DataRow(FaultInjectionOperationType.UpsertItem, 1, false, DisplayName = "Validate Upsert Item operation with local region preferred.")]
         [DataRow(FaultInjectionOperationType.PatchItem, 1, false, DisplayName = "Validate Patch Item operation with remote region preferred.")]
+        [DataRow(FaultInjectionOperationType.CreateItem, 0, true, DisplayName = "Validate Write Item operation with 0 sessionTokenMismatchRetryAttempts.")]
+        [DataRow(FaultInjectionOperationType.ReplaceItem, -1, true, DisplayName = "Validate Replace Item operation with negative sessionTokenMismatchRetryAttempts.")]
         [TestCategory("MultiMaster")]
         public async Task WriteOperationWithReadSessionUnavailableTest(FaultInjectionOperationType faultInjectionOperationType,
            int sessionTokenMismatchRetryAttempts, Boolean remoteRegionPreferred)
@@ -137,7 +142,6 @@
 
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
             Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
-            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
 
             try { 
             FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
@@ -162,6 +166,7 @@
                 ConsistencyLevel = ConsistencyLevel.Session,
                 ApplicationPreferredRegions = preferredRegions,
                 ConnectionMode = ConnectionMode.Direct,
+                MaxInRegionRetryCountForSessionRetry = sessionTokenMismatchRetryAttempts
             };
 
                 using (CosmosClient faultInjectionClient = new CosmosClient(
@@ -193,15 +198,15 @@
                     long hitCount = badSessionTokenRule.GetHitCount();
                     if (remoteRegionPreferred)
                     {
+                        int effectiveRetryAttempts = Math.Max(sessionTokenMismatchRetryAttempts, 0);
                         // higher hit count is possible while in MinRetryWaitTimeWithinRegion
-                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts);
+                        Assert.IsTrue(hitCount >= effectiveRetryAttempts);
                     }
                 }
             }
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
-                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
             }
         }
 
