@@ -268,9 +268,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(cosmosClient,
                 message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
 
-            Assert.IsNotNull(cosmosClient.ClientOptions.AvailabilityStrategy);
+            Assert.IsNotNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
 
-            CrossRegionHedgingAvailabilityStrategy crossRegionHedgingStrategy = (CrossRegionHedgingAvailabilityStrategy)cosmosClient.ClientOptions.AvailabilityStrategy;
+            CrossRegionHedgingAvailabilityStrategy crossRegionHedgingStrategy = (CrossRegionHedgingAvailabilityStrategy)cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
 
             Assert.IsNotNull(crossRegionHedgingStrategy);
 
