@@ -6361,6 +6361,27 @@
           "Attributes": [],
           "MethodInfo": "Double RRF(Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Double VectorDistance(Byte[], Byte[], Boolean, VectorDistanceOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double VectorDistance(Byte[], Byte[], Boolean, VectorDistanceOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double VectorDistance(SByte[], SByte[], Boolean, VectorDistanceOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double VectorDistance(SByte[], SByte[], Boolean, VectorDistanceOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double VectorDistance(Single[], Single[], Boolean, VectorDistanceOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double VectorDistance(Single[], Single[], Boolean, VectorDistanceOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Int32 DocumentId(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
