@@ -6845,16 +6845,28 @@ namespace Microsoft.Azure.Cosmos
 
             this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
-
-            this.ConnectionPolicy.UserAgentContainer.SetSuffix(CosmosClientOptions.GetUserAgentSuffix(
-                applicationName: this.ConnectionPolicy.ApplicationName,
-                enablePartitionLevelFailover: this.ConnectionPolicy.EnablePartitionLevelFailover,
-                enablePartitionLevelCircuitBreaker: this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker));
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
 
             this.initializePPAFWithDefaultHedging?.Invoke(this.ConnectionPolicy.EnablePartitionLevelFailover);
 
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+        }
+
+        internal string GetUserAgentFeatures()
+        {
+            int featureFlag = 0;
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
+            }
+
+            return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

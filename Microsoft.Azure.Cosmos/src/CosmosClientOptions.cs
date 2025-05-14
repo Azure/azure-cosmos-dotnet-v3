@@ -1252,7 +1252,8 @@ namespace Microsoft.Azure.Cosmos
             return new UserAgentContainer(
                         clientId: clientId,
                         features: featureString,
-                        regionConfiguration: regionConfiguration);
+                        regionConfiguration: regionConfiguration,
+                        suffix: this.ApplicationName);
         }
 
         internal void InitializePartitionLevelFailoverWithDefaultHedging(
@@ -1269,32 +1270,6 @@ namespace Microsoft.Azure.Cosmos
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(CosmosClientOptions.DefaultHedgingThresholdStepInMilliseconds));
             }
-        }
-
-        internal static string GetUserAgentSuffix(
-            string applicationName,
-            bool enablePartitionLevelFailover,
-            bool enablePartitionLevelCircuitBreaker)
-        {
-            int featureFlag = 0;
-            if (enablePartitionLevelFailover)
-            {
-                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
-            }
-
-            if (enablePartitionLevelFailover || enablePartitionLevelCircuitBreaker)
-            {
-                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
-            }
-
-            if (featureFlag == 0)
-            {
-                return applicationName;
-            }
-
-            return string.IsNullOrEmpty(applicationName) ?
-                $"F{featureFlag:X}" :
-                $"F{featureFlag:X}|{applicationName}";
         }
 
         /// <summary>

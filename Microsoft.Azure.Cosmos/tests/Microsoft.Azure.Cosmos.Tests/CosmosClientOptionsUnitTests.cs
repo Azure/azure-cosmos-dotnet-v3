@@ -524,7 +524,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
-            string userAgent = userAgentContainer.UserAgent + CosmosClientOptions.GetUserAgentSuffix(appName ? userAgentSuffix : string.Empty, ppaf, ppcb);
+            userAgentContainer.AppendFeatures(ppcb ? "F2" : string.Empty);
+            userAgentContainer.AppendFeatures(ppaf ? "F3" : string.Empty);
+
+            string userAgent = userAgentContainer.UserAgent;
             Console.WriteLine(userAgent);
             if (appName)
             {
