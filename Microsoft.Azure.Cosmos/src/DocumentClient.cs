@@ -1006,6 +1006,13 @@ namespace Microsoft.Azure.Cosmos
             // For direct: WFStoreProxy [set in OpenAsync()].
             this.eventSource = DocumentClientEventSource.Instance;
 
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+
+            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
+
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),
                     new ResourceThrottleRetryPolicy(
@@ -6844,7 +6851,7 @@ namespace Microsoft.Azure.Cosmos
                 enablePartitionLevelFailover: this.ConnectionPolicy.EnablePartitionLevelFailover,
                 enablePartitionLevelCircuitBreaker: this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker));
 
-            this.initializePPAFWithDefaultHedging(this.ConnectionPolicy.EnablePartitionLevelFailover);
+            this.initializePPAFWithDefaultHedging?.Invoke(this.ConnectionPolicy.EnablePartitionLevelFailover);
 
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
