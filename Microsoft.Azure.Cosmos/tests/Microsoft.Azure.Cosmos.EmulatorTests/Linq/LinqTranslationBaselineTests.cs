@@ -430,7 +430,15 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Float VectorDistance + GroupBy", b => getQuery(b)
                     .GroupBy(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null), (key, values) => key)),
                 new LinqTestInput("Float VectorDistance with non null fourth option", b => getQuery(b)
-                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32, SearchListSizeMultiplier = 10}))),
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32, SearchListSizeMultiplier = 20}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default DataType", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, SearchListSizeMultiplier = 10}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Float32, SearchListSizeMultiplier = 10}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with all default values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions()))),
                 new LinqTestInput("Float VectorDistance + RRF", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, false, null),
                                             doc.VectorFloatField.VectorDistance(new float[] { 3, 4, 5 }, false, null)))
@@ -454,13 +462,27 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("UInt8 VectorDistance + GroupBy", b => getQuery(b)
                     .GroupBy(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null), (key, values) => key)),
                 new LinqTestInput("UInt8 VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
                     .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default DistanceFunction and SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Uint8 }))),
                 new LinqTestInput("UInt8 VectorDistance + RRF", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
                                             doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, null)))
                     .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 })))
+                    .Select(doc => doc.Pk)),
                 new LinqTestInput("UInt8 VectorDistance + RRF + FullTextScore", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + FullTextScore + non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, new VectorDistanceOptions() { DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }),
                                             doc.VectorUInt8Field.FullTextScore("string", "name")))
                     .Select(doc => doc.Pk)),
 
@@ -493,12 +515,20 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions{}))),
                  new LinqTestInput("VectorDistance with empty object 2", b => getQuery(b)
                     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, null))),
-
-                // Negative case
+                new LinqTestInput("VectorDistance with default values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Float32, DistanceFunction = DistanceFunction.Euclidean, SearchListSizeMultiplier = 10 }))),
+                new LinqTestInput("VectorDistance with non default values 1", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Int8, DistanceFunction = DistanceFunction.Cosine, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("VectorDistance with non default values 2", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Uint8, DistanceFunction = DistanceFunction.DotProduct, SearchListSizeMultiplier = 50 }))),
+                new LinqTestInput("VectorDistance with nullable values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = null, DistanceFunction = null, SearchListSizeMultiplier = null }))),
                 new LinqTestInput("VectorDistance with partial fourth option", b => getQuery(b)
                     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean }))),
                 new LinqTestInput("VectorDistance with partial fourth option 2", b => getQuery(b)
                     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = 1 }))),
+
+                // Negative case
                 new LinqTestInput("VectorDistance with fourth option with invalid values 1", b => getQuery(b)
                     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = -100 })))
             };

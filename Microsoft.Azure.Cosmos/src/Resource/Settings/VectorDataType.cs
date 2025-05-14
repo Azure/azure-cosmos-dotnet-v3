@@ -4,19 +4,12 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Runtime.Serialization;
-    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Defines the target data type of a vector index specification in the Azure Cosmos DB service.
     /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum VectorDataType
     {
-        /// <summary>
-        /// Represents default value.
-        /// </summary>
-        None,
-
         /// <summary>
         /// Represent a float32 data type.
         /// </summary>

@@ -32,20 +32,20 @@ namespace Microsoft.Azure.Cosmos.Linq
             /// If not specified, the default value is what is defined in the container policy
             /// </summary>
             [JsonPropertyName("distanceFunction")]
-            public DistanceFunction DistanceFunction { get; set; }
+            public DistanceFunction? DistanceFunction { get; set; }
 
             /// <summary>
             /// The data type of the vectors. float32, int8, uint8 values. Default value is float32.
             /// </summary>
             [JsonPropertyName("dataType")]
-            public VectorDataType DataType { get; set; }
+            public VectorDataType? DataType { get; set; }
 
             /// <summary>
             /// An integer specifying the size of the search list when conducting a vector search on the DiskANN index. 
             /// Increasing this may improve accuracy at the expense of RU cost and latency. Min=1, Default=10, Max=100.
             /// </summary>
             [JsonPropertyName("searchListSizeMultiplier")]
-            public int SearchListSizeMultiplier { get; set; }
+            public int? SearchListSizeMultiplier { get; set; }
         }
 
         /// <summary>

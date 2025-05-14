@@ -141,9 +141,15 @@ namespace Microsoft.Azure.Cosmos.Linq
 
                 if (methodCallExpression.Arguments[3] is ConstantExpression optionExpression && optionExpression.Value != null)
                 {
-                    string serializedConstant = System.Text.Json.JsonSerializer.Serialize(
+                    JsonSerializerOptions options = new JsonSerializerOptions
+                    {
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+                    options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+
+                    string serializedConstant = JsonSerializer.Serialize(
                         optionExpression.Value, 
-                        new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault });
+                        options);
 
                     arguments.Add(CosmosElement.Parse(serializedConstant).Accept(CosmosElementToSqlScalarExpressionVisitor.Singleton));
                 }
