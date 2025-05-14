@@ -1000,18 +1000,18 @@ namespace Microsoft.Azure.Cosmos
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
 
-            this.desiredConsistencyLevel = desiredConsistencyLevel;
-            // Setup the proxy to be  used based on connection mode.
-            // For gateway: GatewayProxy.
-            // For direct: WFStoreProxy [set in OpenAsync()].
-            this.eventSource = DocumentClientEventSource.Instance;
-
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
                 connectionPolicy: this.ConnectionPolicy,
                 partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
+
+            this.desiredConsistencyLevel = desiredConsistencyLevel;
+            // Setup the proxy to be  used based on connection mode.
+            // For gateway: GatewayProxy.
+            // For direct: WFStoreProxy [set in OpenAsync()].
+            this.eventSource = DocumentClientEventSource.Instance;
 
             this.initializeTaskFactory = (_) => TaskHelper.InlineIfPossible<bool>(
                     () => this.GetInitializationTaskAsync(storeClientFactory: storeClientFactory),

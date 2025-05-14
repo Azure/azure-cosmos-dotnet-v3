@@ -1041,7 +1041,7 @@ namespace Microsoft.Azure.Cosmos
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
-                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
             };
 
             if (this.CosmosClientTelemetryOptions != null)
