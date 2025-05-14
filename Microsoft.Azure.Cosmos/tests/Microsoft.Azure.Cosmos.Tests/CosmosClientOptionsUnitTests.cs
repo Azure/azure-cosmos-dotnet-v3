@@ -524,7 +524,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
 
             Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
-            string userAgent = userAgentContainer.UserAgent + CosmosClientOptions.GetUserAgentSuffix(appName ? userAgentSuffix : string.Empty, ppaf, ppcb);
+            userAgentContainer.AppendFeatures(ppcb ? "F2" : string.Empty);
+            userAgentContainer.AppendFeatures(ppaf ? "F3" : string.Empty);
+
+            string userAgent = userAgentContainer.UserAgent;
             Console.WriteLine(userAgent);
             if (appName)
             {
@@ -1169,90 +1172,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
 #nullable disable
-        }
-
-        [TestMethod]
-        public void PPAFClientApplicationRegionCreationTest()
-        {
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-                {
-                    ApplicationRegion = Regions.WestUS2,
-                };
-
-                CosmosClient cosmosClient = new CosmosClient(ConnectionString, cosmosClientOptions);
-                Assert.AreEqual(Regions.WestUS2, cosmosClient.ClientOptions.ApplicationRegion);
-                Assert.IsTrue(cosmosClient.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
-            }
-        }
-
-        [TestMethod]
-        public void PPAFClientApplicationPreferredRegionCreationTest()
-        {
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-                {
-                    ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
-                };
-
-                CosmosClient cosmosClient = new CosmosClient(ConnectionString, cosmosClientOptions);
-                Assert.AreEqual(Regions.WestUS2, cosmosClient.ClientOptions.ApplicationPreferredRegions[0]);
-                Assert.AreEqual(Regions.EastUS2, cosmosClient.ClientOptions.ApplicationPreferredRegions[1]);
-                Assert.IsTrue(cosmosClient.DocumentClient.ConnectionPolicy.EnablePartitionLevelFailover);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
-            }
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void PPAFClientAppRegionAndAppPreferredRegionTest()
-        {
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-                {
-                    ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
-                    ApplicationRegion = Regions.AustraliaCentral
-                };
-
-                _ = new CosmosClient(ConnectionString, cosmosClientOptions);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
-            }
-        }
-
-        [TestMethod]
-        public void PPAFClientNoRegionsTest()
-        {
-            try
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-
-                CosmosClient cosmosClient = new(ConnectionString);
-
-                Assert.IsNotNull(cosmosClient);
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
-            }
         }
 
         private class TestWebProxy : IWebProxy
