@@ -6839,10 +6839,10 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
 
-            this.ConnectionPolicy.UserAgentContainer.Suffix = CosmosClientOptions.GetUserAgentSuffix(
+            this.ConnectionPolicy.UserAgentContainer.SetSuffix(CosmosClientOptions.GetUserAgentSuffix(
                 applicationName: this.ConnectionPolicy.ApplicationName,
                 enablePartitionLevelFailover: this.ConnectionPolicy.EnablePartitionLevelFailover,
-                enablePartitionLevelCircuitBreaker: this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                enablePartitionLevelCircuitBreaker: this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker));
 
             this.initializePPAFWithDefaultHedging(this.ConnectionPolicy.EnablePartitionLevelFailover);
 
