@@ -57,12 +57,6 @@ namespace Microsoft.Azure.Cosmos
         private const ApiType DefaultApiType = ApiType.None;
 
         /// <summary>
-        /// Default thresholds for PPAF request hedging.
-        /// </summary>
-        private const int DefaultHedgingThresholdInMilliseconds = 1000;
-        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
-
-        /// <summary>
         /// Default request timeout
         /// </summary>
         private int gatewayModeMaxConnectionLimit;
@@ -1255,22 +1249,6 @@ namespace Microsoft.Azure.Cosmos
                         features: featureString,
                         regionConfiguration: regionConfiguration,
                         suffix: this.ApplicationName);
-        }
-
-        internal void InitializePartitionLevelFailoverWithDefaultHedging(
-            bool enablePartitionLevelFailover)
-        {
-            if (enablePartitionLevelFailover
-                && this.AvailabilityStrategy == null)
-            {
-                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
-                // the request timeout value provided by the end customer.
-                double defaultThresholdInMillis = Math.Min(CosmosClientOptions.DefaultHedgingThresholdInMilliseconds, this.RequestTimeout.TotalMilliseconds / 2);
-
-                this.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
-                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
-                    thresholdStep: TimeSpan.FromMilliseconds(CosmosClientOptions.DefaultHedgingThresholdStepInMilliseconds));
-            }
         }
 
         /// <summary>

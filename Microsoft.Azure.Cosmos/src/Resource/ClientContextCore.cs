@@ -86,8 +86,7 @@ namespace Microsoft.Azure.Cosmos
                remoteCertificateValidationCallback: ClientContextCore.SslCustomValidationCallBack(clientOptions.GetServerCertificateCustomValidationCallback()),
                cosmosClientTelemetryOptions: clientOptions.CosmosClientTelemetryOptions,
                chaosInterceptorFactory: clientOptions.ChaosInterceptorFactory,
-               enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing,
-               initializePPAFWithDefaultHedging: clientOptions.InitializePartitionLevelFailoverWithDefaultHedging);
+               enableAsyncCacheExceptionNoSharing: clientOptions.EnableAsyncCacheExceptionNoSharing);
 
             return ClientContextCore.Create(
                 cosmosClient,

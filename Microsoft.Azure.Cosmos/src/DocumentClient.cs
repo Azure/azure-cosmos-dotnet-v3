@@ -113,6 +113,12 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        /// <summary>
+        /// Default thresholds for PPAF request hedging.
+        /// </summary>
+        private const int DefaultHedgingThresholdInMilliseconds = 1000;
+        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
 
@@ -201,7 +207,6 @@ namespace Microsoft.Azure.Cosmos
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
-        private Action<bool> initializePPAFWithDefaultHedging;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
@@ -452,7 +457,6 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cosmosClientTelemetryOptions">This is distributed tracing flag</param>
         /// <param name="chaosInterceptorFactory">This is the chaos interceptor used for fault injection</param>
         /// <param name="enableAsyncCacheExceptionNoSharing">A boolean flag indicating if stack trace optimization is enabled.</param>
-        /// <param name="initializePPAFWithDefaultHedging">blabla.</param>
         /// <remarks>
         /// The service endpoint can be obtained from the Azure Management Portal.
         /// If you are connecting using one of the Master Keys, these can be obtained along with the endpoint from the Azure Management Portal
@@ -482,8 +486,7 @@ namespace Microsoft.Azure.Cosmos
                               RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
                               CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
                               IChaosInterceptorFactory chaosInterceptorFactory = null,
-                              bool enableAsyncCacheExceptionNoSharing = true,
-                              Action<bool> initializePPAFWithDefaultHedging = null)
+                              bool enableAsyncCacheExceptionNoSharing = true)
         {
             if (sendingRequestEventArgs != null)
             {
@@ -512,7 +515,6 @@ namespace Microsoft.Azure.Cosmos
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
             this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
-            this.initializePPAFWithDefaultHedging = initializePPAFWithDefaultHedging;
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -1060,6 +1062,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
+
+            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            if (this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
+            {
+                isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
+            }
+
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+            this.InitializePartitionLevelFailoverWithDefaultHedging();
 
             this.PartitionKeyRangeLocation = 
                 this.ConnectionPolicy.EnablePartitionLevelFailover 
@@ -6834,21 +6847,7 @@ namespace Microsoft.Azure.Cosmos
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
             await this.accountServiceConfiguration.InitializeAsync();
-
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
-
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-            if (accountProperties.EnablePartitionLevelFailover.HasValue)
-            {
-                isPPafEnabled = accountProperties.EnablePartitionLevelFailover.Value;
-            }
-
-            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
-            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
-            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
-
-            this.initializePPAFWithDefaultHedging?.Invoke(this.ConnectionPolicy.EnablePartitionLevelFailover);
-
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
         }
@@ -6867,6 +6866,23 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
+        }
+
+        internal void InitializePartitionLevelFailoverWithDefaultHedging()
+        {
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover
+                && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                // the request timeout value provided by the end customer.
+                double defaultThresholdInMillis = Math.Min(
+                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+            }
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
