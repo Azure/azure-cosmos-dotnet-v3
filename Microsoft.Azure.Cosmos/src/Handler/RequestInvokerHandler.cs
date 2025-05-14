@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
         public AvailabilityStrategyInternal AvailabilityStrategy(RequestMessage request)
         {
             AvailabilityStrategy strategy = request.RequestOptions?.AvailabilityStrategy
-                    ?? this.client.ClientOptions.AvailabilityStrategy;
+                    ?? this.client.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
 
             if (strategy == null)
             {

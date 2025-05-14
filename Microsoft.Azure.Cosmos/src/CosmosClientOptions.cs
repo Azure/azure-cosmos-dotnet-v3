@@ -1038,6 +1038,7 @@ namespace Microsoft.Azure.Cosmos
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
                 CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
+                AvailabilityStrategy = this.AvailabilityStrategy,
             };
 
             if (this.CosmosClientTelemetryOptions != null)
