@@ -15,6 +15,20 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.51.0-preview.1"/> [3.51.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0-preview.1) - 2025-5-16
+
+### <a name="3.50.1"/> [3.50.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.1) - 2025-5-16
+
+#### Added
+
+- [5182](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5182) InMemoryLeaseContainer: Adds public API to use InMemoryLeaseContainer with ChangeFeedProcessorBuilder
+- [5170](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5170) PPAF: Adds Code to Fetch Enablement Flag Through Gateway Database Account Response
+
+#### Fixed
+
+- [5197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5197) GlobalEndpointManager: Fixes Observed exception (ObjectDisposedException)
+
+
 ### <a name="3.51.0-preview.0"/> [3.51.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0-preview.0) - 2025-5-9
 
 ### <a name="3.50.0"/> [3.50.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0) - 2025-5-9
