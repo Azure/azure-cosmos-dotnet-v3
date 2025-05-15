@@ -80,11 +80,10 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly int MinMinInRegionRetryTimeForWritesInMs = 100;
 
         /// <summary>
-        /// intent is If a client specify a value, we will force it to be atleast 1, otherwise default is going to be 1(right now both the values are 1 but we have the provision to change them in future).
+        /// If a client specify a value  less than or equal to 0 we will not retry and yield after the original attempt, otherwise default is going to be 1
         /// </summary>
         internal static readonly string MaxRetriesInLocalRegionWhenRemoteRegionPreferred = "AZURE_COSMOS_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED";
         internal static readonly int DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
-        internal static readonly int MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling binary encoding. This will eventually
@@ -112,12 +111,10 @@ namespace Microsoft.Azure.Cosmos
 
         public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
         {
-            return Math.Max(
-                ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: MaxRetriesInLocalRegionWhenRemoteRegionPreferred,
-                        defaultValue: DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred),
-                MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred);
+            return ConfigurationManager
+                 .GetEnvironmentVariable(
+                     variable: MaxRetriesInLocalRegionWhenRemoteRegionPreferred,
+                     defaultValue: DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred);
         }
 
         public static TimeSpan GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred()

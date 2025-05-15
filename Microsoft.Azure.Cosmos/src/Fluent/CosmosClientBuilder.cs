@@ -584,6 +584,18 @@ namespace Microsoft.Azure.Cosmos.Fluent
         }
 
         /// <summary>
+        /// Sets the maximum number of in-region retries for session retry policy.
+        /// </summary>
+        /// <param name="maxInRegionRetryCount">The maximum number of retries within each region for read and write operations.
+        /// use value of less than or equal to 0 for this parameter with care as this will have negative consequences for multi-master and some other scenerios.</param>
+        /// <returns>The <see cref="CosmosClientBuilder"/> object</returns>
+        internal CosmosClientBuilder WithMaxInRegionRetryCountForSessionRetry(int maxInRegionRetryCount)
+        {
+            this.clientOptions.MaxInRegionRetryCountForSessionRetry = maxInRegionRetryCount;
+            return this;
+        }
+
+        /// <summary>
         /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
         /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
         /// With a single-write-region account the next applicable region is the write-region, with a 

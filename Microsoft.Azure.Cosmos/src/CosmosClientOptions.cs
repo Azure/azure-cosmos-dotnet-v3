@@ -754,6 +754,17 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
+        /// Provides access to the maximum number of in-region retries for session retry policy.
+        /// If a value of less than or equal to 0 is provided we will not retry and yield after the original attempt, otherwise default is going to be 1
+        /// use value of less than or equal to for this parameter with care as this will have negative consequences for multi-master and some other scenerios.
+        /// </summary>
+        internal int MaxInRegionRetryCountForSessionRetry
+        {
+            get => this.SessionRetryOptions.MaxInRegionRetryCount;
+            set => this.SessionRetryOptions.MaxInRegionRetryCount = value;
+        }
+
+        /// <summary>
         /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
         /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
         /// With a single-write-region account the next applicable region is the write-region, with a 

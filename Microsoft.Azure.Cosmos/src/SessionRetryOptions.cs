@@ -26,12 +26,12 @@ namespace Microsoft.Azure.Cosmos
         /// replication latency between the regions you chose
         /// </summary>
         public TimeSpan MinInRegionRetryTime { get; private set; }
-
+        
         /// <summary>
-        /// Sets the maximum number of retries within each region for read and write operations. The minimum value is 1 - the backoff time for the last in-region retry will ensure that the total retry time within the
+        /// Sets the maximum number of retries within each region for read and write operations - the backoff time for the last in-region retry will ensure that the total retry time within the
         /// region is at least the min. in-region retry time.
         /// </summary>
-        public int MaxInRegionRetryCount { get; private set; }
+        public int MaxInRegionRetryCount { get; internal set; }
 
         /// <summary>
         /// hints which guide SDK-internal retry policies on how early to switch retries to a different region. If true, will retry all replicas once and add a minimum delay before switching to the next region.If false, it will
