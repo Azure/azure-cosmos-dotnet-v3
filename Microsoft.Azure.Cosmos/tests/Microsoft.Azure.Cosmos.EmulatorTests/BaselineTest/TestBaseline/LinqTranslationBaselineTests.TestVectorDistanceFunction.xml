@@ -547,36 +547,6 @@ FROM root]]></SqlQuery>
   </Result>
   <Result>
     <Input>
-      <Description><![CDATA[VectorDistance with non default values 1]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, True, new VectorDistanceOptions() {DataType = Convert(Int8, Nullable`1), DistanceFunction = Convert(Cosine, Nullable`1), SearchListSizeMultiplier = Convert(20, Nullable`1)}))]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE VectorDistance(root["VectorFloatField"], [2, 3, 4], true, {"distanceFunction": "cosine", "dataType": "int8", "searchListSizeMultiplier": 20}) 
-FROM root]]></SqlQuery>
-      <Results><![CDATA[[
-  0.9925833339709302,
-  0.9925833339709302
-]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
-      <Description><![CDATA[VectorDistance with non default values 2]]></Description>
-      <Expression><![CDATA[query.Select(doc => doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, True, new VectorDistanceOptions() {DataType = Convert(Uint8, Nullable`1), DistanceFunction = Convert(DotProduct, Nullable`1), SearchListSizeMultiplier = Convert(50, Nullable`1)}))]]></Expression>
-    </Input>
-    <Output>
-      <SqlQuery><![CDATA[
-SELECT VALUE VectorDistance(root["VectorFloatField"], [2, 3, 4], true, {"distanceFunction": "dotProduct", "dataType": "uint8", "searchListSizeMultiplier": 50}) 
-FROM root]]></SqlQuery>
-      <Results><![CDATA[[
-  20.0,
-  20.0
-]]]></Results>
-    </Output>
-  </Result>
-  <Result>
-    <Input>
       <Description><![CDATA[VectorDistance with nullable values]]></Description>
       <Expression><![CDATA[query.Select(doc => doc.VectorFloatField.VectorDistance(new [] {2, 3, 4}, True, new VectorDistanceOptions() {DataType = null, DistanceFunction = null, SearchListSizeMultiplier = null}))]]></Expression>
     </Input>
