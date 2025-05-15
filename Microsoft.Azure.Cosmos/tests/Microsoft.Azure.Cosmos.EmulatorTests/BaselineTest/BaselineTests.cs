@@ -151,8 +151,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest
                 matched,
                 $@"
                     Please run the ..\azure-cosmos-dotnet-v3\UpdateContracts.ps1 script to update the baselines.
-                    Expected: {baselineTextSuffix},
-                    Actual:   {outputTextSuffix},
+                    Expected: {baselineText},
+                    Actual:   {outputText},
                     OutputPath: {Path.GetFullPath(outputPath)},
                     BaselinePath: {Path.GetFullPath(baselinePath)}");
         }
