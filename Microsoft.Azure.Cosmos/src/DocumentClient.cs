@@ -1002,13 +1002,6 @@ namespace Microsoft.Azure.Cosmos
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
 
-            this.retryPolicy = new RetryPolicy(
-                globalEndpointManager: this.GlobalEndpointManager,
-                connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
-
-            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
-
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
             // For gateway: GatewayProxy.
