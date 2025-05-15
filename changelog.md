@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.47.0](#3.47.0)**.
+The **minimum recommended version is [3.51.0](#3.51.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes. With the release of [3.47.0](#3.47.0), it is now best practice to include a cross regional hedging availability strategy when using the Azure Cosmos DB .NET SDK. For more information about cross regional hedging, see [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/docs/Cross%20Region%20Request%20Hedging.md).
 
@@ -15,9 +15,9 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.51.0-preview.1"/> [3.51.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0-preview.1) - 2025-5-16
+### <a name="3.52.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.0) - 2025-5-16
 
-### <a name="3.50.1"/> [3.50.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.1) - 2025-5-16
+### <a name="3.51.0"/> [3.51.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0) - 2025-5-16
 
 #### Added
 
