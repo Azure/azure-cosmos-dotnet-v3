@@ -246,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 apiType,
                 recievedResponseEventHandler);
 
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             return client;
         }
 

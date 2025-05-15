@@ -1312,7 +1312,7 @@
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
 
-                if (cosmosClientOptions.EnablePartitionLevelFailover)
+                if (enablePartitionLevelFailover)
                 {
                     Assert.IsNotNull(hedgeContext);
                     List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
