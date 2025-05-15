@@ -47,7 +47,8 @@
         {
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
             Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
-            
+            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
+
             try
             {
                 // if I go to first region for reading an item, I should get a 404/2002 response for 10 minutes
@@ -73,7 +74,6 @@
                     ConsistencyLevel = ConsistencyLevel.Session,
                     ApplicationPreferredRegions = preferredRegions,
                     ConnectionMode = ConnectionMode.Direct,
-                    MaxInRegionRetryCountForSessionRetry = sessionTokenMismatchRetryAttempts
                 };
 
                 using (CosmosClient faultInjectionClient = new CosmosClient(
@@ -117,6 +117,7 @@
             finally
             {
                 Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, null);
             }
         }
 
@@ -140,6 +141,7 @@
 
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
             Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
+            Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
 
             try
             {
@@ -165,7 +167,6 @@
                     ConsistencyLevel = ConsistencyLevel.Session,
                     ApplicationPreferredRegions = preferredRegions,
                     ConnectionMode = ConnectionMode.Direct,
-                    MaxInRegionRetryCountForSessionRetry = sessionTokenMismatchRetryAttempts
                 };
 
                 using (CosmosClient faultInjectionClient = new CosmosClient(

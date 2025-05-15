@@ -80,7 +80,7 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly int MinMinInRegionRetryTimeForWritesInMs = 100;
 
         /// <summary>
-        /// If a client specify a value  less than or equal to 0 we will not retry and yield after the original attempt, otherwise default is going to be 1
+        /// If a client specifies a value less than or equal to 0 we will not retry and yield after the original attempt, otherwise default is going to be 1
         /// </summary>
         internal static readonly string MaxRetriesInLocalRegionWhenRemoteRegionPreferred = "AZURE_COSMOS_MAX_RETRIES_IN_LOCAL_REGION_WHEN_REMOTE_REGION_PREFERRED";
         internal static readonly int DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred = 1;
