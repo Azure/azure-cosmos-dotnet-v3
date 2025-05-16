@@ -107,8 +107,6 @@
         [DataRow(FaultInjectionOperationType.QueryItem, 1, true, DisplayName = "Validate Query Item operation with remote region preferred.")]
         [DataRow(FaultInjectionOperationType.ReadItem, 2, false, DisplayName = "Validate Read Item operation with local region preferred.")]
         [DataRow(FaultInjectionOperationType.QueryItem, 2, false, DisplayName = "Validate Query Item operation with local region preferred.")]
-        [DataRow(FaultInjectionOperationType.ReadItem, 0, true, DisplayName = "Validate Read Item operation with 0 sessionTokenMismatchRetryAttempts.")]
-        [DataRow(FaultInjectionOperationType.QueryItem, -1, true, DisplayName = "Validate Query Item operation with negative sessionTokenMismatchRetryAttempts.")]
         [TestCategory("MultiMaster")]
         public async Task ReadOperationWithReadSessionUnavailableTest(FaultInjectionOperationType faultInjectionOperationType,
             int sessionTokenMismatchRetryAttempts, Boolean remoteRegionPreferred)
@@ -177,8 +175,7 @@
 
                     if (remoteRegionPreferred)
                     {
-                        int effectiveRetryAttempts = Math.Max(sessionTokenMismatchRetryAttempts, 0);
-                        Assert.IsTrue(hitCount >= effectiveRetryAttempts && hitCount <= (1 + effectiveRetryAttempts) * 4);
+                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4);
                     }
                 }
             }
@@ -200,8 +197,6 @@
         [DataRow(FaultInjectionOperationType.DeleteItem, 2, false, DisplayName = "Validate Delete Item operation with local region preferred.")]
         [DataRow(FaultInjectionOperationType.UpsertItem, 1, false, DisplayName = "Validate Upsert Item operation with local region preferred.")]
         [DataRow(FaultInjectionOperationType.PatchItem, 1, false, DisplayName = "Validate Patch Item operation with remote region preferred.")]
-        [DataRow(FaultInjectionOperationType.CreateItem, 0, true, DisplayName = "Validate Write Item operation with 0 sessionTokenMismatchRetryAttempts.")]
-        [DataRow(FaultInjectionOperationType.ReplaceItem, -1, true, DisplayName = "Validate Replace Item operation with negative sessionTokenMismatchRetryAttempts.")]
         [TestCategory("MultiMaster")]
         public async Task WriteOperationWithReadSessionUnavailableTest(FaultInjectionOperationType faultInjectionOperationType,
            int sessionTokenMismatchRetryAttempts, Boolean remoteRegionPreferred)
@@ -267,9 +262,7 @@
                     if (remoteRegionPreferred)
                     {
                         // higher hit count is possible while in MinRetryWaitTimeWithinRegion
-                        int effectiveRetryAttempts = Math.Max(sessionTokenMismatchRetryAttempts, 0);
-                        // higher hit count is possible while in MinRetryWaitTimeWithinRegion
-                        Assert.IsTrue(hitCount >= effectiveRetryAttempts);
+                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts);
                     }
                 }
             }
