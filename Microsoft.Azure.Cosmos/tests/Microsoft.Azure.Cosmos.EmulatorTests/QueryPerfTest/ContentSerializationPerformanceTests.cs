@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
@@ -66,15 +67,26 @@
 
             Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(this.cosmosDatabaseId);
 
-            Container container;
-            try
-            {
-                container = database.GetContainer(this.containerId);
-                await container.DeleteContainerAsync();
-            }
-            catch (CosmosException) { }
+            FeedIterator<ContainerProperties> iterator = database.GetContainerQueryIterator<ContainerProperties>();
 
-            container = await database.CreateContainerIfNotExistsAsync(
+            bool containerExists = false;
+            while (iterator.HasMoreResults)
+            {
+                FeedResponse<ContainerProperties> containers = await iterator.ReadNextAsync().ConfigureAwait(false);
+                if (containers.Any(c => c.Id == this.containerId))
+                {
+                    containerExists = true;
+                    break;
+                }
+            }
+            
+            if (containerExists)
+            {
+                Container previousContainer = database.GetContainer(this.containerId);
+                await previousContainer.DeleteContainerAsync();
+            }
+
+            Container container = await database.CreateContainerIfNotExistsAsync(
                 id: this.containerId,
                 partitionKeyPath: "/myPartitionKey",
                 throughput: 400
