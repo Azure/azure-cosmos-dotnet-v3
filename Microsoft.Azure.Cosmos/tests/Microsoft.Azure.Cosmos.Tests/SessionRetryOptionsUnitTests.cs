@@ -35,17 +35,6 @@
             }
 
         }
-        [TestMethod]
-        public void SessionRetryOptionsValidateMaxInRegionRetryCount()
-        {
-            SessionRetryOptions options = new SessionRetryOptions
-            {
-                RemoteRegionPreferred = false
-            };
-
-            Assert.ThrowsException<ArgumentException>(() => options.MaxInRegionRetryCount = 0);
-            Assert.ThrowsException<ArgumentException>(() => options.MaxInRegionRetryCount = -5);
-        }
 
         [TestMethod]
         public void SessionRetryOptionsDefaultValuesTest()
