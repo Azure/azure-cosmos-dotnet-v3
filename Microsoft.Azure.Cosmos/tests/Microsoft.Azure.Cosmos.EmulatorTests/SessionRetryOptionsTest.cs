@@ -34,6 +34,74 @@
             Assert.IsTrue(this.writeRegionMap.Count() >= 2);
 
         }
+
+        [TestMethod]
+        [DataRow(FaultInjectionOperationType.ReadItem, DisplayName = "No retries for ReadItem when MaxInRegionRetryCount is 0 and EnableRemoteRegionPreferredForSessionRetry is true")]
+        [DataRow(FaultInjectionOperationType.QueryItem, DisplayName = "No retries for QueryItem when MaxInRegionRetryCount is 0 and and EnableRemoteRegionPreferredForSessionRetry is true")]
+        [TestCategory("MultiMaster")]
+        public async Task ReadOrQueryOperationWithMaxInRegionRetryCountZero(FaultInjectionOperationType faultInjectionOperationType)
+        {
+            string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
+
+            FaultInjectionRule badSessionTokenRule = new FaultInjectionRuleBuilder(
+                    id: "badSessionTokenRule",
+                    condition:
+                        new FaultInjectionConditionBuilder()
+                            .WithOperationType(faultInjectionOperationType)
+                            .WithRegion(preferredRegions[0])
+                            .Build(),
+                    result:
+                        FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+                            .Build())
+                    .WithDuration(TimeSpan.FromMinutes(10))
+                    .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { badSessionTokenRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+            Assert.IsNotNull(faultInjector);
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                EnableRemoteRegionPreferredForSessionRetry = true,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                ApplicationPreferredRegions = preferredRegions,
+                ConnectionMode = ConnectionMode.Direct,
+            };
+
+            // Explicitly set MaxInRegionRetryCount to 0 in SessionRetryOptions
+            clientOptions.SessionRetryOptions.MaxInRegionRetryCount = 0;
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                        connectionString: this.connectionString,
+                        clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = await database.CreateContainerIfNotExistsAsync("sessionRetryPolicy", "/id");
+                string GUID = Guid.NewGuid().ToString();
+                dynamic testObject = new
+                {
+                    id = GUID,
+                    name = "customer one",
+                    address = new
+                    {
+                        line1 = "45 new street",
+                        city = "mckinney",
+                        postalCode = "98989",
+                    }
+                };
+
+                ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(testObject);
+                Assert.IsNotNull(response);
+
+                OperationExecutionResult executionResult = await this.PerformDocumentOperation(faultInjectionOperationType, container, testObject);
+                this.ValidateOperationExecutionResult(executionResult, true);
+
+                // Assert that only the original attempt happened (no retries)
+                long hitCount = badSessionTokenRule.GetHitCount();
+                Assert.AreEqual(4, hitCount, $"There should be only one attempt (no retries) for {faultInjectionOperationType} when MaxInRegionRetryCount is 0 and RemotePreferredRegion is set to true.");
+            }
+
+        }
+
         [TestMethod]
         [DataRow(FaultInjectionOperationType.ReadItem, 2, true, DisplayName = "Validate Read Item operation with remote region preferred.")]
         [DataRow(FaultInjectionOperationType.QueryItem, 1, true, DisplayName = "Validate Query Item operation with remote region preferred.")]
