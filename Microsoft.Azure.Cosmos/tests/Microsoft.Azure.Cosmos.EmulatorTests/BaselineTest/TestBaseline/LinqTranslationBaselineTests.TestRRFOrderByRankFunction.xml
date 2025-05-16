@@ -1,0 +1,73 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 2 functions]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField2"], "test1", "test2", "test3"))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 3 functions]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField.FullTextScore(new [] {"test1", "text2"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField"], "test1", "text2"), FullTextScore(root["StringField2"], "test1", "test2", "test3"))]]></SqlQuery>
+      <Results><![CDATA[[
+  "Test",
+  "Test"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF with 1 function]]></Description>
+      <Expression><![CDATA[query.OrderByRank(doc => RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"})})).Select(doc => doc.Pk)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root["Pk"] 
+FROM root 
+ORDER BY RANK RRF(FullTextScore(root["StringField"], "test1"))]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":34,"end":96},"code":"SC2221","message":"The ORDER BY RANK clause must be followed by a VectorDistance and/or a FullTextScore function call."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF in WHERE clause]]></Description>
+      <Expression><![CDATA[query.Where(doc => (RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"})}) != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RRF(FullTextScore(root["StringField"], "test1")) != null)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":39,"end":82},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":35,"end":38},"code":"SC2005","message":"'RRF' is not a recognized built-in function name."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[RRF in WHERE clause 2]]></Description>
+      <Expression><![CDATA[query.Where(doc => (RRF(new [] {doc.StringField.FullTextScore(new [] {"test1"}), doc.StringField2.FullTextScore(new [] {"test1", "test2", "test3"})}) != null))]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["StringField2"], "test1", "test2", "test3")) != null)]]></SqlQuery>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":39,"end":82},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":84,"end":146},"code":"SC2240","message":"The FullTextScore function is only allowed in the ORDER BY RANK clause."},{"severity":"Error","location":{"start":35,"end":38},"code":"SC2005","message":"'RRF' is not a recognized built-in function name."}]},0x800A0B00]]></ErrorMessage>
+    </Output>
+  </Result>
+</Results>
