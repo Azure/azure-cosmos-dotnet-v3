@@ -43,6 +43,7 @@
             {
                 EnableRemoteRegionPreferredForSessionRetry = true,
             };
+
             Assert.IsTrue(clientOptions.SessionRetryOptions.MinInRegionRetryTime == TimeSpan.FromMilliseconds(500));
             Assert.IsTrue(clientOptions.SessionRetryOptions.MaxInRegionRetryCount == 1);
 
