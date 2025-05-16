@@ -114,7 +114,6 @@
             string[] preferredRegions = this.writeRegionMap.Keys.ToArray();
             Environment.SetEnvironmentVariable(ConfigurationManager.MinInRegionRetryTimeForWritesInMs, "100");
             Environment.SetEnvironmentVariable(ConfigurationManager.MaxRetriesInLocalRegionWhenRemoteRegionPreferred, Convert.ToString(sessionTokenMismatchRetryAttempts));
-
             try
             {
                 // if I go to first region for reading an item, I should get a 404/2002 response for 10 minutes
