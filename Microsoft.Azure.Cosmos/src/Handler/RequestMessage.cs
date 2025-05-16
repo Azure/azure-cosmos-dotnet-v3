@@ -295,6 +295,9 @@ namespace Microsoft.Azure.Cosmos
 
                 serviceRequest.UseStatusCodeForFailures = true;
                 serviceRequest.UseStatusCodeFor429 = true;
+                serviceRequest.UseStatusCodeFor4041002 = true;
+                serviceRequest.UseStatusCodeFor403 = true;
+                serviceRequest.UseStatusCodeForBadRequest = true;
                 serviceRequest.Properties = this.Properties;
                 this.DocumentServiceRequest = serviceRequest;
             }
