@@ -5,8 +5,8 @@ parameters:
   Arguments: ''
   VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
   OS: 'Windows'
-  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
-  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster" --verbosity normal '
+  EmulatorPipeline1Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster & (TestCategory=ClientTelemetryEmulator|TestCategory=Query|TestCategory=ReadFeed|TestCategory=Batch|TestCategory=ChangeFeed)" --verbosity normal '
+  EmulatorPipeline2Arguments: ' --filter "TestCategory!=Flaky & TestCategory!=Quarantine & TestCategory!=Functional & TestCategory!=ClientTelemetryRelease & TestCategory !=ThinClient & TestCategory!=ClientTelemetryEmulator & TestCategory!=Query & TestCategory!=ReadFeed & TestCategory!=Batch & TestCategory!=ChangeFeed & TestCategory!=LongRunning & TestCategory!=MultiRegion & TestCategory!=MultiMaster" --verbosity normal '
   EmulatorPipeline3Arguments: ' --filter "TestCategory=MultiRegion" --verbosity normal '
   EmulatorPipeline4Arguments: ' --filter "TestCategory=MultiMaster" --verbosity normal '
   EmulatorPipeline1CategoryListName: ' Client Telemetry, Query, ChangeFeed, ReadFeed, Batch ' # Divided in 2 categories to run them in parallel and reduce the PR feedback time
