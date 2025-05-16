@@ -377,6 +377,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Trim = "TRIM";
             public const string Trunc = "TRUNC";
             public const string Upper = "UPPER";
+            public const string VectorDistance = "VectorDistance";
         }
 
         public static class Identifiers
