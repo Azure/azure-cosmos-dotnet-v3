@@ -3,11 +3,11 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
 
     [Ignore]
     [TestClass]
@@ -21,7 +21,7 @@
         private readonly string cosmosDatabaseId;
         private readonly string containerId;
         private readonly int insertDocumentCount;
-        private readonly List<string> queries;
+        private readonly IReadOnlyList<string> queries;
         private readonly int iterationCount;
         private readonly int warmupIterationCount;
         private readonly int maxConcurrency;
@@ -43,7 +43,7 @@
             this.cosmosDatabaseId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.CosmosDatabaseId"];
             this.containerId = Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.ContainerId"];
             this.insertDocumentCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.InsertDocumentCount"]);
-            this.queries = JsonConvert.DeserializeObject<List<string>>(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Queries"]);
+            this.queries = JsonSerializer.Deserialize<List<string>>(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.Queries"]);
             this.iterationCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.NumberOfIterations"]);
             this.warmupIterationCount = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.WarmupIterations"]);
             this.maxConcurrency = int.Parse(Utils.ConfigurationManager.AppSettings["QueryPerformanceTests.MaxConcurrency"]);
@@ -101,7 +101,7 @@
         private async Task RunAsync(CosmosClient client)
         {
             Container container = client.GetContainer(this.cosmosDatabaseId, this.containerId);
-            string outputPath = Path.GetFullPath((this.outputPath != string.Empty) ? this.outputPath : Directory.GetCurrentDirectory());
+            string outputPath = Path.GetFullPath(!string.IsNullOrWhiteSpace(this.outputPath) ? this.outputPath : Directory.GetCurrentDirectory());
 
             string fullOutputPath = Path.Combine(outputPath, this.outputDirectoryName);
             if (!Directory.Exists(fullOutputPath))
@@ -115,13 +115,13 @@
                 {
                     for (int i = 0; i < this.warmupIterationCount; i++)
                     {
-                        await this.RunQueryAsync(container, query, serializationFormat, true);
+                        await this.RunQueryAsync(container, query, serializationFormat, isWarmup: true);
                     }
 
                     MetricsSerializer metricsSerializer = new();
                     for (int i = 0; i < this.iterationCount; i++)
                     {
-                        await this.RunQueryAsync(container, query, serializationFormat, false);
+                        await this.RunQueryAsync(container, query, serializationFormat, isWarmup: false);
                     }
                     metricsSerializer.Serialize(fullOutputPath, this.queryStatisticsDatumVisitorMap[serializationFormat], this.iterationCount, query, serializationFormat);
                 }
