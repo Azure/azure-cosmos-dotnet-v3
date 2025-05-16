@@ -71,6 +71,8 @@
                 if (combinedMetrics.GetCosmosElementTrace != null)
                 {
                     queryStatisticsDatumVisitor.AddGetCosmosElementResponseTime(combinedMetrics.GetCosmosElementTrace.Duration.TotalMilliseconds);
+                    queryStatisticsDatumVisitor.AddRequestCharge(response.RequestCharge);
+
                     foreach (KeyValuePair<string, object> datum in combinedMetrics.QueryMetricsTrace.Data)
                     {
                         switch (datum.Value)

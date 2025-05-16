@@ -133,6 +133,8 @@
 
         private async Task InsertDocuments(Container container)
         {
+            string[] regions = { "Arizona", "California", "Florida", "Utah", "New York", "Oregon" };
+
             for (int i = 0; i < this.insertDocumentCount; i++)
             {
                 States state = new States
@@ -142,7 +144,7 @@
                     Name = $"State-{i}",
                     City = $"City-{i % 1000}",
                     PostalCode = $"{(10000 + (i % 90000))}",
-                    Region = $"Region-{(i % 10) + 1}",
+                    Region = regions[i % regions.Length],
                     UserDefinedID = i % 1000,
                     WordsArray = new List<string> { "alpha", "beta", "gamma", "delta" },
                     Tags = new Tags
@@ -157,7 +159,7 @@
                             Name = $"Recipient-{i % 100}",
                             City = $"RecipientCity-{i % 1000}",
                             PostalCode = $"{(20000 + (i * 7) % 80000)}",
-                            Region = $"Region-{(i % 5) + 1}",
+                            Region = regions[i % regions.Length],
                             GUID = $"guid-{i}",
                             Quantity = (i % 99) + 1
                         }
@@ -246,6 +248,7 @@
                 if (response.RequestCharge != 0)
                 {
                     visitor.AddEndToEndTime(totalTime.ElapsedMilliseconds - accumulateMetricsTime.ElapsedMilliseconds);
+                    visitor.AddRequestCharge(response.RequestCharge);
                     visitor.PopulateMetrics();
                 }
 

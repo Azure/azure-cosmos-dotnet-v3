@@ -13,6 +13,7 @@
             metric => metric.RetrievedDocumentSize,
             metric => metric.OutputDocumentCount,
             metric => metric.OutputDocumentSize,
+            metric => metric.RUCharge,
             metric => metric.TotalQueryExecutionTime,
             metric => metric.DocumentLoadTime,
             metric => metric.DocumentWriteTime,
@@ -76,6 +77,7 @@
                         RetrievedDocumentSize = metricsPerRoundTrip.Sum(metric => metric.RetrievedDocumentSize),
                         OutputDocumentCount = metricsPerRoundTrip.Sum(metric => metric.OutputDocumentCount),
                         OutputDocumentSize = metricsPerRoundTrip.Sum(metric => metric.OutputDocumentSize),
+                        RUCharge = metricsPerRoundTrip.Sum(metric => metric.RUCharge),
                         TotalQueryExecutionTime = metricsPerRoundTrip.Sum(metric => metric.TotalQueryExecutionTime),
                         DocumentLoadTime = metricsPerRoundTrip.Sum(metric => metric.DocumentLoadTime),
                         DocumentWriteTime = metricsPerRoundTrip.Sum(metric => metric.DocumentWriteTime),
@@ -114,6 +116,7 @@
                 "RetrievedDocumentSize", 
                 "OutputDocumentCount",
                 "OutputDocumentSize",
+                "RUCharge",
                 "TotalQueryExecutionTime", 
                 "DocumentLoadTime",
                 "DocumentWriteTime",
@@ -159,7 +162,7 @@
             string metricsPath = Path.Combine(outputPath, "raw_data.csv");
             fileExists = File.Exists(metricsPath);
 
-            using (StreamWriter writer = new StreamWriter(metricsPath))
+            using (StreamWriter writer = new StreamWriter(metricsPath, append: true))
             {
                 if (!fileExists)
                 {
@@ -181,6 +184,7 @@
                         metrics.RetrievedDocumentSize,
                         metrics.OutputDocumentCount,
                         metrics.OutputDocumentSize,
+                        metrics.RUCharge,
                         metrics.TotalQueryExecutionTime,
                         metrics.DocumentLoadTime,
                         metrics.DocumentWriteTime, 
