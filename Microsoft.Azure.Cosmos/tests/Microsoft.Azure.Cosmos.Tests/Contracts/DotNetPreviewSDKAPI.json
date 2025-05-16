@@ -1,16 +1,5 @@
 {
   "Subclasses": {
-    "Microsoft.Azure.Cosmos.AvailabilityStrategy;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
-      "Subclasses": {},
-      "Members": {
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan], Boolean)": {
-          "Type": "Method",
-          "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan], Boolean);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
-        }
-      },
-      "NestedTypes": {}
-    },
     "Microsoft.Azure.Cosmos.ChangeFeedItem`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
       "Subclasses": {},
       "Members": {

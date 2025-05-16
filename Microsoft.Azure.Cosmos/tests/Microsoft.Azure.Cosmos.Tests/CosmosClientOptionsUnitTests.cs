@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNull(clientOptions.HttpClientFactory);
             Assert.AreNotEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.AreNotEqual(priorityLevel, clientOptions.PriorityLevel);
-            Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsFalse(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue);
             Assert.AreNotEqual(throughputBucket, clientOptions.ThroughputBucket);
 
@@ -149,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsTrue(clientOptions.AllowBulkExecution);
             Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
             Assert.AreEqual(priorityLevel, clientOptions.PriorityLevel);
-            Assert.IsFalse(clientOptions.EnablePartitionLevelFailover);
+            Assert.IsFalse(clientOptions.EnablePartitionLevelCircuitBreaker);
             Assert.IsTrue(clientOptions.EnableAdvancedReplicaSelectionForTcp.HasValue && clientOptions.EnableAdvancedReplicaSelectionForTcp.Value);
             Assert.AreEqual(throughputBucket, clientOptions.ThroughputBucket);
 
@@ -227,20 +227,15 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
-        /// initialization should throw an argument exception and fail. This should hold true for both environment variable and CosmosClientOptions.
+        /// initialization should succeed. This should hold true for both environment variable and CosmosClientOptions.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        [DataRow(true, DisplayName = "Validate that when environment variable is used to enable PPAF, the outcome of the test should be same.")]
-        [DataRow(false, DisplayName = "Validate that when CosmosClientOptions is used to enable PPAF, the outcome of the test should be same.")]
-        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldThrowArgumentException(bool useEnvironmentVariable)
+        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldInitializeCosmosClientSuccessfully()
         {
             try
             {
-                if (useEnvironmentVariable)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-                }
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
 
                 string endpoint = AccountEndpoint;
                 string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
@@ -276,17 +271,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .WithPriorityLevel(priorityLevel)
                     .WithThroughputBucket(throughputBucket);
 
-                if (!useEnvironmentVariable)
-                {
-                    cosmosClientBuilder
-                        .WithPartitionLevelFailoverEnabled();
-                }
+                CosmosClient cosmosClient = cosmosClientBuilder.Build();
 
-                ArgumentException exception = Assert.ThrowsException<ArgumentException>(() => cosmosClientBuilder.Build());
-
-                Assert.AreEqual(
-                    expected: "ApplicationPreferredRegions or ApplicationRegion is required when EnablePartitionLevelFailover is enabled.",
-                    actual: exception.Message);
+                Assert.IsNotNull(cosmosClient,
+                    message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
             }
             finally
             {
@@ -300,16 +288,11 @@ namespace Microsoft.Azure.Cosmos.Tests
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
-        [DataRow(true, DisplayName = "Validate that when enevironment variable is used to enable PPAF, the outcome of the test should be same.")]
-        [DataRow(false, DisplayName = "Validate that when CosmosClientOptions is used to enable PPAF, the outcome of the test should be same.")]
-        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsSet_ShouldInitializeSuccessfully(bool useEnvironmentVariable)
+        public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsSet_ShouldInitializeSuccessfully()
         {
             try
             {
-                if (useEnvironmentVariable)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-                }
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
 
                 string endpoint = AccountEndpoint;
                 string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
@@ -342,7 +325,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                     .WithSerializerOptions(cosmosSerializerOptions)
                     .WithConsistencyLevel(consistencyLevel)
                     .WithPriorityLevel(priorityLevel)
-                    .WithPartitionLevelFailoverEnabled()
                     .WithThroughputBucket(throughputBucket)
                     .WithApplicationPreferredRegions(
                         new List<string>()
@@ -373,7 +355,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
                 Assert.IsFalse(clientOptions.AllowBulkExecution);
                 Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
-                Assert.IsTrue(clientOptions.EnablePartitionLevelFailover);
                 Assert.IsNotNull(clientOptions.ApplicationPreferredRegions);
                 Assert.IsNotNull(clientOptions.AccountInitializationCustomEndpoints);
             }
@@ -513,69 +494,75 @@ namespace Microsoft.Azure.Cosmos.Tests
 
         [TestMethod]
         [Owner("ntripician")]
-        [DataRow(true, new string[] { nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker) }, "F2", DisplayName = "With PPCB and ApplicationName")]
-        [DataRow(true, new string[] { nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker), nameof(UserAgentFeatureFlags.PerPartitionAutomaticFailover) }, "F3", DisplayName = "With PPAF and ApplicationName")]
-        [DataRow(false, new string[] { nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker) }, "F2", DisplayName = "With PPCB and Without ApplicationName")]
-        [DataRow(false, new string[] { }, "", DisplayName = "Without Any Features and ApplicationName")]
+        [DataRow(true, false, true, "F2", DisplayName = "With PPCB and ApplicationName")]
+        [DataRow(true, true, true, "F3", DisplayName = "With PPAF and ApplicationName")]
+        [DataRow(false, false, true, "F2", DisplayName = "With PPCB and Without ApplicationName")]
+        [DataRow(false, false, false, "", DisplayName = "Without Any Features and ApplicationName")]
         public void UserAgentContainsPPAFInformation(
             bool appName,
-            string[] featureList,
+            bool ppaf, 
+            bool ppcb,
             string expectedHexStringPostFix)
         {
             EnvironmentInformation environmentInformation = new EnvironmentInformation();
             string expectedValue = "cosmos-netstandard-sdk/" + environmentInformation.ClientVersion;
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions();
             string userAgentSuffix = "testSuffix";
+
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+
+            CosmosClientBuilder cosmosClientBuilder = new CosmosClientBuilder(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
+
             if (appName)
             {
-                cosmosClientOptions.ApplicationName = userAgentSuffix;
+                cosmosClientBuilder.WithApplicationName(userAgentSuffix);
             }
 
-            foreach(string feature in featureList)
+            ConnectionPolicy policy = new ConnectionPolicy()
             {
-                if (feature.Equals(nameof(UserAgentFeatureFlags.PerPartitionCircuitBreaker)))
-                {
-                    cosmosClientOptions.EnablePartitionLevelCircuitBreaker = true;
-                }
-                else if (feature.Equals(nameof(UserAgentFeatureFlags.PerPartitionAutomaticFailover)))
-                {
-                    cosmosClientOptions.EnablePartitionLevelFailover = true;
-                }
-            }
+                EnablePartitionLevelCircuitBreaker = ppcb,
+                EnablePartitionLevelFailover = ppaf
+            };
 
-            cosmosClientOptions.ApplicationRegion = Regions.WestUS;
+            CosmosClient cosmosClient = cosmosClientBuilder.Build(new MockDocumentClient(policy));
+
+            CosmosClientOptions cosmosClientOptions = cosmosClient.ClientOptions;
+            
             if (appName)
             {
                 Assert.AreEqual(userAgentSuffix, cosmosClientOptions.ApplicationName);
+                cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClientOptions.ApplicationName);
             }
             else
             {
                 Assert.IsNull(cosmosClientOptions.ApplicationName);
             }
 
-            Cosmos.UserAgentContainer userAgentContainer = cosmosClientOptions.CreateUserAgentContainerWithFeatures(clientId: 0);
-            Console.WriteLine(userAgentContainer.UserAgent);
-            if (appName)
-            {
-                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(userAgentSuffix));
-            }
-            else
-            {
-                Assert.IsTrue(userAgentContainer.UserAgent.EndsWith(expectedHexStringPostFix));
-            }
-            
-            Assert.IsTrue(userAgentContainer.UserAgent.StartsWith(expectedValue));
+            cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.AppendFeatures(cosmosClient.DocumentClient.GetUserAgentFeatures());
 
-            ConnectionPolicy connectionPolicy = cosmosClientOptions.GetConnectionPolicy(clientId: 0);
-            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.StartsWith(expectedValue));
-            Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.Contains(expectedHexStringPostFix));
+            string userAgent = cosmosClient.DocumentClient.ConnectionPolicy.UserAgentContainer.UserAgent;
+            Console.WriteLine(userAgent);
             if (appName)
             {
-                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(userAgentSuffix));
+                Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
             }
             else
             {
-                Assert.IsTrue(connectionPolicy.UserAgentContainer.UserAgent.EndsWith(expectedHexStringPostFix));
+                Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
+            }
+
+            Assert.IsTrue(userAgent.StartsWith(expectedValue));
+            Assert.IsTrue(userAgent.Contains(expectedHexStringPostFix));
+
+            if (appName)
+            {
+                Assert.IsTrue(userAgent.EndsWith(userAgentSuffix));
+            }
+            else
+            {
+                Assert.IsTrue(userAgent.EndsWith(expectedHexStringPostFix));
             }
         }
 
@@ -1200,61 +1187,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
 #nullable disable
-        }
-
-        [TestMethod]
-        public void PPAFClientApplicationRegionCreationTest()
-        {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-            {
-                ApplicationRegion = Regions.WestUS2,
-                EnablePartitionLevelFailover = true
-            };
-
-            CosmosClient cosmosClient = new CosmosClient(ConnectionString, cosmosClientOptions);
-            Assert.AreEqual(Regions.WestUS2, cosmosClient.ClientOptions.ApplicationRegion);
-            Assert.IsTrue(cosmosClient.ClientOptions.EnablePartitionLevelFailover);
-        }
-
-        [TestMethod]
-        public void PPAFClientApplicationPreferredRegionCreationTest()
-        {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-            {
-                ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
-                EnablePartitionLevelFailover = true
-            };
-
-            CosmosClient cosmosClient = new CosmosClient(ConnectionString, cosmosClientOptions);
-            Assert.AreEqual(Regions.WestUS2, cosmosClient.ClientOptions.ApplicationPreferredRegions[0]);
-            Assert.AreEqual(Regions.EastUS2, cosmosClient.ClientOptions.ApplicationPreferredRegions[1]);
-            Assert.IsTrue(cosmosClient.ClientOptions.EnablePartitionLevelFailover);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void PPAFClientAppRegionAndAppPreferredRegionTest()
-        {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-            {
-                EnablePartitionLevelFailover = true,
-                ApplicationPreferredRegions = new List<string> { Regions.WestUS2, Regions.EastUS2 },
-                ApplicationRegion = Regions.AustraliaCentral
-            };
-
-            _ = new CosmosClient(ConnectionString, cosmosClientOptions);
-        }
-
-        [TestMethod]
-        [ExpectedException(typeof(ArgumentException))]
-        public void PPAFClientNoRegionsTest()
-        {
-            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions
-            {
-                EnablePartitionLevelFailover = true
-            };
-
-            _ = new CosmosClient(ConnectionString, cosmosClientOptions);
         }
 
         private class TestWebProxy : IWebProxy

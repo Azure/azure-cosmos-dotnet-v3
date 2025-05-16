@@ -748,7 +748,11 @@ namespace Microsoft.Azure.Cosmos
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
 
         /// <summary>
-        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
+        /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
+        /// With a single-write-region account the next applicable region is the write-region, with a 
+        /// multi-write-region account the next applicable region is the next region in the order of effective 
+        /// preferred regions (same order also used for read/query operations).
         /// </summary>
 #if PREVIEW
         public
@@ -760,11 +764,6 @@ namespace Microsoft.Azure.Cosmos
             get => this.SessionRetryOptions.RemoteRegionPreferred;
             set => this.SessionRetryOptions.RemoteRegionPreferred = value;
         }
-
-        /// <summary>
-        /// Enable partition key level failover
-        /// </summary>
-        internal bool EnablePartitionLevelFailover { get; set; } = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
 
         /// <summary>
         /// Enable partition level circuit breaker (aka PPCB). For compute gateway use case, by default per partition automatic failover will be disabled, so does the PPCB.
@@ -1014,10 +1013,10 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ValidateDirectTCPSettings();
             this.ValidateLimitToEndpointSettings();
-            this.ValidatePartitionLevelFailoverSettings();
 
             ConnectionPolicy connectionPolicy = new ConnectionPolicy()
             {
+                ApplicationName = this.ApplicationName,
                 MaxConnectionLimit = this.GatewayModeMaxConnectionLimit,
                 RequestTimeout = this.RequestTimeout,
                 ConnectionMode = this.ConnectionMode,
@@ -1030,14 +1029,14 @@ namespace Microsoft.Azure.Cosmos
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
-                EnablePartitionLevelFailover = this.EnablePartitionLevelFailover,
-                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker,
+                EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
                 HttpClientFactory = this.httpClientFactory,
                 ServerCertificateCustomValidationCallback = this.ServerCertificateCustomValidationCallback,
-                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions()
+                CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions(),
+                AvailabilityStrategy = this.AvailabilityStrategy,
             };
 
             if (this.CosmosClientTelemetryOptions != null)
@@ -1191,16 +1190,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void ValidatePartitionLevelFailoverSettings()
-        {
-            if (this.EnablePartitionLevelFailover
-                && string.IsNullOrEmpty(this.ApplicationRegion)
-                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
-            }
-        }
-
         private void ValidateDirectTCPSettings()
         {
             string settingName = string.Empty;
@@ -1259,30 +1248,7 @@ namespace Microsoft.Azure.Cosmos
                         clientId: clientId,
                         features: featureString,
                         regionConfiguration: regionConfiguration,
-                        suffix: this.GetUserAgentSuffix());
-        }
-
-        internal string GetUserAgentSuffix()
-        {
-            int featureFlag = 0;
-            if (this.EnablePartitionLevelFailover)
-            {
-                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
-            }
-
-            if (this.EnablePartitionLevelFailover || this.EnablePartitionLevelCircuitBreaker)
-            {
-                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
-            }
-
-            if (featureFlag == 0)
-            {
-                return this.ApplicationName;
-            }
-
-            return string.IsNullOrEmpty(this.ApplicationName) ?
-                $"F{featureFlag:X}" :
-                $"F{featureFlag:X}|{this.ApplicationName}";
+                        suffix: this.ApplicationName);
         }
 
         /// <summary>

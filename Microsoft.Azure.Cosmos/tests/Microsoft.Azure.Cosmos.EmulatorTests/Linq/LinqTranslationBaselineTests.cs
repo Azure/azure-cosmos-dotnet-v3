@@ -113,6 +113,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             public string StringField;
             public string StringField2;
             public int[] ArrayField;
+            public float[] VectorFloatField;
+            public byte[] VectorInt8Field;
+            public sbyte[] VectorUInt8Field;
             public List<int> EnumerableField;
             public Point Point;
             public int? NullableField;
@@ -392,6 +395,157 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestVectorDistanceFunction()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    Id = Guid.NewGuid().ToString(),
+                    VectorUInt8Field = new sbyte[] {1, 2, 3},
+                    VectorInt8Field = new byte[] { 1, 2, 3 },
+                    VectorFloatField = new float[] { 1, 2.0f, 3.0f },
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                new LinqTestInput("Float VectorDistance + Order By Rank", b => getQuery(b)
+                    .OrderByRank(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + Order By", b => getQuery(b)
+                    .OrderBy(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + Select", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null))),
+                new LinqTestInput("Float VectorDistance + Where", b => getQuery(b)
+                    .Where(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null) > 0)
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + GroupBy", b => getQuery(b)
+                    .GroupBy(doc => doc.VectorFloatField.VectorDistance(new float[] {2,3,4}, false, null), (key, values) => key)),
+                new LinqTestInput("Float VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32, SearchListSizeMultiplier = 20}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default DataType", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, SearchListSizeMultiplier = 10}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Float32, SearchListSizeMultiplier = 10}))),
+                new LinqTestInput("Float VectorDistance with non null fourth option with all default values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions()))),
+                new LinqTestInput("Float VectorDistance + RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, false, null),
+                                            doc.VectorFloatField.VectorDistance(new float[] { 3, 4, 5 }, false, null)))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Float VectorDistance + RRF + FullTextScore", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, false, null),
+                                            doc.VectorFloatField.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("UInt8 VectorDistance + Order By Rank", b => getQuery(b)
+                    .OrderByRank(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + Order By", b => getQuery(b)
+                    .OrderBy(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + Select", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null))),
+                new LinqTestInput("UInt8 VectorDistance + Where", b => getQuery(b)
+                    .Where(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null) > 0)
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + GroupBy", b => getQuery(b)
+                    .GroupBy(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null), (key, values) => key)),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 }))),
+                new LinqTestInput("UInt8 VectorDistance with non null fourth option with default DistanceFunction and SearchListSizeMultiplier", b => getQuery(b)
+                    .Select(doc => doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DataType = VectorDataType.Uint8 }))),
+                new LinqTestInput("UInt8 VectorDistance + RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, null)))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + non null fourth option with default SearchListSizeMultiplier", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.VectorDistance(new sbyte[] { 3, 4, 5 }, false, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.DotProduct, DataType = VectorDataType.Uint8 })))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + FullTextScore", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorUInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("UInt8 VectorDistance + RRF + FullTextScore + non null fourth option with default DistanceFunction", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorUInt8Field.VectorDistance(new sbyte[] { 2, 3, 4 }, false, new VectorDistanceOptions() { DataType = VectorDataType.Uint8, SearchListSizeMultiplier = 20 }),
+                                            doc.VectorUInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Int8 VectorDistance + Order By Rank", b => getQuery(b)
+                    .OrderByRank(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + Order By", b => getQuery(b)
+                    .OrderBy(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + Select", b => getQuery(b)
+                    .Select(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null))),
+                new LinqTestInput("Int8 VectorDistance + Where", b => getQuery(b)
+                    .Where(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null) > 0)
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + GroupBy", b => getQuery(b)
+                    .GroupBy(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null), (key, values) => key)),
+                new LinqTestInput("Int8 VectorDistance with non null fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean, DataType = VectorDataType.Int8}))),
+                new LinqTestInput("Int8 VectorDistance + RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorInt8Field.VectorDistance(new byte[] { 3, 4, 5 }, false, null)))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Int8 VectorDistance + RRF + FullTextScore", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.VectorInt8Field.VectorDistance(new byte[] { 2, 3, 4 }, false, null),
+                                            doc.VectorInt8Field.FullTextScore("string", "name")))
+                    .Select(doc => doc.Pk)),
+
+                // Other cases regarding fourth option
+                new LinqTestInput("VectorDistance with empty object", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions{}))),
+                 new LinqTestInput("VectorDistance with empty object 2", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, null))),
+                new LinqTestInput("VectorDistance with default values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Float32, DistanceFunction = DistanceFunction.Euclidean, SearchListSizeMultiplier = 10 }))),
+                // ISSUE-TODO-leminh - the following two variations produce different results in the official run.
+                // new LinqTestInput("VectorDistance with non default values 1", b => getQuery(b)
+                //     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.// Int8, DistanceFunction = DistanceFunction.Cosine, SearchListSizeMultiplier = 20 }))),
+                // new LinqTestInput("VectorDistance with non default values 2", b => getQuery(b)
+                //     .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = VectorDataType.Uint8, DistanceFunction = DistanceFunction.DotProduct, SearchListSizeMultiplier = 50 }))),
+                new LinqTestInput("VectorDistance with nullable values", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions { DataType = null, DistanceFunction = null, SearchListSizeMultiplier = null }))),
+                new LinqTestInput("VectorDistance with partial fourth option", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Euclidean }))),
+                new LinqTestInput("VectorDistance with partial fourth option 2", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = 1 }))),
+
+                // Negative case
+                new LinqTestInput("VectorDistance with fourth option with invalid values 1", b => getQuery(b)
+                    .Select(doc => doc.VectorFloatField.VectorDistance(new float[] { 2, 3, 4 }, true, new VectorDistanceOptions() { SearchListSizeMultiplier = -100 })))
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // VectorDistance are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestFullTextScoreOrderByRankFunction()
         {
             const int Records = 2;
@@ -425,14 +579,14 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
                 // Negative case: FullTextScore in non order by clause
                 new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != null)),
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1" }) != 123)),
                 new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != null)),
+                    .Where(doc => doc.StringField.FullTextScore(new string[] { "test1", "test2", "test3" }) != 123)),
 
                 new LinqTestInput("FullTextScore in WHERE clause", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore("test1") != null)),
+                    .Where(doc => doc.StringField.FullTextScore("test1") != 123)),
                 new LinqTestInput("FullTextScore in WHERE clause 2", b => getQuery(b)
-                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != null)),
+                    .Where(doc => doc.StringField.FullTextScore("test1", "test2", "test3") != 123)),
             };
 
             foreach (LinqTestInput input in inputs)
@@ -456,6 +610,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 DataObject obj = new DataObject
                 {
                     StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    IntField = 1,
                     Id = Guid.NewGuid().ToString(),
                     Pk = "Test"
                 };
@@ -466,25 +621,39 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
                 new LinqTestInput("RRF with 2 functions", b => getQuery(b)
-                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 
+                                                doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
                     .Select(doc => doc.Pk)),
 
                 new LinqTestInput("RRF with 3 functions", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
-                                            doc.StringField.FullTextScore(new string[] { "test1", "text2" }), 
+                                            doc.StringField.FullTextScore(new string[] { "test1", "text2" }),
                                             doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
                     .Select(doc => doc.Pk)),
 
                 // Negative case: FullTextScore in non order by clause
                 new LinqTestInput("RRF with 1 function", b => getQuery(b)
-                    .OrderByRank(doc => CosmosLinqExtensions.RRF(doc.StringField.FullTextScore(new string[] { "test1" })))
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })))
                     .Select(doc => doc.Pk)),
 
                 new LinqTestInput("RRF in WHERE clause", b => getQuery(b)
-                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != null)),
+                    .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" })) != 123)),
                 new LinqTestInput("RRF in WHERE clause 2", b => getQuery(b)
                     .Where(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
-                                  doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != null)),
+                                  doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })) != 123)),
+
+                new LinqTestInput("RRF with non scoring function", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), 123))),
+                new LinqTestInput("RRF with non scoring function 2", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.IntField * 1.0))),
+                new LinqTestInput("RRF with non scoring function 3", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.StringField2.Length))),
+                new LinqTestInput("RRF with non scoring function 4", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }), doc.ArrayField.Count()))),
+                new LinqTestInput("RRF with RRF", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            RRF(doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "test2"})))))
             };
 
             foreach (LinqTestInput input in inputs)

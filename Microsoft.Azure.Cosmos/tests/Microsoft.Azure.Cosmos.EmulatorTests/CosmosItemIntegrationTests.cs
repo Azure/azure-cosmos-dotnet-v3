@@ -675,6 +675,123 @@
         }
 
         [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Owner("dkunda")]
+        [Timeout(70000)]
+        public async Task ReadItemAsync_WithNoPreferredRegionsAndCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride()
+        {
+            // Arrange.
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, "10");
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(10))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                int consecutiveFailureCount = 10;
+                int totalIterations = 15;
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+                {
+                    try
+                    {
+                        ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                            id: itemsList[0].Id,
+                            partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
+                        HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.OK,
+                            actual: readResponse.StatusCode);
+
+                        Assert.IsNotNull(contactedRegions);
+
+                        PartitionKeyRangeFailoverInfo failoverInfo = TestCommon.GetFailoverInfoForFirstPartitionUsingReflection(
+                            globalPartitionEndpointManager: cosmosClient.ClientContext.DocumentClient.PartitionKeyRangeLocation,
+                            isReadOnlyOrMultiMaster: true);
+
+                        if (attemptCount > consecutiveFailureCount + 1)
+                        {
+                            Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the consecutive failure count reaches the threshold, the partition was failed over to the next region, and the subsequent read request/s were successful on the next region.");
+                            Assert.IsTrue(contactedRegions.Contains(region2));
+                            Assert.AreEqual(this.readRegionsMapping[region2], failoverInfo.Current);
+                        }
+                        else
+                        {
+                            Assert.IsTrue(contactedRegions.Count == 2, "Asserting that when the read request succeeds before the consecutive failure count reaches the threshold, the partition didn't over to the next region, and the request was retried on the next region.");
+                            Assert.IsTrue(contactedRegions.Contains(region1) && contactedRegions.Contains(region2));
+
+                            if (attemptCount > consecutiveFailureCount)
+                            {
+                                Assert.AreEqual(this.readRegionsMapping[region2], failoverInfo.Current);
+                            }
+                            else
+                            {
+                                Assert.AreEqual(this.readRegionsMapping[region1], failoverInfo.Current);
+                            }
+                        }
+                    }
+                    catch (CosmosException)
+                    {
+                        Assert.Fail("Read Item operation should succeed.");
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Unhandled Exception was thrown during ReadItemAsync call. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
+
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
         [Owner("dkunda")]
         [TestCategory("MultiRegion")]
         [Timeout(70000)]
@@ -1117,6 +1234,105 @@
                 {
                     await this.container.DeleteItemAsync<CosmosIntegrationTestObject>(item.Id, new PartitionKey(item.Pk));
                 }
+            }
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        [TestCategory("MultiRegion")]
+        [Timeout(70000)]
+        [DataRow(true, DisplayName = "Test scenario when PPAF is enabled at client level.")]
+        [DataRow(false, DisplayName = "Test scenario when PPAF is disabled at client level.")]
+        public async Task ReadItemAsync_WithPPAFEnabledAndSingleMasterAccountWithResponseDelay_ShouldHedgeRequestToMultipleRegions(
+            bool enablePartitionLevelFailover)
+        {
+            // Arrange.
+            if (enablePartitionLevelFailover)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+            }
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(region1)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
+                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            List<string> preferredRegions = new List<string> { region1, region2, region3 };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                    id: itemsList[0].Id,
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
+                HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                Assert.AreEqual(
+                    expected: HttpStatusCode.OK,
+                    actual: readResponse.StatusCode);
+
+                CosmosTraceDiagnostics traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+
+                if (enablePartitionLevelFailover)
+                {
+                    Assert.IsNotNull(hedgeContext);
+                    List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
+
+                    Assert.IsTrue(hedgedRegions.Count > 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                    Assert.IsTrue(hedgedRegions.Contains(region1) && (hedgedRegions.Contains(region2) || hedgedRegions.Contains(region3)));
+                }
+                else
+                {
+                    Assert.IsNull(hedgeContext);
+                }
+
+                Assert.IsNotNull(contactedRegions);
+                Assert.IsTrue(contactedRegions.Count == 1, "Asserting that when the read request succeeds on any region, given that there were no availability loss.");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+
+                await this.TryDeleteItems(itemsList);
             }
         }
 
