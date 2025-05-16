@@ -113,11 +113,11 @@ namespace Microsoft.Azure.Cosmos
         public static int GetMaxRetriesInLocalRegionWhenRemoteRegionPreferred()
         {
             return Math.Max(
-               ConfigurationManager
-                   .GetEnvironmentVariable(
-                       variable: MaxRetriesInLocalRegionWhenRemoteRegionPreferred,
-                       defaultValue: DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred),
-               MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred);
+                ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: MaxRetriesInLocalRegionWhenRemoteRegionPreferred,
+                        defaultValue: DefaultMaxRetriesInLocalRegionWhenRemoteRegionPreferred),
+                MinMaxRetriesInLocalRegionWhenRemoteRegionPreferred);
         }
 
         public static TimeSpan GetMinRetryTimeInLocalRegionWhenRemoteRegionPreferred()
