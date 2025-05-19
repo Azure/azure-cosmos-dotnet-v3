@@ -29,6 +29,17 @@ namespace Microsoft.Azure.Cosmos
             this.Suffix = suffix ?? string.Empty;
         }
 
+        public void AppendFeatures(
+            string features)
+        {
+            if (!string.IsNullOrEmpty(features))
+            {
+                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                    ? features
+                    : $"{features}|{this.Suffix}";
+            }
+        }
+
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;
 
         protected virtual void GetEnvironmentInformation(

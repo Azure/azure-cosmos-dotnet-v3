@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestWriteForbiddenScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                shouldEnablePPAF: true,
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
                 out string secondaryRegionEndpiont,
@@ -57,13 +58,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                EnablePartitionLevelFailover = true,
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                 ApplicationPreferredRegions = new List<string>()
-                    {
-                        Regions.EastUS,
-                        Regions.WestUS
-                    },
+                {
+                    Regions.EastUS,
+                    Regions.WestUS
+                },
                 HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
@@ -115,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CreateItemAsync_WithPreferredRegionsAndServiceUnavailableForFirstPreferredRegion_ShouldRetryAndSucceedToTheNextPreferredRegion()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                shouldEnablePPAF: true,
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
                 out string secondaryRegionEndpiont,
@@ -148,21 +149,20 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                EnablePartitionLevelFailover = true,
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                 ApplicationPreferredRegions = new List<string>()
-                    {
-                        Regions.EastUS,
-                        Regions.WestUS
-                    },
+                {
+                    Regions.EastUS,
+                    Regions.WestUS
+                },
                 HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
 
             using CosmosClient customClient = new CosmosClient(
-                 globalEndpoint,
-                 Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                 cosmosClientOptions);
+                    globalEndpoint,
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                    cosmosClientOptions);
 
             Container container = customClient.GetContainer(databaseName, containerName);
 
@@ -212,6 +212,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             TimeSpan explictAvailabilityStrategyThresholdStep = TimeSpan.FromMilliseconds(500);
 
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                shouldEnablePPAF: true,
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
                 out string secondaryRegionEndpiont,
@@ -247,7 +248,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                EnablePartitionLevelFailover = true,
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                 HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
@@ -268,10 +268,10 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsNotNull(cosmosClient,
                 message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
 
-            Assert.IsNotNull(cosmosClient.ClientOptions.AvailabilityStrategy);
+            Assert.IsNotNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
 
-            CrossRegionHedgingAvailabilityStrategy crossRegionHedgingStrategy = (CrossRegionHedgingAvailabilityStrategy)cosmosClient.ClientOptions.AvailabilityStrategy;
-            
+            CrossRegionHedgingAvailabilityStrategy crossRegionHedgingStrategy = (CrossRegionHedgingAvailabilityStrategy)cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy;
+
             Assert.IsNotNull(crossRegionHedgingStrategy);
 
             if (isExplictAvailabilityStrategyProvided)
@@ -293,6 +293,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task TestRequestTimeoutExceptionScenarioAsync()
         {
             GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                shouldEnablePPAF: true,
                 out string secondaryRegionNameForUri,
                 out string globalEndpoint,
                 out string secondaryRegionEndpiont,
@@ -326,13 +327,12 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                EnablePartitionLevelFailover = true,
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                 ApplicationPreferredRegions = new List<string>()
-                    {
-                        Regions.EastUS,
-                        Regions.WestUS
-                    },
+                {
+                    Regions.EastUS,
+                    Regions.WestUS
+                },
                 HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                 TransportClientHandlerFactory = (original) => mockTransport.Object,
             };
@@ -386,6 +386,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         private static void SetupAccountAndCacheOperations(
+            bool shouldEnablePPAF,
             out string secondaryRegionNameForUri,
             out string globalEndpoint,
             out string secondaryRegionEndpiont,
@@ -439,7 +440,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 endpoint: globalEndpointUri.ToString(),
                 accountName: accountName,
                 writeRegions: writeRegion,
-                readRegions: readRegions);
+                readRegions: readRegions,
+                shouldEnablePPAF: shouldEnablePPAF);
 
             MockSetupsHelper.SetupContainerProperties(
                 mockHttpHandler: mockHttpHandler,
