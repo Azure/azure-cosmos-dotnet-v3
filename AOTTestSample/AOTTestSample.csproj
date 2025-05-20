@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj" />
+	<TrimmerRootAssembly Include="Microsoft.Azure.Cosmos.Client" />
+    <TrimmerRootAssembly Include="Microsoft.Azure.Cosmos.Direct" />
+    <TrimmerRootAssembly Include="Microsoft.HybridRow" />
+  </ItemGroup>
+
+</Project>

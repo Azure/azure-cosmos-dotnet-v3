@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29123.88
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.36105.23 d17.13
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Azure.Cosmos", "Microsoft.Azure.Cosmos\src\Microsoft.Azure.Cosmos.csproj", "{36F6F6A8-CEC8-4261-9948-903495BC3C25}"
 EndProject
@@ -38,6 +38,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FaultInjectionTests", "Microsoft.Azure.Cosmos\FaultInjection\tests\FaultInjectionTests.csproj", "{D744906A-1091-403F-B0B6-794DE045169A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests", "Microsoft.Azure.Cosmos.Encryption.Custom\tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests\Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests.csproj", "{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AOTTestSample", "AOTTestSample\AOTTestSample.csproj", "{7555CB05-B783-4BB5-BC47-7847404AE45E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -193,6 +195,18 @@ Global
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}.Release|x64.ActiveCfg = Release|Any CPU
 		{CE4D6DA8-148D-4A98-943B-D8C2D532E1DC}.Release|x64.Build.0 = Release|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Cover|Any CPU.ActiveCfg = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Cover|Any CPU.Build.0 = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Cover|x64.ActiveCfg = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Cover|x64.Build.0 = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Debug|x64.Build.0 = Debug|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Release|x64.ActiveCfg = Release|Any CPU
+		{7555CB05-B783-4BB5-BC47-7847404AE45E}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
