@@ -57,6 +57,7 @@ jobs:
 
 - job:
   displayName: Microsoft.Azure.Cosmos.Tests Flaky
+  timeoutInMinutes: 120
   pool:
     name: 'OneES'
 
