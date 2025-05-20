@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Reflection;
     using System.Text.Json;
@@ -35,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override T FromStream<T>(Stream stream)
+        public override T FromStream<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(Stream stream)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
@@ -78,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Stream ToStream<T>(T input)
+        public override Stream ToStream<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(T input)
         {
             MemoryStream streamPayload = new ();
             using Utf8JsonWriter writer = new (streamPayload);
@@ -130,11 +131,11 @@ namespace Microsoft.Azure.Cosmos
         /// <typeparam name="T">The desired type, the input stream to be deserialize into</typeparam>
         /// <param name="stream">An instance of <see cref="Stream"/> containing th raw input stream.</param>
         /// <returns>The deserialized output of type <typeparamref name="T"/>.</returns>
-        private T DeserializeStream<T>(
+        private T DeserializeStream<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>(
             Stream stream)
         {
             using StreamReader reader = new (stream);
-            return System.Text.Json.JsonSerializer.Deserialize<T>(reader.ReadToEnd(), this.jsonSerializerOptions);
+            return (T)System.Text.Json.JsonSerializer.Deserialize(reader.ReadToEnd(), typeof(T), this.jsonSerializerOptions);
         }
     }
 }
