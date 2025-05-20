@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
             BufferProviderWrapper bufferProviderWrapper = this.bufferProviderWrapperPool.Get();
             try
             {
-                PartitionKeyRange partitionKeyRange = request.RequestContext.ResolvedPartitionKeyRange;
+                PartitionKeyRange partitionKeyRange = request.RequestContext?.ResolvedPartitionKeyRange;
 
                 if (partitionKeyRange != null)
                 {
