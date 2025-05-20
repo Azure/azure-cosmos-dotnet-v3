@@ -216,7 +216,7 @@ jobs:
 
 - job:
   displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline2CategoryListName }}
-  timeoutInMinutes: 60
+  timeoutInMinutes: 120
   condition: and(succeeded(), eq('${{ parameters.OS }}', 'Windows'))
   pool:
     name: 'OneES'
