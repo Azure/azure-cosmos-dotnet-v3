@@ -90,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         /// <summary>
         /// Adds a datum to the this trace instance.
+        /// This method is thread-safe.
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="traceDatum">The datum itself.</param>
@@ -97,6 +98,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         /// <summary>
         /// Adds a datum to the this trace instance.
+        /// This method is thread-safe.
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="value">The datum itself.</param>
@@ -104,6 +106,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         /// <summary>
         /// Updates the given datum in this trace instance if exists, otherwise Add
+        /// This method is thread-safe.
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="value">The datum itself.</param>
