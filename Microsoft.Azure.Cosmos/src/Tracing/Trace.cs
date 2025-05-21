@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.Tracing
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
@@ -16,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
-        private readonly Lazy<Dictionary<string, object>> data;
+        private readonly ConcurrentDictionary<string, object> data;
         private ValueStopwatch stopwatch;
 
         private Trace(
@@ -34,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Lazy<Dictionary<string, object>>();
+            this.data = new ConcurrentDictionary<string, object>();
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
@@ -56,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public IReadOnlyList<ITrace> Children => this.children;
 
-        public IReadOnlyDictionary<string, object> Data => this.data.IsValueCreated ? this.data.Value : Trace.EmptyDictionary;
+        public IReadOnlyDictionary<string, object> Data => this.data.Count > 0 ? this.data : Trace.EmptyDictionary;
 
         public void Dispose()
         {
@@ -124,27 +125,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            lock (this.data)
-            {
-                this.data.Value.Add(key, traceDatum);
-                this.Summary.UpdateRegionContacted(traceDatum);
-            }
+            this.data.TryAdd(key, traceDatum);
+            this.Summary.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
         {
-            lock (this.data)
-            {
-                this.data.Value.Add(key, value);
-            }
+            this.data.TryAdd(key, value);
         }
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            lock (this.data)
-            {
-                this.data.Value[key] = value;
-            }
+            this.data[key] = value;
         }
     }
 }
