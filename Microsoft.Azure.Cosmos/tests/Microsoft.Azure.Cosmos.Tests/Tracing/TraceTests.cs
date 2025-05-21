@@ -147,6 +147,9 @@
             // Use a list to keep track of the tasks
             List<Task> tasks = new List<Task>();
             
+            // Use HashSet to track the actual keys we expect to be successfully added
+            HashSet<string> expectedUniqueKeys = new HashSet<string>();
+            
             for (int i = 0; i < numThreads; i++)
             {
                 int threadIndex = i;
@@ -163,7 +166,14 @@
                         // Also test AddDatum
                         try
                         {
-                            trace.AddDatum($"add_{threadIndex}_{j}", value);
+                            string addKey = $"add_{threadIndex}_{j}";
+                            trace.AddDatum(addKey, value);
+                            
+                            // Keep track of successfully added keys
+                            lock (expectedUniqueKeys)
+                            {
+                                expectedUniqueKeys.Add(addKey);
+                            }
                         }
                         catch (ArgumentException)
                         {
@@ -177,8 +187,23 @@
             // Wait for all tasks to complete
             Task.WaitAll(tasks.ToArray());
             
-            // Verify the data dictionary has entries
-            Assert.IsTrue(trace.Data.Count > 0);
+            // Verify all AddOrUpdateDatum operations succeeded
+            // Each thread adds unique keys, so we should have numThreads * operationsPerThread entries
+            int expectedAddOrUpdateCount = numThreads * operationsPerThread;
+            int addOrUpdateKeysFound = trace.Data.Keys.Count(k => k.StartsWith("key_"));
+            Assert.AreEqual(expectedAddOrUpdateCount, addOrUpdateKeysFound, 
+                "All AddOrUpdateDatum operations should succeed with unique keys");
+            
+            // Verify the keys added via AddDatum match our tracked collection
+            foreach (string expectedKey in expectedUniqueKeys)
+            {
+                Assert.IsTrue(trace.Data.ContainsKey(expectedKey), 
+                    $"Expected key {expectedKey} not found in dictionary");
+            }
+            
+            // Verify the total number of keys is the sum of AddOrUpdate keys and successful AddDatum keys
+            Assert.AreEqual(expectedAddOrUpdateCount + expectedUniqueKeys.Count, trace.Data.Count, 
+                "Total key count should equal AddOrUpdate keys plus successful AddDatum keys");
         }
     }
 }
