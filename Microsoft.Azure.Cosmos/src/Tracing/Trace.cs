@@ -129,9 +129,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="traceDatum">The datum itself.</param>
+        /// <exception cref="ArgumentException">Thrown when the key already exists in the dictionary.</exception>
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            this.data.Value.TryAdd(key, traceDatum);
+            if (!this.data.Value.TryAdd(key, traceDatum))
+            {
+                throw new ArgumentException($"An item with the same key has already been added: '{key}'");
+            }
             this.Summary.UpdateRegionContacted(traceDatum);
         }
 
@@ -141,9 +145,13 @@ namespace Microsoft.Azure.Cosmos.Tracing
         /// </summary>
         /// <param name="key">The key to associate the datum.</param>
         /// <param name="value">The datum itself.</param>
+        /// <exception cref="ArgumentException">Thrown when the key already exists in the dictionary.</exception>
         public void AddDatum(string key, object value)
         {
-            this.data.Value.TryAdd(key, value);
+            if (!this.data.Value.TryAdd(key, value))
+            {
+                throw new ArgumentException($"An item with the same key has already been added: '{key}'");
+            }
         }
 
         /// <summary>
