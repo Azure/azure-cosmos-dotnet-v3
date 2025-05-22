@@ -12,6 +12,24 @@ then
     exit -1
 fi
 
+if [ -z "$THINCLIENT_ENDPOINT" ]
+then
+    echo "Missing THINCLIENT_ENDPOINT"
+    exit -1
+fi
+
+if [ -z "$THINCLIENT_KEY" ]
+then
+    echo "Missing THINCLIENT_KEY"
+    exit -1
+fi
+
+if [ -z "$THINCLIENT_ENABLED" ]
+then
+    echo "Missing THINCLIENT_ENABLED"
+    exit -1
+fi
+
 if [ -z "$RESULTS_PK" ]
 then
     echo "Missing RESULTS_PK"
@@ -57,6 +75,44 @@ sleep 10 #Wait
 # Open telemetry enabled ReadStreamExistsV3. This is needed to see the impact of distributed tracing (without listener) 
 dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 --WorkloadName ReadStreamExistsV3WithDistributedTracingWOListener  --enableDistributedTracing --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
 sleep 10 #Wait
+
+# ThinClient operations (only if enabled)
+if [ "$THINCLIENT_ENABLED" = true ]; then
+    for WORKLOAD_NAME in \
+        ThinClientCreateItemV3BenchmarkOperation \
+        ThinClientCreateItemStreamV3BenchmarkOperation \
+        ThinClientReadItemV3BenchmarkOperation \
+        ThinClientReadItemStreamV3BenchmarkOperation \
+        ThinClientReplaceItemV3BenchmarkOperation \
+        ThinClientReplaceItemStreamV3BenchmarkOperation \
+        ThinClientUpsertItemV3BenchmarkOperation \
+        ThinClientUpsertItemStreamV3BenchmarkOperation \
+        ThinClientDeleteItemV3BenchmarkOperation \
+        ThinClientDeleteItemStreamV3BenchmarkOperation
+    do
+        dotnet run -c Release \
+            -- -n 2000000 \
+            -w $WORKLOAD_NAME \
+            --pl $PL \
+            -e $ACCOUNT_ENDPOINT \
+            -k $ACCOUNT_KEY \
+            --thinclientendpoint $THINCLIENT_ENDPOINT \
+            --thinclientkey $THINCLIENT_KEY \
+            --isthinclientenabled $THINCLIENT_ENABLED \
+            --enablelatencypercentiles \
+            --disablecoresdklogging \
+            --publishresults \
+            --resultspartitionkeyvalue $RESULTS_PK \
+            --commitid $COMMIT_ID \
+            --commitdate $COMMIT_DATE \
+            --committime $COMMIT_TIME \
+            --branchname $BRANCH_NAME \
+            --database testdb \
+            --container testcol \
+            --partitionkeypath /pk
+        sleep 10
+    done
+fi
 
 #Point read operations
 for WORKLOAD_NAME in ReadNotExistsV3 ReadTExistsV3 ReadStreamExistsWithDiagnosticsV3

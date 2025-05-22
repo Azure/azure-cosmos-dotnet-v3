@@ -144,7 +144,8 @@ namespace CosmosBenchmark
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
             // V3 SDK client initialization
-            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
+
+            using (CosmosClient cosmosClient = config.CreateCosmosClient())
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                 if (config.CleanupOnStart)
@@ -219,8 +220,8 @@ namespace CosmosBenchmark
                     Utility.TeeTraceInformation("Publishing results");
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 

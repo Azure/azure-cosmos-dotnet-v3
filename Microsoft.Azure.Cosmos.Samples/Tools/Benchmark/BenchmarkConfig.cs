@@ -31,6 +31,16 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
+        [Option(Required = false, HelpText = "ThinClient Cosmos account end point")]
+        public string ThinClientEndPoint { get; set; }
+
+        [Option(Required = false, HelpText = "ThinClient Cosmos account master key")]
+        [JsonIgnore]
+        public string ThinClientKey { get; set; }
+
+        [Option(Required = false, HelpText = "ThinClient enabled")]
+        public bool IsThinClientEnabled { get; set; }
+
         [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
         public string WorkloadName { get; set; }
 
@@ -209,7 +219,7 @@ namespace CosmosBenchmark
             return this.WorkloadName ?? this.WorkloadType ?? BenchmarkConfig.UserAgentSuffix;
         }
 
-        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
+        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient()
         {
             // Overwrite the default timespan if configured
             if(this.TelemetryScheduleInSec > 0)
@@ -242,8 +252,8 @@ namespace CosmosBenchmark
             }
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
-                        this.EndPoint,
-                        accountKey,
+                        this.IsThinClientEnabled ? this.ThinClientEndPoint : this.EndPoint,
+                        this.IsThinClientEnabled ? this.ThinClientKey : this.Key,
                         clientOptions);
         }
 

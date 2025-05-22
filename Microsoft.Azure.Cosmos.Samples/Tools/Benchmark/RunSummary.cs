@@ -61,6 +61,9 @@ namespace CosmosBenchmark
         [JsonProperty]
         public static JObject AzureVmInfo { get; set; }
 
+        public string ThinClientAccountName => this.BenchmarkConfig.ThinClientEndPoint;
+        public string ThinClientAccountKey => this.BenchmarkConfig.ThinClientKey;
+
         public double Top10PercentAverageRps { get; set; }
         public double Top20PercentAverageRps { get; set; }
         public double Top30PercentAverageRps { get; set; }

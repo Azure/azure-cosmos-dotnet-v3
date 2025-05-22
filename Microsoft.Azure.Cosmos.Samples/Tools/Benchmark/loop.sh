@@ -8,6 +8,11 @@ export PL=18
 export ACCOUNT_ENDPOINT=
 export ACCOUNT_KEY=
 
+#Thinclient configurations
+export THINCLIENT_ENDPOINT=
+export THINCLIENT_KEY=
+export THINCLIENT_ENABLED=
+
 #Loop forever
 i=0
 while :
