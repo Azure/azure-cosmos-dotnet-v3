@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Documents.Routing
 {
     using System;
     using System.IO;
-    using Newtonsoft.Json;
+    using System.Text.Json;
 
     internal sealed class UndefinedPartitionKeyComponent: IPartitionKeyComponent
     {
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Documents.Routing
             return 0;
         }
 
-        public void JsonEncode(JsonWriter writer)
+        public void JsonEncode(Utf8JsonWriter writer)
         {
             writer.WriteStartObject();
             writer.WriteEndObject();

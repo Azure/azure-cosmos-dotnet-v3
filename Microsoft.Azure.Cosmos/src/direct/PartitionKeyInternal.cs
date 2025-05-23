@@ -11,11 +11,13 @@ namespace Microsoft.Azure.Documents.Routing
     using System.IO;
     using System.Linq;
     using System.Text;
+    using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.SharedFiles.Routing;
     using Int128 = Microsoft.Azure.Documents.SharedFiles.Routing.Int128;
     using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
-    using Newtonsoft.Json;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Schema-less Partition Key value.
@@ -42,23 +44,6 @@ namespace Microsoft.Azure.Documents.Routing
         public static readonly string MaximumExclusiveEffectivePartitionKey = ToHexEncodedBinaryString(new[] { new InfinityPartitionKeyComponent() });
 
         private static readonly Int32 HashV2EPKLength = 32; // UInt128.Length * 2 (UInt128 gives 16 bytes as output, each byte takes 2 chars after hex-encoding)
-
-        private static readonly JsonSerializer FromJsonStringSerializer =
-            JsonSerializer.CreateDefault(
-                new JsonSerializerSettings
-                {
-                    DateParseHandling = DateParseHandling.None,
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                });
-
-        private static readonly JsonSerializer ToJsonStringSerializer =
-            JsonSerializer.CreateDefault(
-                new JsonSerializerSettings
-                {
-                    StringEscapeHandling = StringEscapeHandling.EscapeNonAscii,
-                    Formatting = Formatting.None,
-                    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                });
 
         public static PartitionKeyInternal InclusiveMinimum
         {
@@ -170,27 +155,15 @@ namespace Microsoft.Azure.Documents.Routing
         {
             if (string.IsNullOrWhiteSpace(partitionKey))
             {
-                throw new JsonSerializationException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, partitionKey));
+                throw new JsonException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, partitionKey));
             }
 
-            using (StringReader stringReader = new StringReader(partitionKey))
-            using (JsonTextReader jsonReader = new JsonTextReader(stringReader))
-            {
-                return FromJsonStringSerializer.Deserialize<PartitionKeyInternal>(jsonReader);
-            }
+            return JsonSerializer.Deserialize(partitionKey, DocumentsJsonSerializerContext.Default.PartitionKeyInternal);
         }
 
         public string ToJsonString()
         {
-            using (StringWriter stringWriter = new StringWriter(new StringBuilder(256), CultureInfo.InvariantCulture))
-            {
-                using (JsonTextWriter jsonWriter = new JsonTextWriter(stringWriter))
-                {
-                    ToJsonStringSerializer.Serialize(jsonWriter, this, objectType: null);
-                }
-
-                return stringWriter.ToString();
-            }
+            return JsonSerializer.Serialize(this, DocumentsJsonSerializerContext.Default.PartitionKeyInternal);
         }
 
         public bool Contains(PartitionKeyInternal nestedPartitionKey)
@@ -405,7 +378,7 @@ namespace Microsoft.Azure.Documents.Routing
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this, DocumentsJsonSerializerContext.Default.PartitionKeyInternal);
         }
 
 

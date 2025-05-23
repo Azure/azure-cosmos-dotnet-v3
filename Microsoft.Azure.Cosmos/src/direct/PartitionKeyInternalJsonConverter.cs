@@ -8,25 +8,23 @@ namespace Microsoft.Azure.Documents.Routing
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
-    internal sealed class PartitionKeyInternalJsonConverter : JsonConverter
+    internal sealed class PartitionKeyInternalJsonConverter : JsonConverter<PartitionKeyInternal>
     {
-        private const string Type = "type";
+        private const string TypePropertyName = "type";
         private const string MinNumber = "MinNumber";
         private const string MaxNumber = "MaxNumber";
         private const string MinString = "MinString";
         private const string MaxString = "MaxString";
         private const string Infinity = "Infinity";
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, PartitionKeyInternal partitionKey, JsonSerializerOptions options)
         {
-            PartitionKeyInternal partitionKey = (PartitionKeyInternal)value;
-
             if (partitionKey.Equals(PartitionKeyInternal.ExclusiveMaximum))
             {
-                writer.WriteValue(Infinity);
+                writer.WriteStringValue(Infinity);
                 return;
             }
 
@@ -41,56 +39,54 @@ namespace Microsoft.Azure.Documents.Routing
             writer.WriteEndArray();
         }
 
-        public override object ReadJson(
-            JsonReader reader,
+        public override PartitionKeyInternal Read(
+            ref Utf8JsonReader reader,
             Type objectType,
-            object existingValue,
-            JsonSerializer serializer)
+            JsonSerializerOptions options)
         {
-            JToken token = JToken.Load(reader);
-            if (token.Type == JTokenType.String && token.Value<string>() == Infinity)
+            JsonDocument document = JsonDocument.ParseValue(ref reader);
+            JsonElement root = document.RootElement;
+            
+            if (root.ValueKind == JsonValueKind.String && root.GetString() == Infinity)
             {
                 return PartitionKeyInternal.ExclusiveMaximum;
             }
 
             List<object> values = new List<object>();
-
-            if (token.Type == JTokenType.Array)
+            if (root.ValueKind == JsonValueKind.Array)
             {
-                foreach (JToken item in ((JArray)token))
+                foreach (JsonElement item in root.EnumerateArray())
                 {
-                    if (item is JObject)
+                    if (item.ValueKind == JsonValueKind.Object)
                     {
-                        JObject obj = (JObject)item;
-
-                        if (!obj.Properties().Any())
+                        if (item.EnumerateObject().Count() == 0)
                         {
                             values.Add(Undefined.Value);
                         }
                         else
                         {
                             bool valid = false;
-                            JToken val;
 
-                            if (obj.TryGetValue(Type, out val))
+                            if (item.TryGetProperty(TypePropertyName, out JsonElement property))
                             {
-                                if (val.Type == JTokenType.String)
+                                if (property.ValueKind == JsonValueKind.String)
                                 {
+                                    string val = property.GetString();
                                     valid = true;
 
-                                    if (val.Value<string>() == MinNumber)
+                                    if (val == MinNumber)
                                     {
                                         values.Add(Microsoft.Azure.Documents.Routing.MinNumber.Value);
                                     }
-                                    else if (val.Value<string>() == MaxNumber)
+                                    else if (val == MaxNumber)
                                     {
                                         values.Add(Microsoft.Azure.Documents.Routing.MaxNumber.Value);
                                     }
-                                    else if (val.Value<string>() == MinString)
+                                    else if (val == MinString)
                                     {
                                         values.Add(Microsoft.Azure.Documents.Routing.MinString.Value);
                                     }
-                                    else if (val.Value<string>() == MaxString)
+                                    else if (val == MaxString)
                                     {
                                         values.Add(Microsoft.Azure.Documents.Routing.MaxString.Value);
                                     }
@@ -103,24 +99,29 @@ namespace Microsoft.Azure.Documents.Routing
 
                             if (!valid)
                             {
-                                throw new JsonSerializationException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, token));
+                                throw new JsonException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, root.ToString()));
                             }
                         }
                     }
-                    else if (item is JValue)
-                    {
-                        values.Add(((JValue)item).Value);
-                    }
                     else
                     {
-                        throw new JsonSerializationException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, token));
+                        object value = item.ValueKind switch
+                        {
+                            JsonValueKind.String => item.GetString(),
+                            JsonValueKind.Number => item.GetDouble(),
+                            JsonValueKind.True => true,
+                            JsonValueKind.False => false,
+                            JsonValueKind.Null => null,
+                            _ => throw new JsonException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, root.ToString()))
+                        };
+                        values.Add(value);
                     }
                 }
 
                 return PartitionKeyInternal.FromObjectArray(values, true);
             }
 
-            throw new JsonSerializationException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, token));
+            throw new JsonException(string.Format(CultureInfo.InvariantCulture, RMResources.UnableToDeserializePartitionKeyValue, root.ToString()));
         }
 
         public override bool CanConvert(Type objectType)
@@ -128,33 +129,33 @@ namespace Microsoft.Azure.Documents.Routing
             return typeof(PartitionKeyInternal).IsAssignableFrom(objectType);
         }
 
-        public static void JsonEncode(MinNumberPartitionKeyComponent component, JsonWriter writer)
+        public static void JsonEncode(MinNumberPartitionKeyComponent component, Utf8JsonWriter writer)
         {
             JsonEncodeLimit(writer, MinNumber);
         }
 
-        public static void JsonEncode(MaxNumberPartitionKeyComponent component, JsonWriter writer)
+        public static void JsonEncode(MaxNumberPartitionKeyComponent component, Utf8JsonWriter writer)
         {
             JsonEncodeLimit(writer, MaxNumber);
         }
 
-        public static void JsonEncode(MinStringPartitionKeyComponent component, JsonWriter writer)
+        public static void JsonEncode(MinStringPartitionKeyComponent component, Utf8JsonWriter writer)
         {
             JsonEncodeLimit(writer, MinString);
         }
 
-        public static void JsonEncode(MaxStringPartitionKeyComponent component, JsonWriter writer)
+        public static void JsonEncode(MaxStringPartitionKeyComponent component, Utf8JsonWriter writer)
         {
             JsonEncodeLimit(writer, MaxString);
         }
 
-        private static void JsonEncodeLimit(JsonWriter writer, string value)
+        private static void JsonEncodeLimit(Utf8JsonWriter writer, string value)
         {
             writer.WriteStartObject();
 
-            writer.WritePropertyName(Type);
+            writer.WritePropertyName(TypePropertyName);
 
-            writer.WriteValue(value);
+            writer.WriteStringValue(value);
 
             writer.WriteEndObject();
         }
