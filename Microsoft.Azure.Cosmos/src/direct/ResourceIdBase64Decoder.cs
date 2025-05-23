@@ -11,9 +11,6 @@ namespace Microsoft.Azure.Documents
     /// Implementation does not support spaces inside the message given is is not a case for ResourceIds.
     /// Do not modify this file. Take any changes necessary outside of this code that will be eventually replaced with the runtime implementation.
     /// </summary>
-#if NETSTANDARD2_1 || NETCOREAPP
-#error Switch to https://docs.microsoft.com/en-us/dotnet/api/system.convert.tryfrombase64string?view=net-6.0
-#endif
     internal static class ResourceIdBase64Decoder
     {
         public unsafe static bool TryDecode(string base64string, out byte[] bytes)
@@ -43,8 +40,12 @@ namespace Microsoft.Azure.Documents
                 {
                     return false;
                 }
+
                 bytes = new byte[destLength];
 
+#if NET5_0_OR_GREATER
+                return Convert.TryFromBase64String(base64string, bytes, out _);
+#else
                 int sourceIndex = 0;
                 int destIndex = 0;
 
@@ -150,6 +151,7 @@ namespace Microsoft.Azure.Documents
                 }
 
                 return true;
+#endif
             }
         }
 
