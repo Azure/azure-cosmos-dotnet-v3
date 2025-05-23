@@ -43,6 +43,11 @@
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
+		<EnableNetAnalyzers>false</EnableNetAnalyzers>
+		<NoWarn>$(NoWarn);CS0472;CS0672;CS0618;SYSLIB0010;SYSLIB0013;SYSLIB0014;SYSLIB0051;SYSLIB0054;SA1209;</NoWarn>
+		<!-- nullable -->
+		<NoWarn>$(NoWarn);CS8600;CS8601;CS8604;CS8622;CS8765;CS8767</NoWarn>
+		<NoWarn>$(NoWarn);CS8073</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -193,7 +198,6 @@
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
 		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
 		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
-		<NoWarn>CS0472</NoWarn>
 	</PropertyGroup>
 
 </Project>
