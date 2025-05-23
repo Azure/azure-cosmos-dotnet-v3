@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
@@ -880,7 +881,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         Span<byte> buffer = this.binaryWriter.BufferAsSpan;
                         bytesToWrite = TypeMarkerLength
                             + JsonBinaryEncoding.OneByteLength
-                            + (serializeCount ? JsonBinaryEncoding.OneByteCount : 0); 
+                            + (serializeCount ? JsonBinaryEncoding.OneByteCount : 0);
                         this.MoveBuffer(buffer, payloadIndex, payloadLength, typeMarkerIndex, bytesToWrite, stringStartIndex, stringReferenceStartIndex);
 
                         // Move the cursor back
@@ -1322,48 +1323,48 @@ namespace Microsoft.Azure.Cosmos.Json
                     {
                         case JsonNodeType.String:
                         case JsonNodeType.FieldName:
-                        {
-                            Span<byte> offsetBuffer = binaryWriterRawBuffer.Slice(stringReferenceOffset + 1);
-                            switch (typeMarker)
                             {
-                                case TypeMarker.StrR1:
+                                Span<byte> offsetBuffer = binaryWriterRawBuffer.Slice(stringReferenceOffset + 1);
+                                switch (typeMarker)
                                 {
-                                    byte stringIndex = offsetBuffer[0];
-                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                    JsonBinaryEncoding.SetFixedSizedValue<byte>(offsetBuffer, (byte)sharedStringValue.Offset);
-                                    break;
+                                    case TypeMarker.StrR1:
+                                        {
+                                            byte stringIndex = offsetBuffer[0];
+                                            SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                            JsonBinaryEncoding.SetFixedSizedValue<byte>(offsetBuffer, (byte)sharedStringValue.Offset);
+                                            break;
+                                        }
+
+                                    case TypeMarker.StrR2:
+                                        {
+                                            ushort stringIndex = JsonBinaryEncoding.GetFixedSizedValue<ushort>(offsetBuffer);
+                                            SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                            JsonBinaryEncoding.SetFixedSizedValue<ushort>(offsetBuffer, (ushort)sharedStringValue.Offset);
+                                            break;
+                                        }
+
+                                    case TypeMarker.StrR3:
+                                        {
+                                            JsonBinaryEncoding.UInt24 stringIndex =
+                                                JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(offsetBuffer);
+                                            SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                            JsonBinaryEncoding.SetFixedSizedValue<JsonBinaryEncoding.UInt24>(
+                                                offsetBuffer,
+                                                (JsonBinaryEncoding.UInt24)sharedStringValue.Offset);
+                                            break;
+                                        }
+
+                                    case TypeMarker.StrR4:
+                                        {
+                                            int stringIndex = JsonBinaryEncoding.GetFixedSizedValue<int>(offsetBuffer);
+                                            SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
+                                            JsonBinaryEncoding.SetFixedSizedValue<int>(offsetBuffer, (int)sharedStringValue.Offset);
+                                            break;
+                                        }
                                 }
 
-                                case TypeMarker.StrR2:
-                                {
-                                    ushort stringIndex = JsonBinaryEncoding.GetFixedSizedValue<ushort>(offsetBuffer);
-                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                    JsonBinaryEncoding.SetFixedSizedValue<ushort>(offsetBuffer, (ushort)sharedStringValue.Offset);
-                                    break;
-                                }
-
-                                case TypeMarker.StrR3:
-                                {
-                                    JsonBinaryEncoding.UInt24 stringIndex =
-                                        JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(offsetBuffer);
-                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                    JsonBinaryEncoding.SetFixedSizedValue<JsonBinaryEncoding.UInt24>(
-                                        offsetBuffer,
-                                        (JsonBinaryEncoding.UInt24)sharedStringValue.Offset);
-                                    break;
-                                }
-
-                                case TypeMarker.StrR4:
-                                {
-                                    int stringIndex = JsonBinaryEncoding.GetFixedSizedValue<int>(offsetBuffer);
-                                    SharedStringValue sharedStringValue = this.sharedStrings[stringIndex];
-                                    JsonBinaryEncoding.SetFixedSizedValue<int>(offsetBuffer, (int)sharedStringValue.Offset);
-                                    break;
-                                }
+                                break;
                             }
-
-                            break;
-                        }
                         default:
                             throw new InvalidOperationException($"Unknown {nameof(nodeType)}: {nodeType}.");
                     }

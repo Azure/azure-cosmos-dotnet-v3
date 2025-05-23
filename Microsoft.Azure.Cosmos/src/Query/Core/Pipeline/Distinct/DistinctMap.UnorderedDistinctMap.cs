@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// Partial wrapper
