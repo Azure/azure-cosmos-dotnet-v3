@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Documents.Routing
 {
     using System;
     using System.IO;
-    using Newtonsoft.Json;
+    using System.Text.Json;
 
     internal sealed class NumberPartitionKeyComponent : IPartitionKeyComponent
     {
@@ -48,9 +48,9 @@ namespace Microsoft.Azure.Documents.Routing
             return this.value.GetHashCode();
         }
 
-        public void JsonEncode(JsonWriter writer)
+        public void JsonEncode(Utf8JsonWriter writer)
         {
-            writer.WriteValue(this.value);
+            writer.WriteNumberValue(this.value);
         }
 
         public object ToObject()

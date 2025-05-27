@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Documents.Routing
     using System;
     using System.IO;
     using System.Text;
-    using Newtonsoft.Json;
+    using System.Text.Json;
 
     internal sealed class StringPartitionKeyComponent : IPartitionKeyComponent
     {
@@ -27,9 +27,9 @@ namespace Microsoft.Azure.Documents.Routing
             this.utf8Value = Encoding.UTF8.GetBytes(value);
         }
 
-        public void JsonEncode(JsonWriter writer)
+        public void JsonEncode(Utf8JsonWriter writer)
         {
-            writer.WriteValue(this.value);
+            writer.WriteStringValue(this.value);
         }
 
         public object ToObject()
