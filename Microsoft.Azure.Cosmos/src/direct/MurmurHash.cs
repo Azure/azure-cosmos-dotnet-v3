@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Documents.Routing
     using System;
     using System.Diagnostics;
     using Documents;
-    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
 #pragma warning disable SA1649 // File name should match first type name
     internal static class MurmurHash3

@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
-    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.
@@ -52,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
         private readonly GroupingTable groupingTable;
         protected readonly int pageSize;
-        protected bool returnedLastPage;
+        protected bool returnedLastPage; 
 
         protected GroupByQueryPipelineStage(
             IQueryPipelineStage source,
@@ -299,7 +298,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 List<CosmosElement> results = new List<CosmosElement>();
                 foreach (SingleGroupAggregator singleGroupAggregator in singleGroupAggregators)
                 {
-                    results.Add(singleGroupAggregator.GetResult());
+                        results.Add(singleGroupAggregator.GetResult());
                 }
 
                 if (this.Count == 0)
