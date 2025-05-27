@@ -1,7 +1,7 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+#if NETSTANDARD2_0_OR_GREATER
 namespace Microsoft.Azure.Documents.Telemetry
 {
     using System;

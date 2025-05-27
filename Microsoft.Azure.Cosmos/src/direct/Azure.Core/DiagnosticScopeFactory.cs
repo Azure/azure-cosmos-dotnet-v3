@@ -5,7 +5,7 @@
 // To make it compatible with Cosmosdb repo, following changes were made:
 // 1. Commented Code Analysis related code. i.e Line 60
 #nullable enable
-#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+#if NETSTANDARD2_0_OR_GREATER
 
 namespace Azure.Core
 {

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Documents.Telemetry
 
         public const string ResourceProviderNamespace = "Microsoft.DocumentDB";
 
-#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// It is a feature flag to enable/disable distributed tracing feature completely at network level. 
         /// Even this flag is switched on, exporter needs to be subscribed for "Azure.Cosmos.Request" Source

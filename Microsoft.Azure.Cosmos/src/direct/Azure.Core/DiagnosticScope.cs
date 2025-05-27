@@ -7,7 +7,7 @@
 // 2. Commented Line number 135, as it is using RequestFailedException in If-condition which belogs to Azure Core repo.
 
 #nullable enable
-#if NETSTANDARD2_0_OR_GREATER || NETCOREAPP2_0_OR_GREATER
+#if NETSTANDARD2_0_OR_GREATER
 
 namespace Azure.Core
 {
