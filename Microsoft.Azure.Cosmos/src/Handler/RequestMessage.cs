@@ -129,7 +129,13 @@ namespace Microsoft.Azure.Cosmos
 
         internal Uri InternalRequestUri { get; private set; }
 
-        internal ITrace Trace { get; set; }
+        // Using the backing field to ensure Trace is never null when accessed
+        private ITrace trace;
+        internal ITrace Trace 
+        { 
+            get => this.trace ?? NoOpTrace.Singleton;
+            set => this.trace = value ?? NoOpTrace.Singleton;
+        }
 
         internal RequestOptions RequestOptions { get; set; }
 
@@ -213,21 +219,25 @@ namespace Microsoft.Azure.Cosmos
 
         internal void AddThroughputPropertiesHeader(ThroughputProperties throughputProperties)
         {
+            // Return early if the throughput properties are null
             if (throughputProperties == null)
             {
                 return;
             }
 
+            // Validate that both properties can't be set simultaneously
             if (throughputProperties.Throughput.HasValue &&
                 (throughputProperties.AutoscaleMaxThroughput.HasValue || throughputProperties.AutoUpgradeMaxThroughputIncrementPercentage.HasValue))
             {
                 throw new InvalidOperationException("Autoscale provisioned throughput can not be configured with fixed offer");
             }
 
+            // If we have a fixed throughput value, add it to the headers
             if (throughputProperties.Throughput.HasValue)
             {
                 this.AddThroughputHeader(throughputProperties.Throughput);
             }
+            // Otherwise handle autoscale settings if they exist
             else if (throughputProperties?.Content?.OfferAutoscaleSettings != null)
             {
                 this.Headers.Add(HttpConstants.HttpHeaders.OfferAutopilotSettings, throughputProperties.Content.OfferAutoscaleSettings.GetJsonString());
@@ -236,6 +246,12 @@ namespace Microsoft.Azure.Cosmos
 
         internal async Task AssertPartitioningDetailsAsync(CosmosClient client, CancellationToken cancellationToken, ITrace trace)
         {
+            // Validate input parameters
+            if (client == null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
             if (this.IsMasterOperation())
             {
                 return;
@@ -305,6 +321,7 @@ namespace Microsoft.Azure.Cosmos
                 this.DocumentServiceRequest.RouteTo(this.PartitionKeyRangeId);
             }
             
+            // Safe access to RequestOptions using null conditional operator
             this.DocumentServiceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
             this.OnBeforeRequestHandler(this.DocumentServiceRequest);
             return this.DocumentServiceRequest;
@@ -316,27 +333,32 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>a cloned copy of the RequestMessage</returns>
         internal RequestMessage Clone(ITrace newTrace, CloneableStream cloneContent)
         {
+            // Ensure trace is never null, use NoOpTrace.Singleton as fallback
+            ITrace traceToUse = newTrace ?? NoOpTrace.Singleton;
+
             RequestMessage clone = new RequestMessage(
                 this.Method,
                 this.RequestUriString,
-                newTrace,
+                traceToUse,
                 this.Headers.Clone(),
                 new Dictionary<string, object>(this.Properties));
 
+            // Clone content if both content and cloneContent are non-null
             if (this.Content != null && cloneContent != null)
             {
                 clone.Content = cloneContent.Clone();
             }
 
+            // Clone RequestOptions if it exists
             if (this.RequestOptions != null)
             {
                 clone.RequestOptions = this.RequestOptions.ShallowCopy();
             }
 
             clone.ResourceType = this.ResourceType;
-
             clone.OperationType = this.OperationType;
 
+            // Safely clone PartitionKeyRangeId if it exists
             if (this.PartitionKeyRangeId != null)
             {
                 clone.PartitionKeyRangeId = string.IsNullOrEmpty(this.PartitionKeyRangeId.CollectionRid)
@@ -363,7 +385,16 @@ namespace Microsoft.Azure.Cosmos
 
         private void OnBeforeRequestHandler(DocumentServiceRequest serviceRequest)
         {
+            // Validate serviceRequest to prevent null reference exception
+            if (serviceRequest == null)
+            {
+                throw new ArgumentNullException(nameof(serviceRequest));
+            }
+
+            // Safe access to RequestOptions using null conditional operator
             serviceRequest.RequestContext.ExcludeRegions = this.RequestOptions?.ExcludeRegions;
+            
+            // Use null conditional operator to safely invoke the delegate if it exists
             this.OnBeforeSendRequestActions?.Invoke(serviceRequest);
         }
 
