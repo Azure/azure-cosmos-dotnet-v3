@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Collections.Generic;
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters;
@@ -21,7 +22,7 @@ namespace Microsoft.Azure.Cosmos
 #else
     internal
 #endif
-        class ChangeFeedMetadata
+    class ChangeFeedMetadata
     {
         /// <summary>
         /// The change's conflict resolution timestamp.
@@ -50,9 +51,21 @@ namespace Microsoft.Azure.Cosmos
         public long PreviousLsn { get; internal set; }
 
         /// <summary>
-        /// Used to distinquish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
+        /// Used to distinguish explicit deletes (e.g. via DeleteItem) from deletes caused by TTL expiration (a collection may define time-to-live policy for documents).
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.TimeToLiveExpired, NullValueHandling = NullValueHandling.Ignore)]
         public bool IsTimeToLiveExpired { get; internal set; }
+
+        /// <summary>
+        /// The id of the previous item version. Used for delete operations only.
+        /// </summary>
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.Id, NullValueHandling = NullValueHandling.Ignore)]
+        public string Id { get; internal set; }
+
+        /// <summary>
+        /// The partition key of the previous item version. Dictionary Key is the partition key property name and Dictionary Value is the partition key property value. Used for delete operations only.
+        /// </summary>
+        [JsonProperty(PropertyName = ChangeFeedMetadataFields.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
+        public List<(string, object)> PartitionKey { get; internal set; }
     }
 }
