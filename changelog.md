@@ -1,6 +1,6 @@
 ## <a name="recommended-version"></a> Recommended version
 
-The **minimum recommended version is [3.47.0](#3.47.0)**.
+The **minimum recommended version is [3.51.0](#3.51.0)**.
 
 Make sure that your applications, when using the .NET V3 SDK, are using at least the version described here to have all the critical fixes. With the release of [3.47.0](#3.47.0), it is now best practice to include a cross regional hedging availability strategy when using the Azure Cosmos DB .NET SDK. For more information about cross regional hedging, see [here](https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/docs/Cross%20Region%20Request%20Hedging.md).
 
@@ -14,6 +14,47 @@ Preview features are treated as a separate branch and will not be included in th
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+### <a name="3.52.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.0) - 2025-5-16
+
+### <a name="3.51.0"/> [3.51.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0) - 2025-5-16
+
+#### Added
+
+- [5182](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5182) InMemoryLeaseContainer: Adds public API to use InMemoryLeaseContainer with ChangeFeedProcessorBuilder
+- [5170](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5170) PPAF: Adds Code to Fetch Enablement Flag Through Gateway Database Account Response
+
+#### Fixed
+
+- [5197](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5197) GlobalEndpointManager: Fixes Observed exception (ObjectDisposedException)
+
+
+### <a name="3.51.0-preview.0"/> [3.51.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0-preview.0) - 2025-5-9
+
+### <a name="3.50.0"/> [3.50.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0) - 2025-5-9
+
+#### Added
+
+- [4993](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/4993) Query: Adds LINQ extension method for ORDER BY RANK, FullTextScore and RRF
+- [5121](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5121) Query: Adds support for the optimized query plan that skips the order by rewrite
+- [5190](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5190) Hedging: Adds Hedging for Write requests GA
+
+#### Fixed
+
+- [5145](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5145) Query: Fixes handling of undefined projections in hybrid search
+- [5150](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5150) Query: Fixes Full Text Search APIs by marking them public
+- [5162](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5162) HPK : Fixes code documentation to reference PartitionKeyPaths for HPK scenarios
+- [5163](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5163) Query: Fixes function signature for RRF, OrderByRank and FullTextScore LINQ extension methods
+- [5171](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5172) Query: Fixes FullText Policy API by making language optional
+- [5189](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5189) Hedging: Fixes Concurrency Issue
+
+### <a name="3.50.0-preview.1"/> [3.50.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0-preview.1) - 2025-5-6
+
+### <a name="3.49.1"/> [3.49.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.1) - 2025-5-6
+
+#### Fixed
+
+- [5174](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5174) Query: Fixes default for the query plan optimization for Hybrid Search to be disabled
 
 ### <a name="3.50.0-preview.0"/> [3.50.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.50.0-preview.0) - 2025-4-17
 
