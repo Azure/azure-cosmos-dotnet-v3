@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
+    using System.Globalization;
     using System.IO;
     using System.Text;
 
@@ -322,7 +323,18 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="DateTime"/> value to write.</param>
         public override void WriteValue(DateTime value)
         {
-            this.WriteValue(value.ToString("O"));
+            if (value.Kind == DateTimeKind.Utc || value.Kind == DateTimeKind.Local)
+            {
+                value = DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
+            }
+
+            long subSecondTicks = value.Ticks % TimeSpan.TicksPerSecond;
+
+            string dateTimeValue = subSecondTicks == 0
+                ? value.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture)
+                : $"{value:yyyy-MM-dd'T'HH:mm:ss}.{subSecondTicks:D7}".TrimEnd('0');
+
+            this.WriteValue(dateTimeValue);
         }
 
         /// <summary>
