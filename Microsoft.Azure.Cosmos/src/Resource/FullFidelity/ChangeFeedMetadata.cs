@@ -57,13 +57,15 @@ namespace Microsoft.Azure.Cosmos
         public bool IsTimeToLiveExpired { get; internal set; }
 
         /// <summary>
-        /// The id of the previous item version. Used for delete operations only.
+        /// Used for delete operations only.
+        /// The id of the previous item version. 
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.Id, NullValueHandling = NullValueHandling.Ignore)]
         public string Id { get; internal set; }
 
         /// <summary>
-        /// The partition key of the previous item version. Dictionary Key is the partition key property name and Dictionary Value is the partition key property value. Used for delete operations only.
+        ///  Used for delete operations only.
+        /// The partition key of the previous item version. string  is the partition key property name and object is the partition key property value. All levels of hierarchy will be represented in order if a HPK is used.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
         public List<(string, object)> PartitionKey { get; internal set; }
