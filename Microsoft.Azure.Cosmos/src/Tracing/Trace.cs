@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
     {
         private static readonly IReadOnlyDictionary<string, object> EmptyDictionary = new Dictionary<string, object>();
         private readonly List<ITrace> children;
-        private readonly Lazy<ConcurrentDictionary<string, object>> data;
+        private readonly Lazy<OrderedConcurrentDictionary<string, object>> data;
         private ValueStopwatch stopwatch;
 
         private Trace(
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
             this.Component = component;
             this.Parent = parent;
             this.children = new List<ITrace>();
-            this.data = new Lazy<ConcurrentDictionary<string, object>>(() => new ConcurrentDictionary<string, object>());
+            this.data = new Lazy<OrderedConcurrentDictionary<string, object>>(() => new OrderedConcurrentDictionary<string, object>());
             this.Summary = summary ?? throw new ArgumentNullException(nameof(summary));
         }
 
