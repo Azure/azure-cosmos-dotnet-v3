@@ -323,17 +323,9 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="DateTime"/> value to write.</param>
         public override void WriteValue(DateTime value)
         {
-            if (value.Kind == DateTimeKind.Utc || value.Kind == DateTimeKind.Local)
-            {
-                value = DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
-            }
-
-            long subSecondTicks = value.Ticks % TimeSpan.TicksPerSecond;
-
-            string dateTimeValue = subSecondTicks == 0
-                ? value.ToString("yyyy-MM-dd'T'HH:mm:ss", CultureInfo.InvariantCulture)
-                : $"{value:yyyy-MM-dd'T'HH:mm:ss}.{subSecondTicks:D7}".TrimEnd('0');
-
+            // If the date-time value contains milli seconds precision, then we wil use the rount trip
+            // format for datetime parsing. Otherwise, we will use the universal format for parsing.
+            string dateTimeValue = value.Millisecond > 0 ? value.ToString("O") : value.ToString("u");
             this.WriteValue(dateTimeValue);
         }
 
