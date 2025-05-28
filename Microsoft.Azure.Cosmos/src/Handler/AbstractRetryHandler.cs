@@ -55,6 +55,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
             }
             catch (OperationCanceledException ex)
             {
+                Console.WriteLine("Operation was canceled: " + ex.Message);
                 throw new CosmosOperationCanceledException(ex, request.Trace);
             }
             finally
