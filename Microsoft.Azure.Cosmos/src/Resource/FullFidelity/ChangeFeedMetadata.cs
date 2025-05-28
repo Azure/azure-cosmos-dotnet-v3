@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         public bool IsTimeToLiveExpired { get; internal set; }
 
         /// <summary>
-        /// Used for delete operations only.
+        /// Applicable for delete operations only, otherwise null.
         /// The id of the previous item version. 
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.Id, NullValueHandling = NullValueHandling.Ignore)]
