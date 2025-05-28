@@ -154,9 +154,12 @@
             }
             catch (CosmosOperationCanceledException oce)
             {
-                Console.WriteLine(oce.Diagnostics.ToString());
                 IReadOnlyList<ITrace> children = ((CosmosTraceDiagnostics)oce.Diagnostics).Value.Children;
                 ITrace exceptionChild = children[^1];
+                foreach (ITrace child in children)
+                {
+                    Console.WriteLine($"Child Trace: {child.Name}");
+                }
                 Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
                 Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
             }
