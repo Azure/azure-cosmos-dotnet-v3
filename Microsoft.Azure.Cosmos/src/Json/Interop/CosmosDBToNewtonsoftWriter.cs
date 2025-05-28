@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using System.Globalization;
     using System.IO;
     using System.Text;
 
@@ -19,6 +18,12 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
 #endif
     sealed class CosmosDBToNewtonsoftWriter : Newtonsoft.Json.JsonWriter
     {
+        /// <summary>
+        /// The built-in DateTime format "o"/ "O" is comparable to the custom format of: "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffffffK".
+        /// In order to remove the trailing zeros from the milli-second precision, we replace the lower-case f's with upper case ones.
+        /// </summary>
+        private const string RoundTripFormatWithoutTrailingZeros = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'FFFFFFFK";
+
         /// <summary>
         /// A CosmosDB JSON writer used for the actual implementation.
         /// </summary>
@@ -323,8 +328,11 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="DateTime"/> value to write.</param>
         public override void WriteValue(DateTime value)
         {
-            // Use rount trip format for datetime parsing and trim the additional trailing zeros to maintain milliseconds precision .
-            this.WriteValue(value.ToString("O").Trim('0').Trim('.'));
+            // We use rount trip format for datetime parsing and trim the additional trailing zeros using a custom "O" format
+            // to maintain milliseconds precision.
+            this.WriteValue(
+                value.ToString(
+                    format: CosmosDBToNewtonsoftWriter.RoundTripFormatWithoutTrailingZeros));
         }
 
         /// <summary>
