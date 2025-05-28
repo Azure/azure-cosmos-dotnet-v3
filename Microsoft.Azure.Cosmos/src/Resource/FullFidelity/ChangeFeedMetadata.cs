@@ -64,7 +64,7 @@ namespace Microsoft.Azure.Cosmos
         public string Id { get; internal set; }
 
         /// <summary>
-        ///  Used for delete operations only.
+        ///  Applicable for delete operations only, otherwise null.
         /// The partition key of the previous item version. string  is the partition key property name and object is the partition key property value. All levels of hierarchy will be represented in order if a HPK is used.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
