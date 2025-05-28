@@ -232,72 +232,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(true, DisplayName = "DateTime array roundtrip with binary encoding enabled")]
-        public async Task DateTimeArrayRoundtrip_BinaryEncodingTest(bool binaryEncodingEnabledInClient)
-        {
-            try
-            {
-                if (binaryEncodingEnabledInClient)
-                {
-                    Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
-                }
-                Random random = new();
-
-                string[] dateStrings =
-                {
-                    "12/25/2023","2023-12-25","12-25-2023","25.12.2023","25/12/2023",
-                    "Dec 25, 2023","Dec 25 2023","2023-12-25T10:00:00","2023-12-25T10:00:00.123",
-                    "12/25/2023 10:00 AM","12/25/2023 10:00:00 AM","12/25/2023 10:00:00.123 AM",
-                    "0001-01-01T00:00:00","9999-12-31T23:59:59",
-                    "2023-12-25T10:00:00.1","2023-12-25T10:00:00.12",
-                    "2023-12-25T10:00:00.1234","2023-12-25T10:00:00.1234567"
-                };
-
-                string[] formats =
-                {
-                    "MM/dd/yyyy","yyyy-MM-dd","MM-dd-yyyy","dd.MM.yyyy","dd/MM/yyyy",
-                    "MMM dd, yyyy","MMM dd yyyy","yyyy-MM-ddTHH:mm:ss","yyyy-MM-ddTHH:mm:ss.fff",
-                    "yyyy-MM-ddTHH:mm:ss.f","yyyy-MM-ddTHH:mm:ss.ff","yyyy-MM-ddTHH:mm:ss.ffff",
-                    "yyyy-MM-ddTHH:mm:ss.fffffff","MM/dd/yyyy hh:mm tt","MM/dd/yyyy hh:mm:ss tt",
-                    "MM/dd/yyyy hh:mm:ss.fff tt"
-                };
-
-                DateTime[] parsedDates = dateStrings
-                    .Select(s => DateTime.ParseExact(s, formats, CultureInfo.InvariantCulture, DateTimeStyles.None))
-                    .ToArray();
-
-                TestCosmosItem original = new TestCosmosItem(
-                    id: Guid.NewGuid().ToString(),
-                    pk: "pk",
-                    title: random.Next().ToString(),
-                    email: "test@example.com",
-                    body: "Binary encoding test document.",
-                    createdUtc: DateTime.UtcNow,
-                    modifiedUtc: DateTime.Parse("2025-03-26T20:22:20Z", null, DateTimeStyles.AdjustToUniversal),
-                    extraDates: parsedDates);
-
-                ItemResponse<TestCosmosItem> write = await this.Container.CreateItemAsync(
-                    item: original,
-                    partitionKey: new(original.pk));
-
-                ItemResponse<TestCosmosItem> read = await this.Container.ReadItemAsync<TestCosmosItem>(
-                    id: original.id,
-                    partitionKey: new(original.pk));
-
-                TestCosmosItem loaded = read.Resource;
-
-                CollectionAssert.AreEqual(
-                    original.ExtraDates.Select(d => d.ToString("O")).ToArray(),
-                    loaded.ExtraDates.Select(d => d.ToString("O")).ToArray(),
-                    "ExtraDates array mismatch");
-            }
-            finally
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
-            }
-        }
-
-        [TestMethod]
         [DataRow(true, DisplayName = "Test scenario when binary encoding is enabled at client level.")]
         [DataRow(false, DisplayName = "Test scenario when binary encoding is disabled at client level.")]
         public async Task NegativeCreateItemTest(bool binaryEncodingEnabledInClient)
@@ -4593,41 +4527,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             JsonSerializationFormat desiredFormat)
         {
             return desiredFormat == JsonSerializationFormat.Text && firstByte < (int)JsonSerializationFormat.Binary;
-        }
-
-        public sealed class TestCosmosItem
-        {
-            [JsonConstructor]
-            public TestCosmosItem(
-                string id,
-                string pk,
-                string title,
-                string email,
-                string body,
-                DateTime createdUtc,
-                DateTime modifiedUtc,
-                DateTime[] extraDates)
-            {
-                this.id = id;
-                this.pk = pk;
-                this.title = title;
-                this.email = email;
-                this.body = body;
-                this.CreatedUtc = createdUtc;
-                this.ModifiedUtc = modifiedUtc;
-                this.ExtraDates = extraDates;
-            }
-
-#pragma warning disable IDE1006 // Naming Styles
-            public string id { get; }
-            public string pk { get; }
-            public string title { get; }
-            public string email { get; }
-            public string body { get; }
-#pragma warning restore IDE1006 // Naming Styles
-            public DateTime CreatedUtc { get; }
-            public DateTime ModifiedUtc { get; }
-            public DateTime[] ExtraDates { get; }
         }
     }
 }

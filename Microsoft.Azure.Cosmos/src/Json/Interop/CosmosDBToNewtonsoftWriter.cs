@@ -323,10 +323,8 @@ namespace Microsoft.Azure.Cosmos.Json.Interop
         /// <param name="value">The <see cref="DateTime"/> value to write.</param>
         public override void WriteValue(DateTime value)
         {
-            // If the date-time value contains milli seconds precision, then we wil use the rount trip
-            // format for datetime parsing. Otherwise, we will use the universal format for parsing.
-            string dateTimeValue = value.Millisecond > 0 ? value.ToString("O") : value.ToString("u");
-            this.WriteValue(dateTimeValue);
+            // Use rount trip format for datetime parsing and trim the additional trailing zeros to maintain milliseconds precision .
+            this.WriteValue(value.ToString("O").Trim('0').Trim('.'));
         }
 
         /// <summary>
