@@ -136,18 +136,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
-#if NETSTANDARD20
-            // GetEntryAssembly returns null when loaded from native netstandard2.0
-            if (System.Reflection.Assembly.GetEntryAssembly() != null)
+            if (AppConfig.IsEnabled)
             {
-#endif
                 if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out int userSpecifiedBatchSize))
                 {
                     batchSize = userSpecifiedBatchSize;
                 }
-#if NETSTANDARD20
             }
-#endif  
 #endif
 
             string collectionAltLink = string.Format(
