@@ -153,6 +153,7 @@
         }
 
         [TestMethod]
+        [Timeout(70000)]
         [TestCategory("MultiRegion")]
         public async Task DateTimeArrayRoundtrip_BinaryEncoding_CompareExtraDates_IntegrationTest()
         {
@@ -195,8 +196,6 @@
             ContainerResponse containerBEEnabledResponse = await db.CreateContainerAsync(binaryEncodingEnabled, "/pk");
             ContainerResponse containerBEDisabledResponse = await db.CreateContainerAsync(binaryEncodingDisabled, "/pk");
 
-            string originalValue = Environment.GetEnvironmentVariable("Cosmos.BinaryEncodingEnabled");
-
             try
             {
                 // BinaryEncodingEnabled = True
@@ -234,7 +233,6 @@
             }
             finally
             {
-                Environment.SetEnvironmentVariable("Cosmos.BinaryEncodingEnabled", originalValue);
                 await containerBEEnabledResponse.Container.DeleteContainerAsync();
                 await containerBEDisabledResponse.Container.DeleteContainerAsync();
             }
