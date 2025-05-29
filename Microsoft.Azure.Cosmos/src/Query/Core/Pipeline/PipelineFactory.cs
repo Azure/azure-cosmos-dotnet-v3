@@ -172,7 +172,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                     top = 0;
                 }
 
-                if (top > int.MaxValue)
+                if (queryInfo.HasTop && (top > int.MaxValue))
                 {
                     throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
