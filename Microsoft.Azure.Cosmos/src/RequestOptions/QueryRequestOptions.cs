@@ -123,6 +123,25 @@ namespace Microsoft.Azure.Cosmos
         /// The results will be displayed in <c>FeedResponse.QueryAdvice</c>. Please note that this options will incur overhead, so it should be 
         /// enabled only when debugging queries.
         /// </para>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var queryRequestOptions = new QueryRequestOptions { PopulateQueryAdvice = true};
+        /// 
+        /// // View results in FeedResponse.QueryAdvice
+        /// while (itemQuery.HasMoreResults)
+        ///    {
+        ///        // query advice is the same across pages so we only need to log it once
+        ///        if (queryAdvice != null)
+        ///        {
+        ///            break;
+        ///        }
+        ///        FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
+        ///      queryAdvice = page.QueryAdvice;
+        ///    }
+        /// ]]>
+        /// </code>
+        /// </example>
         /// </remarks>
         public bool? PopulateQueryAdvice { get; set; }
 
