@@ -166,13 +166,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline
                 else if (queryInfo.HasLimit && (queryInfo.Limit.Value > 0))
                 {
                     top = (queryInfo.Offset ?? 0) + queryInfo.Limit.Value;
+                    top = top > int.MaxValue ? int.MaxValue : top;
                 }
                 else
                 {
                     top = 0;
                 }
 
-                if (queryInfo.HasTop && (top > int.MaxValue))
+                if (top > int.MaxValue)
                 {
                     throw new ArgumentOutOfRangeException(nameof(queryInfo.Top.Value));
                 }
