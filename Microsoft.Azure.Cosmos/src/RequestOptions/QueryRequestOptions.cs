@@ -132,12 +132,11 @@ namespace Microsoft.Azure.Cosmos
         /// while (itemQuery.HasMoreResults)
         ///    {
         ///        // query advice is the same across pages so we only need to log it once
-        ///        if (queryAdvice != null)
+        ///        if (queryAdvice == null)
         ///        {
-        ///            break;
+        ///             FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
+        ///             queryAdvice = page.QueryAdvice; 
         ///        }
-        ///        FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
-        ///      queryAdvice = page.QueryAdvice;
         ///    }
         /// ]]>
         /// </code>
