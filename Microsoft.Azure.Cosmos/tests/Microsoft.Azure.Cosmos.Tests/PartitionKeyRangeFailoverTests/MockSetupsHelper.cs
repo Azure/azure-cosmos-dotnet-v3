@@ -29,12 +29,14 @@ namespace Microsoft.Azure.Cosmos.Tests
             string accountName,
             string endpoint,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool shouldEnablePPAF)
         {
             HttpResponseMessage httpResponseMessage = MockSetupsHelper.CreateStrongAccount(
                 accountName,
                 writeRegions,
-                readRegions);
+                readRegions,
+                shouldEnablePPAF);
 
             Uri endpointUri = new Uri(endpoint);
             mockHttpClientHandler.Setup(x => x.SendAsync(
@@ -106,7 +108,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         public static HttpResponseMessage CreateStrongAccount(
             string accountName,
             IList<AccountRegion> writeRegions,
-            IList<AccountRegion> readRegions)
+            IList<AccountRegion> readRegions,
+            bool shouldEnablePPAF = false)
         {
             AccountProperties accountProperties = new AccountProperties()
             {
@@ -114,6 +117,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 WriteLocationsInternal = new Collection<AccountRegion>(writeRegions),
                 ReadLocationsInternal = new Collection<AccountRegion>(readRegions),
                 EnableMultipleWriteLocations = writeRegions.Count > 1,
+                EnablePartitionLevelFailover = shouldEnablePPAF,
                 Consistency = new AccountConsistency()
                 {
                     DefaultConsistencyLevel = Cosmos.ConsistencyLevel.Strong
