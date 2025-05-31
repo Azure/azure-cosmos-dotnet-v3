@@ -91,6 +91,19 @@ namespace Microsoft.Azure.Cosmos
             BufferProviderWrapper bufferProviderWrapper = this.bufferProviderWrapperPool.Get();
             try
             {
+                PartitionKeyRange partitionKeyRange = request.RequestContext?.ResolvedPartitionKeyRange;
+
+                if (partitionKeyRange != null)
+                {
+                   requestMessage.Headers.TryAddWithoutValidation(
+                       ThinClientConstants.ProxyStartEpk,
+                       partitionKeyRange?.MinInclusive);
+
+                   requestMessage.Headers.TryAddWithoutValidation(
+                       ThinClientConstants.ProxyEndEpk,
+                       partitionKeyRange?.MaxExclusive);
+                }
+
                 requestMessage.Headers.TryAddWithoutValidation(
                     ThinClientConstants.ProxyOperationType,
                     request.OperationType.ToOperationTypeString());
@@ -113,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
-                requestMessage.Headers.Clear();
+               
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 

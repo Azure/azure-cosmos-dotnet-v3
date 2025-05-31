@@ -77,7 +77,7 @@ WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["Stri
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore, VectorDistance.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -87,7 +87,7 @@ WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["Stri
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore, VectorDistance.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -97,7 +97,7 @@ WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["Stri
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore, VectorDistance.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -107,7 +107,7 @@ WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["Stri
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Expressions of type System.Double is not supported as an argument to CosmosLinqExtensions.RRF. Supported expressions are method calls to FullTextScore, VectorDistance.]]></ErrorMessage>
     </Output>
   </Result>
   <Result>
@@ -117,7 +117,7 @@ WHERE (RRF(FullTextScore(root["StringField"], "test1"), FullTextScore(root["Stri
     </Input>
     <Output>
       <SqlQuery><![CDATA[]]></SqlQuery>
-      <ErrorMessage><![CDATA[Method RRF is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are FullTextScore.]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Method RRF is not supported as an argument to CosmosLinqExtensions.RRF. Supported methods are FullTextScore, VectorDistance.]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

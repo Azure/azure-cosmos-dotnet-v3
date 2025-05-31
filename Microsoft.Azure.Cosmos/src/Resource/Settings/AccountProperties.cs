@@ -244,6 +244,12 @@ namespace Microsoft.Azure.Cosmos
         [JsonProperty(PropertyName = Constants.Properties.EnableMultipleWriteLocations)]
         internal bool EnableMultipleWriteLocations { get; set; }
 
+        /// <summary>
+        /// Gets the featured enabled value for Per Partition Automatic Failover
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.EnablePerPartitionFailoverBehavior)]
+        internal bool? EnablePartitionLevelFailover { get; set; }
+
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))

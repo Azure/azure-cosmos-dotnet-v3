@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Runtime.Serialization;
     using System.Text;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Client;
@@ -244,6 +245,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }";
 
             DocumentClient client = new DocumentClient(this.hostUri, this.masterKey, serializerSettings);
+            await client.EnsureValidClientAsync(NoOpTrace.Singleton);
 
             StoredProcedure sproc = await client.CreateStoredProcedureAsync(this.collectionUri, storedProcedureDef);
 
@@ -325,6 +327,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 serializerSettings,
                 connectionPolicy,
                 defaultConsistencyLevel);
+
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
 
             // Create a simple stored procedure
             string scriptId = "bulkImportScript";
@@ -533,6 +537,9 @@ function bulkImport(docs) {
                 serializerSettings,
                 connectionPolicy,
                 defaultConsistencyLevel);
+
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
+
             originalDocument = new Document();
             originalDocument.SetPropertyValue(jsonPropertyName, "2017-05-18T17:17:32.7514920Z");
             originalDocument.SetPropertyValue(PartitionKeyProperty, "value");

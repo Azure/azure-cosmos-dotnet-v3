@@ -113,6 +113,12 @@ namespace Microsoft.Azure.Cosmos
         private const bool DefaultEnableCpuMonitor = true;
         private const string DefaultInitTaskKey = "InitTaskKey";
 
+        /// <summary>
+        /// Default thresholds for PPAF request hedging.
+        /// </summary>
+        private const int DefaultHedgingThresholdInMilliseconds = 1000;
+        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
 
@@ -955,14 +961,7 @@ namespace Microsoft.Azure.Cosmos
                 servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
             }
 #endif
-
             this.GlobalEndpointManager = new GlobalEndpointManager(this, this.ConnectionPolicy, this.enableAsyncCacheExceptionNoSharing);
-            this.PartitionKeyRangeLocation = this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                ? new GlobalPartitionEndpointManagerCore(
-                    this.GlobalEndpointManager,
-                    this.ConnectionPolicy.EnablePartitionLevelFailover,
-                    this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
-                : GlobalPartitionEndpointManagerNoOp.Instance;
 
             this.httpClient = CosmosHttpClientCore.CreateWithConnectionPolicy(
                 this.ApiType,
@@ -1002,13 +1001,6 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.sessionContainer = new SessionContainer(this.ServiceEndpoint.Host);
             }
-
-            this.retryPolicy = new RetryPolicy(
-                globalEndpointManager: this.GlobalEndpointManager,
-                connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
-
-            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             this.desiredConsistencyLevel = desiredConsistencyLevel;
             // Setup the proxy to be  used based on connection mode.
@@ -1063,6 +1055,33 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
+
+            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            if (this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
+            {
+                isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
+            }
+
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+            this.InitializePartitionLevelFailoverWithDefaultHedging();
+
+            this.PartitionKeyRangeLocation = 
+                this.ConnectionPolicy.EnablePartitionLevelFailover 
+                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
+                    ? new GlobalPartitionEndpointManagerCore(
+                        this.GlobalEndpointManager,
+                        this.ConnectionPolicy.EnablePartitionLevelFailover,
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+                    : GlobalPartitionEndpointManagerNoOp.Instance;
+
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+
+            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
                     this.GlobalEndpointManager,
@@ -6823,8 +6842,40 @@ namespace Microsoft.Azure.Cosmos
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
-
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+        }
+
+        internal string GetUserAgentFeatures()
+        {
+            int featureFlag = 0;
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionAutomaticFailover;
+            }
+
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
+            }
+
+            return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
+        }
+
+        internal void InitializePartitionLevelFailoverWithDefaultHedging()
+        {
+            if (this.ConnectionPolicy.EnablePartitionLevelFailover
+                && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                // the request timeout value provided by the end customer.
+                double defaultThresholdInMillis = Math.Min(
+                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+            }
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

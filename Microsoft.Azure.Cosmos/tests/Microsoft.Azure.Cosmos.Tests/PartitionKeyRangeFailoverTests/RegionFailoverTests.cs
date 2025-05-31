@@ -103,11 +103,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                    count++;
                    if (count < 2)
                    {
-                       return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegion, readRegions));
+                       return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegion, readRegions, shouldEnablePPAF: true));
                    }
                    else
                    {
-                       return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegionFailedOver, readRegionsFailedOver));
+                       return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegionFailedOver, readRegionsFailedOver, shouldEnablePPAF: true));
                    }
                });
 
@@ -156,7 +156,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                EnablePartitionLevelFailover = true,
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                 ApplicationPreferredRegions = new List<string>()
                     {
