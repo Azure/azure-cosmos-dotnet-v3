@@ -69,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
-
+                            Assert.IsNull(change.Metadata.Id);
+                            Assert.IsNull(change.Metadata.PartitionKey);
                             // previous
                             Assert.IsNull(change.Previous);
                         }

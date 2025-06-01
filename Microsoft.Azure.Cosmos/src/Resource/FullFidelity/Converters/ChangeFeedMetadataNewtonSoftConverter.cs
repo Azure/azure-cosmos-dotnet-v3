@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
             }
 
             ChangeFeedMetadata metadata = new ChangeFeedMetadata();
-            List<(string, object)> partitionKey = new List<(string, object)>();
+            List<(string, object)> partitionKey = null;
 
             reader.Read(); // StartObject
 
@@ -145,8 +145,8 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                     case ChangeFeedMetadataFields.PartitionKey:
                         if (reader.TokenType == JsonToken.StartObject)
                         {
+                            partitionKey ??= new List<(string, object)>();
                             reader.Read(); // Move to the first property in the object
-
                             while (reader.TokenType == JsonToken.PropertyName)
                             {
                                 string key = reader.Value.ToString();
