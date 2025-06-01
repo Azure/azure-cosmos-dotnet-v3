@@ -129,12 +129,14 @@ namespace Microsoft.Azure.Cosmos
         /// var queryRequestOptions = new QueryRequestOptions { PopulateQueryAdvice = true};
         /// 
         /// // View results in FeedResponse.QueryAdvice
+        /// string queryAdvice = null;
         /// while (itemQuery.HasMoreResults)
         ///    {
+        ///        FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
+        ///        
         ///        // query advice is the same across pages so we only need to log it once
         ///        if (queryAdvice == null)
         ///        {
-        ///             FeedResponse<CosmosElement> page = itemQuery.ReadNextAsync().Result;
         ///             queryAdvice = page.QueryAdvice; 
         ///        }
         ///    }
