@@ -6,7 +6,7 @@ pr:
     include:
     - master
     - releases/*
-    - msdata/direct
+    - msdata/direct*
   paths:
     include:
     - '*'
