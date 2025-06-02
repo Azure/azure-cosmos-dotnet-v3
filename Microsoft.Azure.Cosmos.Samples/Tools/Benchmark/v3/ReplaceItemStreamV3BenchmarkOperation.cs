@@ -1,7 +1,6 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-
 namespace CosmosBenchmark
 {
     using System;
@@ -10,15 +9,17 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ThinClientCreateItemStreamV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReplaceItemStreamV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
         private readonly Dictionary<string, object> sampleJObject;
         private readonly string databaseName;
         private readonly string containerName;
+        private string itemId;
+        private string itemPk;
 
-        public ThinClientCreateItemStreamV3BenchmarkOperation(
+        public ReplaceItemStreamV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -32,30 +33,37 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public BenchmarkOperationType OperationType => BenchmarkOperationType.Insert;
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
 
-        public Task PrepareAsync()
+        public async Task PrepareAsync()
         {
-            this.sampleJObject["id"] = Guid.NewGuid().ToString();
-            this.sampleJObject[this.partitionKeyPath] = Guid.NewGuid().ToString();
-            return Task.CompletedTask;
+            this.itemId = Guid.NewGuid().ToString();
+            this.itemPk = Guid.NewGuid().ToString();
+            this.sampleJObject["id"] = this.itemId;
+            this.sampleJObject[this.partitionKeyPath] = this.itemPk;
+            this.sampleJObject["other"] = "Original";
+
+            using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
+            {
+                ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(input, new PartitionKey(this.itemPk));
+                System.Buffers.ArrayPool<byte>.Shared.Return(input.GetBuffer());
+            }
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            PartitionKey partitionKey = new PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString());
+            this.sampleJObject["other"] = "Updated Stream Other";
             using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
             {
-                ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(input, partitionKey);
-
+                ResponseMessage response = await this.container.ReplaceItemStreamAsync(input, this.itemId, new PartitionKey(this.itemPk));
                 return new OperationResult
                 {
                     DatabseName = this.databaseName,
                     ContainerName = this.containerName,
                     OperationType = this.OperationType,
-                    RuCharges = itemResponse.Headers.RequestCharge,
-                    CosmosDiagnostics = itemResponse.Diagnostics,
-                    LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                    RuCharges = response.Headers.RequestCharge,
+                    CosmosDiagnostics = response.Diagnostics,
+                    LazyDiagnostics = () => response.Diagnostics.ToString(),
                 };
             }
         }

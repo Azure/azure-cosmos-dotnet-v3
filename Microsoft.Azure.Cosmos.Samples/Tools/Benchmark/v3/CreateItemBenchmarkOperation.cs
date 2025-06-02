@@ -9,12 +9,12 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ThinClientCreateItemBenchmarkOperation : IBenchmarkOperation
+    internal class CreateItemBenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string pk = "pk_benchmark";
 
-        public ThinClientCreateItemBenchmarkOperation(CosmosClient client, string db, string containerName)
+        public CreateItemBenchmarkOperation(CosmosClient client, string db, string containerName)
         {
             this.container = client.GetContainer(db, containerName);
         }

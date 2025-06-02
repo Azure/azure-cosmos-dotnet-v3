@@ -28,7 +28,7 @@ namespace CosmosBenchmark
         public string Commit => this.BenchmarkConfig.CommitId;
         public string CommitDate => this.BenchmarkConfig.CommitDate;
         public string CommitTime => this.BenchmarkConfig.CommitTime;
-
+        public bool IsThinClient => this.BenchmarkConfig.IsThinClientEnabled;
         public string Remarks { get; set; }
         public string Date { get; }
         public string Time { get; }

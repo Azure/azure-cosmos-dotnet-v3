@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ThinClientReplaceItemStreamV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReplaceItemV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -19,7 +19,7 @@ namespace CosmosBenchmark
         private string itemId;
         private string itemPk;
 
-        public ThinClientReplaceItemStreamV3BenchmarkOperation(
+        public ReplaceItemV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -52,20 +52,17 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            this.sampleJObject["other"] = "Updated Stream Other";
-            using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
+            this.sampleJObject["other"] = "Updated Other";
+            ItemResponse<Dictionary<string, object>> response = await this.container.ReplaceItemAsync(this.sampleJObject, this.itemId, new PartitionKey(this.itemPk));
+            return new OperationResult
             {
-                ResponseMessage response = await this.container.ReplaceItemStreamAsync(input, this.itemId, new PartitionKey(this.itemPk));
-                return new OperationResult
-                {
-                    DatabseName = this.databaseName,
-                    ContainerName = this.containerName,
-                    OperationType = this.OperationType,
-                    RuCharges = response.Headers.RequestCharge,
-                    CosmosDiagnostics = response.Diagnostics,
-                    LazyDiagnostics = () => response.Diagnostics.ToString(),
-                };
-            }
+                DatabseName = this.databaseName,
+                ContainerName = this.containerName,
+                OperationType = this.OperationType,
+                RuCharges = response.RequestCharge,
+                CosmosDiagnostics = response.Diagnostics,
+                LazyDiagnostics = () => response.Diagnostics.ToString(),
+            };
         }
     }
 }

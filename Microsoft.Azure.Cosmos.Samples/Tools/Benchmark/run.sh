@@ -79,16 +79,16 @@ sleep 10 #Wait
 # ThinClient operations (only if enabled)
 if [ "$THINCLIENT_ENABLED" = true ]; then
     for WORKLOAD_NAME in \
-        ThinClientCreateItemV3BenchmarkOperation \
-        ThinClientCreateItemStreamV3BenchmarkOperation \
-        ThinClientReadItemV3BenchmarkOperation \
-        ThinClientReadItemStreamV3BenchmarkOperation \
-        ThinClientReplaceItemV3BenchmarkOperation \
-        ThinClientReplaceItemStreamV3BenchmarkOperation \
-        ThinClientUpsertItemV3BenchmarkOperation \
-        ThinClientUpsertItemStreamV3BenchmarkOperation \
-        ThinClientDeleteItemV3BenchmarkOperation \
-        ThinClientDeleteItemStreamV3BenchmarkOperation
+        CreateItemV3BenchmarkOperation \
+        CreateItemStreamV3BenchmarkOperation \
+        ReadItemV3BenchmarkOperation \
+        ReadItemStreamV3BenchmarkOperation \
+        ReplaceItemV3BenchmarkOperation \
+        ReplaceItemStreamV3BenchmarkOperation \
+        UpsertItemV3BenchmarkOperation \
+        UpsertItemStreamV3BenchmarkOperation \
+        DeleteItemV3BenchmarkOperation \
+        DeleteItemStreamV3BenchmarkOperation
     do
         dotnet run -c Release \
             -- -n 2000000 \

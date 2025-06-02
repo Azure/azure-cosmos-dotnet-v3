@@ -9,7 +9,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ThinClientReplaceItemV3BenchmarkOperation : IBenchmarkOperation
+    internal class ReadItemV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -19,7 +19,7 @@ namespace CosmosBenchmark
         private string itemId;
         private string itemPk;
 
-        public ThinClientReplaceItemV3BenchmarkOperation(
+        public ReadItemV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -41,7 +41,6 @@ namespace CosmosBenchmark
             this.itemPk = Guid.NewGuid().ToString();
             this.sampleJObject["id"] = this.itemId;
             this.sampleJObject[this.partitionKeyPath] = this.itemPk;
-            this.sampleJObject["other"] = "Original";
 
             using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
             {
@@ -52,8 +51,7 @@ namespace CosmosBenchmark
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
-            this.sampleJObject["other"] = "Updated Other";
-            ItemResponse<Dictionary<string, object>> response = await this.container.ReplaceItemAsync(this.sampleJObject, this.itemId, new PartitionKey(this.itemPk));
+            ItemResponse<Dictionary<string, object>> response = await this.container.ReadItemAsync<Dictionary<string, object>>(this.itemId, new PartitionKey(this.itemPk));
             return new OperationResult
             {
                 DatabseName = this.databaseName,

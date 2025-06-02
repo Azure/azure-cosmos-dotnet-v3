@@ -10,7 +10,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ThinClientUpsertItemStreamV3BenchmarkOperation : IBenchmarkOperation
+    internal class UpsertItemStreamV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -18,7 +18,7 @@ namespace CosmosBenchmark
         private readonly string databaseName;
         private readonly string containerName;
 
-        public ThinClientUpsertItemStreamV3BenchmarkOperation(
+        public UpsertItemStreamV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,

@@ -1,6 +1,7 @@
 ﻿//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
 namespace CosmosBenchmark
 {
     using System;
@@ -9,7 +10,7 @@ namespace CosmosBenchmark
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos;
 
-    internal class ThinClientUpsertItemV3BenchmarkOperation : IBenchmarkOperation
+    internal class CreateItemStreamV3BenchmarkOperation : IBenchmarkOperation
     {
         private readonly Container container;
         private readonly string partitionKeyPath;
@@ -17,7 +18,7 @@ namespace CosmosBenchmark
         private readonly string databaseName;
         private readonly string containerName;
 
-        public ThinClientUpsertItemV3BenchmarkOperation(
+        public CreateItemStreamV3BenchmarkOperation(
             CosmosClient cosmosClient,
             string dbName,
             string containerName,
@@ -31,29 +32,32 @@ namespace CosmosBenchmark
             this.sampleJObject = JsonHelper.Deserialize<Dictionary<string, object>>(sampleJson);
         }
 
-        public BenchmarkOperationType OperationType => BenchmarkOperationType.Read;
+        public BenchmarkOperationType OperationType => BenchmarkOperationType.Insert;
 
         public Task PrepareAsync()
         {
             this.sampleJObject["id"] = Guid.NewGuid().ToString();
             this.sampleJObject[this.partitionKeyPath] = Guid.NewGuid().ToString();
-            this.sampleJObject["other"] = "Upserted";
             return Task.CompletedTask;
         }
 
         public async Task<OperationResult> ExecuteOnceAsync()
         {
             PartitionKey partitionKey = new PartitionKey(this.sampleJObject[this.partitionKeyPath].ToString());
-            ItemResponse<Dictionary<string, object>> response = await this.container.UpsertItemAsync(this.sampleJObject, partitionKey: partitionKey);
-            return new OperationResult
+            using (MemoryStream input = JsonHelper.ToStream(this.sampleJObject))
             {
-                DatabseName = this.databaseName,
-                ContainerName = this.containerName,
-                OperationType = this.OperationType,
-                RuCharges = response.RequestCharge,
-                CosmosDiagnostics = response.Diagnostics,
-                LazyDiagnostics = () => response.Diagnostics.ToString(),
-            };
+                ResponseMessage itemResponse = await this.container.CreateItemStreamAsync(input, partitionKey);
+
+                return new OperationResult
+                {
+                    DatabseName = this.databaseName,
+                    ContainerName = this.containerName,
+                    OperationType = this.OperationType,
+                    RuCharges = itemResponse.Headers.RequestCharge,
+                    CosmosDiagnostics = itemResponse.Diagnostics,
+                    LazyDiagnostics = () => itemResponse.Diagnostics.ToString(),
+                };
+            }
         }
     }
 }
