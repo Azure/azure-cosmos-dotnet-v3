@@ -394,7 +394,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.jsonWriter.WriteStringValue(storeResult.StatusCode.ToString());
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.SubStatusCode));
-                this.jsonWriter.WriteStringValue(storeResult.SubStatusCode.ToString());
+                this.jsonWriter.WriteStringValue(this.GetSubStatusCodeString(storeResult.StatusCode, storeResult.SubStatusCode));
 
                 this.jsonWriter.WriteFieldName(nameof(storeResult.LSN));
                 this.jsonWriter.WriteNumberValue(storeResult.LSN);
@@ -450,6 +450,116 @@ namespace Microsoft.Azure.Cosmos.Tracing
                 this.WriteStringValueOrNull(transportException?.Message);
 
                 this.jsonWriter.WriteObjectEnd();
+            }
+
+            internal string GetSubStatusCodeString(StatusCodes statusCode, SubStatusCodes subStatusCode)
+            {
+                if ((int)subStatusCode == 1002)
+                {
+                    return statusCode == StatusCodes.NotFound
+                         ? "ReadSessionNotAvailable"
+                         : SubStatusCodes.PartitionKeyRangeGone.ToString();
+                }
+
+                if ((int)subStatusCode == 2001)
+                {
+                    return statusCode == StatusCodes.NoContent
+                        ? "MissedTargetLsn"
+                        : SubStatusCodes.SplitIsDisabled.ToString();
+                }
+
+                if ((int)subStatusCode == 2002)
+                {
+                    return statusCode == StatusCodes.NoContent
+                        ? "MissedTargetLsnOver100"
+                        : SubStatusCodes.CollectionsInPartitionGotUpdated.ToString();
+                }
+
+                if ((int)subStatusCode == 2003)
+                {
+                    return statusCode == StatusCodes.NoContent
+                        ? "MissedTargetLsnOver1000"
+                        : SubStatusCodes.CanNotAcquirePKRangesLock.ToString();
+                }
+
+                if ((int)subStatusCode == 2004)
+                {
+                    return statusCode == StatusCodes.NoContent
+                        ? "MissedTargetLsnOver10000"
+                        : SubStatusCodes.ResourceNotFound.ToString();
+                }
+
+                if ((int)subStatusCode == 2011)
+                {
+                    return statusCode == StatusCodes.NoContent
+                        ? "MissedTargetGlobalCommittedLsn"
+                        : SubStatusCodes.StorageSplitConflictingWithNWayThroughputSplit.ToString();
+                }
+
+                if ((int)subStatusCode == 2012)
+                {
+                    return statusCode == StatusCodes.NoContent
+                        ? "MissedTargetGlobalCommittedLsnOver100"
+                        : SubStatusCodes.MergeIsDisabled.ToString();
+                }
+
+                if ((int)subStatusCode == 1004)
+                {
+                    return statusCode == StatusCodes.BadRequest
+                        ? "CrossPartitionQueryNotServable"
+                        : SubStatusCodes.ConfigurationNameNotFound.ToString();
+                }
+
+                if ((int)subStatusCode == 1007)
+                {
+                    return statusCode == StatusCodes.Gone
+                        ? "CompletingSplit"
+                        : SubStatusCodes.InsufficientBindablePartitions.ToString();
+                }
+
+                if ((int)subStatusCode == 1008)
+                {
+                    return statusCode == StatusCodes.Gone
+                        ? "CompletingPartitionMigration"
+                        : SubStatusCodes.DatabaseAccountNotFound.ToString();
+                }
+
+                if ((int)subStatusCode == 1005)
+                {
+                    return statusCode == StatusCodes.NotFound
+                        ? "ConfigurationPropertyNotFound"
+                        : SubStatusCodes.ProvisionLimitReached.ToString();
+                }
+
+                if ((int)subStatusCode == 3207)
+                {
+                    return statusCode == StatusCodes.Conflict
+                        ? "ConfigurationNameAlreadyExists"
+                        : SubStatusCodes.PrepareTimeLimitExceeded.ToString();
+                }
+
+                if ((int)subStatusCode == 6001)
+                {
+                    return statusCode == StatusCodes.ServiceUnavailable
+                        ? "AggregatedHealthStateError"
+                        : SubStatusCodes.PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringCompleteMigrationFromBackend.ToString();
+                }
+
+                if ((int)subStatusCode == 6002)
+                {
+                    return statusCode == StatusCodes.ServiceUnavailable
+                        ? "ApplicationHealthStateError"
+                        : SubStatusCodes.PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringAbortMigrationFromBackend.ToString();
+                }
+
+                if ((int)subStatusCode == 6003)
+                {
+                    return statusCode == StatusCodes.ServiceUnavailable
+                        ? "HealthStateError"
+                        : SubStatusCodes.PartitionMigrationFinalizeMigrationsDidNotCompleteInTenRetries.ToString();
+                }
+
+                return subStatusCode.ToString();
             }
 
             public void Visit(PartitionKeyRangeCacheTraceDatum partitionKeyRangeCacheTraceDatum)

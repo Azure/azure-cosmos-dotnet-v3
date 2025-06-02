@@ -127,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool hybridSearchSkipOrderByRewrite,
             GeospatialType geospatialType)
         {
             TryCatch<PartitionedQueryExecutionInfoInternal> tryGetInternalQueryInfo = this.TryGetPartitionedQueryExecutionInfoInternal(
@@ -139,6 +140,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
+                hybridSearchSkipOrderByRewrite: hybridSearchSkipOrderByRewrite,
                 geospatialType: geospatialType);
 
             if (!tryGetInternalQueryInfo.Succeeded)
@@ -190,6 +192,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool hybridSearchSkipOrderByRewrite,
             GeospatialType geospatialType)
         {
             if (querySpecJsonString == null || partitionKeyDefinition == null)
@@ -243,6 +246,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                         bIsContinuationExpected = Convert.ToInt32(isContinuationExpected),
                         bRequireFormattableOrderByQuery = Convert.ToInt32(requireFormattableOrderByQuery),
                         bUseSystemPrefix = Convert.ToInt32(useSystemPrefix),
+                        bHybridSearchSkipOrderByRewrite = Convert.ToInt32(hybridSearchSkipOrderByRewrite),
                         eGeospatialType = Convert.ToInt32(geospatialType),
                         ePartitionKind = Convert.ToInt32(partitionKind)
                     };
@@ -328,8 +332,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                         innerException));
             }
 
-            Debug.Assert(!(queryInfoInternal.QueryInfo.HasTop && queryInfoInternal.QueryInfo.HasLimit));
-
             return TryCatch<PartitionedQueryExecutionInfoInternal>.FromResult(queryInfoInternal);
         }
 
@@ -383,7 +385,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 Exception exception = Marshal.GetExceptionForHR((int)errorCode);
                 if (exception != null)
                 {
-                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception);
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", exception?.Message);
                     return TryCatch<IntPtr>.FromException(exception);
                 }
                 
@@ -391,7 +393,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex);
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with exception {0}", ex.Message);
                 return TryCatch<IntPtr>.FromException(ex);
             }
         }

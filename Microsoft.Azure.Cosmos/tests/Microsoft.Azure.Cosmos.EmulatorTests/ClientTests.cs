@@ -402,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sdkSupportedCapability = sdkSupportedCapabilities.Single();
             ulong capability = ulong.Parse(sdkSupportedCapability);
 
-            Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens), capability & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens), $"received header value as {sdkSupportedCapability}");
         }
 
         [TestMethod]
@@ -937,6 +937,75 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(cosmosClient);
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
+        }
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        [Owner("amudumba")]
+        public async Task ValidateAsyncExceptionNoSharing(bool asyncCacheExceptionNoSharing)
+        {
+            TimeoutException exception = new TimeoutException("HTTP Timeout exception", new TimeoutException("Inner exception message"));
+            TaskCompletionSource<object> blockSendingHandlers = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                SendingRequestEventArgs = (sender, e) =>
+                {
+                    if (e.IsHttpRequest())
+                    {
+                        string endWith = "partitionKeyRangeIds=0";
+                        if (e.HttpRequest.Method == HttpMethod.Get &&
+                            e.HttpRequest.RequestUri.OriginalString.EndsWith(endWith))
+                        {
+                            blockSendingHandlers.Task.Wait(); // block here until all enter
+                            throw exception;
+                        }
+                    }
+                },
+                EnableAsyncCacheExceptionNoSharing = asyncCacheExceptionNoSharing
+            };
+
+            Cosmos.Database db = null;
+            try
+            {
+                CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions);
+
+                db = await cosmosClient.CreateDatabaseIfNotExistsAsync("TimeoutFaultTest");
+                Container container = await db.CreateContainerIfNotExistsAsync("TimeoutFaultContainer", "/pk");
+
+                int iterations = 3;
+                List<Task> createTasks = new();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    createTasks.Add(container.CreateItemAsync(testItem)
+                        .ContinueWith(t => {
+                            Assert.IsTrue(t.IsFaulted);
+                            if (asyncCacheExceptionNoSharing)
+                            {
+                                //asyncCacheExceptionNoSharing feature is enabled. Shallow copies of the exception will be thrown.
+                                Assert.IsFalse(Object.ReferenceEquals(t.Exception, exception), "Exception should not be the same");
+                            }
+                            else
+                            {
+                                //asyncCacheExceptionNoSharing feature is disabled. Exceptions will be thrown as is.
+                                Assert.IsTrue(Object.ReferenceEquals(t.Exception.InnerException, exception), "Exception should be the same");
+                            }
+                        }));
+                }
+
+                blockSendingHandlers.SetResult(null);
+
+                // Wait for all tasks to complete (they should all fail)
+                await Task.WhenAll(createTasks);
+            }
+            finally
+            {
+                if (db != null) await db.DeleteAsync();
+            }
         }
 
         [TestMethod]
