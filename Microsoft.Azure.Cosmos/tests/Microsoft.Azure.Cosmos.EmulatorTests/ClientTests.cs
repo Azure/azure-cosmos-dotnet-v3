@@ -1014,7 +1014,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             //Prepare
             //Enabling aggressive timeout detection that empowers connnection health checker whih marks a channel/connection as "unhealthy" if there are a set of consecutive timeouts.
-            Environment.SetEnvironmentVariable("AZURE_COSMOS_AGGRESSIVE_TIMEOUT_DETECTION_ENABLED", "True");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AGGRESSIVE_TIMEOUT_DETECTION_ENABLED", "true");
             Environment.SetEnvironmentVariable("AZURE_COSMOS_TIMEOUT_DETECTION_TIME_LIMIT_IN_SECONDS", "1");
 
             // Enabling fault injection rule to simulate a timeout scenario.
@@ -1027,7 +1027,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
-                    .WithDelay(TimeSpan.FromSeconds(100))
+                    .WithDelay(TimeSpan.FromSeconds(2))
                         .Build())
                 .Build();
 
@@ -1039,9 +1039,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
                 FaultInjector = faultInjector,
-                RequestTimeout = TimeSpan.FromSeconds(2)
-
+                RequestTimeout = TimeSpan.FromSeconds(1)
             };
+
 
             Cosmos.Database db = null;
             try
@@ -1050,6 +1050,74 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
                 db = await cosmosClient.CreateDatabaseIfNotExistsAsync("TimeoutFaultTest");
                 Container container = await db.CreateContainerIfNotExistsAsync("TimeoutFaultContainer", "/pk");
+                // Get all the channels that are under TransportClient -> ChannelDictionary -> Channels.
+                IStoreClientFactory storeClientFactAbstract = (IStoreClientFactory)cosmosClient.DocumentClient.GetType()
+                    .GetField("storeClientFactory", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(cosmosClient.DocumentClient);
+                StoreClientFactory storeClientFactory = (StoreClientFactory)storeClientFactAbstract;
+
+                TransportClient transportClient = (TransportClient)storeClientFactory.GetType()
+                                .GetField("transportClient", BindingFlags.NonPublic | BindingFlags.Instance)
+                                .GetValue(storeClientFactory);
+
+                Documents.Rntbd.TransportClient rntbdTransportClient = (Documents.Rntbd.TransportClient)transportClient;
+
+                Documents.Rntbd.ChannelDictionary channelDict = (Documents.Rntbd.ChannelDictionary)rntbdTransportClient.GetType()
+                                .GetField("channelDictionary", BindingFlags.NonPublic | BindingFlags.Instance)
+                                .GetValue(rntbdTransportClient);
+
+                ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel> allChannels = (ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel>)channelDict.GetType()
+                    .GetField("channels", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(channelDict);
+
+                //Cold start, will be only one channel available.Assert and note the serverKey for this channel.
+
+                Assert.AreEqual(1, allChannels.Count(), "Cold start client, there should be only one channel open");
+                Documents.Rntbd.ServerKey partitionAddressBeforeTest = allChannels.Keys.FirstOrDefault();
+
+                //Assert that the old channel that is now made unhealthy by the timeouts.
+                //Get the channel by channelDict -> LoadBalancingChannel -> LoadBalancingPartition -> LbChannelState -> IChannel.
+
+                Documents.Rntbd.LoadBalancingChannel loadBalancingUnhealthyChannel1 = (Documents.Rntbd.LoadBalancingChannel)allChannels[partitionAddressBeforeTest];
+                Documents.Rntbd.LoadBalancingPartition loadBalancingPartitionUnHealthy1 = (Documents.Rntbd.LoadBalancingPartition)loadBalancingUnhealthyChannel1.GetType()
+                                        .GetField("singlePartition", BindingFlags.NonPublic | BindingFlags.Instance)
+                                        .GetValue(loadBalancingUnhealthyChannel1);
+
+                //Assert.IsNotNull(loadBalancingPartitionUnHealthy);
+
+                List<Documents.Rntbd.LbChannelState> openChannelsUnhealthy1 = (List<Documents.Rntbd.LbChannelState>)loadBalancingPartitionUnHealthy1.GetType()
+                                        .GetField("openChannels", BindingFlags.NonPublic | BindingFlags.Instance)
+                                        .GetValue(loadBalancingPartitionUnHealthy1);
+                //Assert.AreEqual(1, openChannelsUnhealthy.Count);
+
+                foreach (Documents.Rntbd.LbChannelState channelState in openChannelsUnhealthy1)
+                {
+                    Documents.Rntbd.IChannel channel = (Documents.Rntbd.IChannel)openChannelsUnhealthy1[0].GetType()
+                                        .GetField("channel", BindingFlags.NonPublic | BindingFlags.Instance)
+                                        .GetValue(channelState);
+                    //Assert.IsFalse(channel.Healthy);
+                }
+
+                //Assert that the new channel which is healthy. Picking the first channel from the allChannels dictionary as the new channel.
+                Documents.Rntbd.LoadBalancingChannel loadBalancingChannel1 = (Documents.Rntbd.LoadBalancingChannel)allChannels[allChannels.Keys.First()];
+                Documents.Rntbd.LoadBalancingPartition loadBalancingPartition1 = (Documents.Rntbd.LoadBalancingPartition)loadBalancingChannel1.GetType()
+                                        .GetField("singlePartition", BindingFlags.NonPublic | BindingFlags.Instance)
+                                        .GetValue(loadBalancingChannel1);
+
+                //Assert.IsNotNull(loadBalancingPartition);
+
+                List<Documents.Rntbd.LbChannelState> openChannels1 = (List<Documents.Rntbd.LbChannelState>)loadBalancingPartition1.GetType()
+                                        .GetField("openChannels", BindingFlags.NonPublic | BindingFlags.Instance)
+                                        .GetValue(loadBalancingPartition1);
+                //Assert.AreEqual(1, openChannels.Count);
+
+                foreach (Documents.Rntbd.LbChannelState channelState in openChannels1)
+                {
+                    Documents.Rntbd.IChannel channel1 = (Documents.Rntbd.IChannel)openChannels1[0].GetType()
+                                        .GetField("channel", BindingFlags.NonPublic | BindingFlags.Instance)
+                                        .GetValue(channelState);
+                    //Assert.IsTrue(channel.Healthy);
+                }
 
                 // Act.
                 // Simulate a aggressive timeout scenario by performing 3 writes which will all timeout due to fault injection rule.
@@ -1058,38 +1126,29 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     try
                     {
                         ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                        await container.CreateItemAsync<ToDoActivity>(testItem);
+                        ItemResponse<ToDoActivity> itemResponse = await container.CreateItemAsync<ToDoActivity>(testItem);
                     }
                     catch (CosmosException exx)
                     {
                         Assert.AreEqual(HttpStatusCode.RequestTimeout, exx.StatusCode);
+                    } catch (Exception ex)
+                    {
+                        Assert.Fail($"Unexpected exception: {ex.Message}");
                     }
                 }
 
                 //Assert that the old channel that is now made unhealthy by the timeouts and a new healthy channel is available for next requests.
 
 
-                // Get all the channels that are under TransportClient -> ChannelDictionary -> Channels.
-                IStoreClientFactory factory = (IStoreClientFactory)cosmosClient.DocumentClient.GetType()
-                    .GetField("storeClientFactory", BindingFlags.NonPublic | BindingFlags.Instance)
-                    .GetValue(cosmosClient.DocumentClient);
-                StoreClientFactory storeClientFactory = (StoreClientFactory)factory;
-
-                TransportClient client = (TransportClient)storeClientFactory.GetType()
-                                .GetField("transportClient", BindingFlags.NonPublic | BindingFlags.Instance)
-                                .GetValue(storeClientFactory);
-                Documents.Rntbd.TransportClient transportClient = (Documents.Rntbd.TransportClient)client;
-
-                Documents.Rntbd.ChannelDictionary channelDict = (Documents.Rntbd.ChannelDictionary)transportClient.GetType()
-                                .GetField("channelDictionary", BindingFlags.NonPublic | BindingFlags.Instance)
-                                .GetValue(transportClient);
-                ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel> allChannels = (ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel>)channelDict.GetType()
+                ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel> allChannelsAfterTest = (ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel>)channelDict.GetType()
                     .GetField("channels", BindingFlags.NonPublic | BindingFlags.Instance)
                     .GetValue(channelDict);
 
+                Assert.IsTrue(allChannels.Count > 1, "There should be at least 2 channels, one healthy and one unhealthy channel.");
+
                 //Assert that the old channel that is now made unhealthy by the timeouts.
                 //Get the channel by channelDict -> LoadBalancingChannel -> LoadBalancingPartition -> LbChannelState -> IChannel.
-                Documents.Rntbd.LoadBalancingChannel loadBalancingUnhealthyChannel = (Documents.Rntbd.LoadBalancingChannel)allChannels[allChannels.Keys.ElementAt(1)];
+                Documents.Rntbd.LoadBalancingChannel loadBalancingUnhealthyChannel = (Documents.Rntbd.LoadBalancingChannel)allChannels[partitionAddressBeforeTest];
                 Documents.Rntbd.LoadBalancingPartition loadBalancingPartitionUnHealthy = (Documents.Rntbd.LoadBalancingPartition)loadBalancingUnhealthyChannel.GetType()
                                         .GetField("singlePartition", BindingFlags.NonPublic | BindingFlags.Instance)
                                         .GetValue(loadBalancingUnhealthyChannel);
