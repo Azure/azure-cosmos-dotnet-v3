@@ -160,7 +160,7 @@
                 {
                     Console.WriteLine($"Child Trace: {child.Name}");
                 }
-                Assert.Fail("idk bruh");
+                Assert.Fail("Test Fail info");
                 Console.WriteLine($"{exceptionChild.Data}");
                 Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
                 Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
