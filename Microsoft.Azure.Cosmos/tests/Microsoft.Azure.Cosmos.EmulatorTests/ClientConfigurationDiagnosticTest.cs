@@ -160,13 +160,14 @@
                 {
                     Console.WriteLine($"Child Trace: {child.Name}");
                 }
-                Assert.Fail("Test Fail info");
+                
                 Console.WriteLine($"Look at diag");
                 
                 for (int i = 0; i < oce.Diagnostics.ToString().Length; i+=100)
                 {
                     Console.WriteLine(oce.Diagnostics.ToString().Substring(i, Math.Min(100, oce.Diagnostics.ToString().Length - i)));
                 }
+                Assert.Fail("Test Fail info");
                 Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
                 Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
             }
