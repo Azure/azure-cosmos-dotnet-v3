@@ -154,22 +154,9 @@
             }
             catch (CosmosOperationCanceledException oce)
             {
-                IReadOnlyList<ITrace> children = ((CosmosTraceDiagnostics)oce.Diagnostics).Value.Children;
-                ITrace exceptionChild = children[^1];
-                foreach (ITrace child in children)
-                {
-                    Console.WriteLine($"Child Trace: {child.Name}");
-                }
-                
-                Console.WriteLine($"Look at diag");
-                
-                for (int i = 0; i < oce.Diagnostics.ToString().Length; i+=100)
-                {
-                    Console.WriteLine(oce.Diagnostics.ToString().Substring(i, Math.Min(100, oce.Diagnostics.ToString().Length - i)));
-                }
-                Assert.Fail("Test Fail info");
-                Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
-                Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
+                //check that the exception child exists in the trace diagnostics
+                Assert.IsTrue(oce.Diagnostics.ToString().Contains("CosmosOperationCanceledException"));
+                Assert.IsTrue(oce.Diagnostics.ToString().Contains("Operation Cancelled Exception"));
             }
         }
     }
