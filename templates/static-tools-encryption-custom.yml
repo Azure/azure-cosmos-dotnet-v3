@@ -15,11 +15,11 @@ jobs:
     clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
 
   - task: DotNetCoreCLI@2
-    displayName: Build Microsoft.Azure.Cosmos.Encryption
+    displayName: Build Microsoft.Azure.Cosmos.Encryption.Custom
     inputs: 
       command: build
       nugetConfigPath: NuGet.config
-      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      projects: Microsoft.Azure.Cosmos.Encryption.Custom/src/Microsoft.Azure.Cosmos.Encryption.Custom.csproj
       arguments: '-p:Optimize=true --configuration Release'
       versioningScheme: OFF
 
@@ -27,7 +27,7 @@ jobs:
     displayName: 'BinSkim'
     condition: eq(1,2) #disablng as nuget repo failing
     inputs:
-        AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos.Encryption\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Encryption.dll
+        AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos.Encryption.Custom\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Encryption.Custom.dll
         AnalyzeRecurse:     true
         AnalyzeVerbose:     true
         AnalyzeHashes:      false
