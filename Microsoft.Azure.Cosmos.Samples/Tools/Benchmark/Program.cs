@@ -35,6 +35,8 @@ namespace CosmosBenchmark
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_THIN_CLIENT_ENABLED", config.IsThinClientEnabled.ToString());
+
                 await AddAzureInfoToRunSummary();
 
                 MeterProvider meterProvider = BuildMeterProvider(config);
@@ -71,6 +73,8 @@ namespace CosmosBenchmark
             }
             finally
             {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_THIN_CLIENT_ENABLED", "False");
+
                 Utility.TeeTraceInformation($"{nameof(CosmosBenchmark)} completed successfully.");
                 if (Debugger.IsAttached)
                 {

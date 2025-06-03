@@ -233,6 +233,7 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                ConnectionMode = this.IsThinClientEnabled ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
                     DisableSendingMetricsToService = !this.EnableTelemetry,
