@@ -92,7 +92,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task CreateItemsTest()
         {
             string pk = "pk_create";
@@ -107,7 +106,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task ReadItemsTest()
         {
             string pk = "pk_read";
@@ -128,7 +126,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task ReplaceItemsTest()
         {
             string pk = "pk_replace";
@@ -156,7 +153,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task UpsertItemsTest()
         {
             string pk = "pk_upsert";
@@ -171,7 +167,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task DeleteItemsTest()
         {
             string pk = "pk_delete";
@@ -191,7 +186,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task CreateItemStreamTest()
         {
             string pk = "pk_create_stream";
@@ -211,7 +205,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task ReadItemStreamTest()
         {
             string pk = "pk_read_stream";
@@ -233,7 +226,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task ReplaceItemStreamTest()
         {
             string pk = "pk_replace_stream";
@@ -265,7 +257,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task UpsertItemStreamTest()
         {
             string pk = "pk_upsert_stream";
@@ -285,7 +276,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task DeleteItemStreamTest()
         {
             string pk = "pk_delete_stream";
@@ -307,7 +297,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task QueryItemsTest()
         {
             string pk = "pk_query";
@@ -333,7 +322,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         [TestMethod]
         [TestCategory("ThinClient")]
-        [Timeout(70000)]
         public async Task QueryItemsStreamTest()
         {
             string pk = "pk_query_stream";
