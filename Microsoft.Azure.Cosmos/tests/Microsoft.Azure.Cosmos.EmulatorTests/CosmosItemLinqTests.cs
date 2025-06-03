@@ -949,6 +949,26 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(2, (await this.FetchResults<ToDoActivity>(queryDefinition)).Count);
         }
 
+        [TestMethod]
+        public async Task LinqSkipOrderBy()
+        {
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
+            IQueryable<ToDoActivity> queryable = this.Container.GetItemLinqQueryable<ToDoActivity>()
+                .OrderBy(x => x.cost)
+                .Skip(1);
+
+            FeedIterator<ToDoActivity> feedIterator = queryable.ToFeedIterator();
+
+            int count = 0;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedResponse = feedIterator.ReadNextAsync().Result;
+                count += feedResponse.Count;
+            }
+
+            Assert.AreEqual(2, count);
+        }
+
         private class NumberLinqItem
         {
             public string id;
