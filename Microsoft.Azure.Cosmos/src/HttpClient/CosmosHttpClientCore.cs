@@ -112,8 +112,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public static HttpMessageHandler CreateHttpClientHandler(
-            int gatewayModeMaxConnectionLimit, 
-            IWebProxy webProxy, 
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove type check and use #if NET6_0_OR_GREATER when multitargetting is possible
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
             if (socketHandlerType != null)
             {
                 try
-                {               
+                {
                     return CosmosHttpClientCore.CreateSocketsHttpHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
                 }
                 catch (Exception e)
@@ -130,13 +130,13 @@ namespace Microsoft.Azure.Cosmos
                     DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e.Message);
                 }
             }
-            
+
             return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
         }
 
         public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
-            int gatewayModeMaxConnectionLimit, 
-            IWebProxy webProxy, 
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove Reflection when multitargetting is possible
@@ -162,7 +162,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);              
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
@@ -189,8 +189,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public static HttpMessageHandler CreateHttpClientHandlerHelper(
-            int gatewayModeMaxConnectionLimit, 
-            IWebProxy webProxy, 
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             HttpClientHandler httpClientHandler = new HttpClientHandler();
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
             // https://docs.microsoft.com/en-us/archive/blogs/timomta/controlling-the-number-of-outgoing-connections-from-httpclient-net-core-or-full-framework
             try
             {
-                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;               
+                httpClientHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
@@ -421,7 +421,7 @@ namespace Microsoft.Azure.Cosmos
                                     string message =
                                             $"GatewayStoreClient Request Timeout. Start Time UTC:{startDateTimeUtc}; Total Duration:{(DateTime.UtcNow - startDateTimeUtc).TotalMilliseconds} Ms; Request Timeout {requestTimeout.TotalMilliseconds} Ms; Http Client Timeout:{this.httpClient.Timeout.TotalMilliseconds} Ms; Activity id: {System.Diagnostics.Trace.CorrelationManager.ActivityId};";
                                     e.Data.Add("Message", message);
-                                    
+
                                     if (timeoutPolicy.ShouldThrow503OnTimeout)
                                     {
                                         throw CosmosExceptionFactory.CreateServiceUnavailableException(
@@ -468,8 +468,8 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(
-            CancellationTokenSource cancellationTokenSource, 
-            DocumentServiceRequest documentServiceRequest, 
+            CancellationTokenSource cancellationTokenSource,
+            DocumentServiceRequest documentServiceRequest,
             HttpRequestMessage requestMessage)
         {
             CancellationToken fiToken = cancellationTokenSource.Token;

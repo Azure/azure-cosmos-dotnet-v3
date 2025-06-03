@@ -48,16 +48,16 @@
 		<None Include="..\..\..\Icon.png" Pack="true" PackagePath=""/>
 	</ItemGroup>
 
+	
 	<ItemGroup Condition=" '$(SdkProjectRef)' != 'True' ">
 		<PackageReference Include="Microsoft.Azure.Cosmos" Version="$(ClientOfficialVersion)" />
-	</ItemGroup>
+	</ItemGroup> 
 
 	<ItemGroup Condition=" '$(SdkProjectRef)' == 'True' ">
 		<ProjectReference Include="..\..\src\Microsoft.Azure.Cosmos.csproj" />
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.Azure.Cosmos.Direct" Version="[$(DirectVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>

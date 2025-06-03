@@ -56,6 +56,7 @@ For globally strong write:
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
+        private readonly ISessionRetryOptions sessionRetryOptions;
 
         public ConsistencyWriter(
             AddressSelector addressSelector,
@@ -65,7 +66,8 @@ For globally strong write:
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
             bool enableReplicaValidation,
-            AccountConfigurationProperties accountConfigurationProperties)
+            AccountConfigurationProperties accountConfigurationProperties,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
@@ -73,6 +75,7 @@ For globally strong write:
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
+            this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(
                                     transportClient,
                                     addressSelector,
@@ -130,7 +133,8 @@ For globally strong write:
             {
                 return await BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                     callbackMethod: () => this.WritePrivateAsync(entity, timeout, forceRefresh),
-                    retryPolicy: new SessionTokenMismatchRetryPolicy(),
+                    retryPolicy: new SessionTokenMismatchRetryPolicy(
+                        sessionRetryOptions: this.sessionRetryOptions),
                     cancellationToken: cancellationToken);
             }
             finally
@@ -260,7 +264,7 @@ For globally strong write:
                     throw new InternalServerErrorException();
                 }
 
-                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target, request.OperationType))
+                if (ReplicatedResourceClient.IsGlobalStrongEnabled() && this.ShouldPerformWriteBarrierForGlobalStrong(storeResult.Target, request))
                 {
                     long lsn = storeResult.Target.LSN;
                     long globalCommittedLsn = storeResult.Target.GlobalCommittedLSN;
@@ -279,15 +283,16 @@ For globally strong write:
                     //if necessary we would have already refreshed cache by now.
                     request.RequestContext.ForceRefreshAddressCache = false;
 
-                    DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}", globalCommittedLsn, lsn);
+                    DefaultTrace.TraceInformation("ConsistencyWriter: globalCommittedLsn {0}, lsn {1}, resourceType {2}, operationType {3}", globalCommittedLsn, lsn, request.ResourceType, request.OperationType);
                     //barrier only if necessary, i.e. when write region completes write, but read regions have not.
                     if (globalCommittedLsn < lsn)
                     {
-                        using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN))
+                        using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN, includeRegionContext: true))
                         {
                             if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
                             {
-                                DefaultTrace.TraceError("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                                DefaultTrace.TraceError("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}, resourceType {1}, operationType {2}",
+                                    request.RequestContext.GlobalCommittedSelectedLSN, request.ResourceType, request.OperationType);
                                 throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
                             }
                         }
@@ -300,11 +305,12 @@ For globally strong write:
             }
             else
             {
-                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN))
+                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN, includeRegionContext: true))
                 {
                     if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
                     {
-                        DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}", request.RequestContext.GlobalCommittedSelectedLSN);
+                        DefaultTrace.TraceWarning("ConsistencyWriter: Write barrier has not been met for global strong request. SelectedGlobalCommittedLsn: {0}, resourceType {1}, operationType {2}",
+                           request.RequestContext.GlobalCommittedSelectedLSN, request.ResourceType, request.OperationType);
                         throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
                     }
                 }
@@ -313,9 +319,22 @@ For globally strong write:
             return request.RequestContext.GlobalStrongWriteStoreResult.Target.ToResponse();
         }
 
-        internal bool ShouldPerformWriteBarrierForGlobalStrong(StoreResult storeResult, OperationType operationType)
+        internal bool ShouldPerformWriteBarrierForGlobalStrong(
+            StoreResult storeResult,
+            DocumentServiceRequest incomingRequest)
         {
-            if (operationType.IsSkippedForWriteBarrier())
+            #if !COSMOSCLIENT
+            bool skipSettingStrongConsistencyHeaderForWrites = false;
+
+            // For write requests sending the header to skip setting strong consistency header, we should not set consistency level header.
+            if (bool.TryParse(incomingRequest.Headers[HttpConstants.HttpHeaders.SkipSettingStrongConsistencyHeaderForWrites], out skipSettingStrongConsistencyHeaderForWrites) &&
+                skipSettingStrongConsistencyHeaderForWrites)
+            {
+                return false;
+            }
+            #endif
+
+            if (incomingRequest.OperationType.IsSkippedForWriteBarrier())
             {
                 return false;
             }
@@ -412,7 +431,8 @@ For globally strong write:
 
             int writeBarrierRetryCount = 0;
             long maxGlobalCommittedLsnReceived = 0;
-            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+            // Retry loop
+            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) 
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
 

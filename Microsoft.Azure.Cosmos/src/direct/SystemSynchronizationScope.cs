@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.ServiceFramework.Core
                     }
                     catch (AbandonedMutexException amEx)
                     {
-                        DefaultTrace.TraceWarning($"{this.TraceId}: {nameof(AbandonedMutexException)} waiting for mutex '{this.MutexName}': {amEx}");
+                        DefaultTrace.TraceWarning($"{this.TraceId}: {nameof(AbandonedMutexException)} waiting for mutex '{this.MutexName}': {amEx.Message}");
                         this.isOwned = true;
                     }
                 }
@@ -144,11 +144,11 @@ namespace Microsoft.Azure.Cosmos.ServiceFramework.Core
                 }
                 catch (AbandonedMutexException amEx)
                 {
-                    DefaultTrace.TraceWarning($"{this.TraceId}: {nameof(AbandonedMutexException)} waiting for mutex '{this.MutexName}': {amEx}");
+                    DefaultTrace.TraceWarning($"{this.TraceId}: {nameof(AbandonedMutexException)} waiting for mutex '{this.MutexName}': {amEx.Message}");
                 }
                 catch (ApplicationException appEx)
                 {
-                    DefaultTrace.TraceWarning($"{this.TraceId}: Exception releasing system mutex '{this.MutexName}': {appEx}");
+                    DefaultTrace.TraceWarning($"{this.TraceId}: Exception releasing system mutex '{this.MutexName}': {appEx.Message}");
                 }
 
                 mutex.Dispose();

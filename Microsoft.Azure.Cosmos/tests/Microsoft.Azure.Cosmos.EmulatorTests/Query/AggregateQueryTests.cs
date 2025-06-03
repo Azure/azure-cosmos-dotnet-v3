@@ -244,148 +244,6 @@
                     }
                 }
             }
-
-
-             static AggregateQueryArguments[] CreateAggregateQueryArguments(
-                IReadOnlyList<CosmosObject> inputDocuments,
-                AggregateTestArgs aggregateTestArgs)
-            {
-                IReadOnlyList<CosmosObject> documentsWherePkIsANumber = inputDocuments
-                        .Where(doc =>
-                        {
-                            return double.TryParse(
-                                doc[aggregateTestArgs.PartitionKey].ToString(),
-                                out double result);
-                        })
-                        .ToList();
-                double numberSum = documentsWherePkIsANumber
-                    .Sum(doc =>
-                    {
-                        if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosNumber number))
-                        {
-                            Assert.Fail("Failed to get partition key from document");
-                        }
-
-                        return Number64.ToDouble(number.Value);
-                    });
-                double count = documentsWherePkIsANumber.Count();
-                AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
-                {
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosNumber64.Create(numberSum / count),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "COUNT",
-                        expectedValue: CosmosNumber64.Create(inputDocuments.Count()),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MAX",
-                        expectedValue: CosmosString.Create("xyz"),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MIN",
-                        expectedValue: CosmosBoolean.Create(false),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosNumber64.Create(numberSum),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: $"true"),
-                };
-
-                return aggregateQueryArgumentsList;
-            }
-        }
-
-        private static AggregateQueryArguments[] CreateAggregateQueryArguments(
-            IReadOnlyList<CosmosObject> inputDocuments,
-            AggregateTestArgs aggregateTestArgs)
-        {
-            IReadOnlyList<CosmosObject> documentsWherePkIsANumber = inputDocuments
-                    .Where(doc =>
-                    {
-                        return double.TryParse(
-                            doc[aggregateTestArgs.PartitionKey].ToString(),
-                            out double result);
-                    })
-                    .ToList();
-            double numberSum = documentsWherePkIsANumber
-                .Sum(doc =>
-                {
-                    if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosNumber number))
-                    {
-                        Assert.Fail("Failed to get partition key from document");
-                    }
-
-                    return Number64.ToDouble(number.Value);
-                });
-            double count = documentsWherePkIsANumber.Count();
-
-            IReadOnlyList<CosmosElement> makeListResult = inputDocuments
-                .Select(doc =>
-                {
-                    if (!doc.TryGetValue(aggregateTestArgs.PartitionKey, out CosmosElement cosmosElement))
-                    {
-                        Assert.Fail("Failed to get partition key from document");
-                    }
-
-                    return cosmosElement;
-                })
-                .ToList();
-
-            IReadOnlyList<CosmosElement> makeSetResult = makeListResult.Distinct().ToList();
-
-            AggregateQueryArguments[] aggregateQueryArgumentsList = new AggregateQueryArguments[]
-            {
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosNumber64.Create(numberSum / count),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "AVG",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "COUNT",
-                        expectedValue: CosmosNumber64.Create(inputDocuments.Count()),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MAKELIST",
-                        expectedValue: CosmosArray.Create(makeListResult),
-                        predicate: "true",
-                        ignoreResultOrder: true),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MAKESET",
-                        expectedValue: CosmosArray.Create(makeSetResult),
-                        predicate: "true",
-                        ignoreResultOrder: true),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MAX",
-                        expectedValue: CosmosString.Create("xyz"),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "MIN",
-                        expectedValue: CosmosBoolean.Create(false),
-                        predicate: "true"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosNumber64.Create(numberSum),
-                        predicate: $"IS_NUMBER(r.{aggregateTestArgs.PartitionKey})"),
-                    new AggregateQueryArguments(
-                        aggregateOperator: "SUM",
-                        expectedValue: CosmosUndefined.Create(),
-                        predicate: $"true"),
-            };
-
-            return aggregateQueryArgumentsList;
         }
 
         private static AggregateQueryArguments[] CreateAggregateQueryArguments(
@@ -499,7 +357,7 @@
 
         private readonly struct AggregateQueryArguments
         {
-            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate, bool ignoreResultOrder=false)
+            public AggregateQueryArguments(string aggregateOperator, CosmosElement expectedValue, string predicate, bool ignoreResultOrder = false)
             {
                 this.AggregateOperator = aggregateOperator;
                 this.ExpectedValue = expectedValue;
@@ -781,7 +639,7 @@
                         SELECT VALUE {aggregateOperator} (c.{field}) 
                         FROM c 
                         WHERE {typeCheckFunction}(c.{field})
-                    ", 
+                    ",
                     ignoreResultOrder));
                 }
 
@@ -795,7 +653,8 @@
                     ",
                     ignoreResultOrder));
                 }
-            };
+            }
+            ;
 
             // mixing primitive and non primitives
             foreach (string minmaxop in new string[] { "MIN", "MAX" })
@@ -828,7 +687,7 @@
             {
                 writer.WriteStartDocument();
                 writer.WriteStartElement("Results");
-                foreach ( (string query, bool ignoreResultOrder) in queries)
+                foreach ((string query, bool ignoreResultOrder) in queries)
                 {
                     string formattedQuery = string.Join(
                         Environment.NewLine,
@@ -855,7 +714,7 @@
                     {
                         Assert.AreEqual(1, items.Count);
                         CosmosElement aggregateResult = items.First();
-                        if(aggregateResult is not CosmosUndefined)
+                        if (aggregateResult is not CosmosUndefined)
                         {
                             if (ignoreResultOrder && (aggregateResult is CosmosArray aggregateResultArray))
                             {

@@ -12,11 +12,10 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
-    
 #pragma warning disable CS1570 // XML comment has badly formed XML
 #pragma warning disable CS1570 // XML comment has badly formed XML
 #pragma warning disable CS1570 // XML comment has badly formed XML
-/// <summary>
+    /// <summary>
     /// ConnectionStateListener listens to the connection reset event notification fired by the transport client
     /// and refreshes the Document client's address cache
     /// </summary>
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Documents
     ///     - TCP direct connections in TIMED_WAIT state
     ///     - Task scheduler contention
     /// </remarks>
-    internal sealed class ConnectionStateMuxListener : IConnectionStateListener 
+    internal sealed class ConnectionStateMuxListener : IConnectionStateListener
 #pragma warning restore CS1570 // XML comment has badly formed XML
 #pragma warning restore CS1570 // XML comment has badly formed XML
 #pragma warning restore CS1570 // XML comment has badly formed XML

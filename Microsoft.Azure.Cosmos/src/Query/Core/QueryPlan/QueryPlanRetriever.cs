@@ -39,17 +39,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SupportedQueryFeatures & (~QueryFeatures.HybridSearchSkipOrderByRewrite);
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
-
-        private static readonly string SupportedQueryFeaturesWithoutNonStreamingOrderByString =
-            SupportedQueryFeaturesWithoutNonStreamingOrderBy.ToString();
-
-        private static string GetSupportedQueryFeaturesString(bool isNonStreamingOrderByQueryFeatureDisabled)
-        {
-            return isNonStreamingOrderByQueryFeatureDisabled ?
-                SupportedQueryFeaturesWithoutNonStreamingOrderByString :
-                SupportedQueryFeaturesString;
-        }
-
         private static readonly string SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabledString =
             SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabled.ToString();
 
@@ -155,7 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     // It's Windows and x64, should have loaded the DLL
                     gatewayQueryPlanTrace.AddDatum("ServiceInterop unavailable", true);
                 }
-                
+
                 return queryContext.ExecuteQueryPlanRequestAsync(
                     resourceLink,
                     ResourceType.Document,

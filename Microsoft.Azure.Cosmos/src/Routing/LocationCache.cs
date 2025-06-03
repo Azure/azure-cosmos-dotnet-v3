@@ -290,22 +290,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         }
 
         /// <summary>
-        /// Gets available (account-level) read locations.
-        /// </summary>
-        public ReadOnlyCollection<string> GetAvailableAccountLevelReadLocations()
-        {
-            return this.locationInfo.AvailableReadLocations;
-        }
-        
-        /// <summary>
-        /// Gets available (account-level) write locations.
-        /// </summary>
-        public ReadOnlyCollection<string> GetAvailableAccountLevelWriteLocations()
-        {
-            return this.locationInfo.AvailableWriteLocations;
-        }
-
-        /// <summary>
         /// Resolves request to service endpoint. 
         /// 1. If this is a write request
         ///    (a) If UseMultipleWriteLocations = true

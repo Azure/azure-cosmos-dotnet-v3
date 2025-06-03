@@ -283,6 +283,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to {0} capability is not supported on subscription {1}.
+        /// </summary>
+        internal static string CapabilityNotSupportedOnSubscription
+        {
+            get
+            {
+                return ResourceManager.GetString("CapabilityNotSupportedOnSubscription", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to StartTime cannot have DateTimeKind.Unspecified..
         /// </summary>
         internal static string ChangeFeedOptionsStartTimeWithUnspecifiedDateTimeKind
@@ -796,6 +807,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("EnableMultipleWriteLocationsAndEnableServerlessNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Serverless accounts do not support partition merge.
+        /// </summary>
+        internal static string MergeNotSupportedForServerless
+        {
+            get
+            {
+                return ResourceManager.GetString("MergeNotSupportedForServerless", resourceCulture);
             }
         }
 
@@ -1321,10 +1343,10 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-		/// <summary>
-		///   Looks up a localized string similar to The backend response was not in the correct format..
-		/// </summary>
-		internal static string InvalidBackendResponse
+        /// <summary>
+        ///   Looks up a localized string similar to The backend response was not in the correct format..
+        /// </summary>
+        internal static string InvalidBackendResponse
         {
             get
             {
@@ -4321,8 +4343,8 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("FailoverDisabled", resourceCulture);
             }
         }
-		
-		/// <summary>
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot perform failover priority change as it is disabled for the account.
         /// </summary>
         internal static string FailoverPriorityChangeDisabled
@@ -4433,7 +4455,7 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("FreeTierNotSupportedForInternalSubscription", resourceCulture);
             }
         }
-
+        
         /// <summary>
         ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
         /// </summary>

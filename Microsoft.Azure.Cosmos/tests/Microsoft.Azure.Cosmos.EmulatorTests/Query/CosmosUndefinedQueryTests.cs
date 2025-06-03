@@ -29,10 +29,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
         private const string ObjectValue = "{\"type\":\"object\"}";
 
-        private const string ArrayValue = "[10, 20]";
-
-        private const string ObjectValue = "{\"type\":\"object\"}";
-
         private static readonly int[] PageSizes = new[] { 5, 10, -1 };
 
         private static readonly IndexingPolicy CompositeIndexPolicy = CreateIndexingPolicy();
@@ -182,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         int documentCount = navigator.GetArrayItemCount(documentsProperty.ValueNode);
                         Assert.AreEqual(count, documentCount);
 
-                        for (int index= 0; index < documentCount; ++index)
+                        for (int index = 0; index < documentCount; ++index)
                         {
                             IJsonNavigatorNode documentNode = navigator.GetArrayItemAt(documentsProperty.ValueNode, index);
                             int propertyCount = navigator.GetObjectPropertyCount(documentNode);
@@ -555,14 +551,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                         mixedTypeElement = CosmosObject.Parse(ObjectValue);
                         break;
 
-                    case 5:
-                        mixedTypeElement = CosmosArray.Parse(ArrayValue);
-                        break;
-
-                    case 6:
-                        mixedTypeElement = CosmosObject.Parse(ObjectValue);
-                        break;
-
                     default:
                         mixedTypeElement = null;
                         Assert.Fail("Illegal value found for mixed type");
@@ -698,11 +686,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public static bool operator ==(GroupByProjection left, GroupByProjection right)
             {
                 bool result;
-                if(left is null && right is null)
+                if (left is null && right is null)
                 {
                     result = true;
                 }
-                else if(left is null || right is null)
+                else if (left is null || right is null)
                 {
                     result = false;
                 }
@@ -722,7 +710,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             public bool Equals(GroupByProjection other)
             {
                 bool result;
-                if(other is null)
+                if (other is null)
                 {
                     result = false;
                 }

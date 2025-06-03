@@ -576,7 +576,6 @@ namespace Microsoft.Azure.Cosmos.Json
                 value = 0;
                 return false;
             }
-            #endregion
 
             private static JsonTokenType GetJsonTokenType(byte typeMarker, UniformArrayInfo arrayInfo)
             {

@@ -3,11 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Client
 {
-    
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+    using Microsoft.Azure.Cosmos;
+
+    /// <summary>
     /// Specifies the protocol to be used by DocumentClient for communicating to the Azure Cosmos DB service.
     /// </summary>
     /// <example>
@@ -26,9 +24,6 @@ namespace Microsoft.Azure.Documents.Client
     /// <seealso cref="DocumentClient"/>
 #if COSMOSCLIENT
     internal
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 #else
     public
 #endif

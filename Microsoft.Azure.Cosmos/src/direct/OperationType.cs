@@ -149,6 +149,7 @@ namespace Microsoft.Azure.Documents
         ControllerBatchGetOutputV2 = -27,
         ControllerBatchWatchdogHealthCheckPing = -28,
         GetDatabaseAccountArtifactPermissions = -29,
+        GetRegionalConfigurations = -30,
 #endif
     }
 

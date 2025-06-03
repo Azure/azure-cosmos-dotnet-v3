@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     {
                         DefaultTrace.TraceError(
                             "The CPU monitor refresh task failed. Exception: {0}",
-                            t.Exception);
+                            t.Exception?.Message);
                     },
                     TaskContinuationOptions.OnlyOnFaulted);
                 this.periodicTask.ContinueWith(t =>

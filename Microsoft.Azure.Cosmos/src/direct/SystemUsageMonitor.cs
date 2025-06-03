@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     DefaultTrace.TraceError(
                         "The CPU and Memory usage monitoring refresh task failed. Exception: {0}",
-                        t.Exception);
+                        t.Exception?.Message);
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
 

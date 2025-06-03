@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         // Receiving is done only from the receive loop.
         // Initialization and disposal are not thread safe. Guard these
         // operations with connectionLock.
-        private readonly Connection connection;
+        private readonly IConnection connection;
         private readonly UserAgentContainer userAgent;
         private readonly Uri serverUri;
         private readonly IConnectionStateListener connectionStateListener;
@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TimerPool idleTimerPool,
             bool enableChannelMultiplexing,
             IChaosInterceptor chaosInterceptor,
-            Connection connection)
+            IConnection connection)
         {
             this.connection = connection ?? throw new ArgumentNullException(nameof(connection));
             this.userAgent = userAgent;
@@ -118,7 +118,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.enableChannelMultiplexing = enableChannelMultiplexing;
             this.chaosInterceptor = chaosInterceptor;
         }
-
         #region Test hook.
 
         internal event Action TestOnConnectionClosed;
@@ -228,7 +227,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         DefaultTrace.TraceWarning(
                             "[RNTBD Dispatcher {0}] Dispatcher.ReceiveLoopAsync failed. Consuming the task " +
                             "exception asynchronously. Dispatcher: {1}. Exception: {2}",
-                            this.ConnectionCorrelationId, this, completedTask.Exception?.InnerException);
+                            this.ConnectionCorrelationId, this, completedTask.Exception?.InnerException?.Message);
                     },
                     default(CancellationToken),
                     TaskContinuationOptions.OnlyOnFaulted,
@@ -372,7 +371,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                         {
                             await this.chaosInterceptor.OnAfterConnectionWriteAsync(args);
                         }
-
                     }
                     catch (Exception e)
                     {
@@ -576,7 +574,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 {
                     DefaultTrace.TraceWarning(
                         "[RNTBD Dispatcher {0}][{1}] Idle timer callback failed: {2}",
-                        this.ConnectionCorrelationId, this, failedTask.Exception?.InnerException);
+                        this.ConnectionCorrelationId, this, failedTask.Exception?.InnerException?.Message);
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
         }
@@ -603,7 +601,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 DefaultTrace.TraceWarning(
                     "[RNTBD Dispatcher {0}][{1}] Registered cancellation callbacks failed: {2}",
-                    this.ConnectionCorrelationId, this, e);
+                    this.ConnectionCorrelationId, this, e.Message);
                 // Deliberately ignoring the exception.
             }
         }
@@ -665,7 +663,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 DefaultTrace.TraceWarning(
                     "[RNTBD Dispatcher {0}][{1}] Parallel task failed: {2}. Exception: {3}",
-                    this.ConnectionCorrelationId, this, description, e);
+                    this.ConnectionCorrelationId, this, description, e.Message);
                 // Intentionally swallowing the exception. The caller can't
                 // do anything useful with it.
             }
@@ -902,7 +900,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // In other cases, it may be reasonable to handle additional exception types here.
                 DefaultTrace.TraceWarning(
                     "[RNTBD Dispatcher {0}] Not a TransportException. Will not raise the connection state change event: {1}",
-                    this.ConnectionCorrelationId, ex);
+                    this.ConnectionCorrelationId, ex?.Message);
                 return;
             }
 
@@ -934,7 +932,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             t.ContinueWith(static (failedTask, connectionIdObject) =>
             {
-                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEventAsync callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
+                DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEventAsync callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException?.Message);
             }, this.ConnectionCorrelationId, TaskContinuationOptions.OnlyOnFaulted);
         }
 
@@ -1149,7 +1147,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         DefaultTrace.TraceError(
                             "[RNTBD Dispatcher.CallInfo {0}] Unexpected: Rntbd asynchronous completion " +
                             "call failed. Consuming the task exception asynchronously. " +
-                            "Exception: {1}", connectionIdObject, failedTask.Exception?.InnerException);
+                            "Exception: {1}", connectionIdObject, failedTask.Exception?.InnerException?.Message);
                     },
                     this.connectionCorrelationId,
                     TaskContinuationOptions.OnlyOnFaulted);
@@ -1167,7 +1165,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         DefaultTrace.TraceError(
                             "[RNTBD Dispatcher.CallInfo {0}] Unexpected: Rntbd asynchronous completion " +
                             "call failed. Consuming the task exception asynchronously. " +
-                            "Exception: {1}", connectionIdObject, failedTask.Exception?.InnerException);
+                            "Exception: {1}", connectionIdObject, failedTask.Exception?.InnerException?.Message);
                     },
                     this.connectionCorrelationId,
                     TaskContinuationOptions.OnlyOnFaulted);

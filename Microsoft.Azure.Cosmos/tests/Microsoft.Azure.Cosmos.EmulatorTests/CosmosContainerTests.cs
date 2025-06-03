@@ -1795,7 +1795,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 Assert.AreEqual(containerId, readResponse.Resource.Id);
 
                 ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
-                ItemResponse<ToDoActivity> itemResponse = await readContainer.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+                ItemResponse<ToDoActivity> itemResponse = await readContainer.CreateItemAsync(testItem, new Cosmos. PartitionKey(testItem.pk));
                 Assert.AreEqual(HttpStatusCode.Created, itemResponse.StatusCode);
 
                 // Delete the container

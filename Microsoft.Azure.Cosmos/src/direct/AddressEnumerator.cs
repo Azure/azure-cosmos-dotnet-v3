@@ -4,6 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using static Microsoft.Azure.Documents.HttpConstants;
@@ -32,7 +33,7 @@ namespace Microsoft.Azure.Documents
         /// This return a random order of the addresses if there are no addresses that failed. Else it moves the failes addresses to the end.
         /// </summary>
         public IEnumerable<TransportAddressUri> GetTransportAddresses(IReadOnlyList<TransportAddressUri> transportAddressUris,
-                                                                      Lazy<HashSet<TransportAddressUri>> failedEndpoints,
+                                                                      Lazy<ConcurrentDictionary<TransportAddressUri, bool>> failedEndpoints,
                                                                       bool replicaAddressValidationEnabled)
         {
             if (failedEndpoints == null)
@@ -205,10 +206,10 @@ namespace Microsoft.Azure.Documents
         /// <returns>A list of <see cref="TransportAddressUri"/> ordered by the replica health statuses.</returns>
         private static IEnumerable<TransportAddressUri> ReorderReplicasByHealthStatus(
             IEnumerable<TransportAddressUri> randomPermutation,
-            Lazy<HashSet<TransportAddressUri>> lazyFailedReplicasPerRequest,
+            Lazy<ConcurrentDictionary<TransportAddressUri, bool>> lazyFailedReplicasPerRequest,
             bool replicaAddressValidationEnabled)
         {
-            HashSet<TransportAddressUri> failedReplicasPerRequest = null;
+            ConcurrentDictionary<TransportAddressUri, bool> failedReplicasPerRequest = null;
             if (lazyFailedReplicasPerRequest != null &&
                 lazyFailedReplicasPerRequest.IsValueCreated &&
                 lazyFailedReplicasPerRequest.Value.Count > 0)
@@ -241,7 +242,7 @@ namespace Microsoft.Azure.Documents
         /// <returns>The reordered list of <see cref="TransportAddressUri"/>.</returns>
         private static IEnumerable<TransportAddressUri> ReorderAddressesWhenReplicaValidationEnabled(
             IEnumerable<TransportAddressUri> addresses,
-            HashSet<TransportAddressUri> failedReplicasPerRequest)
+            ConcurrentDictionary<TransportAddressUri, bool> failedReplicasPerRequest)
         {
             List<TransportAddressUri> failedReplicas = null, pendingReplicas = null;
             foreach (TransportAddressUri transportAddressUri in addresses)
@@ -294,7 +295,7 @@ namespace Microsoft.Azure.Documents
         /// <returns>The reordered list of <see cref="TransportAddressUri"/>.</returns>
         private static IEnumerable<TransportAddressUri> MoveFailedReplicasToTheEnd(
             IEnumerable<TransportAddressUri> addresses,
-            HashSet<TransportAddressUri> failedReplicasPerRequest)
+            ConcurrentDictionary<TransportAddressUri, bool> failedReplicasPerRequest)
         {
             List<TransportAddressUri> failedReplicas = null;
             foreach (TransportAddressUri transportAddressUri in addresses)
@@ -324,21 +325,18 @@ namespace Microsoft.Azure.Documents
                 }
             }
         }
-
-        
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets the effective health status of the transport address uri.
         /// </summary>
         /// <param name="addressUri">An instance of the <see cref="TransportAddressUri"/> containing the replica address.</param>
         /// <param name="failedEndpoints">A set containing the failed endpoints.</param>
         /// <returns>An instance of <see cref="TransportAddressUri.HealthStatus"/> indicating the effective health status of the address.</returns>
         private static TransportAddressHealthState.HealthStatus GetEffectiveStatus(
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
             TransportAddressUri addressUri,
-            HashSet<TransportAddressUri> failedEndpoints)
+            ConcurrentDictionary<TransportAddressUri, bool> failedEndpoints)
         {
-            if (failedEndpoints != null && failedEndpoints.Contains(addressUri))
+            if (failedEndpoints != null && failedEndpoints.ContainsKey(addressUri))
             {
                 return TransportAddressHealthState.HealthStatus.Unhealthy;
             }

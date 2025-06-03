@@ -489,30 +489,6 @@ namespace Microsoft.Azure.Cosmos.Linq
             throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
         }
 
-        private SqlGroupByClause Substitute(SqlSelectSpec spec, SqlIdentifier inputParam, SqlGroupByClause groupByClause)
-        {
-            if (groupByClause == null)
-            {
-                return null;
-            }
-
-            SqlSelectValueSpec selectValueSpec = spec as SqlSelectValueSpec;
-            if (selectValueSpec != null)
-            {
-                SqlScalarExpression replaced = selectValueSpec.Expression;
-                SqlScalarExpression[] substitutedItems = new SqlScalarExpression[groupByClause.Expressions.Length];
-                for (int i = 0; i < substitutedItems.Length; ++i)
-                {
-                    SqlScalarExpression substituted = SqlExpressionManipulation.Substitute(replaced, inputParam, groupByClause.Expressions[i]);
-                    substitutedItems[i] = substituted;
-                }
-                SqlGroupByClause result = SqlGroupByClause.Create(substitutedItems);
-                return result;
-            }
-
-            throw new DocumentQueryException("Unexpected SQL select clause type: " + spec.GetType());
-        }
-
         /// <summary>
         /// Determine if the current method call should create a new QueryUnderConstruction node or not.
         /// </summary>

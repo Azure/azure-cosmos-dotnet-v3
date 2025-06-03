@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos
         /// Get or set session container for the client
         /// </summary>
         internal ISessionContainer SessionContainer { get; set; }
-        
+
         /// <summary>
         /// hint which guide SDK-internal retry policies on how early to switch retries to a different region. 
         /// </summary>
@@ -746,6 +746,7 @@ namespace Microsoft.Azure.Cosmos
         /// after the threshold step time, the SDK will hedge to the third region and so on.
         /// </remarks>
         public AvailabilityStrategy AvailabilityStrategy { get; set; }
+
         /// <summary>
         /// Provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints,
         /// which guide SDK-internal retry policies on how early to fallback to the next applicable region.
@@ -990,7 +991,8 @@ namespace Microsoft.Azure.Cosmos
 #else
         internal
 #endif
-        int? ThroughputBucket { get; set; }
+        int? ThroughputBucket
+        { get; set; }
 
         internal IChaosInterceptorFactory ChaosInterceptorFactory { get; set; }
 
@@ -1186,16 +1188,6 @@ namespace Microsoft.Azure.Cosmos
             if (!string.IsNullOrEmpty(this.ApplicationRegion) && this.ApplicationPreferredRegions?.Count > 0)
             {
                 throw new ArgumentException($"Cannot specify {nameof(this.ApplicationPreferredRegions)} and {nameof(this.ApplicationRegion)}. Only one can be set.");
-            }
-        }
-
-        private void ValidatePartitionLevelFailoverSettings()
-        {
-            if (this.EnablePartitionLevelFailover
-                && string.IsNullOrEmpty(this.ApplicationRegion)
-                && (this.ApplicationPreferredRegions is null || this.ApplicationPreferredRegions.Count == 0))
-            {
-                throw new ArgumentException($"{nameof(this.ApplicationPreferredRegions)} or {nameof(this.ApplicationRegion)} is required when {nameof(this.EnablePartitionLevelFailover)} is enabled.");
             }
         }
 

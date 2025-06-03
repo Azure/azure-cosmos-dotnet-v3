@@ -220,7 +220,7 @@ namespace Microsoft.Azure.Documents
                         catch (Exception ex)
                         {
                             elapsed = stopwatch.Elapsed;
-                            DefaultTrace.TraceInformation("Failed inBackoffAlternateCallback with {0}, proceeding with retry. Time taken: {1}ms", ex.ToString(), elapsed.TotalMilliseconds);
+                            DefaultTrace.TraceInformation("Failed inBackoffAlternateCallback with {0}, proceeding with retry. Time taken: {1}ms", ex.Message, elapsed.TotalMilliseconds);
                         }
 
                         backoffTime = result.BackoffTime > elapsed ? result.BackoffTime - elapsed : TimeSpan.Zero;

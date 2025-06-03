@@ -29,13 +29,13 @@ namespace Microsoft.Azure.Documents
         private const char SegmentSeparator = '#';
         private const string SegmentSeparatorString = "#";
         private const char RegionProgressSeparator = '=';
+        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
         private readonly string sessionToken;
         private readonly long version;
 #pragma warning disable IDE0032 // Use auto property
         private readonly long globalLsn;
 #pragma warning restore IDE0032 // Use auto property
         private readonly IReadOnlyDictionary<uint, long> localLsnByRegion;
-        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
         private static bool isFalseProgressMergeDisabled = string.Equals(Environment.GetEnvironmentVariable(SessionTokenFalseProgressMergeDisabled), "true",
                 StringComparison.OrdinalIgnoreCase);
 
@@ -140,7 +140,6 @@ namespace Microsoft.Azure.Documents
                     return false;
                 }
             }
-
             if (other.version == this.version && other.localLsnByRegion.Count != this.localLsnByRegion.Count)
             {
                 throw new InternalServerErrorException(

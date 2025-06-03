@@ -567,6 +567,12 @@ namespace Microsoft.Azure.Documents.Client
         internal RemoteStorageType? RemoteStorageType { get; set; }
 
         /// <summary>
+        /// Gets or sets the <see cref="AllowUpdatingIsPhysicalMigrationInProgress"/> flag for a topology resource upsert to bypass the use
+        /// of intent on an account with per-partition automatic failover (PPAF) enabled.
+        /// </summary>
+        internal bool AllowTopologyUpsertWithoutIntent { get; set; }
+
+        /// <summary>
         /// Gets or sets the partition key range id for the current request.
         /// </summary>
         /// <remarks>

@@ -348,15 +348,6 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets or sets the certificate validation callback.
-        /// </summary>
-        internal Func<X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
         /// Gets or sets the flag to enable writes on any locations (regions) for geo-replicated database accounts in the Azure Cosmos DB service.
         /// </summary>
         /// <remarks>

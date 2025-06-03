@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException);
+                    DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException?.Message);
                     return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
                         storeResponse: null,
                         exception: new InternalServerErrorException(RMResources.InternalServerError, responseException),
@@ -265,12 +265,12 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(StoreResponse storeResponse)
+        public static ReferenceCountedDisposable<StoreResult> CreateForTesting(StoreResponse storeResponse, int numberOfReadRegions = 0)
         {
             return new ReferenceCountedDisposable<StoreResult>(
                 new StoreResult(
                     storeResponse, exception: null, null, default, default, default, default, default, default,
-                    default, default, default, default, default, default, default, default, default, default, default));
+                    default, default, numberOfReadRegions, default, default, default, default, default, default, default, default));
         }
 
         public static ReferenceCountedDisposable<StoreResult> CreateForTesting(TransportRequestStats transportRequestStats)

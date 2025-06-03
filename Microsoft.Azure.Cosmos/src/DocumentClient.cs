@@ -122,9 +122,6 @@ namespace Microsoft.Azure.Cosmos
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
 
-        private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
-        private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
-
         private readonly bool IsLocalQuorumConsistency = false;
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;

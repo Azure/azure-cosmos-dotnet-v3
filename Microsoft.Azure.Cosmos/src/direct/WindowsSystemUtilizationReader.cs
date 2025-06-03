@@ -81,11 +81,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             /// <returns></returns>
             [DllImport("kernel32.dll", SetLastError = true)]
             internal static extern bool GetSystemTimes(out long idle, out long kernel, out long user);
-            
+
 #pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
 #pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
 #pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
-/// <summary>
+            /// <summary>
             /// https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-globalmemorystatusex
             /// </summary>
             /// <param name="idle"></param>
@@ -97,8 +97,8 @@ namespace Microsoft.Azure.Documents.Rntbd
 #pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
 #pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
 #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+
             internal static extern bool GlobalMemoryStatusEx(out MemoryInfo memInfo);
-#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
 
             [StructLayout(LayoutKind.Sequential)]
             internal struct MemoryInfo
