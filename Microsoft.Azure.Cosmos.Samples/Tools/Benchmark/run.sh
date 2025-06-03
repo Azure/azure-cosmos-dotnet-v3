@@ -1,13 +1,5 @@
 #!/bin/bash
 
-export ACCOUNT_ENDPOINT=
-export ACCOUNT_KEY=
-export THINCLIENT_ENDPOINT=
-export THINCLIENT_KEY=
-export THINCLIENT_ENABLED=true
-export RESULTS_PK=
-export PL=18
-export INCLUDE_QUERY=false
 
 if [ -z "$ACCOUNT_ENDPOINT" ]
 then
