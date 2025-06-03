@@ -60,19 +60,13 @@ stages:
         inputs:
           BuildDropPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption'
 
-      - task: AzureFileCopy@2
-        displayName: ' Copy Artifacts to Azure SDK Release blob storage'
-        condition: and(succeeded(),ne(variables['BlobVersion'], ''))
-        inputs:
-          SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption'
-          azureSubscription: azuresdkpartnerdrops
-          Destination: AzureBlob
-          storage: azuresdkpartnerdrops
-          ContainerName: 'drops'
-          BlobPrefix: 'cosmosdb/csharp/encryption/$(BlobVersion)'
-
-      - task: PublishBuildArtifacts@1
-        displayName: 'Publish Artifacts: Microsoft.Azure.Cosmos.Encryption'
-        inputs:
-          artifactName: Microsoft.Azure.Cosmos.Encryption
-#
+- stage:
+  displayName: Publish 
+  jobs:
+    - template:  templates/encryption-nuget-pack.yml
+      parameters:
+        BuildConfiguration: Release
+        VmImage: '${{ variables.VmImage }}'
+        ReleasePackage: true
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption'
+        BlobVersion: $(BlobVersion)
