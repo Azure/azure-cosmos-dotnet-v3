@@ -339,7 +339,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (databaseAccount != null)
                     {
                         this.AccountProperties = databaseAccount;
-                        this.CancellationTokenSource.Cancel();
+                        try
+                        {
+                            this.CancellationTokenSource.Cancel();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // Ignore the exception if the cancellation token source is already disposed
+                        }
                     }
                 }
                 catch (Exception e)
@@ -348,7 +355,14 @@ namespace Microsoft.Azure.Cosmos.Routing
                     if (GetAccountPropertiesHelper.IsNonRetriableException(e))
                     {
                         DefaultTrace.TraceInformation("GlobalEndpointManager: Exception is not retriable");
-                        this.CancellationTokenSource.Cancel();
+                        try
+                        {
+                            this.CancellationTokenSource.Cancel();
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            // Ignore the exception if the cancellation token source is already disposed
+                        }
                         this.NonRetriableException = e;
                     }
                     else
@@ -405,15 +419,36 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-
             public void Dispose()
             {
-                if (Interlocked.Increment(ref this.disposeCounter) == 1)
-                {
-                    this.CancellationTokenSource?.Cancel();
-                    this.CancellationTokenSource?.Dispose();
-                }
+                // Dispose of unmanaged resources.
+                this.Dispose(true);
+                // Suppress finalization.
+                GC.SuppressFinalize(this);
             }
+            protected virtual void Dispose(bool disposing)
+            {
+                if (Interlocked.Increment(ref this.disposeCounter) != 1)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                    try
+                    {
+                        this.CancellationTokenSource?.Cancel();
+                        this.CancellationTokenSource?.Dispose();
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Ignore exceptions during dispose
+                    }
+
+                }
+
+            }
+
         }
 
         public virtual Uri ResolveServiceEndpoint(DocumentServiceRequest request)
@@ -494,11 +529,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
-                // This can cause task canceled exceptions if the user disposes of the object while awaiting an async call.
-                this.cancellationTokenSource.Cancel();
-                // The background timer task can hit a ObjectDisposedException but it's an async background task
-                // that is never awaited on so it will not be thrown back to the caller.
-                this.cancellationTokenSource.Dispose();
+                try
+                {
+                    // This can cause task canceled exceptions if the user disposes of the object while awaiting an async call.
+                    this.cancellationTokenSource.Cancel();
+                    // The background timer task can hit a ObjectDisposedException but it's an async background task
+                    // that is never awaited on so it will not be thrown back to the caller.
+                    this.cancellationTokenSource.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Ignore the exception if the cancellation token source is already disposed
+
+                }
             }
         }
 
@@ -554,6 +597,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 return;
             }
+
+            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            if (databaseAccount.EnablePartitionLevelFailover.HasValue)
+            {
+                isPPafEnabled = databaseAccount.EnablePartitionLevelFailover.Value;
+            }
+
+            this.connectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
