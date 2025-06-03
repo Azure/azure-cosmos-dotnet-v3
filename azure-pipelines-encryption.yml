@@ -65,9 +65,9 @@ stages:
         condition: and(succeeded(),ne(variables['BlobVersion'], ''))
         inputs:
           SourcePath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption'
-          azureSubscription: azuresdkpartnerdrops
+          ConnectedServiceNameARM: azuresdkpartnerdrops
           Destination: AzureBlob
-          storage: azuresdkpartnerdrops
+          StorageAccountRM: azuresdkpartnerdrops
           ContainerName: 'drops'
           BlobPrefix: 'cosmosdb/csharp/encryption/$(BlobVersion)'
 
