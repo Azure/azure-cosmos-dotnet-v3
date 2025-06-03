@@ -12,7 +12,7 @@ stages:
 - stage:
   displayName: Encryption Release Gates
   jobs:
-    - template:  templates/static-tools.yml
+    - template:  templates/static-tools-encryption.yml
       parameters:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         VmImage: '${{ variables.VmImage }}'
