@@ -72,7 +72,7 @@ namespace Microsoft.Azure.Documents
 
         internal override void OnSave()
         {
-            this.SetValue(Constants.Properties.Path, this.DefaultLanguage);
+            this.SetValue(Constants.Properties.DefaultLanguage, this.DefaultLanguage);
 
             if (this.fullTextPaths != null)
             {

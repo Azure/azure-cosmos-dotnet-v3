@@ -88,7 +88,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 DefaultTrace.TraceError(
                     "Reading the system-wide CPU usage failed. Exception: {0}",
-                    exception);
+                    exception.Message);
 
                 return Single.NaN;
             }
@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 DefaultTrace.TraceError(
                     "Reading the system-wide Memory availability failed. Exception: {0}",
-                    exception);
+                    exception.Message);
 
                 return null;
             }

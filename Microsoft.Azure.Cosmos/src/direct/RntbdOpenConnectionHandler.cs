@@ -94,7 +94,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
                 {
                     DefaultTrace.TraceWarning("Failed to open Rntbd connection to backend uri: {0} with exception: {1}. '{2}'",
                         address.Uri,
-                        ex,
+                        ex.Message,
                         Trace.CorrelationManager.ActivityId);
                     address.SetUnhealthy();
                 }

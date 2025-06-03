@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Documents.Telemetry
                 }
                 catch(Exception ex)
                 {
-                    DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.ToString());
+                    DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.Message);
                 }
             }
 

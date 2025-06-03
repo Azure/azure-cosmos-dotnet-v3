@@ -24,6 +24,7 @@ namespace Microsoft.Azure.Documents
         private ThroughputDistributionPolicyType? throughputDistributionPolicy;
         private Collection<ThroughputBucket> throughputBuckets;
         private int? offerTargetThroughput;
+        private int? partitionCount;
 #endif
 
         /// <summary>
@@ -98,6 +99,12 @@ namespace Microsoft.Azure.Documents
                 {
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
+
+                int? partitionCount = content.PartitionCount;
+                if (partitionCount.HasValue)
+                {
+                    this.PartitionCount = partitionCount.Value;
+                }
             }
 #endif
         }
@@ -141,6 +148,12 @@ namespace Microsoft.Azure.Documents
                 if (offerTargetThroughput.HasValue)
                 {
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
+                }
+
+                int? partitionCount = content.PartitionCount;
+                if (partitionCount.HasValue)
+                {
+                    this.PartitionCount = partitionCount.Value;
                 }
             }
 #endif
@@ -294,11 +307,17 @@ namespace Microsoft.Azure.Documents
             {
                 this.OfferTargetThroughput = offerTargetThroughput.Value;
             }
+
+            int? partitionCount = contentV2.PartitionCount;
+            if (partitionCount.HasValue)
+            {
+                this.PartitionCount = partitionCount.Value;
+            }
         }
 
         /// <summary>
         /// Internal constructor accepting offer throughput, autopilot settings, minimum throughput parameters, bg task throughput percent,
-        /// throughput distribution policy, throughput buckets, and target throughput
+        /// throughput distribution policy, throughput buckets, target throughput, and partition count.
         /// </summary>
         internal OfferContentV2(
             int offerThroughput,
@@ -309,7 +328,8 @@ namespace Microsoft.Azure.Documents
             double? bgTaskMaxAllowedThroughputPercent,
             ThroughputDistributionPolicyType? throughputDistributionPolicy,
             Collection<ThroughputBucket> throughputBuckets,
-            int? offerTargetThroughput = null)
+            int? offerTargetThroughput = null,
+            int? partitionCount = null)
         {
             this.OfferThroughput = offerThroughput;
             this.OfferIsRUPerMinuteThroughputEnabled = offerEnableRUPerMinuteThroughput;
@@ -344,6 +364,11 @@ namespace Microsoft.Azure.Documents
             {
                 this.OfferTargetThroughput = offerTargetThroughput.Value;
             }
+
+            if (partitionCount.HasValue)
+            {
+                this.PartitionCount = partitionCount.Value;
+            }
         }
 
         internal OfferContentV2(
@@ -373,6 +398,13 @@ namespace Microsoft.Azure.Documents
                 {
                     this.OfferTargetThroughput = offerTargetThroughput.Value;
                 }
+                
+                int? partitionCount = content.PartitionCount;
+                if (partitionCount.HasValue)
+                {
+                    this.PartitionCount = partitionCount.Value;
+                }
+
             }
         }
 #endif
@@ -632,6 +664,29 @@ namespace Microsoft.Azure.Documents
                 base.SetValue(Constants.Properties.OfferTargetThroughput, this.offerTargetThroughput);
             }
         }
+
+        /// <summary>
+        /// Represents partition count.
+        /// </summary>
+        [JsonProperty(PropertyName = Constants.Properties.PartitionCount, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        internal int? PartitionCount
+        {
+            get
+            {
+                if (this.partitionCount == null)
+                {
+                    this.partitionCount = base.GetValue<int?>(Constants.Properties.PartitionCount);
+                }
+
+                return this.partitionCount;
+            }
+            private set
+            {
+                this.partitionCount = value;
+                base.SetValue(Constants.Properties.PartitionCount, this.partitionCount);
+            }
+        }
+
 
         internal override void OnSave()
         {

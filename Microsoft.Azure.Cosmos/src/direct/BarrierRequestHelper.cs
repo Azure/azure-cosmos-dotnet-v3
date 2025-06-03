@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             IAuthorizationTokenProvider authorizationTokenProvider,
             long? targetLsn,
-            long? targetGlobalCommittedLsn)
+            long? targetGlobalCommittedLsn,
+            bool includeRegionContext = false)
         {
             bool isCollectionHeadRequest = BarrierRequestHelper.IsCollectionHeadBarrierRequest(request.ResourceType, request.OperationType);
 
@@ -61,7 +62,8 @@ namespace Microsoft.Azure.Documents
                         headers: null,
                         authorizationTokenType: originalRequestTokenType);
             }
-            else if (request.IsNameBased) // Name based server request
+            // Name based server request
+            else if (request.IsNameBased) 
             {
                 // get the collection full name
                 // dbs/{id}/colls/{collid}/
@@ -73,7 +75,8 @@ namespace Microsoft.Azure.Documents
                     originalRequestTokenType,
                     null);
             }
-            else // RID based Server request
+            // RID based Server request
+            else 
             {
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,
@@ -154,6 +157,18 @@ namespace Microsoft.Azure.Documents
                 barrierLsnRequest.Headers[WFConstants.BackendHeaders.CollectionRid] = request.Headers[WFConstants.BackendHeaders.CollectionRid];
             }
 
+            if (includeRegionContext)
+            {
+                if (request.RequestContext.LocationEndpointToRoute != null)
+                {
+                    barrierLsnRequest.RequestContext.RouteToLocation(request.RequestContext.LocationEndpointToRoute);
+                }
+                else if (request.RequestContext.LocationIndexToRoute.HasValue)
+                {
+                    barrierLsnRequest.RequestContext.RouteToLocation(request.RequestContext.LocationIndexToRoute.Value, false);
+                }
+            }
+
             if (request.Properties != null && request.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString))
             {
                 if (barrierLsnRequest.Properties == null)
@@ -210,13 +225,11 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-#pragma warning disable CS1570 // XML comment has badly formed XML
-#pragma warning disable CS1570 // XML comment has badly formed XML
-/// <summary>
+        /// <summary>
         /// Used to determine the appropriate back-off time between barrier requests based
         /// on the responses to previous barrier requests. The substatus code of HEAD requests
         /// indicate the gap - like how far the targeted LSN/GCLSN was missed.
-        /// As a very naive rule-of-thumb the assumpiton is that even for small documents < 1 KB
+        /// As a very naive rule-of-thumb the assumpiton is that even for small documents &lt; 1 KB
         /// only about 2000 write trasnactions can possibly be committed on a single phsyical
         /// partition (10,000 RU / 5 RU at least per write operation). The allowed
         /// throughput per physical partition could grow and the min. RU per write operations
@@ -238,8 +251,6 @@ namespace Microsoft.Azure.Documents
         /// A flag indicating whether a delay before the next barrier request should be injected.
         /// </returns>
         internal static bool ShouldDelayBetweenHeadRequests(
-#pragma warning restore CS1570 // XML comment has badly formed XML
-#pragma warning restore CS1570 // XML comment has badly formed XML
             TimeSpan previousHeadRequestLatency,
             IList<ReferenceCountedDisposable<StoreResult>> responses,
             TimeSpan minDelay,

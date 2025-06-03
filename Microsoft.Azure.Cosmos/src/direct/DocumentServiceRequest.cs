@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Documents
     //we can open this up to public.
     internal sealed class DocumentServiceRequest : IDisposable
     {
+        internal static bool DefaultUseStatusCodeFor4041002 = false;
+
         private bool isDisposed = false;
 
         // The lock is used for locking request body operations like sending request or changing stream position.
@@ -244,6 +246,13 @@ namespace Microsoft.Azure.Documents
 
         /// <summary>
         /// This is a flag that indicates whether the DocumentClient internally
+        /// throws exceptions for 404-1002(SessionNotFound) status code
+        /// the status codes as part of the result for failures.
+        /// </summary>
+        public bool UseStatusCodeFor4041002 { get; set; } = DefaultUseStatusCodeFor4041002;
+
+        /// <summary>
+        /// This is a flag that indicates whether the DocumentClient internally
         /// throws exceptions for 429 status codes
         /// the status codes as part of the result for failures.
         /// </summary>
@@ -380,7 +389,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public OperationType OperationType { get; private set; }
+        public OperationType OperationType { get; set; }
 
         public ResourceType ResourceType { get; private set; }
 
@@ -405,6 +414,14 @@ namespace Microsoft.Azure.Documents
             {
                 return this.Headers[HttpConstants.HttpHeaders.Version];
             }
+        }
+
+        internal bool IsAnyExceptionLessEnabled()
+        {
+            return this.UseStatusCodeFor403 
+                || this.UseStatusCodeFor4041002 
+                || this.UseStatusCodeFor429 
+                || this.UseStatusCodeForFailures;
         }
 
         /// <summary>
@@ -618,6 +635,7 @@ namespace Microsoft.Azure.Documents
                 case OperationType.GetUnwrappedDek:
                 case OperationType.GetDekProperties:
                 case OperationType.GetFederationConfigurations:
+                case OperationType.GetRegionalConfigurations:
                 case OperationType.GetDatabaseAccountConfigurations:
                 case OperationType.GetStorageServiceConfigurations:
                 case OperationType.GetDatabaseAccountArtifactPermissions:
@@ -824,14 +842,25 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             Resource modifiedResource)
         {
+            return CreateFromResourceWithModifiedOperationType(
+                request,
+                modifiedResource,
+                request.OperationType);
+        }
+
+        public static DocumentServiceRequest CreateFromResourceWithModifiedOperationType(
+            DocumentServiceRequest request,
+            Resource modifiedResource,
+            OperationType operationType)
+        {
             DocumentServiceRequest modifiedRequest;
             if (!request.IsNameBased)
             {
-                modifiedRequest = DocumentServiceRequest.Create(request.OperationType, modifiedResource, request.ResourceType, request.RequestAuthorizationTokenType, request.Headers, request.ResourceId);
+                modifiedRequest = DocumentServiceRequest.Create(operationType, modifiedResource, request.ResourceType, request.RequestAuthorizationTokenType, request.Headers, request.ResourceId);
             }
             else
             {
-                modifiedRequest = DocumentServiceRequest.CreateFromName(request.OperationType, modifiedResource, request.ResourceType, request.Headers, request.ResourceAddress, request.RequestAuthorizationTokenType);
+                modifiedRequest = DocumentServiceRequest.CreateFromName(operationType, modifiedResource, request.ResourceType, request.Headers, request.ResourceAddress, request.RequestAuthorizationTokenType);
             }
 
             return modifiedRequest;
@@ -1139,21 +1168,22 @@ namespace Microsoft.Azure.Documents
             this.RequestContext.ResolvedPartitionKeyRange = null;
         }
 
-        public DocumentServiceRequest Clone()
+        public DocumentServiceRequest Clone(bool ignoreCloneableBody = false)
         {
             if (!this.IsBodySeekableClonableAndCountable)
             {
                 throw new InvalidOperationException();
             }
 
-            return new DocumentServiceRequest{
+            return new DocumentServiceRequest
+            {
                OperationType = this.OperationType,
                ForceNameCacheRefresh = this.ForceNameCacheRefresh,
                ResourceType = this.ResourceType,
                ServiceIdentity = this.ServiceIdentity,
                SystemAuthorizationParams = this.SystemAuthorizationParams == null ? null : this.SystemAuthorizationParams.Clone(),
                // Body = this.Body, // intentionally don't clone body, as it is not cloneable.
-               CloneableBody = this.CloneableBody != null ? this.CloneableBody.Clone() : null,
+               CloneableBody = !ignoreCloneableBody && this.CloneableBody != null ? this.CloneableBody.Clone() : null,
                Headers = (INameValueCollection)this.Headers.Clone(),
                IsFeed = this.IsFeed,
                IsNameBased = this.IsNameBased,
@@ -1163,7 +1193,7 @@ namespace Microsoft.Azure.Documents
                RequestContext = this.RequestContext.Clone(),
                PartitionKeyRangeIdentity = this.PartitionKeyRangeIdentity,
                UseGatewayMode = this.UseGatewayMode,
-               QueryString  = this.QueryString,
+               QueryString = this.QueryString,
                Continuation = this.Continuation,
                ForcePartitionKeyRangeRefresh = this.ForcePartitionKeyRangeRefresh,
                LastCollectionRoutingMapHashCode = this.LastCollectionRoutingMapHashCode,
@@ -1176,6 +1206,8 @@ namespace Microsoft.Azure.Documents
                DatabaseName = this.DatabaseName,
                CollectionName = this.CollectionName,
                DisableArchivalPartitionNotFoundRetry = this.DisableArchivalPartitionNotFoundRetry,
+               UseStatusCodeFor403 = this.UseStatusCodeFor403,
+               UseStatusCodeFor4041002 = this.UseStatusCodeFor4041002,
             };
         }
 

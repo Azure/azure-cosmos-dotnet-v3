@@ -134,6 +134,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                                 catch (Exception exception) when (exception.InnerException is JsonParseException)
                                 {
                                     MalformedContinuationTokenException malformedContinuationTokenException = new MalformedContinuationTokenException(exception.Message);
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                                     throw CosmosExceptionFactory.CreateBadRequestException(
                                             message: $"Malformed Continuation Token: {tokenAsString}.",
                                             headers: CosmosQueryResponseMessageHeaders.ConvertToQueryHeaders(
@@ -145,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.ReadFeed
                                             stackTrace: exception.StackTrace,
                                             innerException: malformedContinuationTokenException,
                                             trace: null);
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
                                 }
                             }
 

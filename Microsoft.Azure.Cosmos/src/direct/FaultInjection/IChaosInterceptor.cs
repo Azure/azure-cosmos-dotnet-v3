@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
 {
     using System;
     using System.Net.Http;
+    using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents.Rntbd;
 
@@ -23,8 +24,8 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Used to inject faults on request call for GatewayCalls
         /// </summary>
-        /// <param name="request"></param>
-        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request);
+        /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request, CancellationToken token = default);
 
         /// <summary>
         /// Used to inject faults on channel open
@@ -51,8 +52,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Used to inject faults before connection writes for gateway
         /// </summary>
-        /// <param name="request"></param>
-        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request);
+        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request, CancellationToken token = default);
 
         /// <summary>
         /// Used to inject faults after connection writes
@@ -63,8 +63,7 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Used to inject faults after connection writes for gateway
         /// </summary>
-        /// <param name="request"></param>
-        public Task OnAfterHttpSendAsync(DocumentServiceRequest request);
+        public Task OnAfterHttpSendAsync(DocumentServiceRequest request, CancellationToken token = default);
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id

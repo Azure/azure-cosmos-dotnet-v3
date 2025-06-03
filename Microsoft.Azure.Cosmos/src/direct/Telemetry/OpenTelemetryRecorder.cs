@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Documents.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.ToString());
+                DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.Message);
             }
         }
         public void Dispose()
@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Documents.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceWarning("Error with diagnostic scope dispose {0}", ex.ToString());
+                DefaultTrace.TraceWarning("Error with diagnostic scope dispose {0}", ex.Message);
             }
         }
     }

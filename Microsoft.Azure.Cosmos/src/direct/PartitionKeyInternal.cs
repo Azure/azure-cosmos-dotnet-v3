@@ -811,6 +811,7 @@ namespace Microsoft.Azure.Documents.Routing
                         hashes.Add(new Int128(maxBytes));
                     }
                 }
+                // The EPK has less values than Paths.Count in the PkDef, this is empty partitionkey.
                 else
                 {
                     hashes.Add(0);

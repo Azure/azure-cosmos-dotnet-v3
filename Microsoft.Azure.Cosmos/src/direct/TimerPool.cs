@@ -166,7 +166,7 @@ namespace Microsoft.Azure.Documents
             }
             catch(Exception ex)
             {
-                DefaultTrace.TraceCritical("Hit exception ex: {0}\n, stack: {1}", ex.Message, ex.StackTrace);
+                DefaultTrace.TraceCritical("Hit exception ex: {0}", ex.Message);
             }
             finally
             {
@@ -195,17 +195,15 @@ namespace Microsoft.Azure.Documents
             this.ThrowIfDisposed();
             return new PooledTimer(timeoutInSeconds, this);
         }
-        
+
 #pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
-/// <summary>
+        /// <summary>
         /// get a timer with timeout specified as a TimeSpan
         /// </summary>
         /// <param name="timeoutInSeconds"></param>
         /// <returns></returns>
-#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
+        #pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
         public PooledTimer GetPooledTimer(TimeSpan timeout)
-#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
-#pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
         {
             this.ThrowIfDisposed();
             return new PooledTimer(timeout, this);

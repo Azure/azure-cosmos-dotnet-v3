@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Documents
         public const string ReplicaOperations_ReportThroughputUtilization = "reportthroughpututilization";
         public const string ReplicaOperations_BatchReportThroughputUtilization = "batchreportthroughpututilization";
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
+        public const string OperationsGetRegionalConfigurations = "getregionalconfigurations";
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
         public const string Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions = "getdatabaseaccountartifactpermissions";
