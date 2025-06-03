@@ -627,9 +627,11 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void MultiByteUserStringDictionaryTest()
         {
             // Object with 33 field names. This creates a user string with 2 byte type marker.
-
             List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
-            StringBuilder textInput = new StringBuilder("{");
+
+            StringBuilder textInput = new();
+            textInput.Append("{");
+
             List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, };
             List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 };
 
@@ -693,7 +695,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void MaxSizeUserStringDictionaryTest()
         {
             List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
-            StringBuilder textInput = new StringBuilder("{");
+            
+            StringBuilder textInput = new();
+            textInput.Append("{");
+
             List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, };
             List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 };
 
