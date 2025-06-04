@@ -1286,6 +1286,10 @@ namespace Microsoft.Azure.Cosmos
         ///     
         ///     - Partition and Id: mandatory arguments
         ///         - partial HPK: Not supported
+        ///         
+        ///   
+        ///     - Significantly deviates from existing TransactionalBatch API model (scoped to a single partition-key)
+        ///         - https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/transactional-batch?tabs=dotnet#how-to-create-a-transactional-batch-operation
         /// </summary>
         /// <param name="transferAmount">Amount to transfer</param>
         /// <returns>
@@ -1301,7 +1305,6 @@ namespace Microsoft.Azure.Cosmos
                 readTransactionId,
                 new Operation[]
                 {
-                    new Operation(OperationType.Check, "db1", "container1", new PartitionKey("User1"), "doc1", new ItemRequestOptions() { IfMatchEtag = "???" }),
                     Operation.Read("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob"),
                     Operation.Read("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"), "Alice"),
                 });
@@ -1338,6 +1341,57 @@ namespace Microsoft.Azure.Cosmos
                 });
         }
 
+        /// <summary>
+        /// Modeling based on existing TransactionalBatch API's
+        /// </summary>
+        /// <param name="transferAmount"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public async Task Bob2AliceTransfer2Async(int transferAmount)
+        {
+            CosmosClient client = new CosmosClient();
+
+            // Phase1: Read Transaction
+            Guid readTransactionId = Guid.NewGuid();
+            IDistributedTransactionalBatch readTransactionResponse = client.CreateDistributedTransaction(readTransactionId);
+            readTransactionResponse.Add("BranchDB", "BobBranchContainer", new PartitionKey("Bob"))
+                .ReadItem("Bob");
+            readTransactionResponse.Add("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"))
+                .ReadItem("Alice");
+
+            // Observations: 
+            // - ReadTransactionResponse.Add() -> TransactionalBatch whcih also had ExecuteAsync() => Mis-leading of nested transactions
+            // - Reponse handling: Order is not explicit but implicit with nested operations ordered inline
+            TransactionalBatchResponse transactionalBatchReadOperationResults = await readTransactionResponse.ExecuteAsync();
+
+            TransactionalBatchOperationResult<AccountDetails> bobDetails = transactionalBatchReadOperationResults.GetOperationResultAtIndex<AccountDetails>(0);
+            TransactionalBatchOperationResult<AccountDetails> aliceDetails = transactionalBatchReadOperationResults.GetOperationResultAtIndex<AccountDetails>(1);
+
+            AccountDetails bobAcctDetails = bobDetails.Resource;
+            AccountDetails aliceAcctDetails = aliceDetails.Resource;
+
+            bobAcctDetails.Amount -= transferAmount;
+            aliceAcctDetails.Amount += transferAmount;
+
+            if (bobAcctDetails.Amount < 0)
+            {
+                throw new InvalidOperationException("Negative balance");
+            }
+
+            // Phase2: Transfer/commit transaction
+            Guid transferTransactionId = Guid.NewGuid();
+            IDistributedTransactionalBatch transferTransactionResponse = client.CreateDistributedTransaction(transferTransactionId);
+
+            readTransactionResponse.Add("BranchDB", "BobBranchContainer", new PartitionKey("Bob"))
+                .ConditionalCheck<AccountDetails>("Bob", acctDetails => acctDetails.Amount >= transferAmount, new ItemRequestOptions() { IfMatchEtag = bobDetails.ETag })
+                .ReplaceItem<AccountDetails>("Bob", bobAcctDetails);
+            readTransactionResponse.Add("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"))
+                .ConditionalCheck<AccountDetails>("Alice", null, new ItemRequestOptions() { IfMatchEtag = aliceDetails.ETag })
+                .ReplaceItem<AccountDetails>("Alice", aliceAcctDetails);
+
+            await transferTransactionResponse.ExecuteAsync();
+        }
+
         public async Task Bob2AliceTransferWithPatchAsync(int transferAmount)
         {
             CosmosClient client = new CosmosClient();
@@ -1372,23 +1426,23 @@ namespace Microsoft.Azure.Cosmos
 
         public class Operation
         {
-            public Operation(OperationType, string, string, PartitionKey, string, ItemRequestOptions = null)
+            internal Operation(OperationType, string, string, PartitionKey, string, ItemRequestOptions = null)
             {
 
             }
 
-            public Operation(OperationType, string, string, PartitionKey, string, Stream payload, ItemRequestOptions = null)
+            internal Operation(OperationType, string, string, PartitionKey, string, Stream payload, ItemRequestOptions = null)
             {
 
             }
 
-            public OperationType OperationType { get; set; }
-            public string Database { get; set; }
-            public string Container { get; set; }
-            public PartitionKey PartitionKey { get; set; }
-            public string Id { get; set; }
-            public Stream Payload { get; set; }
-            public ItemRequestOptions RequestOptions { get; set; }
+            public OperationType OperationType { get; internal set; }
+            public string Database { get; internal set; }
+            public string Container { get; internal set; }
+            public PartitionKey PartitionKey { get; internal set; }
+            public string Id { get; internal set; }
+            public Stream Payload { get; internal set; }
+            public ItemRequestOptions RequestOptions { get; internal set; }
 
             public static Operation Read(string dbName, string collectionName, PartitionKey partitionKey, string id, ItemRequestOptions options = null)
             {
@@ -1437,6 +1491,20 @@ namespace Microsoft.Azure.Cosmos
             Operation[] operations)
         {
             throw new NotImplementedException();
+        }
+
+        public virtual IDistributedTransactionalBatch CreateDistributedTransaction(Guid transactionId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public interface IDistributedTransactionalBatch
+        {
+            public TransactionalBatch Add(string dbName, string collectionName, PartitionKey partitionKey);
+
+            public abstract Task<TransactionalBatchResponse> ExecuteAsync(
+               TransactionalBatchRequestOptions requestOptions = default,
+               CancellationToken cancellationToken = default);
         }
 
         public abstract class DistributeTransaction
