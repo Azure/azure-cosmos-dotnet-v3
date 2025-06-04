@@ -211,10 +211,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
 
-                    FeedResource<PartitionKeyRange> feedResource = response.GetResource<FeedResource<PartitionKeyRange>>();
+                    FeedResource_PartitionKeyRange feedResource = response.GetResource<FeedResource_PartitionKeyRange>(CosmosSerializerContext.Default.FeedResource_PartitionKeyRange);
                     if (feedResource != null)
                     {
-                        ranges.AddRange(feedResource);
+                        ranges.AddRange(feedResource.PartitionKeyRanges);
                     }
                 }
             }

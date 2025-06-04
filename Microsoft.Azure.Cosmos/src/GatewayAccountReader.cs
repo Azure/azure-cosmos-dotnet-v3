@@ -65,10 +65,10 @@ namespace Microsoft.Azure.Cosmos
                             clientSideRequestStatistics: stats,
                             cancellationToken: default,
                             documentServiceRequest: request))
-                         using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
-                         {
-                          return CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
-                         }
+                        using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
+                        {
+                            return CosmosResource.FromStream(documentServiceResponse, CosmosSerializerContext.Default.AccountProperties);
+                        }
                     }
                 }
                 catch (ObjectDisposedException) when (this.cancellationToken.IsCancellationRequested)

@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Documents
 #else
     public
 #endif
-    abstract class Resource : JsonSerializable
+    abstract class Resource : JsonSerializable, IResource
     {
         internal static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 

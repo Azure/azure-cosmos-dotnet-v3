@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a partition key range in the Azure Cosmos DB service.
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Documents
 #else
     public
 #endif
-    sealed class PartitionKeyRange : Resource, IEquatable<PartitionKeyRange>
+    sealed class PartitionKeyRange : PlainResource, IEquatable<PartitionKeyRange>
     {
         // This is only used in Gateway and corresponds to the value set in the backend.
         // Client must not use this value, as it must use whatever comes in address resolution response.
@@ -26,102 +26,32 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Represents the minimum possible value of a PartitionKeyRange in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.MinInclusive)]
-        internal string MinInclusive
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.MinInclusive);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MinInclusive, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.MinInclusive)]
+        internal string MinInclusive { get; set; }
 
         /// <summary>
         /// Represents maximum exclusive value of a PartitionKeyRange (the upper, but not including this value, boundary of PartitionKeyRange)
         /// in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.MaxExclusive)]
-        internal string MaxExclusive
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.MaxExclusive);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MaxExclusive, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.MaxExclusive)]
+        internal string MaxExclusive { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.RidPrefix)]
-        internal int? RidPrefix
-        {
-            get
-            {
-                return base.GetValue<int?>(Constants.Properties.RidPrefix);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.RidPrefix, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.RidPrefix)]
+        internal int? RidPrefix { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.ThroughputFraction)]
-        internal double ThroughputFraction
-        {
-            get
-            {
-                return base.GetValue<double>(Constants.Properties.ThroughputFraction);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.ThroughputFraction, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.ThroughputFraction)]
+        internal double ThroughputFraction { get; set; }
 
 #if !DOCDBCLIENT
-        [JsonProperty(PropertyName = Constants.Properties.TargetThroughput)]
-        internal double? TargetThroughput
-        {
-            get
-            {
-                return base.GetValue<double?>(Constants.Properties.TargetThroughput);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.TargetThroughput, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.TargetThroughput)]
+        internal double? TargetThroughput { get; set; }
 #endif
 
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKeyRangeStatus)]
-        internal PartitionKeyRangeStatus Status
-        {
-            get
-            {
-                return base.GetValue<PartitionKeyRangeStatus>(Constants.Properties.PartitionKeyRangeStatus);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.PartitionKeyRangeStatus, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.PartitionKeyRangeStatus)]
+        internal PartitionKeyRangeStatus Status { get; set; }
 
-        [JsonProperty(PropertyName = Constants.Properties.Lsn)]
-        public long LSN
-        {
-            get
-            {
-                return base.GetValue<long>(Constants.Properties.Lsn);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Lsn, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.Lsn)]
+        public long LSN { get; set; }
 
         /// <summary>
         /// Contains ids or parent ranges in the Azure Cosmos DB service.
@@ -130,18 +60,8 @@ namespace Microsoft.Azure.Documents
         /// If range '3' splits into '4' and '5', then parents for ranges '4' and '5'
         /// will be ['1', '3'].
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Parents)]
-        public Collection<string> Parents
-        {
-            get
-            {
-                return base.GetValue<Collection<string>>(Constants.Properties.Parents);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.Parents, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.Parents)]
+        public Collection<string> Parents { get; set; }
 
         /// <summary>
         /// Contains ids of owned archival pkranges in the Azure Cosmos DB service.
@@ -150,18 +70,8 @@ namespace Microsoft.Azure.Documents
         /// '2' owns archival reference to ['0']
         /// '3' owns archival reference to ['1']
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.OwnedArchivalPKRangeIds)]
-        internal Collection<string> OwnedArchivalPKRangeIds
-        {
-            get
-            {
-                return base.GetValue<Collection<string>>(Constants.Properties.OwnedArchivalPKRangeIds);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.OwnedArchivalPKRangeIds, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.OwnedArchivalPKRangeIds)]
+        internal Collection<string> OwnedArchivalPKRangeIds { get; set; }
 
         internal Range<string> ToRange()
         {

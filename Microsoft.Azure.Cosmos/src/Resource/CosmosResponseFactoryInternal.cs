@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Scripts;
+    using System.Text.Json.Serialization.Metadata;
 
     internal abstract class CosmosResponseFactoryInternal : CosmosResponseFactory
     {
@@ -15,6 +16,11 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage);
 
         public abstract FeedResponse<T> CreateQueryFeedResponse<T>(
+            ResponseMessage responseMessage,
+            Documents.ResourceType resourceType);
+
+        public abstract FeedResponse<T> CreateQueryFeedResponse<T>(
+            JsonTypeInfo<T[]> typeInfo,
             ResponseMessage responseMessage,
             Documents.ResourceType resourceType);
 

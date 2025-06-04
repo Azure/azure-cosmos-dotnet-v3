@@ -6,6 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Documents;
 
     /// <summary> 
@@ -39,6 +42,32 @@ namespace Microsoft.Azure.Cosmos
         internal static T FromStream<T>(Stream stream)
         {
             return CosmosResource.cosmosDefaultJsonSerializer.FromStream<T>(stream);
+        }
+
+        internal static T FromStream<T>(DocumentServiceResponse response, JsonTypeInfo<T> typeInfo)
+        {
+            if (response == null)
+            {
+                throw new ArgumentNullException(nameof(response));
+            }
+
+            if (response.ResponseBody != null && (!response.ResponseBody.CanSeek || response.ResponseBody.Length > 0))
+            {
+                return FromStream<T>(response.ResponseBody, typeInfo);
+            }
+
+            return default;
+        }
+
+        private static T FromStream<T>(Stream stream, JsonTypeInfo<T> typeInfo)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream));
+            }
+
+            T result = JsonSerializer.Deserialize<T>(stream, typeInfo);
+            return result;
         }
     }
 }

@@ -9,13 +9,14 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.IO;
     using System.Text;
+    using Microsoft.Azure.Cosmos;
     using Newtonsoft.Json;
 
     /// <summary>
     /// SnapshotContent.
     /// </summary>
 
-    internal sealed class SnapshotContent : JsonSerializable
+    internal sealed partial class SnapshotContent : JsonSerializable
     {
         private Database databaseResource;
         private DocumentCollection collectionResource;
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Documents
                     this.partitionKeyRangeList = new List<PartitionKeyRange>();
                     foreach (string partitionKeyRange in this.SerializedPartitionKeyRanges)
                     {
-                        this.partitionKeyRangeList.Add(this.GetResourceIfDeserialized<PartitionKeyRange>(partitionKeyRange));
+                        this.partitionKeyRangeList.Add(this.GetResourceIfDeserialized<PartitionKeyRange>(partitionKeyRange, CosmosSerializerContext.Default.PartitionKeyRange));
                     }
                 }
 

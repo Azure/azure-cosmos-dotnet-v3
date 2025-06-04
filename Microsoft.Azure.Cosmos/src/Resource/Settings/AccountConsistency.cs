@@ -5,9 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the consistency policy of a database account of the Azure Cosmos DB service.
@@ -28,22 +27,22 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get or set the default consistency level in the Azure Cosmos DB service.
         /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.DefaultConsistencyLevel)]
+        [JsonConverter(typeof(JsonStringEnumConverter<ConsistencyLevel>))]
+        [JsonPropertyName(Constants.Properties.DefaultConsistencyLevel)]
         public ConsistencyLevel DefaultConsistencyLevel { get; internal set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms difference in sequence numbers (aka version) in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.MaxStalenessPrefix)]
+        [JsonPropertyName(Constants.Properties.MaxStalenessPrefix)]
         public int MaxStalenessPrefix { get; internal set; }
 
         /// <summary>
         /// For bounded staleness consistency, the maximum allowed staleness
         /// in terms time interval in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.MaxStalenessIntervalInSeconds)]
+        [JsonPropertyName(Constants.Properties.MaxStalenessIntervalInSeconds)]
         public int MaxStalenessIntervalInSeconds { get; internal set; }
 
         /// <summary>
@@ -51,7 +50,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         internal Documents.ConsistencyLevel ToDirectConsistencyLevel()
         {

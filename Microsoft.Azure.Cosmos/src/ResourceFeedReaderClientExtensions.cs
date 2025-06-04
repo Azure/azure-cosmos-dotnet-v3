@@ -49,10 +49,10 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="partitionKeyRangesLink">The link for partition key ranges</param>
         /// <param name="options">the <see cref="FeedOptions"/> options for the request.</param>
         /// <returns>A <see cref="ResourceFeedReader{PartitionKeyRange}"/> instance.</returns>
-        public static ResourceFeedReader<PartitionKeyRange> CreatePartitionKeyRangeFeedReader(this DocumentClient client, string partitionKeyRangesLink,
+        public static PlainResourceFeedReader<PartitionKeyRange> CreatePartitionKeyRangeFeedReader(this DocumentClient client, string partitionKeyRangesLink,
             FeedOptions options = null)
         {
-            return new ResourceFeedReader<PartitionKeyRange>(client, ResourceType.PartitionKeyRange, options, partitionKeyRangesLink);
+            return new PlainResourceFeedReader<PartitionKeyRange>(client, ResourceType.PartitionKeyRange, options, partitionKeyRangesLink);
         }
 
         /// <summary>

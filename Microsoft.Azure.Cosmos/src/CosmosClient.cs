@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.Net;
     using System.Runtime.InteropServices;
     using System.Text;
@@ -105,7 +106,7 @@ namespace Microsoft.Azure.Cosmos
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/distribute-data-globally">Global data distribution</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/partitioning-overview">Partitioning and horizontal scaling</seealso>
     /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-    public class CosmosClient : IDisposable
+    public partial class CosmosClient : IDisposable
     {
         internal readonly string Id = Guid.NewGuid().ToString();
         private readonly object disposedLock = new object();
@@ -1087,6 +1088,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
+        [RequiresUnreferencedCode("Deserialization of arbitrary types relies on reflection over members which may be trimmed.")]
         public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
