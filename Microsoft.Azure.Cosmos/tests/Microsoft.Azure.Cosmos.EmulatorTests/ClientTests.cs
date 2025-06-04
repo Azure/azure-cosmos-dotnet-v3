@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading.Tasks;
     using global::Azure;
     using Microsoft.Azure.Cosmos.FaultInjection;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Moq;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [TestClass]
     public class ClientTests
@@ -926,6 +928,455 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Type clientMessageHandlerType = cosmosClient.ClientContext.DocumentClient.httpClient.HttpMessageHandler.GetType();
             Assert.AreEqual(socketHandlerType, clientMessageHandlerType);
         }
+
+        // This Test is not part of this PR. It was written solely to verify the existing behaviour of 429 requests
+        // when exceptionLess is turned off for 429 errors.It still make multiple calls instead of just making call to one replica and yield.
+        [TestMethod]
+        public async Task AssertExisting429BehaviourByTurningOffExceptionLess()
+        {
+            int failureRequestRetryCount = 0;
+            
+            string databaseName = "newdatabase";
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        if (request.OperationType == Documents.OperationType.Read)
+                        {
+
+                            request.UseStatusCodeFor429 = false;
+                            // Increment retry count for 429 requests
+                            failureRequestRetryCount++;
+                            storeResponse.Status = (int)HttpStatusCode.TooManyRequests; // Simulate 429 error
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                            connectionString: "points to test environment with one read and one write region")
+                            .WithThrottlingRetryOptions(
+                                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(5), // Maximum wait time for retries
+                                    maxRetryAttemptsOnThrottledRequests: 2) // Maximum retry attempts
+                            .WithTransportClientHandlerFactory(clientOptions.TransportClientHandlerFactory)
+                            .WithConnectionModeDirect()
+                            .Build();
+
+
+            
+            Container container = cosmosClient.GetDatabase(databaseName).GetContainer("test");
+            dynamic testObject = new
+            {
+                id = Guid.NewGuid().ToString(),
+                Company = "Microsoft",
+                State = "WA"
+            };
+            await container.CreateItemAsync<dynamic>(testObject);
+
+            try
+            {
+                // Attempt to read the item
+                ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(
+                    testObject.id,
+                    new Cosmos.PartitionKey(testObject.id));
+
+            }
+
+            catch (CosmosException ex)
+            {
+                // Handle other Cosmos exceptions
+                Console.WriteLine($"CosmosException: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(ex.Diagnostics.ToString());
+            }
+
+            Console.Write("429 count of requests: " + failureRequestRetryCount);
+            // Assert that retries occurred
+            Assert.IsTrue(failureRequestRetryCount > 0, "No retries were made for 429 error code.");
+        }
+        [TestMethod]
+        public async Task AssertBarrierCallsForStrongConsistencyWrite()
+        {
+            int barrier429Count = 0;
+            string databaseName = "newdatabase";
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        // Force a barrier request on write item in strong consistency.
+                        // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                        long lsn = storeResponse.LSN - 2;
+                        if (request.OperationType == Documents.OperationType.Create)
+                        {
+                            // Simulate a barrier request by setting GLSN < LSN
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                        }
+                        // Simulate 429 errors for write barrier requests
+                        if (request.OperationType == Documents.OperationType.Head)
+                        {
+                            request.UseStatusCodeFor429 = false;
+                            // Simulate a 429 for barrier requests
+                            storeResponse.Status = (int)HttpStatusCode.TooManyRequests; // Simulate 429 error
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                            barrier429Count++;
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                 connectionString: "points to test environment with one read and one write region")
+                .WithTransportClientHandlerFactory(clientOptions.TransportClientHandlerFactory)
+                .WithThrottlingRetryOptions(
+                                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(5), // Maximum wait time for retries
+                                    maxRetryAttemptsOnThrottledRequests: 2) // Maximum retry attempts
+                .WithConnectionModeDirect()
+                .WithConsistencyLevel(Cosmos.ConsistencyLevel.Strong)
+                .Build();
+
+            Container container = cosmosClient.GetDatabase(databaseName).GetContainer("test");
+
+            dynamic testObject = new
+            {
+                id = Guid.NewGuid().ToString(),
+                Company = "Microsoft",
+                State = "WA"
+            };
+            try
+            {
+                // Perform a write operation to trigger barrier calls
+                ItemResponse<dynamic> response = await container.CreateItemAsync<dynamic>(
+                    testObject,
+                    new Cosmos.PartitionKey(testObject.id));
+
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(response.Diagnostics.ToString());
+            }
+            catch (CosmosException ex)
+            {
+                // Handle other Cosmos exceptions
+                Console.WriteLine($"CosmosException: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(ex.Diagnostics.ToString());
+            }
+
+            Console.WriteLine($"Total 429 responses on barrier calls: {barrier429Count}");
+            // Assert that retries occurred
+            Assert.IsTrue(barrier429Count > 0, "No retries were made for 429 error code.");
+        }
+
+        [TestMethod]
+        public async Task Real429ReturnsLsnWithNoRetry()
+        {
+            string databaseName = "newdatabase";
+            string containerName = "testcontainer429";
+            string connectionString = "points to test environment with one read and one write region";
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(connectionString)
+                .WithConnectionModeDirect()
+                .WithThrottlingRetryOptions(TimeSpan.Zero, 0) // No retries on 429
+                .Build();
+
+            // Ensure database and container exist
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Container container = await cosmosClient.GetDatabase(databaseName)
+                .CreateContainerIfNotExistsAsync(new ContainerProperties(containerName, "/id"), throughput: 400);
+
+            // Create a test item
+            dynamic testItem = new { id = Guid.NewGuid().ToString(), value = "test" };
+            await container.CreateItemAsync(testItem);
+
+            int concurrentReads = 1000;
+            ConcurrentQueue<CosmosException> throttledExceptions = new ConcurrentQueue<CosmosException>();
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < concurrentReads; i++)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+                        if(response.StatusCode == HttpStatusCode.TooManyRequests)
+                        {
+                            Console.WriteLine(response.Diagnostics.ToString());
+                        }
+                    }
+                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                    {
+                        throttledExceptions.Enqueue(ex);
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+
+            Assert.IsTrue(throttledExceptions.Count > 0, "Did not receive any 429 responses from Cosmos DB.");
+            
+        }
+
+
+        [TestMethod]
+        public async Task AssertOneBarrierCallShouldResultInASuccess()
+        {
+            int barrier429Count = 0;
+            string databaseName = "newdatabase";
+            bool isReadOperation = false;
+            bool hasFailedOnce = false;
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        // Force a barrier request on read item in strong consistency.
+                        // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                        long lsn = storeResponse.LSN - 2;
+                        if (request.OperationType == Documents.OperationType.Read)
+                        {
+                            // Simulate a barrier request by setting GLSN < LSN
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                        }
+                        // only simulate 429 errors for read operations not write
+                        if (request.OperationType == Documents.OperationType.Head && isReadOperation && !hasFailedOnce)
+                        {
+
+                            request.UseStatusCodeFor429 = false;
+                            // Simulate a 429 for barrier requests
+                            storeResponse.Status = (int)HttpStatusCode.TooManyRequests; // Simulate 429 error
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                            barrier429Count++;
+                            hasFailedOnce = true; // Ensure only one failure
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                 connectionString: "points to test environment with one read and one write region")
+                .WithTransportClientHandlerFactory(clientOptions.TransportClientHandlerFactory)
+                .WithThrottlingRetryOptions(
+                                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(5), // Maximum wait time for retries
+                                    maxRetryAttemptsOnThrottledRequests: 2) // Maximum retry attempts
+                .WithConnectionModeDirect()
+                .WithConsistencyLevel(Cosmos.ConsistencyLevel.Strong)
+                .Build();
+
+            Container container = cosmosClient.GetDatabase(databaseName).GetContainer("test");
+
+            dynamic testObject = new
+            {
+                id = Guid.NewGuid().ToString(),
+                Company = "Microsoft",
+                State = "WA"
+            };
+            await container.CreateItemAsync<dynamic>(testObject);
+
+            try
+            {
+                isReadOperation = true;
+                // Perform a read operation to trigger barrier calls
+                ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                    testObject.id,
+                    new Cosmos.PartitionKey(testObject.id));
+
+
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(response.Diagnostics.ToString());
+            }
+            catch (CosmosException ex)
+            {
+                // Handle other Cosmos exceptions
+                Console.WriteLine($"CosmosException: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(ex.Diagnostics.ToString());
+            }
+
+            Console.WriteLine($"Total 429 responses on barrier calls: {barrier429Count}");
+            // Assert that retries occurred
+            Assert.IsTrue(barrier429Count > 0, "No retries were made for 429 error code.");
+
+        }
+
+        //StorePhysicalAddress
+        [TestMethod]
+        public async Task AssertBarrierCallsWhenQuorumStateIsQuorumSelected()
+        {
+            int barrier429Count = 0;
+            string databaseName = "newdatabase";
+            bool isReadOperation = false;
+            
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConnectionProtocol = Protocol.Tcp,
+                TransportClientHandlerFactory = (transport) => new TransportClientWrapper(transport,
+                    interceptorAfterResult: (request, storeResponse) =>
+                    {
+                        // Force a barrier request on read item in strong consistency.
+                        // There needs to be 2 regions and the GlobalCommittedLSN must be behind the LSN.
+                        long lsn = storeResponse.LSN - 2;
+                        if (request.OperationType == Documents.OperationType.Read)
+                        {
+                            // Simulate a barrier request by setting GLSN < LSN
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                        }
+                        // only simulate 429 errors for read operations not write
+                        if (request.OperationType == Documents.OperationType.Head && isReadOperation )
+                        {
+                            // Simulate a 429 for barrier requests
+                            storeResponse.Status = (int)HttpStatusCode.TooManyRequests; // Simulate 429 error
+                            storeResponse.Headers.Set(Documents.WFConstants.BackendHeaders.GlobalCommittedLSN, lsn.ToString());
+                            barrier429Count++;
+                        }
+
+                        return storeResponse;
+                    })
+            };
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                 connectionString: "points to test environment with one read and one write region")
+                .WithTransportClientHandlerFactory(clientOptions.TransportClientHandlerFactory)
+                .WithThrottlingRetryOptions(
+                                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(5), // Maximum wait time for retries
+                                    maxRetryAttemptsOnThrottledRequests: 2) // Maximum retry attempts
+                .WithConnectionModeDirect()
+                .WithConsistencyLevel(Cosmos.ConsistencyLevel.Strong)
+                .Build();
+
+            Container container = cosmosClient.GetDatabase(databaseName).GetContainer("test");
+
+            dynamic testObject = new
+            {
+                id = Guid.NewGuid().ToString(),
+                Company = "Microsoft",
+                State = "WA"
+            };
+            await container.CreateItemAsync<dynamic>(testObject);
+
+            try
+            {
+                isReadOperation = true;
+                // Perform a read operation to trigger barrier calls
+                ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(
+                    testObject.id,
+                    new Cosmos.PartitionKey(testObject.id));
+
+                
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(response.Diagnostics.ToString());
+            }
+            catch (CosmosException ex)
+            {
+                // Handle other Cosmos exceptions
+                Console.WriteLine($"CosmosException: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(ex.Diagnostics.ToString());
+            }
+            
+            Console.WriteLine($"Total 429 responses on barrier calls: {barrier429Count}");
+            // Assert that retries occurred
+            Assert.IsTrue(barrier429Count > 0, "No retries were made for 429 error code.");
+
+        }
+
+
+        [TestMethod]
+        [DataRow(5 , 2, DisplayName = "Validate Read Item operation with simulated error count < 4 * (maxRetryAttempts + 1) means we will get eventually 200 status Code")]
+        [DataRow(50 ,2, DisplayName = "Validate Read Item operation with simulated error count > 4 * (maxRetryAttempts + 1) means no 200 status code")]
+        public async Task InjectTooManyRequestsFaultAndVerify429Count(int simulatedErrorCount , int maxRetryAttempts)
+        {
+            string databaseName = "newdatabase";
+
+            // Create a fault injection rule for TooManyRequests (429) in direct mode
+            FaultInjectionRule tooManyRequestsRule = new FaultInjectionRuleBuilder(
+                id: "TooManyRequestsRule-" + Guid.NewGuid(),
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.ReadItem)
+                    .Build(),
+                result: FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
+                     .WithTimes(simulatedErrorCount)
+                    .Build())
+                .Build();
+
+            // Initialize the fault injector
+            FaultInjector faultInjector = new FaultInjector(new List<FaultInjectionRule> { tooManyRequestsRule });
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(
+                            connectionString: "points to test environment with one read and one write region")
+                            .WithConnectionModeDirect().WithFaultInjection(faultInjector)
+                            .WithThrottlingRetryOptions(
+                                    maxRetryWaitTimeOnThrottledRequests: TimeSpan.FromSeconds(5), // Maximum wait time for retries
+                                    maxRetryAttemptsOnThrottledRequests: maxRetryAttempts) // Maximum retry attempts
+                            .Build();
+
+            
+            ContainerProperties containerProperties = new ContainerProperties(
+                                           id: "test",
+                                           partitionKeyPath: "/id");
+
+
+            // Create database and container
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Container container = await cosmosClient.GetDatabase(databaseName).CreateContainerIfNotExistsAsync(containerProperties);
+            
+            dynamic testObject = new
+            {
+               id = Guid.NewGuid().ToString(),
+               Company = "Microsoft",
+               State = "WA"
+
+            };
+
+
+            await container.CreateItemAsync<dynamic>(testObject);
+            try
+            {
+                // Attempt to read the item
+                ItemResponse<dynamic> itemResponse = await container.ReadItemAsync<dynamic>(
+                    testObject.id,
+                    new Cosmos.PartitionKey(testObject.id));
+
+                // Print diagnostics
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(itemResponse.Diagnostics.ToString());
+            }
+            
+            catch (CosmosException ex)
+            {
+                // Handle other Cosmos exceptions
+                Console.WriteLine($"CosmosException: {ex.StatusCode} - {ex.Message}");
+                Console.WriteLine("Diagnostics:");
+                Console.WriteLine(ex.Diagnostics.ToString());
+            }
+            long hitCount = tooManyRequestsRule.GetHitCount();
+            if(simulatedErrorCount < 4 * (maxRetryAttempts + 1))
+            {
+                Assert.AreEqual(simulatedErrorCount , hitCount, "$hitcount of {hitCount} does not match simulatedErrorCount {simulatedErrorCount}");
+            }
+            else
+            {
+                Assert.AreEqual(4 * (maxRetryAttempts + 1), hitCount, "$hitcount of {hitCount} does not match number of replicas {4 * (maxRetryAttempts+1)}");
+            }
+                
+
+        }
+
+
 
         [TestMethod]
         [TestCategory("MultiRegion")]
