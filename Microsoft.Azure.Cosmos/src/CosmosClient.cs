@@ -1347,7 +1347,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="transferAmount"></param>
         /// <returns></returns>
         /// <exception cref="InvalidOperationException"></exception>
-        public async Task Bob2AliceTransfer2Async(int transferAmount)
+        public async Task Bob2AliceTransferWithBatchAPIsAsync(int transferAmount)
         {
             CosmosClient client = new CosmosClient();
 
