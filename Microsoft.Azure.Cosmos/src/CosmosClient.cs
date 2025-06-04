@@ -1268,14 +1268,14 @@ namespace Microsoft.Azure.Cosmos
         ///     - Transaction at the scope of account -> API at CosmosClient level
         ///     - TransactionId: CX needs to define (control back to application for control on retries)
         ///         - => No guarantee of TransactionId -> payload/contents
-        ///         - ** Service side transaction retention period: how long for clients to retry for idempotency?
+        ///         - ** Service side transaction retention period: how long for clients to retry for idempotency? (Committed/Aborted: Minimal transactional record TTL, response-might not be saved ??)
         ///             - ETag is ideal to avoid overstepping BUT there are non-Etag possiblilities as well?
         ///                 - Blind replace
         ///     - ActivityId: So-far the model is on uniqueue activityid per NW call 
         ///         => single activityId for all the composed operations
         ///             -> Part of the transaction NOT per operation?
         ///     - Possible conditon modeling
-        ///         - Item/Document existnece: Read operation (implicit)
+        ///         - Item/Document existnece: Read operation (implicit) -> TBD: Model as existence
         ///         - Item/Document content: (including system properties)
         ///             - Currently assumed to be some form of query-where clause
         ///                 - Non-intutive for CX to grasp the standing variable? (From c)
@@ -1290,6 +1290,13 @@ namespace Microsoft.Azure.Cosmos
         ///   
         ///     - Significantly deviates from existing TransactionalBatch API model (scoped to a single partition-key)
         ///         - https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/transactional-batch?tabs=dotnet#how-to-create-a-transactional-batch-operation
+        ///         
+        /// -- Open items
+        ///     - Ability to get transactionId before execution
+        ///     - Read and write transactions: Explicit (implicit might get mis-interpreted, reads with writes are not allowed)
+        ///     - ConsitionExistence as replacement for WriteTrasaction
+        ///     - Transaction Retry API ??
+        ///     
         /// </summary>
         /// <param name="transferAmount">Amount to transfer</param>
         /// <returns>
@@ -1308,6 +1315,8 @@ namespace Microsoft.Azure.Cosmos
                     Operation.Read("BranchDB", "BobBranchContainer", new PartitionKey("Bob"), "Bob"),
                     Operation.Read("BranchDB", "AiceBranchContainer", new PartitionKey("Alice"), "Alice"),
                 });
+
+            // Persistence
 
             TransactionalBatchOperationResult<AccountDetails> bobDetails = readTransactionResponse.At<AccountDetails>(0);
             TransactionalBatchOperationResult<AccountDetails> aliceDetails = readTransactionResponse.At<AccountDetails>(1);
