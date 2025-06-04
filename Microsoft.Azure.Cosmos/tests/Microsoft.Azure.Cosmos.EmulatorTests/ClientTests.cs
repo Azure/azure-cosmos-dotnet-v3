@@ -1075,6 +1075,56 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsTrue(barrier429Count > 0, "No retries were made for 429 error code.");
         }
 
+        [TestMethod]
+        public async Task Real429ReturnsLsnWithNoRetry()
+        {
+            string databaseName = "newdatabase";
+            string containerName = "testcontainer429";
+            string connectionString = "points to test environment with one read and one write region";
+
+            CosmosClient cosmosClient = new CosmosClientBuilder(connectionString)
+                .WithConnectionModeDirect()
+                .WithThrottlingRetryOptions(TimeSpan.Zero, 0) // No retries on 429
+                .Build();
+
+            // Ensure database and container exist
+            await cosmosClient.CreateDatabaseIfNotExistsAsync(databaseName);
+            Container container = await cosmosClient.GetDatabase(databaseName)
+                .CreateContainerIfNotExistsAsync(new ContainerProperties(containerName, "/id"), throughput: 400);
+
+            // Create a test item
+            dynamic testItem = new { id = Guid.NewGuid().ToString(), value = "test" };
+            await container.CreateItemAsync(testItem);
+
+            int concurrentReads = 1000;
+            ConcurrentQueue<CosmosException> throttledExceptions = new ConcurrentQueue<CosmosException>();
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < concurrentReads; i++)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        ItemResponse<dynamic> response = await container.ReadItemAsync<dynamic>(testItem.id, new Cosmos.PartitionKey(testItem.id));
+                        if(response.StatusCode == HttpStatusCode.TooManyRequests)
+                        {
+                            Console.WriteLine(response.Diagnostics.ToString());
+                        }
+                    }
+                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                    {
+                        throttledExceptions.Enqueue(ex);
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+
+            Assert.IsTrue(throttledExceptions.Count > 0, "Did not receive any 429 responses from Cosmos DB.");
+            
+        }
+
 
         [TestMethod]
         public async Task AssertOneBarrierCallShouldResultInASuccess()
