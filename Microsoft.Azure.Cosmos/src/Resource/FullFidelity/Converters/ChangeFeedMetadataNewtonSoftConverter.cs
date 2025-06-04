@@ -165,6 +165,7 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
                                 partitionKey.Add((key, value));
                                 reader.Read(); // Move to the next property or EndObject
                             }
+                            metadata.PartitionKey = partitionKey;
                         }
                         break;
 
@@ -175,8 +176,6 @@ namespace Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters
 
                 reader.Read(); // Move to next property or EndObject
             }
-
-            metadata.PartitionKey = partitionKey;
             return metadata;
         }
         /// <summary>
