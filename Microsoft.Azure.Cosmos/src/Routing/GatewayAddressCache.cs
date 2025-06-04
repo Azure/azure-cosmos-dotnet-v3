@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -407,12 +408,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 using (DocumentServiceResponse response = documentServiceResponseWrapper.Result)
                 {
-                    FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
+                    FeedResource_Address addressFeed = response.GetResource(CosmosSerializerContext.Default.FeedResource_Address);
 
                     bool inNetworkRequest = this.IsInNetworkRequest(response);
 
                     IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                        addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                        addressFeed.Addresss.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
                             .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
                             .Select(group => this.ToPartitionAddressAndRange(containerProperties.ResourceId, @group.ToList(), inNetworkRequest));
 
@@ -583,11 +584,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                         forceRefresh,
                         false))
                     {
-                        FeedResource<Address> masterAddresses = response.GetResource<FeedResource<Address>>();
+                        FeedResource_Address masterAddresses = response.GetResource<FeedResource_Address>(CosmosSerializerContext.Default.FeedResource_Address);
 
                         bool inNetworkRequest = this.IsInNetworkRequest(response);
 
-                        masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.ToList(), inNetworkRequest);
+                        masterAddressAndRange = this.ToPartitionAddressAndRange(string.Empty, masterAddresses.Addresss.ToList(), inNetworkRequest);
                         this.masterPartitionAddressCache = masterAddressAndRange;
                         this.suboptimalMasterPartitionTimestamp = DateTime.MaxValue;
                     }
@@ -617,12 +618,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             using (DocumentServiceResponse response =
                 await this.GetServerAddressesViaGatewayAsync(request, collectionRid, new[] { partitionKeyRangeId }, forceRefresh))
             {
-                FeedResource<Address> addressFeed = response.GetResource<FeedResource<Address>>();
+                FeedResource_Address addressFeed = response.GetResource(CosmosSerializerContext.Default.FeedResource_Address);
 
                 bool inNetworkRequest = this.IsInNetworkRequest(response);
 
                 IEnumerable<Tuple<PartitionKeyRangeIdentity, PartitionAddressInformation>> addressInfos =
-                    addressFeed.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
+                    addressFeed.Addresss.Where(addressInfo => ProtocolFromString(addressInfo.Protocol) == this.protocol)
                         .GroupBy(address => address.PartitionKeyRangeId, StringComparer.Ordinal)
                         .Select(group => this.ToPartitionAddressAndRange(collectionRid, @group.ToList(), inNetworkRequest));
 
