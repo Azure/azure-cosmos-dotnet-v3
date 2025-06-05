@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Documents.Routing
 {
     using System.IO;
 
-    using Newtonsoft.Json;
+    using System.Text.Json;
 
     internal interface IPartitionKeyComponent
     {
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Documents.Routing
 
         int GetTypeOrdinal();
 
-        void JsonEncode(JsonWriter writer);
+        void JsonEncode(Utf8JsonWriter writer);
 
         object ToObject();
 

@@ -6,8 +6,7 @@ namespace Microsoft.Azure.Documents.Routing
 {
     using System;
     using System.IO;
-
-    using Newtonsoft.Json;
+    using System.Text.Json;
 
     internal sealed class NullPartitionKeyComponent : IPartitionKeyComponent
     {
@@ -48,9 +47,9 @@ namespace Microsoft.Azure.Documents.Routing
             writer.Write((byte)PartitionKeyComponentType.Null);
         }
 
-        public void JsonEncode(JsonWriter writer)
+        public void JsonEncode(Utf8JsonWriter writer)
         {
-            writer.WriteValue((object)null);
+            writer.WriteNullValue();
         }
 
         public object ToObject()

@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Documents.Routing
 {
     using System;
     using System.IO;
-    using Newtonsoft.Json;
+    using System.Text.Json;
 
     internal sealed class MaxNumber
     { 
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Documents.Routing
             throw new InvalidOperationException();
         }
 
-        public void JsonEncode(JsonWriter writer)
+        public void JsonEncode(Utf8JsonWriter writer)
         {
             PartitionKeyInternalJsonConverter.JsonEncode(this, writer);
         }

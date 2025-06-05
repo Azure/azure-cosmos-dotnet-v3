@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Dynamic;
     using System.Globalization;
     using System.Linq;
@@ -22,6 +23,8 @@ namespace Microsoft.Azure.Documents
     /// number of custom properties as well as an optional list of attachments. Document is an application resource and can be
     /// authorized using the master key or resource keys.
     /// </remarks>
+    [RequiresUnreferencedCode("Implementation of IDynamicMetaObjectProvider.GetMetaObject uses Newtonsoft.Json")]
+    [RequiresDynamicCode("Implementation of IDynamicMetaObjectProvider.GetMetaObject uses Newtonsoft.Json")]
 #if COSMOSCLIENT
     internal
 #else
@@ -302,6 +305,8 @@ namespace Microsoft.Azure.Documents
             return new DocumentDynamicMetaObject(this, parameter);
         }
 
+        [RequiresUnreferencedCode("Binds to method which uses Newtonsoft.Json")]
+        [RequiresDynamicCode("Binds to method which uses Newtonsoft.Json")]
         private class DocumentDynamicMetaObject : DynamicMetaObject
         {
             private readonly Document document;
