@@ -15,6 +15,20 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.53.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.0) - 2025-6-5
+
+### <a name="3.52.0"/> [3.51.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0) - 2025-6-5
+
+#### Added
+
+- [5180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5180) Query: Adds public PopulateQueryAdvice capability
+- [5215](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5215) Client Encryption: Adds support for latest Cosmos package and bumps up Encryption package for nuget release
+- [5157](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5157) Query: Adds support for LINQ extension method for VectorDistance
+
+#### Fixed
+
+- [5221](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5221) Query : Fixes Skip + Order By Bug 
+
 ### <a name="3.52.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.0) - 2025-5-16
 
 ### <a name="3.51.0"/> [3.51.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0) - 2025-5-16
