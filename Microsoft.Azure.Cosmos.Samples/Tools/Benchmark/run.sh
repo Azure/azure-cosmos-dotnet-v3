@@ -61,9 +61,9 @@ if [ "$THINCLIENT_ENABLED" = true ]; then
             --pl $PL \
             -e $ACCOUNT_ENDPOINT \
             -k $ACCOUNT_KEY \
-            --isthinclientenabled $THINCLIENT_ENABLED \
-            --isgatewaymodeenabled $GATEWAYMODE_ENABLED \
-            --isdirectmodeenabled $DIRECTMODE_ENABLED \
+            --isthinclientenabled=$THINCLIENT_ENABLED \
+            --isgatewaymodeenabled=$GATEWAYMODE_ENABLED \
+            --isdirectmodeenabled=$DIRECTMODE_ENABLED \
             --enablelatencypercentiles \
             --disablecoresdklogging \
             --publishresults \
