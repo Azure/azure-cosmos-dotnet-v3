@@ -10,20 +10,20 @@ variables:
 
 stages:
 - stage:
-  displayName: Encryption Custom Release Gates
+  displayName: Encryption Release Gates
   jobs:
-    - template:  templates/static-tools-encryption-custom.yml
+    - template:  templates/static-tools-encryption.yml
       parameters:
         BuildConfiguration: '${{ variables.BuildConfiguration }}'
         VmImage: '${{ variables.VmImage }}'
 
 - stage:
-  displayName: Publish
+  displayName: Build, Pack and Publish
   jobs:
-    - template:  templates/encryption-custom-nuget-pack.yml
+    - template:  templates/encryption-nuget-pack.yml
       parameters:
         BuildConfiguration: Release
         VmImage: '${{ variables.VmImage }}'
         ReleasePackage: true
-        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption.Custom'
+        OutputPath: '$(Build.ArtifactStagingDirectory)/bin/AnyCPU/$(BuildConfiguration)/Microsoft.Azure.Cosmos.Encryption'
         BlobVersion: $(BlobVersion)
