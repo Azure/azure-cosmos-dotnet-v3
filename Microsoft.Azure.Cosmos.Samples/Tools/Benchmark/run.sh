@@ -42,18 +42,6 @@ echo $COMMIT_TIME
 echo $BRANCH_NAME
 
 if [ "$THINCLIENT_ENABLED" = true ]; then
-    # ThinClient operations
-    if [ -z "$THINCLIENT_ENDPOINT" ]
-    then
-        echo "Missing THINCLIENT_ENDPOINT"
-        exit -1
-    fi
-
-    if [ -z "$THINCLIENT_KEY" ]
-    then
-        echo "Missing THINCLIENT_KEY"
-        exit -1
-    fi
 
     for WORKLOAD_NAME in \
         CreateItemV3BenchmarkOperation \
