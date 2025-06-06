@@ -31,15 +31,15 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
-        [Option(Required = false, HelpText = "ThinClient Cosmos account end point")]
-        public string ThinClientEndPoint { get; set; }
-
-        [Option(Required = false, HelpText = "ThinClient Cosmos account master key")]
-        [JsonIgnore]
-        public string ThinClientKey { get; set; }
-
         [Option(Required = false, HelpText = "ThinClient enabled")]
         public bool IsThinClientEnabled { get; set; }
+
+        [Option(Required = false, HelpText = "Gateway mode enabled")]
+        public bool IsGatewayModeEnabled { get; set; }
+
+        [Option(Required = false, HelpText = "Direct mode enabled")]
+        public bool IsDirectModeEnabled { get; set; }
+
 
         [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
         public string WorkloadName { get; set; }
@@ -233,7 +233,7 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
-                ConnectionMode = this.IsThinClientEnabled ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
+                ConnectionMode = (this.IsThinClientEnabled || this.IsGatewayModeEnabled) ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
                     DisableSendingMetricsToService = !this.EnableTelemetry,
@@ -253,8 +253,8 @@ namespace CosmosBenchmark
             }
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
-                        this.IsThinClientEnabled ? this.ThinClientEndPoint : this.EndPoint,
-                        this.IsThinClientEnabled ? this.ThinClientKey : this.Key,
+                        this.EndPoint,
+                        this.Key,
                         clientOptions);
         }
 

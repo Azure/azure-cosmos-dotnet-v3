@@ -29,6 +29,8 @@ namespace CosmosBenchmark
         public string CommitDate => this.BenchmarkConfig.CommitDate;
         public string CommitTime => this.BenchmarkConfig.CommitTime;
         public bool IsThinClient => this.BenchmarkConfig.IsThinClientEnabled;
+        public bool IsGatewayModeEnabled => this.BenchmarkConfig.IsGatewayModeEnabled;
+        public bool IsDirectModeEnabled => this.BenchmarkConfig.IsDirectModeEnabled;
         public string Remarks { get; set; }
         public string Date { get; }
         public string Time { get; }
@@ -60,10 +62,6 @@ namespace CosmosBenchmark
         public static string Location { get; set; }
         [JsonProperty]
         public static JObject AzureVmInfo { get; set; }
-
-        public string ThinClientAccountName => this.BenchmarkConfig.ThinClientEndPoint;
-        public string ThinClientAccountKey => this.BenchmarkConfig.ThinClientKey;
-
         public double Top10PercentAverageRps { get; set; }
         public double Top20PercentAverageRps { get; set; }
         public double Top30PercentAverageRps { get; set; }
