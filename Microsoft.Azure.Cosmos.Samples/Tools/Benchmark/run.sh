@@ -41,26 +41,24 @@ echo $COMMIT_DATE
 echo $COMMIT_TIME
 echo $BRANCH_NAME
 
-MODE_FLAGS="\
-  --isthinclientenabled=$THINCLIENT_ENABLED \
-  --isgatewaymodeenabled=$GATEWAYMODE_ENABLED \
-  --isdirectmodeenabled=$DIRECTMODE_ENABLED"
+MODE_FLAGS="--isthinclientenabled=${THINCLIENT_ENABLED:-false} \
+--isgatewaymodeenabled=${GATEWAYMODE_ENABLED:-false} \
+--isdirectmodeenabled=${DIRECTMODE_ENABLED:-false}"
 
-if [ "$THINCLIENT_ENABLED" = true ]; then
-
-    for WORKLOAD_NAME in \
-        CreateItemV3BenchmarkOperation \
-        CreateItemStreamV3BenchmarkOperation \
-        ReadItemV3BenchmarkOperation \
-        ReadItemStreamV3BenchmarkOperation \
-        ReplaceItemV3BenchmarkOperation \
-        ReplaceItemStreamV3BenchmarkOperation \
-        UpsertItemV3BenchmarkOperation \
-        UpsertItemStreamV3BenchmarkOperation \
-        DeleteItemV3BenchmarkOperation \
-        DeleteItemStreamV3BenchmarkOperation
-    do
-        dotnet run -c Release \
+    # ---------- 1) ALWAYS RUN THESE 10 WORKLOADS ----------
+for WORKLOAD_NAME in \
+  CreateItemV3BenchmarkOperation \
+  CreateItemStreamV3BenchmarkOperation \
+  ReadItemV3BenchmarkOperation \
+  ReadItemStreamV3BenchmarkOperation \
+  ReplaceItemV3BenchmarkOperation \
+  ReplaceItemStreamV3BenchmarkOperation \
+  UpsertItemV3BenchmarkOperation \
+  UpsertItemStreamV3BenchmarkOperation \
+  DeleteItemV3BenchmarkOperation \
+  DeleteItemStreamV3BenchmarkOperation
+do
+  dotnet run -c Release \
             -- -n 2000000 \
             -w $WORKLOAD_NAME \
             $MODE_FLAGS \
@@ -79,8 +77,10 @@ if [ "$THINCLIENT_ENABLED" = true ]; then
             --container testcol \
             --partitionkeypath /pk
         sleep 10
-    done
-else
+done
+
+# ---------- 2) ADDITIONAL SCENARIOS DIRECT-ONLY ----------
+if [ "${DIRECTMODE_ENABLED:-false}" = true ]; then
     # Client telemetry disabled ReadStreamExistsV3
     dotnet run -c Release  -- -n 2000000 -w ReadStreamExistsV3 $MODE_FLAGS --tcp 10 --pl $PL -e $ACCOUNT_ENDPOINT -k $ACCOUNT_KEY  --enablelatencypercentiles --disablecoresdklogging --publishresults --resultspartitionkeyvalue $RESULTS_PK --commitid $COMMIT_ID --commitdate $COMMIT_DATE --committime $COMMIT_TIME  --branchname $BRANCH_NAME --database testdb --container testcol --partitionkeypath /pk 
     sleep 10 #Wait
