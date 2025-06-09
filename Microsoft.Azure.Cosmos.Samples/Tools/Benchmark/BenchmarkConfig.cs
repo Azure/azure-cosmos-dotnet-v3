@@ -31,14 +31,18 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
-        [Option(Required = false, HelpText = "ThinClient enabled")]
-        public bool IsThinClientEnabled { get; set; }
+        [Option("isthinclientenabled", Required = false, HelpText = "ThinClient enabled")]
+        public string IsThinClientEnabledRaw { get; set; }
+        public bool IsThinClientEnabled => string.Equals(this.IsThinClientEnabledRaw, "true", StringComparison.OrdinalIgnoreCase);
 
-        [Option(Required = false, HelpText = "Gateway mode enabled")]
-        public bool IsGatewayModeEnabled { get; set; }
+        [Option("isgatewaymodeenabled", Required = false, HelpText = "Gateway mode enabled")]
+        public string IsGatewayModeEnabledRaw { get; set; }
+        public bool IsGatewayModeEnabled => string.Equals(this.IsGatewayModeEnabledRaw, "true", StringComparison.OrdinalIgnoreCase);
 
-        [Option(Required = false, HelpText = "Direct mode enabled")]
-        public bool IsDirectModeEnabled { get; set; }
+        [Option("isdirectmodeenabled", Required = false, HelpText = "Direct mode enabled")]
+        public string IsDirectModeEnabledRaw { get; set; }
+        public bool IsDirectModeEnabled => string.Equals(this.IsDirectModeEnabledRaw, "true", StringComparison.OrdinalIgnoreCase);
+
 
 
         [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
