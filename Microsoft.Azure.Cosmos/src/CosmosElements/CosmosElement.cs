@@ -41,17 +41,22 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             return obj is CosmosElement cosmosElement && this.Equals(cosmosElement);
         }
 
-        public abstract bool Equals(CosmosElement cosmosElement);
+        public abstract bool Equals(CosmosElement? cosmosElement);
 
         public abstract override int GetHashCode();
 
-        public int CompareTo(CosmosElement other)
+        public int CompareTo(CosmosElement? other)
         {
+            if (other is null)
+            {
+                return 1;
+            }
+
             int thisTypeOrder = this.Accept(CosmosElementToTypeOrder.Singleton);
             int otherTypeOrder = other.Accept(CosmosElementToTypeOrder.Singleton);
 

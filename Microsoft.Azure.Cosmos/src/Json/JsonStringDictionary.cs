@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Core.Collections;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
+    using UInt128 = Cosmos.UInt128;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
