@@ -1298,6 +1298,8 @@ namespace Microsoft.Azure.Cosmos
         /// -- Open items
         ///     - Ability to get transactionId before execution
         ///     - Transaction Retry API ??
+        ///         -- SDK retry for higher reliability
+        ///         -- User Retry ??
         ///     
         /// -- Fabian notes
         ///     - Wondering whether fluent API model to define distributed transaction makes it easier to read/reason about it
