@@ -1297,6 +1297,17 @@ namespace Microsoft.Azure.Cosmos
         ///     - ConsitionExistence as replacement for WriteTrasaction
         ///     - Transaction Retry API ??
         ///     
+        /// -- Fabian notes
+        ///     - Wondering whether fluent API model to define distributed transaction makes it easier to read/reason about it
+        ///     - ActivityId comment - IMO we should consider having a dedictaed service API to execute a distributed transaction 
+        ///     - how that service deals with correlation is one question - but SDK to service a single activityId should be sufficient?
+        ///     - RequestOptiosn should be separated - only subset will be relevant(for example no individual consistency settings, no session token etc.)
+        ///     - Timeouts/retry policies - not quite sure how to reason over this from the APIs - my hunch would be that this is something the service API would dela with 
+        ///         but might require to expose config settings
+        ///     - Becomes quite chaleenging form a teleemtry/observability point of view - but also depends on whether there is really this DTS processor API in teh service 
+        ///         then diagnostics could be provided by it in more granular form to SDK - or we keep it compeletely internal (hard to get done I guess because there are so
+        ///         manny failure conditions and we need soem way to self-service)
+        ///     
         /// </summary>
         /// <param name="transferAmount">Amount to transfer</param>
         /// <returns>
