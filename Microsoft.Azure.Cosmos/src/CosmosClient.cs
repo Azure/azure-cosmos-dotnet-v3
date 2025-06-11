@@ -1293,13 +1293,15 @@ namespace Microsoft.Azure.Cosmos
         ///         
         /// -- Closures
         ///     - Read and write transactions: Explicit (implicit might get mis-interpreted, reads with writes are not allowed)
-        ///     - ConsitionExistence as replacement for WriteTrasaction
+        ///     - ConditionExistence as replacement for WriteTrasaction
+        ///     - ActivityId: Per NEW interaction across all hops (SDK -> Co-ordinator, Co-ordinator-> BE)
         ///     
         /// -- Open items
         ///     - Ability to get transactionId before execution
         ///     - Transaction Retry API ??
         ///         -- SDK retry for higher reliability
         ///         -- User Retry ??
+        ///     - Cover existing batchAPI (JAVA vs .NET diovergence)
         ///     
         /// -- Fabian notes
         ///     - Wondering whether fluent API model to define distributed transaction makes it easier to read/reason about it
