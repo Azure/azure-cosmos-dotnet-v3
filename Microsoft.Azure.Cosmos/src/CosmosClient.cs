@@ -1291,10 +1291,12 @@ namespace Microsoft.Azure.Cosmos
         ///     - Significantly deviates from existing TransactionalBatch API model (scoped to a single partition-key)
         ///         - https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/transactional-batch?tabs=dotnet#how-to-create-a-transactional-batch-operation
         ///         
-        /// -- Open items
-        ///     - Ability to get transactionId before execution
+        /// -- Closures
         ///     - Read and write transactions: Explicit (implicit might get mis-interpreted, reads with writes are not allowed)
         ///     - ConsitionExistence as replacement for WriteTrasaction
+        ///     
+        /// -- Open items
+        ///     - Ability to get transactionId before execution
         ///     - Transaction Retry API ??
         ///     
         /// -- Fabian notes
