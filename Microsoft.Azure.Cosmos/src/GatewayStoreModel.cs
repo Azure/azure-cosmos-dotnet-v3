@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
         private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
-        private GatewayStoreClient gatewayStoreClient;
+        protected GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
         protected PartitionKeyRangeCache partitionKeyRangeCache;

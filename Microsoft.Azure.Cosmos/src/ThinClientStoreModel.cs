@@ -55,10 +55,10 @@ namespace Microsoft.Azure.Cosmos
                 base.clientCollectionCache,
                 base.endpointManager);
 
+            Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
             DocumentServiceResponse response;
             try
             {
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
                 if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(
                     request.RequestContext.LocationEndpointToRoute,
                     out string regionName))
@@ -78,6 +78,22 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException exception)
             {
+                if (exception.StatusCode == HttpStatusCode.ServiceUnavailable || exception.StatusCode == HttpStatusCode.InternalServerError)
+                {
+                    try
+                    {
+                        DocumentServiceResponse gatewayResponse = await this.gatewayStoreClient.InvokeAsync(
+                            request,
+                            request.ResourceType,
+                            physicalAddress,
+                            cancellationToken);
+                    }
+                    catch (DocumentClientException)
+                    {
+                        throw;
+                    }
+                }
+
                 if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
