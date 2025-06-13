@@ -15,9 +15,9 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-### <a name="3.52.0-preview.1"/> [3.52.0-preview.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.1) - 2025-6-10
+### <a name="3.53.0-preview.0"/> [3.53.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.0) - 2025-6-13
 
-### <a name="3.51.1"/> [3.51.1](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.1) - 2025-6-10
+### <a name="3.52.0"/> [3.52.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0) - 2025-6-13
 
 #### Added
 
@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [5221](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5221) Query : Fixes Skip + Order By Bug 
 - [5218](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5218) Binary Encoding: Fixes DateTime Parsing Issue with Trailing Zeros in the Milli-Seconds Precision
+- [5234](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5234) Client Encryption: Fixes Encryption Release Pipeline
 
 ### <a name="3.52.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.0) - 2025-5-16
 
