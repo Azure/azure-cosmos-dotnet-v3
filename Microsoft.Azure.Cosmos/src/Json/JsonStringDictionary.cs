@@ -150,12 +150,6 @@ namespace Microsoft.Azure.Cosmos.Json
 
         private bool TryAddString(Utf8Span value, int maxCount, out int stringId)
         {
-            // If the string already exists, return that stringId.
-            if (this.utf8StringToStringId.TryGetValue(value.Span, out stringId))
-            {
-                return true;
-            }
-
             // Return false if dictionary already at capacity.
             if (this.size == maxCount)
             {

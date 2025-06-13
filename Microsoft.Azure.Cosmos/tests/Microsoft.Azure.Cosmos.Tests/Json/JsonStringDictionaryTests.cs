@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     [TestClass]
     public class JsonStringDictionaryTests
@@ -24,7 +23,34 @@
 
                 Assert.IsTrue(stringDictionary.TryGetStringId(value.Utf8String.Span, out int stringId));
                 Assert.AreEqual(i, stringId);
-            }        
+            }
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void TestDuplicatesCase()
+        {
+            List<string> strings = new List<string> { "test0", "test1", "test2", "test0", "test4", "test5" };
+            JsonStringDictionary stringDictionary = new JsonStringDictionary(strings);
+            Assert.AreEqual(6, stringDictionary.GetCount());
+
+            for (int i = 0; i < stringDictionary.GetCount(); i++)
+            {
+                Assert.IsTrue(stringDictionary.TryGetString(i, out UtfAllString value));
+                Assert.AreEqual(strings[i], value.Utf16String);
+
+                Assert.IsTrue(stringDictionary.TryGetStringId(value.Utf8String.Span, out int stringId));
+
+                if (i == 0)
+                {
+                    // For duplicate strings the ID from the last occurrence will be used.
+                    Assert.AreEqual(3, stringId);
+                }
+                else
+                {
+                    Assert.AreEqual(i, stringId);
+                }
+            }
         }
 
         [TestMethod]
