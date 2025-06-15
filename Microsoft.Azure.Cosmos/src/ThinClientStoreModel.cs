@@ -19,6 +19,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
+        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         private ThinClientStoreClient thinClientStoreClient;
 
         public ThinClientStoreModel(
@@ -28,7 +30,8 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            bool isPartitionLevelFailoverEnabled = false)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -37,6 +40,8 @@ namespace Microsoft.Azure.Cosmos
                   httpClient,
                   globalPartitionEndpointManager)
         {
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 eventSource,
@@ -54,6 +59,25 @@ namespace Microsoft.Azure.Cosmos
                 base.partitionKeyRangeCache,
                 base.clientCollectionCache,
                 base.endpointManager);
+
+            // This is applicable for both per partition automatic failover and per partition circuit breaker.
+            if (this.isPartitionLevelFailoverEnabled
+                && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                && request.ResourceType.IsPartitioned())
+            {
+                (bool isSuccess, PartitionKeyRange partitionKeyRange) = await GatewayStoreModel.TryResolvePartitionKeyRangeAsync(
+                    request: request,
+                    sessionContainer: this.sessionContainer,
+                    partitionKeyRangeCache: this.partitionKeyRangeCache,
+                    clientCollectionCache: this.clientCollectionCache,
+                    refreshCache: false);
+
+                if (isSuccess)
+                {
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                }
+            }
 
             Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
             DocumentServiceResponse response;
