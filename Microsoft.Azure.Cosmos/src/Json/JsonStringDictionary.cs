@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #endif
     sealed class JsonStringDictionary : IJsonStringDictionary, IEquatable<JsonStringDictionary>
     {
-        public static readonly int MaxDictionarySize = 
+        public static readonly int MaxDictionaryEncodedStrings = 
             TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin + ((TypeMarker.UserString2ByteLengthMax - TypeMarker.UserString2ByteLengthMin) * 256);
 
         private const int MaxStackAllocSize = 4 * 1024;
@@ -50,10 +50,7 @@ namespace Microsoft.Azure.Cosmos.Json
             for (int i = 0; i < userStrings.Count; i++)
             {
                 string userString = userStrings[i];
-                if (!this.TryAddString(Utf8Span.TranscodeUtf16(userString), MaxDictionarySize, out int stringId))
-                {
-                    throw new ArgumentException($"Failed to add {userString} to {nameof(JsonStringDictionary)}.");
-                }
+                this.AddString(Utf8Span.TranscodeUtf16(userString), out int stringId);
 
                 if (stringId != i)
                 {
@@ -139,30 +136,21 @@ namespace Microsoft.Azure.Cosmos.Json
             return this.size;
         }
 
-        private bool TryAddString(string value, int maxCount, out int stringId)
+        private void AddString(string value, out int stringId)
         {
             int utf8Length = Encoding.UTF8.GetByteCount(value);
             Span<byte> utfString = utf8Length < JsonStringDictionary.MaxStackAllocSize ? stackalloc byte[utf8Length] : new byte[utf8Length];
             Encoding.UTF8.GetBytes(value, utfString);
 
-            return this.TryAddString(Utf8Span.UnsafeFromUtf8BytesNoValidation(utfString), maxCount, out stringId);
+            this.AddString(Utf8Span.UnsafeFromUtf8BytesNoValidation(utfString), out stringId);
         }
 
-        private bool TryAddString(Utf8Span value, int maxCount, out int stringId)
+        private void AddString(Utf8Span value, out int stringId)
         {
-            // Return false if dictionary already at capacity.
-            if (this.size == maxCount)
-            {
-                stringId = default;
-                return false;
-            }
-
             stringId = this.size;
             this.strings.Add(UtfAllString.Create(value.ToString()));
             this.utf8StringToStringId.AddOrUpdate(value.Span, stringId);
             this.size++;
-
-            return true;
         }
 
         public override int GetHashCode()

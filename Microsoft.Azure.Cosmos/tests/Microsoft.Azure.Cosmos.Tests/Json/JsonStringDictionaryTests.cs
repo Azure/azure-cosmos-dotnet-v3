@@ -2,7 +2,6 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.Specialized;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -43,40 +42,33 @@
 
             strings = new();
             indexes = new();
-            for (int i = 0; i < JsonStringDictionary.MaxDictionarySize; i++)
+            for (int i = 0; i < JsonStringDictionary.MaxDictionaryEncodedStrings; i++)
             {
                 strings.Add("test");
-                indexes.Add(JsonStringDictionary.MaxDictionarySize - 1);
+                indexes.Add(JsonStringDictionary.MaxDictionaryEncodedStrings - 1);
             }
 
             this.ExecuteDuplicatesTest(strings, indexes);
-
         }
 
         [TestMethod]
         [Owner("mayapainter")]
-        public void TestDictionarySizeLimit()
+        public void TestDictionarySize()
         {
             List<string> strings = new();
-            for (int i = 0; i < JsonStringDictionary.MaxDictionarySize; i++)
+            for (int i = 0; i < JsonStringDictionary.MaxDictionaryEncodedStrings; i++)
             {
                 strings.Add("test" + i);
             }
 
             JsonStringDictionary jsonStringDictionary0 = new JsonStringDictionary(strings);
-            Assert.AreEqual(JsonStringDictionary.MaxDictionarySize, jsonStringDictionary0.GetCount());
+            Assert.AreEqual(JsonStringDictionary.MaxDictionaryEncodedStrings, jsonStringDictionary0.GetCount());
 
             strings.Add("testString");
 
-            try
-            {
-                JsonStringDictionary jsonStringDictionary1 = new JsonStringDictionary(strings);
-                Assert.Fail("Should not be able to create JsonStringDictionary over max size.");
-            }
-            catch(ArgumentException ex)
-            {
-                Assert.AreEqual("Failed to add testString to JsonStringDictionary.", ex.Message);
-            }
+            // Allow larger dictionaries than can be utilized by the encoding.
+            JsonStringDictionary jsonStringDictionary1 = new JsonStringDictionary(strings);
+            Assert.AreEqual(JsonStringDictionary.MaxDictionaryEncodedStrings + 1, jsonStringDictionary1.GetCount());
         }
 
         [TestMethod]
