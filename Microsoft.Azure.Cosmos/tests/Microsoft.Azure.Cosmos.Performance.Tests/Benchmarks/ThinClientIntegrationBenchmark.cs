@@ -269,6 +269,70 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             this.deleteStreamItems.RemoveAt(index);
         }
 
+        [Benchmark]
+        public async Task BulkCreateItemsAsync()
+        {
+            string pk = "pk_bulk";
+            List<CosmosIntegrationTestObject> bulkItems = this.GenerateItems(pk).Take(100).ToList();
+            List<Task> tasks = new();
+
+            foreach (CosmosIntegrationTestObject item in bulkItems)
+            {
+                tasks.Add(this.container.CreateItemAsync(item, new PartitionKey(item.Pk)));
+            }
+
+            await Task.WhenAll(tasks);
+        }
+
+        [Benchmark]
+        public async Task TransactionalBatchCreateAsync()
+        {
+            string pk = "pk_batch";
+            List<CosmosIntegrationTestObject> batchItems = this.GenerateItems(pk).Take(10).ToList();
+
+            TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pk));
+            foreach (CosmosIntegrationTestObject item in batchItems)
+            {
+                batch.CreateItem(item);
+            }
+            TransactionalBatchResponse response = await batch.ExecuteAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception("Transactional batch failed.");
+            }
+        }
+
+        [Benchmark]
+        public async Task QueryItemsAsync()
+        {
+            FeedIterator<CosmosIntegrationTestObject> query = this.container.GetItemQueryIterator<CosmosIntegrationTestObject>(
+                $"SELECT * FROM c WHERE c.pk = 'pk_benchmark'");
+            List<CosmosIntegrationTestObject> results = new();
+            while (query.HasMoreResults)
+            {
+                FeedResponse<CosmosIntegrationTestObject> response = await query.ReadNextAsync();
+                results.AddRange(response);
+            }
+            if (results.Count == 0)
+            {
+                throw new Exception("Query returned no results.");
+            }
+        }
+
+        [Benchmark]
+        public async Task QueryItemsStreamAsync()
+        {
+            FeedIterator query = this.container.GetItemQueryStreamIterator(
+                $"SELECT * FROM c WHERE c.pk = 'pk_benchmark'");
+            while (query.HasMoreResults)
+            {
+                using ResponseMessage response = await query.ReadNextAsync();
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new Exception("QueryStream failed.");
+                }
+            }
+        }
         private class CustomBenchmarkConfig : ManualConfig
         {
             public CustomBenchmarkConfig()
