@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -31,26 +32,25 @@
         public void TestDuplicatesCase()
         {
             List<string> strings = new List<string> { "test0", "test1", "test2", "test0", "test4", "test5" };
-            JsonStringDictionary stringDictionary = new JsonStringDictionary(strings);
-            Assert.AreEqual(6, stringDictionary.GetCount());
+            List<int> indexes = new List<int> { 3, 1, 2, 3, 4, 5 };
 
-            for (int i = 0; i < stringDictionary.GetCount(); i++)
+            this.ExecuteDuplicatesTest(strings, indexes);
+
+            strings = new List<string> { "test0", "test0", "test0", "test1", "test1", "test1" };
+            indexes = new List<int> { 2, 2, 2, 5, 5, 5 };
+
+            this.ExecuteDuplicatesTest(strings, indexes);
+
+            strings = new();
+            indexes = new();
+            for (int i = 0; i < JsonStringDictionary.MaxDictionarySize; i++)
             {
-                Assert.IsTrue(stringDictionary.TryGetString(i, out UtfAllString value));
-                Assert.AreEqual(strings[i], value.Utf16String);
-
-                Assert.IsTrue(stringDictionary.TryGetStringId(value.Utf8String.Span, out int stringId));
-
-                if (i == 0)
-                {
-                    // For duplicate strings the ID from the last occurrence will be used.
-                    Assert.AreEqual(3, stringId);
-                }
-                else
-                {
-                    Assert.AreEqual(i, stringId);
-                }
+                strings.Add("test");
+                indexes.Add(JsonStringDictionary.MaxDictionarySize - 1);
             }
+
+            this.ExecuteDuplicatesTest(strings, indexes);
+
         }
 
         [TestMethod]
@@ -105,6 +105,23 @@
             // Order-sensitive comparison
             IJsonStringDictionary stringDictionary5 = new JsonStringDictionary(new List<string> { "test1", "test0", "test2" });
             Assert.IsFalse(stringDictionary1.Equals(stringDictionary5));
+        }
+
+        private void ExecuteDuplicatesTest(List<string> strings, List<int> indexes)
+        {
+            IJsonStringDictionary dictionary = new JsonStringDictionary(strings);
+            Assert.AreEqual(indexes.Count, dictionary.GetCount());
+
+            for (int i = 0; i < dictionary.GetCount(); i++)
+            {
+                Assert.IsTrue(dictionary.TryGetString(i, out UtfAllString value));
+                Assert.AreEqual(strings[i], value.Utf16String);
+
+                Assert.IsTrue(dictionary.TryGetStringId(value.Utf8String.Span, out int stringId));
+
+                // For duplicate strings the ID from the last occurrence will be used.
+                Assert.AreEqual(indexes[i], stringId);
+            }
         }
     }
 }
