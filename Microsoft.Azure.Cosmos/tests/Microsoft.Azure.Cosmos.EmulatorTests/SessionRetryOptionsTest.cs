@@ -97,7 +97,7 @@
 
                 // Assert that only the original attempt happened (no retries)
                 long hitCount = badSessionTokenRule.GetHitCount();
-                Assert.AreEqual(4, hitCount, $"There should be only one attempt (no retries) for {faultInjectionOperationType} when MaxInRegionRetryCount is 0 and RemotePreferredRegion is set to true.");
+                Assert.AreEqual(4, hitCount, $"There should be only one attempt (no retries) for {faultInjectionOperationType} when MaxInRegionRetryCount is 0 and RemotePreferredRegion is set to true. Diagnostics {executionResult.Diagnostics}");
             }
 
         }
@@ -174,7 +174,7 @@
 
                     if (remoteRegionPreferred)
                     {
-                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4);
+                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts && hitCount <= (1 + sessionTokenMismatchRetryAttempts) * 4, executionResult.Diagnostics.ToString());
                     }
                 }
             }
@@ -261,7 +261,7 @@
                     if (remoteRegionPreferred)
                     {
                         // higher hit count is possible while in MinRetryWaitTimeWithinRegion
-                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts);
+                        Assert.IsTrue(hitCount >= sessionTokenMismatchRetryAttempts, executionResult.Diagnostics.ToString());
                     }
                 }
             }
