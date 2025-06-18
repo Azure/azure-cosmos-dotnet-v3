@@ -48,9 +48,9 @@ MODE_FLAGS="--isthinclientenabled=${THINCLIENT_ENABLED:-false} \
     # ---------- 1) ALWAYS RUN THESE 10 WORKLOADS ----------
 for WORKLOAD_NAME in \
   CreateItemV3BenchmarkOperation \
-  CreateItemStreamV3BenchmarkOperation \
+  InsertV3BenchmarkOperation \
   ReadItemV3BenchmarkOperation \
-  ReadItemStreamV3BenchmarkOperation \
+  ReadStreamExistsV3BenchmarkOperation \
   ReplaceItemV3BenchmarkOperation \
   ReplaceItemStreamV3BenchmarkOperation \
   UpsertItemV3BenchmarkOperation \
