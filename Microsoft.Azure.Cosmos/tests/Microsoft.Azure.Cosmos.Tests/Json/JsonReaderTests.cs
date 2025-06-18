@@ -702,7 +702,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, };
             List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 };
 
-            int stringId = JsonStringDictionary.MaxDictionarySize - 1;
+            int stringId = JsonStringDictionary.MaxDictionaryEncodedStrings - 1;
             string userEncodedString = "a" + stringId.ToString();
 
             expectedTokens.Add(JsonToken.FieldName(userEncodedString));
