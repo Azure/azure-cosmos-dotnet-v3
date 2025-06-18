@@ -5,47 +5,48 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.Linq;
     using System.Net;
-    using System.Text;
-    using System.Text.Json.Serialization;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading.Tasks;
     using BenchmarkDotNet.Attributes;
     using BenchmarkDotNet.Columns;
     using BenchmarkDotNet.Configs;
     using BenchmarkDotNet.Diagnosers;
-    using BenchmarkDotNet.Exporters.Csv;
     using BenchmarkDotNet.Exporters;
+    using BenchmarkDotNet.Exporters.Csv;
     using BenchmarkDotNet.Jobs;
+    using Microsoft.Azure.Cosmos;
 
     [MemoryDiagnoser]
     [BenchmarkCategory("ThinClientHttpPerf")]
-    [Config(typeof(CustomBenchmarkConfig))]
+    [Config(typeof(CustomConfig))]
     public class ThinClientHttpPerf
     {
         private CosmosClient client;
-        private Database database;
         private Container container;
+        private List<Doc> seedDocs;
         private CosmosSystemTextJsonSerializer serializer;
-        private List<CosmosIntegrationTestObject> seedItems;
-        private readonly Random random = new();
-        private const int SeedItemCount = 1_000;
 
-        private const int TotalOperations = 1_000_000;
+        private const int SeedItemCount = 1_000;
 
         [Params(1, 4, 16, 64)]
         public int Concurrency { get; set; }
 
-        #region Setup / Cleanup
+        // run “small” or the full million just by switching the params list
+        [Params(1_000, 1_000_000)]
+        public int Operations { get; set; }
+
+        #region setup / teardown
         [GlobalSetup]
         public async Task GlobalSetup()
         {
-            string cs = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            if (string.IsNullOrEmpty(cs))
-                throw new InvalidOperationException("COSMOSDB_THINCLIENT env-var missing.");
+            string cs = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT")
+                        ?? throw new InvalidOperationException("COSMOSDB_THINCLIENT not set.");
+
+            ConnectionMode Mode = ConnectionMode.Gateway;
+            Environment.SetEnvironmentVariable(
+                ConfigurationManager.ThinClientModeEnabled, "True");
 
             this.serializer = new CosmosSystemTextJsonSerializer(
                 new JsonSerializerOptions
@@ -59,135 +60,88 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
                 cs,
                 new CosmosClientOptions
                 {
-                    ConnectionMode = ConnectionMode.Gateway,   // flip to http2/direct in your code
-                    Serializer = this.serializer
+                    ConnectionMode = Mode,
+                    Serializer = this.serializer,
+                    MaxRetryAttemptsOnRateLimitedRequests = 9,
+                    MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(30)
                 });
 
-            string db = "TestDb_" + Guid.NewGuid();
-            string col = "TestContainer_" + Guid.NewGuid();
+            Database db = await this.client.CreateDatabaseIfNotExistsAsync("Perf_" + Guid.NewGuid());
+            this.container = await db.CreateContainerIfNotExistsAsync("Cn_" + Guid.NewGuid(), "/pk");
 
-            this.database = await this.client.CreateDatabaseIfNotExistsAsync(db);
-            this.container = await this.database.CreateContainerIfNotExistsAsync(col, "/pk");
-
-            string pk = "pk_seed";
-            this.seedItems = this.GenerateItems(pk).ToList();
-
-            foreach (CosmosIntegrationTestObject it in this.seedItems)
-                await this.container.CreateItemAsync(it, new PartitionKey(it.Pk));
+            // seed read targets
+            this.seedDocs = new List<Doc>(SeedItemCount);
+            for (int i = 0; i < SeedItemCount; i++)
+            {
+                Doc d = new Doc { Id = Guid.NewGuid().ToString(), Pk = "pk_seed", Other = "seed" };
+                this.seedDocs.Add(d);
+                await this.container.CreateItemAsync(d, new PartitionKey(d.Pk));
+            }
         }
 
         [GlobalCleanup]
-        public async Task GlobalCleanup()
+        public async Task Cleanup()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-            if (this.database != null)
-                await this.database.DeleteAsync();
+            if (this.container != null)
+                await this.container.Database.DeleteAsync();
             this.client?.Dispose();
         }
         #endregion
 
-        /*----------------------- 1 000 000 CREATEs ---------------------------*/
-        [Benchmark(
-            Description = "1 000 000 point creates (configurable concurrency)",
-            OperationsPerInvoke = TotalOperations)]
-        public async Task MillionPointCreatesAsync()
+        [Benchmark(Description = "Point reads")]
+        public async Task PointReadsAsync()
         {
-            int opsPerWorker = TotalOperations / this.Concurrency;
-            Task[] tasks = new Task[this.Concurrency];
+            int baseOps = this.Operations / this.Concurrency;
+            int remainder = this.Operations % this.Concurrency;
 
+            Task[] workers = new Task[this.Concurrency];
             for (int w = 0; w < this.Concurrency; w++)
-                tasks[w] = this.RunCreatesAsync(opsPerWorker);
-
-            await Task.WhenAll(tasks);
-        }
-
-        private async Task RunCreatesAsync(int iterations)
-        {
-            for (int i = 0; i < iterations; i++)
             {
-                CosmosIntegrationTestObject item = new CosmosIntegrationTestObject
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Pk = "pk_create",
-                    Other = "bulk-create"
-                };
-
-                using Stream s = this.serializer.ToStream(item);
-                ResponseMessage rsp = await this.container.CreateItemStreamAsync(s, new PartitionKey(item.Pk));
-                if (rsp.StatusCode != HttpStatusCode.Created)
-                    throw new Exception($"Create failed: {item.Id}");
+                int work = baseOps + (w < remainder ? 1 : 0);
+                workers[w] = this.DoReadsAsync(work);
             }
+            await Task.WhenAll(workers);
         }
 
-        /*------------------------ 1 000 000 READs ----------------------------*/
-        [Benchmark(
-            Description = "1 000 000 point reads (configurable concurrency)",
-            OperationsPerInvoke = TotalOperations)]
-        public async Task MillionPointReadsAsync()
+        private async Task DoReadsAsync(int count)
         {
-            int opsPerWorker = TotalOperations / this.Concurrency;
-            Task[] tasks = new Task[this.Concurrency];
-
-            for (int w = 0; w < this.Concurrency; w++)
-                tasks[w] = this.RunReadsAsync(opsPerWorker);
-
-            await Task.WhenAll(tasks);
-        }
-
-        private async Task RunReadsAsync(int iterations)
-        {
-            Random localRand = new();
-            for (int i = 0; i < iterations; i++)
+            for (int i = 0; i < count; i++)
             {
-                CosmosIntegrationTestObject item = this.seedItems[localRand.Next(this.seedItems.Count)];
-                ResponseMessage rsp = await this.container.ReadItemStreamAsync(item.Id, new PartitionKey(item.Pk));
+                Doc doc = this.seedDocs[Random.Shared.Next(this.seedDocs.Count)];
+                ResponseMessage rsp = await this.container.ReadItemStreamAsync(doc.Id, new PartitionKey(doc.Pk));
                 if (rsp.StatusCode != HttpStatusCode.OK)
-                    throw new Exception($"Read failed: {item.Id}");
+                    throw new InvalidOperationException($"Read failed: {doc.Id}");
             }
         }
-        /*--------------------------------------------------------------------*/
 
-        private IEnumerable<CosmosIntegrationTestObject> GenerateItems(string pk)
+        private class CustomConfig : ManualConfig
         {
-            for (int i = 0; i < SeedItemCount; i++)
-                yield return new CosmosIntegrationTestObject
-                {
-                    Id = Guid.NewGuid().ToString(),
-                    Pk = pk,
-                    Other = "seed"
-                };
-        }
-
-        private class CustomBenchmarkConfig : ManualConfig
-        {
-            public CustomBenchmarkConfig()
+            public CustomConfig()
             {
+                this.AddColumn(StatisticColumn.OperationsPerSecond);
                 this.AddColumn(StatisticColumn.OperationsPerSecond);
                 this.AddColumn(StatisticColumn.P95);
                 this.AddColumn(StatisticColumn.P100);
-
                 this.AddDiagnoser(MemoryDiagnoser.Default);
-                this.AddDiagnoser(ThreadingDiagnoser.Default);
-
-                this.AddColumnProvider(DefaultConfig.Instance.GetColumnProviders().ToArray());
-
-                this.AddJob(Job.ShortRun.WithStrategy(BenchmarkDotNet.Engines.RunStrategy.Throughput));
-
-                this.AddExporter(HtmlExporter.Default);
-                this.AddExporter(CsvExporter.Default);
+                this.AddJob(Job.Dry    // 1 warm-up + 1 measurement
+                       .WithStrategy(BenchmarkDotNet.Engines.RunStrategy.Throughput)
+                       .WithIterationCount(1)
+                       .WithWarmupCount(1));
+                this.AddExporter(HtmlExporter.Default, CsvExporter.Default);
             }
         }
-    }
 
-    internal class CosmosIntegrationTestObject
-    {
-        [JsonPropertyName("id")]
-        public string Id { get; set; }
+        internal class Doc
+        {
+            [JsonPropertyName("id")]
+            public string Id { get; set; }
 
-        [JsonPropertyName("pk")]
-        public string Pk { get; set; }
+            [JsonPropertyName("pk")]
+            public string Pk { get; set; }
 
-        [JsonPropertyName("other")]
-        public string Other { get; set; }
+            [JsonPropertyName("other")]
+            public string Other { get; set; }
+        }
     }
 }
