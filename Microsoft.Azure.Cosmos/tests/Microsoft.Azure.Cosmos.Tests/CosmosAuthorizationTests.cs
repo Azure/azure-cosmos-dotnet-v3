@@ -103,7 +103,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0",
+                    "type%3daad%26ver%3d1.0%26sig%3dewogICAgICAgICAgICAgICAgImFsZyI6IlJTMjU2IiwKICAgICAgICAgICAgICAgICJraWQiOiJ4XzlLU3VzS1U1WWNIZjQiLAogICAgICAgICAgICAgICAgInR5cCI6IkpXVCIKICAgICAgICAgICAgfQ.ewogICAgICAgICAgICAgICAgIm9pZCI6Ijk2MzEzMDM0LTQ3MzktNDNjYi05M2NkLTc0MTkzYWRiZTViNiIsCiAgICAgICAgICAgICAgICAidGlkIjoiN2IxOTk5YTEtZGZkNy00NDBlLTgyMDQtMDAxNzA5NzliOTg0IiwKICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLAogICAgICAgICAgICAgICAgImdyb3VwcyI6WwogICAgICAgICAgICAgICAgICAgICI3Y2UxZDAwMy00Y2IzLTQ4NzktYjdjNS03NDA2MmEzNWM2NmUiLAogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLAogICAgICAgICAgICAgICAgICAgICI1NTQ5YmI2Mi1jNzdiLTQzMDUtYmRhOS05ZWM2NmI4NWQ5ZTQiLAogICAgICAgICAgICAgICAgICAgICJjNDRmZDY4NS01YzU4LTQ1MmMtYWFmNy0xM2NlNzUxODRmNjUiLAogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgIm5iZiI6MTkxNjIxMjE0OSwKICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksCiAgICAgICAgICAgICAgICAiaWF0IjoxNTk2NTkyMzM1LAogICAgICAgICAgICAgICAgImlzcyI6Imh0dHBzOi8vc3RzLmZha2UtaXNzdWVyLm5ldC83YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLAogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCIKICAgICAgICAgICAgfQ.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0",
                     token);
                 Assert.IsNull(payload);
             }
@@ -118,7 +118,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
+                    "type%3daad%26ver%3d1.0%26sig%3dewogICAgICAgICAgICAgICAgImFsZyI6IlJTMjU2IiwKICAgICAgICAgICAgICAgICJraWQiOiJ4XzlLU3VzS1U1WWNIZjQiLAogICAgICAgICAgICAgICAgInR5cCI6IkpXVCIKICAgICAgICAgICAgfQ.ewogICAgICAgICAgICAgICAgIm9pZCI6Ijk2MzEzMDM0LTQ3MzktNDNjYi05M2NkLTc0MTkzYWRiZTViNiIsCiAgICAgICAgICAgICAgICAidGlkIjoiN2IxOTk5YTEtZGZkNy00NDBlLTgyMDQtMDAxNzA5NzliOTg0IiwKICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLAogICAgICAgICAgICAgICAgImdyb3VwcyI6WwogICAgICAgICAgICAgICAgICAgICI3Y2UxZDAwMy00Y2IzLTQ4NzktYjdjNS03NDA2MmEzNWM2NmUiLAogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLAogICAgICAgICAgICAgICAgICAgICI1NTQ5YmI2Mi1jNzdiLTQzMDUtYmRhOS05ZWM2NmI4NWQ5ZTQiLAogICAgICAgICAgICAgICAgICAgICJjNDRmZDY4NS01YzU4LTQ1MmMtYWFmNy0xM2NlNzUxODRmNjUiLAogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgIm5iZiI6MTkxNjIxMjE0OSwKICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksCiAgICAgICAgICAgICAgICAiaWF0IjoxNTk2NTkyMzM1LAogICAgICAgICAgICAgICAgImlzcyI6Imh0dHBzOi8vc3RzLmZha2UtaXNzdWVyLm5ldC83YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLAogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCIKICAgICAgICAgICAgfQ.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
                 Assert.IsNull(payload);
             }
 
@@ -132,7 +132,63 @@ namespace Microsoft.Azure.Cosmos.Tests
                     AuthorizationTokenType.PrimaryMasterKey);
 
                 Assert.AreEqual(
-                    "type%3daad%26ver%3d1.0%26sig%3dew0KICAgICAgICAgICAgICAgICJhbGciOiJSUzI1NiIsDQogICAgICAgICAgICAgICAgImtpZCI6InhfOUtTdXNLVTVZY0hmNCIsDQogICAgICAgICAgICAgICAgInR5cCI6IkpXVCINCiAgICAgICAgICAgIH0.ew0KICAgICAgICAgICAgICAgICJvaWQiOiI5NjMxMzAzNC00NzM5LTQzY2ItOTNjZC03NDE5M2FkYmU1YjYiLA0KICAgICAgICAgICAgICAgICJ0aWQiOiI3YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLA0KICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLA0KICAgICAgICAgICAgICAgICJncm91cHMiOlsNCiAgICAgICAgICAgICAgICAgICAgIjdjZTFkMDAzLTRjYjMtNDg3OS1iN2M1LTc0MDYyYTM1YzY2ZSIsDQogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLA0KICAgICAgICAgICAgICAgICAgICAiNTU0OWJiNjItYzc3Yi00MzA1LWJkYTktOWVjNjZiODVkOWU0IiwNCiAgICAgICAgICAgICAgICAgICAgImM0NGZkNjg1LTVjNTgtNDUyYy1hYWY3LTEzY2U3NTE4NGY2NSIsDQogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiDQogICAgICAgICAgICAgICAgXSwNCiAgICAgICAgICAgICAgICAibmJmIjoxOTE2MjEyMTQ5LA0KICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksDQogICAgICAgICAgICAgICAgImlhdCI6MTU5NjU5MjMzNSwNCiAgICAgICAgICAgICAgICAiaXNzIjoiaHR0cHM6Ly9zdHMuZmFrZS1pc3N1ZXIubmV0LzdiMTk5OWExLWRmZDctNDQwZS04MjA0LTAwMTcwOTc5Yjk4NCIsDQogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCINCiAgICAgICAgICAgIH0.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
+                    "type%3daad%26ver%3d1.0%26sig%3dewogICAgICAgICAgICAgICAgImFsZyI6IlJTMjU2IiwKICAgICAgICAgICAgICAgICJraWQiOiJ4XzlLU3VzS1U1WWNIZjQiLAogICAgICAgICAgICAgICAgInR5cCI6IkpXVCIKICAgICAgICAgICAgfQ.ewogICAgICAgICAgICAgICAgIm9pZCI6Ijk2MzEzMDM0LTQ3MzktNDNjYi05M2NkLTc0MTkzYWRiZTViNiIsCiAgICAgICAgICAgICAgICAidGlkIjoiN2IxOTk5YTEtZGZkNy00NDBlLTgyMDQtMDAxNzA5NzliOTg0IiwKICAgICAgICAgICAgICAgICJzY3AiOiJ1c2VyX2ltcGVyc29uYXRpb24iLAogICAgICAgICAgICAgICAgImdyb3VwcyI6WwogICAgICAgICAgICAgICAgICAgICI3Y2UxZDAwMy00Y2IzLTQ4NzktYjdjNS03NDA2MmEzNWM2NmUiLAogICAgICAgICAgICAgICAgICAgICJlOTlmZjMwYy1jMjI5LTRjNjctYWIyOS0zMGE2YWViYzNlNTgiLAogICAgICAgICAgICAgICAgICAgICI1NTQ5YmI2Mi1jNzdiLTQzMDUtYmRhOS05ZWM2NmI4NWQ5ZTQiLAogICAgICAgICAgICAgICAgICAgICJjNDRmZDY4NS01YzU4LTQ1MmMtYWFmNy0xM2NlNzUxODRmNjUiLAogICAgICAgICAgICAgICAgICAgICJiZTg5NTIxNS1lYWI1LTQzYjctOTUzNi05ZWY4ZmUxMzAzMzAiCiAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgIm5iZiI6MTkxNjIxMjE0OSwKICAgICAgICAgICAgICAgICJleHAiOjE5MTYyMTU3NDksCiAgICAgICAgICAgICAgICAiaWF0IjoxNTk2NTkyMzM1LAogICAgICAgICAgICAgICAgImlzcyI6Imh0dHBzOi8vc3RzLmZha2UtaXNzdWVyLm5ldC83YjE5OTlhMS1kZmQ3LTQ0MGUtODIwNC0wMDE3MDk3OWI5ODQiLAogICAgICAgICAgICAgICAgImF1ZCI6Imh0dHBzOi8vbG9jYWxob3N0LmxvY2FsaG9zdCIKICAgICAgICAgICAgfQ.VkdocGN5QnBjeUJoSUhOaGJYQnNaU0J6ZEhKcGJtYz0", token);
+                Assert.IsNull(payload);
+            }
+        }
+
+        [TestMethod]
+        public async Task TokenCredentialCache_SetsCorrectScope_BasedOnHost()
+        {
+            // Fabric host scenario
+            string fabricHost = "test.zb9.msit-sql.cosmos.fabric.microsoft.com";
+            Uri fabricUri = new Uri($"https://{fabricHost}");
+            string expectedFabricScope = "https://cosmos.azure.com/.default";
+
+            LocalEmulatorTokenCredential fabricCredential = new LocalEmulatorTokenCredential(
+                masterKey: "testkey",
+                expectedScope: expectedFabricScope);
+
+            using (AuthorizationTokenProvider fabricAuthorization = new AuthorizationTokenProviderTokenCredential(
+                fabricCredential,
+                fabricUri,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1)))
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await fabricAuthorization.GetUserAuthorizationAsync(
+                    "dbs\\test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.IsFalse(string.IsNullOrEmpty(token));
+                Assert.IsNull(payload);
+            }
+
+            // Non-fabric host scenario
+            string customHost = "myaccount.documents.azure.com";
+            Uri customUri = new Uri($"https://{customHost}");
+            string expectedCustomScope = $"https://{customHost}/.default";
+
+            LocalEmulatorTokenCredential customCredential = new LocalEmulatorTokenCredential(
+                masterKey: "testkey",
+                expectedScope: expectedCustomScope);
+
+            using (AuthorizationTokenProvider customAuthorization = new AuthorizationTokenProviderTokenCredential(
+                customCredential,
+                customUri,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1)))
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await customAuthorization.GetUserAuthorizationAsync(
+                    "dbs\\test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.IsFalse(string.IsNullOrEmpty(token));
                 Assert.IsNull(payload);
             }
         }
