@@ -307,7 +307,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
             }
 
-            string query = $"SELECT * FROM c WHERE c.partitionKey = '{pk}'";
+            string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
             FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
 
             int count = 0;
@@ -327,12 +327,12 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_query_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (dynamic item in items)
+            foreach (TestObject item in items)
             {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.partitionKey));
+                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
             }
 
-            QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.partitionKey = @pk").WithParameter("@pk", pk);
+            QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.pk = @pk").WithParameter("@pk", pk);
             FeedIterator iterator = this.container.GetItemQueryStreamIterator(query);
 
             int count = 0;
@@ -354,6 +354,63 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             }
 
             Assert.AreEqual(ItemCount, count);
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task BulkCreateItemsTest()
+        {
+            CosmosClient bulkClient = new CosmosClient(
+                this.connectionString,
+                new CosmosClientOptions
+                {
+                    ConnectionMode = ConnectionMode.Gateway,
+                    Serializer = this.cosmosSystemTextJsonSerializer,
+                    AllowBulkExecution = true,
+                });
+
+            string pk = "pk_bulk";
+            List<TestObject> items = this.GenerateItems(pk).ToList();
+            List<Task<ItemResponse<TestObject>>> tasks = new List<Task<ItemResponse<TestObject>>>();
+
+            Container bulkContainer = bulkClient.GetContainer(this.database.Id, this.container.Id);
+
+            foreach (TestObject item in items)
+            {
+                tasks.Add(bulkContainer.CreateItemAsync(item, new PartitionKey(item.Pk)));
+            }
+
+            await Task.WhenAll(tasks);
+
+            foreach (Task<ItemResponse<TestObject>> task in tasks)
+            {
+                Assert.AreEqual(HttpStatusCode.Created, task.Result.StatusCode);
+            }
+
+            bulkClient.Dispose();
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task TransactionalBatchCreateItemsTest()
+        {
+            string pk = "pk_batch";
+            List<TestObject> items = this.GenerateItems(pk).Take(100).ToList();
+
+            TransactionalBatch batch = this.container.CreateTransactionalBatch(new PartitionKey(pk));
+
+            foreach (TestObject item in items)
+            {
+                batch.CreateItem(item);
+            }
+
+            TransactionalBatchResponse batchResponse = await batch.ExecuteAsync();
+            Assert.AreEqual(HttpStatusCode.OK, batchResponse.StatusCode);
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                Assert.AreEqual(HttpStatusCode.Created, batchResponse[i].StatusCode);
+            }
         }
     }
 }

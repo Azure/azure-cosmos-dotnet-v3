@@ -7987,6 +7987,11 @@
           "Attributes": [],
           "MethodInfo": "System.String EastUS2EUAP;IsInitOnly:False;IsStatic:True;"
         },
+        "System.String EastUS3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String EastUS3;IsInitOnly:False;IsStatic:True;"
+        },
         "System.String EastUSSLV": {
           "Type": "Field",
           "Attributes": [],
