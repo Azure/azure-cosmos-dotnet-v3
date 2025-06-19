@@ -33,8 +33,8 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
         [Params(1, 4, 16, 64)]
         public int Concurrency { get; set; }
 
-        // run “small” or the full million just by switching the params list
-        [Params(1_000, 1_000_000)]
+
+        [Params(1_000_000)]
         public int Operations { get; set; }
 
         #region setup / teardown
