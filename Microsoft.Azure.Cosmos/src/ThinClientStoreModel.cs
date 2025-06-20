@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics;
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,9 +20,36 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
-        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
+        /// <summary>
+        /// An instance of <see cref="CancellationTokenSource"/> used to cancel the background connection initialization task.
+        /// </summary>
+        private readonly CancellationTokenSource cancellationTokenSource = new ();
+
+        /// <summary>
+        /// A readonly integer containing the partition failback refresh interval in seconds. The default value is 5 minutes.
+        /// </summary>
+        private readonly int backgroundFailbackTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(300);
+
+        private readonly int requestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForReads(10);
+
+        private readonly TimeSpan timeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
+
+        private readonly object timestampLock = new ();
+
+        private readonly object counterLock = new ();
+
+        private GatewayStoreClient storeClient;
+
         private ThinClientStoreClient thinClientStoreClient;
+
+        private int consecutiveRequestFailureCount;
+
+        private DateTime lastRequestFailureTime;
+
+        /// <summary>
+        /// An integer indicating how many times the dispose was invoked.
+        /// </summary>
+        private int disposeCounter = 0;
 
         public ThinClientStoreModel(
             GlobalEndpointManager endpointManager,
@@ -30,8 +58,7 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient,
-            bool isPartitionLevelFailoverEnabled = false)
+            CosmosHttpClient httpClient)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -40,12 +67,12 @@ namespace Microsoft.Azure.Cosmos
                   httpClient,
                   globalPartitionEndpointManager)
         {
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
-            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 eventSource,
                 serializerSettings);
+            this.storeClient = this.thinClientStoreClient;
+            this.InitiateGlobalFailbackLoop();
         }
 
         public override async Task<DocumentServiceResponse> ProcessMessageAsync(
@@ -60,29 +87,10 @@ namespace Microsoft.Azure.Cosmos
                 base.clientCollectionCache,
                 base.endpointManager);
 
-            // This is applicable for both per partition automatic failover and per partition circuit breaker.
-            if (this.isPartitionLevelFailoverEnabled
-                && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
-                && request.ResourceType.IsPartitioned())
-            {
-                (bool isSuccess, PartitionKeyRange partitionKeyRange) = await GatewayStoreModel.TryResolvePartitionKeyRangeAsync(
-                    request: request,
-                    sessionContainer: this.sessionContainer,
-                    partitionKeyRangeCache: this.partitionKeyRangeCache,
-                    clientCollectionCache: this.clientCollectionCache,
-                    refreshCache: false);
-
-                if (isSuccess)
-                {
-                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
-                }
-            }
-
-            Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
             DocumentServiceResponse response;
             try
             {
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
                 if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(
                     request.RequestContext.LocationEndpointToRoute,
                     out string regionName))
@@ -91,7 +99,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 AccountProperties properties = await this.GetDatabaseAccountPropertiesAsync();
-                response = await this.thinClientStoreClient.InvokeAsync(
+                response = await this.storeClient.InvokeAsync(
                     request,
                     request.ResourceType,
                     physicalAddress,
@@ -102,19 +110,18 @@ namespace Microsoft.Azure.Cosmos
             }
             catch (DocumentClientException exception)
             {
-                if (exception.StatusCode == HttpStatusCode.ServiceUnavailable || exception.StatusCode == HttpStatusCode.InternalServerError)
+                if (exception.StatusCode == HttpStatusCode.ServiceUnavailable
+                    || exception.StatusCode == HttpStatusCode.InternalServerError)
                 {
-                    try
+                    this.IncrementRequestFailureCounts(
+                        currentTime: DateTime.UtcNow);
+
+                    this.SnapshotConsecutiveRequestFailureCount(
+                        out int consecutiveRequestFailureCount);
+
+                    if (consecutiveRequestFailureCount == this.requestFailureCounterThreshold)
                     {
-                        DocumentServiceResponse gatewayResponse = await this.gatewayStoreClient.InvokeAsync(
-                            request,
-                            request.ResourceType,
-                            physicalAddress,
-                            cancellationToken);
-                    }
-                    catch (DocumentClientException)
-                    {
-                        throw;
+                        Interlocked.Exchange(ref this.storeClient, base.gatewayStoreClient);
                     }
                 }
 
@@ -141,6 +148,95 @@ namespace Microsoft.Azure.Cosmos
             return response;
         }
 
+        public void IncrementRequestFailureCounts(
+            DateTime currentTime)
+        {
+            this.SnapshotGlobalFailoverTimestamps(
+                out DateTime lastRequestFailureTime);
+
+            if (currentTime - lastRequestFailureTime > this.timeoutCounterResetWindowInMinutes)
+            {
+                Interlocked.Exchange(ref this.consecutiveRequestFailureCount, 0);
+            }
+
+            Interlocked.Increment(ref this.consecutiveRequestFailureCount);
+            this.lastRequestFailureTime = currentTime;
+        }
+
+        /// <summary>
+        /// Helper method to snapshot the last request failure timestamps.
+        /// </summary>
+        /// <param name="lastRequestFailureTime">A <see cref="DateTime"/> field containing th e last send attempt time.</param>
+        public void SnapshotGlobalFailoverTimestamps(
+            out DateTime lastRequestFailureTime)
+        {
+            Debug.Assert(!Monitor.IsEntered(this.timestampLock));
+            lock (this.timestampLock)
+            {
+                lastRequestFailureTime = this.lastRequestFailureTime;
+            }
+        }
+
+        public void SnapshotConsecutiveRequestFailureCount(
+            out int consecutiveRequestFailureCount)
+        {
+            Debug.Assert(!Monitor.IsEntered(this.counterLock));
+            lock (this.counterLock)
+            {
+                consecutiveRequestFailureCount = this.consecutiveRequestFailureCount;
+            }
+        }
+
+        /// <summary>
+        /// This method that will run a continious loop with a delay of one minute to refresh the connection to the failed backend replicas.
+        /// The loop will break, when a cancellation is requested.
+        /// Note that the refresh interval can configured by the end user using the environment variable:
+        /// AZURE_COSMOS_PPCB_STALE_PARTITION_UNAVAILABILITY_REFRESH_INTERVAL_IN_SECONDS.
+        /// </summary>
+#pragma warning disable VSTHRD100 // Avoid async void methods
+        private async void InitiateGlobalFailbackLoop()
+#pragma warning restore VSTHRD100 // Avoid async void methods
+        {
+            while (!this.cancellationTokenSource.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(
+                        TimeSpan.FromSeconds(this.backgroundFailbackTimeIntervalInSeconds),
+                        this.cancellationTokenSource.Token);
+
+                    if (this.cancellationTokenSource.IsCancellationRequested)
+                    {
+                        break;
+                    }
+
+                    DefaultTrace.TraceInformation("ThinClientStoreModel: InitiateGlobalFailbackLoop() trying to fail back to thin client mode.");
+                    this.FallbackToThinClientMode();
+                }
+                catch (Exception ex)
+                {
+                    if (this.cancellationTokenSource.IsCancellationRequested && (ex is OperationCanceledException || ex is ObjectDisposedException))
+                    {
+                        break;
+                    }
+
+                    DefaultTrace.TraceCritical("ThinClientStoreModel: InitiateGlobalFailbackLoop() - Unable fail back to thin client mode. Exception: {0}", ex.Message);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to mark the unhealthy endpoints for a faulty partition to healthy state, un-deterministically. This is done
+        /// specifically for the gateway mode to get the faulty partition failed back to the original location.
+        /// </summary>
+        public void FallbackToThinClientMode()
+        {
+            if (this.storeClient is not ThinClientStoreClient)
+            {
+                Interlocked.Exchange(ref this.storeClient, this.thinClientStoreClient);
+            }
+        }
+
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
         {
             try
@@ -165,6 +261,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (disposing)
             {
+                if (Interlocked.Increment(ref this.disposeCounter) == 1)
+                {
+                    this.cancellationTokenSource?.Cancel();
+                    this.cancellationTokenSource?.Dispose();
+                }
+
                 if (this.thinClientStoreClient != null)
                 {
                     try
