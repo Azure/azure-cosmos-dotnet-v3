@@ -229,10 +229,10 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionServerErrorRule thinClientRule, 
             DocumentServiceRequest request)
         {
-            // Thin client rules are applicable only for port 10650
+            // Thin client rules are applicable only for port 10250
             int port = int.Parse(request.Headers.Get("port"));
             return thinClientRule.GetConnectionType() == FaultInjectionConnectionType.ThinClient
-                && port == 10650;
+                && port == 10250;
         }
     }
 }
