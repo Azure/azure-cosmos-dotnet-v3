@@ -167,6 +167,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || this.ThinClientApplicable(rule, dsr)
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(dsr))
                 {
@@ -182,6 +183,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || this.ThinClientApplicable(rule, dsr)
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(dsr))
                 {
@@ -197,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             foreach (FaultInjectionServerErrorRule rule in this.serverSendDelayRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
+                    || this.ThinClientApplicable(rule, dsr)
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(dsr))
                 {
@@ -220,6 +223,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         internal FaultInjectionRuleProcessor GetRuleProcessor()
         {
             return this.ruleProcessor;
+        }
+
+        internal bool ThinClientApplicable(
+            FaultInjectionServerErrorRule thinClientRule, 
+            DocumentServiceRequest request)
+        {
+            // Thin client rules are applicable only for ports 1000-1099
+            int port = int.Parse(request.Headers.Get("port"));
+            return thinClientRule.GetConnectionType() == FaultInjectionConnectionType.ThinClient
+                && port >= 1000 && port < 1100;
         }
     }
 }
