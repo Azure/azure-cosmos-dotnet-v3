@@ -19,6 +19,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         Gateway,
 
         /// <summary>
+        /// Requests to the ThinClient Proxy
+        /// </summary>
+        ThinClient,
+
+        /// <summary>
         /// All connection types. Default value.
         /// </summary>
         All,

@@ -359,6 +359,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
+                            documentServiceRequest.Headers.Set("port", requestMessage.RequestUri.Port.ToString());
                             (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
                             if (hasFault)
                             {
@@ -373,6 +374,7 @@ namespace Microsoft.Azure.Cosmos
 
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
+                            documentServiceRequest.Headers.Set("port", requestMessage.RequestUri.Port.ToString());
                             CancellationToken fiToken = cancellationTokenSource.Token;
                             fiToken.ThrowIfCancellationRequested();
                             await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, fiToken);
