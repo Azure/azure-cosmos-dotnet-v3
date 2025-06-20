@@ -46,6 +46,11 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
 
         /// <summary>
+        /// Environment variable to override AAD scope.
+        /// </summary>
+        internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
+
+        /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
         /// </summary>
@@ -182,6 +187,20 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ThinClientModeEnabled,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the AAD scope value to override.
+        /// </summary>
+        /// <param name="defaultValue">Emoty string for AAD scope if no scope value is provided.</param>
+        /// <returns>AAD scope value.</returns>
+        public static string AADScopeOverrideValue(
+            string defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.AADScopeOverride,
                         defaultValue: defaultValue);
         }
 
