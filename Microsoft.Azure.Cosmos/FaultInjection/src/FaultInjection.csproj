@@ -40,10 +40,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<None Include="..\LICENSE" Pack="true" PackagePath="" Visible="false" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<AdditionalFiles Include="stylecop.json" />
 		<None Include="..\..\..\Icon.png" Pack="true" PackagePath=""/>
 	</ItemGroup>
