@@ -138,7 +138,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        public async Task TokenCredentialCache_SetsCorrectScope_BasedOnHost()
+        public async Task TokenCredentialCache_SetsCorrectFabricScope()
         {
             // Fabric host scenario
             string fabricHost = "test.zb9.msit-sql.cosmos.fabric.microsoft.com";
@@ -191,6 +191,40 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsFalse(string.IsNullOrEmpty(token));
                 Assert.IsNull(payload);
             }
+        }
+
+        [DataTestMethod]
+        [DataRow("https://env-override/.default", "https://env-override/.default", DisplayName = "EnvVarOverride")]
+        [DataRow(null, "https://anyhost.documents.azure.com/.default", DisplayName = "NoEnvVar_DefaultScope")]
+        public async Task TokenCredentialCache_SetsCorrectScope_EnvOverrideOrDefault(string envVarValue, string expectedScope)
+        {
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", envVarValue);
+
+            string anyHost = "anyhost.documents.azure.com";
+            Uri anyUri = new Uri($"https://{anyHost}");
+
+            LocalEmulatorTokenCredential credential = new LocalEmulatorTokenCredential(
+                masterKey: "testkey",
+                expectedScope: expectedScope);
+
+            using (AuthorizationTokenProvider authorization = new AuthorizationTokenProviderTokenCredential(
+                credential,
+                anyUri,
+                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1)))
+            {
+                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
+                (string token, string payload) = await authorization.GetUserAuthorizationAsync(
+                    "dbs\\test",
+                    ResourceType.Database.ToResourceTypeString(),
+                    "GET",
+                    headers,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Assert.IsFalse(string.IsNullOrEmpty(token));
+                Assert.IsNull(payload);
+            }
+
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AAD_SCOPE_OVERRIDE", null);
         }
 
         [TestMethod]

@@ -66,11 +66,15 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
+            string? scopeOverride = ConfigurationManager.AADScopeOverrideValue(defaultValue: null);
+
             this.tokenRequestContext = new TokenRequestContext(new string[]
             {
-                 accountEndpoint.Host.EndsWith("cosmos.fabric.microsoft.com", StringComparison.OrdinalIgnoreCase)
-                    ? FabricScope
-                    : string.Format(DefaultScopeFormat, accountEndpoint.Host)
+                !string.IsNullOrEmpty(scopeOverride)
+                    ? scopeOverride
+                    : (accountEndpoint.Host.EndsWith("cosmos.fabric.microsoft.com", StringComparison.OrdinalIgnoreCase)
+                        ? FabricScope
+                        : string.Format(DefaultScopeFormat, accountEndpoint.Host))
             });
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)
