@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         // If the background refresh fails with less than a minute then just allow the request to hit the exception.
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
-        private const string DefaultScopeFormat = "https://{0}/.default";
+        private const string ScopeFormat = "https://{0}/.default";
 
         private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 !string.IsNullOrEmpty(scopeOverride)
                     ? scopeOverride
-                    : string.Format(DefaultScopeFormat, accountEndpoint.Host)
+                    : string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
             });
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)

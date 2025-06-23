@@ -21,10 +21,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private readonly string expectedScope;
 
         internal LocalEmulatorTokenCredential(
+            string expectedScope,
             string masterKey = null,
             Action<TokenRequestContext, CancellationToken> getTokenCallback = null,
-            DateTime? defaultDateTime = null,
-            string expectedScope = "https://127.0.0.1/.default")
+            DateTime? defaultDateTime = null)
         {
             this.masterKey = masterKey;
             this.GetTokenCallback = getTokenCallback;
