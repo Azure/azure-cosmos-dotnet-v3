@@ -37,7 +37,6 @@ namespace Microsoft.Azure.Cosmos
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
         private const string DefaultScopeFormat = "https://{0}/.default";
-        private const string FabricScope = "https://cosmos.azure.com/.default";
 
         private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
@@ -72,9 +71,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 !string.IsNullOrEmpty(scopeOverride)
                     ? scopeOverride
-                    : (accountEndpoint.Host.EndsWith("cosmos.fabric.microsoft.com", StringComparison.OrdinalIgnoreCase)
-                        ? FabricScope
-                        : string.Format(DefaultScopeFormat, accountEndpoint.Host))
+                    : string.Format(DefaultScopeFormat, accountEndpoint.Host)
             });
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)

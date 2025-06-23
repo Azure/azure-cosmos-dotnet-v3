@@ -137,64 +137,9 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]
-        public async Task TokenCredentialCache_SetsCorrectFabricScope()
-        {
-            // Fabric host scenario
-            string fabricHost = "test.zb9.msit-sql.cosmos.fabric.microsoft.com";
-            Uri fabricUri = new Uri($"https://{fabricHost}");
-            string expectedFabricScope = "https://cosmos.azure.com/.default";
-
-            LocalEmulatorTokenCredential fabricCredential = new LocalEmulatorTokenCredential(
-                masterKey: "testkey",
-                expectedScope: expectedFabricScope);
-
-            using (AuthorizationTokenProvider fabricAuthorization = new AuthorizationTokenProviderTokenCredential(
-                fabricCredential,
-                fabricUri,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1)))
-            {
-                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
-                (string token, string payload) = await fabricAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test",
-                    ResourceType.Database.ToResourceTypeString(),
-                    "GET",
-                    headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
-
-                Assert.IsFalse(string.IsNullOrEmpty(token));
-                Assert.IsNull(payload);
-            }
-
-            // Non-fabric host scenario
-            string customHost = "myaccount.documents.azure.com";
-            Uri customUri = new Uri($"https://{customHost}");
-            string expectedCustomScope = $"https://{customHost}/.default";
-
-            LocalEmulatorTokenCredential customCredential = new LocalEmulatorTokenCredential(
-                masterKey: "testkey",
-                expectedScope: expectedCustomScope);
-
-            using (AuthorizationTokenProvider customAuthorization = new AuthorizationTokenProviderTokenCredential(
-                customCredential,
-                customUri,
-                backgroundTokenCredentialRefreshInterval: TimeSpan.FromSeconds(1)))
-            {
-                StoreResponseNameValueCollection headers = new StoreResponseNameValueCollection();
-                (string token, string payload) = await customAuthorization.GetUserAuthorizationAsync(
-                    "dbs\\test",
-                    ResourceType.Database.ToResourceTypeString(),
-                    "GET",
-                    headers,
-                    AuthorizationTokenType.PrimaryMasterKey);
-
-                Assert.IsFalse(string.IsNullOrEmpty(token));
-                Assert.IsNull(payload);
-            }
-        }
-
         [DataTestMethod]
         [DataRow("https://env-override/.default", "https://env-override/.default", DisplayName = "EnvVarOverride")]
+        [DataRow("https://cosmos.azure.com/.default", "https://cosmos.azure.com/.default", DisplayName = "EnvVarOverride_Fabric")]
         [DataRow(null, "https://anyhost.documents.azure.com/.default", DisplayName = "NoEnvVar_DefaultScope")]
         public async Task TokenCredentialCache_SetsCorrectScope_EnvOverrideOrDefault(string envVarValue, string expectedScope)
         {
