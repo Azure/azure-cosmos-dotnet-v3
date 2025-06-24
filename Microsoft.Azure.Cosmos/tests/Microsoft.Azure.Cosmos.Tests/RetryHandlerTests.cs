@@ -51,13 +51,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Mock PartitionKeyRangeCache
             List<PartitionKeyRange> overlappingRanges = new List<PartitionKeyRange>
             {
-                    new PartitionKeyRange { Id = "0", MinInclusive = "A", MaxExclusive = "Z" },
-                    new PartitionKeyRange { Id = "1", MinInclusive = "M", MaxExclusive = "Z" }
+                new PartitionKeyRange { Id = "0", MinInclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343", MaxExclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED" },
+                new PartitionKeyRange { Id = "1", MinInclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED", MaxExclusive = "1080F600C27CF98DC13F8639E94E7676" }
             };
             PartitionKeyRangeCache pkRangeCache = new TestPartitionKeyRangeCache(overlappingRanges);
 
             // FeedRangeEpk for the test
-            FeedRangeEpk feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("A", "Z", true, false));
+            FeedRangeEpk feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("0DCEB8CE51C6BFE84F4BD9409F69B9BB", "0DCEB8CE51C6BFE84F4BD9409F69B9BBFF", true, false));
             RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null)
             {
                 InnerHandler = new TestHandler((request, token) => TestHandler.ReturnSuccess())

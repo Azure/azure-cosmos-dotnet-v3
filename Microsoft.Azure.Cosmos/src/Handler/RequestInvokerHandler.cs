@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             // For epk range filtering we can end up in one of 3 cases:
                             if (overlappingRanges.Count > 1)
                             {
-                                //If we are running a query and our provided partition key results in a hash that resolves to more than one EPKRanges then its a valid use case
+                                //If we are running a query plan and our provided partition key results in a hash that resolves to more than one EPKRanges then its a valid use case
                                 bool isQueryOperation = request.ResourceType == ResourceType.Document && request.OperationType == OperationType.QueryPlan;
                                 if (!isQueryOperation)
                                 {
@@ -321,9 +321,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
 
                                     return goneException.ToCosmosResponseMessage(request);
                                 }
-                                // For query operations spanning multiple partitions, we don't set PartitionKeyRangeId
-                                // because the query engine needs to handle this case differently
-                                // Just continue without setting PartitionKeyRangeId
                             }
                             // overlappingRanges.Count == 1
                             else
