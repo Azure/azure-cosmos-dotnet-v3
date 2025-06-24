@@ -24,6 +24,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private readonly FaultInjectionRuleProcessor ruleProcessor;
 
+        private readonly GlobalEndpointManager globalEndpointManager;
+
         public static async Task<FaultInjectionRuleStore> CreateAsync(
             DocumentClient client,
             FaultInjectionApplicationContext applicationContext)
@@ -50,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             IRoutingMapProvider routingMapProvider,
             FaultInjectionApplicationContext applicationContext)
         {
+            this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.ruleProcessor = new FaultInjectionRuleProcessor(
                     connectionMode: connectionMode,
                     collectionCache: collectionCache,
@@ -229,10 +232,9 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionServerErrorRule thinClientRule, 
             DocumentServiceRequest request)
         {
-            // Thin client rules are applicable only for port 10250
             int port = int.Parse(request.Headers.Get("port"));
             return thinClientRule.GetConnectionType() == FaultInjectionConnectionType.ThinClient
-                && port == 10250;
+                && port == this.globalEndpointManager.ResolveThinClientEndpoint(request).Port;
         }
     }
 }
