@@ -305,17 +305,24 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             // For epk range filtering we can end up in one of 3 cases:
                             if (overlappingRanges.Count > 1)
                             {
-                                // 1) The EpkRange spans more than one physical partition
-                                // In this case it means we have encountered a split and 
-                                // we need to bubble that up to the higher layers to update their datastructures
-                                CosmosException goneException = new CosmosException(
-                                    message: $"Epk Range: {feedRangeEpk.Range} is gone.",
-                                    statusCode: System.Net.HttpStatusCode.Gone,
-                                    subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
-                                    activityId: Guid.NewGuid().ToString(),
-                                    requestCharge: default);
+                                bool isQueryOperation = request.ResourceType == ResourceType.Document && request.OperationType == OperationType.QueryPlan;
+                                if (!isQueryOperation)
+                                {
+                                    // 1) The EpkRange spans more than one physical partition
+                                    // In this case it means we have encountered a split and 
+                                    // we need to bubble that up to the higher layers to update their datastructures
+                                    CosmosException goneException = new CosmosException(
+                                        message: $"Epk Range: {feedRangeEpk.Range} is gone.",
+                                        statusCode: System.Net.HttpStatusCode.Gone,
+                                        subStatusCode: (int)SubStatusCodes.PartitionKeyRangeGone,
+                                        activityId: Guid.NewGuid().ToString(),
+                                        requestCharge: default);
 
-                                return goneException.ToCosmosResponseMessage(request);
+                                    return goneException.ToCosmosResponseMessage(request);
+                                }
+                                // For query operations spanning multiple partitions, we don't set PartitionKeyRangeId
+                                // because the query engine needs to handle this case differently
+                                // Just continue without setting PartitionKeyRangeId
                             }
                             // overlappingRanges.Count == 1
                             else
