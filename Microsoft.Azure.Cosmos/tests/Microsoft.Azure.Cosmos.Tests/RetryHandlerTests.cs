@@ -5,11 +5,17 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -18,6 +24,74 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class RetryHandlerTests
     {
         private static readonly Uri TestUri = new Uri("https://dummy.documents.azure.com:443/dbs");
+        [TestMethod]
+        public async Task ValidatePassingOverlappingRangesInQueryPlanDoesntThrowAnException()
+        {
+            using CosmosClient client = MockCosmosUtil.CreateMockCosmosClient();
+
+            // Create mock container 
+            Mock<ContainerInternal> containerMock = MockCosmosUtil.CreateMockContainer("testDb", "testColl");
+
+            // Setup container properties
+            ContainerProperties containerProps = new ContainerProperties("testColl", "/pk");
+            var resourceIdProperty = typeof(ContainerProperties).GetProperty(
+                "ResourceId",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            resourceIdProperty.SetValue(containerProps, "testCollRid");
+
+            // Set up additional mocks as needed
+            containerMock.Setup(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProps);
+
+            Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
+            databaseMock.Setup(d => d.Id).Returns("testDb");
+            containerMock.Setup(c => c.Database).Returns(databaseMock.Object);
+
+            // Mock PartitionKeyRangeCache
+            List<PartitionKeyRange> overlappingRanges = new List<PartitionKeyRange>
+            {
+                    new PartitionKeyRange { Id = "0", MinInclusive = "A", MaxExclusive = "Z" },
+                    new PartitionKeyRange { Id = "1", MinInclusive = "M", MaxExclusive = "Z" }
+            };
+            PartitionKeyRangeCache pkRangeCache = new TestPartitionKeyRangeCache(overlappingRanges);
+
+            // FeedRangeEpk for the test
+            FeedRangeEpk feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>("A", "Z", true, false));
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null)
+            {
+                InnerHandler = new TestHandler((request, token) => TestHandler.ReturnSuccess())
+            };
+
+            // Act
+            ResponseMessage response =  await invoker.SendAsync("dbs/testDb/colls/testColl", ResourceType.Document, OperationType.QueryPlan, null, containerMock.Object, feedRange,
+                                                                                                                                                                                                                                    null,null, NoOpTrace.Singleton, CancellationToken.None);
+
+            //Assert
+            Assert.IsNotNull(response, "Response should not be null.");
+            Assert.IsTrue(response.IsSuccessStatusCode, $"Expected a successful status code, but got {response.StatusCode}.");
+        }
+
+        private class TestPartitionKeyRangeCache : PartitionKeyRangeCache
+        {
+            private readonly IReadOnlyList<PartitionKeyRange> overlappingRanges;
+
+            public TestPartitionKeyRangeCache(IReadOnlyList<PartitionKeyRange> overlappingRanges)
+                : base(null, null, null, null) // Pass nulls or mocks as needed for base constructor
+            {
+                this.overlappingRanges = overlappingRanges;
+            }
+
+            public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+                string collectionRid,
+                Documents.Routing.Range<string> range,
+                ITrace trace,
+                bool forceRefresh)
+            {
+                return Task.FromResult(this.overlappingRanges);
+            }
+        }
+
 
         [TestMethod]
         public async Task RetryHandlerDoesNotRetryOnSuccess()
