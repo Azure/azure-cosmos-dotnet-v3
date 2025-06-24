@@ -305,6 +305,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             // For epk range filtering we can end up in one of 3 cases:
                             if (overlappingRanges.Count > 1)
                             {
+                                //If we are running a query and our provided partition key results in a hash that resolves to more than one EPKRanges then its a valid use case
                                 bool isQueryOperation = request.ResourceType == ResourceType.Document && request.OperationType == OperationType.QueryPlan;
                                 if (!isQueryOperation)
                                 {
