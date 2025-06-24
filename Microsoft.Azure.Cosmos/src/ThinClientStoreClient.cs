@@ -24,16 +24,19 @@ namespace Microsoft.Azure.Cosmos
     internal class ThinClientStoreClient : GatewayStoreClient
     {
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly bool isPartitionLevelFailoverEnabled;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null)
+            JsonSerializerSettings serializerSettings = null,
+            bool isPartitionLevelFailoverEnabled = false)
             : base(httpClient,
                   eventSource,
                   serializerSettings)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
@@ -151,7 +154,9 @@ namespace Microsoft.Azure.Cosmos
             return base.httpClient.SendHttpAsync(
                 () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache),
                 resourceType,
-                HttpTimeoutPolicy.GetTimeoutPolicy(request),
+                HttpTimeoutPolicy.GetTimeoutPolicy(
+                    request,
+                    this.isPartitionLevelFailoverEnabled),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken);
         }

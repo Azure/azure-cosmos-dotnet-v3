@@ -8,8 +8,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -19,6 +21,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreModel : GatewayStoreModel
     {
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
+        private readonly bool isPartitionLevelFailoverEnabled;
         private ThinClientStoreClient thinClientStoreClient;
 
         public ThinClientStoreModel(
@@ -28,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            bool isPartitionLevelFailoverEnabled = false)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -40,7 +45,13 @@ namespace Microsoft.Azure.Cosmos
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 eventSource,
-                serializerSettings);
+                serializerSettings,
+                isPartitionLevelFailoverEnabled);
+
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
+            this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
+               base.MarkEndpointsToHealthyAsync);
         }
 
         public override async Task<DocumentServiceResponse> ProcessMessageAsync(
@@ -58,7 +69,6 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceResponse response;
             try
             {
-                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
                 if (request.ResourceType.Equals(ResourceType.Document) && base.endpointManager.TryGetLocationForGatewayDiagnostics(
                     request.RequestContext.LocationEndpointToRoute,
                     out string regionName))
@@ -66,6 +76,23 @@ namespace Microsoft.Azure.Cosmos
                     request.RequestContext.RegionName = regionName;
                 }
 
+                // This is applicable for both per partition automatic failover and per partition circuit breaker.
+                if (this.isPartitionLevelFailoverEnabled
+                    && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                    && request.ResourceType.IsPartitioned())
+                {
+                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                        request: request,
+                        sessionContainer: this.sessionContainer,
+                        partitionKeyRangeCache: this.partitionKeyRangeCache,
+                        clientCollectionCache: this.clientCollectionCache,
+                        refreshCache: false);
+
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                }
+
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
                 AccountProperties properties = await this.GetDatabaseAccountPropertiesAsync();
                 response = await this.thinClientStoreClient.InvokeAsync(
                     request,
