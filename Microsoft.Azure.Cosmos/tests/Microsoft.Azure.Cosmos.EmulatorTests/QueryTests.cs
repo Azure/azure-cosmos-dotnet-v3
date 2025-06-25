@@ -941,7 +941,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton, null);
             Assert.IsTrue(ranges.Count() > 1);
 
             Document document = new Document { Id = "id1" };
@@ -1005,7 +1005,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton, null);
             Assert.IsTrue(ranges.Count() > 1);
 
             DateTime startTime = DateTime.Now;
@@ -1057,7 +1057,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton, null);
             Assert.IsTrue(ranges.Count > 1);
 
             // Query Number 1, that failed before
@@ -1235,7 +1235,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton, null);
             Assert.AreEqual(5, ranges.Count);
 
             // Query Number 1
@@ -1394,7 +1394,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             IRoutingMapProvider routingMapProvider = await client.GetPartitionKeyRangeCacheAsync(NoOpTrace.Singleton);
             IReadOnlyList<PartitionKeyRange> ranges =
-                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton);
+                await routingMapProvider.TryGetOverlappingRangesAsync(coll.ResourceId, fullRange, NoOpTrace.Singleton, null);
             Assert.AreEqual(5, ranges.Count);
 
             FeedOptions feedOptions = new FeedOptions

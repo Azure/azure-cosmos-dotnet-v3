@@ -150,6 +150,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string collectionRid,
                 Documents.Routing.Range<string> range,
                 ITrace trace,
+                PartitionKeyDefinition partitionKeyDefinition,
                 bool forceRefresh)
             {
                 return Task.FromResult(this.overlappingRanges);

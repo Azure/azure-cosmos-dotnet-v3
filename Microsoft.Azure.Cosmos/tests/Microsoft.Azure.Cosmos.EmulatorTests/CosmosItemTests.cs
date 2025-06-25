@@ -2161,6 +2161,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     containerResponse.Resource.ResourceId,
                     new Documents.Routing.Range<string>("00", "FF", isMaxInclusive: true, isMinInclusive: true),
                     NoOpTrace.Singleton,
+                    partitionKeyDefinition: null,
                     forceRefresh: false);
 
                 // If this fails the RUs of the container needs to be increased to ensure at least 2 partitions.

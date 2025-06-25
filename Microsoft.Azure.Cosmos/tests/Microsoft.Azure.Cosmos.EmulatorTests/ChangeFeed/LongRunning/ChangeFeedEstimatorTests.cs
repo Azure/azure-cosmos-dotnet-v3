@@ -220,6 +220,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.ChangeFeed.LongRunning
                     collectionRid: monitoredContainerResponse.Resource.ResourceId,
                     range: FeedRangeEpk.FullRange.Range,
                     trace: NoOpTrace.Singleton,
+                    partitionKeyDefinition: null,
                     forceRefresh: true);
 
                 if (stopWatch.Elapsed.TotalMinutes > timeoutInMinutes) // failsafe to break loop if it takes longer than 'timeoutInMinutes' to split.

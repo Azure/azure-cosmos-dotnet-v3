@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             Range<string> range,
             ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition,
             bool forceRefresh = false)
         {
             using (ITrace childTrace = trace.StartChild("Try Get Overlapping Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
@@ -62,7 +63,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     collectionRid: collectionRid,
                     previousValue: null,
                     request: null,
-                    trace: childTrace);
+                    trace: childTrace,
+                    partitionKeyDefinition: partitionKeyDefinition);
 
                 if (forceRefresh && routingMap != null)
                 {
@@ -70,7 +72,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid: collectionRid,
                         previousValue: routingMap,
                         request: null,
-                        trace: childTrace);
+                        trace: childTrace,
+                        partitionKeyDefinition: partitionKeyDefinition);
                 }
 
                 if (routingMap == null)
@@ -87,6 +90,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionResourceId,
             string partitionKeyRangeId,
             ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition,
             bool forceRefresh = false)
         {
             Debug.Assert(ResourceId.TryParse(collectionResourceId, out _), "Could not parse CollectionRid from ResourceId.");
@@ -95,7 +99,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                 collectionRid: collectionResourceId,
                 previousValue: null,
                 request: null,
-                trace: trace);
+                trace: trace,
+                partitionKeyDefinition: partitionKeyDefinition);
 
             if (forceRefresh && routingMap != null)
             {
@@ -103,7 +108,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     collectionRid: collectionResourceId,
                     previousValue: routingMap,
                     request: null,
-                    trace: trace);
+                    trace: trace,
+                    partitionKeyDefinition: partitionKeyDefinition);
             }
 
             if (routingMap == null)
@@ -119,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousValue,
             DocumentServiceRequest request,
-            ITrace trace)
+            ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             try
             {
@@ -129,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         collectionRid: collectionRid,
                         previousRoutingMap: previousValue,
                         trace: trace,
-                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics),
+                        clientSideRequestStatistics: request?.RequestContext?.ClientRequestStatistics, partitionKeyDefinition),
                     forceRefresh: (currentValue) => PartitionKeyRangeCache.ShouldForceRefresh(previousValue, currentValue));
             }
             catch (DocumentClientException ex)
@@ -183,7 +190,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             CollectionRoutingMap previousRoutingMap,
             ITrace trace,
-            IClientSideRequestStatistics clientSideRequestStatistics)
+            IClientSideRequestStatistics clientSideRequestStatistics,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             List<PartitionKeyRange> ranges = new List<PartitionKeyRange>();
             string changeFeedNextIfNoneMatch = previousRoutingMap?.ChangeFeedNextIfNoneMatch;
@@ -232,11 +240,12 @@ namespace Microsoft.Azure.Cosmos.Routing
                 routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
                     tuples.Where(tuple => !goneRanges.Contains(tuple.Item1.Id)),
                     string.Empty,
+                    partitionKeyDefinition,
                     changeFeedNextIfNoneMatch);
             }
             else
             {
-                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch);
+                routingMap = previousRoutingMap.TryCombine(tuples, changeFeedNextIfNoneMatch, partitionKeyDefinition);
             }
 
             if (routingMap == null)

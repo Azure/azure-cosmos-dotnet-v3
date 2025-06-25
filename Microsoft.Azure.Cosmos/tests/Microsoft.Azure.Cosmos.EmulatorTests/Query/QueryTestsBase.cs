@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             IReadOnlyList<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(
                 container.ResourceId, 
                 fullRange,
-                NoOpTrace.Singleton);
+                NoOpTrace.Singleton, null);
             return ranges;
         }
 
