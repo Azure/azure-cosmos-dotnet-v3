@@ -24,13 +24,30 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         private static readonly Uri TestUri = new Uri("https://dummy.documents.azure.com:443/dbs");
         [TestMethod]
-        public async Task ValidatePassingOverlappingRangesInQueryPlanDoesntThrowAnException()
+        public async Task ValidateQueryPlanDoesNotThrowExceptionForOverlappingRanges()
+        {
+            await this.ValidateOverlappingRangesBehaviorAsync(
+                operationType: OperationType.QueryPlan,
+                shouldThrowGoneException: false);
+        }
+
+        [TestMethod]
+        public async Task ValidateQueryThrowsGoneExceptionForOverlappingRanges()
+        {
+            await this.ValidateOverlappingRangesBehaviorAsync(
+                operationType: OperationType.Query,
+                shouldThrowGoneException: true);
+        }
+
+        private async Task ValidateOverlappingRangesBehaviorAsync(
+            OperationType operationType,
+            bool shouldThrowGoneException)
         {
             // Create overlapping ranges for the test
             List<PartitionKeyRange> overlappingRanges = new List<PartitionKeyRange>
             {
-                    new PartitionKeyRange { Id = "0", MinInclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343", MaxExclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED" },
-                    new PartitionKeyRange { Id = "1", MinInclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED", MaxExclusive = "1080F600C27CF98DC13F8639E94E7676" }
+                new PartitionKeyRange { Id = "0", MinInclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343", MaxExclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED" },
+                new PartitionKeyRange { Id = "1", MinInclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED", MaxExclusive = "1080F600C27CF98DC13F8639E94E7676" }
             };
 
             // Create a custom document client with our TestPartitionKeyRangeCache
@@ -65,8 +82,8 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // FeedRangeEpk for the test - use a range that overlaps both partition key ranges
             FeedRangeEpk feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(
-                "0DCEB8CE51C6BFE84F4BD9409F69B9BB", // Start just before the boundary
-                "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579EE", // End just after the boundary
+                "0DCEB8CE51C6BFE84F4BD9409F69B9BB",
+                "0DCEB8CE51C6BFE84F4BD9409F69B9BBFF", 
                 true, false));
 
             RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null)
@@ -78,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             ResponseMessage response = await invoker.SendAsync(
                 "dbs/testDb/colls/testColl",
                 ResourceType.Document,
-                OperationType.QueryPlan,
+                operationType,
                 null,
                 containerMock.Object,
                 feedRange,
@@ -87,9 +104,19 @@ namespace Microsoft.Azure.Cosmos.Tests
                 NoOpTrace.Singleton,
                 CancellationToken.None);
 
-            //Assert
+            // Assert
             Assert.IsNotNull(response, "Response should not be null.");
-            Assert.IsTrue(response.IsSuccessStatusCode, $"Expected a successful status code, but got {response.StatusCode}.");
+
+            if (shouldThrowGoneException)
+            {
+                Assert.IsFalse(response.IsSuccessStatusCode, "Expected a failure status code for Query operation.");
+                Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode, "Expected a 410 Gone status code.");
+                Assert.AreEqual((int)SubStatusCodes.PartitionKeyRangeGone, (int)response.Headers.SubStatusCode, "Expected PartitionKeyRangeGone sub-status code.");
+            }
+            else
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode, $"Expected a successful status code, but got {response.StatusCode}.");
+            }
         }
 
         // Custom MockDocumentClient that allows injecting our TestPartitionKeyRangeCache
