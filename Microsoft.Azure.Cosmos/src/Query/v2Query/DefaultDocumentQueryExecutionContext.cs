@@ -20,7 +20,7 @@ namespace Microsoft.Azure.Cosmos.Query
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.Routing;
     using Newtonsoft.Json;
-
+    using static Microsoft.Azure.Documents.RntbdConstants;
     /// <summary>
     /// Default document query execution context for single partition queries or for split proofing general requests.
     /// </summary>
@@ -211,7 +211,8 @@ namespace Microsoft.Azure.Cosmos.Query
                             routingMapProvider: routingMapProvider,
                             collectionRid: collection.ResourceId,
                             resolvedRangeInfo: queryRoutingInfo.Item1,
-                            trace: NoOpTrace.Singleton))
+                            trace: NoOpTrace.Singleton,
+                            partitionKeyDefinition: collection.PartitionKey))
                         {
                             // Collection to which this request was resolved doesn't exist.
                             // Retry policy will refresh the cache and return NotFound.
@@ -357,7 +358,9 @@ namespace Microsoft.Azure.Cosmos.Query
                     collection.ResourceId,
                     rangeFromContinuationToken,
                     suppliedTokens,
-                    NoOpTrace.Singleton);
+                    NoOpTrace.Singleton,
+                    collection.PartitionKey,
+                    RntdbEnumerationDirection.Forward);
 
             if (resolvedRangeInfo.ResolvedRange == null)
             {

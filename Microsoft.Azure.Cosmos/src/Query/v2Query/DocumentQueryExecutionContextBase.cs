@@ -444,11 +444,12 @@ namespace Microsoft.Azure.Cosmos.Query
             }
         }
 
-        public async Task<PartitionKeyRange> GetTargetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId)
+        public async Task<PartitionKeyRange> GetTargetPartitionKeyRangeByIdAsync(string collectionResourceId, string partitionKeyRangeId,
+            PartitionKeyDefinition partitionKeyDefinition)
         {
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId, NoOpTrace.Singleton);
+            PartitionKeyRange range = await routingMapProvider.TryGetPartitionKeyRangeByIdAsync(collectionResourceId, partitionKeyRangeId, NoOpTrace.Singleton, partitionKeyDefinition);
             if (range == null && PathsHelper.IsNameBased(this.ResourceLink))
             {
                 // Refresh the cache and don't try to reresolve collection as it is not clear what already
@@ -468,16 +469,16 @@ namespace Microsoft.Azure.Cosmos.Query
             return range;
         }
 
-        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string collectionResourceId, string effectivePartitionKeyString)
+        internal Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesByEpkStringAsync(string collectionResourceId, string effectivePartitionKeyString, PartitionKeyDefinition partitionKeyDefinition)
         {
             return this.GetTargetPartitionKeyRangesAsync(collectionResourceId,
                 new List<Range<string>>
                 {
                     Range<string>.GetPointRange(effectivePartitionKeyString)
-                });
+                }, partitionKeyDefinition);
         }
 
-        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string collectionResourceId, List<Range<string>> providedRanges)
+        internal async Task<List<PartitionKeyRange>> GetTargetPartitionKeyRangesAsync(string collectionResourceId, List<Range<string>> providedRanges, PartitionKeyDefinition partitionKeyDefinition)
         {
             if (string.IsNullOrEmpty(nameof(collectionResourceId)))
             {
@@ -491,7 +492,7 @@ namespace Microsoft.Azure.Cosmos.Query
 
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
 
-            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, NoOpTrace.Singleton);
+            List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, NoOpTrace.Singleton, partitionKeyDefinition, false);
             if (ranges == null && PathsHelper.IsNameBased(this.ResourceLink))
             {
                 // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -515,10 +516,10 @@ namespace Microsoft.Azure.Cosmos.Query
 
         protected abstract Task<DocumentFeedResponse<CosmosElement>> ExecuteInternalAsync(CancellationToken cancellationToken);
 
-        protected async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid)
+        protected async Task<List<PartitionKeyRange>> GetReplacementRangesAsync(PartitionKeyRange targetRange, string collectionRid, PartitionKeyDefinition partitionKeyDefinition)
         {
             IRoutingMapProvider routingMapProvider = await this.Client.GetRoutingMapProviderAsync();
-            List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), NoOpTrace.Singleton, forceRefresh: true)).ToList();
+            List<PartitionKeyRange> replacementRanges = (await routingMapProvider.TryGetOverlappingRangesAsync(collectionRid, targetRange.ToRange(), NoOpTrace.Singleton, partitionKeyDefinition, forceRefresh: true)).ToList();
             string replaceMinInclusive = replacementRanges.First().MinInclusive;
             string replaceMaxExclusive = replacementRanges.Last().MaxExclusive;
             if (!replaceMinInclusive.Equals(targetRange.MinInclusive, StringComparison.Ordinal) || !replaceMaxExclusive.Equals(targetRange.MaxExclusive, StringComparison.Ordinal))

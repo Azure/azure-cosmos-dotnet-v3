@@ -266,7 +266,8 @@ namespace Microsoft.Azure.Cosmos
                 collectionRid: collection.ResourceId,
                 previousValue: null,
                 request: request,
-                trace: NoOpTrace.Singleton);
+                trace: NoOpTrace.Singleton,
+                partitionKeyDefinition: collection.PartitionKey);
 
             if (routingMap != null && request.ForceCollectionRoutingMapRefresh)
             {
@@ -278,7 +279,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionRid: collection.ResourceId,
                     previousValue: routingMap,
                     request: request,
-                    trace: NoOpTrace.Singleton);
+                    trace: NoOpTrace.Singleton,
+                    partitionKeyDefinition: collection.PartitionKey);
             }
 
             if (request.ForcePartitionKeyRangeRefresh)
@@ -291,7 +293,8 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: routingMap,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        partitionKeyDefinition: collection.PartitionKey);
                 }
             }
 
@@ -307,7 +310,8 @@ namespace Microsoft.Azure.Cosmos
                         collectionRid: collection.ResourceId,
                         previousValue: null,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        partitionKeyDefinition: collection.PartitionKey);
             }
 
             AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);
@@ -339,7 +343,8 @@ namespace Microsoft.Azure.Cosmos
                             collectionRid: collection.ResourceId,
                             previousValue: null,
                             request: request,
-                            trace: NoOpTrace.Singleton);
+                            trace: NoOpTrace.Singleton,
+                            partitionKeyDefinition: collection.PartitionKey);
                     }
                 }
 
@@ -349,7 +354,8 @@ namespace Microsoft.Azure.Cosmos
                         collection.ResourceId,
                         previousValue: routingMap,
                         request: request,
-                        trace: NoOpTrace.Singleton);
+                        trace: NoOpTrace.Singleton,
+                        partitionKeyDefinition: collection.PartitionKey);
                 }
 
                 AddressResolver.EnsureRoutingMapPresent(request, routingMap, collection);

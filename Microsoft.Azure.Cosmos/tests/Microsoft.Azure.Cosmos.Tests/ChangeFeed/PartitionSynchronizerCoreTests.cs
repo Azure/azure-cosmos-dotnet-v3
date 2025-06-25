@@ -75,6 +75,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 true))
                 .ReturnsAsync(resultingRanges);
 
@@ -141,6 +142,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -209,6 +211,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 It.Is<bool>(b => b == true)))
                 .ReturnsAsync(resultingRanges);
 
@@ -269,6 +272,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.Is<Documents.Routing.Range<string>>(r => r.Min == range.Min && r.Max == range.Max),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 true))
                 .ReturnsAsync(resultingRanges);
 
@@ -320,6 +324,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 false))
                 .ReturnsAsync(resultingRanges);
 
@@ -367,6 +372,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 false))
                 .ReturnsAsync(resultingRanges);
 
@@ -421,6 +427,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Tests
                 It.IsAny<string>(),
                 It.IsAny<Documents.Routing.Range<string>>(),
                 It.IsAny<ITrace>(),
+                It.IsAny<PartitionKeyDefinition>(),
                 false))
                 .ReturnsAsync(resultingRanges);
 
