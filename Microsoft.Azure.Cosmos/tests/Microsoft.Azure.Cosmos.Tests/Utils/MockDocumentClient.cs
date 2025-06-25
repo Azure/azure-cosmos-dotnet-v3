@@ -243,10 +243,11 @@ JsonConvert.DeserializeObject<Dictionary<string, object>>("{\"maxSqlQueryInputLe
                             It.IsAny<string>(),
                             It.IsAny<Documents.Routing.Range<string>>(),
                             It.IsAny<ITrace>(),
-                            It.IsAny<bool>()
+                            It.IsAny<bool>(),
+                            It.IsAny<PartitionKeyDefinition>()
                         )
                 ).Returns(
-                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh)
+                (string collectionRid, Documents.Routing.Range<string> range, ITrace trace, bool forceRefresh, PartitionKeyDefinition partitionKeyDefinition)
                     => Task.FromResult<IReadOnlyList<PartitionKeyRange>>(
                         this.ResolveOverlapingPartitionKeyRanges(collectionRid, range, forceRefresh)));
 
