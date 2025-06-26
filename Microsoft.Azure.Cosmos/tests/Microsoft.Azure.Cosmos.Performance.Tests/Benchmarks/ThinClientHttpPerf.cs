@@ -25,14 +25,10 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
     {
         private CosmosClient client;
         private Container container;
-        private List<Doc> seedDocs;
         private CosmosSystemTextJsonSerializer serializer;
-
-        private const int SeedItemCount = 1_000;
 
         [Params(1, 4, 16, 64)]
         public int Concurrency { get; set; }
-
 
         [Params(1_000_000)]
         public int Operations { get; set; }
@@ -56,27 +52,20 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 });
 
+            // Enable bulk execution for high throughput
             this.client = new CosmosClient(
                 cs,
                 new CosmosClientOptions
                 {
                     ConnectionMode = Mode,
                     Serializer = this.serializer,
+                    AllowBulkExecution = true,
                     MaxRetryAttemptsOnRateLimitedRequests = 9,
                     MaxRetryWaitTimeOnRateLimitedRequests = TimeSpan.FromSeconds(30)
                 });
 
             Database db = await this.client.CreateDatabaseIfNotExistsAsync("Perf_" + Guid.NewGuid());
             this.container = await db.CreateContainerIfNotExistsAsync("Cn_" + Guid.NewGuid(), "/pk");
-
-            // seed read targets
-            this.seedDocs = new List<Doc>(SeedItemCount);
-            for (int i = 0; i < SeedItemCount; i++)
-            {
-                Doc d = new Doc { Id = Guid.NewGuid().ToString(), Pk = "pk_seed", Other = "seed" };
-                this.seedDocs.Add(d);
-                await this.container.CreateItemAsync(d, new PartitionKey(d.Pk));
-            }
         }
 
         [GlobalCleanup]
@@ -89,8 +78,8 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
         }
         #endregion
 
-        [Benchmark(Description = "Point reads")]
-        public async Task PointReadsAsync()
+        [Benchmark(Description = "Bulk creates")]
+        public async Task BulkCreatesAsync()
         {
             int baseOps = this.Operations / this.Concurrency;
             int remainder = this.Operations % this.Concurrency;
@@ -99,20 +88,25 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             for (int w = 0; w < this.Concurrency; w++)
             {
                 int work = baseOps + (w < remainder ? 1 : 0);
-                workers[w] = this.DoReadsAsync(work);
+                workers[w] = this.DoBulkCreatesAsync(work);
             }
             await Task.WhenAll(workers);
         }
 
-        private async Task DoReadsAsync(int count)
+        private async Task DoBulkCreatesAsync(int count)
         {
+            List<Task> batch = new List<Task>(count);
             for (int i = 0; i < count; i++)
             {
-                Doc doc = this.seedDocs[Random.Shared.Next(this.seedDocs.Count)];
-                ResponseMessage rsp = await this.container.ReadItemStreamAsync(doc.Id, new PartitionKey(doc.Pk));
-                if (rsp.StatusCode != HttpStatusCode.OK)
-                    throw new InvalidOperationException($"Read failed: {doc.Id}");
+                Doc doc = new Doc
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "pk_bulk",
+                    Other = "bulk"
+                };
+                batch.Add(this.container.CreateItemAsync(doc, new PartitionKey(doc.Pk)));
             }
+            await Task.WhenAll(batch);
         }
 
         private class CustomConfig : ManualConfig
@@ -120,11 +114,10 @@ namespace Microsoft.Azure.Cosmos.Benchmarks
             public CustomConfig()
             {
                 this.AddColumn(StatisticColumn.OperationsPerSecond);
-                this.AddColumn(StatisticColumn.OperationsPerSecond);
                 this.AddColumn(StatisticColumn.P95);
                 this.AddColumn(StatisticColumn.P100);
                 this.AddDiagnoser(MemoryDiagnoser.Default);
-                this.AddJob(Job.Dry    // 1 warm-up + 1 measurement
+                this.AddJob(Job.Dry
                        .WithStrategy(BenchmarkDotNet.Engines.RunStrategy.Throughput)
                        .WithIterationCount(1)
                        .WithWarmupCount(1));
