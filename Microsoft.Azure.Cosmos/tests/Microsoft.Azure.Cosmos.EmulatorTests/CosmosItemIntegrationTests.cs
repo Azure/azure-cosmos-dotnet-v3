@@ -1360,7 +1360,7 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
-            // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and set the flag to null, so that
+            // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and remove the flag from the response, so that
             // the environment variable set above is honored.
             HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
             {
@@ -1370,7 +1370,7 @@
                     if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
                     {
                         JObject parsedDatabaseAccountResponse = JObject.Parse(json);
-                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = null;
+                        parsedDatabaseAccountResponse.Remove("enablePerPartitionFailoverBehavior");
 
                         HttpResponseMessage interceptedResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<HttpResponseMessage>(
                             value: parsedDatabaseAccountResponse.ToString());
