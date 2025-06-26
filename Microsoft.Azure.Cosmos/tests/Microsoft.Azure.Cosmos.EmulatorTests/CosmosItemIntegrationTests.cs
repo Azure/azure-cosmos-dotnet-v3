@@ -5,6 +5,7 @@
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
@@ -13,6 +14,7 @@
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
@@ -1358,6 +1360,28 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
+            // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and set the flag to null, so that
+            // the environment variable set above is honored.
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = null;
+
+                        HttpResponseMessage interceptedResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<HttpResponseMessage>(
+                            value: parsedDatabaseAccountResponse.ToString());
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
@@ -1365,6 +1389,7 @@
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
             };
 
             List<CosmosIntegrationTestObject> itemsList = new()
