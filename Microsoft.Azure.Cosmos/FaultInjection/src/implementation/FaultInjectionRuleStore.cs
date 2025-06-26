@@ -24,8 +24,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         private readonly FaultInjectionRuleProcessor ruleProcessor;
 
-        private readonly GlobalEndpointManager globalEndpointManager;
-
         public static async Task<FaultInjectionRuleStore> CreateAsync(
             DocumentClient client,
             FaultInjectionApplicationContext applicationContext)
@@ -52,7 +50,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             IRoutingMapProvider routingMapProvider,
             FaultInjectionApplicationContext applicationContext)
         {
-            this.globalEndpointManager = globalEndpointManager ?? throw new ArgumentNullException(nameof(globalEndpointManager));
             this.ruleProcessor = new FaultInjectionRuleProcessor(
                     connectionMode: connectionMode,
                     collectionCache: collectionCache,
@@ -170,7 +167,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseErrorRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
-                    || this.ThinClientApplicable(rule, dsr)
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(dsr))
                 {
@@ -186,7 +182,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             foreach (FaultInjectionServerErrorRule rule in this.serverResponseDelayRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
-                    || this.ThinClientApplicable(rule, dsr)
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(dsr))
                 {
@@ -202,7 +197,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             foreach (FaultInjectionServerErrorRule rule in this.serverSendDelayRuleSet.Keys)
             {
                 if ((rule.GetConnectionType() == FaultInjectionConnectionType.Gateway
-                    || this.ThinClientApplicable(rule, dsr)
                     || rule.GetConnectionType() == FaultInjectionConnectionType.All)
                     && rule.IsApplicable(dsr))
                 {
@@ -226,15 +220,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         internal FaultInjectionRuleProcessor GetRuleProcessor()
         {
             return this.ruleProcessor;
-        }
-
-        internal bool ThinClientApplicable(
-            FaultInjectionServerErrorRule thinClientRule, 
-            DocumentServiceRequest request)
-        {
-            int port = int.Parse(request.Headers.Get("port"));
-            return thinClientRule.GetConnectionType() == FaultInjectionConnectionType.ThinClient
-                && port == this.globalEndpointManager.ResolveThinClientEndpoint(request).Port;
         }
     }
 }

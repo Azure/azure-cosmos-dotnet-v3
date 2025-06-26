@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly FaultInjectionConnectionType connectionType;
         private readonly string region;
         private readonly FaultInjectionEndpoint endpoint;
+        private readonly bool limitToProxy;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionCondition"/>.
@@ -26,7 +27,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionOperationType? operationType = null,
             FaultInjectionConnectionType? connectionType = null,
             string? region = null,
-            FaultInjectionEndpoint? endpoint = null)
+            FaultInjectionEndpoint? endpoint = null,
+            bool limitToProxy = false)
         {
 
             RegionNameMapper mapper = new RegionNameMapper();
@@ -37,6 +39,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 ? FaultInjectionConnectionType.Gateway 
                 : connectionType ?? FaultInjectionConnectionType.All;
             this.endpoint = endpoint ?? FaultInjectionEndpoint.Empty;
+            this.limitToProxy = limitToProxy;
         }
 
         /// <summary>
@@ -77,17 +80,27 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
+        /// Indicates whether the rule will only target requests that are sent to gateway proxy.
+        /// </summary>
+        /// <returns></returns>
+        internal bool IsLimitToProxy()
+        {
+            return this.limitToProxy;
+        }
+
+        /// <summary>
         /// To String method
         /// </summary>
         /// <returns>A string represeting the <see cref="FaultInjectionCondition"/>.</returns>
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}",
+                "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}, LimitToProxy: {4}",
                 this.operationType,
                 this.connectionType,
                 this.region,  
-                this.endpoint.ToString());
+                this.endpoint.ToString(),
+                this.limitToProxy);
         }
 
         internal bool IsMetadataOperationType()
