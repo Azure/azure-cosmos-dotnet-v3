@@ -1116,7 +1116,8 @@ namespace Microsoft.Azure.Cosmos
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.httpClient);
+                    this.httpClient,
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
 
                 thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
