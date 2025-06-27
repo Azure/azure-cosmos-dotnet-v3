@@ -114,6 +114,8 @@
                         ("QueryInfo.Offset", "SELECT c.name FROM c OFFSET 2147483648 LIMIT 10"),
                         ("QueryInfo.Limit",  "SELECT c.name FROM c OFFSET 10 LIMIT 2147483648"),
                         ("QueryInfo.Top",    "SELECT TOP 2147483648 c.name FROM c"),
+                        ("QueryInfo.Offset", "SELECT c.name FROM c ORDER BY c.name OFFSET 2147483648 LIMIT 10"),
+                        ("QueryInfo.Limit", "SELECT c.name FROM c ORDER BY c.name OFFSET 10 LIMIT 2147483648")
                     })
                 try
                 {

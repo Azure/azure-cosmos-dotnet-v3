@@ -599,7 +599,7 @@ FROM root]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE VectorDistance(root["VectorFloatField"], [2, 3, 4], true, {"searchListSizeMultiplier": -100}) 
 FROM root]]></SqlQuery>
-      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":71,"end":105},"code":"SC2213","message":"The SearchListSizeMultiplier value -100 specified in the VectorDistance function is outside the supported range. The value must be between 1 and 100."}]},0x800A0B00]]></ErrorMessage>
+      <ErrorMessage><![CDATA[Status Code: BadRequest,{"errors":[{"severity":"Error","location":{"start":71,"end":105},"code":"SC2213","message":"The 'searchListSizeMultiplier' value -100 specified in the VectorDistance function is outside the supported range. The value must be between 1 and 100."}]},0x800A0B00]]></ErrorMessage>
     </Output>
   </Result>
 </Results>

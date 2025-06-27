@@ -2,8 +2,11 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
+    using System.Text;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading;
@@ -11,6 +14,7 @@
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Routing.GlobalPartitionEndpointManagerCore;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
 
@@ -147,6 +151,92 @@
             {
                 rule.Disable();
                 fiClient.Dispose();
+            }
+        }
+
+        [TestMethod]
+        [Timeout(70000)]
+        [TestCategory("MultiRegion")]
+        public async Task DateTimeArrayRoundtrip_BinaryEncoding_CompareExtraDates_IntegrationTest()
+        {
+            string binaryEncodingEnabled = "binaryEncodingEnabled" + Guid.NewGuid().ToString("N");
+            string binaryEncodingDisabled = "binaryEncodingDisabled" + Guid.NewGuid().ToString("N");
+            string pk = "pk";
+            string testId = Guid.NewGuid().ToString();
+
+            string[] dateStrings =
+            {
+                "12/25/2023","2023-12-25","12-25-2023","25.12.2023","25/12/2023",
+                "Dec 25, 2023","Dec 25 2023","2023-12-25T10:00:00","2023-12-25T10:00:00.123",
+                "12/25/2023 10:00 AM","12/25/2023 10:00:00 AM","12/25/2023 10:00:00.123 AM","9999-12-31T23:59:59",
+                "2023-12-25T10:00:00.1","2023-12-25T10:00:00.12",
+                "2023-12-25T10:00:00.1234","2023-12-25T10:00:00.1234567"
+            };
+            string[] formats =
+            {
+                "MM/dd/yyyy","yyyy-MM-dd","MM-dd-yyyy","dd.MM.yyyy","dd/MM/yyyy",
+                "MMM dd, yyyy","MMM dd yyyy","yyyy-MM-ddTHH:mm:ss","yyyy-MM-ddTHH:mm:ss.fff",
+                "yyyy-MM-ddTHH:mm:ss.f","yyyy-MM-ddTHH:mm:ss.ff","yyyy-MM-ddTHH:mm:ss.ffff",
+                "yyyy-MM-ddTHH:mm:ss.fffffff","MM/dd/yyyy hh:mm tt","MM/dd/yyyy hh:mm:ss tt",
+                "MM/dd/yyyy hh:mm:ss.fff tt"
+            };
+            DateTime[] parsedDates = dateStrings
+                .Select(s => DateTime.ParseExact(s, formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None))
+                .ToArray();
+
+            TestCosmosItem testItem = new TestCosmosItem(
+                id: testId,
+                pk: pk,
+                title: "title",
+                email: "test@example.com",
+                body: "Binary encoding test document.",
+                createdUtc: DateTime.UtcNow,
+                modifiedUtc: DateTime.Parse("2025-03-26T20:22:20Z", null, System.Globalization.DateTimeStyles.AdjustToUniversal),
+                extraDates: parsedDates);
+
+            Database db = this.database;
+            ContainerResponse containerBEEnabledResponse = await db.CreateContainerAsync(binaryEncodingEnabled, "/pk");
+            ContainerResponse containerBEDisabledResponse = await db.CreateContainerAsync(binaryEncodingDisabled, "/pk");
+
+            try
+            {
+                // BinaryEncodingEnabled = True
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+                string rawJsonBEEnabled;
+                string rawJsonBEDisabled;
+                using (CosmosClient clientBinaryEncodingEnabled = new CosmosClient(this.connectionString))
+                {
+                    Container containerBinaryEncodingEnabled = clientBinaryEncodingEnabled.GetDatabase(db.Id).GetContainer(binaryEncodingEnabled);
+                    await containerBinaryEncodingEnabled.CreateItemAsync(testItem, new Microsoft.Azure.Cosmos.PartitionKey(pk));
+                    using ResponseMessage response = await containerBinaryEncodingEnabled.ReadItemStreamAsync(testId, new Microsoft.Azure.Cosmos.PartitionKey(pk));
+                    using StreamReader reader = new StreamReader(response.Content, Encoding.UTF8);
+                    rawJsonBEEnabled = await reader.ReadToEndAsync();
+
+                }
+
+                // BinaryEncodingEnabled = False
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "False");
+                using (CosmosClient clientBinaryEncodingDisabled = new CosmosClient(this.connectionString))
+                {
+                    Container containerBinaryEncodingDisabled = clientBinaryEncodingDisabled.GetDatabase(db.Id).GetContainer(binaryEncodingDisabled);
+                    await containerBinaryEncodingDisabled.CreateItemAsync(testItem, new Microsoft.Azure.Cosmos.PartitionKey(pk));
+                    using ResponseMessage response = await containerBinaryEncodingDisabled.ReadItemStreamAsync(testId, new Microsoft.Azure.Cosmos.PartitionKey(pk));
+                    using StreamReader reader = new StreamReader(response.Content, Encoding.UTF8);
+                    rawJsonBEDisabled = await reader.ReadToEndAsync();
+                }
+
+                using JsonDocument docTrue = JsonDocument.Parse(rawJsonBEEnabled);
+                using JsonDocument docFalse = JsonDocument.Parse(rawJsonBEDisabled);
+
+                string extraDatesTrue = docTrue.RootElement.GetProperty("ExtraDates").GetRawText();
+                string extraDatesFalse = docFalse.RootElement.GetProperty("ExtraDates").GetRawText();
+
+                Assert.AreEqual(extraDatesTrue, extraDatesFalse, $"ExtraDates JSON mismatch:\nTrue: {extraDatesTrue}\nFalse: {extraDatesFalse}");
+            }
+            finally
+            {
+                await containerBEEnabledResponse.Container.DeleteContainerAsync();
+                await containerBEDisabledResponse.Container.DeleteContainerAsync();
             }
         }
 
@@ -1270,6 +1360,28 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
+            // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and remove the flag from the response, so that
+            // the environment variable set above is honored.
+            HttpClientHandlerHelper httpClientHandlerHelper = new HttpClientHandlerHelper()
+            {
+                ResponseIntercepter = async (response, request) =>
+                {
+                    string json = await response?.Content?.ReadAsStringAsync();
+                    if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
+                    {
+                        JObject parsedDatabaseAccountResponse = JObject.Parse(json);
+                        parsedDatabaseAccountResponse.Remove("enablePerPartitionFailoverBehavior");
+
+                        HttpResponseMessage interceptedResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<HttpResponseMessage>(
+                            value: parsedDatabaseAccountResponse.ToString());
+
+                        return interceptedResponse;
+                    }
+
+                    return response;
+                },
+            };
+
             List<string> preferredRegions = new List<string> { region1, region2, region3 };
             CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
@@ -1277,6 +1389,7 @@
                 FaultInjector = faultInjector,
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
+                HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
             };
 
             List<CosmosIntegrationTestObject> itemsList = new()
@@ -1376,6 +1489,41 @@
             {
                 // Ignore
             }
+        }
+
+        public sealed class TestCosmosItem
+        {
+            [JsonConstructor]
+            public TestCosmosItem(
+                string id,
+                string pk,
+                string title,
+                string email,
+                string body,
+                DateTime createdUtc,
+                DateTime modifiedUtc,
+                DateTime[] extraDates)
+            {
+                this.id = id;
+                this.pk = pk;
+                this.title = title;
+                this.email = email;
+                this.body = body;
+                this.CreatedUtc = createdUtc;
+                this.ModifiedUtc = modifiedUtc;
+                this.ExtraDates = extraDates;
+            }
+
+#pragma warning disable IDE1006
+            public string id { get; }
+            public string pk { get; }
+            public string title { get; }
+            public string email { get; }
+            public string body { get; }
+#pragma warning restore IDE1006 // Naming Styles
+            public DateTime CreatedUtc { get; }
+            public DateTime ModifiedUtc { get; }
+            public DateTime[] ExtraDates { get; }
         }
     }
 }
