@@ -5,11 +5,16 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
+    using System.IO;
     using System.Net;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
+    using global::Azure;
     using Microsoft.Azure.Cosmos.Handlers;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -18,6 +23,139 @@ namespace Microsoft.Azure.Cosmos.Tests
     public class RetryHandlerTests
     {
         private static readonly Uri TestUri = new Uri("https://dummy.documents.azure.com:443/dbs");
+        [TestMethod]
+        public async Task ValidateQueryPlanDoesNotThrowExceptionForOverlappingRanges()
+        {
+            await this.ValidateOverlappingRangesBehaviorAsync(
+                operationType: OperationType.QueryPlan,
+                shouldThrowGoneException: false);
+        }
+
+        [TestMethod]
+        public async Task ValidateQueryThrowsGoneExceptionForOverlappingRanges()
+        {
+            await this.ValidateOverlappingRangesBehaviorAsync(
+                operationType: OperationType.Query,
+                shouldThrowGoneException: true);
+        }
+
+        private async Task ValidateOverlappingRangesBehaviorAsync(
+            OperationType operationType,
+            bool shouldThrowGoneException)
+        {
+            // Create overlapping ranges for the test
+            List<PartitionKeyRange> overlappingRanges = new List<PartitionKeyRange>
+            {
+                new PartitionKeyRange { Id = "0", MinInclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343", MaxExclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED" },
+                new PartitionKeyRange { Id = "1", MinInclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED", MaxExclusive = "1080F600C27CF98DC13F8639E94E7676" }
+            };
+
+            // Create a custom document client with our TestPartitionKeyRangeCache
+            var testPartitionKeyRangeCache = new TestPartitionKeyRangeCache(overlappingRanges);
+            var customDocClient = new CustomMockDocumentClient(testPartitionKeyRangeCache);
+
+            // Create CosmosClient with our custom document client
+            using CosmosClient client = new CosmosClient(
+                "https://localhost:8081",
+                MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey,
+                new CosmosClientOptions(),
+                customDocClient);
+
+            // Create mock container 
+            Mock<ContainerInternal> containerMock = MockCosmosUtil.CreateMockContainer("testDb", "testColl");
+
+            // Setup container properties
+            ContainerProperties containerProps = new ContainerProperties("testColl", "/pk");
+            var resourceIdProperty = typeof(ContainerProperties).GetProperty(
+                "ResourceId",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            resourceIdProperty.SetValue(containerProps, "testCollRid");
+
+            // Set up additional mocks as needed
+            containerMock.Setup(c => c.GetCachedContainerPropertiesAsync(
+                It.IsAny<bool>(), It.IsAny<ITrace>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(containerProps);
+
+            Mock<Cosmos.Database> databaseMock = new Mock<Cosmos.Database>();
+            databaseMock.Setup(d => d.Id).Returns("testDb");
+            containerMock.Setup(c => c.Database).Returns(databaseMock.Object);
+
+            // FeedRangeEpk for the test - use a range that overlaps both partition key ranges
+            FeedRangeEpk feedRange = new FeedRangeEpk(new Documents.Routing.Range<string>(
+                "0DCEB8CE51C6BFE84F4BD9409F69B9BB",
+                "0DCEB8CE51C6BFE84F4BD9409F69B9BBFF", 
+                true, false));
+
+            RequestInvokerHandler invoker = new RequestInvokerHandler(client, null, null, null)
+            {
+                InnerHandler = new TestHandler((request, token) => TestHandler.ReturnSuccess())
+            };
+
+            // Act
+            ResponseMessage response = await invoker.SendAsync(
+                "dbs/testDb/colls/testColl",
+                ResourceType.Document,
+                operationType,
+                null,
+                containerMock.Object,
+                feedRange,
+                null,
+                null,
+                NoOpTrace.Singleton,
+                CancellationToken.None);
+
+            // Assert
+            Assert.IsNotNull(response, "Response should not be null.");
+
+            if (shouldThrowGoneException)
+            {
+                Assert.IsFalse(response.IsSuccessStatusCode, "Expected a failure status code for Query operation.");
+                Assert.AreEqual(HttpStatusCode.Gone, response.StatusCode, "Expected a 410 Gone status code.");
+                Assert.AreEqual((int)SubStatusCodes.PartitionKeyRangeGone, (int)response.Headers.SubStatusCode, "Expected PartitionKeyRangeGone sub-status code.");
+            }
+            else
+            {
+                Assert.IsTrue(response.IsSuccessStatusCode, $"Expected a successful status code, but got {response.StatusCode}.");
+            }
+        }
+
+        // Custom MockDocumentClient that allows injecting our TestPartitionKeyRangeCache
+        private class CustomMockDocumentClient : MockDocumentClient
+        {
+            private readonly TestPartitionKeyRangeCache testPartitionKeyRangeCache;
+
+            public CustomMockDocumentClient(TestPartitionKeyRangeCache testPartitionKeyRangeCache)
+                : base(new ConnectionPolicy())
+            {
+                this.testPartitionKeyRangeCache = testPartitionKeyRangeCache;
+            }
+
+            internal override Task<PartitionKeyRangeCache> GetPartitionKeyRangeCacheAsync(ITrace trace)
+            {
+                return Task.FromResult<PartitionKeyRangeCache>(this.testPartitionKeyRangeCache);
+            }
+        }
+
+        private class TestPartitionKeyRangeCache : PartitionKeyRangeCache
+        {
+            private readonly IReadOnlyList<PartitionKeyRange> overlappingRanges;
+
+            public TestPartitionKeyRangeCache(IReadOnlyList<PartitionKeyRange> overlappingRanges)
+                : base(null, null, null, null) // Pass nulls or mocks as needed for base constructor
+            {
+                this.overlappingRanges = overlappingRanges;
+            }
+
+            public override Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
+                string collectionRid,
+                Documents.Routing.Range<string> range,
+                ITrace trace,
+                bool forceRefresh)
+            {
+                return Task.FromResult(this.overlappingRanges);
+            }
+        }
+
 
         [TestMethod]
         public async Task RetryHandlerDoesNotRetryOnSuccess()
