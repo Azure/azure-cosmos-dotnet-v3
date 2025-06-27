@@ -385,8 +385,123 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
         }
 
+        [TestMethod]
+        [Timeout(20000)]
+        [Owner("dkunda")]
+        [DataRow(true, null, DisplayName = "Scenario when PPAF is enabled at client level and not set at the service level.")]
+        [DataRow(false, null, DisplayName = "Scenario when PPAF is disabled at client level and not set at the service level.")]
+        [DataRow(true, true, DisplayName = "Scenario when PPAF is enabled at client level and enabled at service level.")]
+        [DataRow(false, true, DisplayName = "Scenario when PPAF is disabled at client level and enabled at service level.")]
+        [DataRow(true, false, DisplayName = "Scenario when PPAF is enabled at client level and disabled at service level.")]
+        [DataRow(false, false, DisplayName = "Scenario when PPAF is disabled at client level and disabled at service level.")]
+        public async Task TestPPAFClientAndServerEnablementCombinationScenariosAsync(
+            bool ppafEnabledFromClient,
+            bool? ppafEnabledFromService)
+        {
+            if (ppafEnabledFromClient)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+            }
+
+            try
+            {
+                GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                    shouldEnablePPAF: ppafEnabledFromService,
+                    out string secondaryRegionNameForUri,
+                    out string globalEndpoint,
+                    out string secondaryRegionEndpiont,
+                    out string databaseName,
+                    out string containerName,
+                    out ResourceId containerResourceId,
+                    out Mock<IHttpHandler> mockHttpHandler,
+                    out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+                    out TransportAddressUri primaryRegionprimaryReplicaUri);
+
+                Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
+
+                MockSetupsHelper.SetupServiceUnavailableException(
+                    mockTransport,
+                    primaryRegionprimaryReplicaUri);
+
+                // Partition key ranges are the same in both regions so the SDK
+                // does not need to go the secondary to get the partition key ranges.
+                // Only the addresses need to be mocked on the secondary
+                MockSetupsHelper.SetupAddresses(
+                    mockHttpHandler: mockHttpHandler,
+                    partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
+                    regionEndpoint: secondaryRegionEndpiont,
+                    regionName: secondaryRegionNameForUri,
+                    containerResourceId: containerResourceId,
+                    primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
+
+                MockSetupsHelper.SetupCreateItemResponse(
+                    mockTransport,
+                    secondaryRegionPrimaryReplicaUri);
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                    ApplicationPreferredRegions = new List<string>()
+                {
+                    Regions.EastUS,
+                    Regions.WestUS
+                },
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                    TransportClientHandlerFactory = (original) => mockTransport.Object,
+                };
+
+                using CosmosClient customClient = new CosmosClient(
+                        globalEndpoint,
+                        Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                        cosmosClientOptions);
+
+                Container container = customClient.GetContainer(databaseName, containerName);
+
+                ToDoActivity toDoActivity = new ToDoActivity()
+                {
+                    Id = "TestItem",
+                    Pk = "TestPk"
+                };
+
+                if ((!ppafEnabledFromService.HasValue && ppafEnabledFromClient)
+                    || (ppafEnabledFromService.HasValue && ppafEnabledFromService.Value))
+                {
+                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    Assert.IsTrue(response.Diagnostics.GetContactedRegions().Count > 1);
+
+                    mockTransport.VerifyAll();
+                    mockHttpHandler.VerifyAll();
+                }
+                else
+                {
+                    try
+                    {
+                        await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                        Assert.Fail("Should throw an exception");
+                    }
+                    catch (CosmosException ce)
+                    {
+                        // Clears all the setups. No network calls should be done on the next operation.
+                        Assert.IsNotNull(ce);
+                        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ce.StatusCode);
+                    }
+                }
+
+                mockHttpHandler.Reset();
+                mockTransport.Reset();
+                mockTransport.Setup(x => x.Dispose());
+            }
+            finally
+            {
+                // Reset the environment variable to avoid affecting other tests.
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+            }
+        }
+
         private static void SetupAccountAndCacheOperations(
-            bool shouldEnablePPAF,
+            bool? shouldEnablePPAF,
             out string secondaryRegionNameForUri,
             out string globalEndpoint,
             out string secondaryRegionEndpiont,
