@@ -6858,6 +6858,16 @@ namespace Microsoft.Azure.Cosmos
                 featureFlag += (int)UserAgentFeatureFlags.PerPartitionCircuitBreaker;
             }
 
+            if (this.isThinClientEnabled)
+            {
+                featureFlag += (int)UserAgentFeatureFlags.ThinClientEnabled;
+            }
+
+            if (ConfigurationManager.IsBinaryEncodingEnabled())
+            {
+                featureFlag += (int)UserAgentFeatureFlags.BinaryEncodingEnabled;
+            }
+
             return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
         }
 

@@ -27,10 +27,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         private readonly Dictionary<string, AddressResolutionStatistics> endpointToAddressResolutionStats;
         private readonly List<StoreResponseStatistics> storeResponseStatistics;
         private readonly List<HttpResponseStatistics> httpResponseStatistics;
+        private readonly List<HttpResponseStatistics> thinclientResponseStatistics;
 
         private IReadOnlyDictionary<string, AddressResolutionStatistics> shallowCopyOfEndpointToAddressResolutionStatistics = null;
         private IReadOnlyList<StoreResponseStatistics> shallowCopyOfStoreResponseStatistics = null;
         private IReadOnlyList<HttpResponseStatistics> shallowCopyOfHttpResponseStatistics = null;
+        private IReadOnlyList<HttpResponseStatistics> shallowCopyOfThinclientResponseStatistics = null;
         private SystemUsageHistory systemUsageHistory = null;
 
         public ClientSideRequestStatisticsTraceDatum(DateTime startTime, ITrace trace)
@@ -43,6 +45,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             this.FailedReplicas = new HashSet<TransportAddressUri>();
             this.RegionsContacted = new HashSet<(string, Uri)>();
             this.httpResponseStatistics = new List<HttpResponseStatistics>();
+            this.thinclientResponseStatistics = new List<HttpResponseStatistics>();
             this.Trace = trace;
         }
 
@@ -107,6 +110,23 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 {
                     this.shallowCopyOfHttpResponseStatistics ??= new List<HttpResponseStatistics>(this.httpResponseStatistics);
                     return this.shallowCopyOfHttpResponseStatistics;
+                }
+            }
+        }
+
+        public IReadOnlyList<HttpResponseStatistics> ThinclientResponseStatisticsList
+        {
+            get
+            {
+                if (this.thinclientResponseStatistics.Count == 0)
+                {
+                    return ClientSideRequestStatisticsTraceDatum.EmptyHttpResponseStatistics;
+                }
+
+                lock (this.thinclientResponseStatistics)
+                {
+                    this.shallowCopyOfThinclientResponseStatistics ??= new List<HttpResponseStatistics>(this.thinclientResponseStatistics);
+                    return this.shallowCopyOfThinclientResponseStatistics;
                 }
             }
         }
@@ -346,6 +366,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
+            if (request.Version == new Version(2, 0))
+            {
+                this.RecordThinclientHttpResponse(request, response, resourceType, requestStartTimeUtc);
+                return;
+            }
             DateTime requestEndTimeUtc = DateTime.UtcNow;
             this.UpdateRequestEndTime(requestEndTimeUtc);
 
@@ -376,6 +401,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                        ResourceType resourceType,
                                        DateTime requestStartTimeUtc)
         {
+            if (request.Version == new Version(2, 0))
+            {
+                this.RecordThinclientHttpException(request, exception, resourceType, requestStartTimeUtc);
+                return;
+            }
             DateTime requestEndTimeUtc = DateTime.UtcNow;
             this.UpdateRequestEndTime(requestEndTimeUtc);
 
@@ -399,6 +429,70 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                            responseMessage: null,
                                                                            exception: exception,
                                                                            region: Convert.ToString(regionName)));
+            }
+        }
+
+        public void RecordThinclientHttpResponse(
+             HttpRequestMessage request,
+             HttpResponseMessage response,
+             ResourceType resourceType,
+             DateTime requestStartTimeUtc)
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            this.UpdateRequestEndTime(requestEndTimeUtc);
+
+            lock (this.thinclientResponseStatistics)
+            {
+                Uri locationEndpoint = request.RequestUri;
+                object regionName = null;
+                if (request.Properties != null &&
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
+                {
+                    this.TraceSummary?.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                }
+
+                this.shallowCopyOfThinclientResponseStatistics = null;
+                this.thinclientResponseStatistics.Add(new HttpResponseStatistics(
+                    requestStartTimeUtc,
+                    requestEndTimeUtc,
+                    request.RequestUri,
+                    request.Method,
+                    resourceType,
+                    response,
+                    exception: null,
+                    region: Convert.ToString(regionName)));
+            }
+        }
+
+        public void RecordThinclientHttpException(
+            HttpRequestMessage request,
+            Exception exception,
+            ResourceType resourceType,
+            DateTime requestStartTimeUtc)
+        {
+            DateTime requestEndTimeUtc = DateTime.UtcNow;
+            this.UpdateRequestEndTime(requestEndTimeUtc);
+
+            lock (this.thinclientResponseStatistics)
+            {
+                Uri locationEndpoint = request.RequestUri;
+                object regionName = null;
+                if (request.Properties != null &&
+                        request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
+                {
+                    this.TraceSummary?.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
+                }
+
+                this.shallowCopyOfThinclientResponseStatistics = null;
+                this.thinclientResponseStatistics.Add(new HttpResponseStatistics(
+                    requestStartTimeUtc,
+                    requestEndTimeUtc,
+                    request.RequestUri,
+                    request.Method,
+                    resourceType,
+                    responseMessage: null,
+                    exception: exception,
+                    region: Convert.ToString(regionName)));
             }
         }
 

@@ -78,6 +78,52 @@
         }
 
         [TestMethod]
+        public void ThinclientHttpResponseAndException_AreTrackedSeparately()
+        {
+            Trace trace = Trace.GetRootTrace("thinclient-test");
+            ClientSideRequestStatisticsTraceDatum stats = new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            // ThinClient HTTP/2.0 request
+            HttpRequestMessage thinRequest = new HttpRequestMessage(HttpMethod.Get, "https://test.com")
+            {
+                Version = new Version(2, 0)
+            };
+            HttpResponseMessage thinResponse = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+
+            stats.RecordHttpResponse(thinRequest, thinResponse, Microsoft.Azure.Documents.ResourceType.Document, DateTime.UtcNow.AddSeconds(-1));
+            Assert.AreEqual(1, stats.ThinclientResponseStatisticsList.Count);
+            Assert.AreEqual(0, stats.HttpResponseStatisticsList.Count);
+
+            // Gateway HTTP/1.1 request
+            HttpRequestMessage gwRequest = new HttpRequestMessage(HttpMethod.Get, "https://test.com")
+            {
+                Version = new Version(1, 1)
+            };
+            HttpResponseMessage gwResponse = new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+
+            stats.RecordHttpResponse(gwRequest, gwResponse, Microsoft.Azure.Documents.ResourceType.Document, DateTime.UtcNow.AddSeconds(-1));
+            Assert.AreEqual(1, stats.ThinclientResponseStatisticsList.Count);
+            Assert.AreEqual(1, stats.HttpResponseStatisticsList.Count);
+
+            // ThinClient Exception
+            HttpRequestMessage thinExceptionRequest = new HttpRequestMessage(HttpMethod.Get, "https://test.com")
+            {
+                Version = new Version(2, 0)
+            };
+            InvalidOperationException ex = new InvalidOperationException("test");
+            stats.RecordHttpException(thinExceptionRequest, ex, Microsoft.Azure.Documents.ResourceType.Document, DateTime.UtcNow.AddSeconds(-1));
+            Assert.AreEqual(2, stats.ThinclientResponseStatisticsList.Count);
+
+            // Gateway Exception
+            HttpRequestMessage gwExceptionRequest = new HttpRequestMessage(HttpMethod.Get, "https://test.com")
+            {
+                Version = new Version(1, 1)
+            };
+            stats.RecordHttpException(gwExceptionRequest, ex, Microsoft.Azure.Documents.ResourceType.Document, DateTime.UtcNow.AddSeconds(-1));
+            Assert.AreEqual(2, stats.HttpResponseStatisticsList.Count);
+        }
+
+        [TestMethod]
         [Timeout(20000)]
         public async Task ConcurrentUpdateStoreResponseStatisticsListTests()
         {

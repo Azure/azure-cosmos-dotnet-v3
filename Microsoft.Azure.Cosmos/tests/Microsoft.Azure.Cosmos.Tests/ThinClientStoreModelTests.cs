@@ -152,6 +152,85 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public async Task ProcessMessageAsync_ThinClientDiagnostics_AreTracked()
+        {
+            // Arrange
+            Cosmos.Tracing.Trace trace = Microsoft.Azure.Cosmos.Tracing.Trace.GetRootTrace("thinclient-model-diagnostics");
+            Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum stats = new Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            ThinClientStoreModelTests.MockThinClientStoreClient thinClientStoreClient = new ThinClientStoreModelTests.MockThinClientStoreClient(
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                {
+                    HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, "https://test.com")
+                    {
+                        Version = new Version(2, 0)
+                    };
+                    HttpResponseMessage httpResponse = new HttpResponseMessage(HttpStatusCode.OK);
+                    stats.RecordHttpResponse(httpRequest, httpResponse, resourceType, DateTime.UtcNow.AddSeconds(-1));
+                    Stream responseBody = new MemoryStream(new byte[] { 1, 2, 3 });
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(responseBody, headers, httpResponse.StatusCode));
+                });
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient
+                .Setup(c => c.ServiceEndpoint)
+                .Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                UseMultipleWriteLocations = false
+            };
+
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(
+                owner: mockDocumentClient.Object,
+                connectionPolicy: connectionPolicy);
+
+            ThinClientStoreModel thinClientStoreModel = new ThinClientStoreModel(
+                endpointManager: endpointManager,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
+                eventSource: new DocumentClientEventSource(),
+                serializerSettings: null,
+                httpClient: null);
+
+            Mock<ClientCollectionCache> clientCollectionCacheMock = new Mock<ClientCollectionCache>(
+                this.sessionContainer,
+                thinClientStoreModel,
+                null, null, null, false);
+            ClientCollectionCache mockClientCollectionCache = clientCollectionCacheMock.Object;
+
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCacheMock = new Mock<PartitionKeyRangeCache>(
+                null,
+                thinClientStoreModel,
+                mockClientCollectionCache,
+                endpointManager,
+                false);
+            PartitionKeyRangeCache mockPartitionKeyRangeCache = partitionKeyRangeCacheMock.Object;
+
+            thinClientStoreModel.SetCaches(mockPartitionKeyRangeCache, mockClientCollectionCache);
+
+            ThinClientStoreModelTests.ReplaceThinClientStoreClientField(thinClientStoreModel, thinClientStoreClient);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                operationType: OperationType.Read,
+                resourceType: ResourceType.Document,
+                resourceId: "NH1uAJ6ANm0=",
+                body: null,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            // Act
+            await thinClientStoreModel.ProcessMessageAsync(request);
+
+            // Assert
+            Assert.IsTrue(stats.ThinclientResponseStatisticsList.Count > 0, "ThinClient diagnostics should be tracked in ThinclientResponseStatisticsList");
+        }
+
+        [TestMethod]
         public void Dispose_ShouldDisposeThinClientStoreClient()
         {
             // Arrange

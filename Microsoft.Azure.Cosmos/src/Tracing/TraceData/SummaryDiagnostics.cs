@@ -20,6 +20,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
             this.GatewayRequestsSummary 
                 = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
+            this.ThinclientRequestsSummary
+                = new Lazy<Dictionary<(int, int), int>>(() => new Dictionary<(int, int), int>());
+
             this.AllRegionsContacted 
                 = new Lazy<HashSet<Uri>>(() => new HashSet<Uri>());
             
@@ -33,6 +36,8 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
         // Count of (StatusCode, SubStatusCode) tuples
         public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> DirectRequestsSummary { get; private set; }
 
+        public Lazy<List<HttpResponseStatistics>> ThinclientResponseStatistics { get; private set; } = new Lazy<List<HttpResponseStatistics>>(() => new List<HttpResponseStatistics>());
+        public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> ThinclientRequestsSummary { get; private set; }
         public Lazy<List<HttpResponseStatistics>> HttpResponseStatistics { get; private set; } = new Lazy<List<HttpResponseStatistics>>(() => new List<HttpResponseStatistics>());
         public Lazy<Dictionary<(int statusCode, int subStatusCode), int>> GatewayRequestsSummary { get; private set; }
 
@@ -45,6 +50,11 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                     this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
                     this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
                     this.AggregateRegionsContacted(clientSideRequestStatisticsTraceDatum.RegionsContacted);
+
+                    if (clientSideRequestStatisticsTraceDatum.ThinclientResponseStatisticsList != null)
+                    {
+                        this.AggregateThinclientStatistics(clientSideRequestStatisticsTraceDatum.ThinclientResponseStatisticsList);
+                    }
                 }
             }
 
@@ -114,6 +124,37 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             }
         }
 
+        private void AggregateThinclientStatistics(IReadOnlyList<ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics> thinclientResponseStatisticsList)
+        {
+            foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics thinclientResponseStatistics in thinclientResponseStatisticsList)
+            {
+                this.ThinclientResponseStatistics.Value.Add(thinclientResponseStatistics); // <-- Add this line
+
+                int statusCode = 0;
+                int substatusCode = 0;
+                if (thinclientResponseStatistics.HttpResponseMessage != null)
+                {
+                    statusCode = (int)thinclientResponseStatistics.HttpResponseMessage.StatusCode;
+                    if (!int.TryParse(SummaryDiagnostics.GetSubStatusCodes(thinclientResponseStatistics),
+                                NumberStyles.Integer,
+                                CultureInfo.InvariantCulture,
+                                out substatusCode))
+                    {
+                        substatusCode = 0;
+                    }
+                }
+
+                if (!this.ThinclientRequestsSummary.Value.ContainsKey((statusCode, substatusCode)))
+                {
+                    this.ThinclientRequestsSummary.Value[(statusCode, substatusCode)] = 1;
+                }
+                else
+                {
+                    this.ThinclientRequestsSummary.Value[(statusCode, substatusCode)]++;
+                }
+            }
+        }
+
         public void WriteSummaryDiagnostics(IJsonWriter jsonWriter)
         {
             jsonWriter.WriteObjectStart();
@@ -141,6 +182,18 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 jsonWriter.WriteFieldName("GatewayCalls");
                 jsonWriter.WriteObjectStart();
                 foreach (KeyValuePair<(int, int), int> kvp in this.GatewayRequestsSummary.Value)
+                {
+                    jsonWriter.WriteFieldName(kvp.Key.ToString());
+                    jsonWriter.WriteNumberValue(kvp.Value);
+                }
+                jsonWriter.WriteObjectEnd();
+            }
+
+            if (this.ThinclientRequestsSummary.IsValueCreated)
+            {
+                jsonWriter.WriteFieldName("ThinclientCalls");
+                jsonWriter.WriteObjectStart();
+                foreach (KeyValuePair<(int, int), int> kvp in this.ThinclientRequestsSummary.Value)
                 {
                     jsonWriter.WriteFieldName(kvp.Key.ToString());
                     jsonWriter.WriteNumberValue(kvp.Value);

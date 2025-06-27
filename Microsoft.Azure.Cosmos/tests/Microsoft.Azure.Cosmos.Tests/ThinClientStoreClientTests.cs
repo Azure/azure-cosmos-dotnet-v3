@@ -106,6 +106,31 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        public void ThinClient_TracksHttp2ResponsesAndExceptionsInThinclientResponseStatisticsList()
+        {
+            // Arrange
+            Trace trace = Microsoft.Azure.Cosmos.Tracing.Trace.GetRootTrace("thinclient-diagnostics");
+            Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum stats = new Microsoft.Azure.Cosmos.Tracing.TraceData.ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace);
+
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "https://test.com")
+            {
+                Version = new Version(2, 0)
+            };
+            HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+
+            // Act
+            stats.RecordHttpResponse(request, response, Microsoft.Azure.Documents.ResourceType.Document, DateTime.UtcNow.AddSeconds(-1));
+
+            // Assert
+            Assert.AreEqual(1, stats.ThinclientResponseStatisticsList.Count, "ThinClient response should be tracked in ThinclientResponseStatisticsList");
+            Assert.AreEqual(0, stats.HttpResponseStatisticsList.Count, "No Gateway response should be tracked for HTTP/2.0");
+
+            InvalidOperationException ex = new InvalidOperationException("test");
+            stats.RecordHttpException(request, ex, Microsoft.Azure.Documents.ResourceType.Document, DateTime.UtcNow.AddSeconds(-1));
+            Assert.AreEqual(2, stats.ThinclientResponseStatisticsList.Count, "ThinClient exception should be tracked in ThinclientResponseStatisticsList");
+        }
+
+        [TestMethod]
         public async Task InvokeAsync_Rntbd200_ShouldReturnDocumentServiceResponse()
         {
             HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.Created)
