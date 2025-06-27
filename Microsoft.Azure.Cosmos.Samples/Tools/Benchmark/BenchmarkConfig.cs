@@ -31,6 +31,20 @@ namespace CosmosBenchmark
         [JsonIgnore]
         public string Key { get; set; }
 
+        [Option("isthinclientenabled", Required = false, HelpText = "ThinClient enabled")]
+        public string IsThinClientEnabledRaw { get; set; }
+        public bool IsThinClientEnabled => string.Equals(this.IsThinClientEnabledRaw, "true", StringComparison.OrdinalIgnoreCase);
+
+        [Option("isgatewaymodeenabled", Required = false, HelpText = "Gateway mode enabled")]
+        public string IsGatewayModeEnabledRaw { get; set; }
+        public bool IsGatewayModeEnabled => string.Equals(this.IsGatewayModeEnabledRaw, "true", StringComparison.OrdinalIgnoreCase);
+
+        [Option("isdirectmodeenabled", Required = false, HelpText = "Direct mode enabled")]
+        public string IsDirectModeEnabledRaw { get; set; }
+        public bool IsDirectModeEnabled => string.Equals(this.IsDirectModeEnabledRaw, "true", StringComparison.OrdinalIgnoreCase);
+
+
+
         [Option(Required = false, HelpText = "Workload Name, it will override the workloadType value in published results")]
         public string WorkloadName { get; set; }
 
@@ -209,7 +223,7 @@ namespace CosmosBenchmark
             return this.WorkloadName ?? this.WorkloadType ?? BenchmarkConfig.UserAgentSuffix;
         }
 
-        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient(string accountKey)
+        internal Microsoft.Azure.Cosmos.CosmosClient CreateCosmosClient()
         {
             // Overwrite the default timespan if configured
             if(this.TelemetryScheduleInSec > 0)
@@ -223,6 +237,7 @@ namespace CosmosBenchmark
                 MaxRetryAttemptsOnRateLimitedRequests = 0,
                 MaxRequestsPerTcpConnection = this.MaxRequestsPerTcpConnection,
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
+                ConnectionMode = (this.IsThinClientEnabled || this.IsGatewayModeEnabled) ? Microsoft.Azure.Cosmos.ConnectionMode.Gateway: Microsoft.Azure.Cosmos.ConnectionMode.Direct,
                 CosmosClientTelemetryOptions = new Microsoft.Azure.Cosmos.CosmosClientTelemetryOptions()
                 {
                     DisableSendingMetricsToService = !this.EnableTelemetry,
@@ -243,7 +258,7 @@ namespace CosmosBenchmark
 
             return new Microsoft.Azure.Cosmos.CosmosClient(
                         this.EndPoint,
-                        accountKey,
+                        this.Key,
                         clientOptions);
         }
 
