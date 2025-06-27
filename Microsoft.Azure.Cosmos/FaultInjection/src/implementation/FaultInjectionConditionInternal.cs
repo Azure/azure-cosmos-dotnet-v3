@@ -6,20 +6,24 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     
     internal class FaultInjectionConditionInternal
     {
         private readonly List<IFaultInjectionConditionValidator> validators;
+        private readonly GlobalEndpointManager globalEndpointManager;
 
         private string containerResourceId = string.Empty;
         private OperationType? operationType = null;
         private List<Uri> regionEndpoints = new List<Uri>{ };
         private List<Uri> physicalAddresses = new List<Uri> { };
 
-        public FaultInjectionConditionInternal()
+        public FaultInjectionConditionInternal(GlobalEndpointManager globalEndpointManager)
         {
+            this.globalEndpointManager = globalEndpointManager 
+                ?? throw new ArgumentNullException(nameof(globalEndpointManager), "Argument 'globalEndpointManager' cannot be null.");
             this.validators = new List<IFaultInjectionConditionValidator>();
         }
 
@@ -68,6 +72,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public void SetResourceType(ResourceType resourceType)
         {
             this.validators.Add(new ResourceTypeValidator(resourceType));
+        }
+
+        public void SetLimitToProxy(bool limitToProxy)
+        {
+            this.validators.Add(new ProxyValidator(limitToProxy, this.globalEndpointManager));
         }
 
         public string GetContainerResourceId()
@@ -353,6 +362,43 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
                 return this.resourceType == request.ResourceType;
+            }
+        }
+
+        private class ProxyValidator : IFaultInjectionConditionValidator
+        {
+            private readonly bool limitToProxy;
+            private readonly GlobalEndpointManager globalEndpointManager;
+
+            public ProxyValidator(bool limitToProxy, GlobalEndpointManager globalEndpointManager)
+            {
+                this.limitToProxy = limitToProxy;
+                this.globalEndpointManager = globalEndpointManager 
+                    ?? throw new ArgumentNullException(nameof(globalEndpointManager), "Argument 'globalEndpointManager' cannot be null.");
+            }
+
+            public bool IsApplicable(string ruleId, ChannelCallArguments args)
+            {
+                //not needed for direct calls 
+                throw new NotImplementedException();
+            }
+
+            //Used for Gateway Requests
+
+            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
+            {
+                if (this.limitToProxy)
+                {
+                    Uri gwURI = new Uri(request.Headers.Get("FAULTINJECTION_GW_URI"));
+
+                    // Check if the request is routed through the proxy
+                    return gwURI.Host == this.globalEndpointManager.ResolveThinClientEndpoint(request).Host
+                    && gwURI.Port == this.globalEndpointManager.ResolveThinClientEndpoint(request).Port;
+
+                }
+
+                //If not limited to proxy, then the rule applies to all requests
+                return true;
             }
         }
     }
