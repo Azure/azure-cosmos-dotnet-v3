@@ -43,13 +43,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
         }
 
-        public bool Equals(CosmosGuid cosmosGuid)
+        public bool Equals(CosmosGuid? cosmosGuid)
         {
+            if (cosmosGuid is null)
+            {
+                return false;
+            }
+
             return this.Value == cosmosGuid.Value;
         }
 
@@ -60,8 +65,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosGuid cosmosGuid)
+        public int CompareTo(CosmosGuid? cosmosGuid)
         {
+            if (cosmosGuid is null)
+            {
+                return 1;
+            }
+
             return this.Value.CompareTo(cosmosGuid.Value);
         }
 
