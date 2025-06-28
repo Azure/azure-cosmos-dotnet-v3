@@ -18,5 +18,9 @@ namespace Microsoft.Azure.Cosmos
         PerPartitionAutomaticFailover = 1,
 
         PerPartitionCircuitBreaker = 2,
+
+        ThinClient = 3,
+
+        BinaryEncoding = 4,
     }
 }

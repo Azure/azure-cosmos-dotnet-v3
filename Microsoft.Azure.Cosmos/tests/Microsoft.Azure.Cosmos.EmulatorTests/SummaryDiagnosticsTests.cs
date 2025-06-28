@@ -80,6 +80,62 @@
         }
 
         [TestMethod]
+        public async Task ThinClientPointOperationSummaryTest()
+        {
+            // Arrange
+            string connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
+            }
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                ConnectionMode = ConnectionMode.Gateway
+            };
+
+            using CosmosClient thinClient = new CosmosClient(connectionString, clientOptions);
+            Cosmos.Database database = await thinClient.CreateDatabaseIfNotExistsAsync("TestDb_" + Guid.NewGuid());
+            Container container = await database.CreateContainerIfNotExistsAsync("TestContainer_" + Guid.NewGuid(), "/pk");
+
+            try
+            {
+                // Act
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                ItemResponse<ToDoActivity> createResponse = await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+                Assert.IsNotNull(createResponse.Diagnostics);
+                ITrace createTrace = ((CosmosTraceDiagnostics)createResponse.Diagnostics).Value;
+                SummaryDiagnostics createSummary = new SummaryDiagnostics(createTrace);
+
+                // Assert: ThinclientRequestsSummary should have (201, 0)
+                Assert.IsTrue(createSummary.ThinclientRequestsSummary.Value.ContainsKey((201, 0)));
+                Assert.AreEqual(1, createSummary.ThinclientRequestsSummary.Value[(201, 0)]);
+ 
+                Assert.IsFalse(createSummary.DirectRequestsSummary.IsValueCreated);
+
+                ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(testItem.id, new Cosmos.PartitionKey(testItem.pk));
+                Assert.IsNotNull(readResponse.Diagnostics);
+                ITrace readTrace = ((CosmosTraceDiagnostics)readResponse.Diagnostics).Value;
+                SummaryDiagnostics readSummary = new SummaryDiagnostics(readTrace);
+
+                // Assert: ThinclientRequestsSummary should have (200, 0)
+                Assert.IsTrue(readSummary.ThinclientRequestsSummary.Value.ContainsKey((200, 0)));
+                Assert.AreEqual(1, readSummary.ThinclientRequestsSummary.Value[(200, 0)]);
+
+                Assert.IsFalse(readSummary.DirectRequestsSummary.IsValueCreated);
+            }
+            finally
+            {
+                await database.DeleteAsync();
+                thinClient.Dispose();
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
+            }
+        }
+
+        [TestMethod]
         public async Task QuerySummaryTest()
         {
             Container container = (await this.Database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", throughput: 20000)).Container;
