@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string endpoint,
             IList<AccountRegion> writeRegions,
             IList<AccountRegion> readRegions,
-            bool shouldEnablePPAF)
+            bool? shouldEnablePPAF)
         {
             HttpResponseMessage httpResponseMessage = MockSetupsHelper.CreateStrongAccount(
                 accountName,
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string accountName,
             IList<AccountRegion> writeRegions,
             IList<AccountRegion> readRegions,
-            bool shouldEnablePPAF = false)
+            bool? shouldEnablePPAF = null)
         {
             AccountProperties accountProperties = new AccountProperties()
             {
