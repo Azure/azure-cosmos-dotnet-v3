@@ -116,6 +116,258 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.AreEqual("2", partitionKeyRanges1.ElementAt(1).Id);
         }
 
+        ///// This test is designed to validate the normalization logic in the CollectionRoutingMap when requested with an input partition key definition that has multiple levels of partition keys.
+        /// The test uses a prebuilt routing map with overlapping ranges and checks the behavior of the overlapping ranges with or without the normalization logic.
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        public void TestCollectionRoutingMapWithNormalizationLogic(bool isRoutingMapFullySpecified)
+        {
+            //Setup.
+            CollectionRoutingMap routingMap = this.generateRoutingMap(isRoutingMapFullySpecified);
+            PartitionKeyDefinition partitionKeyDefinition = this.GeneratePartitionKeyDefinition(2);
+
+
+            /// Test scenario 1.1: Input EPK is partial and falls on the boundary between two overlapping ranges. Routing map is hybrid of fully specified and partially specified ranges.
+            /// Input Min EPK 06AB34CFE4E482236BCACBBF50E234AB matches (significant bytes) with maxEPK of pkrangeid 1 and minEPK of pkrangeid 2.
+            Range<string> inputPkRange = new Range<string>(
+            "06AB34CFE4E482236BCACBBF50E234AB",
+            "06AB34CFE4E482236BCACBBF50E234ABFF",
+            true,
+            false);
+
+            /// Expected outcome with normalization : Resultant overlapping range will include only partition key range with id 2, since the input minEPK is normalized and searched.
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange, partitionKeyDefinition);
+            Assert.AreEqual(1, partitionKeyRanges1.Count);
+            Assert.AreEqual("2", partitionKeyRanges1[0].Id);
+
+            /// Expected outcome without normalization (existing behaviour) : Resultant overlapping range will include both partition key ranges with ids 1 and 2.
+            IReadOnlyList<PartitionKeyRange> partitionKeyRanges2 = routingMap.GetOverlappingRanges(inputPkRange, null);
+            Assert.AreEqual(2, partitionKeyRanges2.Count);
+            CollectionAssert.AreEquivalent(new[] { "1", "2" }, partitionKeyRanges2.Select(r => r.Id).ToArray());
+
+            /// Test scenario 1.2: Input EPK falls in boundary and maxEPK also matches the next range's max. The following case is a classic example of a scenario where the normalization logic is beneficial.
+            inputPkRange = new Range<string>(
+            "0BD3FBE846AF75790CE63F78B1A81631",
+            "0BD3FBE846AF75790CE63F78B1A81631FF",
+            true,
+            false);
+
+            //TODO: Verify this because it is considering 631FF00000000 as grethan 631FF. CHeck.
+            partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange, partitionKeyDefinition);
+            if (!isRoutingMapFullySpecified)
+            {
+                Assert.AreEqual(2, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "11", "12" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+            }
+            else
+            {
+                Assert.AreEqual(1, partitionKeyRanges1.Count);
+                CollectionAssert.AreEquivalent(new[] { "11"}, partitionKeyRanges1.Select(r => r.Id).ToArray());
+            }
+
+                /// Expected outcome without normalization (existing incorrect behaviour) : Resultant overlapping range will include both partition key ranges with ids 3 and 11 which is incorrect.
+                partitionKeyRanges2 = routingMap.GetOverlappingRanges(inputPkRange);
+            Assert.AreEqual(2, partitionKeyRanges2.Count);
+            CollectionAssert.AreEquivalent(new[] { "11", "3" }, partitionKeyRanges2.Select(r => r.Id).ToArray());
+
+            /// Test scenario 1.2: Input EPK falls in boundary and maxEPK also matches the next range's max. The following case is a classic example of a scenario where the normalization logic is beneficial.
+            inputPkRange = new Range<string>(
+            "0BD3FBE846AF75790CE63F78B1A81620",
+            "0BD3FBE846AF75790CE63F78B1A81631",
+            true,
+            false);
+
+
+            partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange, partitionKeyDefinition);
+            Assert.AreEqual(1, partitionKeyRanges1.Count);
+            CollectionAssert.AreEquivalent(new[] { "3" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+
+
+            /// Test scenario 1.3: Input EPK is partial and scopes two overlapping ranges. Routing map is hybrid of fully specified and partially specified ranges.
+            /// Input Min EPK 0DCEB8CE51C6BFE84F4BD9409F69B9BB falls in both pkrangeid 4 and pkrangeid 5.
+            inputPkRange = new Range<string>(
+            "0DCEB8CE51C6BFE84F4BD9409F69B9BB",
+            "0DCEB8CE51C6BFE84F4BD9409F69B9BBFF",
+            true,
+            false);
+
+
+            partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange, partitionKeyDefinition);
+            Assert.AreEqual(2, partitionKeyRanges1.Count);
+            CollectionAssert.AreEquivalent(new[] { "24", "5" }, partitionKeyRanges1.Select(r => r.Id).ToArray());
+
+
+            ///Test scenario 1.4: Input EPK is partial and falls in a single range in the middle. Routing map is hybrid of fully specified and partially specified ranges.
+            inputPkRange = new Range<string>(
+            "02559A67F2724111B5E565DFA8711A00",
+            "02559A67F2724111B5E565DFA8711A00",
+            true,
+            true);
+
+            partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+            Assert.AreEqual(1, partitionKeyRanges1.Count);
+            Assert.AreEqual("0", partitionKeyRanges1[0].Id);
+
+
+            ///Test scenario 1.5: Input EPK is partial and falls in a single range in the middle. Routing map targeted range has partial EPK values only.
+            inputPkRange = new Range<string>(
+            "0D4DC2CD8F49C65A8E0C5306B61B4345",
+            "0D4DC2CD8F49C65A8E0C5306B61B4345",
+            true,
+            true);
+
+            partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange);
+            Assert.AreEqual(1, partitionKeyRanges1.Count);
+            Assert.AreEqual("4", partitionKeyRanges1[0].Id);
+
+
+            partitionKeyRanges1 = routingMap.GetOverlappingRanges(inputPkRange, partitionKeyDefinition);
+            Assert.AreEqual(1, partitionKeyRanges1.Count);
+            Assert.AreEqual("4", partitionKeyRanges1[0].Id);
+        }
+
+        private CollectionRoutingMap generateRoutingMap(bool isFullySpecified)
+        {
+            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> partitionKeyRangeTuples = new[]
+                {
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "0",
+                            MinInclusive = "",
+                            MaxExclusive = "03559A67F2724111B5E565DFA8711A00"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "1",
+                            MinInclusive = "03559A67F2724111B5E565DFA8711A00",
+                            MaxExclusive = "06AB34CFE4E482236BCACBBF50E234AB00000000000000000000000000000000"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "2",
+                            MinInclusive = "06AB34CFE4E482236BCACBBF50E234AB00000000000000000000000000000000",
+                            MaxExclusive = "0BD3FBE846AF75790CE63F78B1A81620"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "3",
+                            MinInclusive = "0BD3FBE846AF75790CE63F78B1A81620",
+                            MaxExclusive = "0BD3FBE846AF75790CE63F78B1A8163100000000000000000000000000000000"
+                        },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "11",
+                            MinInclusive = "0BD3FBE846AF75790CE63F78B1A8163100000000000000000000000000000000",
+                            MaxExclusive = "0BD3FBE846AF75790CE63F78B1A81631FF"
+                        },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "12",
+                            MinInclusive = "0BD3FBE846AF75790CE63F78B1A81631FF",
+                            MaxExclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "4",
+                            MinInclusive = "0D4DC2CD8F49C65A8E0C5306B61B4343",
+                            MaxExclusive = "0D5DC2CD8F49C65A8E0C5306B61B4343"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "24",
+                            MinInclusive = "0D5DC2CD8F49C65A8E0C5306B61B4343",
+                            MaxExclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED"
+                        },
+                        (ServiceIdentity)null),
+
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "5",
+                            MinInclusive = "0DCEB8CE51C6BFE84F4BD9409F69B9BB2164DEBD78C50C850E0C1E3E3F0579ED",
+                            MaxExclusive = "1080F600C27CF98DC13F8639E94E7676"
+                        },
+                        (ServiceIdentity)null),
+                    Tuple.Create(
+                        new PartitionKeyRange
+                        {
+                            Id = "9",
+                            MinInclusive = "1080F600C27CF98DC13F8639E94E7676",
+                            MaxExclusive = "FF"
+                        },
+                        (ServiceIdentity)null),
+                };
+
+            if (isFullySpecified)
+            {
+                partitionKeyRangeTuples = partitionKeyRangeTuples
+                    .Select(tuple =>
+                    {
+                        PartitionKeyRange range = tuple.Item1;
+                        // Pad right to 64 bytes (128 hex chars) for MinInclusive and MaxExclusive if not empty
+                        string PadTo64(string value)
+                        {
+                            if (string.IsNullOrEmpty(value) || value == "FF")
+                                return value;
+                            return value.PadRight(64, '0');
+                        }
+                        return Tuple.Create(
+                            new PartitionKeyRange
+                            {
+                                Id = range.Id,
+                                MinInclusive = PadTo64(range.MinInclusive),
+                                MaxExclusive = PadTo64(range.MaxExclusive)
+                            },
+                            tuple.Item2
+                        );
+                    })
+                    .ToList();
+            }
+
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(
+                partitionKeyRangeTuples,
+                string.Empty);
+
+            return routingMap;
+        }
+
+        private PartitionKeyDefinition GeneratePartitionKeyDefinition(int levels)
+        {
+            System.Collections.ObjectModel.Collection<string> paths = new System.Collections.ObjectModel.Collection<string>();
+            for (int i = 0; i < levels; i++)
+            {
+                paths.Add($"/{"id" + i}");
+            }
+
+            PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition
+            {
+                Paths = paths,
+                Kind = PartitionKind.MultiHash
+            };
+            return partitionKeyDefinition;
+        }
+
         [TestMethod]
         [ExpectedException(typeof(InvalidOperationException))]
         public void TestInvalidRoutingMap()

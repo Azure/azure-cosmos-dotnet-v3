@@ -917,7 +917,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 string collectionResourceId, 
                 Range<string> range, 
                 ITrace trace,
-                bool forceRefresh = false)
+                bool forceRefresh = false,
+                PartitionKeyDefinition partitionKeyDefinition = null)
             {
                 return Task.FromResult(this.collectionRoutingMap.GetOverlappingRanges(range));
             }

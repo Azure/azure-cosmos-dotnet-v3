@@ -20,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </summary>
     internal sealed class CollectionRoutingMap
     {
+        private const string EpkNormalizationDisabled = "EpkNormalizationDisabled";
         /// <summary>
         /// Partition key range id to partition address and range.
         /// </summary>
@@ -124,16 +125,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
-        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(Range<string> range)
+        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(Range<string> range, PartitionKeyDefinition partitionKeyDefinition = null)
         {
-            return this.GetOverlappingRanges(new[] { range });
+            return this.GetOverlappingRanges(new[] { range }, partitionKeyDefinition);
         }
 
-        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(IReadOnlyList<Range<string>> providedPartitionKeyRanges)
+        public IReadOnlyList<PartitionKeyRange> GetOverlappingRanges(IReadOnlyList<Range<string>> providedPartitionKeyRanges, PartitionKeyDefinition partitionKeyDefinition = null)
         {
             if (providedPartitionKeyRanges == null)
             {
                 throw new ArgumentNullException("providedPartitionKeyRanges");
+            }
+
+            string epkNormalizationDisabled = Environment.GetEnvironmentVariable(EpkNormalizationDisabled);
+            bool normalizationDisabled = !string.IsNullOrEmpty(epkNormalizationDisabled) && epkNormalizationDisabled.Equals(bool.TrueString, StringComparison.OrdinalIgnoreCase);
+
+            // Perform normalization of the provided partition epk ranges only in the case of a hierarchical partition key.
+            if (!normalizationDisabled && partitionKeyDefinition != null && partitionKeyDefinition.Kind == PartitionKind.MultiHash)
+            {
+                providedPartitionKeyRanges = PartitionKeyRangeNormalizer.NormalizeRanges(providedPartitionKeyRanges, partitionKeyDefinition);
             }
 
             SortedList<string, PartitionKeyRange> partitionRanges = new SortedList<string, PartitionKeyRange>();
@@ -246,6 +256,64 @@ namespace Microsoft.Azure.Cosmos.Routing
             return new CollectionRoutingMap(newRangeById, newOrderedRanges, this.CollectionUniqueId, changeFeedNextIfNoneMatch);
         }
 
+        internal static class PartitionKeyRangeNormalizer
+        {
+            public static IReadOnlyList<Range<string>> NormalizeRanges(
+                IReadOnlyList<Range<string>> providedPartitionKeyRanges,
+                PartitionKeyDefinition partitionKeyDefinition = null)
+            {
+                if (partitionKeyDefinition == null)
+                {
+                    throw new ArgumentNullException(nameof(partitionKeyDefinition), "PartitionKeyDefinition cannot be null for normalization.");
+                }
+
+                int normalizedLength = GetEffectiveNormalizedLength(partitionKeyDefinition);
+
+                List<Range<string>> normalizedRanges = new List<Range<string>>(providedPartitionKeyRanges.Count);
+
+                foreach (Range<string> range in providedPartitionKeyRanges)
+                {
+                    string min = NormalizeEffectivePartitionKey(range.Min, normalizedLength);
+                    string max = NormalizeEffectivePartitionKey(range.Max, normalizedLength);
+
+                    normalizedRanges.Add(new Range<string>(
+                        min,
+                        max,
+                        range.IsMinInclusive,
+                        range.IsMaxInclusive));
+                }
+
+                return normalizedRanges;
+            }
+
+            private static int GetEffectiveNormalizedLength(PartitionKeyDefinition partitionKeyDefinition)
+            {
+                // Default to 32 bytes if not specified
+                if (partitionKeyDefinition == null || partitionKeyDefinition.Paths == null)
+                {
+                    return 32;
+                }
+                return partitionKeyDefinition.Paths.Count * 32;
+            }
+
+            private static string NormalizeEffectivePartitionKey(string effectivePartitionKey, int normalizedLength)
+            {
+                if (effectivePartitionKey == null)
+                {
+                    return null;
+                }
+
+                // If the effective partition key is already normalized or minimum or maxium boundaries, return it as is.
+                if (effectivePartitionKey.Length >= normalizedLength ||
+                    effectivePartitionKey == Documents.Routing.PartitionKeyInternal.MinimumInclusiveEffectivePartitionKey ||
+                    effectivePartitionKey == Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey)
+                {
+                    return effectivePartitionKey;
+                }
+
+                return effectivePartitionKey.PadRight(normalizedLength, '0');
+            }
+        }
         private class MinPartitionKeyTupleComparer : IComparer<Tuple<PartitionKeyRange, ServiceIdentity>>
         {
             public int Compare(Tuple<PartitionKeyRange, ServiceIdentity> left, Tuple<PartitionKeyRange, ServiceIdentity> right)

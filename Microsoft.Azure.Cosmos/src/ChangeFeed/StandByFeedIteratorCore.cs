@@ -85,7 +85,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 (currentKeyRangeId, response) = await this.ReadNextInternalAsync(trace, cancellationToken);
                 // Read only one range at a time - Breath first
                 this.compositeContinuationToken.MoveToNextToken();
-                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+                PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+                (_, nextKeyRangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync(false, partitionKeyDefinition);
                 if (response.StatusCode != HttpStatusCode.NotModified)
                 {
                     break;
@@ -128,7 +129,8 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                     pkRangeCache.TryGetOverlappingRangesAsync);
             }
 
-            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync();
+            PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
+            (CompositeContinuationToken currentRangeToken, string rangeId) = await this.compositeContinuationToken.GetCurrentTokenAsync(false, partitionKeyDefinition);
             string partitionKeyRangeId = rangeId;
             this.continuationToken = currentRangeToken.Token;
             ResponseMessage response = await this.NextResultSetDelegateAsync(this.continuationToken, partitionKeyRangeId, this.maxItemCount, this.changeFeedOptions, trace, cancellationToken);
@@ -163,8 +165,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
                 && (response.Headers.SubStatusCode == Documents.SubStatusCodes.PartitionKeyRangeGone || response.Headers.SubStatusCode == Documents.SubStatusCodes.CompletingSplit);
             if (partitionSplit)
             {
+                PartitionKeyDefinition partitionKeyDefinition = await this.container.GetPartitionKeyDefinitionAsync(cancellationToken);
                 // Forcing stale refresh of Partition Key Ranges Cache
-                await this.compositeContinuationToken.GetCurrentTokenAsync(forceRefresh: true);
+                await this.compositeContinuationToken.GetCurrentTokenAsync(forceRefresh: true, partitionKeyDefinition: partitionKeyDefinition);
                 return true;
             }
 
