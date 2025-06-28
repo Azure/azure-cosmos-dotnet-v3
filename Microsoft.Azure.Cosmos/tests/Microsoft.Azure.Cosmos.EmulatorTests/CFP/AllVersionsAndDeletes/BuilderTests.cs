@@ -69,7 +69,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(DateTime.TryParse(s: change.Metadata.ConflictResolutionTimestamp.ToString(), out _), message: "Invalid csrt must be a datetime value.");
                             Assert.IsTrue(change.Metadata.Lsn > 0, message: "Invalid lsn must be a long value.");
                             Assert.IsFalse(change.Metadata.IsTimeToLiveExpired);
-
+                            Assert.IsNull(change.Metadata.Id);
+                            Assert.IsNull(change.Metadata.PartitionKey);
                             // previous
                             Assert.IsNull(change.Previous);
                         }
@@ -84,6 +85,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                             Assert.IsTrue(change.Metadata.IsTimeToLiveExpired);
 
                             // previous
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.Id.ToString());
+                            Assert.AreEqual(expected: "1", actual: change.Metadata.PartitionKey.FirstOrDefault().Item2);
                             Assert.AreEqual(expected: "1", actual: change.Previous.id.ToString());
                             Assert.AreEqual(expected: "1", actual: change.Previous.pk.ToString());
                             Assert.AreEqual(expected: "Testing TTL on CFP.", actual: change.Previous.description.ToString());
@@ -155,6 +158,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
             ChangeFeedProcessor processor = monitoredContainer
                 .GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes(processorName: "processor", onChangesDelegate: (ChangeFeedProcessorContext context, IReadOnlyCollection<ChangeFeedItem<dynamic>> docs, CancellationToken token) =>
                 {
+                    string metadataId = default;
+                    string metadataPk = default;
                     string id = default;
                     string pk = default;
                     string description = default;
@@ -171,6 +176,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
                         }
                         else
                         {
+                            metadataId = change.Metadata.Id.ToString();
+                            metadataPk = change.Metadata.PartitionKey.FirstOrDefault().Item2.ToString();
                             id = change.Previous.id.ToString();
                             pk = change.Previous.pk.ToString();
                             description = change.Previous.description.ToString();
@@ -211,6 +218,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.CFP.AllVersionsAndDeletes
 
                     ChangeFeedItem<dynamic> deleteChange = docs.ElementAt(2);
                     Assert.IsNull(deleteChange.Current.id);
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.Id.ToString());
+                    Assert.AreEqual(expected: "1", actual: deleteChange.Metadata.PartitionKey.FirstOrDefault().Item2);
                     Assert.AreEqual(expected: deleteChange.Metadata.OperationType, actual: ChangeFeedOperationType.Delete);
                     Assert.AreEqual(expected: replaceChange.Metadata.Lsn, actual: deleteChange.Metadata.PreviousLsn);
                     Assert.IsNotNull(deleteChange.Previous);
