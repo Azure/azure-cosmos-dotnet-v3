@@ -6860,12 +6860,12 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.isThinClientEnabled)
             {
-                featureFlag += (int)UserAgentFeatureFlags.ThinClientEnabled;
+                featureFlag += (int)UserAgentFeatureFlags.ThinClient;
             }
 
             if (ConfigurationManager.IsBinaryEncodingEnabled())
             {
-                featureFlag += (int)UserAgentFeatureFlags.BinaryEncodingEnabled;
+                featureFlag += (int)UserAgentFeatureFlags.BinaryEncoding;
             }
 
             return featureFlag == 0 ? string.Empty : $"F{featureFlag:X}";
