@@ -19,8 +19,8 @@ namespace Microsoft.Azure.Cosmos
 
         PerPartitionCircuitBreaker = 2,
 
-        ThinClient = 3,
+        ThinClient = 4,
 
-        BinaryEncoding = 4,
+        BinaryEncoding = 8,
     }
 }

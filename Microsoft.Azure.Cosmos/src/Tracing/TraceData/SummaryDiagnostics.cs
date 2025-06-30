@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             if (this.ThinclientRequestsSummary.IsValueCreated)
             {
-                jsonWriter.WriteFieldName("ThinclientCalls");
+                jsonWriter.WriteFieldName("GatewayV2Calls");
                 jsonWriter.WriteObjectStart();
                 foreach (KeyValuePair<(int, int), int> kvp in this.ThinclientRequestsSummary.Value)
                 {
