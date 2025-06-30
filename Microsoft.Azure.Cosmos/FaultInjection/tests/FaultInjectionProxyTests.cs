@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(Timeout)]
         [Description("Test Region rule filtering")]
         [Owner("ntripician")]
-        public async Task FIGatewayRegion()
+        public async Task FIProxyRegion()
         {
             //Get regions for testing
             List<string> preferredRegions = new List<string>() { };
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(Timeout)]
         [Description("Test Partition rule filtering")]
         [Owner("ntripician")]
-        public async Task FIGatewayPartitionTest()
+        public async Task FIProxyPartitionTest()
         {
             //create container with high throughput to create multiple feed ranges
             await this.InitializeHighThroughputContainerAsync();
@@ -373,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(Timeout)]
         [Description("Test response delay, request should be sent")]
         [Owner("ntripician")]
-        public async Task FIGatewayResponseDelay()
+        public async Task FIProxyResponseDelay()
         {
             //id and partitionkey of item that is to be created, will want to delete after test
             string id = "id";
@@ -468,7 +468,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(Timeout)]
         [Description("Test send delay, request should not be sent")]
         [Owner("ntripician")]
-        public async Task FIGatewaySendDelay()
+        public async Task FIProxySendDelay()
         {
             //id and partitionkey of item that is to be created, will want to delete after test
             string id = "id";
@@ -579,7 +579,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.Timeout, (int)StatusCodes.RequestTimeout, (int)SubStatusCodes.Unknown, DisplayName = "Timeout - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsMigrating, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingPartitionMigration, DisplayName = "PartitionIsMigrating - write")]
         [DataRow(FaultInjectionOperationType.CreateItem, FaultInjectionServerErrorType.PartitionIsSplitting, (int)StatusCodes.Gone, (int)SubStatusCodes.CompletingSplit, DisplayName = "PartitionIsSplitting - write")]
-        public async Task FIGatewayServerResponse(
+        public async Task FIProxyServerResponse(
             FaultInjectionOperationType faultInjectionOperationType, 
             FaultInjectionServerErrorType faultInjectionServerErrorType,
             int statusCodes,
@@ -714,7 +714,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(Timeout)]
         [Description("Test hit limit")]
         [Owner("ntripician")]
-        public async Task FIGatewayHitLimit()
+        public async Task FIProxyHitLimit()
         {
             string hitCountRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule hitCountRule = new FaultInjectionRuleBuilder(
@@ -795,7 +795,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
         [Timeout(Timeout)]
         [Description("Test injection rate")]
         [Owner("ntripician")]
-        public async Task FIGatewayInjectionRate()
+        public async Task FIProxyInjectionRate()
         {
             string thresholdRuleId = "hitCountRule-" + Guid.NewGuid().ToString();
             FaultInjectionRule thresholdRule = new FaultInjectionRuleBuilder(

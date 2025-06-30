@@ -83,7 +83,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         public override string ToString()
         {
             return String.Format(
-                "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}, LimitToProxy: {4}",
+                "FaultInjectionCondition{{ OperationType: {0}, ConnectionType: {1}, Region: {2}, Endpoint: {3}",
                 this.operationType,
                 this.connectionType,
                 this.region,  
