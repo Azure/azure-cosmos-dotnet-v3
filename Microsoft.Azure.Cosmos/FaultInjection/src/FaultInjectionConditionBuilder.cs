@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private FaultInjectionConnectionType connectionType = FaultInjectionConnectionType.All;
         private string region = string.Empty;
         private FaultInjectionEndpoint endpoint = FaultInjectionEndpoint.Empty;
-        private bool limitToProxy = false;
 
         /// <summary>
         /// Optional. Specifies which operation type rule will target. Once set, the rule will only target requests with this operation type.
@@ -72,17 +71,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// Optional. Specifies whether the rule will only target requests that are sent to gateway proxy.
-        /// </summary>
-        /// <param name="limitToProxy"></param>
-        /// <returns></returns>
-        internal FaultInjectionConditionBuilder WithLimitToProxy(bool limitToProxy)
-        {
-            this.limitToProxy = limitToProxy;
-            return this;
-        }
-
-        /// <summary>
         /// Creates the <see cref="FaultInjectionCondition"/>.
         /// </summary>
         /// <returns>the <see cref="FaultInjectionCondition"/>.</returns>
@@ -92,8 +80,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.operationType, 
                 this.connectionType, 
                 this.region, 
-                this.endpoint,
-                this.limitToProxy);
+                this.endpoint);
         }
 
     }

@@ -116,7 +116,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[0])
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
@@ -133,7 +132,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                         .WithRegion(preferredRegions[1])
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
@@ -254,7 +252,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                                 feedRanges[0])
                                 .Build())
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.TooManyRequests)
@@ -390,7 +387,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
@@ -486,7 +482,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.CreateItem)
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
@@ -601,7 +596,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                     .WithOperationType(faultInjectionOperationType)
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                    .WithLimitToProxy(true)
                     .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(faultInjectionServerErrorType)
@@ -728,7 +722,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                 condition:
                     new FaultInjectionConditionBuilder()
                     .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                    .WithLimitToProxy(true)
                     .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
@@ -811,7 +804,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.Gone)
@@ -882,7 +874,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection.Tests
                     new FaultInjectionConditionBuilder()
                         .WithOperationType(FaultInjectionOperationType.ReadItem)
                         .WithConnectionType(FaultInjectionConnectionType.Gateway)
-                        .WithLimitToProxy(true)
                         .Build(),
                 result:
                     FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.InternalServerError)

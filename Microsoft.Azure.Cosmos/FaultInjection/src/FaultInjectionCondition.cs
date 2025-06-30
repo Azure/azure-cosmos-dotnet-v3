@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private readonly FaultInjectionConnectionType connectionType;
         private readonly string region;
         private readonly FaultInjectionEndpoint endpoint;
-        private readonly bool limitToProxy;
 
         /// <summary>
         /// Creates a <see cref="FaultInjectionCondition"/>.
@@ -27,8 +26,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             FaultInjectionOperationType? operationType = null,
             FaultInjectionConnectionType? connectionType = null,
             string? region = null,
-            FaultInjectionEndpoint? endpoint = null,
-            bool limitToProxy = false)
+            FaultInjectionEndpoint? endpoint = null)
         {
 
             RegionNameMapper mapper = new RegionNameMapper();
@@ -39,7 +37,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 ? FaultInjectionConnectionType.Gateway 
                 : connectionType ?? FaultInjectionConnectionType.All;
             this.endpoint = endpoint ?? FaultInjectionEndpoint.Empty;
-            this.limitToProxy = limitToProxy;
         }
 
         /// <summary>
@@ -80,15 +77,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         }
 
         /// <summary>
-        /// Indicates whether the rule will only target requests that are sent to gateway proxy.
-        /// </summary>
-        /// <returns></returns>
-        internal bool IsLimitToProxy()
-        {
-            return this.limitToProxy;
-        }
-
-        /// <summary>
         /// To String method
         /// </summary>
         /// <returns>A string represeting the <see cref="FaultInjectionCondition"/>.</returns>
@@ -99,8 +87,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.operationType,
                 this.connectionType,
                 this.region,  
-                this.endpoint.ToString(),
-                this.limitToProxy);
+                this.endpoint.ToString());
         }
 
         internal bool IsMetadataOperationType()

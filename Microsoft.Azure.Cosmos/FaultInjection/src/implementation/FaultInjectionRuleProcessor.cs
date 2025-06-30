@@ -122,7 +122,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
             if (rule.GetCondition().GetConnectionType() == FaultInjectionConnectionType.Gateway)
             {
-                effectiveCondition.SetLimitToProxy(rule.GetCondition().IsLimitToProxy());
                 if (rule.GetCondition().GetEndpoint() != FaultInjectionEndpoint.Empty 
                     && this.CanErrorLimitToOperation(errorType) 
                     && this.CanLimitToPartition(rule.GetCondition()))

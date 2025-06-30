@@ -74,11 +74,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             this.validators.Add(new ResourceTypeValidator(resourceType));
         }
 
-        public void SetLimitToProxy(bool limitToProxy)
-        {
-            this.validators.Add(new ProxyValidator(limitToProxy, this.globalEndpointManager));
-        }
-
         public string GetContainerResourceId()
         {
             return this.containerResourceId;
@@ -210,8 +205,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
                 bool isApplicable = this.regionEndpoints.Any(uri => 
-                    request.RequestContext.LocationEndpointToRoute.AbsoluteUri
-                    .StartsWith(uri.AbsoluteUri));
+                    request.RequestContext.LocationEndpointToRoute.Host
+                    .StartsWith(uri.Host));
 
                 return isApplicable;
             }
@@ -362,43 +357,6 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
                 return this.resourceType == request.ResourceType;
-            }
-        }
-
-        private class ProxyValidator : IFaultInjectionConditionValidator
-        {
-            private readonly bool limitToProxy;
-            private readonly GlobalEndpointManager globalEndpointManager;
-
-            public ProxyValidator(bool limitToProxy, GlobalEndpointManager globalEndpointManager)
-            {
-                this.limitToProxy = limitToProxy;
-                this.globalEndpointManager = globalEndpointManager 
-                    ?? throw new ArgumentNullException(nameof(globalEndpointManager), "Argument 'globalEndpointManager' cannot be null.");
-            }
-
-            public bool IsApplicable(string ruleId, ChannelCallArguments args)
-            {
-                //not needed for direct calls 
-                throw new NotImplementedException();
-            }
-
-            //Used for Gateway Requests
-
-            public bool IsApplicable(string ruleId, DocumentServiceRequest request)
-            {
-                if (this.limitToProxy)
-                {
-                    Uri gwURI = new Uri(request.Headers.Get("FAULTINJECTION_GW_URI"));
-
-                    // Check if the request is routed through the proxy
-                    return gwURI.Host == this.globalEndpointManager.ResolveThinClientEndpoint(request).Host
-                    && gwURI.Port == this.globalEndpointManager.ResolveThinClientEndpoint(request).Port;
-
-                }
-
-                //If not limited to proxy, then the rule applies to all requests
-                return true;
             }
         }
     }
