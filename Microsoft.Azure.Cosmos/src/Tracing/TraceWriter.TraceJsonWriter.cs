@@ -222,12 +222,18 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
                 this.jsonWriter.WriteArrayEnd();
 
-                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0)
+                if (clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList.Count > 0
+                    || clientSideRequestStatisticsTraceDatum.ThinclientResponseStatisticsList.Count > 0)
                 {
                     this.jsonWriter.WriteFieldName("HttpResponseStats");
                     this.jsonWriter.WriteArrayStart();
 
                     foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList)
+                    {
+                        this.VisitHttpResponseStatistics(stat, this.jsonWriter);
+                    }
+
+                    foreach (ClientSideRequestStatisticsTraceDatum.HttpResponseStatistics stat in clientSideRequestStatisticsTraceDatum.ThinclientResponseStatisticsList)
                     {
                         this.VisitHttpResponseStatistics(stat, this.jsonWriter);
                     }
