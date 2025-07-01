@@ -76,7 +76,8 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IEnumerable<Range<string>> sortedRanges,
             ITrace trace,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
             if (sortedRanges == null)
             {
@@ -138,7 +139,8 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     queryRange,
                     trace,
-                    forceRefresh);
+                    forceRefresh,
+                    partitionKeyDefinition);
 
                 if (overlappingRanges == null)
                 {

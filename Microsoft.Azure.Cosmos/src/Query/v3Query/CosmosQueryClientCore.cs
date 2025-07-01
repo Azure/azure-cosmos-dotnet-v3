@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos
                     collectionResourceId,
                     ranges,
                     forceRefresh,
-                    childTrace);
+                    childTrace, partitionKeyDefinition);
             }
         }
 
@@ -249,7 +249,8 @@ namespace Microsoft.Azure.Cosmos
             string collectionResourceId,
             IReadOnlyList<Range<string>> providedRanges,
             bool forceRefresh,
-            ITrace trace)
+            ITrace trace,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
             if (string.IsNullOrEmpty(collectionResourceId))
             {
@@ -267,7 +268,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 IRoutingMapProvider routingMapProvider = await this.GetRoutingMapProviderAsync();
 
-                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace);
+                List<PartitionKeyRange> ranges = await routingMapProvider.TryGetOverlappingRangesAsync(collectionResourceId, providedRanges, getPKRangesTrace, false, partitionKeyDefinition);
                 if (ranges == null && PathsHelper.IsNameBased(resourceLink))
                 {
                     // Refresh the cache and don't try to re-resolve collection as it is not clear what already
@@ -455,9 +456,9 @@ namespace Microsoft.Azure.Cosmos
         public override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
             string collectionResourceId,
             Range<string> range,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
-            PartitionKeyDefinition partitionKeyDefinition = await this.cosmosContainerCore.GetPartitionKeyDefinitionAsync(CancellationToken.None);
             PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
             return await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
                 collectionResourceId,
