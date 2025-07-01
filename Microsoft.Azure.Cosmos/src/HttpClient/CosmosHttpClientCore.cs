@@ -359,7 +359,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
-                            documentServiceRequest.Headers.Set("FAULTINJECTION_GW_URI", requestMessage.RequestUri.ToString());
+                            this.SetFaultInjectionHeader(documentServiceRequest, requestMessage);
                             (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
                             if (hasFault)
                             {
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos
 
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
-                            documentServiceRequest.Headers.Set("FAULTINJECTION_GW_URI", requestMessage.RequestUri.ToString());
+                            this.SetFaultInjectionHeader(documentServiceRequest, requestMessage);
                             CancellationToken fiToken = cancellationTokenSource.Token;
                             fiToken.ThrowIfCancellationRequested();
                             await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, fiToken);
@@ -467,6 +467,11 @@ namespace Microsoft.Azure.Cosmos
                     await Task.Delay(delayForNextRequest);
                 }
             }
+        }
+
+        private void SetFaultInjectionHeader(DocumentServiceRequest documentServiceRequest, HttpRequestMessage requestMessage)
+        {
+            documentServiceRequest.Headers.Set("FAULTINJECTION_GW_URI", requestMessage.RequestUri.ToString());
         }
 
         private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(

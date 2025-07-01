@@ -22,8 +22,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
         public FaultInjectionConditionInternal(GlobalEndpointManager globalEndpointManager)
         {
-            this.globalEndpointManager = globalEndpointManager 
-                ?? throw new ArgumentNullException(nameof(globalEndpointManager), "Argument 'globalEndpointManager' cannot be null.");
+            this.globalEndpointManager = globalEndpointManager;
             this.validators = new List<IFaultInjectionConditionValidator>();
         }
 
