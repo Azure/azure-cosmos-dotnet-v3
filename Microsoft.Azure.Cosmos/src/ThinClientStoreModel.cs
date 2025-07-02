@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
+                Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
                 if (this.isPartitionLevelFailoverEnabled
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
@@ -90,6 +91,11 @@ namespace Microsoft.Azure.Cosmos
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
                     this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+
+                    if (request.RequestContext?.LocationEndpointToRoute != null)
+                    {
+                        thinClientEndpoint = request.RequestContext.LocationEndpointToRoute;
+                    }
                 }
 
                 Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
@@ -98,7 +104,7 @@ namespace Microsoft.Azure.Cosmos
                     request,
                     request.ResourceType,
                     physicalAddress,
-                    this.endpointManager.ResolveThinClientEndpoint(request),
+                    thinClientEndpoint,
                     properties.Id,
                     base.clientCollectionCache,
                     cancellationToken);

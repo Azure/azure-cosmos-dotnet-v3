@@ -100,6 +100,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationCache.ThinClientReadEndpoints;
+
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationCache.ThinClientWriteEndpoints;
+
         public int PreferredLocationCount
         {
             get

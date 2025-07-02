@@ -125,6 +125,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Gets the list of thin client read endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationInfo.ThinClientReadEndpoints;
+
+        /// <summary>
+        /// Gets the list of thin client write endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationInfo.ThinClientWriteEndpoints;
+
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
