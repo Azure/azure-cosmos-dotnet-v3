@@ -158,7 +158,8 @@ namespace Microsoft.Azure.Cosmos
                     request,
                     this.isPartitionLevelFailoverEnabled),
                 request.RequestContext.ClientRequestStatistics,
-                cancellationToken);
+                cancellationToken,
+                request);
         }
 
         internal class ObjectPool<T>
