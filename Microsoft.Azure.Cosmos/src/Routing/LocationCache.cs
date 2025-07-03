@@ -125,6 +125,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
         }
 
+        /// <summary>
+        /// Gets the list of thin client read endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationInfo.ThinClientReadEndpoints;
+
+        /// <summary>
+        /// Gets the list of thin client write endpoints.
+        /// </summary>
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationInfo.ThinClientWriteEndpoints;
+
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
         /// <summary>
@@ -216,16 +226,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 preferenceList: preferredLocations);
         }
 
-        public bool IsMetaData(DocumentServiceRequest request)
+        public static bool IsMetaData(DocumentServiceRequest request)
         {
             return (request.OperationType != Documents.OperationType.ExecuteJavaScript && request.ResourceType == ResourceType.StoredProcedure) ||
                 request.ResourceType != ResourceType.Document;
    
         }
+
         public bool IsMultimasterMetadataWriteRequest(DocumentServiceRequest request)
         {
             return !request.IsReadOnlyRequest && this.locationInfo.AvailableWriteLocations.Count > 1
-                && this.IsMetaData(request) 
+                && LocationCache.IsMetaData(request) 
                 && this.CanUseMultipleWriteLocations();
 
         }
@@ -896,6 +907,11 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         internal Uri ResolveThinClientEndpoint(DocumentServiceRequest request, bool isReadRequest)
         {
+            if (request.RequestContext != null && request.RequestContext.LocationEndpointToRoute != null)
+            {
+                return request.RequestContext.LocationEndpointToRoute;
+            }
+
             DatabaseAccountLocationsInfo snapshot = this.locationInfo;
             ReadOnlyCollection<Uri> endpoints = isReadRequest
                 ? snapshot.ThinClientReadEndpoints
