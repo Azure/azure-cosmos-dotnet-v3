@@ -8,10 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
 
@@ -77,7 +75,6 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
                 if (this.isPartitionLevelFailoverEnabled
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
@@ -91,11 +88,6 @@ namespace Microsoft.Azure.Cosmos
 
                     request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
                     this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
-
-                    if (request.RequestContext?.LocationEndpointToRoute != null)
-                    {
-                        thinClientEndpoint = request.RequestContext.LocationEndpointToRoute;
-                    }
                 }
 
                 Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType) ? base.GetFeedUri(request) : base.GetEntityUri(request);
@@ -104,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                     request,
                     request.ResourceType,
                     physicalAddress,
-                    thinClientEndpoint,
+                    this.endpointManager.ResolveThinClientEndpoint(request),
                     properties.Id,
                     base.clientCollectionCache,
                     cancellationToken);
