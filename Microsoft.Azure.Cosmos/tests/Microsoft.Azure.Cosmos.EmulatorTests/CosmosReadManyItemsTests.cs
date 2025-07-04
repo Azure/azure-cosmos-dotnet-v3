@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using System.Collections.Concurrent;
 
     [TestClass]
     public class CosmosReadManyItemsTests : BaseCosmosClientHelper
@@ -360,6 +361,67 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                                         CosmosFeedResponseSerializer.GetStreamWithoutServiceEnvelope(responseMessage.Content));
                 Assert.AreEqual(items.Length, 2);
             }
+        }
+
+        [TestMethod]
+        public async Task ReadMany429ThrottlingExceptionTest()
+        {
+            // Create a new database and container with low throughput to trigger throttling
+            Database database = await this.GetClient().CreateDatabaseAsync(Guid.NewGuid().ToString());
+            Container container = await database.CreateContainerAsync(Guid.NewGuid().ToString(), "/pk", throughput: 400);
+
+            // Insert a few items
+            for (int i = 0; i < 5; i++)
+            {
+                await container.CreateItemAsync(
+                    ToDoActivity.CreateRandomToDoActivity("pk" + i, i.ToString()));
+            }
+
+            List<(string, PartitionKey)> itemList = new List<(string, PartitionKey)>();
+            for (int i = 0; i < 5; i++)
+            {
+                itemList.Add((i.ToString(), new PartitionKey("pk" + i)));
+            }
+
+            // Warm up caches
+            await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+
+            // Run many concurrent ReadManyItemsStreamAsync requests to trigger 429s
+            int concurrentRequests = 500;
+            ConcurrentQueue<ResponseMessage> throttledStreamResponses = new ConcurrentQueue<ResponseMessage>();
+            ConcurrentQueue<CosmosException> throttledTypedExceptions = new ConcurrentQueue<CosmosException>();
+            List<Task> tasks = new List<Task>();
+
+            for (int i = 0; i < concurrentRequests; i++)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    // Stream API
+                    using (ResponseMessage responseMessage = await container.ReadManyItemsStreamAsync(itemList))
+                    {
+                        if (responseMessage.StatusCode == HttpStatusCode.TooManyRequests)
+                        {
+                            throttledStreamResponses.Enqueue(responseMessage);
+                        }
+                    }
+
+                    // Typed API
+                    try
+                    {
+                        await container.ReadManyItemsAsync<ToDoActivity>(itemList);
+                    }
+                    catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.TooManyRequests)
+                    {
+                        throttledTypedExceptions.Enqueue(ex);
+                    }
+                }));
+            }
+
+            await Task.WhenAll(tasks);
+
+            Assert.IsTrue(throttledStreamResponses.Count > 0, "Did not receive any 429 (TooManyRequests) responses from ReadManyItemsStreamAsync.");
+            Assert.IsTrue(throttledTypedExceptions.Count > 0, "Did not receive any 429 (TooManyRequests) exceptions from ReadManyItemsAsync.");
+            await database.DeleteAsync();
         }
 
         [TestMethod]
