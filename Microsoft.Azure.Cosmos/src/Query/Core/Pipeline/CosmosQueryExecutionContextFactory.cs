@@ -218,7 +218,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                     containerQueryProperties.ResourceId,
                                     containerQueryProperties.EffectiveRangesForPartitionKey,
                                     forceRefresh: false,
-                                    createQueryPipelineTrace);
+                                    createQueryPipelineTrace, containerQueryProperties.PartitionKeyDefinition);
 
                                 return TryCreatePassthroughQueryExecutionContext(
                                     documentContainer,
@@ -334,7 +334,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                         containerQueryProperties.ResourceId,
                         new List<Documents.Routing.Range<string>> { FeedRangeEpk.FullRange.Range },
                         forceRefresh: false,
-                        trace);
+                        trace,
+                        containerQueryProperties.PartitionKeyDefinition);
 
                     tryCreatePipelineStage = TryCreateFullQueryPipeline(
                         documentContainer,
@@ -669,7 +670,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                                 containerQueryProperties.ResourceId,
                                 partitionedQueryExecutionInfo.QueryRanges,
                                 forceRefresh: false,
-                                trace);
+                                trace,
+                                containerQueryProperties.PartitionKeyDefinition);
             }
 
             return targetRanges;
