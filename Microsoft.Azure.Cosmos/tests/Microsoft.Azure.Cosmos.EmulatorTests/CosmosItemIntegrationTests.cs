@@ -1449,6 +1449,56 @@
             }
         }
 
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Owner("ntripician")]
+        public async Task AddressRefreshInternalServerErrorTest()
+        {
+            FaultInjectionRule internalServerError = new FaultInjectionRuleBuilder(
+                id: "rule1",
+                condition: new FaultInjectionConditionBuilder()
+                    .WithOperationType(FaultInjectionOperationType.MetadataRefreshAddresses)
+                    .WithRegion(region1)
+                    .Build(),
+                result:
+                   FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.InternalServerError)
+                    .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule>() { internalServerError };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            internalServerError.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                Serializer = this.cosmosSystemTextJsonSerializer,
+                ApplicationRegion = region1,
+            };
+
+            using (CosmosClient faultInjectionClient = new CosmosClient(
+                connectionString: this.connectionString,
+                clientOptions: faultInjector.GetFaultInjectionClientOptions(clientOptions)))
+            {
+                Database database = faultInjectionClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                internalServerError.Enable();
+
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> response = await container.ReadItemAsync<CosmosIntegrationTestObject>("testId", new PartitionKey("pk"));
+                    Assert.IsTrue(internalServerError.GetHitCount() > 0);
+                    Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.Fail(ex.Message);
+                }
+            }
+        }
+
         private async Task TryCreateItems(List<CosmosIntegrationTestObject> testItems)
         {
             foreach (CosmosIntegrationTestObject item in testItems)
