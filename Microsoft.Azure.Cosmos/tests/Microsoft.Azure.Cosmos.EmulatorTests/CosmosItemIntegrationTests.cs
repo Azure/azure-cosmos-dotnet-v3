@@ -31,6 +31,7 @@
         private static string region2;
         private static string region3;
         private IDictionary<string, Uri> readRegionsMapping;
+        private IList<Uri> thinClientreadRegionalEndpoints;
         private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
 
         [TestInitialize]
@@ -1497,6 +1498,273 @@
                 {
                     Assert.Fail(ex.Message);
                 }
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiRegion")]
+        [Ignore("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
+        [DataRow(ConnectionMode.Gateway, "15", "10", DisplayName = "Thin Client Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow(ConnectionMode.Gateway, "25", "20", DisplayName = "Thin Client Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow(ConnectionMode.Gateway, "35", "30", DisplayName = "Thin Client Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
+        [Owner("dkunda")]
+        [Timeout(70000)]
+        public async Task ReadItemAsync_WithThinClientCircuitBreakerEnabledAndSingleMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
+            ConnectionMode connectionMode,
+            string iterationCount,
+            string circuitBreakerConsecutiveFailureCount)
+        {
+            // Arrange.
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, circuitBreakerConsecutiveFailureCount);
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.ReadItem)
+                        .WithRegion(Regions.WestUS)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(10))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            List<string> preferredRegions = new List<string> { Regions.WestUS, Regions.EastAsia };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                AccountProperties accountInfo = await cosmosClient.ReadAccountAsync();
+
+                Assert.IsTrue(cosmosClient.DocumentClient.GlobalEndpointManager.ThinClientReadEndpoints.Count() >= 2);
+                this.thinClientreadRegionalEndpoints = cosmosClient.DocumentClient.GlobalEndpointManager.ThinClientReadEndpoints;
+
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                int consecutiveFailureCount = int.Parse(circuitBreakerConsecutiveFailureCount);
+                int totalIterations = int.Parse(iterationCount);
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+                {
+                    try
+                    {
+                        ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                            id: itemsList[0].Id,
+                            partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
+                        HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.OK,
+                            actual: readResponse.StatusCode);
+
+                        Assert.IsNotNull(contactedRegions);
+
+                        PartitionKeyRangeFailoverInfo failoverInfo = TestCommon.GetFailoverInfoForFirstPartitionUsingReflection(
+                            globalPartitionEndpointManager: cosmosClient.ClientContext.DocumentClient.PartitionKeyRangeLocation,
+                            isReadOnlyOrMultiMaster: true);
+
+                        if (attemptCount > consecutiveFailureCount)
+                        {
+                            Assert.AreEqual(this.thinClientreadRegionalEndpoints[1], failoverInfo.Current);
+                        }
+                        else
+                        {
+                            if (attemptCount == consecutiveFailureCount)
+                            {
+                                Assert.AreEqual(this.thinClientreadRegionalEndpoints[1], failoverInfo.Current);
+                            }
+                            else
+                            {
+                                Assert.AreEqual(this.thinClientreadRegionalEndpoints[0], failoverInfo.Current);
+                            }
+                        }
+                    }
+                    catch (CosmosException ce)
+                    {
+                        Assert.Fail("Read Item operation should succeed." + ce);
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Unhandled Exception was thrown during ReadItemAsync call. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
+
+                await this.TryDeleteItems(itemsList);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("MultiMaster")]
+        [Ignore ("We will enable this test once the test staging account used for multi master validation starts supporting thin proxy.")]
+        [DataRow(ConnectionMode.Gateway, "15", "10", DisplayName = "Thin Client Mode - Scenario when the total iteration count is 15 and circuit breaker consecutive failure threshold is set to 10.")]
+        [DataRow(ConnectionMode.Gateway, "25", "20", DisplayName = "Thin Client Mode - Scenario when the total iteration count is 25 and circuit breaker consecutive failure threshold is set to 20.")]
+        [DataRow(ConnectionMode.Gateway, "35", "30", DisplayName = "Thin Client Mode - Scenario when the total iteration count is 35 and circuit breaker consecutive failure threshold is set to 30.")]
+        [Owner("dkunda")]
+        [Timeout(70000)]
+        public async Task CreateItemAsync_WithThinClientEnabledAndCircuitBreakerEnabledAndMultiMasterAccountAndServiceUnavailableReceived_ShouldApplyPartitionLevelOverride(
+            ConnectionMode connectionMode,
+            string iterationCount,
+            string circuitBreakerConsecutiveFailureCount)
+        {
+            // Arrange.
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, "True");
+            Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, circuitBreakerConsecutiveFailureCount);
+
+            // Enabling fault injection rule to simulate a 503 service unavailable scenario.
+            string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
+                id: serviceUnavailableRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .WithRegion(Regions.WestUS)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(10))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+            Random random = new();
+            List<CosmosIntegrationTestObject> itemsCleanupList = new();
+            List<string> preferredRegions = new List<string> { Regions.WestUS, Regions.EastAsia };
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = connectionMode,
+                ConsistencyLevel = ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(5),
+                ApplicationPreferredRegions = preferredRegions,
+            };
+
+            List<CosmosIntegrationTestObject> itemsList = new()
+            {
+                new() { Id = "smTestId1", Pk = "smpk1" },
+            };
+
+            try
+            {
+                using CosmosClient cosmosClient = new(connectionString: this.connectionString, clientOptions: cosmosClientOptions);
+                AccountProperties accountInfo = await cosmosClient.ReadAccountAsync();
+
+                Assert.IsTrue(cosmosClient.DocumentClient.GlobalEndpointManager.ThinClientReadEndpoints.Count() >= 2);
+                this.thinClientreadRegionalEndpoints = cosmosClient.DocumentClient.GlobalEndpointManager.ThinClientReadEndpoints;
+
+                Database database = cosmosClient.GetDatabase(MultiRegionSetupHelpers.dbName);
+                Container container = database.GetContainer(MultiRegionSetupHelpers.containerName);
+
+                // Act and Assert.
+                await this.TryCreateItems(itemsList);
+
+                //Must Ensure the data is replicated to all regions
+                await Task.Delay(3000);
+
+                int consecutiveFailureCount = int.Parse(circuitBreakerConsecutiveFailureCount);
+                int totalIterations = int.Parse(iterationCount);
+
+                for (int attemptCount = 1; attemptCount <= totalIterations; attemptCount++)
+                {
+                    try
+                    {
+                        CosmosIntegrationTestObject testItem = new()
+                        {
+                            Id = $"mmTestId{random.Next()}",
+                            Pk = $"mmpk{random.Next()}"
+                        };
+
+                        ItemResponse<CosmosIntegrationTestObject> createResponse = await container.CreateItemAsync<CosmosIntegrationTestObject>(testItem);
+                        itemsCleanupList.Add(testItem);
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.Created,
+                            actual: createResponse.StatusCode);
+
+                        IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = createResponse.Diagnostics.GetContactedRegions();
+                        HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                        Assert.AreEqual(
+                            expected: HttpStatusCode.OK,
+                            actual: createResponse.StatusCode);
+
+                        Assert.IsNotNull(contactedRegions);
+
+                        PartitionKeyRangeFailoverInfo failoverInfo = TestCommon.GetFailoverInfoForFirstPartitionUsingReflection(
+                            globalPartitionEndpointManager: cosmosClient.ClientContext.DocumentClient.PartitionKeyRangeLocation,
+                            isReadOnlyOrMultiMaster: true);
+
+                        if (attemptCount > consecutiveFailureCount)
+                        {
+                            Assert.AreEqual(this.thinClientreadRegionalEndpoints[1], failoverInfo.Current);
+                        }
+                        else
+                        {
+                            if (attemptCount == consecutiveFailureCount)
+                            {
+                                Assert.AreEqual(this.thinClientreadRegionalEndpoints[1], failoverInfo.Current);
+                            }
+                            else
+                            {
+                                Assert.AreEqual(this.thinClientreadRegionalEndpoints[0], failoverInfo.Current);
+                            }
+                        }
+                    }
+                    catch (CosmosException ce)
+                    {
+                        Assert.Fail("Create Item operation should succeed." + ce);
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail($"Unhandled Exception was thrown during CreateItemAsync call. Message: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelCircuitBreakerEnabled, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.CircuitBreakerConsecutiveFailureCountForReads, null);
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
+
+                await this.TryDeleteItems(itemsList);
             }
         }
 
