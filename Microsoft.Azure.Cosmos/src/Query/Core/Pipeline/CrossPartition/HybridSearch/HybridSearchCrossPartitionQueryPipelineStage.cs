@@ -951,7 +951,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.HybridSearch
 
         private static class HybridSearchDebugTraceHelpers
         {
-            private const bool Enabled = true;
+            private const bool Enabled = false;
 #pragma warning disable CS0162 // Unreachable code detected
 
             [Conditional("DEBUG")]

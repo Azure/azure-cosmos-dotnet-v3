@@ -15,6 +15,7 @@
     [TestCategory("Query")]
     public sealed class OptimisticDirectExecutionQueryTests : QueryTestsBase
     {
+        private const int MaxConcurrency = -1;
         private const int NumberOfDocuments = 8;
         private const string PartitionKeyField = "key";
         private const string NumberField = "numberField";
@@ -872,7 +873,7 @@
                         MaxItemCount = pageSize,
                         PartitionKey = testCase.PartitionKey,
                         TestSettings = new TestInjections(simulate429s: false, simulateEmptyPages: false, new TestInjections.ResponseStats()),
-                        MaxConcurrency = 1,
+                        MaxConcurrency = MaxConcurrency,
                     };
 
                     if(testCase.EnableOptimisticDirectExecution.HasValue)
