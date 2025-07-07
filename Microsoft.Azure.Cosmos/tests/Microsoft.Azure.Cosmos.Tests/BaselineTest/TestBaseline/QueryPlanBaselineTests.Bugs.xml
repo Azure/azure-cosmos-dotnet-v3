@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Input>
       <Description>ARRAY_CONTAINS With Filter (This fans out to every partition when it really should just go to 1, 2, 3, 4).</Description>

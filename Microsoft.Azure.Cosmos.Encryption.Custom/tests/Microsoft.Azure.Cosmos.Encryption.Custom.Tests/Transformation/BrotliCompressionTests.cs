@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
+namespace Microsoft.Azure.Cosmos.Encryption.Tests.Transformation
 {
 #if NET8_0_OR_GREATER
     using System;

@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using UInt128 = Cosmos.UInt128;
 
     /// <summary>
     /// Splits or merges <see cref="PartitionKeyHashRange"/>

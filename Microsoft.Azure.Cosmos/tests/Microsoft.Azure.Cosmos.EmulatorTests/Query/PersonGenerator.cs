@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
+namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -16,7 +16,7 @@
                 stringBuilder.Append('a' + rand.Next(0, 26));
             }
 
-            stringBuilder.Append("💩");
+            stringBuilder.Append("??");
 
             return stringBuilder.ToString();
         }

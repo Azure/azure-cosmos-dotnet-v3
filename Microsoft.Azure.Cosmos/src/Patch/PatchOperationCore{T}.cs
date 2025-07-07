@@ -1,4 +1,4 @@
-ï»¿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -10,12 +10,12 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class PatchOperationCore<T> : PatchOperation<T>
     {
         /// <summary>
-Â  Â  Â  Â  /// Initializes a new instance of the <see cref="PatchOperationCore{T}"/> class.
-Â  Â  Â  Â  /// </summary>
-Â  Â  Â  Â  /// <param name="operationType">Specifies the type of Patch operation.</param>
-Â  Â  Â  Â  /// <param name="path">Specifies the path to target location.</param>
-Â  Â  Â  Â  /// <param name="value">Specifies the value to be used. In case of move operations it will be a string specifying the source
-Â  Â  Â  Â  /// location.</param>
+        /// Initializes a new instance of the <see cref="PatchOperationCore{T}"/> class.
+        /// </summary>
+        /// <param name="operationType">Specifies the type of Patch operation.</param>
+        /// <param name="path">Specifies the path to target location.</param>
+        /// <param name="value">Specifies the value to be used. In case of move operations it will be a string specifying the source
+        /// location.</param>
         public PatchOperationCore(
           PatchOperationType operationType,
           string path,

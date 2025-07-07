@@ -1,4 +1,4 @@
-﻿|          Method |      Mean |     Error |    StdDev |     Gen 0 | Gen 1 | Gen 2 | Allocated |
+|          Method |      Mean |     Error |    StdDev |     Gen 0 | Gen 1 | Gen 2 | Allocated |
 |---------------- |----------:|----------:|----------:|----------:|------:|------:|----------:|
 |            Null |  1.364 ms | 0.0219 ms | 0.0183 ms |         - |     - |     - |         - |
 |           False |  1.411 ms | 0.0071 ms | 0.0059 ms |         - |     - |     - |       9 B |

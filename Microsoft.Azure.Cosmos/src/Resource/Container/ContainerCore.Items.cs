@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -1141,7 +1141,9 @@ namespace Microsoft.Azure.Cosmos
         private string ContcatCachedUriWithId(string resourceId)
         {
             Debug.Assert(this.cachedUriSegmentWithoutId.EndsWith("/"));
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
         public async Task<ItemResponse<T>> PatchItemAsync<T>(
@@ -1179,11 +1181,6 @@ namespace Microsoft.Azure.Cosmos
             if (string.IsNullOrWhiteSpace(id))
             {
                 throw new ArgumentNullException(nameof(id));
-            }
-
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
             }
 
             if (patchOperations == null ||
@@ -1231,11 +1228,6 @@ namespace Microsoft.Azure.Cosmos
             if (trace == null)
             {
                 throw new ArgumentNullException(nameof(trace));
-            }
-
-            if (partitionKey == null)
-            {
-                throw new ArgumentNullException(nameof(partitionKey));
             }
 
             if (id == null)

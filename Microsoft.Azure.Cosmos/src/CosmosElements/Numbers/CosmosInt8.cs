@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         {
             return cosmosNumber is CosmosInt8 cosmosInt8 && this.Equals(cosmosInt8);
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public bool Equals(CosmosInt8 cosmosInt8)
         {
@@ -83,3 +84,4 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         }
     }
 }
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).

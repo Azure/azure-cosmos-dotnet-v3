@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -80,7 +80,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #if NETSTANDARD15 || NETSTANDARD16
             return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.GetTypeInfo().BaseType) || objectType == typeof(CosmosElement);
 #else
+#pragma warning disable CS8601 // Possible null reference assignment.
+#pragma warning disable CS8604 // Possible null reference argument.
             return ConvertableTypes.Contains(objectType) || ConvertableTypes.Contains(objectType.BaseType) || objectType == typeof(CosmosElement);
+#pragma warning restore CS8604 // Possible null reference argument.
+#pragma warning restore CS8601 // Possible null reference assignment.
 #endif
         }
 

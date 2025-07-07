@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
-
+    using UInt128 = Cosmos.UInt128; 
     internal static class DistinctHash
     {
         private static readonly UInt128 RootHashSeed = UInt128.Create(0xbfc2359eafc0e2b7, 0x8846e00284c4cf1f);
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             public UInt128 Visit(CosmosArray cosmosArray, UInt128 seed)
             {
                 // Start the array with a distinct hash, so that empty array doesn't hash to another value.
-                UInt128 hash = seed == RootHashSeed ? RootCache.Array : MurmurHash3.Hash128(HashSeeds.Array, seed);
+                Cosmos.UInt128 hash = seed == RootHashSeed ? RootCache.Array : MurmurHash3.Hash128(HashSeeds.Array.ToString(), seed);
 
                 // Incorporate all the array items into the hash.
                 for (int index = 0; index < cosmosArray.Count; index++)
@@ -72,13 +72,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
                     if (arrayItem is not CosmosUndefined)
                     {
-                        // Order of array items matter in equality check, so we add the index just to be safe.
-                        // For now we know that murmurhash will correctly give a different hash for 
-                        // [true, false, true] and [true, true, false]
-                        // due to the way the seed works.
-                        // But we add the index just incase that property does not hold in the future.
-                        UInt128 arrayItemSeed = HashSeeds.ArrayIndex + index;
-                        hash = MurmurHash3.Hash128(arrayItem.Accept(this, arrayItemSeed), hash);
+                        // Fix for CS0019: Operator '+' cannot be applied to operands of type 'UInt128' and 'int'
+                        // The issue is that UInt128 does not support direct addition with an int. To resolve this,
+                        // we can use a method to convert the int to UInt128 before performing the addition.
+
+                        Cosmos.UInt128 arrayItemSeed = HashSeeds.ArrayIndex + (Cosmos.UInt128)index;
+                        hash = MurmurHash3.Hash128(arrayItemSeed.ToString(), hash);
                     }
                 }
 

@@ -32,7 +32,9 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateDatabaseUri(string databaseId)
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
         /// <summary>
@@ -63,8 +65,10 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateDocumentCollectionUri(string databaseId, string collectionId)
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                 Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
         /// <summary>
@@ -81,8 +85,10 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static internal Uri CreateClientEncryptionKeyUri(string databaseId, string clientEncryptionKeyId)
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}", Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                 Paths.ClientEncryptionKeysPathSegment, Uri.EscapeUriString(clientEncryptionKeyId)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
         /// <summary>
@@ -97,9 +103,11 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateUserUri(string databaseId, string userId)
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}",
                             Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.UsersPathSegment, Uri.EscapeUriString(userId)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
         /// <summary>
@@ -114,9 +122,11 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static internal Uri CreateUserDefinedTypeUri(string databaseId, string userDefinedTypeId)
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}",
                             Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.UserDefinedTypesPathSegment, Uri.EscapeUriString(userDefinedTypeId)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
         /// <summary>
@@ -132,12 +142,15 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri.EscapeUriString"/>
         static public Uri CreateDocumentUri(string databaseId, string collectionId, string documentId)
         {
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             return new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}/{3}/{4}/{5}",
                             Paths.DatabasesPathSegment, Uri.EscapeUriString(databaseId),
                             Paths.CollectionsPathSegment, Uri.EscapeUriString(collectionId),
                             Paths.DocumentsPathSegment, Uri.EscapeUriString(documentId)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
         }
 
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
         /// <summary>
         /// Given a database and user id, this creates a permission link.
         /// </summary>
@@ -311,4 +324,5 @@ namespace Microsoft.Azure.Cosmos
                             Paths.SchemasPathSegment, Uri.EscapeUriString(schemaId)), UriKind.Relative);
         }
     }
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
 }

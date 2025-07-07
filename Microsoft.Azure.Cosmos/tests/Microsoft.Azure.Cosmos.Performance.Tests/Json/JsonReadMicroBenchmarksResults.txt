@@ -1,4 +1,4 @@
-﻿|  Method | payload | benchmarkSerializationFormat | materializeValue |      Mean |     Error |    StdDev |    Median |      Gen 0 | Gen 1 | Gen 2 |   Allocated |
+|  Method | payload | benchmarkSerializationFormat | materializeValue |      Mean |     Error |    StdDev |    Median |      Gen 0 | Gen 1 | Gen 2 |   Allocated |
 |-------- |-------- |----------------------------- |----------------- |----------:|----------:|----------:|----------:|-----------:|------:|------:|------------:|
 | Execute |   array |                         Text |            False |  78.33 ms |  1.560 ms |  2.930 ms |  77.78 ms |          - |     - |     - |       192 B |
 | Execute |   array |                         Text |             True |  70.68 ms |  1.398 ms |  2.557 ms |  69.43 ms |          - |     - |     - |       192 B |

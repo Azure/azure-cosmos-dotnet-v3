@@ -1,4 +1,4 @@
-﻿// unset
+// unset
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {

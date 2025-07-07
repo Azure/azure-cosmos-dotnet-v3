@@ -38,6 +38,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return cosmosElementVisitor.Visit(this, input);
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public int CompareTo(CosmosUndefined other)
         {
@@ -48,12 +49,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return cosmosElement is CosmosUndefined;
         }
-
         public bool Equals(CosmosUndefined other)
         {
             return true;
         }
-
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public override int GetHashCode()
         {
             return 0;

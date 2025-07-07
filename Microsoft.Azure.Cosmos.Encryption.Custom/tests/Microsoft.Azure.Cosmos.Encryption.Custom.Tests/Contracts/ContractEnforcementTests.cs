@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests.Contracts
+namespace Microsoft.Azure.Cosmos.Encryption.Tests.Contracts
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

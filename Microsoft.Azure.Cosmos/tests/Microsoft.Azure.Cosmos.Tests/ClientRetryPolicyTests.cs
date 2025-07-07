@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Client.Tests
+namespace Microsoft.Azure.Cosmos.Client.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Routing;

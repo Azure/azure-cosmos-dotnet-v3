@@ -1,4 +1,4 @@
-ï»¿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -12,19 +12,19 @@ namespace Microsoft.Azure.Cosmos
 
         public delegate IJsonWriter CreateCustomWriter();
 
-Â Â Â Â Â Â Â Â /// <summary>
-Â Â Â Â Â Â Â Â /// What serialization format to request the response in from the backend
-Â Â Â Â Â Â Â Â /// </summary>
+        /// <summary>
+        /// What serialization format to request the response in from the backend
+        /// </summary>
         public string ContentSerializationFormat { get; }
 
-Â Â Â Â Â Â Â Â /// <summary>
-Â Â Â Â Â Â Â Â /// Creates a navigator that can navigate a JSON in the specified ContentSerializationFormat
-Â Â Â Â Â Â Â Â /// </summary>
+        /// <summary>
+        /// Creates a navigator that can navigate a JSON in the specified ContentSerializationFormat
+        /// </summary>
         public CreateCustomNavigator CreateCustomNavigatorCallback { get; }
 
-Â Â Â Â Â Â Â Â /// <summary>
-Â Â Â Â Â Â Â Â /// Creates a writer to use to write out the stream.
-Â Â Â Â Â Â Â Â /// </summary>
+        /// <summary>
+        /// Creates a writer to use to write out the stream.
+        /// </summary>
         public CreateCustomWriter CreateCustomWriterCallback { get; }
 
         public CosmosSerializationFormatOptions(

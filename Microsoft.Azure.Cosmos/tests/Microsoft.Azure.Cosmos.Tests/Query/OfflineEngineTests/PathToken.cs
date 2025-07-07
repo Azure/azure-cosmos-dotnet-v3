@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
+namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngineTests
 {
     using System;
     using System.Collections.Generic;

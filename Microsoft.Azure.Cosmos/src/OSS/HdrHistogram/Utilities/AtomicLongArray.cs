@@ -1,4 +1,4 @@
-ï»¿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // The code in this repository code was written by Lee Campbell, as a
 // derived work from the original Java by Gil Tene of Azul Systems and
 // Michael Barker, and released to the public domain, as explained
@@ -89,8 +89,8 @@ namespace HdrHistogram.Utilities
             //Volatile.Read (only emits half-fence (acquire fence) as opposed to Thread.VolatileRead which emits a full-fence
 
             // From http://msdn.microsoft.com/en-us/magazine/jj863136.aspx
-            // An operation thatâ€™s closely related to Interlocked methods is Thread.MemoryBarrier, which can be thought of as a dummy Interlocked operation. 
-            // Just like an Interlocked method, Thread.MemoryÂ­Barrier canâ€™t be reordered with any prior or subsequent memory operations. Unlike an Interlocked 
+            // An operation that’s closely related to Interlocked methods is Thread.MemoryBarrier, which can be thought of as a dummy Interlocked operation. 
+            // Just like an Interlocked method, Thread.Memory­Barrier can’t be reordered with any prior or subsequent memory operations. Unlike an Interlocked 
             // method, though, Thread.MemoryBarrier has no side effect; it simply constrains memory reorderings.
         }
     }

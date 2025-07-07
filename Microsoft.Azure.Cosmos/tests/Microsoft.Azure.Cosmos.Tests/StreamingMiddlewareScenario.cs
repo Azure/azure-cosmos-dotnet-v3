@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Core.Tests
+namespace Microsoft.Azure.Cosmos.Core.Tests
 {
     using System;
     using System.Collections.Generic;

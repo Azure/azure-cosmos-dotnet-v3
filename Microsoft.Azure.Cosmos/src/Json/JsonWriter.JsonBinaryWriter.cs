@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Json
@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
+    using UInt128 = Cosmos.UInt128;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
@@ -2075,6 +2076,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void Write(float value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(float));
+#pragma warning disable CS9191 // The 'ref' modifier for an argument corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
                     MemoryMarshal.Write<float>(this.Cursor, ref value);
                     this.Position += sizeof(float);
                 }
@@ -2091,6 +2093,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     int sizeOfGuid = Marshal.SizeOf(Guid.Empty);
                     this.EnsureRemainingBufferSpace(sizeOfGuid);
                     MemoryMarshal.Write<Guid>(this.Cursor, ref value);
+#pragma warning restore CS9191 // The 'ref' modifier for an argument corresponding to 'in' parameter is equivalent to 'in'. Consider using 'in' instead.
                     this.Position += sizeOfGuid;
                 }
             }

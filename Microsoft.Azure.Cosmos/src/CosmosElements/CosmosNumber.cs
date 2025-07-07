@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 //  Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #endif
     abstract class CosmosNumber : CosmosElement, IEquatable<CosmosNumber>, IComparable<CosmosNumber>
     {
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+
         protected CosmosNumber()
             : base()
         {
@@ -201,6 +203,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return cosmosFloat64.CompareTo((CosmosFloat64)input);
             }
         }
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes)
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

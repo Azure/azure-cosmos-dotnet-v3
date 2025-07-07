@@ -59,7 +59,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.defaultEndpoint = owner.ServiceEndpoint;
             this.connectionPolicy = connectionPolicy;
 
+#pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
+#pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
             this.databaseAccountCache = new AsyncCache<string, AccountProperties>(enableAsyncCacheExceptionNoSharing);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
@@ -68,7 +70,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (System.Reflection.Assembly.GetEntryAssembly() != null)
             {
 #endif
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
                 if (!string.IsNullOrEmpty(backgroundRefreshLocationTimeIntervalInMSConfig))
                 {
                     if (!int.TryParse(backgroundRefreshLocationTimeIntervalInMSConfig, out this.backgroundRefreshLocationTimeIntervalInMS))
@@ -78,9 +82,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 #if NETSTANDARD20
             }
-#endif  
 #endif
+#endif
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             string minimumIntervalForNonForceRefreshLocationInMSConfig = Environment.GetEnvironmentVariable(GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS);
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
             if (!string.IsNullOrEmpty(minimumIntervalForNonForceRefreshLocationInMSConfig))
             {
                 if (int.TryParse(minimumIntervalForNonForceRefreshLocationInMSConfig, out int minimumIntervalForNonForceRefreshLocationInMS))
@@ -526,7 +532,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public void Dispose()
         {
+#pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
             this.connectionPolicy.PreferenceChanged -= this.OnPreferenceChanged;
+#pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
             if (!this.cancellationTokenSource.IsCancellationRequested)
             {
                 try
@@ -552,17 +560,21 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (databaseAccount?.AdditionalProperties != null)
             {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 if (databaseAccount.AdditionalProperties.TryGetValue("thinClientWritableLocations", out JToken writableToken)
                     && writableToken is JArray writableArray)
                 {
                     databaseAccount.ThinClientWritableLocationsInternal = ParseAccountRegionArray(writableArray);
                 }
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 if (databaseAccount.AdditionalProperties.TryGetValue("thinClientReadableLocations", out JToken readableToken)
                     && readableToken is JArray readableArray)
                 {
                     databaseAccount.ThinClientReadableLocationsInternal = ParseAccountRegionArray(readableArray);
                 }
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
             }
         }
 

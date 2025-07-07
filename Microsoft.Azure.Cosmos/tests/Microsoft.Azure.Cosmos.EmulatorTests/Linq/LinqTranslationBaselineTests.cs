@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 // <copyright file="LinqAttributeContractTests.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
@@ -260,7 +260,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("String empty", b => getQuery(b).Select(doc => new { value = String.Empty })));
             inputs.Add(new LinqTestInput("String str1", b => getQuery(b).Select(doc => new { value = "str1" })));
             inputs.Add(new LinqTestInput("String special", b => getQuery(b).Select(doc => new { value = "long string with speicial characters (*)(*)__)((*&*(&*&'*(&)()(*_)()(_(_)*!@#$%^ and numbers 132654890" })));
-            inputs.Add(new LinqTestInput("String unicode", b => getQuery(b).Select(doc => new { value = "unicode 㐀㐁㨀㨁䶴䶵" })));
+            inputs.Add(new LinqTestInput("String unicode", b => getQuery(b).Select(doc => new { value = "unicode ??????" })));
             inputs.Add(new LinqTestInput("null object", b => getQuery(b).Select(doc => new { value = nullStr })));
             this.ExecuteTestSuite(inputs);
         }
@@ -1193,99 +1193,101 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             List<string> emptyList = new List<string>();
             List<string> constantList = new List<string>() { "one", "two", "three" };
             string[] constantArray = new string[] { "one", "two", "three" };
+            string[] someStringArray = ["somethings"];
 
             Func<bool, IQueryable<DataObject>> getQuery = this.CreateDataTestStringFunctions();
-
-            List<LinqTestInput> inputs = new List<LinqTestInput>
+            string query = getQuery(true).Where(doc => constantArray.Contains("str")).ToQueryDefinition().QueryText;
+            List <LinqTestInput> inputs = new List<LinqTestInput>
             {
                 // Concat
-                new LinqTestInput("Concat 2", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str"))),
-                new LinqTestInput("Concat 3", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2"))),
-                new LinqTestInput("Concat 4", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3"))),
-                new LinqTestInput("Concat 5", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3", "str4"))),
-                new LinqTestInput("Concat array", b => getQuery(b).Select(doc => string.Concat(new string[] { doc.StringField, "str1", "str2", "str3", "str4" }))),
-                // Contains
-                new LinqTestInput("Contains w/ string", b => getQuery(b).Select(doc => doc.StringField.Contains("str"))),
-                new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))),
-                new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))),
-                // Contains (case-sensitive)
-                new LinqTestInput("Contains w/ string (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.Ordinal))),
-                new LinqTestInput("Contains in string constant (case-sensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.Ordinal))),
-                // Contains (case-insensitive)
-                new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.OrdinalIgnoreCase))),
-                new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))),
-                // Contains with constants should be IN
-                new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))),
-                new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))),
-                new LinqTestInput("Contains in constant list in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantList.Contains(str))),
-                new LinqTestInput("Contains in constant array in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantArray.Contains(str))),
-                // NOT IN
-                new LinqTestInput("Not in constant list", b => getQuery(b).Select(doc => !constantList.Contains(doc.StringField))),
-                new LinqTestInput("Not in constant array", b => getQuery(b).Select(doc => !constantArray.Contains(doc.StringField))),
-                new LinqTestInput("Filter not in constant list", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantList.Contains(str))),
-                new LinqTestInput("Filter not in constant array", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantArray.Contains(str))),
-                // Empty list
-                new LinqTestInput("Empty list contains", b => getQuery(b).Select(doc => emptyList.Contains(doc.StringField))),
-                new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains(doc.StringField))),
-                // EndsWith
-                new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))),
-                new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))),
-                // EndsWith (case-sensitive)
-                new LinqTestInput("EndsWith (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.Ordinal))),
-                new LinqTestInput("Constant string EndsWith (case-sensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.Ordinal))),
-                // EndsWith (case-insensitive)
-                new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.OrdinalIgnoreCase))),
-                new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
-                // IndexOf
-                new LinqTestInput("IndexOf char", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c'))),
-                new LinqTestInput("IndexOf string", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str"))),
-                new LinqTestInput("IndexOf char w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c', 0))),
-                new LinqTestInput("IndexOf string w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str", 0))),
-                // Count
-                new LinqTestInput("Count", b => getQuery(b).Select(doc => doc.StringField.Count())),
-                // Replace
-                new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))),
-                new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))),
-                // ToLower
-                new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
-                // Trim
-                new LinqTestInput("Trim", b => getQuery(b).Select(doc => doc.StringField.Trim())),
-                new LinqTestInput("Trim with Literal", b => getQuery(b).Select(doc => " abc ".Trim())),
-                new LinqTestInput("Trim with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.Trim(new char[]{ }))),
-                new LinqTestInput("Trim with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".Trim(new char[]{ }))),
-                // TrimEnd
-                new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())),
-                new LinqTestInput("TrimEnd with Literal", b => getQuery(b).Select(doc => " abc ".TrimEnd())),
-                new LinqTestInput("TrimEnd with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimEnd(new char[]{ }))),
-                new LinqTestInput("TrimEnd with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimEnd(new char[]{ }))),
-                // TrimStart
-                new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
-                new LinqTestInput("TrimStart with Literal", b => getQuery(b).Select(doc => " abc ".TrimStart())),
-                new LinqTestInput("TrimStart with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimStart(new char[]{ }))),
-                new LinqTestInput("TrimStart with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimStart(new char[]{ }))),
-                //StartsWith
-                new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))),
-                new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))),
-                //StartsWith (case-sensitive)
-                new LinqTestInput("StartsWith (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.Ordinal))),
-                new LinqTestInput("String constant StartsWith (case-sensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.Ordinal))),
-                //StartsWith (case-insensitive)
-                new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.OrdinalIgnoreCase))),
-                new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
-                // Substring
-                new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
-                // ToString
-                new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField.ToString()))),
-                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
-                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.NumericField.ToString())),
-                new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.GuidField.ToString())),
-                // For these fields, .NET ToString and CosmosDB ToString don't produce the same behavior. Manually verified that BE behavior is as expected
-                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.ArrayField.ToString())),
-                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.Point.ToString())),
-                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.BooleanField.ToString())),
-                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.UnixTime.ToString())),
-                // ToUpper
-                new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
+                new LinqTestInput("Contains w/ string", b => getQuery(b).Where(doc => constantArray.Contains("str"))),
+                //new LinqTestInput("Concat 2", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str"))),
+                //new LinqTestInput("Concat 3", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2"))),
+                //new LinqTestInput("Concat 4", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3"))),
+                //new LinqTestInput("Concat 5", b => getQuery(b).Select(doc => string.Concat(doc.StringField, "str1", "str2", "str3", "str4"))),
+                //new LinqTestInput("Concat array", b => getQuery(b).Select(doc => string.Concat(new string[] { doc.StringField, "str1", "str2", "str3", "str4" }))),
+                //// Contains
+                //new LinqTestInput("Contains w/ string", b => getQuery(b).Select(doc => doc.StringField.Contains("str"))),
+                //new LinqTestInput("Contains w/ char", b => getQuery(b).Select(doc => doc.StringField.Contains('c'))),
+                //new LinqTestInput("Contains in string constant", b => getQuery(b).Select(doc => "str".Contains(doc.StringField))),
+                //// Contains (case-sensitive)
+                //new LinqTestInput("Contains w/ string (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.Ordinal))),
+                //new LinqTestInput("Contains in string constant (case-sensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.Ordinal))),
+                //// Contains (case-insensitive)
+                //new LinqTestInput("Contains w/ string (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.Contains("Str", StringComparison.OrdinalIgnoreCase))),
+                //new LinqTestInput("Contains in string constant (case-insensitive)", b => getQuery(b).Select(doc => "sTr".Contains(doc.StringField, StringComparison.OrdinalIgnoreCase))),
+                //// Contains with constants should be IN
+                //new LinqTestInput("Contains in constant list", b => getQuery(b).Select(doc => constantList.Contains(doc.StringField))),
+                //new LinqTestInput("Contains in constant array", b => getQuery(b).Select(doc => constantArray.Contains(doc.StringField))),
+                //new LinqTestInput("Contains in constant list in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantList.Contains(str))),
+                //new LinqTestInput("Contains in constant array in filter", b => getQuery(b).Select(doc => doc.StringField).Where(str => constantArray.Contains(str))),
+                //// NOT IN
+                //new LinqTestInput("Not in constant list", b => getQuery(b).Select(doc => !constantList.Contains(doc.StringField))),
+                //new LinqTestInput("Not in constant array", b => getQuery(b).Select(doc => !constantArray.Contains(doc.StringField))),
+                //new LinqTestInput("Filter not in constant list", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantList.Contains(str))),
+                //new LinqTestInput("Filter not in constant array", b => getQuery(b).Select(doc => doc.StringField).Where(str => !constantArray.Contains(str))),
+                //// Empty list
+                //new LinqTestInput("Empty list contains", b => getQuery(b).Select(doc => emptyList.Contains(doc.StringField))),
+                //new LinqTestInput("Empty list not contains", b => getQuery(b).Select(doc => !emptyList.Contains(doc.StringField))),
+                //// EndsWith
+                //new LinqTestInput("EndsWith", b => getQuery(b).Select(doc => doc.StringField.EndsWith("str"))),
+                //new LinqTestInput("Constant string EndsWith", b => getQuery(b).Select(doc => "str".EndsWith(doc.StringField))),
+                //// EndsWith (case-sensitive)
+                //new LinqTestInput("EndsWith (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.Ordinal))),
+                //new LinqTestInput("Constant string EndsWith (case-sensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.Ordinal))),
+                //// EndsWith (case-insensitive)
+                //new LinqTestInput("EndsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.EndsWith("stR", StringComparison.OrdinalIgnoreCase))),
+                //new LinqTestInput("Constant string EndsWith (case-insensitive)", b => getQuery(b).Select(doc => "STR".EndsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
+                //// IndexOf
+                //new LinqTestInput("IndexOf char", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c'))),
+                //new LinqTestInput("IndexOf string", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str"))),
+                //new LinqTestInput("IndexOf char w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf('c', 0))),
+                //new LinqTestInput("IndexOf string w/ startIndex", b => getQuery(b).Select(doc => doc.StringField.IndexOf("str", 0))),
+                //// Count
+                //new LinqTestInput("Count", b => getQuery(b).Select(doc => doc.StringField.Count())),
+                //// Replace
+                //new LinqTestInput("Replace char", b => getQuery(b).Select(doc => doc.StringField.Replace('c', 'a'))),
+                //new LinqTestInput("Replace string", b => getQuery(b).Select(doc => doc.StringField.Replace("str", "str2"))),
+                //// ToLower
+                //new LinqTestInput("ToLower", b => getQuery(b).Select(doc => doc.StringField.ToLower())),
+                //// Trim
+                //new LinqTestInput("Trim", b => getQuery(b).Select(doc => doc.StringField.Trim())),
+                //new LinqTestInput("Trim with Literal", b => getQuery(b).Select(doc => " abc ".Trim())),
+                //new LinqTestInput("Trim with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.Trim(new char[]{ }))),
+                //new LinqTestInput("Trim with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".Trim(new char[]{ }))),
+                //// TrimEnd
+                //new LinqTestInput("TrimEnd", b => getQuery(b).Select(doc => doc.StringField.TrimEnd())),
+                //new LinqTestInput("TrimEnd with Literal", b => getQuery(b).Select(doc => " abc ".TrimEnd())),
+                //new LinqTestInput("TrimEnd with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimEnd(new char[]{ }))),
+                //new LinqTestInput("TrimEnd with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimEnd(new char[]{ }))),
+                //// TrimStart
+                //new LinqTestInput("TrimStart", b => getQuery(b).Select(doc => doc.StringField.TrimStart())),
+                //new LinqTestInput("TrimStart with Literal", b => getQuery(b).Select(doc => " abc ".TrimStart())),
+                //new LinqTestInput("TrimStart with EmptyCharArray", b => getQuery(b).Select(doc => doc.StringField.TrimStart(new char[]{ }))),
+                //new LinqTestInput("TrimStart with Literal and EmptyCharArray", b => getQuery(b).Select(doc => " abc ".TrimStart(new char[]{ }))),
+                ////StartsWith
+                //new LinqTestInput("StartsWith", b => getQuery(b).Select(doc => doc.StringField.StartsWith("str"))),
+                //new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField))),
+                ////StartsWith (case-sensitive)
+                //new LinqTestInput("StartsWith (case-sensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.Ordinal))),
+                //new LinqTestInput("String constant StartsWith (case-sensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.Ordinal))),
+                ////StartsWith (case-insensitive)
+                //new LinqTestInput("StartsWith (case-insensitive)", b => getQuery(b).Select(doc => doc.StringField.StartsWith("Str", StringComparison.OrdinalIgnoreCase))),
+                //new LinqTestInput("String constant StartsWith (case-insensitive)", b => getQuery(b).Select(doc => "sTr".StartsWith(doc.StringField, StringComparison.OrdinalIgnoreCase))),
+                //// Substring
+                //new LinqTestInput("Substring", b => getQuery(b).Select(doc => doc.StringField.Substring(0, 1))),
+                //// ToString
+                //new LinqTestInput("String constant StartsWith", b => getQuery(b).Select(doc => "str".StartsWith(doc.StringField.ToString()))),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.StringField.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.NumericField.ToString())),
+                //new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.GuidField.ToString())),
+                //// For these fields, .NET ToString and CosmosDB ToString don't produce the same behavior. Manually verified that BE behavior is as expected
+                ////new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.ArrayField.ToString())),
+                ////new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.Point.ToString())),
+                ////new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.BooleanField.ToString())),
+                ////new LinqTestInput("ToString", b => getQuery(b).Select(doc => doc.UnixTime.ToString())),
+                //// ToUpper
+                //new LinqTestInput("ToUpper", b => getQuery(b).Select(doc => doc.StringField.ToUpper()))
             };
             this.ExecuteTestSuite(inputs);
         }

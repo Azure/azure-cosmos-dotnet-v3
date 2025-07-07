@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 // <copyright file="LinqAttributeContractTests.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode 1",
-                    query: "SELECT * \r\nFROM c\r\nWHERE STARTSWITH(c['Î— Î³Ï\u0081Î®Î³Î¿Ï\u0081Î· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï\u008d Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯'], 's', false)"
+                    query: "SELECT * \r\nFROM c\r\nWHERE STARTSWITH(c['Η γ�\u0081ήγο�\u0081η καφέ αλεπο�\u008d πηδάει πάνω από το τεμπέλικο σκυλί'], 's', false)"
                 ),
 
                 new IndexMetricsParserTestInput
@@ -89,43 +89,43 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode 4",
-                    query: "SELECT VALUE STARTSWITH(r['\u0020\u0021\u0022!@#$%^&*()<>?:\"{}|\u00dfÃ\u0081ŒÆ12ếàưỏốởặ'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['\u0020\u0021\u0022!@#$%^&*()<>?:\"{}|\u00df�\u0081��12?�u????'], 's', true) FROM root r"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode German",
-                    query: "SELECT VALUE STARTSWITH(r['Der schnelle Braunfuchs springt über den faulen Hund'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['Der schnelle Braunfuchs springt �ber den faulen Hund'], 's', true) FROM root r"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode Greek",
-                    query: "SELECT VALUE STARTSWITH(r['Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['? ??????? ?af? a?ep?? p?d?e? p??? ap? t? te�p????? s????'], 's', true) FROM root r"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode Arabic",
-                    query: "SELECT VALUE STARTSWITH(r['الثعلب البني السريع يقفز فوق الكلب الكسول'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['?????? ????? ?????? ???? ??? ????? ??????'], 's', true) FROM root r"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode Russian",
-                    query: "SELECT VALUE STARTSWITH(r['Быстрая коричневая лиса прыгает через ленивую собаку'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['??????? ?????????? ???? ??????? ????? ??????? ??????'], 's', true) FROM root r"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode Japanese",
-                    query: "SELECT VALUE STARTSWITH(r['素早く茶色のキツネが怠惰な犬を飛び越えます'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['?????????????????????'], 's', true) FROM root r"
                 ),
 
                 new IndexMetricsParserTestInput
                 (
                     description: "Unicode Hindi",
-                    query: "SELECT VALUE STARTSWITH(r['तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई'], 's', true) FROM root r"
+                    query: "SELECT VALUE STARTSWITH(r['???, ???? ????? ???? ?????? ?? ??? ??? ??'], 's', true) FROM root r"
                 ),
             };
 

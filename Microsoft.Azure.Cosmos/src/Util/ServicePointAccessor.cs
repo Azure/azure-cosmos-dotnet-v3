@@ -27,7 +27,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal static ServicePointAccessor FindServicePoint(Uri endpoint)
         {
+#pragma warning disable SYSLIB0014 // Type or member is obsolete
             return new ServicePointAccessor(ServicePointManager.FindServicePoint(endpoint));
+#pragma warning restore SYSLIB0014 // Type or member is obsolete
         }
 
         public int ConnectionLimit

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
-
+    using UInt128 = Cosmos.UInt128;
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 #pragma warning disable SA1600 // Elements should be documented
@@ -44,7 +44,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosArray cosmosArray && this.Equals(cosmosArray);
 
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public bool Equals(CosmosArray cosmosArray)
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         {
             if (this.Count != cosmosArray.Count)
             {
@@ -77,7 +79,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public int CompareTo(CosmosArray cosmosArray)
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         {
             UInt128 hash1 = DistinctHash.GetHash(this);
             UInt128 hash2 = DistinctHash.GetHash(cosmosArray);

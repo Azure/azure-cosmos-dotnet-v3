@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -38,7 +38,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using Debug = System.Diagnostics.Debug;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
-    using UInt128 = UInt128;
+    using UInt128 = Cosmos.UInt128;
+
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal class InMemoryContainer : IMonadicDocumentContainer

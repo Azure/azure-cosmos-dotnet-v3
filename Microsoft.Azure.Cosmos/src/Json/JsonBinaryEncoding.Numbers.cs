@@ -1,4 +1,4 @@
-ï»¿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Gets the number value from the binary reader.
         /// </summary>
         /// <param name="numberToken">The buffer to read the number from.</param>
-        /// <param name="uniformArrayInfo">The valueâ€™s external array info, if it occurs within a uniform number array.</param>
+        /// <param name="uniformArrayInfo">The value’s external array info, if it occurs within a uniform number array.</param>
         /// <returns>The number value from the binary reader.</returns>
         public static Number64 GetNumberValue(ReadOnlySpan<byte> numberToken, UniformArrayInfo uniformArrayInfo)
         {
@@ -29,7 +29,7 @@ namespace Microsoft.Azure.Cosmos.Json
         /// Try Get NumberValue
         /// </summary>
         /// <param name="numberToken">The buffer.</param>
-        /// <param name="uniformArrayInfo">The valueâ€™s external array info, if it occurs within a uniform number array.</param>
+        /// <param name="uniformArrayInfo">The value’s external array info, if it occurs within a uniform number array.</param>
         /// <param name="number64">The number.</param>
         /// <param name="bytesConsumed">The number of bytes consumed</param>
         /// <returns>Whether a number was parsed.</returns>

@@ -1,4 +1,4 @@
-﻿using Microsoft.Azure.Cosmos;
+using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
 using System;

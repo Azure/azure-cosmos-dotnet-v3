@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 // <copyright file="SqlObjectVisitorBaselineTests.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
@@ -56,7 +56,7 @@ namespace Microsoft.Azure.Cosmos.Test.SqlObjects
 
             inputs.Add(new SqlObjectVisitorInput("Empty String", SqlStringLiteral.Create(string.Empty)));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlStringLiteral), SqlStringLiteral.Create("Hello")));
-            inputs.Add(new SqlObjectVisitorInput(nameof(SqlStringLiteral) + " With Unicode", SqlStringLiteral.Create("💩")));
+            inputs.Add(new SqlObjectVisitorInput(nameof(SqlStringLiteral) + " With Unicode", SqlStringLiteral.Create("??")));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlNumberLiteral), SqlNumberLiteral.Create(0x5F3759DF)));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlNullLiteral), SqlNullLiteral.Singleton));
             inputs.Add(new SqlObjectVisitorInput(nameof(SqlBooleanLiteral) + "True", SqlBooleanLiteral.True));

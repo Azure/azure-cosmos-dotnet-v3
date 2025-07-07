@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -50,7 +50,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return cosmosElement is CosmosString cosmosString && this.Equals(cosmosString);
         }
-
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public bool Equals(CosmosString cosmosString)
         {
             return this.Value == cosmosString.Value;
@@ -121,6 +121,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 return CosmosElement.Monadic.Parse<CosmosString>(json);
             }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         }
     }
 }

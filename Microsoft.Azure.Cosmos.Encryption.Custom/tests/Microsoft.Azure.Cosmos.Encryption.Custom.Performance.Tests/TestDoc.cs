@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Custom.Performance.Tests
 {
     using System.Text;
     using Newtonsoft.Json;

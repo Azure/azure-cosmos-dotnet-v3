@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using System.Collections.Generic;

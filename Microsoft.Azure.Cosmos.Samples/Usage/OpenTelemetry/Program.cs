@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.OpenTelemetry
+namespace Cosmos.Samples.OpenTelemetry
 {
     using global::OpenTelemetry;
     using global::OpenTelemetry.Trace;

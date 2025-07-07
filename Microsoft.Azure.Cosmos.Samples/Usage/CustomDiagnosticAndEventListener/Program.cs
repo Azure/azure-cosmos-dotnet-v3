@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.ApplicationInsights
+namespace Cosmos.Samples.ApplicationInsights
 {
     using Microsoft.Azure.Cosmos;
     using Microsoft.Extensions.Configuration;

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Query
+namespace Microsoft.Azure.Cosmos.Tests.Query
 {
     using System;
     using System.Collections.Generic;
@@ -928,12 +928,12 @@
 
                 Hash(
                 @"Partition Key Equals Unicode String",
-                @"SELECT * FROM Root r WHERE r.key = '你好'",
+                @"SELECT * FROM Root r WHERE r.key = '??'",
                 @"/key"),
 
                 Hash(
                 @"Partition Key Equals Unicode String 2",
-                @"SELECT * FROM Root r WHERE r.key = 'こにちわ'",
+                @"SELECT * FROM Root r WHERE r.key = '????'",
                 @"/key"),
 
                 Hash(

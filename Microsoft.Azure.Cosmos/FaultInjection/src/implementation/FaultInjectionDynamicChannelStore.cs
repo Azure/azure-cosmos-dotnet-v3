@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.FaultInjection
+namespace Microsoft.Azure.Cosmos.FaultInjection
 {
     using System;
     using System.Collections.Concurrent;

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -56,13 +56,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             public override int Count => this.lazyCache.Value.Count;
 
             public override CosmosElement this[string key] => this.lazyCache.Value[key];
-
+#pragma warning disable CS8601 // Possible null reference assignment.
             public override bool ContainsKey(string key) => this.lazyCache.Value.ContainsKey(key);
 
             public override Enumerator GetEnumerator() => new Enumerator(this.lazyCache.Value.GetEnumerator());
 
             public override bool TryGetValue(string key, out CosmosElement value) => this.lazyCache.Value.TryGetValue(key, out value);
-
+#pragma warning restore CS8601 // Possible null reference assignment.
             public override void WriteTo(IJsonWriter jsonWriter)
             {
                 this.jsonNavigator.WriteNode(this.jsonNavigatorNode, jsonWriter);

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Tracing
+namespace Microsoft.Azure.Cosmos.Tests.Tracing
 {
     using System;
     using System.Collections.Generic;

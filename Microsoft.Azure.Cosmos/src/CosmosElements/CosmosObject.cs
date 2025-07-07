@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
+    using UInt128 = Cosmos.UInt128;
 
 #if INTERNAL
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
@@ -94,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
         }
-
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public bool Equals(CosmosObject cosmosObject)
         {
             if (this.Count != cosmosObject.Count)
@@ -302,6 +303,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 }
             }
         }
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

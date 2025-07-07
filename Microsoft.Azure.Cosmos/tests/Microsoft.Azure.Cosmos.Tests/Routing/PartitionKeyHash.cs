@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
+    using UInt128 = Cosmos.UInt128;
 
     /// <summary>
     /// There are many kinds of documents partitioning schemes (Range, Hash, Range+Hash, Hash+Hash etc.)

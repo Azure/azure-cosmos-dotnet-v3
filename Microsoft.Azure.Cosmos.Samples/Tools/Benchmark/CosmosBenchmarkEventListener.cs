@@ -1,4 +1,4 @@
-﻿namespace CosmosBenchmark
+namespace CosmosBenchmark
 {
     using System;
     using System.Diagnostics.Tracing;

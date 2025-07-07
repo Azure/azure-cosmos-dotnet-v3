@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
@@ -20,17 +20,17 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
 #endif
     sealed class TextTable
     {
-        private const char CellLeftTop = '┌';
-        private const char CellRightTop = '┐';
-        private const char CellLeftBottom = '└';
-        private const char CellRightBottom = '┘';
-        private const char CellHorizontalJointTop = '┬';
-        private const char CellHorizontalJointBottom = '┴';
-        private const char CellVerticalJointLeft = '├';
-        private const char CellTJoint = '┼';
-        private const char CellVerticalJointRight = '┤';
-        private const char CellHorizontalLine = '─';
-        private const char CellVerticalLine = '│';
+        private const char CellLeftTop = '+';
+        private const char CellRightTop = '+';
+        private const char CellLeftBottom = '+';
+        private const char CellRightBottom = '+';
+        private const char CellHorizontalJointTop = '-';
+        private const char CellHorizontalJointBottom = '-';
+        private const char CellVerticalJointLeft = '+';
+        private const char CellTJoint = '+';
+        private const char CellVerticalJointRight = '�';
+        private const char CellHorizontalLine = '-';
+        private const char CellVerticalLine = '�';
 
         private readonly List<Column> columns;
         private readonly string rowFormatString;

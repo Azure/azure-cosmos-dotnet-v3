@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Input>
       <Description>SqlSelectClause useStar: True, useTop: True, hasDistinct: True</Description>

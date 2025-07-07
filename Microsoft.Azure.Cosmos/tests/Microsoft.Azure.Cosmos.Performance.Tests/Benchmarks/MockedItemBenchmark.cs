@@ -1,4 +1,4 @@
-﻿// ----------------------------------------------------------------
+// ----------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ----------------------------------------------------------------
 
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class MockedItemBenchmark : IItemBenchmark
     {
-        // Removed array initialization here — we'll do it in GlobalSetup instead
+        // Removed array initialization here � we'll do it in GlobalSetup instead
         public static IItemBenchmark[] IterParameters;
 
         [Params(

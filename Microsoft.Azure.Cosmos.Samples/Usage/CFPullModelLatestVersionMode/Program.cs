@@ -1,4 +1,4 @@
-﻿namespace CFPullModelLatestVersionMode
+namespace CFPullModelLatestVersionMode
 {
     using System;
     using System.Collections.Generic;

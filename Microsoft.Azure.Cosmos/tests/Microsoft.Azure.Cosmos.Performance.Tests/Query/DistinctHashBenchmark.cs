@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
+namespace Microsoft.Azure.Cosmos.Performance.Tests.Query
 {
     using System.Collections.Generic;
     using BenchmarkDotNet.Attributes;

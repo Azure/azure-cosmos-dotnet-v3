@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.Shared
+namespace Cosmos.Samples.Shared
 {
     using System;
     using System.Threading.Tasks;

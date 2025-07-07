@@ -1,4 +1,4 @@
-ï»¿<Results>
+<Results>
   <Result>
     <Input>
       <Description>ChangeFeed</Description>
@@ -25,233 +25,233 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â”‚   (
-    â”‚   â”‚                       â”‚       [System Info]
-    â”‚   â”‚                       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                       â”‚   )
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                               (
-    â”‚   â”‚                                                   [Client Side Request Stats]
-    â”‚   â”‚                                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                               )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â””â”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   (
-        â”‚       [Client Configuration]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       [DistributedTraceId]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚   )
-        â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”œâ”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚   â””â”€â”€ [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚           â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚           â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚           â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚               â”‚   (
-        â”‚   â”‚               â”‚       [System Info]
-        â”‚   â”‚               â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚   â”‚               â”‚   )
-        â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â”‚                                       (
-        â”‚   â”‚                                           [Client Side Request Stats]
-        â”‚   â”‚                                           Redacted To Not Change The Baselines From Run To Run
-        â”‚   â”‚                                       )
-        â”‚   â””â”€â”€ Drain NotModified Pages(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”œâ”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚   â””â”€â”€ [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚               â”‚   (
-        â”‚       â”‚               â”‚       [System Info]
-        â”‚       â”‚               â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚               â”‚   )
-        â”‚       â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                               â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                                       (
-        â”‚       â”‚                                           [Client Side Request Stats]
-        â”‚       â”‚                                           Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚                                       )
-        â”‚       â”œâ”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚   â””â”€â”€ [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚               â”‚   (
-        â”‚       â”‚               â”‚       [System Info]
-        â”‚       â”‚               â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚               â”‚   )
-        â”‚       â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                               â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚                                       (
-        â”‚       â”‚                                           [Client Side Request Stats]
-        â”‚       â”‚                                           Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚                                       )
-        â”‚       â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â”‚   (
-        â”‚                       â”‚       [System Info]
-        â”‚                       â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚                       â”‚   )
-        â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                               (
-        â”‚                                                   [Client Side Request Stats]
-        â”‚                                                   Redacted To Not Change The Baselines From Run To Run
-        â”‚                                               )
-        â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       ¦   (
+    ¦   ¦                       ¦       [System Info]
+    ¦   ¦                       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                       ¦   )
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                               (
+    ¦   ¦                                                   [Client Side Request Stats]
+    ¦   ¦                                                   Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                               )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   (
+        ¦       [Client Configuration]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       [DistributedTraceId]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦   )
+        +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦   +-- [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦       +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦           +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦           +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦           +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦               ¦   (
+        ¦   ¦               ¦       [System Info]
+        ¦   ¦               ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦   ¦               ¦   )
+        ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦                               +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦   ¦                                       (
+        ¦   ¦                                           [Client Side Request Stats]
+        ¦   ¦                                           Redacted To Not Change The Baselines From Run To Run
+        ¦   ¦                                       )
+        ¦   +-- Drain NotModified Pages(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦   +-- [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦       +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦               ¦   (
+        ¦       ¦               ¦       [System Info]
+        ¦       ¦               ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦               ¦   )
+        ¦       ¦               +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                   +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                           +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                               +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                                       (
+        ¦       ¦                                           [Client Side Request Stats]
+        ¦       ¦                                           Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦                                       )
+        ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦   +-- [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦       +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦           +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦               ¦   (
+        ¦       ¦               ¦       [System Info]
+        ¦       ¦               ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦               ¦   )
+        ¦       ¦               +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                   +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                           +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                               +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦                                       (
+        ¦       ¦                                           [Client Side Request Stats]
+        ¦       ¦                                           Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦                                       )
+        ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       ¦   (
+        ¦                       ¦       [System Info]
+        ¦                       ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦                       ¦   )
+        ¦                       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                               (
+        ¦                                                   [Client Side Request Stats]
+        ¦                                                   Redacted To Not Change The Baselines From Run To Run
+        ¦                                               )
+        +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1217,146 +1217,146 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â”‚   (
-    â”‚   â”‚                       â”‚       [System Info]
-    â”‚   â”‚                       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                       â”‚   )
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                               (
-    â”‚   â”‚                                                   [Client Side Request Stats]
-    â”‚   â”‚                                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                               )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â””â”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   (
-        â”‚       [Client Configuration]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       [DistributedTraceId]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚   )
-        â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â””â”€â”€ [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â”‚   (
-        â”‚                   â”‚       [System Info]
-        â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚                   â”‚   )
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                           (
-        â”‚                                               [Client Side Request Stats]
-        â”‚                                               Redacted To Not Change The Baselines From Run To Run
-        â”‚                                           )
-        â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
++-- Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       ¦   (
+    ¦   ¦                       ¦       [System Info]
+    ¦   ¦                       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                       ¦   )
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                               (
+    ¦   ¦                                                   [Client Side Request Stats]
+    ¦   ¦                                                   Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                               )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦   (
+        ¦       [Client Configuration]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       [DistributedTraceId]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦   )
+        +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       +-- [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   ¦   (
+        ¦                   ¦       [System Info]
+        ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦                   ¦   )
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                           (
+        ¦                                               [Client Side Request Stats]
+        ¦                                               Redacted To Not Change The Baselines From Run To Run
+        ¦                                           )
+        +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -2029,142 +2029,142 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â”‚   (
-    â”‚   â”‚                       â”‚       [System Info]
-    â”‚   â”‚                       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                       â”‚   )
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                               (
-    â”‚   â”‚                                                   [Client Side Request Stats]
-    â”‚   â”‚                                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                               )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â””â”€â”€ Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   (
-        â”‚       [Client Configuration]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       [DistributedTraceId]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚   )
-        â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â””â”€â”€ [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â”‚   (
-        â”‚                   â”‚       [System Info]
-        â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚                   â”‚   )
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                           (
-        â”‚                                               [Client Side Request Stats]
-        â”‚                                               Redacted To Not Change The Baselines From Run To Run
-        â”‚                                           )
-        â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       ¦   (
+    ¦   ¦                       ¦       [System Info]
+    ¦   ¦                       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                       ¦   )
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                               (
+    ¦   ¦                                                   [Client Side Request Stats]
+    ¦   ¦                                                   Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                               )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Iterator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   (
+        ¦       [Client Configuration]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       [DistributedTraceId]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦   )
+        +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       +-- [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   ¦   (
+        ¦                   ¦       [System Info]
+        ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦                   ¦   )
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                           (
+        ¦                                               [Client Side Request Stats]
+        ¦                                               Redacted To Not Change The Baselines From Run To Run
+        ¦                                           )
+        +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -2821,146 +2821,146 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚               â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”œâ”€â”€ Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚   â””â”€â”€ Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â”‚       â””â”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â”‚   (
-    â”‚   â”‚                       â”‚       [System Info]
-    â”‚   â”‚                       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                       â”‚   )
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                               (
-    â”‚   â”‚                                                   [Client Side Request Stats]
-    â”‚   â”‚                                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                               )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   (
-    â”‚   â”‚       [Client Configuration]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚       [DistributedTraceId]
-    â”‚   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚   )
-    â”‚   â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚       â””â”€â”€ [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                   â”‚   (
-    â”‚   â”‚                   â”‚       [System Info]
-    â”‚   â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                   â”‚   )
-    â”‚   â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚                                           (
-    â”‚   â”‚                                               [Client Side Request Stats]
-    â”‚   â”‚                                               Redacted To Not Change The Baselines From Run To Run
-    â”‚   â”‚                                           )
-    â”‚   â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â””â”€â”€ Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   (
-        â”‚       [Client Configuration]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       [DistributedTraceId]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚   )
-        â”œâ”€â”€ ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â””â”€â”€ MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â””â”€â”€ [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â”œâ”€â”€ Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â”‚   (
-        â”‚                   â”‚       [System Info]
-        â”‚                   â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚                   â”‚   )
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                   â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                                           (
-        â”‚                                               [Client Side Request Stats]
-        â”‚                                               Redacted To Not Change The Baselines From Run To Run
-        â”‚                                           )
-        â”œâ”€â”€ Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-        â””â”€â”€ ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
++-- Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Prefetch(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- [,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Container Properties(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- Get Overlapping Feed Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦   +-- Get Partition Key Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       ¦       +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- [,05C1CFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       ¦   (
+    ¦   ¦                       ¦       [System Info]
+    ¦   ¦                       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                       ¦   )
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                               (
+    ¦   ¦                                                   [Client Side Request Stats]
+    ¦   ¦                                                   Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                               )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1CFFFFFFFF8,05C1DFFFFFFFF8) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   (
+    ¦   ¦       [Client Configuration]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦       [DistributedTraceId]
+    ¦   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦   )
+    ¦   +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦       +-- [05C1DFFFFFFFF8,05C1E7FFFFFFFA) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                   ¦   (
+    ¦   ¦                   ¦       [System Info]
+    ¦   ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                   ¦   )
+    ¦   ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦                                           (
+    ¦   ¦                                               [Client Side Request Stats]
+    ¦   ¦                                               Redacted To Not Change The Baselines From Run To Run
+    ¦   ¦                                           )
+    ¦   +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Typed FeedIterator ReadNextAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦   (
+        ¦       [Client Configuration]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       [DistributedTraceId]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦   )
+        +-- ChangeFeed MoveNextAsync(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- MoveNextAsync(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦       +-- [05C1E7FFFFFFFA,FF) move next(00000000-0000-0000-0000-000000000000)  Pagination-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Get Partition Key Range Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Try Get Overlapping Ranges(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   ¦   (
+        ¦                   ¦       [System Info]
+        ¦                   ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦                   ¦   )
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                           +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                   +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                                           (
+        ¦                                               [Client Side Request Stats]
+        ¦                                               Redacted To Not Change The Baselines From Run To Run
+        ¦                                           )
+        +-- Get RID(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+        +-- ChangeFeed Response Serialization(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -3628,71 +3628,71 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â””â”€â”€ Change Feed Estimator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   (
-        â”‚       [Client Configuration]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       [DistributedTraceId]
-        â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚   )
-        â”œâ”€â”€ Initialize Lease Store(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
-        â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚   (
-        â”‚       â”‚       [System Info]
-        â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚   )
-        â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               (
-        â”‚                                   [Client Side Request Stats]
-        â”‚                                   Redacted To Not Change The Baselines From Run To Run
-        â”‚                               )
-        â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚   (
-        â”‚       â”‚       [System Info]
-        â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚   )
-        â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               (
-        â”‚                                   [Client Side Request Stats]
-        â”‚                                   Redacted To Not Change The Baselines From Run To Run
-        â”‚                               )
-        â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚       â”‚   (
-        â”‚       â”‚       [System Info]
-        â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-        â”‚       â”‚   )
-        â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-        â”‚                               (
-        â”‚                                   [Client Side Request Stats]
-        â”‚                                   Redacted To Not Change The Baselines From Run To Run
-        â”‚                               )
-        â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-            â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-                â”‚   (
-                â”‚       [System Info]
-                â”‚       Redacted To Not Change The Baselines From Run To Run
-                â”‚   )
-                â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-                    â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-                        â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-                            â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-                                â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
++-- Trace Forest(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    +-- Change Feed Estimator Read Next Async(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        ¦   (
+        ¦       [Client Configuration]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       [DistributedTraceId]
+        ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦   )
+        +-- Initialize Lease Store(00000000-0000-0000-0000-000000000000)  ChangeFeed-Component  00:00:00:000  0.00 milliseconds  
+        +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦   (
+        ¦       ¦       [System Info]
+        ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦   )
+        ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               (
+        ¦                                   [Client Side Request Stats]
+        ¦                                   Redacted To Not Change The Baselines From Run To Run
+        ¦                               )
+        +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦   (
+        ¦       ¦       [System Info]
+        ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦   )
+        ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               (
+        ¦                                   [Client Side Request Stats]
+        ¦                                   Redacted To Not Change The Baselines From Run To Run
+        ¦                               )
+        +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦       ¦   (
+        ¦       ¦       [System Info]
+        ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+        ¦       ¦   )
+        ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+        ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+        ¦                               (
+        ¦                                   [Client Side Request Stats]
+        ¦                                   Redacted To Not Change The Baselines From Run To Run
+        ¦                               )
+        +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+            +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                ¦   (
+                ¦       [System Info]
+                ¦       Redacted To Not Change The Baselines From Run To Run
+                ¦   )
+                +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                    +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                        +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                            +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+                                +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
                                         (
                                             [Client Side Request Stats]
                                             Redacted To Not Change The Baselines From Run To Run

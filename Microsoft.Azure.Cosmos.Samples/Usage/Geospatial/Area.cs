@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.Geospatial
+namespace Cosmos.Samples.Geospatial
 {
     using System;
     using Newtonsoft.Json;

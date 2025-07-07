@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
+namespace Microsoft.Azure.Cosmos.Tests.Query.OfflineEngine
 {
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;

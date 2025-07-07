@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -350,7 +350,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 foreach (KeyValuePair<string, object> property in request.Properties)
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     requestMessage.Properties.Add(property);
+#pragma warning restore CS0618 // Type or member is obsolete
                 }
             }
 
@@ -362,7 +364,9 @@ namespace Microsoft.Azure.Cosmos
             string regionName = request?.RequestContext?.RegionName;
             if (regionName != null)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, regionName);
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             return requestMessage;

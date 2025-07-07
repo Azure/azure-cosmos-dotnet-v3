@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 #nullable enable
@@ -485,7 +485,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                         {
                             // Initiate Failback to the original failed location.
                             DefaultTrace.TraceInformation($"Initiating Failback to endpoint: {originalFailedLocation}, for partition key range: {pkRange}");
+#pragma warning disable CS8601 // Possible null reference assignment.
                             this.PartitionKeyRangeToLocationForReadAndWrite.Value.TryRemove(pkRange, out PartitionKeyRangeFailoverInfo _);
+#pragma warning restore CS8601 // Possible null reference assignment.
                         }
                     }
                 }
@@ -506,6 +508,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request,
             Lazy<ConcurrentDictionary<PartitionKeyRange, PartitionKeyRangeFailoverInfo>> partitionKeyRangeToLocationMapping)
         {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
             if (partitionKeyRangeToLocationMapping.IsValueCreated
                 && partitionKeyRangeToLocationMapping.Value.TryGetValue(
                     partitionKeyRange,
@@ -527,6 +530,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 request.RequestContext.RouteToLocation(partitionKeyRangeFailover.Current);
                 return true;
             }
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
             return false;
         }
@@ -578,7 +582,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyRange,
                 failedLocation);
 
+#pragma warning disable CS8601 // Possible null reference assignment.
             partitionKeyRangeToLocationMapping.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
+#pragma warning restore CS8601 // Possible null reference assignment.
 
             return false;
         }

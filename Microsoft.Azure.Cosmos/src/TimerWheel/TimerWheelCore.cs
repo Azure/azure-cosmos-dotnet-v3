@@ -56,7 +56,9 @@ namespace Microsoft.Azure.Cosmos.Timers
             int buckets)
             : this(resolution.TotalMilliseconds, buckets)
         {
+#pragma warning disable CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
             this.timer = new Timer(this.OnTimer, state: null, this.resolutionInMs, this.resolutionInMs);
+#pragma warning restore CS8622 // Nullability of reference types in type of parameter doesn't match the target delegate (possibly because of nullability attributes).
         }
 
         /// <summary>
@@ -132,10 +134,12 @@ namespace Microsoft.Azure.Cosmos.Timers
             try
             {
                 ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers[this.expirationIndex];
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 while (timerQueue.TryDequeue(out TimerWheelTimer timer))
                 {
                     timer.FireTimeout();
                 }
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
                 if (++this.expirationIndex == this.buckets)
                 {
@@ -170,10 +174,12 @@ namespace Microsoft.Azure.Cosmos.Timers
         {
             foreach (ConcurrentQueue<TimerWheelTimer> queueTimer in this.timers)
             {
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                 while (queueTimer.TryDequeue(out TimerWheelTimer timer))
                 {
                     timer.CancelTimer();
                 }
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
             }
 
             this.timer?.Dispose();

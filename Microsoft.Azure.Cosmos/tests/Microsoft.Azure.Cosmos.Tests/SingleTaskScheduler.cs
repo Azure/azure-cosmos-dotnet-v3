@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;

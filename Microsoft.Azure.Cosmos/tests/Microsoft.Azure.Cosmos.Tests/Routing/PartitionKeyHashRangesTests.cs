@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using System.Linq;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using UInt128 = Cosmos.UInt128;
 
     [TestClass]
     public class PartitionKeyHashRangesTests

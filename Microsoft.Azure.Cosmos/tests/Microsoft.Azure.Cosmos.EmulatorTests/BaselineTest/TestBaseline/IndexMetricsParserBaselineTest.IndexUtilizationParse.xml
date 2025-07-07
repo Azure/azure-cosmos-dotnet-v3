@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Input>
       <Description><![CDATA[Input full string]]></Description>
@@ -15,19 +15,19 @@ WHERE STARTSWITH(c.statement, 'The quick brown fox jumps over the lazy dog', fal
       <Description><![CDATA[Unicode 1]]></Description>
       <Query><![CDATA[SELECT * 
 FROM c
-WHERE STARTSWITH(c['Î— Î³ÏÎ®Î³Î¿ÏÎ· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯'], 's', false)]]></Query>
+WHERE STARTSWITH(c['Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί'], 's', false)]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"Î— Î³ÏÎ®Î³Î¿ÏÎ· ÎºÎ±Ï†Î­ Î±Î»ÎµÏ€Î¿Ï Ï€Î·Î´Î¬ÎµÎ¹ Ï€Î¬Î½Ï‰ Î±Ï€ÏŒ Ï„Î¿ Ï„ÎµÎ¼Ï€Î­Î»Î¹ÎºÎ¿ ÏƑÎºÏ…Î»Î¯\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode 2]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['ı'], 's', false) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['i'], 's', false) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/ı/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/i/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -42,64 +42,64 @@ WHERE STARTSWITH(c['Î— Î³ÏÎ®Î³Î¿ÏÎ· ÎºÎ±Ï†Î­ Î±Î�
   <Result>
     <Input>
       <Description><![CDATA[Unicode 4]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r[' !"!@#$%^&*()<>?:"{}|ßÃŒÆ12ếàưỏốởặ'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r[' !"!@#$%^&*()<>?:"{}|�Á��12?�u????'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\" !\\\"!@#$%^&*()<>?:\\\"{}|ßÃŒÆ12ếàưỏốởặ\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\" !\\\"!@#$%^&*()<>?:\\\"{}|�Á��12?�u????\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode German]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['Der schnelle Braunfuchs springt über den faulen Hund'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['Der schnelle Braunfuchs springt �ber den faulen Hund'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"Der schnelle Braunfuchs springt über den faulen Hund\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"Der schnelle Braunfuchs springt �ber den faulen Hund\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode Greek]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['? ??????? ?af? a?ep?? p?d?e? p??? ap? t? te�p????? s????'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"Η γρήγορη καφέ αλεπού πηδάει πάνω από το τεμπέλικο σκυλί\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"? ??????? ?af? a?ep?? p?d?e? p??? ap? t? te�p????? s????\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode Arabic]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['الثعلب البني السريع يقفز فوق الكلب الكسول'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['?????? ????? ?????? ???? ??? ????? ??????'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"الثعلب البني السريع يقفز فوق الكلب الكسول\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"?????? ????? ?????? ???? ??? ????? ??????\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode Russian]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['Быстрая коричневая лиса прыгает через ленивую собаку'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['??????? ?????????? ???? ??????? ????? ??????? ??????'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"Быстрая коричневая лиса прыгает через ленивую собаку\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"??????? ?????????? ???? ??????? ????? ??????? ??????\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode Japanese]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['素早く茶色のキツネが怠惰な犬を飛び越えます'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['?????????????????????'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/素早く茶色のキツネが怠惰な犬を飛び越えます/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/?????????????????????/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
     <Input>
       <Description><![CDATA[Unicode Hindi]]></Description>
-      <Query><![CDATA[SELECT VALUE STARTSWITH(r['तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई'], 's', true) FROM root r]]></Query>
+      <Query><![CDATA[SELECT VALUE STARTSWITH(r['???, ???? ????? ???? ?????? ?? ??? ??? ??'], 's', true) FROM root r]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"तेज, भूरी लोमडी आलसी कुत्ते के उपर कूद गई\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/\"???, ???? ????? ???? ?????? ?? ??? ??? ??\"/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
 </Results>

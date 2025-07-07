@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
+namespace Microsoft.Azure.Cosmos.Tests.Query.Pipeline
 {
     using System;
     using System.Collections.Generic;
@@ -41,9 +41,9 @@
             CosmosString.Create("Hello World"),
             CosmosString.Create(string.Join(',', Enumerable.Repeat("Hello World", 75))),
             CosmosString.Create(string.Join(',', Enumerable.Repeat("Hello World", 100))),
-            CosmosString.Create("敏捷的棕色狐狸跳过了懒狗"),
-            CosmosString.Create(string.Join(',', Enumerable.Repeat("敏捷的棕色狐狸跳过了懒狗", 50))),
-            CosmosString.Create(string.Join(',', Enumerable.Repeat("敏捷的棕色狐狸跳过了懒狗", 60))),
+            CosmosString.Create("????????????"),
+            CosmosString.Create(string.Join(',', Enumerable.Repeat("????????????", 50))),
+            CosmosString.Create(string.Join(',', Enumerable.Repeat("????????????", 60))),
 
             CosmosArray.Create(),
             CosmosArray.Create(new CosmosElement[]
@@ -77,22 +77,22 @@
             CosmosObject.Create(new Dictionary<string, CosmosElement>()),
             CosmosObject.Create(new Dictionary<string, CosmosElement>
             {
-                ["敏"] = CosmosUndefined.Create(),
+                ["?"] = CosmosUndefined.Create(),
                 ["b"] = CosmosNull.Create(),
                 ["c"] = CosmosBoolean.Create(true),
                 ["d"] = CosmosBoolean.Create(false),
-                ["懒"] = CosmosNumber64.Create(0),
+                ["?"] = CosmosNumber64.Create(0),
             }),
             CosmosObject.Create(new Dictionary<string, CosmosElement>
             {
-                ["敏"] = CosmosUndefined.Create(),
+                ["?"] = CosmosUndefined.Create(),
                 ["b"] = CosmosNull.Create(),
                 ["c"] = CosmosBoolean.Create(true),
                 ["d"] = CosmosBoolean.Create(false),
-                ["懒"] = CosmosNumber64.Create(0),
+                ["?"] = CosmosNumber64.Create(0),
                 ["e"] = CosmosNumber64.Create(42),
                 ["f"] = CosmosNumber64.Create(-1),
-                ["فوق"] = CosmosNumber64.Create(100010),
+                ["???"] = CosmosNumber64.Create(100010),
                 ["g"] = CosmosNumber64.Create(3.141619),
             }),
 
@@ -110,9 +110,9 @@
             CosmosBinary.Create(Encoding.UTF8.GetBytes("Hello World")),
             CosmosBinary.Create(Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Repeat("Hello World", 75)))),
             CosmosBinary.Create(Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Repeat("Hello World", 100)))),
-            CosmosBinary.Create(Encoding.UTF8.GetBytes("敏捷的棕色狐狸跳过了懒狗")),
-            CosmosBinary.Create(Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Repeat("敏捷的棕色狐狸跳过了懒狗", 50)))),
-            CosmosBinary.Create(Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Repeat("敏捷的棕色狐狸跳过了懒狗", 60)))),
+            CosmosBinary.Create(Encoding.UTF8.GetBytes("????????????")),
+            CosmosBinary.Create(Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Repeat("????????????", 50)))),
+            CosmosBinary.Create(Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Repeat("????????????", 60)))),
         };
 
         [TestMethod]

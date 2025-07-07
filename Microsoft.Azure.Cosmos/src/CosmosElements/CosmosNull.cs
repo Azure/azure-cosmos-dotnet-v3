@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -46,12 +46,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return cosmosElement is CosmosNull cosmosNull && this.Equals(cosmosNull);
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public bool Equals(CosmosNull cosmosNull)
         {
             return true;
         }
-
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public static CosmosNull Create()
         {
             return CosmosNull.Singleton;
@@ -90,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return CosmosElement.TryParse<CosmosNull>(json, out cosmosNull);
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public int CompareTo(CosmosNull other)
         {
@@ -108,6 +110,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return CosmosElement.Monadic.Parse<CosmosNull>(json);
             }
         }
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
     }
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented

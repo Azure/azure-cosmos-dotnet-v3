@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Client.Tests
@@ -1448,7 +1448,7 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 new AccountRegion { Name = "WriteLocation", Endpoint = "https://writelocation.documents.azure.com" }
             };
 
-            Collection<AccountRegion> thinClientReads = new Collection<AccountRegion>(); // 👈 simulate NO thin client read locations
+            Collection<AccountRegion> thinClientReads = new Collection<AccountRegion>(); // ?? simulate NO thin client read locations
 
             Collection<AccountRegion> thinClientWrites = new Collection<AccountRegion>()
             {

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Linq
+namespace Microsoft.Azure.Cosmos.Linq
 {
     using System;
     using System.Linq.Expressions;

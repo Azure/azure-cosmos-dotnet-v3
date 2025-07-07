@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -52,9 +52,13 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
         /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+#pragma warning disable CS0672 // Member overrides obsolete member
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
+#pragma warning restore CS0672 // Member overrides obsolete member
         {
+#pragma warning disable SYSLIB0051 // Type or member is obsolete
             base.GetObjectData(info, context);
+#pragma warning restore SYSLIB0051 // Type or member is obsolete
         }
 
         /// <summary>

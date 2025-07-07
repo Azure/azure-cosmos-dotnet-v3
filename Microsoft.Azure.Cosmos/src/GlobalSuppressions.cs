@@ -1,6 +1,8 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
+
+using System.Diagnostics.CodeAnalysis;
 
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1028:Code should not contain trailing whitespace", Justification = "Code style not enforced")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1629:Documentation text should end with a period", Justification = "Code style not enforced")]
@@ -52,3 +54,10 @@
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.NamingRules", "SA1303:Const field names should begin with upper-case letter", Justification = "Remove after fixing existing code")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1618:Generic type parameters should be documented", Justification = "Remove after fixing existing code")]
 [assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("StyleCop.CSharp.SpacingRules", "SA1005:Single line comments should begin with single space", Justification = "Remove after fixing existing code")]
+[assembly: SuppressMessage("Reliability", "CA2013:Do not use ReferenceEquals with value types", Justification = "<avs>", Scope = "member", Target = "~M:Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler.SendAsync(System.String,Microsoft.Azure.Documents.ResourceType,Microsoft.Azure.Documents.OperationType,Microsoft.Azure.Cosmos.RequestOptions,Microsoft.Azure.Cosmos.ContainerInternal,Microsoft.Azure.Cosmos.FeedRange,System.IO.Stream,System.Action{Microsoft.Azure.Cosmos.RequestMessage},Microsoft.Azure.Cosmos.Tracing.ITrace,System.Threading.CancellationToken)~System.Threading.Tasks.Task{Microsoft.Azure.Cosmos.ResponseMessage}")]
+[assembly: SuppressMessage("Reliability", "CA2013:Do not use ReferenceEquals with value types", Justification = "<svsd>", Scope = "member", Target = "~M:Microsoft.Azure.Cosmos.Number64.Equals(System.Object)~System.Boolean")]
+[assembly: SuppressMessage("Usage", "CA2265:Do not compare Span<T> to 'null' or 'default'", Justification = "<sdva>", Scope = "member", Target = "~M:Microsoft.Azure.Cosmos.AuthorizationHelper.UrlEncodeBase64SpanInPlace(System.Span{System.Byte},System.Int32)~System.String")]
+[assembly: SuppressMessage("Reliability", "CA2013:Do not use ReferenceEquals with value types", Justification = "<savdva>")]
+[assembly: SuppressMessage("Design", "CA1068:CancellationToken parameters must come last", Justification = "<asd>")]
+[assembly: SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "<Pendinasfg>")]
+[assembly: SuppressMessage("Style", "IDE0090:Use 'new(...)'", Justification = "<Penasding>")]

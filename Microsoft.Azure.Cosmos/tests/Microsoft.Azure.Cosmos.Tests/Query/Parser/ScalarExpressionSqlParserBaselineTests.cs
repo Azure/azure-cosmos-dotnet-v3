@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
+namespace Microsoft.Azure.Cosmos.Tests.Query.Parser
 {
     using System;
     using System.Collections.Generic;

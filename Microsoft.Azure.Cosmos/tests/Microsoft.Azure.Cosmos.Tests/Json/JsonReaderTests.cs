@@ -1,4 +1,4 @@
-﻿//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
 // <copyright file="JsonReaderTests.cs" company="Microsoft Corporation">
 //     Copyright (c) Microsoft Corporation.  All rights reserved.
 // </copyright>
@@ -2219,7 +2219,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 // Surrogate pair testing
                 string unicodeEscapedString = @"""\uD801\uDC37""";
                 // This is the 2 byte escaped equivalent.
-                string expectedString = "𐐷";
+                string expectedString = "??";
 
                 JsonToken[] expectedTokens =
                 {
@@ -2254,14 +2254,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void UnicodeTest()
         {
             // the user might literally paste a unicode character into the json.
-            string unicodeString = "\"€\"";
+            string unicodeString = "\"�\"";
             // This is the 2 byte equivalent.
-            string expectedString = "€";
+            string expectedString = "�";
             byte[] binaryInput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 3,
-                // € in utf8 hex
+                // � in utf8 hex
                 0xE2, 0x82, 0xAC
             };
 
@@ -2279,14 +2279,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         public void EmojiUTF32Test()
         {
             // the user might literally paste a utf 32 character (like the poop emoji).
-            string unicodeString = "\"💩\"";
+            string unicodeString = "\"??\"";
             // This is the 4 byte equivalent.
-            string expectedString = "💩";
+            string expectedString = "??";
             byte[] binaryInput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 4,
-                // 💩 in utf8 hex
+                // ?? in utf8 hex
                 0xF0, 0x9F, 0x92, 0xA9
             };
 
@@ -2310,12 +2310,12 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
             // basically its two utf 16 escaped characters
             string unicodeString = "\"\\uD83D\\uDCA9\"";
             // This is the 4 byte equivalent.
-            string expectedString = "💩";
+            string expectedString = "??";
             byte[] binaryInput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 4,
-                // 💩 in utf8 hex
+                // ?? in utf8 hex
                 0xF0, 0x9F, 0x92, 0xA9
             };
 

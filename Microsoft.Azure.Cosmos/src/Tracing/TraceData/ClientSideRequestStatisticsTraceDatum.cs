@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -353,11 +353,13 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             {
                 Uri locationEndpoint = request.RequestUri;
                 object regionName = null;
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (request.Properties != null && 
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
                     this.TraceSummary.AddRegionContacted(Convert.ToString(regionName), locationEndpoint);
                 }
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 this.shallowCopyOfHttpResponseStatistics = null;
                 this.httpResponseStatistics.Add(new HttpResponseStatistics(requestStartTimeUtc,
@@ -384,6 +386,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 Uri locationEndpoint = request.RequestUri;
 
                 object regionName = null;
+#pragma warning disable CS0618 // Type or member is obsolete
                 if (request.Properties != null &&
                         request.Properties.TryGetValue(HttpRequestRegionNameProperty, out regionName))
                 {
@@ -535,4 +538,5 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
             public long? ResponseContentLength { get; }
         }
     }
+#pragma warning restore CS0618 // Type or member is obsolete
 }

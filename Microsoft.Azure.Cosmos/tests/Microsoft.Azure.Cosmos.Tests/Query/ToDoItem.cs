@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests
+namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
     using System.Collections;

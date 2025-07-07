@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // The code in this repository code was written by Lee Campbell, as a
 // derived work from the original Java by Gil Tene of Azul Systems and
 // Michael Barker, and released to the public domain, as explained

@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
 	<Nullable>annotations</Nullable>
 	<IsTestProject>true</IsTestProject>
 	<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 	<Platform>AnyCPU</Platform>
-	<TargetFramework>net6.0</TargetFramework>
+	<TargetFramework>net9</TargetFramework>
 	<IsPackable>false</IsPackable>
 	<GenerateAssemblyInfo>false</GenerateAssemblyInfo>
 	<RootNamespace>Microsoft.Azure.Cosmos.FaultInjection.Tests</RootNamespace>

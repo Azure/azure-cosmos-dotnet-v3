@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -182,7 +182,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.ThrowIfDisposed();
             int parentLinkLength = parentLink?.Length ?? 0;
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             string idUriEscaped = Uri.EscapeUriString(id);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
 
             Debug.Assert(parentLinkLength == 0 || !parentLink.EndsWith("/"));
 

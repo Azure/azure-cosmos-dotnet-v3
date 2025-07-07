@@ -1,4 +1,4 @@
-﻿|                         Method | payload | jsonSerializationFormat | accessMode |        Mean |     Error |    StdDev |      Median |  Gen 0 | Gen 1 | Gen 2 | Allocated |
+|                         Method | payload | jsonSerializationFormat | accessMode |        Mean |     Error |    StdDev |      Median |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------------------- |-------- |------------------------ |----------- |------------:|----------:|----------:|------------:|-------:|------:|------:|----------:|
 | CreateAndNavigateCosmosElement |   array |                    Text |      Never |    193.8 ns |   5.39 ns |   8.07 ns |    190.3 ns | 0.1051 |     - |     - |     440 B |
 | CreateAndNavigateCosmosElement |   array |                    Text |       Once |  4,927.2 ns |  78.67 ns |  69.74 ns |  4,928.7 ns | 0.7935 |     - |     - |    3336 B |

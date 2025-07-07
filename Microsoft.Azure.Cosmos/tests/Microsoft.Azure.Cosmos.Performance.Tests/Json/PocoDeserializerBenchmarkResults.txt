@@ -1,4 +1,4 @@
-﻿|       Method |  serializationFormat |     Mean |    Error |   StdDev |   Median |    Gen0 |   Gen1 | Allocated |
+|       Method |  serializationFormat |     Mean |    Error |   StdDev |   Median |    Gen0 |   Gen1 | Allocated |
 |------------- |--------------------- |---------:|---------:|---------:|---------:|--------:|-------:|----------:|
 | RunBenchmark |                 Text | 426.3 us | 23.98 us | 70.70 us | 386.4 us | 15.6250 | 0.9766 | 163.63 KB |
 | RunBenchmark |       NewtonsoftText | 237.6 us |  1.42 us |  1.26 us | 237.6 us | 11.4746 | 0.9766 |  117.4 KB |

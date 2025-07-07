@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -37,11 +37,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override ValueCollection Values => new ValueCollection(this.dictionary.Values);
 
+#pragma warning disable CS8601 // Possible null reference assignment.
             public override bool ContainsKey(string key) => this.dictionary.ContainsKey(key);
 
             public override Enumerator GetEnumerator() => new Enumerator(this.dictionary.GetEnumerator());
 
             public override bool TryGetValue(string key, out CosmosElement value) => this.dictionary.TryGetValue(key, out value);
+#pragma warning restore CS8601 // Possible null reference assignment.
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

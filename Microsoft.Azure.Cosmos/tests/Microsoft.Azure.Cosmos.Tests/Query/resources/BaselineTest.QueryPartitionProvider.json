@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "partitionKey": {
             "paths": [
@@ -3739,7 +3739,7 @@
             "kind": "Hash"
         },
         "querySpec": {
-            "query": "SELECT * FROM Root r WHERE r.key = '你好'"
+            "query": "SELECT * FROM Root r WHERE r.key = '??'"
         },
         "partitionedQueryExecutionInfo": [
             {
@@ -3753,10 +3753,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "你好"
+                            "??"
                         ],
                         "max": [
-                            "你好"
+                            "??"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3774,10 +3774,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "你好"
+                            "??"
                         ],
                         "max": [
-                            "你好"
+                            "??"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3795,10 +3795,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "你好"
+                            "??"
                         ],
                         "max": [
-                            "你好"
+                            "??"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3816,10 +3816,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "你好"
+                            "??"
                         ],
                         "max": [
-                            "你好"
+                            "??"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3836,7 +3836,7 @@
             "kind": "Hash"
         },
         "querySpec": {
-            "query": "SELECT * FROM Root r WHERE r.key = 'こにちわ'"
+            "query": "SELECT * FROM Root r WHERE r.key = '????'"
         },
         "partitionedQueryExecutionInfo": [
             {
@@ -3850,10 +3850,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "こにちわ"
+                            "????"
                         ],
                         "max": [
-                            "こにちわ"
+                            "????"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3871,10 +3871,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "こにちわ"
+                            "????"
                         ],
                         "max": [
-                            "こにちわ"
+                            "????"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3892,10 +3892,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "こにちわ"
+                            "????"
                         ],
                         "max": [
-                            "こにちわ"
+                            "????"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true
@@ -3913,10 +3913,10 @@
                 "queryRanges": [
                     {
                         "min": [
-                            "こにちわ"
+                            "????"
                         ],
                         "max": [
-                            "こにちわ"
+                            "????"
                         ],
                         "isMinInclusive": true,
                         "isMaxInclusive": true

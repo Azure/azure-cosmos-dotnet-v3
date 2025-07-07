@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -228,7 +228,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             TestScenario scenario = new TestScenario
             {
                 Name = nameof(IdWithUnicodeCharacters),
-                Id = "WithUnicode鱀",
+                Id = "WithUnicode?",
                 Gateway = new TestScenarioExpectations
                 {
                     TransportMode = ConnectionMode.Gateway,

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -148,9 +148,10 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
 #if NETSTANDARD20
             }
-#endif  
+#endif
 #endif
 
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             string collectionAltLink = string.Format(
                 CultureInfo.InvariantCulture,
                 "{0}/{1}/{2}/{3}",
@@ -158,6 +159,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 Uri.EscapeUriString(databaseName),
                 Paths.CollectionsPathSegment,
                 Uri.EscapeUriString(collection.Id));
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
 
             using (DocumentServiceRequest request = DocumentServiceRequest.CreateFromName(
                 OperationType.Read,

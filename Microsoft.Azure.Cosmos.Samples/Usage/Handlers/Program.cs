@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.Handlers
+namespace Cosmos.Samples.Handlers
 {
     using System;
     using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Poco.STJ
+namespace Microsoft.Azure.Cosmos.Tests.Poco.STJ
 {
     using System;
     using System.Collections.Generic;

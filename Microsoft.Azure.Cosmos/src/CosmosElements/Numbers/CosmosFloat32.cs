@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         {
             return cosmosNumber is CosmosFloat32 cosmosFloat32 && this.Equals(cosmosFloat32);
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public bool Equals(CosmosFloat32 cosmosFloat32)
         {
@@ -64,7 +65,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
         {
             return this.GetValue().CompareTo(cosmosFloat32.GetValue());
         }
-
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public override void WriteTo(IJsonWriter jsonWriter)
         {
             jsonWriter.WriteFloat32Value(this.GetValue());

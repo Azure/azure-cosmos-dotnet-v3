@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Contracts
+namespace Microsoft.Azure.Cosmos.Tests.Contracts
 {
     using System;
     using System.Diagnostics;

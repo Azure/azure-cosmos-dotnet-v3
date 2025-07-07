@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -110,11 +110,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The instance of <see cref="ChangeFeedProcessorBuilder"/> to use.</returns>
         public ChangeFeedProcessorBuilder WithPollInterval(TimeSpan pollInterval)
         {
-            if (pollInterval == null)
-            {
-                throw new ArgumentNullException(nameof(pollInterval));
-            }
-
             this.changeFeedProcessorOptions.FeedPollDelay = pollInterval;
             return this;
         }
@@ -157,11 +152,6 @@ namespace Microsoft.Azure.Cosmos
             if (this.changeFeedProcessorOptions.Mode == ChangeFeedMode.AllVersionsAndDeletes)
             {
                 throw new InvalidOperationException($"Using the '{nameof(WithStartTime)}' option with ChangeFeedProcessor is not supported with {ChangeFeedMode.AllVersionsAndDeletes} mode.");
-            }
-
-            if (startTime == null)
-            {
-                throw new ArgumentNullException(nameof(startTime));
             }
 
             this.changeFeedProcessorOptions.StartTime = startTime;

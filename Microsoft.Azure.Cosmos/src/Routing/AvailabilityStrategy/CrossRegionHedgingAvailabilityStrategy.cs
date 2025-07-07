@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos
@@ -282,6 +282,7 @@ namespace Microsoft.Azure.Cosmos
             CancellationTokenSource cancellationTokenSource,
             ITrace trace)
         {
+#pragma warning disable CDX1006 // Experimental - DontCatchGenericExceptions
             try
             {
                 ResponseMessage response = await sender.Invoke(request, cancellationToken);
@@ -304,8 +305,13 @@ namespace Microsoft.Azure.Cosmos
             catch (Exception ex)
             {
                 DefaultTrace.TraceError("Exception thrown while executing cross region hedging availability strategy: {0}", ex.Message);
+#pragma warning disable CDX1005 // Experimental - DontThrowExceptions
+#pragma warning disable CA2200 // Rethrow to preserve stack details
                 throw ex;
+#pragma warning restore CA2200 // Rethrow to preserve stack details
+#pragma warning restore CDX1005 // Experimental - DontThrowExceptions
             }
+#pragma warning restore CDX1006 // Experimental - DontCatchGenericExceptions
         }
 
         private static bool IsFinalResult(int statusCode, int subStatusCode)

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -107,7 +107,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         [TestMethod]
         public void TestUnicodeCharacters()
         {
-            string json = @"[""电脑""]";
+            string json = @"[""??""]";
             PartitionKeyInternal partitionKey = PartitionKeyInternal.FromJsonString(json);
             Assert.AreEqual(@"[""\u7535\u8111""]", partitionKey.ToJsonString());
         }
@@ -258,7 +258,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey);
 
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new Collection<string> { "/A", "/B", "/C", "/E", "/F", "/G" }, Kind = PartitionKind.Hash };
-            PartitionKeyInternal partitionKey = PartitionKeyInternal.FromObjectArray(new object[] { 2, true, false, null, Undefined.Value, "Привет!" }, true);
+            PartitionKeyInternal partitionKey = PartitionKeyInternal.FromObjectArray(new object[] { 2, true, false, null, Undefined.Value, "??????!" }, true);
             string effectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
 
             Assert.AreEqual("05C1D19581B37C05C0000302010008D1A0D281D1B9D1B3D1B6D2832200", effectivePartitionKey);
@@ -271,7 +271,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void TestRangeEffectivePartitionKey()
         {
             PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new Collection<string> { "/A", "/B", "/C", "/E", "/F", "/G" }, Kind = PartitionKind.Range };
-            PartitionKeyInternal partitionKey = PartitionKeyInternal.FromObjectArray(new object[] { 2, true, false, null, Undefined.Value, "Привет!" }, true);
+            PartitionKeyInternal partitionKey = PartitionKeyInternal.FromObjectArray(new object[] { 2, true, false, null, Undefined.Value, "??????!" }, true);
             string effectivePartitionKey = partitionKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
 
             Assert.AreEqual("05C0000302010008D1A0D281D1B9D1B3D1B6D2832200", effectivePartitionKey);
@@ -433,7 +433,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
         public void TestManagedNativeCompatibility()
         {
             PartitionKeyInternal partitionKey =
-                PartitionKeyInternal.FromJsonString("[\"по-русски\",null,true,false,{},5.5]");
+                PartitionKeyInternal.FromJsonString("[\"??-??????\",null,true,false,{},5.5]");
 
             PartitionKeyDefinition pkDefinition = new PartitionKeyDefinition();
             pkDefinition.Paths.Add("/field1");
@@ -446,7 +446,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             Assert.AreEqual("05C1D39FA55F0408D1C0D1BF2ED281D284D282D282D1BBD1B9000103020005C016", effectivePartitionKey);
 
             string latin = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
-            string nonLatin = "абвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюяабвгдеёжзийклмнопрстуфхцчшщъыьэюя";
+            string nonLatin = "????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????";
 
             TestEffectivePartitionKeyEncoding(latin, 99, "05C19B2DC38FC00862636465666768696A6B6C6D6E6F707172737475767778797A7B62636465666768696A6B6C6D6E6F707172737475767778797A7B62636465666768696A6B6C6D6E6F707172737475767778797A7B62636465666768696A6B6C6D6E6F7071727374757600", false);
             TestEffectivePartitionKeyEncoding(latin, 99, "072D8FA3228DD2A6C0A7129C845700E6", true);

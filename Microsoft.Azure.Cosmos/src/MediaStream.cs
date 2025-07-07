@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -125,9 +125,13 @@ namespace Microsoft.Azure.Cosmos
             this.contentStream.EndWrite(asyncResult);
         }
 
+#pragma warning disable CS0672 // Member overrides obsolete member
         public override object InitializeLifetimeService()
+#pragma warning restore CS0672 // Member overrides obsolete member
         {
+#pragma warning disable SYSLIB0010 // Type or member is obsolete
             return this.contentStream.InitializeLifetimeService();
+#pragma warning restore SYSLIB0010 // Type or member is obsolete
         }
 #endif
 

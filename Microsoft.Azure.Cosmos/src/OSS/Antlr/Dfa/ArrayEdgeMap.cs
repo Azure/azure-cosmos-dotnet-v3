@@ -41,7 +41,9 @@ namespace Antlr4.Runtime.Dfa
 #if NET45PLUS
                 return Volatile.Read(ref size);
 #elif !PORTABLE && !COMPACT
+#pragma warning disable SYSLIB0054 // Type or member is obsolete
                 return Thread.VolatileRead(ref size);
+#pragma warning restore SYSLIB0054 // Type or member is obsolete
 #else
                 return Interlocked.CompareExchange(ref size, 0, 0);
 #endif

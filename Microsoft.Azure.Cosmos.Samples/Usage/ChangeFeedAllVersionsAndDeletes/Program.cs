@@ -1,4 +1,4 @@
-﻿namespace ChangeFeedAllVersionsAndDeletes
+namespace ChangeFeedAllVersionsAndDeletes
 {
     using System.Net;
     using Microsoft.Azure.Cosmos;

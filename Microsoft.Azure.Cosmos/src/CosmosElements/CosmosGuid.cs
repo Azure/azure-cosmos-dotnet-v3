@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -48,7 +48,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
         }
 
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public bool Equals(CosmosGuid cosmosGuid)
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         {
             return this.Value == cosmosGuid.Value;
         }
@@ -59,12 +61,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             hash = MurmurHash3.Hash32(this.Value, hash);
             return (int)hash;
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public int CompareTo(CosmosGuid cosmosGuid)
         {
             return this.Value.CompareTo(cosmosGuid.Value);
         }
-
         public static CosmosGuid Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode)
@@ -118,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return CosmosElement.Monadic.Parse<CosmosGuid>(json);
             }
         }
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
     }
 #if INTERNAL
 #pragma warning restore SA1601 // Partial elements should be documented

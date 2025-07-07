@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using System;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using UInt128 = Cosmos.UInt128;
 
     /// <summary>
     /// Base class for all types of DistinctMaps.

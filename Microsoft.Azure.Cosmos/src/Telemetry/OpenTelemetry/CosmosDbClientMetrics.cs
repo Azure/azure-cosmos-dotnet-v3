@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos
             /// <b>0.001, 0.005, 0.010</b> seconds: Higher Precision at Sub-Millisecond Levels, For high-performance workloads, especially when dealing with microservices or low-latency queries. <br></br>
             /// <b>0.050, 0.100, 0.200</b> seconds: Granularity for Standard Web Applications, These values allow detailed tracking for latencies between 50ms and 200ms, which are common in web applications. Fine-grained buckets in this range help in identifying performance issues before they grow critical, while covering the typical response times expected in Cosmos DB.<br></br>
             /// <b>0.500, 1.000</b> seconds: Wider Range for Intermediate Latencies, Operations that take longer, in the range of 500ms to 1 second, are still important for performance monitoring. By capturing these values, you maintain awareness of potential bottlenecks or slower requests that may need optimization.<br></br>
-            /// <b>2.000, 5.000</b> seconds: Capturing Outliers and Slow Queries, It’s important to track outliers that might go beyond 1 second. Having buckets for 2 and 5 seconds enables identification of rare, long-running operations that may require further investigation.
+            /// <b>2.000, 5.000</b> seconds: Capturing Outliers and Slow Queries, It�s important to track outliers that might go beyond 1 second. Having buckets for 2 and 5 seconds enables identification of rare, long-running operations that may require further investigation.
             /// </remarks>
             public static readonly double[] RequestLatencyBuckets = new double[] { 0.001, 0.005, 0.010, 0.050, 0.100, 0.200, 0.500, 1.000, 2.000, 5.000 };
 

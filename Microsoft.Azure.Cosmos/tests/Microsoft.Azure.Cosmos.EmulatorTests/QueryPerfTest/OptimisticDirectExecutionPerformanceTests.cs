@@ -1,4 +1,4 @@
-ï»¿namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
+namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
     using System.Collections.Generic;
@@ -130,22 +130,22 @@
                 CreateInput("SELECT DISTINCT c.city FROM c WHERE STARTSWITH(c.city, 'S')", PartitionKeyValue, true, -1, 2),
 
                 //JOIN
-                CreateInput("SELECTÂ root.id " +
-                "FROMÂ root " +
-                "JOINÂ root.idÂ a " +
-                "JOINÂ root.idÂ b " +
-                "JOINÂ root.idÂ c " +
-                "WHEREÂ root.idÂ =Â '1'Â OR a.idÂ inÂ (1,2,3,4,5,6,7,8,9,10)Â " +
-                "OR b.idÂ inÂ (1,2,3,4,5,6,7,8,9,10)Â " +
-                "OR c.idÂ inÂ (1,2,3,4,5,6,7,8,9,10)", PartitionKeyValue, false, -1, 1),
-                CreateInput("SELECTÂ root.id " +
-                "FROMÂ root " +
-                "JOINÂ root.idÂ a " +
-                "JOINÂ root.idÂ b " +
-                "JOINÂ root.idÂ c " +
-                "WHEREÂ root.idÂ =Â '1'Â OR a.idÂ inÂ (1,2,3,4,5,6,7,8,9,10)Â " +
-                "OR b.idÂ inÂ (1,2,3,4,5,6,7,8,9,10)Â " +
-                "OR c.idÂ inÂ (1,2,3,4,5,6,7,8,9,10)", PartitionKeyValue, true, -1, 1),
+                CreateInput("SELECT root.id " +
+                "FROM root " +
+                "JOIN root.id a " +
+                "JOIN root.id b " +
+                "JOIN root.id c " +
+                "WHERE root.id = '1' OR a.id in (1,2,3,4,5,6,7,8,9,10) " +
+                "OR b.id in (1,2,3,4,5,6,7,8,9,10) " +
+                "OR c.id in (1,2,3,4,5,6,7,8,9,10)", PartitionKeyValue, false, -1, 1),
+                CreateInput("SELECT root.id " +
+                "FROM root " +
+                "JOIN root.id a " +
+                "JOIN root.id b " +
+                "JOIN root.id c " +
+                "WHERE root.id = '1' OR a.id in (1,2,3,4,5,6,7,8,9,10) " +
+                "OR b.id in (1,2,3,4,5,6,7,8,9,10) " +
+                "OR c.id in (1,2,3,4,5,6,7,8,9,10)", PartitionKeyValue, true, -1, 1),
 
                 //High Prep Time
                 CreateInput(highPrepTimeSumQuery, PartitionKeyValue, false, -1, 2500),

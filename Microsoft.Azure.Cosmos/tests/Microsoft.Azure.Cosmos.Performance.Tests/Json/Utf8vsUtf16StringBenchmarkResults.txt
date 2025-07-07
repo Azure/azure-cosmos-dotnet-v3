@@ -1,4 +1,4 @@
-﻿|                     Method |        Mean |     Error |    StdDev |      Median |       Gen 0 | Gen 1 | Gen 2 |  Allocated |
+|                     Method |        Mean |     Error |    StdDev |      Median |       Gen 0 | Gen 1 | Gen 2 |  Allocated |
 |--------------------------- |------------:|----------:|----------:|------------:|------------:|------:|------:|-----------:|
 |     ReadUtf16StringLength8 |    17.33 ms |  0.364 ms |  1.034 ms |    17.02 ms |   1000.0000 |     - |     - |    6.87 MB |
 |      ReadUtf8StringLength8 |    10.80 ms |  0.232 ms |  0.646 ms |    10.68 ms |           - |     - |     - |    3.05 MB |

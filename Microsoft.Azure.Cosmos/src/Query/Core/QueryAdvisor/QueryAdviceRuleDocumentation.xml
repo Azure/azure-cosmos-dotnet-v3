@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <!--Rule format:
 <Rule Id="QA100x" Name="PartialArrayContains">
     <Title>[CDATA["Query uses ARRAY_CONTAINS with the the third argument set to true."]]</Title>

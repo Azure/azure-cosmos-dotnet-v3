@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils
+namespace Microsoft.Azure.Cosmos.FaultInjection.Tests.Utils
 {
     using System;
     using System.Collections.Generic;

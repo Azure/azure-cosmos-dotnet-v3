@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
+    using UInt128 = Cosmos.UInt128;
 
     /// <summary>
     /// Query execution component that groups groupings across continuations and pages.

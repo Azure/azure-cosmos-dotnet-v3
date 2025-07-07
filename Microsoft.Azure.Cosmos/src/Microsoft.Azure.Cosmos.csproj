@@ -1,10 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<Company>Microsoft Corporation</Company>
 		<Product>Microsoft(R) Azure Cosmos</Product>
 		<Description>This client library enables client applications to connect to Azure Cosmos DB via the NoSQL API. Azure Cosmos DB is a globally distributed, multi-model database service. For more information, refer to http://azure.microsoft.com/services/cosmos-db/.</Description>
-		<Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+		<Copyright>� Microsoft Corporation. All rights reserved.</Copyright>
 		<NeutralLanguage>en-US</NeutralLanguage>
 		<CurrentDate>$([System.DateTime]::Now.ToString(yyyyMMdd))</CurrentDate>
 		<ClientVersion Condition=" '$(IsPreview)' != 'true' ">$(ClientOfficialVersion)</ClientVersion>
@@ -16,7 +16,7 @@
 		<Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
 		<FileVersion>$(ClientVersion)</FileVersion>
 		<Authors>Microsoft</Authors>
-		<TargetFramework>netstandard2.0</TargetFramework>
+		<TargetFramework>net9</TargetFramework>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
@@ -41,7 +41,7 @@
 		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
 		<NoWarn>NU5125</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
-		<LangVersion>$(LangVersion)</LangVersion>
+        <LangVersion>preview</LangVersion>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 	</PropertyGroup>
 	
@@ -125,6 +125,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Azure.Core" Version="1.44.1" />
+		<PackageReference Include="Microsoft.CSharp" Version="4.5.0" />
 		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
 		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />

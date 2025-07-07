@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Benchmarks
+namespace Microsoft.Azure.Cosmos.Benchmarks
 {
     using System;
     using BenchmarkDotNet.Attributes;

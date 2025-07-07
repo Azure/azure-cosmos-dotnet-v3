@@ -1,4 +1,4 @@
-﻿namespace Sample.Listeners
+namespace Sample.Listeners
 {
     using System.Diagnostics.Tracing;
     using System.Diagnostics;

@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -19,9 +19,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.FeedManagement
             this.lease = lease;
         }
 
-        public override async Task CheckpointPartitionAsync(string сontinuationToken)
+        public override async Task CheckpointPartitionAsync(string ?ontinuationToken)
         {
-            this.lease = await this.leaseCheckpointer.CheckpointAsync(this.lease, сontinuationToken).ConfigureAwait(false);
+            this.lease = await this.leaseCheckpointer.CheckpointAsync(this.lease, ?ontinuationToken).ConfigureAwait(false);
             DefaultTrace.TraceInformation("Checkpoint: lease token {0}, new continuation {1}", this.lease.CurrentLeaseToken, this.lease.ContinuationToken);
         }
     }

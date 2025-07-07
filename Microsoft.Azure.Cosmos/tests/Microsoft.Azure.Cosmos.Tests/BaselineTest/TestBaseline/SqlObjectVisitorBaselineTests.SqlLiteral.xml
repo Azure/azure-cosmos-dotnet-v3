@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Input>
       <Description>Escape Sequence 0</Description>
@@ -547,13 +547,13 @@
     <Input>
       <Description>SqlStringLiteral With Unicode</Description>
       <SqlObject><![CDATA[{
-  "Value": "💩"
+  "Value": "??"
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA["💩"]]></TextOutput>
+      <TextOutput><![CDATA["??"]]></TextOutput>
       <PrettyPrint><![CDATA[
-"💩"
+"??"
 ]]></PrettyPrint>
       <HashCode>773810028</HashCode>
       <ObfusctedQuery><![CDATA["str1"]]></ObfusctedQuery>
@@ -845,7 +845,7 @@ undefined
   </Result>
   <Result>
     <Input>
-      <Description>PositiveInfinity ∞</Description>
+      <Description>PositiveInfinity 8</Description>
       <SqlObject><![CDATA[{
   "Value": "Infinity"
 }]]></SqlObject>
@@ -861,7 +861,7 @@ Infinity
   </Result>
   <Result>
     <Input>
-      <Description>NegativeInfinity -∞</Description>
+      <Description>NegativeInfinity -8</Description>
       <SqlObject><![CDATA[{
   "Value": "-Infinity"
 }]]></SqlObject>

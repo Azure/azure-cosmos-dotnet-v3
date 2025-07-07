@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos
+namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;

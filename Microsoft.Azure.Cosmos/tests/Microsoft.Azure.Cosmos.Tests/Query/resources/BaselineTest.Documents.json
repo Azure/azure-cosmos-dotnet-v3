@@ -1,4 +1,4 @@
-﻿{
+{
     "partitionKeyDefinition": {
         "paths": [ "/key" ],
         "kind": "Range"

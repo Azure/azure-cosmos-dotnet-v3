@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -33,11 +33,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         public override TResult Accept<TResult>(ICosmosElementVisitor<TResult> cosmosElementVisitor) => cosmosElementVisitor.Visit(this);
 
         public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosBinary cosmosBinary && this.Equals(cosmosBinary);
 
         public bool Equals(CosmosBinary cosmosBinary) => this.Value.Span.SequenceEqual(cosmosBinary.Value.Span);
-
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public override int GetHashCode()
         {
             uint hash = HashSeed;
@@ -45,8 +46,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosBinary cosmosBinary) => this.Value.Span.SequenceCompareTo(cosmosBinary.Value.Span);
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
+        public int CompareTo(CosmosBinary cosmosBinary) => this.Value.Span.SequenceCompareTo(cosmosBinary.Value.Span);
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
         public static CosmosBinary Create(
             IJsonNavigator jsonNavigator,
             IJsonNavigatorNode jsonNavigatorNode) => new LazyCosmosBinary(jsonNavigator, jsonNavigatorNode);

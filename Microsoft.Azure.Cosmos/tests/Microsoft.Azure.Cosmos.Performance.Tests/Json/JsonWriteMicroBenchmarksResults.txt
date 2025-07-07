@@ -1,4 +1,4 @@
-﻿|                     Method | namedWriteDelegate | benchmarkSerializationFormat |      Mean |     Error |    StdDev |      Gen 0 |     Gen 1 |     Gen 2 | Allocated |
+|                     Method | namedWriteDelegate | benchmarkSerializationFormat |      Mean |     Error |    StdDev |      Gen 0 |     Gen 1 |     Gen 2 | Allocated |
 |--------------------------- |------------------- |----------------------------- |----------:|----------:|----------:|-----------:|----------:|----------:|----------:|
 | ExecuteWriteMicroBenchmark |              array |                         Text |  63.59 ms |  1.010 ms |  0.896 ms |   625.0000 |  625.0000 |  625.0000 |     16 MB |
 | ExecuteWriteMicroBenchmark |              array |                       Binary |  91.02 ms |  1.556 ms |  1.455 ms | 23666.6667 | 1000.0000 | 1000.0000 |  95.55 MB |

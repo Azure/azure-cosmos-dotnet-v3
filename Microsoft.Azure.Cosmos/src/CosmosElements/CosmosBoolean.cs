@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -51,12 +51,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             return cosmosElement is CosmosBoolean cosmosBoolean && this.Equals(cosmosBoolean);
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
         public bool Equals(CosmosBoolean cosmosBoolean)
         {
             return this.Value == cosmosBoolean.Value;
         }
-
         public override int GetHashCode()
         {
             return this.Value ? TrueHash : FalseHash;
@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
     }
+#pragma warning restore CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 #if INTERNAL
 #pragma warning restore SA1600 // Elements should be documented
 #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Encryption.Tests
+namespace Microsoft.Azure.Cosmos.Encryption.Tests
 {
     using System;
     using Microsoft.Azure.Cosmos.Encryption.Custom;

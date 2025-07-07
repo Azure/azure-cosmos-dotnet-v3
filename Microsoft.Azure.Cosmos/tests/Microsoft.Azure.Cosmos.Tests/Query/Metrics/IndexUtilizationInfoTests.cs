@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Query.Metrics
                 "{\"UtilizedCompositeIndexes\": [],\"PotentialCompositeIndexes\": [{\"IndexSpecs\": [ \"\\/name ASC\", \"\\/age ASC\"],\"IndexPreciseSet\": false,\"IndexImpactScore\": \"High\"}] }",
 
                 // Unicode character
-                "{\"UtilizedSingleIndexes\": [{\"FilterExpression\": \"(ROOT[\\\"unicode㐀㐁㨀㨁䶴䶵\\\"] = \\\"unicode㐀㐁㨀㨁䶴䶵\\\")\",\"IndexSpec\": \"\\/namÉunicode㐀㐁㨀㨁䶴䶵\\/?\",\"FilterPreciseSet\": true,\"IndexPreciseSet\": true,\"IndexImpactScore\": \"High\"},{\"FilterExpression\": \"(ROOT.age > 12)\",\"IndexSpec\": \"\\/age\\/?\",\"FilterPreciseSet\": true,\"IndexPreciseSet\": true,\"IndexImpactScore\": \"High\"}],\"PotentialSingleIndexes\": [],\"UtilizedCompositeIndexes\": [],\"PotentialCompositeIndexes\": [{\"IndexSpecs\": [ \"\\/name ASC\", \"\\/age ASC\"],\"IndexPreciseSet\": false,\"IndexImpactScore\": \"High\"}] }",
+                "{\"UtilizedSingleIndexes\": [{\"FilterExpression\": \"(ROOT[\\\"unicode??????\\\"] = \\\"unicode??????\\\")\",\"IndexSpec\": \"\\/nam�unicode??????\\/?\",\"FilterPreciseSet\": true,\"IndexPreciseSet\": true,\"IndexImpactScore\": \"High\"},{\"FilterExpression\": \"(ROOT.age > 12)\",\"IndexSpec\": \"\\/age\\/?\",\"FilterPreciseSet\": true,\"IndexPreciseSet\": true,\"IndexImpactScore\": \"High\"}],\"PotentialSingleIndexes\": [],\"UtilizedCompositeIndexes\": [],\"PotentialCompositeIndexes\": [{\"IndexSpecs\": [ \"\\/name ASC\", \"\\/age ASC\"],\"IndexPreciseSet\": false,\"IndexImpactScore\": \"High\"}] }",
 
                 // Valid Json adding new fields in SingleIndexUtilization objects
                 "{\"UtilizedSingleIndexes\": [{\"FilterExpression\": \"(ROOT.name = \\\"Julien\\\")\",\"IndexSpec\": \"\\/name\\/?\",\"FilterPreciseSet\": true,\"IndexPreciseSet\": true,\"IndexImpactScore\": \"High\"},{\"FilterExpression\": \"(ROOT.age > 12)\",\"IndexSpec\": \"\\/age\\/?\",\"FilterPreciseSet\": true,\"IndexPreciseSet\": true,\"IndexImpactScore\": \"High\", \"RU Cost\": 10}],\"PotentialSingleIndexes\": [],\"UtilizedCompositeIndexes\": [],\"PotentialCompositeIndexes\": [{\"IndexSpecs\": [ \"\\/name ASC\", \"\\/age ASC\"],\"IndexPreciseSet\": false,\"IndexImpactScore\": \"High\"}] }",

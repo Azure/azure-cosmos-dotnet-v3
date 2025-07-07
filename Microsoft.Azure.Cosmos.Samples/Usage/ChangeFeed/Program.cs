@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.ChangeFeed
+namespace Cosmos.Samples.ChangeFeed
 {
     using System;
     using System.Collections.Generic;

@@ -1,4 +1,4 @@
-﻿[
+[
     {
         "query": "SELECT * FROM Root r WHERE r.key > 30"
     },

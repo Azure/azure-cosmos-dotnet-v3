@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.CosmosElements
@@ -40,8 +40,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             return Utf8StringHelpers.ToString(jsonWriter.GetResult());
         }
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
 
+#pragma warning disable CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
         public override bool Equals(object obj)
+#pragma warning restore CS8765 // Nullability of type of parameter doesn't match overridden member (possibly because of nullability attributes).
         {
             return obj is CosmosElement cosmosElement && this.Equals(cosmosElement);
         }
@@ -366,7 +369,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 return cosmosObject.CompareTo((CosmosObject)input);
             }
-
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
             public int Visit(CosmosString cosmosString, CosmosElement input)
             {
                 return cosmosString.CompareTo((CosmosString)input);

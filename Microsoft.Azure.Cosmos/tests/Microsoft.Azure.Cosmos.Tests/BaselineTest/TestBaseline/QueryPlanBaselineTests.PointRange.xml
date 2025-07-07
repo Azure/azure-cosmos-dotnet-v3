@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Input>
       <Description>Partition Key Equals Number</Description>
@@ -365,7 +365,7 @@
   <Result>
     <Input>
       <Description>Partition Key Equals Unicode String</Description>
-      <Query>SELECT * FROM Root r WHERE r.key = '你好'</Query>
+      <Query>SELECT * FROM Root r WHERE r.key = '??'</Query>
       <PartitionKeys>
         <Key>/key</Key>
       </PartitionKeys>
@@ -388,7 +388,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[["你好"],["你好"]]</Range>
+            <Range>[["??"],["??"]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>
@@ -398,7 +398,7 @@
   <Result>
     <Input>
       <Description>Partition Key Equals Unicode String 2</Description>
-      <Query>SELECT * FROM Root r WHERE r.key = 'こにちわ'</Query>
+      <Query>SELECT * FROM Root r WHERE r.key = '????'</Query>
       <PartitionKeys>
         <Key>/key</Key>
       </PartitionKeys>
@@ -421,7 +421,7 @@
         </QueryInfo>
         <QueryRanges>
           <Range>
-            <Range>[["こにちわ"],["こにちわ"]]</Range>
+            <Range>[["????"],["????"]]</Range>
           </Range>
         </QueryRanges>
         <RewrittenQuery><![CDATA[]]></RewrittenQuery>

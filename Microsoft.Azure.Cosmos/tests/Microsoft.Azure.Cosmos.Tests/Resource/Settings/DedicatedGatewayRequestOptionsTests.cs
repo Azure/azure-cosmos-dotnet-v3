@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Resource.Settings
+namespace Microsoft.Azure.Cosmos.Tests.Resource.Settings
 {
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

@@ -1,4 +1,4 @@
-﻿|                        Method |     Mean |     Error |    StdDev |   Median | Gen 0 | Gen 1 | Gen 2 | Allocated |
+|                        Method |     Mean |     Error |    StdDev |   Median | Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------------------ |---------:|----------:|----------:|---------:|------:|------:|------:|----------:|
 |        ReadNutritionData_Text | 6.132 ms | 0.4139 ms | 1.1401 ms | 5.637 ms |     - |     - |     - | 730.74 KB |
 |      ReadNutritionData_Binary | 3.252 ms | 0.1759 ms | 0.4635 ms | 3.062 ms |     - |     - |     - |  645.7 KB |

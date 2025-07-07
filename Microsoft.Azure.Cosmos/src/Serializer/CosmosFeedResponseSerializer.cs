@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -80,7 +80,9 @@ namespace Microsoft.Azure.Cosmos
                     resultAsArray = new ArraySegment<byte>(spanwithOnlyArray.ToArray());
                 }
 
+#pragma warning disable CS8604 // Possible null reference argument.
                 MemoryStream arrayOnlyStream = new MemoryStream(resultAsArray.Array, resultAsArray.Offset, resultAsArray.Count, writable: false, publiclyVisible: true);
+#pragma warning restore CS8604 // Possible null reference argument.
                 return arrayOnlyStream;
             }
         }

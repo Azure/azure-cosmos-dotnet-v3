@@ -1,4 +1,4 @@
-﻿namespace CosmosBenchmark.Fx.Tests
+namespace CosmosBenchmark.Fx.Tests
 {
     using CosmosBenchmark.Fx;
     using Microsoft.VisualStudio.TestTools.UnitTesting;

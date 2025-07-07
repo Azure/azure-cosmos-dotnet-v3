@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Json
+namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
     using System.Collections.Generic;

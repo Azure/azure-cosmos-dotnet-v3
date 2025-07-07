@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -30,21 +30,21 @@ namespace Microsoft.Azure.Cosmos.Tracing
                     AsciiType.Default,
                     new AsciiTreeCharacters(
                         blank: ' ',
-                        child: '├',
-                        dash: '─',
-                        last: '└',
-                        parent: '│',
+                        child: '+',
+                        dash: '-',
+                        last: '+',
+                        parent: '�',
                         root: '.')
                 },
                 {
                     AsciiType.DoubleLine,
                     new AsciiTreeCharacters(
                         blank: ' ',
-                        child: '╠',
-                        dash: '═',
-                        last: '╚',
-                        parent: '║',
-                        root: '╗')
+                        child: '�',
+                        dash: '-',
+                        last: '+',
+                        parent: '�',
+                        root: '+')
                 },
                 {
                     AsciiType.Classic,

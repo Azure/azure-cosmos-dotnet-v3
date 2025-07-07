@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -55,10 +55,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                 serializerSettings: null,
                 httpClient: null);
 
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
             PartitionKeyRangeCache pkRangeCache =
                 (PartitionKeyRangeCache)FormatterServices.GetUninitializedObject(typeof(PartitionKeyRangeCache));
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
             ClientCollectionCache collCache =
                 (ClientCollectionCache)FormatterServices.GetUninitializedObject(typeof(ClientCollectionCache));
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
             this.thinClientStoreModel.SetCaches(pkRangeCache, collCache);
 
             System.Diagnostics.Trace.CorrelationManager.ActivityId = Guid.NewGuid();

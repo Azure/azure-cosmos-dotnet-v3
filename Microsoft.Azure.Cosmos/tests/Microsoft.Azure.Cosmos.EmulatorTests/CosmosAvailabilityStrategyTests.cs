@@ -1,4 +1,4 @@
-﻿
+
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;

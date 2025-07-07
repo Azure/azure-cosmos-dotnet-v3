@@ -1,4 +1,4 @@
-﻿// ------------------------------------------------------------
+// ------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 // ------------------------------------------------------------
 
@@ -592,14 +592,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
             private void WriteDateTimeStringValue(DateTime value)
             {
-                if (value == null)
-                {
-                    this.jsonWriter.WriteNullValue();
-                }
-                else
-                {
-                    this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
-                }
+                this.jsonWriter.WriteStringValue(value.ToString("o", CultureInfo.InvariantCulture));
             }
 
         }

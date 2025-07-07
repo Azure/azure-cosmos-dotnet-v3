@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -852,13 +852,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     testDocumentSQL("doc00", "simple", null);
                     testDocumentSQL("doc10", "\uD83D\uDE03", @"\uD83D\uDE03");
                     testDocumentSQL("doc20", "\uD83D\uDE03\t\u0005\uD83D\uDE03", @"\uD83D\uDE03\t\u0005\uD83D\uDE03");
-                    testDocumentSQL("doc30", "Små ord", null);
+                    testDocumentSQL("doc30", "Sm� ord", null);
                     testDocumentSQL("doc40", "contains space and other white characters like \t\r\n", null);
-                    testDocumentSQL("CJK Ext A0", "㐀㐁㨀㨁䶴䶵", null);
-                    testDocumentSQL("doc5CJK Ext B0", "������������", null);
-                    testDocumentSQL("Tibetan0", "དབྱངས་ཅན་སྒྲོལ་དཀར། བཀྲ་ཤིས་རྒྱལ།", null);
-                    testDocumentSQL("Uighur0", "ۋېڭكقق ھس قك كدسدق د كوكو الضعيف بقي قوي", null);
-                    testDocumentSQL("Yi0", "ꉬꄒꐵꄓꐨꐵꄓꐨ", null);
+                    testDocumentSQL("CJK Ext A0", "??????", null);
+                    testDocumentSQL("doc5CJK Ext B0", "????????????", null);
+                    testDocumentSQL("Tibetan0", "??????????????????? ?????????????", null);
+                    testDocumentSQL("Uighur0", "?????? ?? ?? ????? ? ???? ?????? ??? ???", null);
+                    testDocumentSQL("Yi0", "????????", null);
                 }
             }
             catch (DocumentClientException e)

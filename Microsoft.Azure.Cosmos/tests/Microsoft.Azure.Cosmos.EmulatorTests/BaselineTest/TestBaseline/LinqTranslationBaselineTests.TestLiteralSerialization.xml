@@ -1,4 +1,4 @@
-﻿<Results>
+<Results>
   <Result>
     <Input>
       <Description><![CDATA[Byte 1]]></Description>
@@ -420,11 +420,11 @@ FROM root]]></SqlQuery>
   <Result>
     <Input>
       <Description><![CDATA[String unicode]]></Description>
-      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = "unicode 㐀㐁㨀㨁䶴䶵"))]]></Expression>
+      <Expression><![CDATA[query.Select(doc => new AnonymousType(value = "unicode ??????"))]]></Expression>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"value": "unicode 㐀㐁㨀㨁䶴䶵"} 
+SELECT VALUE {"value": "unicode ??????"} 
 FROM root]]></SqlQuery>
     </Output>
   </Result>

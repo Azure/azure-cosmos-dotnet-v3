@@ -1,4 +1,4 @@
-ï»¿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 
@@ -668,7 +668,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <![CDATA[
         /// Feature: Is Feed Range PartOf Validation
         ///
-        /// Scenario Outline: Y feed range is not part of the x feed range with both yâ€™s and xâ€™s isMaxInclusive set to false
+        /// Scenario Outline: Y feed range is not part of the x feed range with both y’s and x’s isMaxInclusive set to false
         ///   Given the x feed range with isMaxInclusive set to false
         ///   And the y feed range with isMaxInclusive set to false
         ///   When the y feed range is compared to the x feed range
@@ -690,7 +690,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <![CDATA[
         /// Feature: Is Feed Range PartOf Validation
         ///
-        /// Scenario Outline: Y feed range is part of the x feed range with the yâ€™s isMaxInclusive set to true and the xâ€™s isMaxInclusive set to false
+        /// Scenario Outline: Y feed range is part of the x feed range with the y’s isMaxInclusive set to true and the x’s isMaxInclusive set to false
         ///   Given the x feed range with isMaxInclusive set to false
         ///   And the y feed range with isMaxInclusive set to true
         ///   When the y feed range is compared to the x feed range
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <![CDATA[
         /// Feature: Is Feed Range PartOf Validation
         ///
-        /// Scenario Outline: Y feed range is not part of the x feed range with the yâ€™s isMaxInclusive set to true and the xâ€™s isMaxInclusive set to false
+        /// Scenario Outline: Y feed range is not part of the x feed range with the y’s isMaxInclusive set to true and the x’s isMaxInclusive set to false
         ///   Given the x feed range with isMaxInclusive set to false
         ///   And the y feed range with isMaxInclusive set to true
         ///   When the y feed range is compared to the x feed range
@@ -739,7 +739,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <![CDATA[
         /// Feature: Is Feed Range PartOf Validation
         ///
-        /// Scenario Outline: Y feed range is part of the x feed range with the yâ€™s isMaxInclusive set to false and the xâ€™s isMaxInclusive set to true
+        /// Scenario Outline: Y feed range is part of the x feed range with the y’s isMaxInclusive set to false and the x’s isMaxInclusive set to true
         ///   Given the x feed range with isMaxInclusive set to true
         ///   And the y feed range with isMaxInclusive set to false
         ///   When the y feed range is compared to the x feed range
@@ -800,7 +800,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <![CDATA[
         /// Feature: Is Feed Range PartOf Validation
         ///
-        /// Scenario Outline: Y feed range is part of the x feed range with both the yâ€™s and xâ€™s isMaxInclusive set to true
+        /// Scenario Outline: Y feed range is part of the x feed range with both the y’s and x’s isMaxInclusive set to true
         ///   Given the x feed range with isMaxInclusive set to true
         ///   And the y feed range with isMaxInclusive set to true
         ///   When the y feed range is compared to the x feed range
@@ -825,7 +825,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         /// <![CDATA[
         /// Feature: Is Feed Range PartOf Validation
         ///
-        /// Scenario Outline: Y feed range is not part of the x feed range with both the yâ€™s and xâ€™s isMaxInclusive set to true
+        /// Scenario Outline: Y feed range is not part of the x feed range with both the y’s and x’s isMaxInclusive set to true
         ///   Given the x feed range with isMaxInclusive set to true
         ///   And the y feed range with isMaxInclusive set to true
         ///   When the y feed range is compared to the x feed range
@@ -973,7 +973,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [DataRow(true, true, "A", "A", true, true, "B", "B", false, DisplayName = "(true, true) Given both x and y ranges are fully inclusive but min and max ranges are not the same (A to A, B to B), y is not a subset")]
         [DataRow(true, true, "B", "B", true, true, "A", "A", false, DisplayName = "(true, true) Given x range (B to B) is fully inclusive and y range (A to A) is fully inclusive, y is not a subset")]
         [DataRow(true, false, "A", "Z", true, true, "A", "Y", true, DisplayName = "(false, true) Given x range (A to Z) has an exclusive max and y range (A to Y) is fully inclusive, y is a subset")]
-        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "(false, true) Given x range (A to Y) has an exclusive max but y range (A to Z) exceeds the xâ€™s max with an inclusive bound, y is not a subset")]
+        [DataRow(true, false, "A", "Y", true, true, "A", "Z", false, DisplayName = "(false, true) Given x range (A to Y) has an exclusive max but y range (A to Z) exceeds the x’s max with an inclusive bound, y is not a subset")]
         [DataRow(true, false, "A", "Z", true, true, "A", "Z", false, DisplayName = "(false, true) Given x range (A to Z) has an exclusive max and y range (A to Z) is fully inclusive, y is not a subset")]
         [DataRow(true, false, "A", "Y", true, false, "A", "Y", true, DisplayName = "(false, false) Given x range (A to Y) is inclusive at min and exclusive at max, and y range (A to Y) is inclusive at min and exclusive at max, y is a subset")]
         [DataRow(true, false, "A", "W", true, false, "A", "Y", false, DisplayName = "(false, false) Given x range (A to W) is inclusive at min and exclusive at max, and y range (A to Y) is inclusive at min and exclusive at max, y is not a subset")]

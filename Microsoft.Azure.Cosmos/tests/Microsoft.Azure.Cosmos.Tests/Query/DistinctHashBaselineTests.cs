@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Query
+namespace Microsoft.Azure.Cosmos.Query
 {
     using System;
     using System.Collections.Generic;
@@ -9,6 +9,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using UInt128 = Cosmos.UInt128;
 
     [TestClass]
     public class DistinctHashBaselineTests : BaselineTests<DistinctHashBaselineTests.Input, DistinctHashBaselineTests.Output>

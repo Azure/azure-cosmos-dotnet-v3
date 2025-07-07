@@ -79,8 +79,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("documentCollection");
             }
 
+#pragma warning disable SYSLIB0013 // Type or member is obsolete
             Uri documentCollectionUri = new Uri(string.Format(CultureInfo.InvariantCulture, "{0}/{1}/{2}",
                      databaseUri.OriginalString, Paths.CollectionsPathSegment, Uri.EscapeUriString(documentCollection.Id)), UriKind.Relative);
+#pragma warning restore SYSLIB0013 // Type or member is obsolete
 
             try
             {

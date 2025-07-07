@@ -1,4 +1,4 @@
-ï»¿<Results>
+<Results>
   <Result>
     <Input>
       <Description>Point Operation with Request Timeout</Description>
@@ -33,40 +33,40 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   (
-    â”‚       [Client Configuration]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       [DistributedTraceId]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   )
-    â”œâ”€â”€ ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           (
-    â”‚               [Client Side Request Stats]
-    â”‚               Redacted To Not Change The Baselines From Run To Run
-    â”‚           )
-    â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚       â”‚   (
-    â”‚       â”‚       [System Info]
-    â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       â”‚   )
-    â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                               (
-    â”‚                                   [Client Side Request Stats]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                                   [Point Operation Statistics]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                               )
-    â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   (
+    ¦       [Client Configuration]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       [DistributedTraceId]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   )
+    +-- ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦           (
+    ¦               [Client Side Request Stats]
+    ¦               Redacted To Not Change The Baselines From Run To Run
+    ¦           )
+    +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦       ¦   (
+    ¦       ¦       [System Info]
+    ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       ¦   )
+    ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦                               (
+    ¦                                   [Client Side Request Stats]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                                   [Point Operation Statistics]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                               )
+    +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -243,59 +243,59 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   (
-    â”‚       [Client Configuration]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       [DistributedTraceId]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   )
-    â”œâ”€â”€ ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           (
-    â”‚               [Client Side Request Stats]
-    â”‚               Redacted To Not Change The Baselines From Run To Run
-    â”‚           )
-    â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚       â”‚   (
-    â”‚       â”‚       [System Info]
-    â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       â”‚   )
-    â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                               (
-    â”‚                                   [Client Side Request Stats]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                               )
-    â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   (
+    ¦       [Client Configuration]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       [DistributedTraceId]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   )
+    +-- ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦           (
+    ¦               [Client Side Request Stats]
+    ¦               Redacted To Not Change The Baselines From Run To Run
+    ¦           )
+    +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦       ¦   (
+    ¦       ¦       [System Info]
+    ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       ¦   )
+    ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦                               (
+    ¦                                   [Client Side Request Stats]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                               )
+    +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -549,51 +549,51 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   (
-    â”‚       [Client Configuration]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       [DistributedTraceId]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   )
-    â”œâ”€â”€ ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           (
-    â”‚               [Client Side Request Stats]
-    â”‚               Redacted To Not Change The Baselines From Run To Run
-    â”‚           )
-    â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚       â”‚   (
-    â”‚       â”‚       [System Info]
-    â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       â”‚   )
-    â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                               (
-    â”‚                                   [Client Side Request Stats]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                                   [Point Operation Statistics]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                               )
-    â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   (
+    ¦       [Client Configuration]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       [DistributedTraceId]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   )
+    +-- ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦           (
+    ¦               [Client Side Request Stats]
+    ¦               Redacted To Not Change The Baselines From Run To Run
+    ¦           )
+    +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦       ¦   (
+    ¦       ¦       [System Info]
+    ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       ¦   )
+    ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦                               (
+    ¦                                   [Client Side Request Stats]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                                   [Point Operation Statistics]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                               )
+    +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -812,62 +812,62 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   (
-    â”‚       [Client Configuration]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       [DistributedTraceId]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   )
-    â”œâ”€â”€ ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           (
-    â”‚               [Client Side Request Stats]
-    â”‚               Redacted To Not Change The Baselines From Run To Run
-    â”‚           )
-    â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚       â”‚   (
-    â”‚       â”‚       [System Info]
-    â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       â”‚   )
-    â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                               (
-    â”‚                                   [Client Side Request Stats]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                                   [Point Operation Statistics]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                               )
-    â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   (
+    ¦       [Client Configuration]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       [DistributedTraceId]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   )
+    +-- ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦           (
+    ¦               [Client Side Request Stats]
+    ¦               Redacted To Not Change The Baselines From Run To Run
+    ¦           )
+    +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦       ¦   (
+    ¦       ¦       [System Info]
+    ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       ¦   )
+    ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦                               (
+    ¦                                   [Client Side Request Stats]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                                   [Point Operation Statistics]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                               )
+    +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1107,84 +1107,84 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   (
-    â”‚       [Client Configuration]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       [DistributedTraceId]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   )
-    â”œâ”€â”€ ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           (
-    â”‚               [Client Side Request Stats]
-    â”‚               Redacted To Not Change The Baselines From Run To Run
-    â”‚           )
-    â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚       â”‚   (
-    â”‚       â”‚       [System Info]
-    â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       â”‚   )
-    â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â”‚               (
-    â”‚               â”‚                   [Client Side Request Stats]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [AuthProvider LifeSpan InSec]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚                   [Point Operation Statistics]
-    â”‚               â”‚                   Redacted To Not Change The Baselines From Run To Run
-    â”‚               â”‚               )
-    â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                               (
-    â”‚                                   [Client Side Request Stats]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                                   [Point Operation Statistics]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                               )
-    â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   (
+    ¦       [Client Configuration]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       [DistributedTraceId]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   )
+    +-- ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦           (
+    ¦               [Client Side Request Stats]
+    ¦               Redacted To Not Change The Baselines From Run To Run
+    ¦           )
+    +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦       ¦   (
+    ¦       ¦       [System Info]
+    ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       ¦   )
+    ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦               ¦               (
+    ¦               ¦                   [Client Side Request Stats]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [AuthProvider LifeSpan InSec]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦                   [Point Operation Statistics]
+    ¦               ¦                   Redacted To Not Change The Baselines From Run To Run
+    ¦               ¦               )
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦                               (
+    ¦                                   [Client Side Request Stats]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                                   [Point Operation Statistics]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                               )
+    +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},
@@ -1427,40 +1427,40 @@
     </Input>
     <Output>
       <Text><![CDATA[.
-â””â”€â”€ CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   (
-    â”‚       [Client Configuration]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       [DistributedTraceId]
-    â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚   )
-    â”œâ”€â”€ ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”œâ”€â”€ Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”œâ”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â”‚   â””â”€â”€ Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           (
-    â”‚               [Client Side Request Stats]
-    â”‚               Redacted To Not Change The Baselines From Run To Run
-    â”‚           )
-    â”œâ”€â”€ Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚       â”‚   (
-    â”‚       â”‚       [System Info]
-    â”‚       â”‚       Redacted To Not Change The Baselines From Run To Run
-    â”‚       â”‚   )
-    â”‚       â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚           â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚               â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                   â””â”€â”€ Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                       â””â”€â”€ Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
-    â”‚                               (
-    â”‚                                   [Client Side Request Stats]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                                   [Point Operation Statistics]
-    â”‚                                   Redacted To Not Change The Baselines From Run To Run
-    â”‚                               )
-    â””â”€â”€ Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
++-- CreateItemAsync(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦   (
+    ¦       [Client Configuration]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       [DistributedTraceId]
+    ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦   )
+    +-- ItemSerialize(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    +-- Get PkValue From Stream(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
+    ¦   ¦   +-- Waiting for Initialization of client to complete(00000000-0000-0000-0000-000000000000)  Unknown-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Read Collection(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦           (
+    ¦               [Client Side Request Stats]
+    ¦               Redacted To Not Change The Baselines From Run To Run
+    ¦           )
+    +-- Microsoft.Azure.Cosmos.Handlers.RequestInvokerHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦   +-- Microsoft.Azure.Cosmos.Handlers.DiagnosticsHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦       ¦   (
+    ¦       ¦       [System Info]
+    ¦       ¦       Redacted To Not Change The Baselines From Run To Run
+    ¦       ¦   )
+    ¦       +-- Microsoft.Azure.Cosmos.Handlers.TelemetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦           +-- Microsoft.Azure.Cosmos.Handlers.RetryHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦               +-- Microsoft.Azure.Cosmos.Handlers.RouterHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                   +-- Microsoft.Azure.Cosmos.Handlers.TransportHandler(00000000-0000-0000-0000-000000000000)  RequestHandler-Component  00:00:00:000  0.00 milliseconds  
+    ¦                       +-- Microsoft.Azure.Documents.ServerStoreModel Transport Request(00000000-0000-0000-0000-000000000000)  Transport-Component  00:00:00:000  0.00 milliseconds  
+    ¦                               (
+    ¦                                   [Client Side Request Stats]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                                   [Point Operation Statistics]
+    ¦                                   Redacted To Not Change The Baselines From Run To Run
+    ¦                               )
+    +-- Get Collection Cache(00000000-0000-0000-0000-000000000000)  Routing-Component  00:00:00:000  0.00 milliseconds  
 ]]></Text>
       <Json><![CDATA[{
   "Summary": {},

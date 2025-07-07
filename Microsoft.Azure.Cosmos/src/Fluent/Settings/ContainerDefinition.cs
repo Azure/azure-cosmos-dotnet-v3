@@ -1,4 +1,4 @@
-﻿//------------------------------------------------------------
+//------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
 namespace Microsoft.Azure.Cosmos.Fluent
@@ -65,11 +65,6 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <seealso cref="ContainerProperties.DefaultTimeToLive"/>
         public T WithDefaultTimeToLive(TimeSpan defaultTtlTimeSpan)
         {
-            if (defaultTtlTimeSpan == null)
-            {
-                throw new ArgumentNullException(nameof(defaultTtlTimeSpan));
-            }
-
             this.defaultTimeToLive = (int)defaultTtlTimeSpan.TotalSeconds;
             return (T)this;
         }

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Pagination
+namespace Microsoft.Azure.Cosmos.Tests.Pagination
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;

@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Azure.Cosmos.Tests.Json
+namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
     using System.Buffers;
@@ -7986,18 +7986,18 @@
         public void UnicodeTest()
         {
             // You don't have to escape a regular unicode character
-            string expectedString = @"""€""";
+            string expectedString = @"""�""";
             byte[] expectedBinaryOutput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 3,
-                // € in utf8 hex
+                // � in utf8 hex
                 0xE2, 0x82, 0xAC
             };
 
             JsonToken[] tokensToWrite =
             {
-                 JsonToken.String("€"),
+                 JsonToken.String("�"),
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);
@@ -8009,18 +8009,18 @@
         public void EmojiUTF32Test()
         {
             // You don't have to escape a regular unicode character
-            string expectedString = @"""💩""";
+            string expectedString = @"""??""";
             byte[] expectedBinaryOutput =
             {
                 BinaryFormat,
                 JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + 4,
-                // 💩 in utf8 hex
+                // ?? in utf8 hex
                 0xF0, 0x9F, 0x92, 0xA9
             };
 
             JsonToken[] tokensToWrite =
             {
-                 JsonToken.String("💩"),
+                 JsonToken.String("??"),
             };
 
             this.VerifyWriter(tokensToWrite, expectedString);

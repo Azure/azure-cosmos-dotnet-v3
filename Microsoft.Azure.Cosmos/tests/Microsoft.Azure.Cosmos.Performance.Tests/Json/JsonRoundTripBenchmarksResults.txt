@@ -1,4 +1,4 @@
-﻿
+
 |            Method |       payload |         sourceFormat |    destinationFormat |         Mean |      Error |     StdDev |     Gen0 |     Gen1 |     Gen2 | Allocated |
 |------------------ |-------------- |--------------------- |--------------------- |-------------:|-----------:|-----------:|---------:|---------:|---------:|----------:|
 | NavigatorToWriter | NutritionData |                 Text |                 Text |     92.35 us |   1.704 us |   2.155 us | 167.1143 | 166.8701 | 166.8701 | 1247977 B |

@@ -1,4 +1,4 @@
-﻿namespace CosmosBenchmark
+namespace CosmosBenchmark
 {
     using System;
     using Microsoft.Azure.Cosmos;

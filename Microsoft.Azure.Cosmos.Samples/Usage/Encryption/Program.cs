@@ -1,4 +1,4 @@
-﻿namespace Cosmos.Samples.Encryption
+namespace Cosmos.Samples.Encryption
 {
     using System;
     using System.Security.Cryptography.X509Certificates;
