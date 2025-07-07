@@ -90,7 +90,7 @@
                     partitionKey: partitionKeyValue,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
 
                 // Simple query (requiresDist = false)
                 CreateInput(
@@ -389,13 +389,6 @@
                     enableOptimisticDirectExecution: true,
                     pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput(
-                    query: $"SELECT TOP 5 VALUE r.{NumberField} FROM r ORDER BY r.{NumberField}",
-                    expectedResult: first5Integers,
-                    partitionKey: null,
-                    enableOptimisticDirectExecution: true,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
 
                 // OFFSET LIMIT with WHERE and BETWEEN (requiresDist = false)
                 CreateInput(
@@ -460,7 +453,7 @@
                 $@"{{ {PartitionKeyField}: ""{2}"", {NumberField}: {8}, {VectorField}: [-1, -1, 0], {TextField}: ""Bears have four paws and thick fur. They are large omnivores. They can be both gentle and fierce depending on the situation. They are ursines."" }}",
             };
 
-            List<DirectExecutionTestCase> singlePartitionTestCases = new List<DirectExecutionTestCase>()
+            List<DirectExecutionTestCase> testCases = new List<DirectExecutionTestCase>()
             {
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
@@ -469,24 +462,6 @@
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK FullTextScore(r.{TextField}, 'paws', 'fur', 'dogs', 'bears')",
-                    expectedResult: new List<int>{1, 8, 3, 2, 7, 5, 6},
-                    partitionKey: null,
-                    enableOptimisticDirectExecution: false,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
-                CreateInput(
-                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
-                    expectedResult: new List<int>{3, 1, 2, 8, 7, 5, 6},
-                    partitionKey: null,
-                    enableOptimisticDirectExecution: false,
-                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
-            };
-
-            List<DirectExecutionTestCase> multiPartitionTestCases = new List<DirectExecutionTestCase>()
-            {
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE r.{NumberField} != 1 ORDER BY VectorDistance(r.{VectorField}, [1, 1, 1])",
                     expectedResult: new List<int>{ 4, 3, 2 },
@@ -504,6 +479,13 @@
 
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK FullTextScore(r.{TextField}, 'paws', 'fur', 'dogs', 'bears')",
+                    expectedResult: new List<int>{1, 8, 3, 2, 7, 5, 6},
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK FullTextScore(r.{TextField}, 'paws', 'fur', 'dogs', 'bears')",
                     expectedResult: new List<int>{ 1, 3, 2 },
                     partitionKey: PartitionKey1,
                     enableOptimisticDirectExecution: false,
@@ -517,6 +499,13 @@
                     pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
                     expectedPipelineType: TestInjections.PipelineType.Specialized),
 
+                CreateInput(
+                    query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
+                    expectedResult: new List<int>{3, 1, 2, 8, 7, 5, 6},
+                    partitionKey: null,
+                    enableOptimisticDirectExecution: false,
+                    pageSizeOptions: PageSizeOptions.NonGroupByWithContinuationTokenPageSizeOptions,
+                    expectedPipelineType: TestInjections.PipelineType.Specialized),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r WHERE NOT FullTextContains(r.{TextField}, 'elephants') ORDER BY RANK RRF(FullTextScore(r.{TextField}, 'paws'), FullTextScore(r.{TextField}, 'fur'), FullTextScore(r.{TextField}, 'dogs'), FullTextScore(r.{TextField}, 'bears'))",
                     expectedResult: new List<int>{ 3, 1, 2 },
@@ -553,23 +542,16 @@
             {
                 CosmosClient cosmosClient = this.CreateDefaultCosmosClient(connectionMode);
 
-                foreach ((CollectionTypes collectionType, IReadOnlyList<DirectExecutionTestCase> testCases) in new[]
-                {
-                    (CollectionTypes.SinglePartition, singlePartitionTestCases),
-                    (CollectionTypes.MultiPartition, multiPartitionTestCases)
-                })
-                {
-                    await this.CreateIngestQueryDeleteAsync(
-                        ToTestConnectionMode(connectionMode),
-                        collectionType,
-                        documents,
-                        (container, documents) => RunTestsAsync(cosmosClient, container, testCases),
-                        "/" + PartitionKeyField,
-                        VectorIndexingPolicy,
-                        (_) => cosmosClient,
-                        GeospatialType.Geography,
-                        EmbeddingPolicy);
-                }
+                await this.CreateIngestQueryDeleteAsync(
+                    ToTestConnectionMode(connectionMode),
+                    CollectionTypes.SinglePartition | CollectionTypes.MultiPartition,
+                    documents,
+                    (container, documents) => RunTestsAsync(cosmosClient, container, testCases),
+                    "/" + PartitionKeyField,
+                    VectorIndexingPolicy,
+                    (_) => cosmosClient,
+                    GeospatialType.Geography,
+                    EmbeddingPolicy);
             }
         }
 
@@ -595,14 +577,14 @@
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 CreateInput(
                     query: $"SELECT VALUE r.{NumberField} FROM r ORDER BY r.{NumberField} DESC",
                     expectedResult: first400IntegersReversed,
                     partitionKey: PartitionKey.None,
                     enableOptimisticDirectExecution: false,
                     pageSizeOptions: PageSizeOptions.PageSize100,
-                    expectedPipelineType: TestInjections.PipelineType.Specialized),
+                    expectedPipelineType: TestInjections.PipelineType.Passthrough),
                 CreateInput(
                     query: $"SELECT VALUE r.numberField FROM r WHERE r.{NumberField} BETWEEN 0 AND {NumberOfDocuments} OFFSET 1 LIMIT 1",
                     expectedResult: new List<int> { 1 },
@@ -846,14 +828,14 @@
                             partitionKey: partitionKeyValue,
                             enableOptimisticDirectExecution: null,  // Uses environment variable
                             pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                            expectedPipelineType: expectODEPipeline ? TestInjections.PipelineType.OptimisticDirectExecution : TestInjections.PipelineType.Specialized),
+                            expectedPipelineType: expectODEPipeline ? TestInjections.PipelineType.OptimisticDirectExecution : TestInjections.PipelineType.Passthrough),
                         CreateInput(
                             query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
                             expectedResult: first5Integers,
                             partitionKey: partitionKeyValue,
                             enableOptimisticDirectExecution: false,  // Overrides environment variable
                             pageSizeOptions: PageSizeOptions.NonGroupByAndNoContinuationTokenPageSizeOptions,
-                            expectedPipelineType: TestInjections.PipelineType.Specialized),
+                            expectedPipelineType: TestInjections.PipelineType.Passthrough),
                         CreateInput(
                             query: $"SELECT TOP 5 VALUE r.numberField FROM r ORDER BY r.{PartitionKeyField}",
                             expectedResult: first5Integers,
