@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
     using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     /// <summary>
     /// Tests for JsonReader.
@@ -623,12 +624,14 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
         [TestMethod]
         [Owner("mayapainter")]
-        public void UserStringTest()
+        public void MultiByteUserStringDictionaryTest()
         {
             // Object with 33 field names. This creates a user string with 2 byte type marker.
-
             List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
-            StringBuilder textInput = new StringBuilder("{");
+
+            StringBuilder textInput = new();
+            textInput.Append("{");
+
             List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, };
             List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 };
 
@@ -660,8 +663,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 else
                 {
                     int twoByteOffset = i - OneByteCount;
-                    binaryInputWithEncoding.Add((byte)((twoByteOffset / 0xFF) + JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin));
-                    binaryInputWithEncoding.Add((byte)(twoByteOffset % 0xFF));
+                    binaryInputWithEncoding.Add((byte)((twoByteOffset / 256) + JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin));
+                    binaryInputWithEncoding.Add((byte)(twoByteOffset % 256));
                 }
 
                 binaryInputWithEncoding.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
@@ -678,6 +681,60 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
 
             List<string> userStrings = new();
             for (int i = 0; i < OneByteCount + 1; i++)
+            {
+                userStrings.Add("a" + i.ToString());
+            }
+
+            JsonStringDictionary jsonStringDictionary = new JsonStringDictionary(userStrings);
+
+            this.VerifyReader(binaryInputWithEncoding.ToArray(), expectedTokens.ToArray(), jsonStringDictionary);
+        }
+
+        [TestMethod]
+        [Owner("mayapainter")]
+        public void MaxSizeUserStringDictionaryTest()
+        {
+            List<JsonToken> expectedTokens = new List<JsonToken>() { JsonToken.ObjectStart() };
+            
+            StringBuilder textInput = new();
+            textInput.Append("{");
+
+            List<byte> binaryInput = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1, };
+            List<byte> binaryInputWithEncoding = new List<byte>() { BinaryFormat, JsonBinaryEncoding.TypeMarker.ObjL1 };
+
+            int stringId = JsonStringDictionary.MaxDictionaryEncodedStrings - 1;
+            string userEncodedString = "a" + stringId.ToString();
+
+            expectedTokens.Add(JsonToken.FieldName(userEncodedString));
+            expectedTokens.Add(JsonToken.String(userEncodedString));
+
+            textInput.Append($@"""{userEncodedString}"":""{userEncodedString}""");
+
+            for (int i = 0; i < 2; i++)
+            {
+                binaryInput.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
+                binaryInput.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
+            }
+
+            byte oneByteCount = TypeMarker.UserString1ByteLengthMax - TypeMarker.UserString1ByteLengthMin;
+            int twoByteOffset = stringId - oneByteCount;
+
+            binaryInputWithEncoding.Add((byte)((twoByteOffset / 256) + JsonBinaryEncoding.TypeMarker.UserString2ByteLengthMin));
+            binaryInputWithEncoding.Add((byte)(twoByteOffset % 256));
+
+            binaryInputWithEncoding.Add((byte)(JsonBinaryEncoding.TypeMarker.EncodedStringLengthMin + userEncodedString.Length));
+            binaryInputWithEncoding.AddRange(Encoding.UTF8.GetBytes(userEncodedString));
+
+            expectedTokens.Add(JsonToken.ObjectEnd());
+            textInput.Append("}");
+            binaryInput.Insert(2, (byte)(binaryInput.Count() - 2));
+            binaryInputWithEncoding.Insert(2, (byte)(binaryInputWithEncoding.Count() - 2));
+
+            this.VerifyReader(textInput.ToString(), expectedTokens.ToArray());
+            this.VerifyReader(binaryInput.ToArray(), expectedTokens.ToArray());
+
+            List<string> userStrings = new();
+            for (int i = 0; i <= stringId; i++)
             {
                 userStrings.Add("a" + i.ToString());
             }

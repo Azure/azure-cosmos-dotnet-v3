@@ -15,6 +15,25 @@ Preview features are treated as a separate branch and will not be included in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### <a name="3.53.0-preview.0"/> [3.53.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.53.0-preview.0) - 2025-6-13
+
+### <a name="3.52.0"/> [3.52.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0) - 2025-6-13
+
+#### Added
+
+- [5180](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5180) Query: Adds public PopulateQueryAdvice capability
+- [5215](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5215) Client Encryption: Adds support for latest Cosmos package and bumps up Encryption package for nuget release
+- [5157](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5157) Query: Adds support for LINQ extension method for VectorDistance
+ > This also includes a Direct Package version update to `3.39.1` in PR [#5241](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5241) which includes the following:
+ - Rntbd Health Check Improvements Part 3: Enables Aggressive Timeout Detection By Default.
+ - Introduce East US 3 region in the SDK.
+
+#### Fixed
+
+- [5221](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5221) Query : Fixes Skip + Order By Bug 
+- [5218](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5218) Binary Encoding: Fixes DateTime Parsing Issue with Trailing Zeros in the Milli-Seconds Precision
+- [5234](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5234) Client Encryption: Fixes Encryption Release Pipeline
+
 ### <a name="3.52.0-preview.0"/> [3.52.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.52.0-preview.0) - 2025-5-16
 
 ### <a name="3.51.0"/> [3.51.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.51.0) - 2025-5-16
@@ -83,7 +102,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Fixed
 
-- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) Metadata requests: Fixes bug where certain metadata requests are not retried with a client cold start with only query requests 
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) Metadata requests: Fixes bug where certain metadata requests are not retried with a client cold start with only query requests.
+
+#### Added
+
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) ClientRetryPolicy: Adds Cross Regional Retry on `Gone` (410) with `LeaseNotFound` (1022) sub status code.
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) ClientRetryPolicy: Adds Cross Regional Retry for read requests on `InternalServerError` (500) status code.
+- [5108](https://github.com/Azure/azure-cosmos-dotnet-v3/pull/5108) ClientRetryPolicy: Adds Retry on the Preferred Regions on endpoint failures.
 
 ### <a name="3.49.0-preview.0"/> [3.49.0-preview.0](https://www.nuget.org/packages/Microsoft.Azure.Cosmos/3.49.0-preview.0) - 2025-3-21
 

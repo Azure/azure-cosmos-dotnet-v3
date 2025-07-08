@@ -10,13 +10,11 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Net;
-    using System.Runtime.CompilerServices;
     using System.Runtime.ExceptionServices;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Tracing;
