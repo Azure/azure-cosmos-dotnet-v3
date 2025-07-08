@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace)
         {
             string effectivePartitionKeyString = this.PartitionKey.InternalKey.GetEffectivePartitionKeyString(partitionKeyDefinition);
-            Documents.PartitionKeyRange range = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(containerRid, effectivePartitionKeyString, trace);
+            Documents.PartitionKeyRange range = await routingMapProvider.TryGetRangeByEffectivePartitionKeyAsync(containerRid, effectivePartitionKeyString, trace, partitionKeyDefinition);
             return new List<string>() { range.Id };
         }
 

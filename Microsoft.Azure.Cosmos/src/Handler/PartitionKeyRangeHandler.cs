@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     ContainerProperties collectionFromCache =
                         await collectionCache.ResolveCollectionAsync(serviceRequest, CancellationToken.None, childTrace);
 
+                    PartitionKeyDefinition partitionKeyDefinition = collectionFromCache.PartitionKey;
                     //direction is not expected to change  between continuations.
                     Range<string> rangeFromContinuationToken =
                         this.partitionRoutingHelper.ExtractPartitionKeyRangeFromContinuationToken(serviceRequest.Headers, out List<CompositeContinuationToken> suppliedTokens);
@@ -98,7 +99,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             rangeFromContinuationToken: rangeFromContinuationToken,
                             suppliedTokens: suppliedTokens,
                             trace: childTrace,
-                            direction: rntdbEnumerationDirection);
+                            direction: rntdbEnumerationDirection,
+                            partitionKeyDefinition: partitionKeyDefinition);
 
                     if (serviceRequest.IsNameBased && resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                     {
@@ -111,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             rangeFromContinuationToken: rangeFromContinuationToken,
                             suppliedTokens: suppliedTokens,
                             trace: childTrace,
-                            direction: rntdbEnumerationDirection);
+                            direction: rntdbEnumerationDirection,
+                            partitionKeyDefinition: partitionKeyDefinition);
                     }
 
                     if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
@@ -138,7 +141,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             collectionRid: collectionFromCache.ResourceId,
                             resolvedRangeInfo: resolvedRangeInfo,
                             trace: childTrace,
-                            direction: rntdbEnumerationDirection))
+                            direction: rntdbEnumerationDirection,
+                            partitionKeyDefinition: partitionKeyDefinition))
                         {
                             return ((DocumentClientException)new NotFoundException(
                                     $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
