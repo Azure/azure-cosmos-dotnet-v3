@@ -687,28 +687,22 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
+                // public static double RRF(double[] weights, params double[] scoringFunctions)
                 new LinqTestInput("RRF with weight in fronts", b => getQuery(b)
                     .OrderByRank(doc => RRF(new double[] { 1.0, 2.0 },
                                             doc.StringField.FullTextScore(new string[] { "test1" }),
                                             doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
                     .Select(doc => doc.Pk)),
 
-                new LinqTestInput("RRF with boolean weight", b => getQuery(b)
-                    .OrderByRank(doc => RRF(true, 
-                                            2,
-                                            doc.StringField.FullTextScore(new string[] { "test1" }),
-                                            doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
-                                            1.0, 
-                                            2.0))
-                    .Select(doc => doc.Pk)),
-
-                new LinqTestInput("RRF without boolean - need additional checks while parsing - curently a valid query with the current RRF signature", b => getQuery(b)
+                // public static double RRF(params double[] scoringFunctionsAndWeights)
+                new LinqTestInput("weighted RRF with variably length weights", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
                                             doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
                                             1.0,
                                             2.0))
                     .Select(doc => doc.Pk)),
 
+                // public static double RRF(double[][] scoringFunctions, double[] weights)
                 new LinqTestInput("RRF with non-param scoring funcs", b => getQuery(b)
                     .OrderByRank(doc => RRF(new double[] 
                                             { 
