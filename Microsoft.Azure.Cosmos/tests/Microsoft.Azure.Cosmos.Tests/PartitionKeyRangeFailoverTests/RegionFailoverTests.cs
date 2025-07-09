@@ -356,5 +356,151 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
             }
         }
+
+        [TestMethod]
+        [DataRow(false, DisplayName = "When PPAF is disabled, Create Item Scenario should not retry on other regions on a single master write account.")]
+        public async Task CreateItemAsync_WithThinClientEnabledAndServiceUnavailableReceived_ShouldNotRetryOnOtherRegions(
+            bool enablePartitionLevelFailover)
+        {
+            try
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+                string accountName = nameof(TestHttpRequestExceptionScenarioAsync);
+                string primaryRegionNameForUri = "eastus";
+                string secondaryRegionNameForUri = "westus";
+                string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
+                Uri globalEndpointUri = new Uri(globalEndpoint);
+                string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
+                string secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
+                string databaseName = "testDb";
+                string containerName = "testContainer";
+                string containerRid = "ccZ1ANCszwk=";
+                ResourceId containerResourceId = ResourceId.Parse(containerRid);
+
+                List<AccountRegion> writeRegion = new List<AccountRegion>()
+                {
+                    new AccountRegion()
+                    {
+                        Name = "East US",
+                        Endpoint = $"{primaryRegionEndpoint}:443/"
+                    }
+                };
+
+                List<AccountRegion> readRegions = new List<AccountRegion>()
+                {
+                    new AccountRegion()
+                    {
+                        Name = "East US",
+                        Endpoint = $"{primaryRegionEndpoint}:443/"
+                    },
+                    new AccountRegion()
+                    {
+                        Name = "West US",
+                        Endpoint = $"{secondaryRegionEndpiont}:443/"
+                    }
+                };
+
+                // Create a mock http handler to inject gateway responses.
+                // MockBehavior.Strict ensures that only the mocked APIs get called
+                List<string> regionsVisited = new List<string>();
+                Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
+                string writeResponseHexStringWith503Status = "2a000000F70100000000000000000000000000000000000035000201000000000000011c000200000000480000007b22636f6465223a2022343039222c226d657373616765223a2022416e206572726f72206f63637572726564207768696c6520726f7574696e67207468652072657175657374227d";
+                string writeResponseHexStringWith201Status = "2a000000C90000000000000000000000000000000000000035000201000000000000011c000200000000480000007b22636f6465223a2022343039222c226d657373616765223a2022416e206572726f72206f63637572726564207768696c6520726f7574696e67207468652072657175657374227d";
+                mockHttpHandler.Setup(x => x.SendAsync(
+                   It.Is<HttpRequestMessage>(m => m.RequestUri == globalEndpointUri || m.RequestUri.ToString().Contains(primaryRegionNameForUri) || m.RequestUri.ToString().Contains(secondaryRegionNameForUri)),
+                   It.IsAny<CancellationToken>()))
+                   .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
+                   {
+                       if (request.Version == new Version(2, 0))
+                       {
+                           if (request.RequestUri.ToString().Contains("eastus"))
+                           {
+                               regionsVisited.Add(Regions.EastUS);
+                               return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
+                               {
+                                   RequestMessage = request,
+                                   Content = new StreamContent(new MemoryStream(Convert.FromHexString(writeResponseHexStringWith503Status)))
+                               });
+                           }
+                           else if (request.RequestUri.ToString().Contains("westus"))
+                           {
+                               regionsVisited.Add(Regions.WestUS);
+                               return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                               {
+                                   RequestMessage = request,
+                                   Content = new StreamContent(new MemoryStream(Convert.FromHexString(writeResponseHexStringWith201Status)))
+                               });
+                           }
+                       }
+
+                       return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegion, readRegions, shouldEnableThinClient: true, shouldEnablePPAF: enablePartitionLevelFailover));
+                   });
+
+                MockSetupsHelper.SetupContainerProperties(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    databaseName: databaseName,
+                    containerName: containerName,
+                    containerRid: containerRid);
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                    ApplicationPreferredRegions = new List<string>()
+                    {
+                        Regions.EastUS,
+                        Regions.WestUS
+                    },
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                };
+
+                using (CosmosClient customClient = new CosmosClient(
+                    globalEndpoint,
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                    cosmosClientOptions))
+                {
+                    Container container = customClient.GetContainer(databaseName, containerName);
+
+                    ToDoActivity toDoActivity = new ToDoActivity()
+                    {
+                        Id = "TestItem",
+                        Pk = "TestPk"
+                    };
+
+                    if (enablePartitionLevelFailover)
+                    {
+                        ItemResponse<ToDoActivity> createItemResponse = await container.CreateItemAsync<ToDoActivity>(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                        Console.WriteLine($"{createItemResponse.Diagnostics}");
+                        Assert.AreEqual(HttpStatusCode.OK, createItemResponse.StatusCode);
+                        Assert.IsTrue(regionsVisited.Count == 2);
+                        Assert.AreEqual(Regions.EastUS, regionsVisited[0]);
+                        Assert.AreEqual(Regions.WestUS, regionsVisited[1]);
+
+                        CosmosTraceDiagnostics traceDiagnostic = createItemResponse.Diagnostics as CosmosTraceDiagnostics;
+                        Assert.IsNotNull(traceDiagnostic);
+
+                        traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
+                        Assert.IsNull(hedgeContext);
+                    }
+                    else
+                    {
+                        CosmosException exception = await Assert.ThrowsExceptionAsync<CosmosException>(
+                            () => container.CreateItemAsync<ToDoActivity>(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk)));
+
+                        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, exception.StatusCode);
+
+                        Console.WriteLine(exception.Diagnostics);
+                    }
+
+                    mockHttpHandler.VerifyAll();
+                }
+            }
+            finally
+            {
+                // Reset the environment variable to avoid impacting other tests.
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
+            }
+        }
     }
 }
