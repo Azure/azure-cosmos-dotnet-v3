@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
             Uri globalEndpointUri = new Uri(globalEndpoint);
             string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
-            string secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
+            string secondaryRegionEndpoint = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
             string databaseName = "testDb";
             string containerName = "testContainer";
             string containerRid = "ccZ1ANCszwk=";
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new AccountRegion()
                 {
                     Name = "West US",
-                    Endpoint = $"{secondaryRegionEndpiont}:443/"
+                    Endpoint = $"{secondaryRegionEndpoint}:443/"
                 }
             };
 
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new AccountRegion()
                 {
                     Name = "West US",
-                    Endpoint = $"{secondaryRegionEndpiont}:443/"
+                    Endpoint = $"{secondaryRegionEndpoint}:443/"
                 }
             };
 
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 new AccountRegion()
                 {
                     Name = "West US",
-                    Endpoint = $"{secondaryRegionEndpiont}:443/"
+                    Endpoint = $"{secondaryRegionEndpoint}:443/"
                 },
                 new AccountRegion()
                 {
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             int count = 0;
             mockHttpHandler.Setup(x => x.SendAsync(
-               It.Is<HttpRequestMessage>(x => x.RequestUri == new Uri(secondaryRegionEndpiont)),
+               It.Is<HttpRequestMessage>(x => x.RequestUri == new Uri(secondaryRegionEndpoint)),
                It.IsAny<CancellationToken>()))
                .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
                {
@@ -116,21 +116,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             MockSetupsHelper.SetupContainerProperties(
                 mockHttpHandler: mockHttpHandler,
-                regionEndpoint: secondaryRegionEndpiont,
+                regionEndpoint: secondaryRegionEndpoint,
                 databaseName: databaseName,
                 containerName: containerName,
                 containerRid: containerRid);
 
             MockSetupsHelper.SetupPartitionKeyRanges(
                 mockHttpHandler: mockHttpHandler,
-                regionEndpoint: secondaryRegionEndpiont,
+                regionEndpoint: secondaryRegionEndpoint,
                 containerResourceId: containerResourceId,
                 partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
 
             MockSetupsHelper.SetupAddresses(
                 mockHttpHandler: mockHttpHandler,
                 partitionKeyRangeId: secondaryRegionPartitionKeyRangeIds.First(),
-                regionEndpoint: secondaryRegionEndpiont,
+                regionEndpoint: secondaryRegionEndpoint,
                 regionName: secondaryRegionNameForUri,
                 containerResourceId: containerResourceId,
                 primaryReplicaUri: out TransportAddressUri secondaryRegionprimaryReplicaUri);
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             MockSetupsHelper.SetupAddresses(
                 mockHttpHandler: mockHttpHandler,
                 partitionKeyRangeId: secondaryRegionPartitionKeyRangeIds.First(),
-                regionEndpoint: secondaryRegionEndpiont,
+                regionEndpoint: secondaryRegionEndpoint,
                 regionName: secondaryRegionNameForUri,
                 containerResourceId: containerResourceId,
                 primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
@@ -226,7 +226,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
                 Uri globalEndpointUri = new Uri(globalEndpoint);
                 string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
-                string secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
+                string secondaryRegionEndpoint = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
                 string databaseName = "testDb";
                 string containerName = "testContainer";
                 string containerRid = "ccZ1ANCszwk=";
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new AccountRegion()
                     {
                         Name = "West US",
-                        Endpoint = $"{secondaryRegionEndpiont}:443/"
+                        Endpoint = $"{secondaryRegionEndpoint}:443/"
                     }
                 };
 
@@ -371,7 +371,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
                 Uri globalEndpointUri = new Uri(globalEndpoint);
                 string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
-                string secondaryRegionEndpiont = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
+                string secondaryRegionEndpoint = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
                 string databaseName = "testDb";
                 string containerName = "testContainer";
                 string containerRid = "ccZ1ANCszwk=";
@@ -396,7 +396,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     new AccountRegion()
                     {
                         Name = "West US",
-                        Endpoint = $"{secondaryRegionEndpiont}:443/"
+                        Endpoint = $"{secondaryRegionEndpoint}:443/"
                     }
                 };
 

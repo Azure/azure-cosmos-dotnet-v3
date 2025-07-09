@@ -39,8 +39,6 @@ namespace Microsoft.Azure.Cosmos
             return this.TimeoutsAndDelays.GetEnumerator();
         }
 
-        // The hot path should always be safe to retires since it should be retrieving meta data 
-        // information that is not idempotent.
         public override bool IsSafeToRetry(HttpMethod httpMethod)
         {
             return this.shouldRetry;
