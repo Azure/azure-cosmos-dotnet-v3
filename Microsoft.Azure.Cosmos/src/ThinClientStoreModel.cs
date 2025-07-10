@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -28,7 +29,8 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            IChaosInterceptor chaosInterceptor)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -40,7 +42,8 @@ namespace Microsoft.Azure.Cosmos
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 eventSource,
-                serializerSettings);
+                serializerSettings,
+                chaosInterceptor);
         }
 
         public override async Task<DocumentServiceResponse> ProcessMessageAsync(
