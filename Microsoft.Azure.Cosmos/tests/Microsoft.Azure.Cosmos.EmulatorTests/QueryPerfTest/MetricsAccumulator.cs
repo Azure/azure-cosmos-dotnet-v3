@@ -12,31 +12,29 @@
 
     internal class MetricsAccumulator
     {
-        private const string QueryMetricsKey = "Query Metrics";
-        private const string ClientSideRequestStatsKey = "Client Side Request Stats";
-        private const string PocoMaterializationNode = "Query Response Serialization";
-        private const string GetCosmosElementResponseNode = "Get Cosmos Element Response";
-        private const string TransportRequestNode = "Microsoft.Azure.Documents.ServerStoreModel Transport Request";
-
         public void ReadFromTrace<T>(FeedResponse<T> response, QueryStatisticsDatumVisitor queryStatisticsDatumVisitor)
         {
             ITrace trace = ((CosmosTraceDiagnostics)response.Diagnostics).Value;
 
             // POCO materialization occurs once per item each roundtrip for calls with status code 200
-            List<ITrace> retrieveQueryMetricTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: PocoMaterializationNode, isKeyName: false);
+            List<ITrace> retrieveQueryMetricTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: TraceDatumKeys.QueryResponseSerialization, isKeyName: false);
             foreach (ITrace queryMetricTrace in retrieveQueryMetricTraces)
             {
                 queryStatisticsDatumVisitor.AddPocoTime(queryMetricTrace.Duration.TotalMilliseconds);
             }
 
             // Get cosmos element response occurs once per roundtrip for calls with status code 200
-            List<ITrace> getCosmosElementTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: GetCosmosElementResponseNode, isKeyName: false);
+            List<ITrace> getCosmosElementTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: TraceDatumKeys.GetCosmosElementResponse, isKeyName: false);
 
             // Query combinedMetrics occurs once per roundtrip for calls with status code 200
-            List<ITrace> queryMetricsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: QueryMetricsKey, isKeyName: true);
+            List<ITrace> queryMetricsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: TraceDatumKeys.QueryMetrics, isKeyName: true);
 
             // Clientside request stats occur once per roundtrip for all status codes
-            List<ITrace> clientSideRequestStatsTraces = this.ExtractTraces(trace: trace, nodeOrKeyName: ClientSideRequestStatsKey, isKeyName: true, currentNodeName: TransportRequestNode);
+            List<ITrace> clientSideRequestStatsTraces = this.ExtractTraces(
+                trace: trace, 
+                nodeOrKeyName: TraceDatumKeys.ClientSideRequestStats,
+                isKeyName: true,
+                currentNodeName: TraceDatumKeys.TransportRequest);
 
             List<QueryCombinedMetricsTraces> combinedMetricsList = new();
             int getCosmosElementTraceCount = 0;
