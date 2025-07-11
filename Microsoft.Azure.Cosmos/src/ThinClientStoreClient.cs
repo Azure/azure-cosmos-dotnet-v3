@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos
             return base.httpClient.SendHttpAsync(
                 () => this.PrepareRequestForProxyAsync(request, physicalAddress, thinClientEndpoint, globalDatabaseAccountName, clientCollectionCache),
                 resourceType,
-                HttpTimeoutPolicy.GetTimeoutPolicy(request),
+                HttpTimeoutPolicy.GetTimeoutPolicy(request, isThinClientEnabled: true),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);
