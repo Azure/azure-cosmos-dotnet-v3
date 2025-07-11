@@ -1337,11 +1337,6 @@
             bool enablePartitionLevelFailover)
         {
             // Arrange.
-            if (enablePartitionLevelFailover)
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-            }
-
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
             string serviceUnavailableRuleId = "503-rule-" + Guid.NewGuid().ToString();
             FaultInjectionRule serviceUnavailableRule = new FaultInjectionRuleBuilder(
@@ -1370,10 +1365,16 @@
                     if (json.Length > 0 && json.Contains("enablePerPartitionFailoverBehavior"))
                     {
                         JObject parsedDatabaseAccountResponse = JObject.Parse(json);
-                        parsedDatabaseAccountResponse.Remove("enablePerPartitionFailoverBehavior");
+                        parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = enablePartitionLevelFailover.ToString();
 
-                        HttpResponseMessage interceptedResponse = Newtonsoft.Json.JsonConvert.DeserializeObject<HttpResponseMessage>(
-                            value: parsedDatabaseAccountResponse.ToString());
+                        HttpResponseMessage interceptedResponse = new()
+                        {
+                            StatusCode = response.StatusCode,
+                            Content = new StringContent(parsedDatabaseAccountResponse.ToString()),
+                            Version = response.Version,
+                            ReasonPhrase = response.ReasonPhrase,
+                            RequestMessage = response.RequestMessage,
+                        };
 
                         return interceptedResponse;
                     }
