@@ -5,15 +5,21 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
+    using System.Security.AccessControl;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
@@ -212,6 +218,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
         [DataRow(false, DisplayName = "Read Item Scenario without PPAF and PPCB.")]
         [DataRow(true, DisplayName = "Read Item Scenario with PPAF and PPCB.")]
         public async Task ReadItemAsync_WithThinClientEnabledAndServiceUnavailableReceived_ShouldRetryOnNextPreferredRegions(
@@ -358,6 +365,152 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
+        public async Task ReadItemAsync_WithThinClientEnabledAndHttpRequestExceptionReceived_ShouldMarkEndpointUnavailable()
+        {
+            try
+            {
+                // testhost.dll.config sets it to 2 seconds which causes it to always expire before retrying. Remove the override.
+                System.Configuration.ConfigurationManager.AppSettings["UnavailableLocationsExpirationTimeInSeconds"] = "500";
+
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+                string accountName = nameof(TestHttpRequestExceptionScenarioAsync);
+                string primaryRegionNameForUri = "eastus";
+                string secondaryRegionNameForUri = "westus";
+                string globalEndpoint = $"https://{accountName}.documents.azure.com:443/";
+                Uri globalEndpointUri = new Uri(globalEndpoint);
+                string primaryRegionEndpoint = $"https://{accountName}-{primaryRegionNameForUri}.documents.azure.com";
+                string secondaryRegionEndpoint = $"https://{accountName}-{secondaryRegionNameForUri}.documents.azure.com";
+                string databaseName = "testDb";
+                string containerName = "testContainer";
+                string containerRid = "ccZ1ANCszwk=";
+                ResourceId containerResourceId = ResourceId.Parse(containerRid);
+
+                List<AccountRegion> writeRegion = new List<AccountRegion>()
+                {
+                    new AccountRegion()
+                    {
+                        Name = "East US",
+                        Endpoint = $"{primaryRegionEndpoint}:443/"
+                    }
+                };
+
+                List<AccountRegion> readRegions = new List<AccountRegion>()
+                {
+                    new AccountRegion()
+                    {
+                        Name = "East US",
+                        Endpoint = $"{primaryRegionEndpoint}:443/"
+                    },
+                    new AccountRegion()
+                    {
+                        Name = "West US",
+                        Endpoint = $"{secondaryRegionEndpoint}:443/"
+                    }
+                };
+
+                // Create a mock http handler to inject proxy responses.
+                // MockBehavior.Strict ensures that only the mocked APIs get called
+                List<string> regionsVisited = new List<string>();
+                Mock<IHttpHandler> mockHttpHandler = new Mock<IHttpHandler>(MockBehavior.Strict);
+                string readResponseHexStringWith200Status = "2a000000C80000000000000000000000000000000000000035000201000000000000011c000200000000480000007b22636f6465223a2022343039222c226d657373616765223a2022416e206572726f72206f63637572726564207768696c6520726f7574696e67207468652072657175657374227d";
+                mockHttpHandler.Setup(x => x.SendAsync(
+                   It.Is<HttpRequestMessage>(m => m.RequestUri == globalEndpointUri || m.RequestUri.ToString().Contains(primaryRegionNameForUri) || m.RequestUri.ToString().Contains(secondaryRegionNameForUri)),
+                   It.IsAny<CancellationToken>()))
+                   .Returns<HttpRequestMessage, CancellationToken>((request, cancellationToken) =>
+                   {
+                       if (request.Version == new Version(2, 0))
+                       {
+                           if (request.RequestUri.ToString().Contains("eastus"))
+                           {
+                               throw new HttpRequestException();
+                           }
+                           else if (request.RequestUri.ToString().Contains("westus"))
+                           {
+                               regionsVisited.Add(Regions.WestUS);
+                               return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                               {
+                                   RequestMessage = request,
+                                   Content = new StreamContent(new MemoryStream(Convert.FromHexString(readResponseHexStringWith200Status)))
+                               });
+                           }
+                       }
+
+                       return Task.FromResult(MockSetupsHelper.CreateStrongAccount(accountName, writeRegion, readRegions, shouldEnableThinClient: true, shouldEnablePPAF: false));
+                   });
+
+                MockSetupsHelper.SetupContainerProperties(
+                    mockHttpHandler: mockHttpHandler,
+                    regionEndpoint: primaryRegionEndpoint,
+                    databaseName: databaseName,
+                    containerName: containerName,
+                    containerRid: containerRid);
+
+                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+                {
+                    ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                    ApplicationPreferredRegions = new List<string>()
+                    {
+                        Regions.EastUS,
+                        Regions.WestUS
+                    },
+                    ConnectionMode = ConnectionMode.Gateway,
+                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                };
+
+                using (CosmosClient customClient = new CosmosClient(
+                    globalEndpoint,
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                    cosmosClientOptions))
+                {
+                    Container container = customClient.GetContainer(databaseName, containerName);
+                    ToDoActivity toDoActivity = new ToDoActivity()
+                    {
+                        Id = "TestItem",
+                        Pk = "TestPk"
+                    };
+
+                    ItemResponse<ToDoActivity> readResponse = await container.ReadItemAsync<ToDoActivity>(toDoActivity.Id, new Cosmos.PartitionKey(toDoActivity.Pk));
+                    Console.WriteLine($"{readResponse.Diagnostics}");
+                    Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+                    Assert.IsTrue(regionsVisited.Count == 1);
+                    Assert.AreEqual(Regions.WestUS, regionsVisited[0]);
+
+                    GlobalEndpointManager endpointManager = customClient.DocumentClient.GlobalEndpointManager;
+
+                    FieldInfo fieldInfo = endpointManager
+                        .GetType()
+                        .GetField(
+                            name: "locationCache",
+                            bindingAttr: BindingFlags.Instance | BindingFlags.NonPublic);
+
+                    LocationCache locationCache = (LocationCache)fieldInfo
+                        .GetValue(
+                            obj: endpointManager);
+
+                    MethodInfo method = locationCache.GetType().GetMethod("IsEndpointUnavailable", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                    if (method != null)
+                    {
+                        bool isEastUsAvailable = (bool)method.Invoke(locationCache, new object[] { endpointManager.ThinClientReadEndpoints[0], OperationType.Read });
+                        bool isWestUsAvailable = (bool)method.Invoke(locationCache, new object[] { endpointManager.ThinClientReadEndpoints[1], OperationType.Read });
+                        
+                        Assert.IsTrue(isWestUsAvailable, "Since West US was never marked unavailable, this endpoint is expected to be available.");
+                        Assert.IsFalse(isEastUsAvailable, "Since East US was marked unavailable, this endpoint is expected to be unavailable.");
+                    }
+
+                    mockHttpHandler.VerifyAll();
+                }
+            }
+            finally
+            {
+                // Reset the environment variable to avoid impacting other tests.
+                Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
+            }
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
         [DataRow(false, DisplayName = "When PPAF is disabled, Create Item Scenario should not retry on other regions on a single master write account.")]
         public async Task CreateItemAsync_WithThinClientEnabledAndServiceUnavailableReceived_ShouldNotRetryOnOtherRegions(
             bool enablePartitionLevelFailover)

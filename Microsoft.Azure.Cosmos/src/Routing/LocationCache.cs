@@ -128,12 +128,38 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Gets the list of thin client read endpoints.
         /// </summary>
-        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationInfo.ThinClientReadEndpoints;
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints
+        {
+            get
+            {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
+                {
+                    this.UpdateLocationCache();
+                }
+
+                return this.locationInfo.ThinClientReadEndpoints;
+            }
+        }
 
         /// <summary>
         /// Gets the list of thin client write endpoints.
         /// </summary>
-        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationInfo.ThinClientWriteEndpoints;
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints
+        {
+            get
+            {
+                // Hot-path: avoid ConcurrentDictionary methods which acquire locks
+                if (DateTime.UtcNow - this.lastCacheUpdateTimestamp > this.unavailableLocationsExpirationTime
+                    && this.locationUnavailablityInfoByEndpoint.Any())
+                {
+                    this.UpdateLocationCache();
+                }
+
+                return this.locationInfo.ThinClientWriteEndpoints;
+            }
+        }
 
         public ReadOnlyCollection<string> EffectivePreferredLocations => this.locationInfo.EffectivePreferredLocations;
 
