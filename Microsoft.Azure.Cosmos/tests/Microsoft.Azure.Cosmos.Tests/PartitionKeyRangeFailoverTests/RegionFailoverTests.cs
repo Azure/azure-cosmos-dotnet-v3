@@ -638,8 +638,6 @@ namespace Microsoft.Azure.Cosmos.Tests
                             () => container.CreateItemAsync<ToDoActivity>(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk)));
 
                         Assert.AreEqual(HttpStatusCode.ServiceUnavailable, exception.StatusCode);
-
-                        Console.WriteLine(exception.Diagnostics);
                     }
 
                     mockHttpHandler.VerifyAll();
