@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Flag from gateway to disable partition level failover.
         /// </summary>
-        internal string DisablePartitionLevelFailoverOverride { get; set; } = ConfigurationManager.IsPartitionLevelFailoverDisableOverride();
+        internal bool DisablePartitionLevelFailoverOverride { get; set; } = false;
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.

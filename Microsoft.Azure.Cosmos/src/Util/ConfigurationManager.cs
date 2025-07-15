@@ -69,12 +69,6 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string CircuitBreakerTimeoutCounterResetWindowInMinutes = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
 
         /// <summary>
-        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
-        /// The default value for this flag is null.
-        /// </summary>
-        internal static readonly string DisablePartitionLevelFailover = "AZURE_COSMOS_DISABLE_PARTITION_LEVEL_FAILOVER";
-
-        /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
         /// </summary>
         internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
@@ -287,26 +281,14 @@ namespace Microsoft.Azure.Cosmos
         /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES' to override the value.
         /// </summary>
         /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
-        /// <returns>An integer representing the timeout counter reset window in minutes.</returns>
-        public static int GetCircuitBreakerTimeoutCounterResetWindowInMinutes(
-            int defaultValue)
+        /// <returns>An double representing the timeout counter reset window in minutes.</returns>
+        public static double GetCircuitBreakerTimeoutCounterResetWindowInMinutes(
+            double defaultValue)
         {
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes,
                         defaultValue: defaultValue);
-        }
-
-        /// <summary>
-        /// Gets the boolean value indicating whether partition level failover is disabled based on the environment variable override.
-        /// </summary>
-        /// <returns> A boolean value indicating whether partition level failover is disabled.</returns>
-        public static string IsPartitionLevelFailoverDisableOverride()
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.PartitionLevelFailoverEnabled,
-                        defaultValue: string.Empty);
         }
 
         /// <summary>
