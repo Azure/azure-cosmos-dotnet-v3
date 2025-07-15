@@ -227,7 +227,7 @@ namespace Microsoft.Azure.Cosmos
             // Resolve the endpoint for the request and pin the resolution to the resolved endpoint
             // This enables marking the endpoint unavailability on endpoint failover/unreachability
             this.locationEndpoint = ConfigurationManager.IsThinClientEnabled(defaultValue: false)
-                && !LocationCache.IsMetaData(request)
+                && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
                 ? this.globalEndpointManager.ResolveThinClientEndpoint(request)
                 : this.globalEndpointManager.ResolveServiceEndpoint(request);
 

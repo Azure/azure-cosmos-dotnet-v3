@@ -56,6 +56,11 @@ namespace Microsoft.Azure.Cosmos
             DocumentServiceRequest request,
             CancellationToken cancellationToken = default)
         {
+            if (!ThinClientStoreModel.IsOperationSupportedByThinClient(request))
+            {
+                return await base.ProcessMessageAsync(request, cancellationToken);
+            }
+
             await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 base.defaultConsistencyLevel,
@@ -124,6 +129,21 @@ namespace Microsoft.Azure.Cosmos
                 response.Headers);
 
             return response;
+        }
+
+        public static bool IsOperationSupportedByThinClient(
+            DocumentServiceRequest request)
+        {
+            // Thin proxy supports the following operations for Document resources.
+            return request.ResourceType == ResourceType.Document
+                   && (request.OperationType == OperationType.Batch
+                   || request.OperationType == OperationType.Patch
+                   || request.OperationType == OperationType.Create
+                   || request.OperationType == OperationType.Read
+                   || request.OperationType == OperationType.Upsert
+                   || request.OperationType == OperationType.Replace
+                   || request.OperationType == OperationType.Delete
+                   || request.OperationType == OperationType.Query);
         }
 
         private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
