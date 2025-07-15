@@ -45,7 +45,5 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Environment.SetEnvironmentVariable(envVarName, null);
             }
         }
-
-
     }
 }

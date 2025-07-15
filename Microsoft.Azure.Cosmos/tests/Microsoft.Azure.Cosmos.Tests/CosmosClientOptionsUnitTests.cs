@@ -233,53 +233,46 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("dkunda")]
         public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsNotSet_ShouldInitializeCosmosClientSuccessfully()
         {
-            try
+            // Note: Environment variable for PPAF was removed. This test now verifies the new approach.
+
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+            TimeSpan requestTimeout = TimeSpan.FromDays(1);
+            string userAgentSuffix = "testSuffix";
+            RequestHandler preProcessHandler = new TestHandler();
+            ApiType apiType = ApiType.Sql;
+            int maxRetryAttemptsOnThrottledRequests = 9999;
+            TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+            CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
             {
-                // Note: Environment variable for PPAF was removed. This test now verifies the new approach.
+                IgnoreNullValues = true,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+            };
 
-                string endpoint = AccountEndpoint;
-                string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
-                TimeSpan requestTimeout = TimeSpan.FromDays(1);
-                string userAgentSuffix = "testSuffix";
-                RequestHandler preProcessHandler = new TestHandler();
-                ApiType apiType = ApiType.Sql;
-                int maxRetryAttemptsOnThrottledRequests = 9999;
-                TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
-                CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
-                {
-                    IgnoreNullValues = true,
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
-                };
+            Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+            Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
+            int throughputBucket = 3;
 
-                Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
-                Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
-                int throughputBucket = 3;
+            CosmosClientBuilder cosmosClientBuilder = new(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
 
-                CosmosClientBuilder cosmosClientBuilder = new(
-                    accountEndpoint: endpoint,
-                    authKeyOrResourceToken: key);
+            cosmosClientBuilder
+                .WithConnectionModeDirect()
+                .WithRequestTimeout(requestTimeout)
+                .WithApplicationName(userAgentSuffix)
+                .AddCustomHandlers(preProcessHandler)
+                .WithApiType(apiType)
+                .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithSerializerOptions(cosmosSerializerOptions)
+                .WithConsistencyLevel(consistencyLevel)
+                .WithPriorityLevel(priorityLevel)
+                .WithThroughputBucket(throughputBucket);
 
-                cosmosClientBuilder
-                    .WithConnectionModeDirect()
-                    .WithRequestTimeout(requestTimeout)
-                    .WithApplicationName(userAgentSuffix)
-                    .AddCustomHandlers(preProcessHandler)
-                    .WithApiType(apiType)
-                    .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
-                    .WithSerializerOptions(cosmosSerializerOptions)
-                    .WithConsistencyLevel(consistencyLevel)
-                    .WithPriorityLevel(priorityLevel)
-                    .WithThroughputBucket(throughputBucket);
+            CosmosClient cosmosClient = cosmosClientBuilder.Build();
 
-                CosmosClient cosmosClient = cosmosClientBuilder.Build();
-
-                Assert.IsNotNull(cosmosClient,
-                    message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
-            }
-            finally
-            {
-                // Cleanup - no environment variable to reset since PPAF env var was removed
-            }
+            Assert.IsNotNull(cosmosClient,
+                message: "ApplicationPreferredRegions or ApplicationRegion is no longer mandatory fields, hence the client initialization should succeed.");
         }
 
         /// <summary>
@@ -290,78 +283,71 @@ namespace Microsoft.Azure.Cosmos.Tests
         [Owner("dkunda")]
         public void CosmosClientOptions_WhenPartitionLevelFailoverEnabledAndPreferredRegionsSet_ShouldInitializeSuccessfully()
         {
-            try
+            // Note: Environment variable for PPAF was removed. This test now verifies the new approach.
+
+            string endpoint = AccountEndpoint;
+            string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
+            TimeSpan requestTimeout = TimeSpan.FromDays(1);
+            string userAgentSuffix = "testSuffix";
+            RequestHandler preProcessHandler = new TestHandler();
+            ApiType apiType = ApiType.Sql;
+            int maxRetryAttemptsOnThrottledRequests = 9999;
+            TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
+            CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
             {
-                // Note: Environment variable for PPAF was removed. This test now verifies the new approach.
+                IgnoreNullValues = true,
+                PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
+            };
 
-                string endpoint = AccountEndpoint;
-                string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
-                TimeSpan requestTimeout = TimeSpan.FromDays(1);
-                string userAgentSuffix = "testSuffix";
-                RequestHandler preProcessHandler = new TestHandler();
-                ApiType apiType = ApiType.Sql;
-                int maxRetryAttemptsOnThrottledRequests = 9999;
-                TimeSpan maxRetryWaitTime = TimeSpan.FromHours(6);
-                CosmosSerializationOptions cosmosSerializerOptions = new CosmosSerializationOptions()
-                {
-                    IgnoreNullValues = true,
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase,
-                };
+            Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
+            Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
+            int throughputBucket = 3;
+            CosmosClientBuilder cosmosClientBuilder = new(
+                accountEndpoint: endpoint,
+                authKeyOrResourceToken: key);
 
-                Cosmos.ConsistencyLevel consistencyLevel = Cosmos.ConsistencyLevel.ConsistentPrefix;
-                Cosmos.PriorityLevel priorityLevel = Cosmos.PriorityLevel.Low;
-                int throughputBucket = 3;
-                CosmosClientBuilder cosmosClientBuilder = new(
-                    accountEndpoint: endpoint,
-                    authKeyOrResourceToken: key);
+            cosmosClientBuilder
+                .WithConnectionModeDirect()
+                .WithRequestTimeout(requestTimeout)
+                .WithApplicationName(userAgentSuffix)
+                .AddCustomHandlers(preProcessHandler)
+                .WithApiType(apiType)
+                .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
+                .WithSerializerOptions(cosmosSerializerOptions)
+                .WithConsistencyLevel(consistencyLevel)
+                .WithPriorityLevel(priorityLevel)
+                .WithThroughputBucket(throughputBucket)
+                .WithApplicationPreferredRegions(
+                    new List<string>()
+                    {
+                    Regions.NorthCentralUS,
+                    Regions.WestUS,
+                    Regions.EastAsia,
+                    })
+                .WithCustomAccountEndpoints(
+                    new HashSet<Uri>()
+                    {
+                    new Uri("https://testfed2.documents-test.windows-int.net:443/"),
+                    new Uri("https://testfed3.documents-test.windows-int.net:443/"),
+                    new Uri("https://testfed4.documents-test.windows-int.net:443/"),
+                    });
 
-                cosmosClientBuilder
-                    .WithConnectionModeDirect()
-                    .WithRequestTimeout(requestTimeout)
-                    .WithApplicationName(userAgentSuffix)
-                    .AddCustomHandlers(preProcessHandler)
-                    .WithApiType(apiType)
-                    .WithThrottlingRetryOptions(maxRetryWaitTime, maxRetryAttemptsOnThrottledRequests)
-                    .WithSerializerOptions(cosmosSerializerOptions)
-                    .WithConsistencyLevel(consistencyLevel)
-                    .WithPriorityLevel(priorityLevel)
-                    .WithThroughputBucket(throughputBucket)
-                    .WithApplicationPreferredRegions(
-                        new List<string>()
-                        {
-                        Regions.NorthCentralUS,
-                        Regions.WestUS,
-                        Regions.EastAsia,
-                        })
-                    .WithCustomAccountEndpoints(
-                        new HashSet<Uri>()
-                        {
-                        new Uri("https://testfed2.documents-test.windows-int.net:443/"),
-                        new Uri("https://testfed3.documents-test.windows-int.net:443/"),
-                        new Uri("https://testfed4.documents-test.windows-int.net:443/"),
-                        });
+            CosmosClientOptions clientOptions = cosmosClientBuilder.Build().ClientOptions;
 
-                CosmosClientOptions clientOptions = cosmosClientBuilder.Build().ClientOptions;
-
-                Assert.AreEqual(ConnectionMode.Direct, clientOptions.ConnectionMode);
-                Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
-                Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
-                Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
-                Assert.AreEqual(apiType, clientOptions.ApiType);
-                Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
-                Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
-                Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
-                Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
-                Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
-                Assert.IsFalse(clientOptions.AllowBulkExecution);
-                Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
-                Assert.IsNotNull(clientOptions.ApplicationPreferredRegions);
-                Assert.IsNotNull(clientOptions.AccountInitializationCustomEndpoints);
-            }
-            finally
-            {
-                // Cleanup - no environment variable to reset since PPAF env var was removed
-            }
+            Assert.AreEqual(ConnectionMode.Direct, clientOptions.ConnectionMode);
+            Assert.AreEqual(requestTimeout, clientOptions.RequestTimeout);
+            Assert.AreEqual(userAgentSuffix, clientOptions.ApplicationName);
+            Assert.AreEqual(preProcessHandler, clientOptions.CustomHandlers[0]);
+            Assert.AreEqual(apiType, clientOptions.ApiType);
+            Assert.AreEqual(maxRetryAttemptsOnThrottledRequests, clientOptions.MaxRetryAttemptsOnRateLimitedRequests);
+            Assert.AreEqual(maxRetryWaitTime, clientOptions.MaxRetryWaitTimeOnRateLimitedRequests);
+            Assert.AreEqual(cosmosSerializerOptions.IgnoreNullValues, clientOptions.SerializerOptions.IgnoreNullValues);
+            Assert.AreEqual(cosmosSerializerOptions.PropertyNamingPolicy, clientOptions.SerializerOptions.PropertyNamingPolicy);
+            Assert.AreEqual(cosmosSerializerOptions.Indented, clientOptions.SerializerOptions.Indented);
+            Assert.IsFalse(clientOptions.AllowBulkExecution);
+            Assert.AreEqual(consistencyLevel, clientOptions.ConsistencyLevel);
+            Assert.IsNotNull(clientOptions.ApplicationPreferredRegions);
+            Assert.IsNotNull(clientOptions.AccountInitializationCustomEndpoints);
         }
 
         [TestMethod]
