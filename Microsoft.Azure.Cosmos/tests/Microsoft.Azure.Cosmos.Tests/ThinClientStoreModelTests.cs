@@ -152,6 +152,84 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
+        [Owner("dkunda")]
+        public async Task ProcessMessageAsync_WithUnsupportedOperations_ShouldFallbackToGatewayModeAndReturnDocumentServiceResponse()
+        {
+            // Arrange
+            // A single base64-encoded RNTBD response representing an HTTP 201 (Created)
+            HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+            HttpRequestMessage capturedRequest = null;
+            Mock<CosmosHttpClient> mockCosmosHttpClient = new Mock<CosmosHttpClient>();
+            mockCosmosHttpClient.Setup(client => client.SendHttpAsync(
+                It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<HttpTimeoutPolicy>(),
+                It.IsAny<IClientSideRequestStatistics>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<DocumentServiceRequest>()))
+                .Callback<Func<ValueTask<HttpRequestMessage>>, ResourceType, HttpTimeoutPolicy, IClientSideRequestStatistics, CancellationToken, DocumentServiceRequest>(
+                    async (requestFactory, _, _, _, _, _) =>
+                        capturedRequest = await requestFactory())
+                .ReturnsAsync(successResponse);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                operationType: OperationType.QueryPlan,
+                resourceType: ResourceType.Document,
+                resourceId: "NH1uAJ6ANm0=",
+                body: null,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            Mock<IDocumentClientInternal> docClientMulti = new Mock<IDocumentClientInternal>();
+            docClientMulti.Setup(c => c.ServiceEndpoint).Returns(new Uri("http://localhost"));
+
+            AccountProperties validAccountProperties = new AccountProperties();
+
+            docClientMulti
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(validAccountProperties);
+
+            ConnectionPolicy policy = new ConnectionPolicy
+            {
+                UseMultipleWriteLocations = true
+            };
+
+            GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
+
+            ThinClientStoreModel storeModel = new ThinClientStoreModel(
+                endpointManager: multiEndpointMgr,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
+                eventSource: new DocumentClientEventSource(),
+                serializerSettings: null,
+                httpClient: mockCosmosHttpClient.Object);
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                this.sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                multiEndpointMgr,
+                false).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+
+            // Act
+            DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+            // Assert
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
         public void Dispose_ShouldDisposeThinClientStoreClient()
         {
             // Arrange
