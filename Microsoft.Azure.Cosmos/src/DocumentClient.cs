@@ -1056,19 +1056,11 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            bool isPPafEnabled = false;
-            if (this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
-            {
-                isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
-            }
-
             // Apply the DisablePartitionLevelFailover setting to override PPAF if explicitly disabled
-            if (this.ConnectionPolicy.DisablePartitionLevelFailover)
-            {
-                isPPafEnabled = false;
-            }
-
-            this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelFailover = !this.ConnectionPolicy.DisablePartitionLevelFailover &&
+                this.accountServiceConfiguration != null &&
+                this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue &&
+                this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
