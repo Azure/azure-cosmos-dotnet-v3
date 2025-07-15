@@ -602,13 +602,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
             if (databaseAccount.EnablePartitionLevelFailover.HasValue)
             {
-                isPPafEnabled = databaseAccount.EnablePartitionLevelFailover.Value;
+                this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
             }
 
-            this.connectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);

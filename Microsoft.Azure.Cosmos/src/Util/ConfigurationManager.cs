@@ -63,6 +63,18 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string CircuitBreakerConsecutiveFailureCountForWrites = "AZURE_COSMOS_PPCB_CONSECUTIVE_FAILURE_COUNT_FOR_WRITES";
 
         /// <summary>
+        /// A read-only string containing the environment variable name for capturing the consecutive failure count for writes, before triggering per partition
+        /// circuit breaker flow. The default value for this interval is 5 consecutive requests within 1 min window.
+        /// </summary>
+        internal static readonly string CircuitBreakerTimeoutCounterResetWindowInMinutes = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
+
+        /// <summary>
+        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
+        /// The default value for this flag is null.
+        /// </summary>
+        internal static readonly string DisablePartitionLevelFailover = "AZURE_COSMOS_DISABLE_PARTITION_LEVEL_FAILOVER";
+
+        /// <summary>
         /// Environment variable name for overriding optimistic direct execution of queries.
         /// </summary>
         internal static readonly string OptimisticDirectExecutionEnabled = "AZURE_COSMOS_OPTIMISTIC_DIRECT_EXECUTION_ENABLED";
@@ -157,23 +169,6 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.ReplicaConnectivityValidationEnabled,
                         defaultValue: true);
-        }
-
-        /// <summary>
-        /// Gets the boolean value of the partition level failover environment variable. Note that, partition level failover
-        /// is disabled by default for both preview and GA releases. The user can set the  respective environment variable
-        /// 'AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED' to override the value for both preview and GA. The method will
-        /// eventually be removed, once partition level failover is enabled by default for  both preview and GA.
-        /// </summary>
-        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
-        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
-        public static bool IsPartitionLevelFailoverEnabled(
-            bool defaultValue)
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.PartitionLevelFailoverEnabled,
-                        defaultValue: defaultValue);
         }
 
         /// <summary>
@@ -284,6 +279,34 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.CircuitBreakerConsecutiveFailureCountForWrites,
                         defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the consecutive faulure count for writes (applicable for multi master accounts) before triggering
+        /// the per partition circuit breaker flow. The default value for this interval is 5 consecutive requests within a 1-minute window.
+        /// The user can set the respective environment variable 'AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES' to override the value.
+        /// </summary>
+        /// <param name="defaultValue">An integer containing the default value for the consecutive failure count.</param>
+        /// <returns>An integer representing the timeout counter reset window in minutes.</returns>
+        public static int GetCircuitBreakerTimeoutCounterResetWindowInMinutes(
+            int defaultValue)
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes,
+                        defaultValue: defaultValue);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating whether partition level failover is disabled based on the environment variable override.
+        /// </summary>
+        /// <returns> A boolean value indicating whether partition level failover is disabled.</returns>
+        public static string IsPartitionLevelFailoverDisableOverride()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.PartitionLevelFailoverEnabled,
+                        defaultValue: string.Empty);
         }
 
         /// <summary>
