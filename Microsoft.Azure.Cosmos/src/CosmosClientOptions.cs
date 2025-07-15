@@ -773,6 +773,13 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
 
         /// <summary>
+        /// Internal option to disable Per Partition Automatic Failover (PPAF) explicitly.
+        /// When set to true, this will be used to disable PPAF irrespective of the account settings.
+        /// The default value for this parameter is 'false'.
+        /// </summary>
+        internal bool DisablePartitionLevelFailover { get; set; } = false;
+
+        /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
         /// </summary>
         internal bool EnableUpgradeConsistencyToLocalQuorum { get; set; } = false;
@@ -1030,6 +1037,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
+                DisablePartitionLevelFailover = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,

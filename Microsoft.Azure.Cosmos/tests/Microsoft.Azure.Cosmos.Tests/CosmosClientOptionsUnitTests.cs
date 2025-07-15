@@ -226,8 +226,8 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         /// <summary>
-        /// Test to validate that when the partition level failover is enabled with the preferred regions list is missing, then the client
-        /// initialization should succeed. This should hold true for both environment variable and CosmosClientOptions.
+        /// Test to validate that when the partition level failover is enabled, client
+        /// initialization should succeed. Environment variable support was removed.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+                // Note: Environment variable for PPAF was removed. This test now verifies the new approach.
 
                 string endpoint = AccountEndpoint;
                 string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
@@ -278,13 +278,13 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+                // Cleanup - no environment variable to reset since PPAF env var was removed
             }
         }
 
         /// <summary>
         /// Test to validate that when the partition level failover is enabled with the preferred regions list is provided, then the client
-        /// initialization should be successful. This holds true for both environment variable and CosmosClientOptions.
+        /// initialization should be successful. Environment variable support was removed.
         /// </summary>
         [TestMethod]
         [Owner("dkunda")]
@@ -292,7 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         {
             try
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
+                // Note: Environment variable for PPAF was removed. This test now verifies the new approach.
 
                 string endpoint = AccountEndpoint;
                 string key = MockCosmosUtil.RandomInvalidCorrectlyFormatedAuthKey;
@@ -360,7 +360,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             finally
             {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+                // Cleanup - no environment variable to reset since PPAF env var was removed
             }
         }
 
@@ -1212,6 +1212,24 @@ namespace Microsoft.Azure.Cosmos.Tests
             RemoteCertificateValidationCallback? httpClientRemoreCertValidationCallback = socketsHttpHandler.SslOptions.RemoteCertificateValidationCallback;
             Assert.IsNotNull(httpClientRemoreCertValidationCallback);
 #nullable disable
+        }
+
+        [TestMethod]
+        public void DisablePartitionLevelFailoverOptionTest()
+        {
+            // Test that the DisablePartitionLevelFailover option defaults to false
+            CosmosClientOptions clientOptions = new CosmosClientOptions();
+            Assert.IsFalse(clientOptions.DisablePartitionLevelFailover);
+
+            // Test that setting DisablePartitionLevelFailover to true is reflected in the connection policy
+            clientOptions.DisablePartitionLevelFailover = true;
+            ConnectionPolicy policy = clientOptions.GetConnectionPolicy(clientId: 0);
+            Assert.IsTrue(policy.DisablePartitionLevelFailover);
+
+            // Test that setting DisablePartitionLevelFailover to false is reflected in the connection policy
+            clientOptions.DisablePartitionLevelFailover = false;
+            policy = clientOptions.GetConnectionPolicy(clientId: 0);
+            Assert.IsFalse(policy.DisablePartitionLevelFailover);
         }
 
         private class TestWebProxy : IWebProxy

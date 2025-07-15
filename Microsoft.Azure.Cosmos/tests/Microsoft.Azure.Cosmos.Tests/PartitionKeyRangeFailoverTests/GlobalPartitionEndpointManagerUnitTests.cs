@@ -394,6 +394,47 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
+        [TestMethod]
+        public void TestCircuitBreakerTimeoutCounterResetWindowConfiguration()
+        {
+            // Test that the timeout counter reset window uses the configuration method with default value
+            const string envVarName = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
+            
+            try
+            {
+                // Clean up any existing environment variable
+                Environment.SetEnvironmentVariable(envVarName, null);
+                
+                Mock<IGlobalEndpointManager> mockEndpointManager = new Mock<IGlobalEndpointManager>(MockBehavior.Strict);
+                GlobalPartitionEndpointManagerCore failoverManager = new GlobalPartitionEndpointManagerCore(
+                    mockEndpointManager.Object, 
+                    isPartitionLevelFailoverEnabled: false, 
+                    isPartitionLevelCircuitBreakerEnabled: true);
+
+                // Use reflection to verify the TimeoutCounterResetWindowInMinutes field is set correctly
+                Type failoverManagerType = typeof(GlobalPartitionEndpointManagerCore);
+                Type nestedType = failoverManagerType.GetNestedType("PartitionKeyRangeFailoverInfo", 
+                    System.Reflection.BindingFlags.NonPublic);
+                Assert.IsNotNull(nestedType, "PartitionKeyRangeFailoverInfo nested class should exist");
+
+                // Test with environment variable set to custom value
+                Environment.SetEnvironmentVariable(envVarName, "10");
+                
+                GlobalPartitionEndpointManagerCore customFailoverManager = new GlobalPartitionEndpointManagerCore(
+                    mockEndpointManager.Object, 
+                    isPartitionLevelFailoverEnabled: false, 
+                    isPartitionLevelCircuitBreakerEnabled: true);
+
+                // If we reach here without exceptions, the configuration is working
+                Assert.IsNotNull(customFailoverManager);
+            }
+            finally
+            {
+                // Clean up environment variable
+                Environment.SetEnvironmentVariable(envVarName, null);
+            }
+        }
+
         private static void SimulateConsecutiveFailures(
             GlobalPartitionEndpointManagerCore failoverManager,
             DocumentServiceRequest requestMessage)

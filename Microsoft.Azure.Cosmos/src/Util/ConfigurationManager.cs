@@ -16,11 +16,10 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ReplicaConnectivityValidationEnabled = "AZURE_COSMOS_REPLICA_VALIDATION_ENABLED";
 
         /// <summary>
-        /// A read-only string containing the environment variable name for enabling per partition automatic failover.
-        /// This will eventually be removed once per partition automatic failover is enabled by default for both preview
-        /// and GA.
+        /// A read-only string containing the environment variable name for capturing the PPCB timeout counter reset window time
+        /// in minutes. The default value for this window is 5 minutes.
         /// </summary>
-        internal static readonly string PartitionLevelFailoverEnabled = "AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED";
+        internal static readonly string CircuitBreakerTimeoutCounterResetWindowInMinutes = "AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES";
 
         /// <summary>
         /// A read-only string containing the environment variable name for enabling per partition circuit breaker. The default value
@@ -160,19 +159,19 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Gets the boolean value of the partition level failover environment variable. Note that, partition level failover
-        /// is disabled by default for both preview and GA releases. The user can set the  respective environment variable
-        /// 'AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED' to override the value for both preview and GA. The method will
-        /// eventually be removed, once partition level failover is enabled by default for  both preview and GA.
+        /// Gets the PPCB timeout counter reset window in minutes.
+        /// The default value for this window is 5 minutes. The user can set the respective
+        /// environment variable 'AZURE_COSMOS_PPCB_TIMEOUT_COUNTER_RESET_WINDOW_IN_MINUTES'
+        /// to override the value.
         /// </summary>
-        /// <param name="defaultValue">A boolean field containing the default value for partition level failover.</param>
-        /// <returns>A boolean flag indicating if partition level failover is enabled.</returns>
-        public static bool IsPartitionLevelFailoverEnabled(
-            bool defaultValue)
+        /// <param name="defaultValue">An integer containing the default value for the timeout counter reset window in minutes.</param>
+        /// <returns>An integer representing the timeout counter reset window in minutes.</returns>
+        public static int GetCircuitBreakerTimeoutCounterResetWindowInMinutes(
+            int defaultValue)
         {
             return ConfigurationManager
                     .GetEnvironmentVariable(
-                        variable: ConfigurationManager.PartitionLevelFailoverEnabled,
+                        variable: ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes,
                         defaultValue: defaultValue);
         }
 

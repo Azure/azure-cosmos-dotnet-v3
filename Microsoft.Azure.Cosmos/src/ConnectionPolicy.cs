@@ -339,6 +339,16 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Gets or sets a value indicating whether to disable Per Partition Automatic Failover (PPAF) explicitly.
+        /// When set to true, this will be used to disable PPAF irrespective of the account settings.
+        /// </summary>
+        public bool DisablePartitionLevelFailover
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets or sets the certificate validation callback.
         /// </summary>
         internal Func<X509Certificate2, X509Chain, SslPolicyErrors, Boolean> ServerCertificateCustomValidationCallback

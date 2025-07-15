@@ -602,10 +602,16 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            bool isPPafEnabled = false;
             if (databaseAccount.EnablePartitionLevelFailover.HasValue)
             {
                 isPPafEnabled = databaseAccount.EnablePartitionLevelFailover.Value;
+            }
+
+            // Apply the DisablePartitionLevelFailover setting to override PPAF if explicitly disabled
+            if (this.connectionPolicy.DisablePartitionLevelFailover)
+            {
+                isPPafEnabled = false;
             }
 
             this.connectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;

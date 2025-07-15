@@ -398,10 +398,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             bool ppafEnabledFromClient,
             bool? ppafEnabledFromService)
         {
-            if (ppafEnabledFromClient)
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-            }
+            // Note: Environment variable for PPAF was removed as per acceptance criteria.
+            // PPAF is now controlled exclusively by account metadata and client options.
 
             try
             {
@@ -495,8 +493,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
             finally
             {
-                // Reset the environment variable to avoid affecting other tests.
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, null);
+                // Cleanup - no environment variable to reset since PPAF env var was removed
             }
         }
 

@@ -1056,10 +1056,16 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
+            bool isPPafEnabled = false;
             if (this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
             {
                 isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
+            }
+
+            // Apply the DisablePartitionLevelFailover setting to override PPAF if explicitly disabled
+            if (this.ConnectionPolicy.DisablePartitionLevelFailover)
+            {
+                isPPafEnabled = false;
             }
 
             this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
