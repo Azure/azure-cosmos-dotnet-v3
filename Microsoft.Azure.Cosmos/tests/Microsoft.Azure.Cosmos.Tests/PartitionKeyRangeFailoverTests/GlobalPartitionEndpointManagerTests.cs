@@ -401,100 +401,93 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Note: Environment variable for PPAF was removed as per acceptance criteria.
             // PPAF is now controlled exclusively by account metadata and client options.
 
-            try
+            GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
+                shouldEnablePPAF: ppafEnabledFromService,
+                out string secondaryRegionNameForUri,
+                out string globalEndpoint,
+                out string secondaryRegionEndpiont,
+                out string databaseName,
+                out string containerName,
+                out ResourceId containerResourceId,
+                out Mock<IHttpHandler> mockHttpHandler,
+                out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
+                out TransportAddressUri primaryRegionprimaryReplicaUri);
+
+            Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
+
+            MockSetupsHelper.SetupServiceUnavailableException(
+                mockTransport,
+                primaryRegionprimaryReplicaUri);
+
+            // Partition key ranges are the same in both regions so the SDK
+            // does not need to go the secondary to get the partition key ranges.
+            // Only the addresses need to be mocked on the secondary
+            MockSetupsHelper.SetupAddresses(
+                mockHttpHandler: mockHttpHandler,
+                partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
+                regionEndpoint: secondaryRegionEndpiont,
+                regionName: secondaryRegionNameForUri,
+                containerResourceId: containerResourceId,
+                primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
+
+            MockSetupsHelper.SetupCreateItemResponse(
+                mockTransport,
+                secondaryRegionPrimaryReplicaUri);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
             {
-                GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
-                    shouldEnablePPAF: ppafEnabledFromService,
-                    out string secondaryRegionNameForUri,
-                    out string globalEndpoint,
-                    out string secondaryRegionEndpiont,
-                    out string databaseName,
-                    out string containerName,
-                    out ResourceId containerResourceId,
-                    out Mock<IHttpHandler> mockHttpHandler,
-                    out IReadOnlyList<string> primaryRegionPartitionKeyRangeIds,
-                    out TransportAddressUri primaryRegionprimaryReplicaUri);
-
-                Mock<TransportClient> mockTransport = new Mock<TransportClient>(MockBehavior.Strict);
-
-                MockSetupsHelper.SetupServiceUnavailableException(
-                    mockTransport,
-                    primaryRegionprimaryReplicaUri);
-
-                // Partition key ranges are the same in both regions so the SDK
-                // does not need to go the secondary to get the partition key ranges.
-                // Only the addresses need to be mocked on the secondary
-                MockSetupsHelper.SetupAddresses(
-                    mockHttpHandler: mockHttpHandler,
-                    partitionKeyRangeId: primaryRegionPartitionKeyRangeIds.First(),
-                    regionEndpoint: secondaryRegionEndpiont,
-                    regionName: secondaryRegionNameForUri,
-                    containerResourceId: containerResourceId,
-                    primaryReplicaUri: out TransportAddressUri secondaryRegionPrimaryReplicaUri);
-
-                MockSetupsHelper.SetupCreateItemResponse(
-                    mockTransport,
-                    secondaryRegionPrimaryReplicaUri);
-
-                CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
-                {
-                    ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
-                    ApplicationPreferredRegions = new List<string>()
-                {
-                    Regions.EastUS,
-                    Regions.WestUS
-                },
-                    HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
-                    TransportClientHandlerFactory = (original) => mockTransport.Object,
-                };
-
-                using CosmosClient customClient = new CosmosClient(
-                        globalEndpoint,
-                        Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
-                        cosmosClientOptions);
-
-                Container container = customClient.GetContainer(databaseName, containerName);
-
-                ToDoActivity toDoActivity = new ToDoActivity()
-                {
-                    Id = "TestItem",
-                    Pk = "TestPk"
-                };
-
-                if ((!ppafEnabledFromService.HasValue && ppafEnabledFromClient)
-                    || (ppafEnabledFromService.HasValue && ppafEnabledFromService.Value))
-                {
-                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-
-                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
-                    Assert.IsTrue(response.Diagnostics.GetContactedRegions().Count > 1);
-
-                    mockTransport.VerifyAll();
-                    mockHttpHandler.VerifyAll();
-                }
-                else
-                {
-                    try
-                    {
-                        await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-                        Assert.Fail("Should throw an exception");
-                    }
-                    catch (CosmosException ce)
-                    {
-                        // Clears all the setups. No network calls should be done on the next operation.
-                        Assert.IsNotNull(ce);
-                        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ce.StatusCode);
-                    }
-                }
-
-                mockHttpHandler.Reset();
-                mockTransport.Reset();
-                mockTransport.Setup(x => x.Dispose());
-            }
-            finally
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
+                ApplicationPreferredRegions = new List<string>()
             {
-                // Cleanup - no environment variable to reset since PPAF env var was removed
+                Regions.EastUS,
+                Regions.WestUS
+            },
+                HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
+                TransportClientHandlerFactory = (original) => mockTransport.Object,
+            };
+
+            using CosmosClient customClient = new CosmosClient(
+                    globalEndpoint,
+                    Convert.ToBase64String(Encoding.UTF8.GetBytes(Guid.NewGuid().ToString())),
+                    cosmosClientOptions);
+
+            Container container = customClient.GetContainer(databaseName, containerName);
+
+            ToDoActivity toDoActivity = new ToDoActivity()
+            {
+                Id = "TestItem",
+                Pk = "TestPk"
+            };
+
+            if ((!ppafEnabledFromService.HasValue && ppafEnabledFromClient)
+                || (ppafEnabledFromService.HasValue && ppafEnabledFromService.Value))
+            {
+                ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                Assert.IsTrue(response.Diagnostics.GetContactedRegions().Count > 1);
+
+                mockTransport.VerifyAll();
+                mockHttpHandler.VerifyAll();
             }
+            else
+            {
+                try
+                {
+                    await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                    Assert.Fail("Should throw an exception");
+                }
+                catch (CosmosException ce)
+                {
+                    // Clears all the setups. No network calls should be done on the next operation.
+                    Assert.IsNotNull(ce);
+                    Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ce.StatusCode);
+                }
+            }
+
+            mockHttpHandler.Reset();
+            mockTransport.Reset();
+            mockTransport.Setup(x => x.Dispose());
         }
 
         private static void SetupAccountAndCacheOperations(

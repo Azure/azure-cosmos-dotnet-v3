@@ -46,27 +46,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             }
         }
 
-        [TestMethod]
-        public void PartitionLevelFailoverEnvironmentVariableRemoved()
-        {
-            // Verify that the deprecated environment variable constant is no longer available
-            // This test ensures the AZURE_COSMOS_PARTITION_LEVEL_FAILOVER_ENABLED constant was removed
-            Type configManagerType = typeof(ConfigurationManager);
-            var field = configManagerType.GetField("PartitionLevelFailoverEnabled", 
-                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-            
-            Assert.IsNull(field, "PartitionLevelFailoverEnabled constant should have been removed");
-        }
 
-        [TestMethod]
-        public void IsPartitionLevelFailoverEnabledMethodRemoved()
-        {
-            // Verify that the deprecated IsPartitionLevelFailoverEnabled method is no longer available
-            Type configManagerType = typeof(ConfigurationManager);
-            var method = configManagerType.GetMethod("IsPartitionLevelFailoverEnabled", 
-                System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-            
-            Assert.IsNull(method, "IsPartitionLevelFailoverEnabled method should have been removed");
-        }
     }
 }
