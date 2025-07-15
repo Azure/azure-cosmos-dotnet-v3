@@ -42,8 +42,7 @@ var partitionKey = new PartitionKey(partitionKeyValue);
 ## Coding Conventions
 
 ### Async/Await Patterns
-- Always use `ConfigureAwait(false)` in SDK code
-- Methods should be suffixed with `Async`
+- Async methods should be suffixed with `Async`
 - Return `Task<T>` or `ValueTask<T>` for async operations
 - Use `CancellationToken` parameters for cancellable operations
 
@@ -293,12 +292,12 @@ var options = new CosmosClientOptions
 ## Common Anti-Patterns to Avoid
 
 1. **Creating multiple CosmosClient instances** - Use singleton pattern
-2. **Not using ConfigureAwait(false)** - Can cause deadlocks in certain scenarios
-3. **Ignoring partition key design** - Leads to hot partitions and poor performance
-4. **Not handling CosmosException properly** - Missing important error context
-5. **Using synchronous APIs** - Blocks threads unnecessarily
-6. **Not disposing resources** - Can lead to connection pool exhaustion
-7. **Hardcoding configuration values** - Use configuration patterns instead
+2. **Ignoring partition key design** - Leads to hot partitions and poor performance
+3. **Not handling CosmosException properly** - Missing important error context
+4. **Using synchronous APIs** - Blocks threads unnecessarily
+5. **Not disposing resources** - Can lead to connection pool exhaustion
+6. **Hardcoding configuration values** - Use configuration patterns instead
+7. **Queries not draining results following continuations** - Always iterate through all pages of query results
 
 ## Migration Guidance
 
