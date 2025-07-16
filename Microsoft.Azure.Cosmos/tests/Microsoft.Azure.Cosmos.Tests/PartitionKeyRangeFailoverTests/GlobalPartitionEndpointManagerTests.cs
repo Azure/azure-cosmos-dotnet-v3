@@ -388,11 +388,14 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [Timeout(20000)]
         [Owner("dkunda")]
-        [DataRow(false, null, DisplayName = "Scenario when PPAF is disabled at client level and not set at the service level.")]
-        [DataRow(false, true, DisplayName = "Scenario when PPAF is disabled at client level and enabled at service level.")]
-        [DataRow(false, false, DisplayName = "Scenario when PPAF is disabled at client level and disabled at service level.")]
+        [DataRow(false, null, DisplayName = "Scenario when PPAF is not disabled at client level and not set at the service level.")]
+        [DataRow(false, true, DisplayName = "Scenario when PPAF is not disabled at client level and enabled at service level.")]
+        [DataRow(false, false, DisplayName = "Scenario when PPAF is not disabled at client level and disabled at service level.")]
+        [DataRow(true, null, DisplayName = "Scenario when PPAF is disabled at client level and not set at the service level.")]
+        [DataRow(true, true, DisplayName = "Scenario when PPAF is disabled at client level and enabled at service level.")]
+        [DataRow(true, false, DisplayName = "Scenario when PPAF is disabled at client level and disabled at service level.")]
         public async Task TestPPAFClientAndServerEnablementCombinationScenariosAsync(
-            bool ppafEnabledFromClient,
+            bool ppafDisabledFromClient,
             bool? ppafEnabledFromService)
         {
             try
@@ -440,7 +443,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     },
                     HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                     TransportClientHandlerFactory = (original) => mockTransport.Object,
-                    DisablePartitionLevelFailover = !ppafEnabledFromClient,
+                    DisablePartitionLevelFailover = ppafDisabledFromClient,
                 };
 
                 using CosmosClient customClient = new CosmosClient(
@@ -456,16 +459,29 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Pk = "TestPk"
                 };
 
-                try
+                if (!ppafDisabledFromClient && ppafEnabledFromService.HasValue && ppafEnabledFromService.Value)
                 {
-                    await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
-                    Assert.Fail("Should throw an exception");
+                    ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+
+                    Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                    Assert.IsTrue(response.Diagnostics.GetContactedRegions().Count > 1);
+
+                    mockTransport.VerifyAll();
+                    mockHttpHandler.VerifyAll();
                 }
-                catch (CosmosException ce)
+                else
                 {
-                    // Clears all the setups. No network calls should be done on the next operation.
-                    Assert.IsNotNull(ce);
-                    Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ce.StatusCode);
+                    try
+                    {
+                        await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
+                        Assert.Fail("Should throw an exception");
+                    }
+                    catch (CosmosException ce)
+                    {
+                        // Clears all the setups. No network calls should be done on the next operation.
+                        Assert.IsNotNull(ce);
+                        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, ce.StatusCode);
+                    }
                 }
 
                 mockHttpHandler.Reset();
