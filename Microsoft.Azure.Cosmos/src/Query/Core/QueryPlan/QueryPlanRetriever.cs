@@ -31,20 +31,22 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             | QueryFeatures.DCount
             | QueryFeatures.NonStreamingOrderBy
             | QueryFeatures.CountIf
-            | QueryFeatures.HybridSearch;
+            | QueryFeatures.HybridSearch
+            | QueryFeatures.WeightedRankFusion
+            | QueryFeatures.HybridSearchSkipOrderByRewrite;
 
-        private static readonly QueryFeatures SupportedQueryFeaturesWithoutNonStreamingOrderBy =
-            SupportedQueryFeatures & (~QueryFeatures.NonStreamingOrderBy);
+        private static readonly QueryFeatures SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabled =
+            SupportedQueryFeatures & (~QueryFeatures.HybridSearchSkipOrderByRewrite);
 
         private static readonly string SupportedQueryFeaturesString = SupportedQueryFeatures.ToString();
 
-        private static readonly string SupportedQueryFeaturesWithoutNonStreamingOrderByString =
-            SupportedQueryFeaturesWithoutNonStreamingOrderBy.ToString();
+        private static readonly string SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabledString =
+            SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabled.ToString();
 
-        private static string GetSupportedQueryFeaturesString(bool isNonStreamingOrderByQueryFeatureDisabled)
+        private static string GetSupportedQueryFeaturesString(bool isHybridSearchQueryPlanOptimizationDisabled)
         {
-            return isNonStreamingOrderByQueryFeatureDisabled ?
-                SupportedQueryFeaturesWithoutNonStreamingOrderByString :
+            return isHybridSearchQueryPlanOptimizationDisabled ?
+                SupportedQueryFeaturesWithHybridSearchQueryPlanOptimizationDisabledString :
                 SupportedQueryFeaturesString;
         }
 
@@ -57,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             bool hasLogicalPartitionKey,
             GeospatialType geospatialType,
             bool useSystemPrefix,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -88,6 +91,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     vectorEmbeddingPolicy,
                     hasLogicalPartitionKey,
                     useSystemPrefix,
+                    isHybridSearchQueryPlanOptimizationDisabled,
                     geospatialType,
                     cancellationToken);
 
@@ -112,7 +116,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             SqlQuerySpec sqlQuerySpec,
             string resourceLink,
             PartitionKey? partitionKey,
-            bool isNonStreamingOrderByQueryFeatureDisabled,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             ITrace trace,
             CancellationToken cancellationToken = default)
         {
@@ -148,7 +152,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                     OperationType.QueryPlan,
                     sqlQuerySpec,
                     partitionKey,
-                    GetSupportedQueryFeaturesString(isNonStreamingOrderByQueryFeatureDisabled),
+                    GetSupportedQueryFeaturesString(isHybridSearchQueryPlanOptimizationDisabled),
                     trace,
                     cancellationToken);
             }

@@ -158,7 +158,7 @@
       <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name = "Abc" GROUP BY c.id]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/id/?"},{"IndexSpec":"/name/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/name/?"},{"IndexSpec":"/id/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -167,7 +167,7 @@
       <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id = "1" and c.name > "Abc" GROUP BY c.id]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/id/?"},{"IndexSpec":"/name/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["/id ASC","/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/name/?"},{"IndexSpec":"/id/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[{"IndexSpecs":["/id ASC","/name ASC"],"IndexImpactScore":"High"}]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>
@@ -176,7 +176,7 @@
       <Query><![CDATA[SELECT COUNT(1) FROM c WHERE c.id > "1" and c.name > "Abc" GROUP BY c.id]]></Query>
     </Input>
     <Output>
-      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/id/?"},{"IndexSpec":"/name/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
+      <IndexMetric><![CDATA[{"UtilizedIndexes":{"SingleIndexes":[{"IndexSpec":"/name/?"},{"IndexSpec":"/id/?"}],"CompositeIndexes":[]},"PotentialIndexes":{"SingleIndexes":[],"CompositeIndexes":[]}}]]></IndexMetric>
     </Output>
   </Result>
   <Result>

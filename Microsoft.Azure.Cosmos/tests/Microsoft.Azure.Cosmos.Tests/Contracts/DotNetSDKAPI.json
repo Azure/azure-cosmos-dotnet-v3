@@ -166,10 +166,10 @@
     "Microsoft.Azure.Cosmos.AvailabilityStrategy;System.Object;IsAbstract:True;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
-        "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan])": {
+        "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan], Boolean)": {
           "Type": "Method",
           "Attributes": [],
-          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+          "MethodInfo": "Microsoft.Azure.Cosmos.AvailabilityStrategy CrossRegionHedgingStrategy(System.TimeSpan, System.Nullable`1[System.TimeSpan], Boolean);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.AvailabilityStrategy DisabledStrategy()": {
           "Type": "Method",
@@ -369,6 +369,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithErrorNotification(ChangeFeedMonitorErrorDelegate);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInMemoryLeaseContainer()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInMemoryLeaseContainer();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.ChangeFeedProcessorBuilder WithInstanceName(System.String)": {
           "Type": "Method",
@@ -2225,6 +2230,18 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.ConflictResolutionPolicy get_ConflictResolutionPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.FullTextPolicy FullTextPolicy[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FullTextPolicy FullTextPolicy;CanRead:True;CanWrite:True;Microsoft.Azure.Cosmos.FullTextPolicy get_FullTextPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextPolicy(Microsoft.Azure.Cosmos.FullTextPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.FullTextPolicy get_FullTextPolicy()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.FullTextPolicy get_FullTextPolicy();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.GeospatialConfig GeospatialConfig[Newtonsoft.Json.JsonIgnoreAttribute()]": {
           "Type": "Property",
           "Attributes": [
@@ -2462,6 +2479,11 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_DefaultTimeToLive(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextPolicy(Microsoft.Azure.Cosmos.FullTextPolicy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_FullTextPolicy(Microsoft.Azure.Cosmos.FullTextPolicy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_GeospatialConfig(Microsoft.Azure.Cosmos.GeospatialConfig)": {
           "Type": "Method",
@@ -3537,6 +3559,11 @@
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.TimeSpan] RetryAfter;CanRead:True;CanWrite:False;System.Nullable`1[System.TimeSpan] get_RetryAfter();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Object Clone()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Object Clone();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
         "System.String ActivityId": {
           "Type": "Property",
           "Attributes": [],
@@ -3662,6 +3689,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Exception GetBaseException();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Object Clone()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Object Clone();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
         },
         "System.String get_HelpLink()": {
           "Type": "Method",
@@ -4798,10 +4830,20 @@
           "Attributes": [],
           "MethodInfo": "System.String get_IndexMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.String get_QueryAdvice()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.String get_QueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.String IndexMetrics": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.String IndexMetrics;CanRead:True;CanWrite:False;System.String get_IndexMetrics();IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String QueryAdvice": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.String QueryAdvice;CanRead:True;CanWrite:False;System.String get_QueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -4902,6 +4944,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ConflictResolutionDefinition WithConflictResolution();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.FullTextPolicyDefinition WithFullTextPolicy(System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.FullTextPolicyDefinition WithFullTextPolicy(System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.UniqueKeyDefinition WithUniqueKey()": {
           "Type": "Method",
@@ -5023,6 +5070,11 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithApplicationRegion(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithAvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithAvailabilityStrategy(Microsoft.Azure.Cosmos.AvailabilityStrategy);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Microsoft.Azure.Cosmos.Fluent.CosmosClientBuilder WithBulkExecution(Boolean)": {
           "Type": "Method",
           "Attributes": [],
@@ -5136,6 +5188,43 @@
       },
       "NestedTypes": {}
     },
+    "Microsoft.Azure.Cosmos.Fluent.FullTextIndexDefinition`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.Fluent.FullTextIndexDefinition`1[T] Path(System.String)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.FullTextIndexDefinition`1[T] Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "T Attach()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "T Attach();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.FullTextIndexPath])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.FullTextIndexPath]), Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.FullTextIndexPath])]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Fluent.FullTextPolicyDefinition;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.ContainerBuilder Attach();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath], System.Action`1[Microsoft.Azure.Cosmos.FullTextPolicy])": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath], System.Action`1[Microsoft.Azure.Cosmos.FullTextPolicy]), Void .ctor(Microsoft.Azure.Cosmos.Fluent.ContainerBuilder, System.String, System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath], System.Action`1[Microsoft.Azure.Cosmos.FullTextPolicy])]"
+        }
+      },
+      "NestedTypes": {}
+    },
     "Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:True;IsSerializable:False": {
       "Subclasses": {},
       "Members": {
@@ -5143,6 +5232,11 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.CompositeIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithCompositeIndex();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Microsoft.Azure.Cosmos.Fluent.FullTextIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithFullTextIndex()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Fluent.FullTextIndexDefinition`1[Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T]] WithFullTextIndex();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Microsoft.Azure.Cosmos.Fluent.IndexingPolicyDefinition`1[T] WithAutomaticIndexing(Boolean)": {
           "Type": "Method",
@@ -5273,6 +5367,150 @@
           "Type": "Constructor",
           "Attributes": [],
           "MethodInfo": "[Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath]), Void .ctor(T, System.Action`1[Microsoft.Azure.Cosmos.VectorIndexPath])]"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.FullTextIndexPath;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Path;CanRead:True;CanWrite:True;System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_Path(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.FullTextPath;System.Object;IsAbstract:False;IsSealed:False;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "Boolean Equals(Microsoft.Azure.Cosmos.FullTextPath)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Boolean Equals(Microsoft.Azure.Cosmos.FullTextPath);IsAbstract:False;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:True;"
+        },
+        "System.String get_Language()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Language();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_Path()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Language[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"language\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Language;CanRead:True;CanWrite:True;System.String get_Language();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Language(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String Path[Newtonsoft.Json.JsonPropertyAttribute(PropertyName = \"path\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String Path;CanRead:True;CanWrite:True;System.String get_Path();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_Language(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Language(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_Path(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_Path(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void ValidateFullTextPath()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void ValidateFullTextPath();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.FullTextPolicy;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:False;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] FullTextPaths[Newtonsoft.Json.JsonIgnoreAttribute()]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonIgnoreAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] FullTextPaths;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextPaths(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths()": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath] get_FullTextPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String DefaultLanguage[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"defaultLanguage\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.String DefaultLanguage;CanRead:True;CanWrite:True;System.String get_DefaultLanguage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DefaultLanguage(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.String get_DefaultLanguage()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.String get_DefaultLanguage();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_DefaultLanguage(System.String)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DefaultLanguage(System.String);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextPaths(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Void set_FullTextPaths(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -5629,6 +5867,20 @@
           ],
           "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.ExcludedPath] get_ExcludedPaths();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] FullTextIndexes[Newtonsoft.Json.JsonPropertyAttribute(NullValueHandling = 1, PropertyName = \"fullTextIndexes\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] FullTextIndexes;CanRead:True;CanWrite:True;System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] get_FullTextIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_FullTextIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] get_FullTextIndexes()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath] get_FullTextIndexes();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.IncludedPath] get_IncludedPaths()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -5696,6 +5948,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_Automatic(Boolean);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_FullTextIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_FullTextIndexes(System.Collections.ObjectModel.Collection`1[Microsoft.Azure.Cosmos.FullTextIndexPath]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_IndexingMode(Microsoft.Azure.Cosmos.IndexingMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -6100,6 +6359,39 @@
           ],
           "MethodInfo": "Boolean RegexMatch(System.Object, System.String);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "Double FullTextScore[TSource](TSource, System.String[])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "Double RRF(Double[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Double RRF(Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double VectorDistance(Byte[], Byte[], Boolean, VectorDistanceOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double VectorDistance(Byte[], Byte[], Boolean, VectorDistanceOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double VectorDistance(SByte[], SByte[], Boolean, VectorDistanceOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double VectorDistance(SByte[], SByte[], Boolean, VectorDistanceOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Double VectorDistance(Single[], Single[], Boolean, VectorDistanceOptions)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "Double VectorDistance(Single[], Single[], Boolean, VectorDistanceOptions);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Int32 DocumentId(System.Object)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
@@ -6121,12 +6413,24 @@
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] ToFeedIterator[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions": {
+          "Type": "NestedType",
+          "Attributes": [],
+          "MethodInfo": null
+        },
         "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
           "Attributes": [
             "ExtensionAttribute"
           ],
           "MethodInfo": "Microsoft.Azure.Cosmos.QueryDefinition ToQueryDefinition[T](System.Linq.IQueryable`1[T]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource,TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]])[System.Runtime.CompilerServices.ExtensionAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "ExtensionAttribute"
+          ],
+          "MethodInfo": "System.Linq.IOrderedQueryable`1[TSource] OrderByRank[TSource,TKey](System.Linq.IQueryable`1[TSource], System.Linq.Expressions.Expression`1[System.Func`2[TSource,TKey]]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[System.Decimal]] AverageAsync(System.Linq.IQueryable`1[System.Decimal], System.Threading.CancellationToken)[System.Runtime.CompilerServices.ExtensionAttribute()]": {
           "Type": "Method",
@@ -6288,6 +6592,155 @@
             "ExtensionAttribute"
           ],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Response`1[TSource]] MinAsync[TSource](System.Linq.IQueryable`1[TSource], System.Threading.CancellationToken);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
+        }
+      },
+      "NestedTypes": {
+        "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+          "Subclasses": {},
+          "Members": {
+            "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] DistanceFunction;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] DataType;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[System.Int32] get_SearchListSizeMultiplier()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Int32] get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[System.Int32] SearchListSizeMultiplier[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"searchListSizeMultiplier\")]": {
+              "Type": "Property",
+              "Attributes": [
+                "JsonPropertyNameAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Int32] SearchListSizeMultiplier;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SearchListSizeMultiplier(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void .ctor()": {
+              "Type": "Constructor",
+              "Attributes": [],
+              "MethodInfo": "[Void .ctor(), Void .ctor()]"
+            },
+            "Void set_DataType(System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_DataType(System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_DistanceFunction(System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_DistanceFunction(System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_SearchListSizeMultiplier(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_SearchListSizeMultiplier(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            }
+          },
+          "NestedTypes": {}
+        }
+      }
+    },
+    "Microsoft.Azure.Cosmos.Linq.CosmosLinqExtensions+VectorDistanceOptions;System.Object;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:False;IsClass:True;IsValueType:False;IsNested:True;IsGenericType:False;IsSerializable:False": {
+      "Subclasses": {},
+      "Members": {
+        "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] DistanceFunction[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"distanceFunction\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] DistanceFunction;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DistanceFunction(System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] get_DistanceFunction()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction] get_DistanceFunction();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] DataType[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"dataType\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] DataType;CanRead:True;CanWrite:True;System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_DataType(System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] get_DataType()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType] get_DataType();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] get_SearchListSizeMultiplier()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Int32] SearchListSizeMultiplier[System.Text.Json.Serialization.JsonPropertyNameAttribute(\"searchListSizeMultiplier\")]": {
+          "Type": "Property",
+          "Attributes": [
+            "JsonPropertyNameAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Int32] SearchListSizeMultiplier;CanRead:True;CanWrite:True;System.Nullable`1[System.Int32] get_SearchListSizeMultiplier();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_SearchListSizeMultiplier(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void .ctor()": {
+          "Type": "Constructor",
+          "Attributes": [],
+          "MethodInfo": "[Void .ctor(), Void .ctor()]"
+        },
+        "Void set_DataType(System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DataType(System.Nullable`1[Microsoft.Azure.Cosmos.VectorDataType]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_DistanceFunction(System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_DistanceFunction(System.Nullable`1[Microsoft.Azure.Cosmos.DistanceFunction]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_SearchListSizeMultiplier(System.Nullable`1[System.Int32])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_SearchListSizeMultiplier(System.Nullable`1[System.Int32]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         }
       },
       "NestedTypes": {}
@@ -7134,10 +7587,22 @@
           ],
           "MethodInfo": "System.Nullable`1[System.Boolean] get_PopulateIndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
+        "System.Nullable`1[System.Boolean] get_PopulateQueryAdvice()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "System.Nullable`1[System.Boolean] get_PopulateQueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Nullable`1[System.Boolean] PopulateIndexMetrics": {
           "Type": "Property",
           "Attributes": [],
           "MethodInfo": "System.Nullable`1[System.Boolean] PopulateIndexMetrics;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_PopulateIndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Nullable`1[System.Boolean] PopulateQueryAdvice": {
+          "Type": "Property",
+          "Attributes": [],
+          "MethodInfo": "System.Nullable`1[System.Boolean] PopulateQueryAdvice;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_PopulateQueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PopulateQueryAdvice(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Nullable`1[System.Int32] get_MaxBufferedItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -7271,6 +7736,13 @@
             "CompilerGeneratedAttribute"
           ],
           "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "Void set_PopulateQueryAdvice(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+          "Type": "Method",
+          "Attributes": [
+            "CompilerGeneratedAttribute"
+          ],
+          "MethodInfo": "Void set_PopulateQueryAdvice(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
           "Type": "Method",
@@ -7514,6 +7986,11 @@
           "Type": "Field",
           "Attributes": [],
           "MethodInfo": "System.String EastUS2EUAP;IsInitOnly:False;IsStatic:True;"
+        },
+        "System.String EastUS3": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "System.String EastUS3;IsInitOnly:False;IsStatic:True;"
         },
         "System.String EastUSSLV": {
           "Type": "Field",
@@ -8325,10 +8802,22 @@
               ],
               "MethodInfo": "System.Nullable`1[System.Boolean] get_PopulateIndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
+            "System.Nullable`1[System.Boolean] get_PopulateQueryAdvice()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "System.Nullable`1[System.Boolean] get_PopulateQueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
             "System.Nullable`1[System.Boolean] PopulateIndexMetrics": {
               "Type": "Property",
               "Attributes": [],
               "MethodInfo": "System.Nullable`1[System.Boolean] PopulateIndexMetrics;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_PopulateIndexMetrics();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "System.Nullable`1[System.Boolean] PopulateQueryAdvice": {
+              "Type": "Property",
+              "Attributes": [],
+              "MethodInfo": "System.Nullable`1[System.Boolean] PopulateQueryAdvice;CanRead:True;CanWrite:True;System.Nullable`1[System.Boolean] get_PopulateQueryAdvice();IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;Void set_PopulateQueryAdvice(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "System.Nullable`1[System.Int32] get_MaxBufferedItemCount()[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -8462,6 +8951,13 @@
                 "CompilerGeneratedAttribute"
               ],
               "MethodInfo": "Void set_PopulateIndexMetrics(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+            },
+            "Void set_PopulateQueryAdvice(System.Nullable`1[System.Boolean])[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
+              "Type": "Method",
+              "Attributes": [
+                "CompilerGeneratedAttribute"
+              ],
+              "MethodInfo": "Void set_PopulateQueryAdvice(System.Nullable`1[System.Boolean]);IsAbstract:False;IsStatic:False;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
             },
             "Void set_QueryTextMode(Microsoft.Azure.Cosmos.QueryTextMode)[System.Runtime.CompilerServices.CompilerGeneratedAttribute()]": {
               "Type": "Method",
@@ -9175,6 +9671,36 @@
           "Attributes": [],
           "MethodInfo": "Microsoft.Azure.Cosmos.FeedIterator`1[T] GetUserDefinedFunctionQueryIterator[T](System.String, System.String, Microsoft.Azure.Cosmos.QueryRequestOptions);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateStoredProcedureStreamAsync(Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateStoredProcedureStreamAsync(Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateTriggerStreamAsync(Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateTriggerStreamAsync(Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateUserDefinedFunctionStreamAsync(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] CreateUserDefinedFunctionStreamAsync(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteStoredProcedureStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteStoredProcedureStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteTriggerStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteTriggerStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteUserDefinedFunctionStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] DeleteUserDefinedFunctionStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteStoredProcedureStreamAsync(System.String, Microsoft.Azure.Cosmos.PartitionKey, System.Object[], Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",
           "Attributes": [],
@@ -9184,6 +9710,36 @@
           "Type": "Method",
           "Attributes": [],
           "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ExecuteStoredProcedureStreamAsync(System.String, System.IO.Stream, Microsoft.Azure.Cosmos.PartitionKey, Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadStoredProcedureStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadStoredProcedureStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadTriggerStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadTriggerStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadUserDefinedFunctionStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReadUserDefinedFunctionStreamAsync(System.String, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceStoredProcedureStreamAsync(Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceStoredProcedureStreamAsync(Microsoft.Azure.Cosmos.Scripts.StoredProcedureProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceTriggerStreamAsync(Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceTriggerStreamAsync(Microsoft.Azure.Cosmos.Scripts.TriggerProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
+        "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceUserDefinedFunctionStreamAsync(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken)": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.ResponseMessage] ReplaceUserDefinedFunctionStreamAsync(Microsoft.Azure.Cosmos.Scripts.UserDefinedFunctionProperties, Microsoft.Azure.Cosmos.RequestOptions, System.Threading.CancellationToken);IsAbstract:True;IsStatic:False;IsVirtual:True;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
         },
         "System.Threading.Tasks.Task`1[Microsoft.Azure.Cosmos.Scripts.StoredProcedureExecuteResponse`1[TOutput]] ExecuteStoredProcedureAsync[TOutput](System.String, Microsoft.Azure.Cosmos.PartitionKey, System.Object[], Microsoft.Azure.Cosmos.Scripts.StoredProcedureRequestOptions, System.Threading.CancellationToken)": {
           "Type": "Method",

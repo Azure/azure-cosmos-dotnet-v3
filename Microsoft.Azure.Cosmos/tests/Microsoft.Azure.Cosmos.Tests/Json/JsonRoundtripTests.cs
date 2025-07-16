@@ -6,7 +6,6 @@
 namespace Microsoft.Azure.Cosmos.Tests.Json
 {
     using System;
-    using System.Collections;
     using System.Diagnostics;
     using System.Text;
     using Microsoft.Azure.Cosmos.Json;
@@ -615,7 +614,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 {
                     SerializationSpec.Text(JsonWriteOptions.None),
                     SerializationSpec.Binary(JsonWriteOptions.None),
-                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays | JsonWriteOptions.EnableUInt64Values)
+                    SerializationSpec.Binary(JsonWriteOptions.EnableNumberArrays | JsonWriteOptions.EnableUInt64Values),
+                    SerializationSpec.Binary(JsonWriteOptions.None, userStringEncoded: true),
                 };
 
                 RewriteScenario[] rewriteScenarios =
