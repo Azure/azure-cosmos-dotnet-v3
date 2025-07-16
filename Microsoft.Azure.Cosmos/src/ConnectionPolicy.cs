@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
-        internal bool DisablePartitionLevelFailoverOverride
+        internal bool DisablePartitionLevelFailover
         {
             get;
             set;

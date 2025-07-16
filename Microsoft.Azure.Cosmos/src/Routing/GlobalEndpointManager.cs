@@ -602,7 +602,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            if (databaseAccount.EnablePartitionLevelFailover.HasValue)
+            if (!this.connectionPolicy.DisablePartitionLevelFailover && databaseAccount.EnablePartitionLevelFailover.HasValue)
             {
                 this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
             }

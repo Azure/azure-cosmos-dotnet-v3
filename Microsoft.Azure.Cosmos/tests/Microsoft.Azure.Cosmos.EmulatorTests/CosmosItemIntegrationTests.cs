@@ -698,13 +698,24 @@
 
                 await Task.Delay(6000); // Wait for the timeout counter to reset
 
+                try
+                {
+                    ItemResponse<CosmosIntegrationTestObject> readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                            id: itemsList[0].Id,
+                            partitionKey: new PartitionKey(itemsList[0].Pk));
+                }
+                catch (CosmosException)
+                {
+                    Assert.Fail("Read Item operation should succeed after the timeout counter is overwritten.");
+                }
+
                 failoverInfo = TestCommon.GetFailoverInfoForFirstPartitionUsingReflection(
                             globalPartitionEndpointManager: cosmosClient.ClientContext.DocumentClient.PartitionKeyRangeLocation,
                             isReadOnlyOrMultiMaster: true);
 
                 failoverInfo.SnapshotConsecutiveRequestFailureCount(out int currentReadErrorCount, out _);
 
-                Assert.AreEqual(0, currentReadErrorCount, "The read error count should be reset after the timeout counter is overwritten.");
+                Assert.AreEqual(1, currentReadErrorCount, "The read error count should be reset after the timeout counter is overwritten. Then after one more failure it should be incremented by 1.");
                 Assert.IsTrue(readErrorCount > currentReadErrorCount, "The read error count should be greater than the current before the timeout counter is overwritten.");
             }
             finally
@@ -1628,7 +1639,7 @@
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
-                DisablePartitionLevelFailoverOverride = true, // This will disable the PPAF override for this test.
+                DisablePartitionLevelFailover = true, // This will disable the PPAF override for this test.
             };
 
             List<CosmosIntegrationTestObject> itemsList = new()

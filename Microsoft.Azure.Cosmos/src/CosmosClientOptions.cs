@@ -775,7 +775,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Flag from gateway to disable partition level failover.
         /// </summary>
-        internal bool DisablePartitionLevelFailoverOverride { get; set; } = false;
+        internal bool DisablePartitionLevelFailover { get; set; } = false;
 
         /// <summary>
         /// Quorum Read allowed with eventual consistency account or consistent prefix account.
@@ -1035,7 +1035,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
-                DisablePartitionLevelFailoverOverride = this.DisablePartitionLevelFailoverOverride,
+                DisablePartitionLevelFailover = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
