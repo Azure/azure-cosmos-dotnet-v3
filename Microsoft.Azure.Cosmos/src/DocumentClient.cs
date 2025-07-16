@@ -1056,7 +1056,7 @@ namespace Microsoft.Azure.Cosmos
                 this.EnsureValidOverwrite(this.desiredConsistencyLevel.Value);
             }
 
-            if (!this.ConnectionPolicy.DisablePartitionLevelFailover
+            if (!this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride
                 && this.accountServiceConfiguration != null && this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.HasValue)
             {
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;

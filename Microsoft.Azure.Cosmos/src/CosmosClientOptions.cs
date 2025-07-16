@@ -773,7 +773,10 @@ namespace Microsoft.Azure.Cosmos
         internal bool EnablePartitionLevelCircuitBreaker { get; set; } = ConfigurationManager.IsPartitionLevelCircuitBreakerEnabled(defaultValue: false);
 
         /// <summary>
-        /// Flag from gateway to disable partition level failover.
+        /// Flag from gateway to disable partition level failover. Normally, the SDK will enable partition level failover based on the account settings. 
+        /// This flag will be used internally by the compute gateway as by default it will disable partition level failover.
+        /// 
+        /// The default value for this parameter is 'false'.
         /// </summary>
         internal bool DisablePartitionLevelFailover { get; set; } = false;
 
@@ -1035,7 +1038,7 @@ namespace Microsoft.Azure.Cosmos
                 MaxTcpConnectionsPerEndpoint = this.MaxTcpConnectionsPerEndpoint,
                 EnableEndpointDiscovery = !this.LimitToEndpoint,
                 EnablePartitionLevelCircuitBreaker = this.EnablePartitionLevelCircuitBreaker,
-                DisablePartitionLevelFailover = this.DisablePartitionLevelFailover,
+                DisablePartitionLevelFailoverClientLevelOverride = this.DisablePartitionLevelFailover,
                 PortReuseMode = this.portReuseMode,
                 EnableTcpConnectionEndpointRediscovery = this.EnableTcpConnectionEndpointRediscovery,
                 EnableAdvancedReplicaSelectionForTcp = this.EnableAdvancedReplicaSelectionForTcp,
