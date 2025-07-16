@@ -250,6 +250,7 @@ namespace Microsoft.Azure.Cosmos
         /// Test to verify the fix for the stream consumption issue when JSON deserialization fails.
         /// This reproduces the scenario where a 403 response has application/json content type 
         /// but invalid JSON content, which would previously cause "stream already consumed" exception.
+        /// Fixes issue #5243.
         /// </summary>
         [TestMethod]
         [Owner("copilot")]
