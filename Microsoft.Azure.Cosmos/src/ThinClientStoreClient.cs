@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
@@ -23,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
@@ -33,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
             bool isPartitionLevelFailoverEnabled = false)
             : base(httpClient,
                   eventSource,
-                  serializerSettings)
+                  serializerSettings,
+                  isPartitionLevelFailoverEnabled)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
