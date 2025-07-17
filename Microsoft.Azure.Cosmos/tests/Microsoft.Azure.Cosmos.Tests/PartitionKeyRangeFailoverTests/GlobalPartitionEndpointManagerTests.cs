@@ -388,21 +388,16 @@ namespace Microsoft.Azure.Cosmos.Tests
         [TestMethod]
         [Timeout(20000)]
         [Owner("dkunda")]
-        [DataRow(true, null, DisplayName = "Scenario when PPAF is enabled at client level and not set at the service level.")]
-        [DataRow(false, null, DisplayName = "Scenario when PPAF is disabled at client level and not set at the service level.")]
-        [DataRow(true, true, DisplayName = "Scenario when PPAF is enabled at client level and enabled at service level.")]
-        [DataRow(false, true, DisplayName = "Scenario when PPAF is disabled at client level and enabled at service level.")]
-        [DataRow(true, false, DisplayName = "Scenario when PPAF is enabled at client level and disabled at service level.")]
-        [DataRow(false, false, DisplayName = "Scenario when PPAF is disabled at client level and disabled at service level.")]
+        [DataRow(false, null, DisplayName = "Scenario when PPAF is not disabled at client level and not set at the service level.")]
+        [DataRow(false, true, DisplayName = "Scenario when PPAF is not disabled at client level and enabled at service level.")]
+        [DataRow(false, false, DisplayName = "Scenario when PPAF is not disabled at client level and disabled at service level.")]
+        [DataRow(true, null, DisplayName = "Scenario when PPAF is disabled at client level and not set at the service level.")]
+        [DataRow(true, true, DisplayName = "Scenario when PPAF is disabled at client level and enabled at service level.")]
+        [DataRow(true, false, DisplayName = "Scenario when PPAF is disabled at client level and disabled at service level.")]
         public async Task TestPPAFClientAndServerEnablementCombinationScenariosAsync(
-            bool ppafEnabledFromClient,
+            bool ppafDisabledFromClient,
             bool? ppafEnabledFromService)
         {
-            if (ppafEnabledFromClient)
-            {
-                Environment.SetEnvironmentVariable(ConfigurationManager.PartitionLevelFailoverEnabled, "True");
-            }
-
             try
             {
                 GlobalPartitionEndpointManagerTests.SetupAccountAndCacheOperations(
@@ -442,12 +437,13 @@ namespace Microsoft.Azure.Cosmos.Tests
                 {
                     ConsistencyLevel = Cosmos.ConsistencyLevel.Strong,
                     ApplicationPreferredRegions = new List<string>()
-                {
-                    Regions.EastUS,
-                    Regions.WestUS
-                },
+                    {
+                        Regions.EastUS,
+                        Regions.WestUS
+                    },
                     HttpClientFactory = () => new HttpClient(new HttpHandlerHelper(mockHttpHandler.Object)),
                     TransportClientHandlerFactory = (original) => mockTransport.Object,
+                    DisablePartitionLevelFailover = ppafDisabledFromClient,
                 };
 
                 using CosmosClient customClient = new CosmosClient(
@@ -463,8 +459,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     Pk = "TestPk"
                 };
 
-                if ((!ppafEnabledFromService.HasValue && ppafEnabledFromClient)
-                    || (ppafEnabledFromService.HasValue && ppafEnabledFromService.Value))
+                if (!ppafDisabledFromClient && ppafEnabledFromService.HasValue && ppafEnabledFromService.Value)
                 {
                     ItemResponse<ToDoActivity> response = await container.CreateItemAsync(toDoActivity, new Cosmos.PartitionKey(toDoActivity.Pk));
 
