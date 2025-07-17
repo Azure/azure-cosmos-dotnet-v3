@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
                 writer.WritePropertyName(PatchConstants.PropertyNames.OperationType);
                 writer.WriteValue(operation.OperationType.ToEnumMemberString());
                 writer.WritePropertyName(PatchConstants.PropertyNames.Path);
-                writer.WriteValue(operation.Path);
+                writer.WriteValue(PatchPathHelper.ProcessPath(operation.Path));
 
                 if (operation.OperationType == PatchOperationType.Move)
                 {
