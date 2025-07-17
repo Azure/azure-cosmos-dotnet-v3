@@ -19,10 +19,18 @@ namespace Microsoft.Azure.Cosmos
     /// See <see cref="Cosmos.Database"/> for creating new containers, and reading/querying all containers.
     /// </summary>
     /// <remarks>
-    ///  Note: all these operations make calls against a fixed budget.
-    ///  You should design your system such that these calls scale sub linearly with your application.
-    ///  For instance, do not call `container.readAsync()` before every single `container.readItemAsync()` call to ensure the container exists;
-    ///  do this once on application start up.
+    /// <para><strong>Performance Best Practices:</strong></para>
+    /// <list type="bullet">
+    /// <item><description>Use point reads (ReadItemAsync) instead of queries when you know the item id and partition key</description></item>
+    /// <item><description>Cache container references - do not call GetContainer() repeatedly for the same container</description></item>
+    /// <item><description>Use stream APIs for better performance when you don't need object deserialization</description></item>
+    /// <item><description>Design your partition key strategy to distribute load evenly across partitions</description></item>
+    /// <item><description>Use appropriate consistency levels for your scenarios - Eventual consistency offers best performance</description></item>
+    /// </list>
+    /// <para><strong>Resource Management:</strong></para>
+    /// <para>All these operations make calls against a fixed budget. You should design your system such that these calls scale sub linearly with your application.
+    /// For instance, do not call ReadContainerAsync() before every single ReadItemAsync() call to ensure the container exists; 
+    /// do this once on application startup.</para>
     /// </remarks>
     public abstract class Container
     {
@@ -198,8 +206,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
         public abstract Task<int?> ReadThroughputAsync(
             CancellationToken cancellationToken = default);
 
@@ -235,8 +243,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
         public abstract Task<ThroughputResponse> ReadThroughputAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default);
@@ -260,8 +268,8 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             int throughput,
             RequestOptions requestOptions = null,
@@ -294,8 +302,8 @@ namespace Microsoft.Azure.Cosmos
         /// </code>
         /// </example>
         /// <remarks>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
-        /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/request-units">Request Units</seealso>
+        /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/set-throughput#set-throughput-on-a-container">Set throughput on a container</seealso>
         /// </remarks>
         public abstract Task<ThroughputResponse> ReplaceThroughputAsync(
             ThroughputProperties throughputProperties,
@@ -351,21 +359,43 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>The <see cref="ItemResponse{T}"/> that was created contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <remarks>
+        /// <para><strong>Best Practices:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>Always specify the partition key explicitly for better performance</description></item>
+        /// <item><description>Use meaningful, unique id values to avoid conflicts</description></item>
+        /// <item><description>Consider using UpsertItemAsync if the item might already exist</description></item>
+        /// <item><description>Handle CosmosException with status code 409 (Conflict) if the item already exists</description></item>
+        /// </list>
+        /// </remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
+        /// public class ToDoActivity
+        /// {
+        ///     public string id { get; set; }
+        ///     public string status { get; set; }
         /// }
         /// 
-        /// ToDoActivity test = new ToDoActivity()
+        /// try
         /// {
-        ///    id = Guid.NewGuid().ToString(),
-        ///    status = "InProgress"
-        /// };
+        ///     ToDoActivity newTask = new ToDoActivity()
+        ///     {
+        ///         id = Guid.NewGuid().ToString(),
+        ///         status = "InProgress"
+        ///     };
         ///
-        /// ItemResponse item = await this.container.CreateItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
+        ///     ItemResponse<ToDoActivity> response = await this.container.CreateItemAsync<ToDoActivity>(
+        ///         newTask, 
+        ///         new PartitionKey(newTask.status));
+        ///     
+        ///     Console.WriteLine($"Created item with id: {response.Resource.id}");
+        /// }
+        /// catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.Conflict)
+        /// {
+        ///     // Item with this id already exists
+        ///     Console.WriteLine("Item already exists");
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -428,36 +458,45 @@ namespace Microsoft.Azure.Cosmos
         /// A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which wraps the read resource record.
         /// </returns>
         /// <remarks>
-        /// Items contain meta data that can be obtained by mapping these meta data attributes to properties in <typeparamref name="T"/>.
-        /// * "_ts": Gets the last modified time stamp associated with the item from the Azure Cosmos DB service.
-        /// * "_etag": Gets the entity tag associated with the item from the Azure Cosmos DB service.
-        /// * "ttl": Gets the time to live in seconds of the item in the Azure Cosmos DB service.
-        /// Note that, this API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property at the moment.
+        /// <para><strong>Performance:</strong> Point reads are the most efficient operation in Cosmos DB. Always provide both id and partition key for optimal performance.</para>
+        /// <para><strong>Metadata:</strong> Items contain metadata that can be obtained by mapping these attributes to properties in <typeparamref name="T"/>:</para>
+        /// <list type="bullet">
+        /// <item><description>"_ts": Gets the last modified timestamp associated with the item</description></item>
+        /// <item><description>"_etag": Gets the entity tag associated with the item for optimistic concurrency</description></item>
+        /// <item><description>"ttl": Gets the time to live in seconds of the item</description></item>
+        /// </list>
+        /// <para>Note: This API does not support the usage of <see cref="RequestOptions.IfMatchEtag"/> property.</para>
         /// </remarks>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
+        /// public class ToDoActivity
+        /// {
+        ///     public string id { get; set; }
+        ///     public string status { get; set; }
+        ///     public string _etag { get; set; }  // Optional: for optimistic concurrency
         /// }
         /// 
-        /// Example 1: Reading Item with Full Response
-        ///
-        /// This example demonstrates how to read an item from the container and retrieve the full
-        /// response, including metadata such as request units (RU) consumed, along with the
-        /// `ToDoActivity` object.
-        ///
-        /// ItemResponse<ToDoActivity> toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
-        ///
-        /// Example 2: Reading Item with Implicit Casting
-        ///
-        /// This example shows how to read an item from the container and implicitly cast the
-        /// response directly to a `ToDoActivity` object, omitting the metadata in the `ItemResponse`.
-        ///
-        /// ToDoActivity toDoActivity = await this.container.ReadItemAsync<ToDoActivity>("id", new PartitionKey("partitionKey"));
-        /// 
+        /// try
+        /// {
+        ///     // Reading item with full response (includes metadata)
+        ///     ItemResponse<ToDoActivity> response = await this.container.ReadItemAsync<ToDoActivity>(
+        ///         "item-id", 
+        ///         new PartitionKey("partition-value"));
+        ///     
+        ///     ToDoActivity item = response.Resource;
+        ///     Console.WriteLine($"Request charge: {response.RequestCharge} RUs");
+        ///     
+        ///     // Implicit casting directly to object (omits metadata)
+        ///     ToDoActivity directItem = await this.container.ReadItemAsync<ToDoActivity>(
+        ///         "item-id", 
+        ///         new PartitionKey("partition-value"));
+        /// }
+        /// catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        /// {
+        ///     Console.WriteLine("Item not found");
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -527,27 +566,50 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>The <see cref="ItemResponse{T}"/> that was upserted contained within a <see cref="System.Threading.Tasks.Task"/> object representing the service response for the asynchronous operation.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <remarks>
-        /// <para>
-        /// Upsert result i.e. creation or replace can be identified by the status code:
-        /// 201 - item created
-        /// 200 - item replaced
-        /// </para>
+        /// <para><strong>Best Practices:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>Use upsert when you want to insert if the item doesn't exist, or replace if it does</description></item>
+        /// <item><description>Upsert is more efficient than separate read-then-create/update operations</description></item>
+        /// <item><description>Always specify the partition key explicitly for better performance</description></item>
+        /// <item><description>Consider using optimistic concurrency with ETags for conflict resolution</description></item>
+        /// </list>
+        /// <para><strong>Status Codes:</strong> Upsert result can be identified by the HTTP status code:</para>
+        /// <list type="bullet">
+        /// <item><description>201 - Item was created (insert operation)</description></item>
+        /// <item><description>200 - Item was replaced (update operation)</description></item>
+        /// </list>
         /// </remarks>
         /// <example>
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
+        /// public class ToDoActivity
+        /// {
+        ///     public string id { get; set; }
+        ///     public string status { get; set; }
+        ///     public DateTime lastModified { get; set; }
         /// }
         /// 
-        /// ToDoActivity test = new ToDoActivity()
+        /// ToDoActivity activity = new ToDoActivity()
         /// {
-        ///    id = Guid.NewGuid().ToString(),
-        ///    status = "InProgress"
+        ///     id = "task-123",
+        ///     status = "InProgress",
+        ///     lastModified = DateTime.UtcNow
         /// };
         ///
-        /// ItemResponse<ToDoActivity> item = await this.container.UpsertItemAsync<ToDoActivity>(test, new PartitionKey(test.status));
+        /// // Upsert will create if not exists, or replace if exists
+        /// ItemResponse<ToDoActivity> response = await this.container.UpsertItemAsync<ToDoActivity>(
+        ///     activity, 
+        ///     new PartitionKey(activity.status));
+        /// 
+        /// // Check if item was created or updated
+        /// if (response.StatusCode == HttpStatusCode.Created)
+        /// {
+        ///     Console.WriteLine("Item was created");
+        /// }
+        /// else if (response.StatusCode == HttpStatusCode.OK)
+        /// {
+        ///     Console.WriteLine("Item was updated");
+        /// }
         /// ]]>
         /// </code>
         /// </example>
@@ -880,7 +942,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
         /// <returns>A <see cref="Task"/> containing a <see cref="ItemResponse{T}"/> which will contain information about the request issued.</returns>
         /// <remarks>
-        /// <see cref="ItemResponse{T}.Resource"/> is <see href="https://docs.microsoft.com/rest/api/cosmos-db/delete-a-document#body">always null</see>
+        /// <see cref="ItemResponse{T}.Resource"/> is <see href="https://learn.microsoft.com/rest/api/cosmos-db/delete-a-document#body">always null</see>
         /// </remarks>
         /// For delete operations, the <see cref="ItemResponse{T}.Resource"/> will be null. Item content is not expected in the response.
         /// 
@@ -950,34 +1012,56 @@ namespace Microsoft.Azure.Cosmos
             QueryRequestOptions requestOptions = null);
 
         /// <summary>
-        ///  This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
-        ///  For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
+        /// This method creates a query for items under a container in an Azure Cosmos database using a SQL statement with parameterized values. It returns a FeedIterator.
+        /// For more information on preparing SQL statements with parameterized values, please see <see cref="QueryDefinition"/>.
         /// </summary>
         /// <param name="queryDefinition">The Cosmos SQL query definition.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
         /// <returns>An iterator to go through the items.</returns>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
+        /// <remarks>
+        /// <para><strong>Query Best Practices:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>Always use parameterized queries to prevent injection attacks and enable query plan caching</description></item>
+        /// <item><description>Specify partition key in QueryRequestOptions for single-partition queries to improve performance</description></item>
+        /// <item><description>Use point reads (ReadItemAsync) instead of queries when you know the id and partition key</description></item>
+        /// <item><description>Limit result sets using TOP clause or MaxItemCount to control RU consumption</description></item>
+        /// <item><description>Create appropriate indexes for your query patterns</description></item>
+        /// </list>
+        /// </remarks>
         /// <example>
-        /// Create a query to get all the ToDoActivity that have a cost greater than 9000
+        /// Create a query to get ToDoActivity items with cost greater than a threshold
         /// <code language="c#">
         /// <![CDATA[
-        /// public class ToDoActivity{
-        ///     public string id {get; set;}
-        ///     public string status {get; set;}
-        ///     public int cost {get; set;}
+        /// public class ToDoActivity
+        /// {
+        ///     public string id { get; set; }
+        ///     public string status { get; set; }
+        ///     public int cost { get; set; }
         /// }
         /// 
-        /// QueryDefinition queryDefinition = new QueryDefinition("select * from ToDos t where t.cost > @expensive")
-        ///     .WithParameter("@expensive", 9000);
+        /// // Use parameterized query for better performance and security
+        /// QueryDefinition queryDefinition = new QueryDefinition(
+        ///     "SELECT * FROM c WHERE c.cost > @threshold AND c.status = @status")
+        ///     .WithParameter("@threshold", 9000)
+        ///     .WithParameter("@status", "Active");
+        /// 
         /// using (FeedIterator<ToDoActivity> feedIterator = this.Container.GetItemQueryIterator<ToDoActivity>(
         ///     queryDefinition,
         ///     null,
-        ///     new QueryRequestOptions() { PartitionKey = new PartitionKey("Error")}))
+        ///     new QueryRequestOptions() 
+        ///     { 
+        ///         PartitionKey = new PartitionKey("Active"),  // Single partition query
+        ///         MaxItemCount = 100  // Limit page size
+        ///     }))
         /// {
         ///     while (feedIterator.HasMoreResults)
         ///     {
-        ///         foreach(var item in await feedIterator.ReadNextAsync())
+        ///         FeedResponse<ToDoActivity> response = await feedIterator.ReadNextAsync();
+        ///         Console.WriteLine($"Query charge: {response.RequestCharge} RUs");
+        ///         
+        ///         foreach(var item in response)
         ///         {
         ///             Console.WriteLine(item.cost); 
         ///         }
@@ -1227,13 +1311,22 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// This method creates a LINQ query for items under a container in an Azure Cosmos DB service.
-        /// IQueryable extension method ToFeedIterator() should be use for asynchronous execution with FeedIterator, please refer to example 2.
+        /// IQueryable extension method ToFeedIterator() should be used for asynchronous execution with FeedIterator, please refer to example 2.
         /// </summary>
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         /// <remarks>
-        /// LINQ execution is synchronous which will cause issues related to blocking calls. 
-        /// It is recommended to always use ToFeedIterator(), and to do the asynchronous execution.
+        /// <para><strong>LINQ Best Practices:</strong></para>
+        /// <list type="bullet">
+        /// <item><description>Always use ToFeedIterator() for asynchronous execution instead of synchronous enumeration</description></item>
+        /// <item><description>Avoid synchronous execution as it can cause blocking and performance issues</description></item>
+        /// <item><description>Use partition key filters in LINQ queries for single-partition queries</description></item>
+        /// <item><description>Be aware of LINQ provider limitations - not all LINQ operations are supported</description></item>
+        /// <item><description>Consider using SQL queries for complex operations not supported by LINQ</description></item>
+        /// </list>
+        /// <para><strong>Performance:</strong> LINQ execution is synchronous which will cause issues related to blocking calls. 
+        /// It is strongly recommended to always use ToFeedIterator() for asynchronous execution.</para>
         /// </remarks>
+        /// <seealso cref="CosmosSerializationOptions"/>
         /// <typeparam name="T">The type of object to query.</typeparam>
         /// <param name="allowSynchronousQueryExecution">(Optional)the option which allows the query to be executed synchronously via IOrderedQueryable.</param>
         /// <param name="continuationToken">(Optional) The continuation token in the Azure Cosmos DB service.</param>
@@ -1302,10 +1395,6 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        /// <remarks>
-        /// The Azure Cosmos DB LINQ provider compiles LINQ to SQL statements. Refer to https://docs.microsoft.com/azure/cosmos-db/sql-query-linq-to-sql for the list of expressions supported by the Azure Cosmos DB LINQ provider. ToString() on the generated IQueryable returns the translated SQL statement. The Azure Cosmos DB provider translates JSON.NET and DataContract serialization attributes for members to their JSON property names.
-        /// </remarks>
-        /// <seealso cref="CosmosSerializationOptions"/>
         public abstract IOrderedQueryable<T> GetItemLinqQueryable<T>(
             bool allowSynchronousQueryExecution = false,
             string continuationToken = null,
@@ -1329,7 +1418,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken">A cancellation token representing the current cancellation status of the <see cref="ChangeFeedProcessor"/> instance.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous operation that is going to be done with the estimation.</returns>
         /// <remarks>
-        /// The estimation over the Change Feed identifies volumes of transactions. If operations in the container are performed through stored procedures, transactional batch or bulk, a group of operations may share the same <see href="https://docs.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> and represented by a single transaction. 
+        /// The estimation over the Change Feed identifies volumes of transactions. If operations in the container are performed through stored procedures, transactional batch or bulk, a group of operations may share the same <see href="https://learn.microsoft.com/azure/cosmos-db/stored-procedures-triggers-udfs#transactions">transaction scope</see> and represented by a single transaction. 
         /// In those cases, the estimation might not exactly represent number of items, but it is still valid to understand if the pending volume is increasing, decreasing, or on a steady state.
         /// </remarks>
         public delegate Task ChangesEstimationHandler(
