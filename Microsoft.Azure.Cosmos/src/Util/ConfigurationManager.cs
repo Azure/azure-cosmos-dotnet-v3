@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos
         /// Cached value for the maximum number of operations in a direct mode batch request.
         /// This is initialized once and reused to avoid repeatedly reading the environment variable.
         /// </summary>
-        private static readonly Lazy<int> maxOperationsInDirectModeBatchRequestCached = new Lazy<int>(GetMaxOperationsInDirectModeBatchRequestInternal);
+        private static Lazy<int> maxOperationsInDirectModeBatchRequestCached = new Lazy<int>(GetMaxOperationsInDirectModeBatchRequestInternal);
 
         /// <summary>
         /// Internal field to track if caching is disabled (used for testing).
@@ -440,11 +440,13 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Enables caching for the maximum operations in direct mode batch request.
-        /// This method is intended for testing purposes only.
+        /// This method is intended for testing purposes only and resets the cache.
         /// </summary>
         internal static void EnableBatchRequestCaching()
         {
             isCachingDisabled = false;
+            // Reset the cache to ensure fresh value is read when caching is re-enabled
+            maxOperationsInDirectModeBatchRequestCached = new Lazy<int>(GetMaxOperationsInDirectModeBatchRequestInternal);
         }
     }
 }
