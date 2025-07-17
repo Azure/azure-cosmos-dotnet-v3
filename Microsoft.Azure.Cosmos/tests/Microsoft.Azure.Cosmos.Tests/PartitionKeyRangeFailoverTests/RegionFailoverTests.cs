@@ -301,11 +301,14 @@ namespace Microsoft.Azure.Cosmos.Tests
                     containerName: containerName,
                     containerRid: containerRid);
 
-                MockSetupsHelper.SetupPartitionKeyRanges(
-                    mockHttpHandler: mockHttpHandler,
-                    regionEndpoint: primaryRegionEndpoint,
-                    containerResourceId: containerResourceId,
-                    partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
+                if (enablePartitionLevelFailover)
+                {
+                    MockSetupsHelper.SetupPartitionKeyRanges(
+                        mockHttpHandler: mockHttpHandler,
+                        regionEndpoint: primaryRegionEndpoint,
+                        containerResourceId: containerResourceId,
+                        partitionKeyRangeIds: out IReadOnlyList<string> secondaryRegionPartitionKeyRangeIds);
+                }
 
                 CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
                 {
