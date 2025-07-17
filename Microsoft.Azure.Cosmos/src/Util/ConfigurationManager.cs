@@ -111,6 +111,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for configuring the maximum number of operations
+        /// allowed in a direct mode batch request.
+        /// </summary>
+        internal static readonly string MaxOperationsInDirectModeBatchRequest = "COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -356,6 +362,43 @@ namespace Microsoft.Azure.Cosmos
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpChannelMultiplexingEnabled,
                         defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the maximum number of operations allowed in a direct mode batch request.
+        /// This value can be customized using the COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST environment variable.
+        /// If the environment variable is not set, the default value from Constants.MaxOperationsInDirectModeBatchRequest is used.
+        /// The configured value must be positive and less than or equal to the default constant value.
+        /// </summary>
+        /// <returns>The maximum number of operations allowed in a direct mode batch request.</returns>
+        public static int GetMaxOperationsInDirectModeBatchRequest()
+        {
+            string environmentValue = Environment.GetEnvironmentVariable(ConfigurationManager.MaxOperationsInDirectModeBatchRequest);
+            
+            if (string.IsNullOrEmpty(environmentValue))
+            {
+                return Documents.Constants.MaxOperationsInDirectModeBatchRequest;
+            }
+
+            if (int.TryParse(environmentValue, out int parsedValue))
+            {
+                if (parsedValue <= 0)
+                {
+                    throw new ArgumentException(
+                        $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be a positive integer. Current value: {environmentValue}");
+                }
+
+                if (parsedValue > Documents.Constants.MaxOperationsInDirectModeBatchRequest)
+                {
+                    throw new ArgumentException(
+                        $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be less than or equal to {Documents.Constants.MaxOperationsInDirectModeBatchRequest}. Current value: {environmentValue}");
+                }
+
+                return parsedValue;
+            }
+
+            throw new ArgumentException(
+                $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be a valid integer. Current value: {environmentValue}");
         }
     }
 }

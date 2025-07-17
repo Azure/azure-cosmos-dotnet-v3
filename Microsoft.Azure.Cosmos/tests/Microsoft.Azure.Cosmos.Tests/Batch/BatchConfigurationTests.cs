@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         public void GetMaxOperationsInDirectModeBatchRequest_WhenEnvironmentVariableSetToLargeValue_ReturnsValue()
         {
             // Arrange
-            const int expectedValue = 500;
+            const int expectedValue = 50; // Changed to a smaller value that should be within bounds
             Environment.SetEnvironmentVariable(EnvironmentVariableName, expectedValue.ToString());
 
             // Act
@@ -59,6 +59,21 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             // Assert
             Assert.AreEqual(expectedValue, result);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void GetMaxOperationsInDirectModeBatchRequest_WhenEnvironmentVariableSetToValueGreaterThanMax_ThrowsArgumentException()
+        {
+            // Arrange
+            // Set to a value that's likely greater than the default constant
+            const int valueGreaterThanMax = 10000;
+            Environment.SetEnvironmentVariable(EnvironmentVariableName, valueGreaterThanMax.ToString());
+
+            // Act
+            BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+
+            // Assert - ExpectedException
         }
 
         [TestMethod]
