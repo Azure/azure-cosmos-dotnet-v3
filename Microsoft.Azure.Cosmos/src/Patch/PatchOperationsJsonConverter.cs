@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos
                 if (operation.OperationType == PatchOperationType.Move)
                 {
                     writer.WritePropertyName(PatchConstants.PropertyNames.From);
-                    writer.WriteValue(operation.From);
+                    writer.WriteValue(PatchPathHelper.ProcessPath(operation.From));
                 }
                 else if (operation.TrySerializeValueParameter(this.userSerializer, out Stream valueStream))
                 {
