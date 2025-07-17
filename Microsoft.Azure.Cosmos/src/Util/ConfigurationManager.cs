@@ -115,7 +115,18 @@ namespace Microsoft.Azure.Cosmos
         /// A read-only string containing the environment variable name for configuring the maximum number of operations
         /// allowed in a direct mode batch request.
         /// </summary>
-        internal static readonly string MaxOperationsInDirectModeBatchRequest = "COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST";
+        internal static readonly string MaxOperationsInDirectModeBatchRequest = "AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST";
+
+        /// <summary>
+        /// Cached value for the maximum number of operations in a direct mode batch request.
+        /// This is initialized once and reused to avoid repeatedly reading the environment variable.
+        /// </summary>
+        private static readonly Lazy<int> maxOperationsInDirectModeBatchRequestCached = new Lazy<int>(GetMaxOperationsInDirectModeBatchRequestInternal);
+
+        /// <summary>
+        /// Internal field to track if caching is disabled (used for testing).
+        /// </summary>
+        private static bool isCachingDisabled = false;
 
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
@@ -366,12 +377,29 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets the maximum number of operations allowed in a direct mode batch request.
-        /// This value can be customized using the COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST environment variable.
+        /// This value can be customized using the AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST environment variable.
         /// If the environment variable is not set, the default value from Constants.MaxOperationsInDirectModeBatchRequest is used.
         /// The configured value must be positive and less than or equal to the default constant value.
+        /// This method uses caching to avoid repeatedly reading the environment variable.
         /// </summary>
         /// <returns>The maximum number of operations allowed in a direct mode batch request.</returns>
         public static int GetMaxOperationsInDirectModeBatchRequest()
+        {
+            // If caching is disabled (for testing), always read fresh
+            if (isCachingDisabled)
+            {
+                return GetMaxOperationsInDirectModeBatchRequestInternal();
+            }
+            
+            return maxOperationsInDirectModeBatchRequestCached.Value;
+        }
+
+        /// <summary>
+        /// Internal method that performs the actual environment variable reading and validation.
+        /// This is called only once and cached by the Lazy of int field.
+        /// </summary>
+        /// <returns>The maximum number of operations allowed in a direct mode batch request.</returns>
+        private static int GetMaxOperationsInDirectModeBatchRequestInternal()
         {
             string environmentValue = Environment.GetEnvironmentVariable(ConfigurationManager.MaxOperationsInDirectModeBatchRequest);
             
@@ -399,6 +427,24 @@ namespace Microsoft.Azure.Cosmos
 
             throw new ArgumentException(
                 $"Environment variable {ConfigurationManager.MaxOperationsInDirectModeBatchRequest} must be a valid integer. Current value: {environmentValue}");
+        }
+
+        /// <summary>
+        /// Disables caching for the maximum operations in direct mode batch request.
+        /// This method is intended for testing purposes only.
+        /// </summary>
+        internal static void DisableBatchRequestCaching()
+        {
+            isCachingDisabled = true;
+        }
+
+        /// <summary>
+        /// Enables caching for the maximum operations in direct mode batch request.
+        /// This method is intended for testing purposes only.
+        /// </summary>
+        internal static void EnableBatchRequestCaching()
+        {
+            isCachingDisabled = false;
         }
     }
 }

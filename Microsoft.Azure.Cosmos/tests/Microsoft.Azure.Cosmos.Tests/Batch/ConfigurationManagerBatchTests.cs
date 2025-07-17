@@ -11,7 +11,21 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ConfigurationManagerTests
     {
-        private const string EnvironmentVariableName = "COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST";
+        private const string EnvironmentVariableName = "AZURE_COSMOS_MAX_OPERATIONS_IN_BATCH_REQUEST";
+
+        [ClassInitialize]
+        public static void ClassInitialize(TestContext context)
+        {
+            // Disable caching for tests to allow environment variable changes to take effect
+            ConfigurationManager.DisableBatchRequestCaching();
+        }
+
+        [ClassCleanup]
+        public static void ClassCleanup()
+        {
+            // Re-enable caching after tests
+            ConfigurationManager.EnableBatchRequestCaching();
+        }
 
         [TestCleanup]
         public void TestCleanup()
