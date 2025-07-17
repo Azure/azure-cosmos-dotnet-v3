@@ -104,7 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Assert.IsNotNull(executor);
                 // The executor should be created with the custom max operations value
                 // We verify this indirectly by ensuring the executor was created successfully
-                // The actual value is verified in the BatchConfiguration tests
+                // The actual value is verified in the ConfigurationManager tests
             }
             finally
             {

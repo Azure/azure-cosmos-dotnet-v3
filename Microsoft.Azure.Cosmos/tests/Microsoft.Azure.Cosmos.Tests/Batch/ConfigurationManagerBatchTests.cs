@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     [TestClass]
-    public class BatchConfigurationTests
+    public class ConfigurationManagerTests
     {
         private const string EnvironmentVariableName = "COSMOS_MAX_OPERATIONS_IN_DIRECT_MODE_BATCH_REQUEST";
 
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, null);
 
             // Act
-            int result = BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            int result = ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert
             Assert.AreEqual(Constants.MaxOperationsInDirectModeBatchRequest, result);
@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, expectedValue.ToString());
 
             // Act
-            int result = BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            int result = ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert
             Assert.AreEqual(expectedValue, result);
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, expectedValue.ToString());
 
             // Act
-            int result = BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            int result = ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert
             Assert.AreEqual(expectedValue, result);
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, valueGreaterThanMax.ToString());
 
             // Act
-            BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert - ExpectedException
         }
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, "0");
 
             // Act
-            BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert - ExpectedException
         }
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, "-1");
 
             // Act
-            BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert - ExpectedException
         }
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, "invalid");
 
             // Act
-            BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert - ExpectedException
         }
@@ -122,7 +122,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, "");
 
             // Act
-            int result = BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            int result = ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert
             Assert.AreEqual(Constants.MaxOperationsInDirectModeBatchRequest, result);
@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             Environment.SetEnvironmentVariable(EnvironmentVariableName, expectedValue.ToString());
 
             // Act
-            int result = BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest();
+            int result = ConfigurationManager.GetMaxOperationsInDirectModeBatchRequest();
 
             // Assert
             Assert.AreEqual(expectedValue, result);
