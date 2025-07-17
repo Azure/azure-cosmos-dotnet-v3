@@ -608,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.ConsecutiveWriteRequestFailureCount = 0;
                 this.ReadRequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForReads(10);
                 this.WriteRequestFailureCounterThreshold = ConfigurationManager.GetCircuitBreakerConsecutiveFailureCountForWrites(5);
-                this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(1);
+                this.TimeoutCounterResetWindowInMinutes = TimeSpan.FromMinutes(ConfigurationManager.GetCircuitBreakerTimeoutCounterResetWindowInMinutes(5));
                 this.FirstRequestFailureTime = DateTime.UtcNow;
                 this.LastRequestFailureTime = DateTime.UtcNow;
             }
