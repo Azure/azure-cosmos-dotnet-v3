@@ -38,7 +38,8 @@ namespace Microsoft.Azure.Cosmos
                   eventSource,
                   serializerSettings,
                   httpClient,
-                  globalPartitionEndpointManager)
+                  globalPartitionEndpointManager,
+                  isPartitionLevelFailoverEnabled)
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
@@ -84,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
-                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await GatewayStoreModel.TryResolvePartitionKeyRangeAsync(
                         request: request,
                         sessionContainer: this.sessionContainer,
                         partitionKeyRangeCache: this.partitionKeyRangeCache,
