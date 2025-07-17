@@ -52,7 +52,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             string collectionRid,
             Range<string> range,
             ITrace trace,
-            bool forceRefresh = false)
+            bool forceRefresh = false,
+            PartitionKeyDefinition partitionKeyDefinition = null)
         {
             using (ITrace childTrace = trace.StartChild("Try Get Overlapping Ranges", TraceComponent.Routing, Tracing.TraceLevel.Info))
             {
@@ -79,7 +80,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     return null;
                 }
 
-                return routingMap.GetOverlappingRanges(range);
+                return routingMap.GetOverlappingRanges(range, partitionKeyDefinition);
             }
         }
 

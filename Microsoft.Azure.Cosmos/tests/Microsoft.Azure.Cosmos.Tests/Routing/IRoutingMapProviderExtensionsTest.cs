@@ -33,9 +33,10 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                 string collectionIdOrNameBasedLink,
                 Range<string> range,
                 ITrace trace,
-                bool forceRefresh = false)
+                bool forceRefresh = false,
+                PartitionKeyDefinition partitionKeyDefinition = null)
             {
-                return Task.FromResult(this.routingMap.GetOverlappingRanges(range));
+                return Task.FromResult(this.routingMap.GetOverlappingRanges(range, partitionKeyDefinition));
             }
 
             public Task<PartitionKeyRange> TryGetPartitionKeyRangeByIdAsync(
