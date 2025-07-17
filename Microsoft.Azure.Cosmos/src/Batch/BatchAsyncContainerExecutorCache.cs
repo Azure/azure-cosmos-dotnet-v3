@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
             BatchAsyncContainerExecutor newExecutor = new BatchAsyncContainerExecutor(
                 container,
                 cosmosClientContext,
-                Constants.MaxOperationsInDirectModeBatchRequest,
+                BatchConfiguration.GetMaxOperationsInDirectModeBatchRequest(),
                 DefaultMaxBulkRequestBodySizeInBytes);
             if (!this.executorsPerContainer.TryAdd(containerLink, newExecutor))
             {
