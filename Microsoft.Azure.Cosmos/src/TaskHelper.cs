@@ -94,7 +94,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // Used on NETFX applications with SynchronizationContext when doing locking calls
-            return Task.Run(task);
+            // Use TaskScheduler.Default to avoid deadlocks with AspNetSynchronizationContext
+            return Task.Factory.StartNew(task, CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap();
         }
     }
 }
