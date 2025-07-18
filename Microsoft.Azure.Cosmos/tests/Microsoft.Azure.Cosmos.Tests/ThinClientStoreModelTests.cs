@@ -46,6 +46,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  owner: mockDocumentClient.Object,
                  connectionPolicy: connectionPolicy);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             this.thinClientStoreModel = new ThinClientStoreModel(
                 endpointManager: this.endpointManager,
                 globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
@@ -53,7 +54,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null);
+                httpClient: null,
+                userAgentContainer: userAgentContainer);
 
             PartitionKeyRangeCache pkRangeCache =
                 (PartitionKeyRangeCache)FormatterServices.GetUninitializedObject(typeof(PartitionKeyRangeCache));
@@ -113,6 +115,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: multiEndpointMgr,
@@ -121,7 +124,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null);
+                httpClient: null,
+                userAgentContainer: userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -195,6 +199,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: multiEndpointMgr,
                 globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
@@ -202,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: mockCosmosHttpClient.Object);
+                httpClient: mockCosmosHttpClient.Object,
+                userAgentContainer: userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -284,6 +290,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             GlobalEndpointManager endpointManagerOk = new GlobalEndpointManager(docClientOkay.Object, policy);
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: endpointManagerOk,
@@ -292,7 +299,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null);
+                httpClient: null,
+                userAgentContainer: userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -340,6 +348,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 : base(
                     httpClient: null,
                     eventSource: null,
+                    userAgentContainer: null,
                     serializerSettings: null)
             {
                 this.invokeAsyncFunc = invokeAsyncFunc;

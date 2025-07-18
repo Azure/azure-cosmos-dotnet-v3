@@ -126,8 +126,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly bool isReplicaAddressValidationEnabled;
         private readonly bool enableAsyncCacheExceptionNoSharing;
 
-        private readonly bool isThinClientEnabled;
-
         //Fault Injection
         private readonly IChaosInterceptorFactory chaosInterceptorFactory;
         private readonly IChaosInterceptor chaosInterceptor;
@@ -136,6 +134,8 @@ namespace Microsoft.Azure.Cosmos
 
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
+
+        private bool isThinClientEnabled;
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -256,7 +256,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: this.cancellationTokenSource.Token,
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.isReplicaAddressValidationEnabled = ConfigurationManager.IsReplicaAddressValidationEnabled(connectionPolicy);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
         }
 
         /// <summary>
@@ -514,7 +513,6 @@ namespace Microsoft.Azure.Cosmos
                 enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.chaosInterceptorFactory = chaosInterceptorFactory;
             this.chaosInterceptor = chaosInterceptorFactory?.CreateInterceptor(this);
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
             this.Initialize(
                 serviceEndpoint: serviceEndpoint,
@@ -526,8 +524,7 @@ namespace Microsoft.Azure.Cosmos
                 storeClientFactory: storeClientFactory,
                 cosmosClientId: cosmosClientId,
                 remoteCertificateValidationCallback: remoteCertificateValidationCallback,
-                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions,
-                enableThinClientMode: this.isThinClientEnabled);
+                cosmosClientTelemetryOptions: cosmosClientTelemetryOptions);
         }
 
         /// <summary>
@@ -626,7 +623,7 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
-        
+
         internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
@@ -690,9 +687,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Clear the caches to ensure that we don't have partial results
                 this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer, 
-                    storeModel: this.GatewayStoreModel, 
-                    tokenProvider: this, 
+                    sessionContainer: this.sessionContainer,
+                    storeModel: this.GatewayStoreModel,
+                    tokenProvider: this,
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
@@ -712,8 +709,7 @@ namespace Microsoft.Azure.Cosmos
             TokenCredential tokenCredential = null,
             string cosmosClientId = null,
             RemoteCertificateValidationCallback remoteCertificateValidationCallback = null,
-            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null,
-            bool enableThinClientMode = false)
+            CosmosClientTelemetryOptions cosmosClientTelemetryOptions = null)
         {
             if (serviceEndpoint == null)
             {
@@ -979,7 +975,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDbOperationMeter.Initialize(this.cosmosClientTelemetryOptions);
                 CosmosDbNetworkMeter.Initialize(this.cosmosClientTelemetryOptions);
-                
+
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
@@ -1062,13 +1058,17 @@ namespace Microsoft.Azure.Cosmos
                 isPPafEnabled = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
+            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false)
+               && this.accountServiceConfiguration != null
+               && this.accountServiceConfiguration.AccountProperties.ThinClientWritableLocationsInternal != null;
+
             this.ConnectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation = 
-                this.ConnectionPolicy.EnablePartitionLevelFailover 
+            this.PartitionKeyRangeLocation =
+                this.ConnectionPolicy.EnablePartitionLevelFailover
                 || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
                     ? new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
@@ -1079,7 +1079,8 @@ namespace Microsoft.Azure.Cosmos
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
                 connectionPolicy: this.ConnectionPolicy,
-                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation);
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled);
 
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
@@ -1096,9 +1097,9 @@ namespace Microsoft.Azure.Cosmos
             this.GatewayStoreModel = gatewayStoreModel;
 
             this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer, 
-                    storeModel: this.GatewayStoreModel, 
-                    tokenProvider: this, 
+                    sessionContainer: this.sessionContainer,
+                    storeModel: this.GatewayStoreModel,
+                    tokenProvider: this,
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
@@ -1116,7 +1117,8 @@ namespace Microsoft.Azure.Cosmos
                     (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
                     this.eventSource,
                     this.serializerSettings,
-                    this.httpClient);
+                    this.httpClient,
+                    this.ConnectionPolicy.UserAgentContainer);
 
                 thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
@@ -1949,7 +1951,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -3323,18 +3325,18 @@ namespace Microsoft.Azure.Cosmos
             if ((options == null) || (options.PartitionKey == null))
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(
                 () => this.ReplaceDocumentPrivateAsync(
-                    documentLink, 
-                    document, 
-                    options, 
-                    requestRetryPolicy, 
-                    cancellationToken), 
-                requestRetryPolicy, 
+                    documentLink,
+                    document,
+                    options,
+                    requestRetryPolicy,
+                    cancellationToken),
+                requestRetryPolicy,
                 cancellationToken);
         }
 
@@ -5706,7 +5708,6 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         retryPolicyInstance?.OnBeforeSendRequest(request);
-
                         request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
                         return new StoredProcedureResponse<TValue>(await this.ExecuteProcedureAsync(
                             request,
@@ -5901,7 +5902,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -6686,7 +6687,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
             if (!this.IsValidConsistency(
-                        defaultConsistencyLevel, 
+                        defaultConsistencyLevel,
                         desiredConsistencyLevel,
                         operationType,
                         resourceType))
@@ -6700,7 +6701,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private bool IsValidConsistency(
-            Documents.ConsistencyLevel backendConsistency, 
+            Documents.ConsistencyLevel backendConsistency,
             Documents.ConsistencyLevel desiredConsistency,
             OperationType? operationType,
             ResourceType? resourceType)
@@ -6835,7 +6836,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: this.isThinClientEnabled);
+                    isThinClientEnabled: ConfigurationManager.IsThinClientEnabled(defaultValue: false));
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
@@ -7024,7 +7025,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // check anyways since default consistency level might have been refreshed.
                 if (!this.IsValidConsistency(
-                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel, 
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel,
                             desiredConsistency: this.desiredConsistencyLevel.Value,
                             operationType: operationType,
                             resourceType: resourceType))

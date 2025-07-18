@@ -24,16 +24,19 @@ namespace Microsoft.Azure.Cosmos
     internal class ThinClientStoreClient : GatewayStoreClient
     {
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly UserAgentContainer userAgentContainer;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
+            UserAgentContainer userAgentContainer,
             JsonSerializerSettings serializerSettings = null)
             : base(httpClient,
                   eventSource,
                   serializerSettings)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
+            this.userAgentContainer = userAgentContainer;
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
@@ -126,7 +129,16 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
-               
+
+                requestMessage.Headers.Clear();
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.UserAgent,
+                    this.userAgentContainer.UserAgent);
+
+                Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
+                requestMessage.Headers.TryAddWithoutValidation(
+                    HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 

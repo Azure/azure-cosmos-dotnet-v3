@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Cosmos
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient)
+            CosmosHttpClient httpClient,
+            UserAgentContainer userAgentContainer)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -40,6 +41,7 @@ namespace Microsoft.Azure.Cosmos
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 eventSource,
+                userAgentContainer,
                 serializerSettings);
         }
 
