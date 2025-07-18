@@ -197,7 +197,8 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
-                isPartitionLevelFailoverEnabled: partitionLevelFailoverEnabled);
+                isPartitionLevelFailoverEnabled: partitionLevelFailoverEnabled,
+                false);
         }
 
         [TestMethod]
