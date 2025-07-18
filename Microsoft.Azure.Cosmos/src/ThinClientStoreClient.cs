@@ -12,10 +12,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.FaultInjection;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
 
@@ -25,11 +23,9 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
-        private readonly IChaosInterceptor chaosInterceptor;
         private readonly bool isPartitionLevelFailoverEnabled;
-        private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,

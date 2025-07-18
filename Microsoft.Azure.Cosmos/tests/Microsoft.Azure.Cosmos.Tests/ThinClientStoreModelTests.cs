@@ -448,7 +448,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                isPartitionLevelFailoverEnabled: true);
+                isPartitionLevelFailoverEnabled: true,
+                chaosInterceptor: null);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 

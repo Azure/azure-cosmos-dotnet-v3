@@ -33,7 +33,7 @@ namespace Microsoft.Azure.Cosmos
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
             bool isPartitionLevelFailoverEnabled = false,
-            IChaosInterceptor chaosInterceptor)
+            IChaosInterceptor chaosInterceptor = null)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
