@@ -169,9 +169,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 // For multi master write accounts, since all the regions are treated as write regions, the next locations to fail over
                 // will be the preferred read regions that are configured in the application preferred regions in the CosmosClientOptions.
-                ReadOnlyCollection<Uri> nextLocations = ConfigurationManager.IsThinClientEnabled(defaultValue: false) && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
-                    ? this.globalEndpointManager.ThinClientReadEndpoints
-                    : this.globalEndpointManager.ReadEndpoints;
+                ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.ReadEndpoints;
 
                 return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
                     partitionKeyRange,
@@ -183,9 +181,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             else if (this.IsRequestEligibleForPerPartitionAutomaticFailover(request))
             {
                 // For any single master write accounts, the next locations to fail over will be the read regions configured at the account level.
-                ReadOnlyCollection<Uri> nextLocations = ConfigurationManager.IsThinClientEnabled(defaultValue: false) && ThinClientStoreModel.IsOperationSupportedByThinClient(request)
-                    ? this.globalEndpointManager.ThinClientReadEndpoints
-                    : this.globalEndpointManager.AccountReadEndpoints;
+                ReadOnlyCollection<Uri> nextLocations = this.globalEndpointManager.AccountReadEndpoints;
 
                 return this.TryAddOrUpdatePartitionFailoverInfoAndMoveToNextLocation(
                     partitionKeyRange,

@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.FaultInjection;
-    using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
 
@@ -25,25 +24,19 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly IChaosInterceptor chaosInterceptor;
-        private readonly bool isPartitionLevelFailoverEnabled;
-        private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
             JsonSerializerSettings serializerSettings = null,
-            bool isPartitionLevelFailoverEnabled = false,
             IChaosInterceptor chaosInterceptor = null)
             : base(httpClient,
                   eventSource,
-                  serializerSettings,
-                  isPartitionLevelFailoverEnabled)
+                  serializerSettings)
         {
-            this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());        
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
             this.chaosInterceptor = chaosInterceptor;
         }
 
