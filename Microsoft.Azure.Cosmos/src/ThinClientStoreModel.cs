@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -31,7 +32,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
-            bool isPartitionLevelFailoverEnabled = false)
+            bool isPartitionLevelFailoverEnabled = false,
+            IChaosInterceptor chaosInterceptor = null)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -45,8 +47,8 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 eventSource,
                 serializerSettings,
-                isPartitionLevelFailoverEnabled);
-
+                isPartitionLevelFailoverEnabled,
+                chaosInterceptor);
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(

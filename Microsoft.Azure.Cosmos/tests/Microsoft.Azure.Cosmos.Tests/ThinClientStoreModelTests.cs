@@ -56,7 +56,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null);
+                httpClient: null,
+                chaosInterceptor: null);
 
             PartitionKeyRangeCache pkRangeCache =
                 (PartitionKeyRangeCache)FormatterServices.GetUninitializedObject(typeof(PartitionKeyRangeCache));
@@ -124,7 +125,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null);
+                httpClient: null,
+                chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -205,7 +207,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: mockCosmosHttpClient.Object);
+                httpClient: mockCosmosHttpClient.Object,
+                chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -295,7 +298,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null);
+                httpClient: null,
+                chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -444,7 +448,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                isPartitionLevelFailoverEnabled: true);
+                isPartitionLevelFailoverEnabled: true,
+                chaosInterceptor: null);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 

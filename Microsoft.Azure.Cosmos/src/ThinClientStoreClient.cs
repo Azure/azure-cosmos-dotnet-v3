@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
 
@@ -22,21 +23,24 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly IChaosInterceptor chaosInterceptor;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
             JsonSerializerSettings serializerSettings = null,
-            bool isPartitionLevelFailoverEnabled = false)
+            bool isPartitionLevelFailoverEnabled = false,
+            IChaosInterceptor chaosInterceptor = null)
             : base(httpClient,
                   eventSource,
                   serializerSettings,
                   isPartitionLevelFailoverEnabled)
         {
-            this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
+            this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());        
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.chaosInterceptor = chaosInterceptor;
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
@@ -57,6 +61,18 @@ namespace Microsoft.Azure.Cosmos
                 clientCollectionCache,
                 cancellationToken))
             {
+                if (this.chaosInterceptor != null)
+                {
+                    request.Headers.Set("FAULTINJECTION_IS_PROXY", "true");
+                    (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(request, cancellationToken);
+                    if (hasFault)
+                    {
+                        DefaultTrace.TraceInformation("Chaos interceptor injected fault for request: {0}", request);
+                        fiResponseMessage.RequestMessage = responseMessage.RequestMessage;
+                        request.Headers.Remove("FAULTINJECTION_IS_PROXY");
+                        return await ThinClientStoreClient.ParseResponseAsync(fiResponseMessage, request.SerializerSettings ?? base.SerializerSettings, request);
+                    }
+                }
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
                 return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
             }
