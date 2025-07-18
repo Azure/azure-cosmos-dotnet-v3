@@ -111,6 +111,12 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         internal static readonly string TcpChannelMultiplexingEnabled = "AZURE_COSMOS_TCP_CHANNEL_MULTIPLEX_ENABLED";
 
+        /// <summary>
+        /// A read-only string containing the environment variable name for bypassing query parsing.
+        /// and GA.
+        /// </summary>
+        internal static readonly string BypassQueryParsing = "AZURE_COSMOS_BYPASS_QUERY_PARSING";
+
         public static T GetEnvironmentVariable<T>(string variable, T defaultValue)
         {
             string value = Environment.GetEnvironmentVariable(variable);
@@ -355,6 +361,19 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.TcpChannelMultiplexingEnabled,
+                        defaultValue: false);
+        }
+
+        /// <summary>
+        /// Gets the boolean value indicating if channel multiplexing enabled on TCP channel.
+        /// Default: false
+        /// </summary>
+        /// <returns>A boolean flag indicating if channel multiplexing is enabled.</returns>
+        public static bool ForceBypassQueryParsing()
+        {
+            return ConfigurationManager
+                    .GetEnvironmentVariable(
+                        variable: ConfigurationManager.BypassQueryParsing,
                         defaultValue: false);
         }
     }

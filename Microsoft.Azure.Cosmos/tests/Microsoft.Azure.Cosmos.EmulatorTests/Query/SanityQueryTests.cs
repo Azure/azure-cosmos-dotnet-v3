@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -645,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public void ServiceInteropUsedByDefault()
         {
             // Test initialie does load CosmosClient
-            Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing());
         }
 
         [TestMethod]
