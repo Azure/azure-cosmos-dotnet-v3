@@ -1116,7 +1116,8 @@ namespace Microsoft.Azure.Cosmos
                     this.eventSource,
                     this.serializerSettings,
                     this.httpClient,
-                    this.chaosInterceptor);
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
