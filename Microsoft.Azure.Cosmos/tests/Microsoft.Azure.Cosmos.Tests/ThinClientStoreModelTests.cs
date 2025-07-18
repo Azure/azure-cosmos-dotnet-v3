@@ -53,8 +53,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null,
-                chaosInterceptor: null);
+                httpClient: null);
 
             PartitionKeyRangeCache pkRangeCache =
                 (PartitionKeyRangeCache)FormatterServices.GetUninitializedObject(typeof(PartitionKeyRangeCache));
@@ -122,8 +121,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null,
-                chaosInterceptor: null);
+                httpClient: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -204,8 +202,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: mockCosmosHttpClient.Object,
-                chaosInterceptor: null);
+                httpClient: mockCosmosHttpClient.Object);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -295,8 +292,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.defaultConsistencyLevel,
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
-                httpClient: null,
-                chaosInterceptor: null);
+                httpClient: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
