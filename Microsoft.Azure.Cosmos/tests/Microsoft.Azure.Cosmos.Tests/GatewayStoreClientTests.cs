@@ -246,6 +246,38 @@ namespace Microsoft.Azure.Cosmos
             Assert.IsNotNull(value: documentClientException.Error.Message);
         }
 
+        /// <summary>
+        /// Test to verify the fix for the stream consumption issue when JSON deserialization fails.
+        /// This reproduces the scenario where a 403 response has application/json content type 
+        /// but invalid JSON content, which would previously cause "stream already consumed" exception.
+        /// Fixes issue #5243.
+        /// </summary>
+        [TestMethod]
+        [Owner("copilot")]
+        public async Task TestStreamConsumptionBugFixWhenJsonDeserializationFails()
+        {
+            // Create invalid JSON content that will fail deserialization but has application/json content type
+            string invalidJson = "{ \"error\": invalid json content that will fail parsing }";
+            
+            HttpResponseMessage responseMessage = new HttpResponseMessage(HttpStatusCode.Forbidden)
+            {
+                RequestMessage = new HttpRequestMessage(HttpMethod.Get, "https://test.com/dbs/db1/colls/coll1/docs/doc1"),
+                Content = new StringContent(invalidJson, Encoding.UTF8, "application/json")
+            };
+
+            IClientSideRequestStatistics requestStatistics = GatewayStoreClientTests.CreateClientSideRequestStatistics();
+
+            // This should NOT throw an InvalidOperationException about stream being consumed
+            DocumentClientException exception = await GatewayStoreClient.CreateDocumentClientExceptionAsync(
+                responseMessage: responseMessage,
+                requestStatistics: requestStatistics);
+
+            // Verify the exception was created successfully with fallback logic
+            Assert.IsNotNull(exception);
+            Assert.AreEqual(HttpStatusCode.Forbidden, exception.StatusCode);
+            Assert.IsTrue(exception.Message.Contains(invalidJson), "Exception message should contain the original invalid JSON content");
+        }
+
         private static IClientSideRequestStatistics CreateClientSideRequestStatistics()
         {
             return new ClientSideRequestStatisticsTraceDatum(

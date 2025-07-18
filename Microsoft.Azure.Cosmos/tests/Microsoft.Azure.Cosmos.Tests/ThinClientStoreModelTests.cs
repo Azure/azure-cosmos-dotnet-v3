@@ -5,7 +5,9 @@
 namespace Microsoft.Azure.Cosmos.Tests
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
     using System.Reflection;
@@ -14,6 +16,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Routing;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -319,6 +322,144 @@ namespace Microsoft.Azure.Cosmos.Tests
                 "Expected 404 DocumentClientException from the final thinClientStore call");
         }
 
+        [TestMethod]
+        public async Task PartitionLevelFailoverEnabled_ResolvesPartitionKeyRangeAndCallsLocationOverride()
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
+
+            Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+            globalPartitionEndpointManager
+                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true)
+                .Verifiable();
+
+            ISessionContainer sessionContainer = new Mock<ISessionContainer>().Object;
+            DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
+            Newtonsoft.Json.JsonSerializerSettings serializerSettings = new Newtonsoft.Json.JsonSerializerSettings();
+            CosmosHttpClient httpClient = new Mock<CosmosHttpClient>().Object;
+
+            ThinClientStoreModel storeModel = new ThinClientStoreModel(
+                endpointManager,
+                globalPartitionEndpointManager.Object,
+                sessionContainer,
+                Cosmos.ConsistencyLevel.Session,
+                eventSource,
+                serializerSettings,
+                httpClient,
+                isPartitionLevelFailoverEnabled: true);
+
+            Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false);
+
+            ContainerProperties containerProperties = new ContainerProperties("test", "/pk");
+            typeof(ContainerProperties)
+                .GetProperty("ResourceId", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)
+                ?.SetValue(containerProperties, "testCollectionRid");
+            containerProperties.PartitionKeyPath = "/pk";
+
+            mockCollectionCache
+                .Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>(), It.IsAny<ITrace>()))
+                .ReturnsAsync(containerProperties);
+
+            Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                mockCollectionCache.Object,
+                endpointManager,
+                false);
+
+            PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+            List<PartitionKeyRange> pkRanges = new List<PartitionKeyRange> { pkRange };
+            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangeTuples = pkRanges.Select(r => Tuple.Create(r, (ServiceIdentity)null));
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid");
+
+            mockPartitionKeyRangeCache
+                .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
+                .ReturnsAsync(routingMap);
+
+            storeModel.SetCaches(mockPartitionKeyRangeCache.Object, mockCollectionCache.Object);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+
+            MockThinClientStoreClient mockThinClientStoreClient = new MockThinClientStoreClient(
+                (DocumentServiceRequest req, ResourceType resourceType, Uri uri, Uri endpoint, string globalDatabaseAccountName, ClientCollectionCache clientCollectionCache, CancellationToken cancellationToken) =>
+                {
+                    MemoryStream stream = new MemoryStream(new byte[] { 1, 2, 3 });
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(stream, headers, HttpStatusCode.OK));
+                });
+
+            ReplaceThinClientStoreClientField(storeModel, mockThinClientStoreClient);
+
+            // Act
+            await storeModel.ProcessMessageAsync(request);
+
+            // Assert
+            globalPartitionEndpointManager.Verify(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()), Times.Once());
+        }
+
+        [TestMethod]
+        public void CircuitBreaker_MarksPartitionUnavailableOnRepeatedFailures()
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
+            Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+            globalPartitionEndpointManager
+                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true);
+
+            globalPartitionEndpointManager
+                .Setup(m => m.TryMarkEndpointUnavailableForPartitionKeyRange(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true)
+                .Verifiable();
+
+            globalPartitionEndpointManager
+                .Setup(m => m.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true);
+
+            ISessionContainer sessionContainer = new Mock<ISessionContainer>().Object;
+            DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
+            Newtonsoft.Json.JsonSerializerSettings serializerSettings = new Newtonsoft.Json.JsonSerializerSettings();
+            CosmosHttpClient httpClient = new Mock<CosmosHttpClient>().Object;
+
+            ThinClientStoreModel storeModel = new ThinClientStoreModel(
+                endpointManager,
+                globalPartitionEndpointManager.Object,
+                sessionContainer,
+                Cosmos.ConsistencyLevel.Session,
+                eventSource,
+                serializerSettings,
+                httpClient,
+                isPartitionLevelFailoverEnabled: true);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+
+            for (int i = 0; i < 3; i++)
+            {
+                globalPartitionEndpointManager.Object.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(request);
+            }
+
+            globalPartitionEndpointManager.Object.TryMarkEndpointUnavailableForPartitionKeyRange(request);
+
+            globalPartitionEndpointManager.Verify(m => m.TryMarkEndpointUnavailableForPartitionKeyRange(It.IsAny<DocumentServiceRequest>()), Times.Once());
+        }
+
         private static void ReplaceThinClientStoreClientField(ThinClientStoreModel model, ThinClientStoreClient newClient)
         {
             FieldInfo field = typeof(ThinClientStoreModel).GetField(
@@ -327,6 +468,18 @@ namespace Microsoft.Azure.Cosmos.Tests
                  ?? throw new InvalidOperationException("Could not find 'thinClientStoreClient' field on ThinClientStoreModel");
 
             field.SetValue(model, newClient);
+        }
+
+        private static DocumentServiceRequest CreatePartitionedDocumentRequest()
+        {
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "/dbs/test/colls/test/docs/test",
+                AuthorizationTokenType.PrimaryMasterKey);
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"test\"]";
+            request.RequestContext = new DocumentServiceRequestContext();
+            return request;
         }
 
         internal class MockThinClientStoreClient : ThinClientStoreClient
