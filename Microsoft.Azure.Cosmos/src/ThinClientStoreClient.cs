@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
-    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.ThinClientTransportSerializer;
@@ -23,19 +23,23 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
+        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly UserAgentContainer userAgentContainer;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
-            ICommunicationEventSource eventSource,
             UserAgentContainer userAgentContainer,
+            ICommunicationEventSource eventSource,
+            bool isPartitionLevelFailoverEnabled = false,
             JsonSerializerSettings serializerSettings = null)
             : base(httpClient,
                   eventSource,
-                  serializerSettings)
+                  serializerSettings,
+                  isPartitionLevelFailoverEnabled)
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.userAgentContainer = userAgentContainer;
         }
 
@@ -136,6 +140,7 @@ namespace Microsoft.Azure.Cosmos
                     this.userAgentContainer.UserAgent);
 
                 Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
+                Debug.Assert(activityId != Guid.Empty);
                 requestMessage.Headers.TryAddWithoutValidation(
                     HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
 
