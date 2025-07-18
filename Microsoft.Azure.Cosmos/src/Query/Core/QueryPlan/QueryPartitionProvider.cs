@@ -101,12 +101,21 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
                         if (!this.disposed && this.serviceProvider != IntPtr.Zero)
                         {
-                            uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
-                                this.serviceProvider,
-                                this.queryengineConfiguration);
+                            try
+                            {
+                                uint errorCode = ServiceInteropWrapper.UpdateServiceProvider(
+                                    this.serviceProvider,
+                                    this.queryengineConfiguration);
 
-                            Exception exception = Marshal.GetExceptionForHR((int)errorCode);
-                            if (exception != null) throw exception;
+                                Exception exception = Marshal.GetExceptionForHR((int)errorCode);
+                                if (exception != null) throw exception;
+                            }
+                            catch (AccessViolationException avEx)
+                            {
+                                // Handle AccessViolationException specifically for UpdateServiceProvider
+                                DefaultTrace.TraceWarning("QueryPartitionProvider.Update failed with AccessViolationException: {0}", avEx.Message);
+                                throw new InvalidOperationException("Native service provider update failed due to memory access violation. This may indicate corrupted native libraries or incompatible configuration.", avEx);
+                            }
                         }
                     }
                 }
@@ -378,6 +387,24 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             try
             {
+                // Add defensive checks for the configuration parameter
+                if (string.IsNullOrEmpty(queryEngineConfiguration))
+                {
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed: queryEngineConfiguration is null or empty");
+                    return TryCatch<IntPtr>.FromException(new ArgumentException("queryEngineConfiguration cannot be null or empty"));
+                }
+
+                // Validate that the configuration is valid JSON
+                try
+                {
+                    JsonConvert.DeserializeObject(queryEngineConfiguration);
+                }
+                catch (JsonException jsonEx)
+                {
+                    DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed: invalid JSON configuration - {0}", jsonEx.Message);
+                    return TryCatch<IntPtr>.FromException(new ArgumentException($"Invalid JSON configuration: {jsonEx.Message}", jsonEx));
+                }
+
                 IntPtr serviceProvider = IntPtr.Zero;
                 uint errorCode = ServiceInteropWrapper.CreateServiceProvider(
                                 queryEngineConfiguration,
@@ -390,6 +417,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 }
                 
                 return TryCatch<IntPtr>.FromResult(serviceProvider);
+            }
+            catch (AccessViolationException avEx)
+            {
+                // Specifically handle AccessViolationException which indicates native memory corruption
+                DefaultTrace.TraceWarning("QueryPartitionProvider.TryCreateServiceProvider failed with AccessViolationException: {0}", avEx.Message);
+                return TryCatch<IntPtr>.FromException(new InvalidOperationException("Native service provider creation failed due to memory access violation. This may indicate corrupted native libraries or incompatible configuration.", avEx));
             }
             catch (Exception ex)
             {
