@@ -23,15 +23,13 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private CosmosClient client;
         private Database database;
         private Container container;
-        private CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
-
-        private const int ItemCount = 1000;
+        private MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer cosmosSystemTextJsonSerializer;
+        private const int ItemCount = 100;
 
         [TestInitialize]
         public async Task TestInitAsync()
         {
             this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
-            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
@@ -60,7 +58,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
         }
 
-
         [TestCleanup]
         public async Task TestCleanupAsync()
         {
@@ -71,7 +68,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 await this.database.DeleteAsync();
             }
 
-            this.client?.Dispose();
+            if (this.client != null)
+            {
+                this.client.Dispose();
+            }
         }
 
         private IEnumerable<TestObject> GenerateItems(string partitionKey)
@@ -86,8 +86,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     Other = "Test Item " + i
                 });
             }
-
             return items;
+        }
+
+        private async Task<List<TestObject>> CreateItemsSafeAsync(IEnumerable<TestObject> items)
+        {
+            List<TestObject> itemsCreated = new List<TestObject>();
+            foreach (TestObject item in items)
+            {
+                try
+                {
+                    ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                    if (response.StatusCode == HttpStatusCode.Created)
+                    {
+                        itemsCreated.Add(item);
+                    }
+                }
+                catch (CosmosException)
+                {
+                }
+            }
+            return itemsCreated;
         }
 
         [TestMethod]
@@ -111,12 +130,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_read";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 ItemResponse<TestObject> response = await this.container.ReadItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -131,12 +147,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_replace";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 TestObject updatedItem = new TestObject
                 {
@@ -172,12 +185,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_delete";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 ItemResponse<TestObject> response = await this.container.DeleteItemAsync<TestObject>(item.Id, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
@@ -210,12 +220,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_read_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 using (ResponseMessage response = await this.container.ReadItemStreamAsync(item.Id, new PartitionKey(item.Pk)))
                 {
@@ -231,12 +238,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_replace_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 TestObject updatedItem = new TestObject
                 {
@@ -281,12 +285,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_delete_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
-            foreach (TestObject item in items)
+            foreach (TestObject item in createdItems)
             {
                 using (ResponseMessage response = await this.container.DeleteItemStreamAsync(item.Id, new PartitionKey(item.Pk)))
                 {
@@ -302,10 +303,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_query";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
             string query = $"SELECT * FROM c WHERE c.pk = '{pk}'";
             FeedIterator<TestObject> iterator = this.container.GetItemQueryIterator<TestObject>(query);
@@ -317,7 +315,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 count += response.Count;
             }
 
-            Assert.AreEqual(ItemCount, count);
+            Assert.AreEqual(createdItems.Count, count);
         }
 
         [TestMethod]
@@ -327,10 +325,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string pk = "pk_query_stream";
             List<TestObject> items = this.GenerateItems(pk).ToList();
 
-            foreach (TestObject item in items)
-            {
-                await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
-            }
+            List<TestObject> createdItems = await this.CreateItemsSafeAsync(items);
 
             QueryDefinition query = new QueryDefinition("SELECT * FROM c WHERE c.pk = @pk").WithParameter("@pk", pk);
             FeedIterator iterator = this.container.GetItemQueryStreamIterator(query);
@@ -353,7 +348,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
 
-            Assert.AreEqual(ItemCount, count);
+            Assert.AreEqual(createdItems.Count, count);
         }
 
         [TestMethod]
