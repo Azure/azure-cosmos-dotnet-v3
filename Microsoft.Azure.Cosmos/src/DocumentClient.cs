@@ -135,7 +135,7 @@ namespace Microsoft.Azure.Cosmos
         //Auth
         internal readonly AuthorizationTokenProvider cosmosAuthorization;
 
-        private bool isThinClientEnabled;
+        private bool isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false);
 
         // Gateway has backoff/retry logic to hide transient errors.
         private RetryPolicy retryPolicy;
@@ -1058,9 +1058,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = ConfigurationManager.IsThinClientEnabled(defaultValue: false)
-               && this.accountServiceConfiguration != null
-               && this.accountServiceConfiguration.AccountProperties.ThinClientWritableLocationsInternal != null;
+            this.isThinClientEnabled = (this.accountServiceConfiguration?.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
 
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
@@ -1072,7 +1070,8 @@ namespace Microsoft.Azure.Cosmos
                     ? new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
-                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker)
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                        this.isThinClientEnabled)
                     : GlobalPartitionEndpointManagerNoOp.Instance;
 
             this.retryPolicy = new RetryPolicy(
@@ -6836,7 +6835,7 @@ namespace Microsoft.Azure.Cosmos
                     connectionPolicy: this.ConnectionPolicy,
                     httpClient: this.httpClient,
                     cancellationToken: this.cancellationTokenSource.Token,
-                    isThinClientEnabled: ConfigurationManager.IsThinClientEnabled(defaultValue: false));
+                    isThinClientEnabled: this.isThinClientEnabled);
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
