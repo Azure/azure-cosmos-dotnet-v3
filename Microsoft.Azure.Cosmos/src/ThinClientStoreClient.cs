@@ -139,7 +139,7 @@ namespace Microsoft.Azure.Cosmos
                     ThinClientConstants.UserAgent,
                     this.userAgentContainer.UserAgent);
 
-                Guid activityId = System.Diagnostics.Trace.CorrelationManager.ActivityId;
+                Guid activityId = Trace.CorrelationManager.ActivityId;
                 Debug.Assert(activityId != Guid.Empty);
                 requestMessage.Headers.TryAddWithoutValidation(
                     HttpConstants.HttpHeaders.ActivityId, activityId.ToString());

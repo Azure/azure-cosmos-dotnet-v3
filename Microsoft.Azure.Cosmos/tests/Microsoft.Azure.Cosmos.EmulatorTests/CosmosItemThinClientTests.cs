@@ -121,6 +121,98 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             {
                 ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
                 Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("ThinClientStoreModel"), "Diagnostics should contain 'ThinClientStoreModel'");
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
+            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_ACCOUNT_CONNECTION_STRING");
+
+            if (string.IsNullOrEmpty(this.connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_ACCOUNT_CONNECTION_STRING to run the tests");
+            }
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                  this.connectionString,
+                  new CosmosClientOptions()
+                  {
+                      ConnectionMode = ConnectionMode.Gateway,
+                      Serializer = this.cosmosSystemTextJsonSerializer,
+                  });
+
+            string uniqueDbName = "TestDb2_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainer2_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_create";
+            IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+            foreach (TestObject item in items)
+            {
+                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("GatewayStoreModel"), "Diagnostics should contain 'GatewayStoreModel'");
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task CreateItemsTestWithThinClientFlagDisabledAccountEnabled()
+        {
+            Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
+            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
+
+            if (string.IsNullOrEmpty(this.connectionString))
+            {
+                Assert.Fail("Set environment variable COSMOSDB_THINCLIENT to run the tests");
+            }
+
+            JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = null,
+                PropertyNameCaseInsensitive = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+            this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
+
+            this.client = new CosmosClient(
+                  this.connectionString,
+                  new CosmosClientOptions()
+                  {
+                      ConnectionMode = ConnectionMode.Gateway,
+                      Serializer = this.cosmosSystemTextJsonSerializer,
+                  });
+
+            string uniqueDbName = "TestDbTCDisabled_" + Guid.NewGuid().ToString();
+            this.database = await this.client.CreateDatabaseIfNotExistsAsync(uniqueDbName);
+            string uniqueContainerName = "TestContainerTCDisabled_" + Guid.NewGuid().ToString();
+            this.container = await this.database.CreateContainerIfNotExistsAsync(uniqueContainerName, "/pk");
+
+            string pk = "pk_create";
+            IEnumerable<TestObject> items = this.GenerateItems(pk);
+
+            foreach (TestObject item in items)
+            {
+                ItemResponse<TestObject> response = await this.container.CreateItemAsync(item, new PartitionKey(item.Pk));
+                Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+                string diagnostics = response.Diagnostics.ToString();
+                Assert.IsTrue(diagnostics.Contains("GatewayStoreModel"), "Diagnostics should contain 'GatewayStoreModel'");
             }
         }
 

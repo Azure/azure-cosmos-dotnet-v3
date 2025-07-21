@@ -52,6 +52,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// A readonly boolean flag used to determine if partition level failover is enabled.
         /// </summary>
         private readonly bool isPartitionLevelFailoverEnabled;
+
         /// <summary>
         /// A readonly boolean flag used to determine if thinclient is enabled.
         /// </summary>

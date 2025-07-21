@@ -1106,26 +1106,29 @@ namespace Microsoft.Azure.Cosmos
 
             gatewayStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
-            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway && this.isThinClientEnabled)
+            if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                ThinClientStoreModel thinClientStoreModel = new (
-                    endpointManager: this.GlobalEndpointManager,
-                    this.PartitionKeyRangeLocation,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient,
-                    this.ConnectionPolicy.UserAgentContainer,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                if (this.isThinClientEnabled)
+                {
+                    ThinClientStoreModel thinClientStoreModel = new (
+                        endpointManager: this.GlobalEndpointManager,
+                        this.PartitionKeyRangeLocation,
+                        this.sessionContainer,
+                        (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                        this.eventSource,
+                        this.serializerSettings,
+                        this.httpClient,
+                        this.ConnectionPolicy.UserAgentContainer,
+                        isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
 
-                thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
+                    thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
-                this.StoreModel = thinClientStoreModel;
-            }
-            else if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
-            {
-                this.StoreModel = this.GatewayStoreModel;
+                    this.StoreModel = thinClientStoreModel;
+                }
+                else
+                {
+                    this.StoreModel = this.GatewayStoreModel;
+                }
             }
             else
             {
