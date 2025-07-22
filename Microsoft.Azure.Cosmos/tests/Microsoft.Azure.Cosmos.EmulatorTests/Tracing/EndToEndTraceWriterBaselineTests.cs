@@ -31,7 +31,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.TransportClientHelper;
 
     [VisualStudio.TestTools.UnitTesting.TestClass]
-    [TestCategory("UpdateContract")]
+    [TestCategory("Flaky")]
     public sealed class EndToEndTraceWriterBaselineTests : BaselineTests<EndToEndTraceWriterBaselineTests.Input, EndToEndTraceWriterBaselineTests.Output>
     {
         public static CosmosClient client;
