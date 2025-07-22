@@ -116,8 +116,8 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default thresholds for PPAF request hedging.
         /// </summary>
-        private const int DefaultHedgingThresholdInMilliseconds = 1000;
-        private const int DefaultHedgingThresholdStepInMilliseconds = 500;
+        internal const int DefaultHedgingThresholdInMilliseconds = 1000;
+        internal const int DefaultHedgingThresholdStepInMilliseconds = 500;
 
         private static readonly char[] resourceIdOrFullNameSeparators = new char[] { '/' };
         private static readonly char[] resourceIdSeparators = new char[] { '/', '\\', '?', '#' };
@@ -6882,7 +6882,7 @@ namespace Microsoft.Azure.Cosmos
                     DocumentClient.DefaultHedgingThresholdInMilliseconds,
                     this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
 
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategy(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
