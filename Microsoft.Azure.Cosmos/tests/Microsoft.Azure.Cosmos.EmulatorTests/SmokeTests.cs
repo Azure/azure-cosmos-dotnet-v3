@@ -59,11 +59,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             if (IntPtr.Size == 8)
             {
-                Assert.IsFalse(Documents.CustomTypeExtensions.ByPassQueryParsing());
+                Assert.IsFalse(Query.Core.QueryPlan.QueryPlanRetriever.BypassQueryParsing());
             }
             else
             {
-                Assert.IsTrue(Documents.CustomTypeExtensions.ByPassQueryParsing());
+                Assert.IsTrue(Query.Core.QueryPlan.QueryPlanRetriever.BypassQueryParsing());
             }
         }
 
