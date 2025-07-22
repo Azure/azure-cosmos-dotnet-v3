@@ -15,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
 
