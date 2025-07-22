@@ -476,28 +476,6 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
         /// There's no implementation provided in the client library.
         /// </summary>
-        /// <param name="weights">the weights to use for scoring functions</param>
-        /// <param name="scoringFunctions">the scoring functions to combine. Valid functions are FullTextScore and VectorDistance</param>
-        /// <returns>Returns the the combined scores of the scoring functions.</returns>
-        /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// var matched = documents.OrderByRank(document => document.RRF(document.Name.FullTextScore(<keyword1>), document.Address.FullTextScore(<keyword2>)));
-        /// ]]>
-        /// </code>
-        /// </example>
-        public static double RRF(double[] weights, params double[] scoringFunctions)
-        {
-            // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
-            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
-        }
-
-        /// <summary>
-        /// This system function is used to combine two or more scores provided by other scoring functions.
-        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/rrf.
-        /// This method is to be used in LINQ expressions only and will be evaluated on server.
-        /// There's no implementation provided in the client library.
-        /// </summary>
         /// <param name="scoringFunctions">the scoring functions to combine. Valid functions are FullTextScore and VectorDistance. </param>
         /// <param name="weights">the weights to use for scoring functions</param>
         /// <returns>Returns the the combined scores of the scoring functions.</returns>
@@ -508,7 +486,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// ]]>
         /// </code>
         /// </example>
-        public static double RRF(double[][] scoringFunctions, double[] weights)
+        public static double RRF(double[] scoringFunctions, double[] weights)
         {
             // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);

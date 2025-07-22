@@ -687,30 +687,32 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
-                // public static double RRF(double[] weights, params double[] scoringFunctions)
-                new LinqTestInput("RRF with weight in fronts", b => getQuery(b)
-                    .OrderByRank(doc => RRF(new double[] { 1.0, 2.0 },
-                                            doc.StringField.FullTextScore(new string[] { "test1" }),
-                                            doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" })))
+                // public static double RRF(double[][] scoringFunctions, double[] weights)
+                new LinqTestInput("Standard weighted RRF calls", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[]
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            },
+                                            new double[] { 1.0, 2.0 } ))
                     .Select(doc => doc.Pk)),
 
-                // public static double RRF(params double[] scoringFunctionsAndWeights)
-                new LinqTestInput("weighted RRF with variably length weights", b => getQuery(b)
+                // Negative case: weights are not in an array
+                new LinqTestInput("Weighted RRF with weights and functions not in a list", b => getQuery(b)
                     .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
                                             doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
                                             1.0,
                                             2.0))
                     .Select(doc => doc.Pk)),
-
-                // public static double RRF(double[][] scoringFunctions, double[] weights)
-                new LinqTestInput("RRF with non-param scoring funcs", b => getQuery(b)
-                    .OrderByRank(doc => RRF(new double[] 
-                                            { 
+                new LinqTestInput("Weighted RRF with weights array first", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 1.0, 2.0 },
+                                            new double[]
+                                            {
                                                 doc.StringField.FullTextScore(new string[] { "test1" }),
-                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" }) 
-                                            },
-                                            new double[] { 1.0, 2.0 } ))
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
                     .Select(doc => doc.Pk)),
+
             };
 
             foreach (LinqTestInput input in inputs)
