@@ -131,7 +131,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_ACCOUNT_CONNECTION_STRING");
+            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
