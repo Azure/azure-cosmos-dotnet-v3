@@ -50,6 +50,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 SupportedQueryFeaturesString;
         }
 
+        public static bool BypassQueryParsing()
+        {
+            return Documents.CustomTypeExtensions.ByPassQueryParsing() || ConfigurationManager.ForceBypassQueryParsing();
+        }
+
         public static async Task<PartitionedQueryExecutionInfo> GetQueryPlanWithServiceInteropAsync(
             CosmosQueryClient queryClient,
             SqlQuerySpec sqlQuerySpec,

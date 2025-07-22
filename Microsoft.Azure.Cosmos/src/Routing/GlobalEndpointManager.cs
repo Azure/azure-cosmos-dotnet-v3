@@ -100,6 +100,10 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public ReadOnlyCollection<Uri> WriteEndpoints => this.locationCache.WriteEndpoints;
 
+        public ReadOnlyCollection<Uri> ThinClientReadEndpoints => this.locationCache.ThinClientReadEndpoints;
+
+        public ReadOnlyCollection<Uri> ThinClientWriteEndpoints => this.locationCache.ThinClientWriteEndpoints;
+
         public int PreferredLocationCount
         {
             get
@@ -598,13 +602,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return;
             }
 
-            bool isPPafEnabled = ConfigurationManager.IsPartitionLevelFailoverEnabled(defaultValue: false);
-            if (databaseAccount.EnablePartitionLevelFailover.HasValue)
+            if (!this.connectionPolicy.DisablePartitionLevelFailoverClientLevelOverride && databaseAccount.EnablePartitionLevelFailover.HasValue)
             {
-                isPPafEnabled = databaseAccount.EnablePartitionLevelFailover.Value;
+                this.connectionPolicy.EnablePartitionLevelFailover = databaseAccount.EnablePartitionLevelFailover.Value;
             }
 
-            this.connectionPolicy.EnablePartitionLevelFailover = isPPafEnabled;
             GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(databaseAccount);
 
             this.locationCache.OnDatabaseAccountRead(databaseAccount);
