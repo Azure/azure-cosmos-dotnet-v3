@@ -687,9 +687,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Clear the caches to ensure that we don't have partial results
                 this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer,
-                    storeModel: this.GatewayStoreModel,
-                    tokenProvider: this,
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
@@ -1058,14 +1058,14 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.accountServiceConfiguration?.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
+            this.isThinClientEnabled = (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
 
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation =
-                this.ConnectionPolicy.EnablePartitionLevelFailover
+            this.PartitionKeyRangeLocation = 
+                this.ConnectionPolicy.EnablePartitionLevelFailover 
                 || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
                     ? new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
@@ -1095,9 +1095,9 @@ namespace Microsoft.Azure.Cosmos
             this.GatewayStoreModel = gatewayStoreModel;
 
             this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer,
-                    storeModel: this.GatewayStoreModel,
-                    tokenProvider: this,
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
@@ -3333,12 +3333,12 @@ namespace Microsoft.Azure.Cosmos
 
             return await TaskHelper.InlineIfPossible(
                 () => this.ReplaceDocumentPrivateAsync(
-                    documentLink,
-                    document,
-                    options,
-                    requestRetryPolicy,
-                    cancellationToken),
-                requestRetryPolicy,
+                    documentLink, 
+                    document, 
+                    options, 
+                    requestRetryPolicy, 
+                    cancellationToken), 
+                requestRetryPolicy, 
                 cancellationToken);
         }
 
@@ -5710,6 +5710,7 @@ namespace Microsoft.Azure.Cosmos
                         }
 
                         retryPolicyInstance?.OnBeforeSendRequest(request);
+
                         request.SerializerSettings = this.GetSerializerSettingsForRequest(options);
                         return new StoredProcedureResponse<TValue>(await this.ExecuteProcedureAsync(
                             request,
@@ -5904,7 +5905,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
                     requestRetryPolicy);
             }
 
@@ -6689,7 +6690,7 @@ namespace Microsoft.Azure.Cosmos
         {
             Documents.ConsistencyLevel defaultConsistencyLevel = this.accountServiceConfiguration.DefaultConsistencyLevel;
             if (!this.IsValidConsistency(
-                        defaultConsistencyLevel,
+                        defaultConsistencyLevel, 
                         desiredConsistencyLevel,
                         operationType,
                         resourceType))
@@ -6703,7 +6704,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         private bool IsValidConsistency(
-            Documents.ConsistencyLevel backendConsistency,
+            Documents.ConsistencyLevel backendConsistency, 
             Documents.ConsistencyLevel desiredConsistency,
             OperationType? operationType,
             ResourceType? resourceType)
@@ -7027,7 +7028,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // check anyways since default consistency level might have been refreshed.
                 if (!this.IsValidConsistency(
-                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel,
+                            backendConsistency: this.accountServiceConfiguration.DefaultConsistencyLevel, 
                             desiredConsistency: this.desiredConsistencyLevel.Value,
                             operationType: operationType,
                             resourceType: resourceType))
