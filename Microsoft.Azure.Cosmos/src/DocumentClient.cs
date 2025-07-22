@@ -690,9 +690,9 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Clear the caches to ensure that we don't have partial results
                 this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer, 
-                    storeModel: this.GatewayStoreModel, 
-                    tokenProvider: this, 
+                    sessionContainer: this.sessionContainer,
+                    storeModel: this.GatewayStoreModel,
+                    tokenProvider: this,
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
@@ -979,7 +979,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDbOperationMeter.Initialize(this.cosmosClientTelemetryOptions);
                 CosmosDbNetworkMeter.Initialize(this.cosmosClientTelemetryOptions);
-                
+
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
@@ -1095,9 +1095,9 @@ namespace Microsoft.Azure.Cosmos
             this.GatewayStoreModel = gatewayStoreModel;
 
             this.collectionCache = new ClientCollectionCache(
-                    sessionContainer: this.sessionContainer, 
-                    storeModel: this.GatewayStoreModel, 
-                    tokenProvider: this, 
+                    sessionContainer: this.sessionContainer,
+                    storeModel: this.GatewayStoreModel,
+                    tokenProvider: this,
                     retryPolicy: this.retryPolicy,
                     telemetryToServiceHelper: this.telemetryToServiceHelper,
                     enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
@@ -1949,7 +1949,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
@@ -3323,18 +3323,18 @@ namespace Microsoft.Azure.Cosmos
             if ((options == null) || (options.PartitionKey == null))
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
                     requestRetryPolicy);
             }
 
             return await TaskHelper.InlineIfPossible(
                 () => this.ReplaceDocumentPrivateAsync(
-                    documentLink, 
-                    document, 
-                    options, 
-                    requestRetryPolicy, 
-                    cancellationToken), 
-                requestRetryPolicy, 
+                    documentLink,
+                    document,
+                    options,
+                    requestRetryPolicy,
+                    cancellationToken),
+                requestRetryPolicy,
                 cancellationToken);
         }
 
