@@ -623,7 +623,7 @@ namespace Microsoft.Azure.Cosmos
         internal GlobalAddressResolver AddressResolver { get; private set; }
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
-
+        
         internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
 
         /// <summary>
@@ -975,7 +975,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDbOperationMeter.Initialize(this.cosmosClientTelemetryOptions);
                 CosmosDbNetworkMeter.Initialize(this.cosmosClientTelemetryOptions);
-
+                
                 CosmosDbOperationMeter.AddInstanceCount(this.ServiceEndpoint);
             }
 
@@ -1953,7 +1953,7 @@ namespace Microsoft.Azure.Cosmos
             if (options?.PartitionKey == null)
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
                     requestRetryPolicy);
             }
 
@@ -3327,7 +3327,7 @@ namespace Microsoft.Azure.Cosmos
             if ((options == null) || (options.PartitionKey == null))
             {
                 requestRetryPolicy = new PartitionKeyMismatchRetryPolicy(
-                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton),
+                    await this.GetCollectionCacheAsync(NoOpTrace.Singleton), 
                     requestRetryPolicy);
             }
 
