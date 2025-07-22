@@ -30,7 +30,9 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed
 
         private string containerRid;
         private string continuationToken;
+#pragma warning disable IDE0044 // Add readonly modifier
         private int? maxItemCount;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         internal StandByFeedIteratorCore(
             CosmosClientContext clientContext,

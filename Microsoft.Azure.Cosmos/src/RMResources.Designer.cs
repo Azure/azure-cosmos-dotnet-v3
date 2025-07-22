@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
 #else
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
 #endif
@@ -279,6 +279,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("CannotSpecifyPKRangeForNonPartitionedResource", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to {0} capability is not supported on subscription {1}.
+        /// </summary>
+        internal static string CapabilityNotSupportedOnSubscription
+        {
+            get
+            {
+                return ResourceManager.GetString("CapabilityNotSupportedOnSubscription", resourceCulture);
             }
         }
 
@@ -800,6 +811,17 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        ///   Looks up a localized string similar to Serverless accounts do not support partition merge.
+        /// </summary>
+        internal static string MergeNotSupportedForServerless
+        {
+            get
+            {
+                return ResourceManager.GetString("MergeNotSupportedForServerless", resourceCulture);
+            }
+        }
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot set EnableMultipleWriteLocations on an account with EnableTieredStorageV1.
         /// </summary>
         internal static string EnableMultipleWriteLocationsAndEnableTieredStorageV1NotSupported
@@ -1086,17 +1108,6 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
-        ///   Looks up a localized string similar to MaterializedViews is not supported on this account type.
-        /// </summary>
-        internal static string MaterializedViewsNotSupportedOnZoneRedundantAccount
-        {
-            get
-            {
-                return ResourceManager.GetString("MaterializedViewsNotSupportedOnZoneRedundantAccount", resourceCulture);
-            }
-        }
-
-        /// <summary>
         ///   Looks up a localized string similar to Federation {0} in region {1} is not found.
         /// </summary>
         internal static string FederationEntityNotFound
@@ -1321,10 +1332,10 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-		/// <summary>
-		///   Looks up a localized string similar to The backend response was not in the correct format..
-		/// </summary>
-		internal static string InvalidBackendResponse
+        /// <summary>
+        ///   Looks up a localized string similar to The backend response was not in the correct format..
+        /// </summary>
+        internal static string InvalidBackendResponse
         {
             get
             {
@@ -4321,8 +4332,8 @@ namespace Microsoft.Azure.Documents
                 return ResourceManager.GetString("FailoverDisabled", resourceCulture);
             }
         }
-		
-		/// <summary>
+
+        /// <summary>
         ///   Looks up a localized string similar to Cannot perform failover priority change as it is disabled for the account.
         /// </summary>
         internal static string FailoverPriorityChangeDisabled
@@ -4970,6 +4981,17 @@ namespace Microsoft.Azure.Documents
             get
             {
                 return ResourceManager.GetString("DisableCmkNotSupported", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Soft Delete and Multiple Write Locations cannot be enabled on the same account..
+        /// </summary>
+        internal static string SoftDeletionNotSupportedWithMultipleWriteLocations
+        {
+            get
+            {
+                return ResourceManager.GetString("SoftDeletionNotSupportedWithMultipleWriteLocations", resourceCulture);
             }
         }
     }

@@ -28,7 +28,9 @@ namespace Microsoft.Azure.Documents
 
         private const int minFailedReplicaCountToConsiderConnectivityIssue = 3;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
+#pragma warning restore IDE0044 // Add readonly modifier
         private int attemptCount = 1;
         private int attemptCountInvalidPartition = 1;
         private int regionRerouteAttemptCount = 0;
@@ -44,7 +46,9 @@ namespace Microsoft.Azure.Documents
         // Don't penalise first retry with delay.
         private int currentBackoffSeconds = GoneAndRetryWithRetryPolicy.initialBackoffSeconds;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private DocumentServiceRequest request;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public GoneAndRetryWithRetryPolicy(
             DocumentServiceRequest request = null,
@@ -218,6 +222,7 @@ namespace Microsoft.Azure.Documents
                                 this.request.RequestContext.ClientRequestStatistics != null &&
                                 this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRetryPolicy.minFailedReplicaCountToConsiderConnectivityIssue)
                             {
+
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(
                                         RMResources.ClientUnavailable,

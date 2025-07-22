@@ -27,13 +27,42 @@ namespace Microsoft.Azure.Documents
     public
 #endif
     class DocumentClientException : Exception
+#if COSMOSCLIENT
+                                        , ICloneable
+#endif
     {
         private Error error;
         private SubStatusCodes? substatus = null;
+#pragma warning disable IDE0044 // Add readonly modifier
         private INameValueCollection responseHeaders;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private string rawErrorMessage;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private Boolean rawErrorMessageOnly;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private bool skippingStackTraceCapture = false;
+#pragma warning restore IDE0044 // Add readonly modifier
+
+        private readonly static HashSet<string> SensitiveHeaders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            HttpConstants.HttpHeaders.Authorization,
+            HttpConstants.HttpHeaders.FabricS2SToken,
+            HttpConstants.HttpHeaders.OriginalAadToken,
+            HttpConstants.HttpHeaders.GatewaySignature,
+            HttpConstants.HttpHeaders.SignedOboToken,
+            HttpConstants.HttpHeaders.ProxyAuthenticate,
+            HttpConstants.HttpHeaders.ProxyAuthorization,
+        };
+
+        private readonly static List<string> SensitiveWordsInHeader = new List<string>
+        {
+            "authorization",
+            "token",
+            "signature"
+        };
 
         internal DocumentClientException(Error errorResource,
             HttpResponseHeaders responseHeaders,
@@ -89,7 +118,7 @@ namespace Microsoft.Azure.Documents
             HttpStatusCode? statusCode,
             Uri requestUri = null,
             SubStatusCodes? substatusCode = null,
-            bool traceCallStack = true,
+            bool traceCallStack = false,
             bool rawErrorMessageOnly = false)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
@@ -160,8 +189,7 @@ namespace Microsoft.Azure.Documents
                     "DocumentClientException with status code {0}, message: {1}, inner exception: {2}, and response headers: {3}",
                     this.StatusCode ?? 0,
                     message,
-                    innerException != null ? 
-                        (traceCallStack ? innerException.ToString() : innerException.ToStringWithMessageAndData()) : "null",
+                    innerException != null ? innerException.ToStringWithMessageAndData() : "null",
                     SerializeHTTPResponseHeaders(responseHeaders));
             }
         }
@@ -225,7 +253,7 @@ namespace Microsoft.Azure.Documents
                     "DocumentClientException with status code {0}, message: {1}, inner exception: {2}, and response headers: {3}",
                     this.StatusCode ?? 0,
                     message,
-                    innerException != null ? innerException.ToString() : "null",
+                    innerException != null ? innerException?.Message : "null",
                     SerializeHTTPResponseHeaders(responseHeaders));
             }
         }
@@ -558,7 +586,7 @@ namespace Microsoft.Azure.Documents
 
             // If we're making this exception on the client side using the message from the Gateway,
             // the message may already have activityId stamped in it. If so, just use the message as-is
-            if (message.Contains(activityId))
+            if (message == null || message.Contains(activityId))
             {
                 return message;
             }
@@ -578,6 +606,11 @@ namespace Microsoft.Azure.Documents
 
             foreach (KeyValuePair<string, IEnumerable<string>> pair in responseHeaders)
             {
+                if (IsSensitiveHeader(pair.Key))
+                {
+                    continue;
+                }
+
                 foreach (string value in pair.Value)
                 {
                     result.Append(string.Format(CultureInfo.InvariantCulture,
@@ -654,6 +687,11 @@ namespace Microsoft.Azure.Documents
 
             foreach (Tuple<string, string> item in items)
             {
+                if (IsSensitiveHeader(item.Item1))
+                {
+                    continue;
+                }
+
                 result.Append(string.Format(CultureInfo.InvariantCulture,
                     "\"{0}\": \"{1}\",{2}",
                     item.Item1,
@@ -664,5 +702,27 @@ namespace Microsoft.Azure.Documents
             result.Append("}");
             return result.ToString();
         }
+
+        private static bool IsSensitiveHeader(string headerName)
+        {
+            if (string.IsNullOrEmpty(headerName))
+            {
+                return false;
+            }
+            
+            if (SensitiveHeaders.Contains(headerName))
+            {
+                return true;
+            }
+
+            return SensitiveWordsInHeader.Any(keyword => headerName.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+#if COSMOSCLIENT
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
+#endif
     }
 }

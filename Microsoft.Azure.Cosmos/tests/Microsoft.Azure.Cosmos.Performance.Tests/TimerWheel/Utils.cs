@@ -9,7 +9,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Benchmarks
 
     internal static class TimerUtilities
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static Random random = new Random();
+#pragma warning restore IDE0044 // Add readonly modifier
         public static IReadOnlyList<int> GenerateTimeoutList(
             int count,
             int maxTimeoutValue,

@@ -10,8 +10,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
     internal sealed class PathParser
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static char segmentSeparator = '/';
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private static string errorMessageFormat = "Invalid path, failed at {0}";
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Extract parts from path

@@ -203,10 +203,14 @@ namespace Microsoft.Azure.Cosmos
         private Func<bool, Task<bool>> initializeTaskFactory;
         internal AsyncCacheNonBlocking<string, bool> initTaskCache;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private JsonSerializerSettings serializerSettings;
+#pragma warning restore IDE0044 // Add readonly modifier
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
+#pragma warning disable IDE0044 // Add readonly modifier
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the

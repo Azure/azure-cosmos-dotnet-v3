@@ -43,7 +43,8 @@ namespace Microsoft.Azure.Documents
             bool disableRetryWithRetryPolicy = false,
             bool enableReplicaValidation = false,
             AccountConfigurationProperties accountConfigurationProperties = null,
-            RetryWithConfiguration retryWithConfiguration = null)
+            RetryWithConfiguration retryWithConfiguration = null,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.serviceConfigurationReader = serviceConfigurationReader;
@@ -72,7 +73,8 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: disableRetryWithRetryPolicy,
                 retryWithConfiguration: retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
-                accountConfigurationProperties: accountConfigurationProperties);
+                accountConfigurationProperties: accountConfigurationProperties,
+                sessionRetryOptions: sessionRetryOptions);
         }
 
         internal JsonSerializerSettings SerializerSettings { get; set; }

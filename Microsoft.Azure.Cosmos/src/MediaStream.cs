@@ -12,8 +12,12 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class MediaStream : Stream
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private HttpResponseMessage responseMessage;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private Stream contentStream;
+#pragma warning restore IDE0044 // Add readonly modifier
         private bool isDisposed;
 
         public MediaStream(HttpResponseMessage responseMessage, Stream contentStream)

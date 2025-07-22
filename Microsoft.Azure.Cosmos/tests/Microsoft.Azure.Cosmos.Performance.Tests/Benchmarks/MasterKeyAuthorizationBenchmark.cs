@@ -13,8 +13,12 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
     [Config(typeof(SdkBenchmarkConfiguration))]
     public class MasterKeyAuthorizationBenchmark
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private IComputeHash authKeyHashFunction;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private INameValueCollection testHeaders;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public MasterKeyAuthorizationBenchmark()
         {

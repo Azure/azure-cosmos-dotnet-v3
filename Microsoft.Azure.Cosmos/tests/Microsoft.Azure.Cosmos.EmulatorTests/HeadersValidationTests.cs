@@ -27,7 +27,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class HeadersValidationTests
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static byte BinarySerializationByteMarkValue = 128;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private string currentVersion;
         private byte[] currentVersionUTF8;

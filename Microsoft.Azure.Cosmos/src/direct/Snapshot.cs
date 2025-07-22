@@ -41,7 +41,11 @@ namespace Microsoft.Azure.Documents
 #endif
     class Snapshot : Resource
     {
-        private new static readonly DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+#pragma warning disable CS0108 // Member hides inherited member; missing new keyword
+#pragma warning disable IDE0044 // Add readonly modifier
+        private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning restore CS0108 // Member hides inherited member; missing new keyword
 
         private SnapshotContent snapshotContent;
 

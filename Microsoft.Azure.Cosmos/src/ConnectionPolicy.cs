@@ -28,8 +28,12 @@ namespace Microsoft.Azure.Cosmos
         private static ConnectionPolicy defaultPolicy;
 
         private Protocol connectionProtocol;
+#pragma warning disable IDE0044 // Add readonly modifier
         private ObservableCollection<string> preferredLocations;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private ObservableCollection<Uri> accountInitializationCustomEndpoints;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.

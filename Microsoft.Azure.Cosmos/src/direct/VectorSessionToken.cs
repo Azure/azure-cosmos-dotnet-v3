@@ -25,6 +25,7 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal sealed class VectorSessionToken : ISessionToken
     {
+        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
         private const string SessionTokenFalseProgressMergeDisabled = "AZURE_COSMOS_SESSION_TOKEN_FALSE_PROGRESS_MERGE_DISABLED";
         private const char SegmentSeparator = '#';
         private const string SegmentSeparatorString = "#";
@@ -35,8 +36,9 @@ namespace Microsoft.Azure.Documents
         private readonly long globalLsn;
 #pragma warning restore IDE0032 // Use auto property
         private readonly IReadOnlyDictionary<uint, long> localLsnByRegion;
-        private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
+#pragma warning disable IDE0044 // Add readonly modifier
         private static bool isFalseProgressMergeDisabled = string.Equals(Environment.GetEnvironmentVariable(SessionTokenFalseProgressMergeDisabled), "true",
+#pragma warning restore IDE0044 // Add readonly modifier
                 StringComparison.OrdinalIgnoreCase);
 
         private VectorSessionToken(long version, long globalLsn, IReadOnlyDictionary<uint, long> localLsnByRegion, string sessionToken = null)

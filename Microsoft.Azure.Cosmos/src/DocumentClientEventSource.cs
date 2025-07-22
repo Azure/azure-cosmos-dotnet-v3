@@ -13,7 +13,9 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class DocumentClientEventSource : EventSource, ICommunicationEventSource
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static Lazy<DocumentClientEventSource> documentClientEventSourceInstance
+#pragma warning restore IDE0044 // Add readonly modifier
             = new Lazy<DocumentClientEventSource>(() => new DocumentClientEventSource());
 
         public static DocumentClientEventSource Instance

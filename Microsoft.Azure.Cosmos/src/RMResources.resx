@@ -861,9 +861,6 @@
   <data name="FeatureNotSupportedInRegion" xml:space="preserve">
     <value>Feature {0} is not supported in {1} region</value>
   </data>
-  <data name="MaterializedViewsNotSupportedOnZoneRedundantAccount" xml:space="preserve">
-    <value>Materialized Views are not supported on account with zone redundant region</value>
-  </data>
   <data name="GlobalAndWriteRegionMisMatch" xml:space="preserve">
     <value>Database and Write Location are not matching</value>
   </data>
@@ -1053,6 +1050,9 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="EnableMultiRegionAndEnableServerlessNotSupported" xml:space="preserve">
     <value>Serverless accounts do not support multiple regions.</value>
+  </data>
+  <data name="MergeNotSupportedForServerless" xml:space="preserve">
+    <value>Serverless accounts do not support partition merge.</value>
   </data>
   <data name="DataPlaneOperationNotAllowed" xml:space="preserve">
     <value>"Operation '{0}' on resource '{1}' is not allowed through Azure Cosmos DB endpoint. Please switch on such operations for your account, or perform this operation through Azure Resource Manager, Azure Portal, Azure CLI or Azure Powershell"</value>
@@ -1454,5 +1454,11 @@ If you would like to serve this query through continuation tokens, then please r
   </data>
   <data name="DisableCmkNotSupported" xml:space="preserve">
     <value>Cannot provide an empty KeyVaultKeyUri to an account with CMK Enabled. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys?tabs=azure-portal</value>
+  </data>
+  <data name="CapabilityNotSupportedOnSubscription" xml:space="preserve">
+    <value>{0} capability is not supported on subscription {1}</value>
+  </data>
+  <data name="SoftDeletionNotSupportedWithMultipleWriteLocations" xml:space="preserve">
+    <value>Soft Delete and Multiple Write Locations cannot be enabled on the same account.</value>
   </data>
 </root>

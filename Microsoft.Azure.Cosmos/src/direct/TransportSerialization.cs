@@ -109,6 +109,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Guid activityId,
             BufferProvider bufferProvider,
             string globalDatabaseAccountName,
+            string regionalDatabaseAccountName,
             out int headerSize,
             out int? bodySize)
         {
@@ -123,6 +124,10 @@ namespace Microsoft.Azure.Documents.Rntbd
             // Set GlobalDatabaseAccountName
             rntbdRequest.globalDatabaseAccountName.value.valueBytes = BytesSerializer.GetBytesForString(globalDatabaseAccountName, rntbdRequest);
             rntbdRequest.globalDatabaseAccountName.isPresent = true;
+
+            // Set RegionalDatabaseAccountName
+            rntbdRequest.regionalDatabaseAccountName.value.valueBytes = BytesSerializer.GetBytesForString(regionalDatabaseAccountName, rntbdRequest);
+            rntbdRequest.regionalDatabaseAccountName.isPresent = true;
 
             return BuildRequestCore(
                 request,
@@ -274,6 +279,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddEnableConflictResolutionPolicyUpdate(requestHeaders, rntbdRequest);
             TransportSerialization.AddAllowDocumentReadsInOfflineRegion(requestHeaders, rntbdRequest);
             TransportSerialization.AddCosmosGatewayTransactionId(requestHeaders, rntbdRequest);
+            TransportSerialization.AddPopulateThroughputPoolInfo(requestHeaders, rntbdRequest);
 
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, requestHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SessionToken, requestHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest);
@@ -373,6 +379,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateThroughputPoolInfo, requestHeaders.PopulateThroughputPoolInfo, rntbdRequest.populateThroughputPoolInfo, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.RetrieveUserStrings, requestHeaders.RetrieveUserStrings, rntbdRequest.retrieveUserStrings, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress, requestHeaders.PopulateVectorIndexAggregateProgress, rntbdRequest.populateVectorIndexAggregateProgress, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.AllowTopologyUpsertWithoutIntent, requestHeaders.AllowTopologyUpsertWithoutIntent, rntbdRequest.allowTopologyUpsertWithoutIntent, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ReadGlobalCommittedData, requestHeaders.ReadGlobalCommittedData, rntbdRequest.readGlobalCommittedData, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.IsSoftDeletionOperation, requestHeaders.IsSoftDeletionOperation, rntbdRequest.isSoftDeletionOperation, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.WorkloadId, requestHeaders.WorkloadId, rntbdRequest.workloadId, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.OriginalAuthorizationTokenType, requestHeaders.OriginalAuthTokenType, rntbdRequest.originalAuthTokenType, rntbdRequest);
+
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
             // BE will respect the per-request value.
@@ -2218,6 +2230,27 @@ namespace Microsoft.Azure.Documents.Rntbd
                     }
 
                     token.value.valueULong = valueULong;
+                    break;
+                case RntbdTokenTypes.UShort:
+                    ushort valueUShort;
+                    if (headerStringValue != null)
+                    {
+                        if (!ushort.TryParse(headerStringValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out valueUShort))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerStringValue, headerName));
+                        }
+                    }
+                    else
+                    {
+                        if (!(headerValue is ushort ushortValue))
+                        {
+                            throw new BadRequestException(String.Format(CultureInfo.CurrentUICulture, RMResources.InvalidHeaderValue, headerValue, headerName));
+                        }
+
+                        valueUShort = ushortValue;
+                    }
+
+                    token.value.valueUShort = valueUShort;
                     break;
                 case RntbdTokenTypes.Long:
                     int valueLong;

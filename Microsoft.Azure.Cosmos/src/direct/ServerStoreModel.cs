@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Documents
     internal sealed class ServerStoreModel : IStoreModelExtension
     {
         private readonly StoreClient storeClient;
+#pragma warning disable IDE0044 // Add readonly modifier
         private EventHandler<SendingRequestEventArgs> sendingRequest;
+#pragma warning restore IDE0044 // Add readonly modifier
         private readonly EventHandler<ReceivedResponseEventArgs> receivedResponse;
 
         public ServerStoreModel(StoreClient storeClient)

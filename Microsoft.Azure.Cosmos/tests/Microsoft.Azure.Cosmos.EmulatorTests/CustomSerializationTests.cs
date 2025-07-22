@@ -573,7 +573,9 @@ function bulkImport(docs) {
         private class CustomJsonSerializer : CosmosSerializer
         {
             private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
+#pragma warning disable IDE0044 // Add readonly modifier
             private JsonSerializer serializer;
+#pragma warning restore IDE0044 // Add readonly modifier
             public CustomJsonSerializer(JsonSerializerSettings jsonSerializerSettings)
             {
                 this.serializer = JsonSerializer.Create(jsonSerializerSettings);

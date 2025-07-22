@@ -43,9 +43,7 @@ namespace Microsoft.Azure.Documents
         }
 
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
@@ -67,7 +65,6 @@ namespace Microsoft.Azure.Documents
         /// </para>
         /// </remarks>
         [JsonProperty(PropertyName = Constants.Properties.Id)]
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         public virtual string Id
         {
             get

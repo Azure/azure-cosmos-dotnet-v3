@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Documents
         public static readonly long Frequency = Stopwatch.Frequency;
         /// <seealso cref="Stopwatch.IsHighResolution"/>
         public static readonly bool IsHighResolution = Stopwatch.IsHighResolution;
-        
+
 #pragma warning disable CS1570 // XML comment has badly formed XML
 #pragma warning disable CS1570 // XML comment has badly formed XML
 /// <remarks>

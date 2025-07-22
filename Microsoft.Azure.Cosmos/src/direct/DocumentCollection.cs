@@ -326,10 +326,12 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
+#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 if(value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
                 }
+#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
@@ -1266,7 +1268,7 @@ namespace Microsoft.Azure.Documents
             {
                 base.SetObject(Constants.Properties.SchemaDiscoveryPolicy, this.schemaDiscoveryPolicy);
             }
-            
+
             if (this.changeFeedPolicy != null)
             {
                 base.SetObject(Constants.Properties.ChangeFeedPolicy, this.changeFeedPolicy);
@@ -1287,7 +1289,7 @@ namespace Microsoft.Azure.Documents
                 base.SetObject(Constants.Properties.GeospatialConfig, this.geospatialConfig);
             }
 
-            if(this.byokConfig != null)
+            if (this.byokConfig != null)
             {
                 base.SetObject(Constants.Properties.ByokConfig, this.byokConfig);
             }
@@ -1330,8 +1332,8 @@ namespace Microsoft.Azure.Documents
                 base.SetObject<EncryptionScopeMetadata>(Constants.EncryptionScopeProperties.EncryptionScope, this.encryptionScopeMetadata);
             }
 
-            if(this.uniqueIndexNameEncodingMode != 0)
-            { 
+            if (this.uniqueIndexNameEncodingMode != 0)
+            {
                 base.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, this.uniqueIndexNameEncodingMode);
             }
 

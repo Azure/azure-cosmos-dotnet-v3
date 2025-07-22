@@ -15,7 +15,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly String base64EncodedKey;
         private readonly byte[] keyBytes;
         private SecureString secureString;
+#pragma warning disable IDE0044 // Add readonly modifier
         private ConcurrentQueue<HMACSHA256> hmacPool;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public StringHMACSHA256Hash(String base64EncodedKey)
         {

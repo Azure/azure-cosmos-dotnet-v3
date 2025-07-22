@@ -349,9 +349,7 @@ namespace Microsoft.Azure.Documents
             string resourceUrl,
             out string resourcePath,
             out string resourceIdOrFullName,
-#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             out bool isNameBased,
-#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             out string databaseName,
             out string collectionName,
             out ResourceType resourceType,
@@ -1467,6 +1465,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetConfiguration;
                 case OperationType.GetFederationConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
+                case OperationType.GetRegionalConfigurations:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetRegionalConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
                 case OperationType.GetDatabaseAccountArtifactPermissions:
@@ -1582,6 +1582,7 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportChargesV2, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_HeartBeatPingWatchdog, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetRegionalConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageServiceConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||

@@ -12,10 +12,11 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
-    
+
 #pragma warning disable CS1570 // XML comment has badly formed XML
 #pragma warning disable CS1570 // XML comment has badly formed XML
 #pragma warning disable CS1570 // XML comment has badly formed XML
+#pragma warning disable CS1584 // XML comment has syntactically incorrect cref attribute
 /// <summary>
     /// ConnectionStateListener listens to the connection reset event notification fired by the transport client
     /// and refreshes the Document client's address cache
@@ -28,6 +29,7 @@ namespace Microsoft.Azure.Documents
     ///     
     /// <see cref="notificationConcurrency"/>control the number of concurrent notifications or calles to the registered handlers
     ///     - Default: Environment.ProcessorCount
+    ///     - Can be set through <see cref="IStoreClientFactory.GetConnectionStateListener().SetConnectionEventConcurrency(int notificationConcurrency)"/>
     ///     - ZERO: no notifications will be sent
     /// 
     /// <see cref="Microsoft.Azure.Documents.Client.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery"/> can be used in conjunction with this listener
@@ -48,6 +50,7 @@ namespace Microsoft.Azure.Documents
     ///     - Task scheduler contention
     /// </remarks>
     internal sealed class ConnectionStateMuxListener : IConnectionStateListener 
+#pragma warning restore CS1584 // XML comment has syntactically incorrect cref attribute
 #pragma warning restore CS1570 // XML comment has badly formed XML
 #pragma warning restore CS1570 // XML comment has badly formed XML
 #pragma warning restore CS1570 // XML comment has badly formed XML
@@ -59,7 +62,7 @@ namespace Microsoft.Azure.Documents
 
         public ConnectionStateMuxListener(bool enableTcpConnectionEndpointRediscovery) 
         {
-            // Default to the processor count 
+            /// Default to the processor count 
             this.notificationConcurrency = Environment.ProcessorCount;
             this.notificationSemaphore = new SemaphoreSlim(this.notificationConcurrency);
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;

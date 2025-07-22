@@ -25,7 +25,9 @@ namespace Microsoft.Azure.Cosmos.Handler
         private static readonly TimeSpan ClientTelemetryRefreshInterval = TimeSpan.FromSeconds(5);
 
         // Need to reset it in Tests hence kept it non-readonly.
+#pragma warning disable IDE0044 // Add readonly modifier
         private static SystemUsageRecorder DiagnosticSystemUsageRecorder = new SystemUsageRecorder(
+#pragma warning restore IDE0044 // Add readonly modifier
             identifier: Diagnostickey,
             historyLength: 6,
             refreshInterval: DiagnosticsHandlerHelper.DiagnosticsRefreshInterval);

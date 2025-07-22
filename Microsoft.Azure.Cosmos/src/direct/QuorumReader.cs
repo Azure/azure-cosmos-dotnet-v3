@@ -122,12 +122,14 @@ namespace Microsoft.Azure.Documents
                             }
 
                             DefaultTrace.TraceWarning(
-                                "QuorumSelected: Could not converge on the LSN {0} GlobalCommittedLSN {3} ReadMode {4} after primary read barrier with read quorum {1} for strong read, Responses: {2}",
+                                "QuorumSelected: Could not converge on the LSN {0} GlobalCommittedLSN {3} ReadMode {4} after primary read barrier with read quorum {1} for strong read, Responses: {2}, resourceType: {5}, operationType: {6}",
                                 secondaryQuorumReadResult.SelectedLsn, 
                                 readQuorumValue,
                                 secondaryQuorumReadResult,
                                 secondaryQuorumReadResult.GlobalCommittedSelectedLsn,
-                                readMode);
+                                readMode,
+                                entity.ResourceType,
+                                entity.OperationType);
 
                             entity.RequestContext.UpdateQuorumSelectedStoreResponse(secondaryQuorumReadResult.GetSelectedResponseAndSkipStoreResultDispose());
                             entity.RequestContext.QuorumSelectedLSN = secondaryQuorumReadResult.SelectedLsn;
@@ -140,31 +142,48 @@ namespace Microsoft.Azure.Documents
                         {
                             if (hasPerformedReadFromPrimary)
                             {
-                                DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries. ReadStoreResponses: {0}", secondaryQuorumReadResult.ToString());
+                                DefaultTrace.TraceWarning("QuorumNotSelected: Primary read already attempted. Quorum could not be selected after retrying on secondaries. ReadStoreResponses: {0}, resourceType: {1}, operationType: {2}",
+                                    secondaryQuorumReadResult.ToString(),
+                                    entity.ResourceType,
+                                    entity.OperationType);
 
                                 throw new GoneException(RMResources.ReadQuorumNotMet +
                                     $", partitionId: {entity.PartitionKeyRangeIdentity}",
                                     SubStatusCodes.Server_ReadQuorumNotMet);
                             }
 
-                            DefaultTrace.TraceWarning("QuorumNotSelected: Quorum could not be selected with read quorum of {0}", readQuorumValue);
+                            DefaultTrace.TraceWarning("QuorumNotSelected: Quorum could not be selected with read quorum of {0}, resourceType: {1}, operationType: {2}",
+                                readQuorumValue,
+                                entity.ResourceType,
+                                entity.OperationType);
+
                             using ReadPrimaryResult response = await this.ReadPrimaryAsync(entity, readQuorumValue, false);
 
                             if (response.IsSuccessful && response.ShouldRetryOnSecondary)
                             {
                                 Debug.Assert(false, "QuorumNotSelected: PrimaryResult has both Successful and ShouldRetryOnSecondary flags set");
-                                DefaultTrace.TraceCritical("PrimaryResult has both Successful and ShouldRetryOnSecondary flags set. ReadQuorumResult StoreResponses: {0}", secondaryQuorumReadResult.ToString());
+                                DefaultTrace.TraceCritical("PrimaryResult has both Successful and ShouldRetryOnSecondary flags set. ReadQuorumResult StoreResponses: {0}, resourceType: {1}, operationType: {2}",
+                                    secondaryQuorumReadResult.ToString(),
+                                    entity.ResourceType,
+                                    entity.OperationType);
 
                             }
                             else if (response.IsSuccessful)
                             {
-                                DefaultTrace.TraceInformation("QuorumNotSelected: ReadPrimary successful");
+                                DefaultTrace.TraceInformation("QuorumNotSelected: ReadPrimary successful, resourceType: {0}, operationType: {1}",
+                                    entity.ResourceType,
+                                    entity.OperationType);
+
                                 return response.GetResponseAndSkipStoreResultDispose();
                             }
                             else if (response.ShouldRetryOnSecondary)
                             {
                                 shouldRetryOnSecondary = true;
-                                DefaultTrace.TraceWarning("QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary. ReadQuorumResult StoreResponses: {0}", secondaryQuorumReadResult.ToString());
+                                DefaultTrace.TraceWarning("QuorumNotSelected: ReadPrimary did not succeed. Will retry on secondary. ReadQuorumResult StoreResponses: {0}, resourceType: {1}, operationType: {2}",
+                                    secondaryQuorumReadResult.ToString(),
+                                    entity.ResourceType,
+                                    entity.OperationType);
+
                                 hasPerformedReadFromPrimary = true;
 
                                 // We have failed to select a quorum before - could very well happen again
@@ -176,7 +195,10 @@ namespace Microsoft.Azure.Documents
                             }
                             else
                             {
-                                DefaultTrace.TraceWarning("QuorumNotSelected: Could not get successful response from ReadPrimary");
+                                DefaultTrace.TraceWarning("QuorumNotSelected: Could not get successful response from ReadPrimary, resourceType: {0}, operationType: {1}",
+                                    entity.ResourceType,
+                                    entity.OperationType);
+                               
                                 throw new GoneException(RMResources.ReadQuorumNotMet, SubStatusCodes.Server_ReadQuorumNotMet);
                             }
                         }
@@ -184,12 +206,19 @@ namespace Microsoft.Azure.Documents
                         break;
 
                     default:
-                        DefaultTrace.TraceCritical("Unknown ReadQuorum result {0}", secondaryQuorumReadResult.QuorumResult.ToString());
+                        DefaultTrace.TraceCritical("Unknown ReadQuorum result {0}, resourceType: {1}, operationType: {2}",
+                            secondaryQuorumReadResult.QuorumResult.ToString(),
+                            entity.ResourceType,
+                            entity.OperationType);
+
                         throw new InternalServerErrorException(RMResources.InternalServerError);
                 }
             } while (--readQuorumRetry > 0 && shouldRetryOnSecondary);
 
-            DefaultTrace.TraceWarning("Could not complete read quorum with read quorum value of {0}", readQuorumValue);
+            DefaultTrace.TraceWarning("Could not complete read quorum with read quorum value of {0}, resourceType: {1}, operationType: {2}", 
+                readQuorumValue,
+                entity.ResourceType,
+                entity.OperationType);
 
             throw new GoneException(
                     string.Format(CultureInfo.CurrentUICulture,
@@ -503,7 +532,7 @@ namespace Microsoft.Azure.Documents
 
             long maxGlobalCommittedLsn = 0;
 
-            while (readBarrierRetryCount-- > 0)
+            while (readBarrierRetryCount-- > 0) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
@@ -606,7 +635,7 @@ namespace Microsoft.Azure.Documents
             long maxGlobalCommittedLsn = 0;
             bool hasConvergedOnLSN = false;
             int readBarrierRetryCount = 0;
-            while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+            while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();

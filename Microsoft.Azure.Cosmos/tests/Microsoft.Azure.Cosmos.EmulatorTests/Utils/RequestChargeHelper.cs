@@ -11,7 +11,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     /// </summary>
     internal sealed class RequestChargeHelper
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private Dictionary<DocumentClientType, double> chargeStore;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         internal RequestChargeHelper()
         {

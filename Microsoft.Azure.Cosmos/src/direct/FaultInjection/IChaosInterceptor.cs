@@ -3,10 +3,11 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.FaultInjection
 {
-    using System;
-    using System.Net.Http;
-    using System.Threading.Tasks;
     using Microsoft.Azure.Documents.Rntbd;
+    using System;
+    using System.Threading.Tasks;
+    using System.Net.Http;
+    using System.Threading;
 
     /// <summary>
     /// Interface for Chaos Interceptor
@@ -23,8 +24,9 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Used to inject faults on request call for GatewayCalls
         /// </summary>
-        /// <param name="request"></param>
-        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request);
+        /// <param name="args"></param>
+        /// <returns></returns>
+        public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request, CancellationToken token = default);
 
         /// <summary>
         /// Used to inject faults on channel open
@@ -51,8 +53,8 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Used to inject faults before connection writes for gateway
         /// </summary>
-        /// <param name="request"></param>
-        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request);
+        /// <param name="args"></param>
+        public Task OnBeforeHttpSendAsync(DocumentServiceRequest request, CancellationToken token = default);
 
         /// <summary>
         /// Used to inject faults after connection writes
@@ -63,8 +65,8 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <summary>
         /// Used to inject faults after connection writes for gateway
         /// </summary>
-        /// <param name="request"></param>
-        public Task OnAfterHttpSendAsync(DocumentServiceRequest request);
+        /// <param name="args"></param>
+        public Task OnAfterHttpSendAsync(DocumentServiceRequest request, CancellationToken token = default);
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id

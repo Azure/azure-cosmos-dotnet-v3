@@ -25,8 +25,12 @@
     [TestClass]
     public sealed class ClientRetryPolicyTests
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static Uri Location1Endpoint = new Uri("https://location1.documents.azure.com");
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private static Uri Location2Endpoint = new Uri("https://location2.documents.azure.com");
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private ReadOnlyCollection<string> preferredLocations;
         private AccountProperties databaseAccount;
@@ -729,8 +733,12 @@
 
         private class MockAddressResolver : IAddressResolverExtension
         {
+#pragma warning disable IDE0044 // Add readonly modifier
             private List<AddressInformation> oldAddressInformations;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
             private List<AddressInformation> newAddressInformations;
+#pragma warning restore IDE0044 // Add readonly modifier
 
             public int NumberOfRefreshes { get; set; }
 
@@ -799,8 +807,12 @@
 
         private class MockTransportClient : TransportClient
         {
+#pragma warning disable IDE0044 // Add readonly modifier
             private Dictionary<Uri, StoreResponse> uriToStoreResponseMap;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
             private Dictionary<Uri, Exception> uriToExceptionMap;
+#pragma warning restore IDE0044 // Add readonly modifier
 
             public MockTransportClient(
                 Dictionary<Uri, StoreResponse> uriToStoreResponseMap,

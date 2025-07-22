@@ -19,7 +19,9 @@ namespace Microsoft.Azure.Cosmos.Routing
     internal sealed class LocationCache
     {
         private const string UnavailableLocationsExpirationTimeInSeconds = "UnavailableLocationsExpirationTimeInSeconds";
+#pragma warning disable IDE0044 // Add readonly modifier
         private static int DefaultUnavailableLocationsExpirationTimeInSeconds = 5 * 60;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private readonly bool enableEndpointDiscovery;
         private readonly Uri defaultEndpoint;

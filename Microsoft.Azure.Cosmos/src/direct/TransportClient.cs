@@ -1199,6 +1199,7 @@ namespace Microsoft.Azure.Documents
 
         protected static string GetErrorFromStream(Stream responseStream)
         {
+            //$ISSUE-Review-mayapainter-2025/06/16 We cannot always assume that responseStream will be text.
             using (responseStream)
             {
                 return new StreamReader(responseStream).ReadToEnd();

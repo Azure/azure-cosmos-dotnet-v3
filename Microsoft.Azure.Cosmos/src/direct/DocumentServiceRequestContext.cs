@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Net;
     using Microsoft.Azure.Documents.Routing;
@@ -119,11 +120,11 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Set of all failed enpoints for a DSR. Used for prioritizing replica selection
         /// </summary>
-        public Lazy<HashSet<TransportAddressUri>> FailedEndpoints { get; private set; }
+        public Lazy<ConcurrentDictionary<TransportAddressUri, bool>> FailedEndpoints { get; private set; }
 
         public DocumentServiceRequestContext()
         {
-            this.FailedEndpoints = new Lazy<HashSet<TransportAddressUri>>();
+            this.FailedEndpoints = new Lazy<ConcurrentDictionary<TransportAddressUri, bool>>();
         }
 
         /// <summary>
@@ -156,36 +157,30 @@ namespace Microsoft.Azure.Documents
                     dce.StatusCode == HttpStatusCode.RequestTimeout ||
                     (int)dce.StatusCode >= 500)
                 {
-                    this.FailedEndpoints.Value.Add(targetUri);
+                    this.FailedEndpoints.Value.TryAdd(targetUri, true);
                 }
             }
         }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
         /// <param name="locationIndex">Index of the location to which the request should be routed</param>
         /// <param name="usePreferredLocations">Use preferred locations to route request</param>
         public void RouteToLocation(int locationIndex, bool usePreferredLocations)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
             this.LocationIndexToRoute = locationIndex;
             this.UsePreferredLocations = usePreferredLocations;
             this.LocationEndpointToRoute = null;
         }
 
-        
-#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Sets location-based routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to given <paramref name="locationEndpoint"/>
         /// </summary>
         /// <param name="locationEndpoint">Location endpoint to which the request should be routed</param>
         public void RouteToLocation(Uri locationEndpoint)
-#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
             this.LocationEndpointToRoute = locationEndpoint;
             this.LocationIndexToRoute = null;

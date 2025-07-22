@@ -17,8 +17,12 @@ namespace Microsoft.Azure.Documents.Telemetry
     {
         private const string DateTimeFormat = "yyyy-MM-dd'T'HH:mm:ssZZ";
         private readonly DiagnosticScope scope;
+#pragma warning disable IDE0044 // Add readonly modifier
         private DistributedTracingOptions options;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private DocumentServiceRequest request;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public OpenTelemetryRecorder(DiagnosticScope scope, DocumentServiceRequest request, DistributedTracingOptions options)
         {

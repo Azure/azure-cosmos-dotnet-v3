@@ -24,7 +24,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public sealed class OfferTests
     {
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private PartitionKeyDefinition partitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/id" }), Kind = PartitionKind.Hash };
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private readonly struct TestCase
         {

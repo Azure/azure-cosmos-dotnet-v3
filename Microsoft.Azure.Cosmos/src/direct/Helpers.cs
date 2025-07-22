@@ -52,7 +52,7 @@ namespace Microsoft.Azure.Documents
             try
             {
                 string pattern = "sig=.*?[&|\"]";
-                string replacement = string.Empty;
+                string replacement = "";
 
                 string result = Regex.Replace(sASToken, pattern, replacement, RegexOptions.IgnoreCase);
                 return result;
