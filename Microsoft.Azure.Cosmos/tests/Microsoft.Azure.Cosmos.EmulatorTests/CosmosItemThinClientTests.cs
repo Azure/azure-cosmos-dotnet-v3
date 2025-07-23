@@ -131,11 +131,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_ACCOUNT_CONNECTION_STRING", null);
+            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
 
             if (string.IsNullOrEmpty(this.connectionString))
             {
-                Assert.Fail("Set environment variable COSMOSDB_ACCOUNT_CONNECTION_STRING to run the tests");
+                Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
             }
 
             JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
