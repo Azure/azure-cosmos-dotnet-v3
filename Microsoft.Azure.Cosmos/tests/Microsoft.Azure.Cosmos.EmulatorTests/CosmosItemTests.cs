@@ -4127,6 +4127,127 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task ItemPatchWithLongNumericStringPathTest()
+        {
+            // This test mirrors the original issue scenario from #5154
+            // The issue was that patch operations would fail with "Token('12345678901234567890') has length longer than expected"
+            // when paths contained numeric-looking strings 20+ characters long
+            
+            // Create a test document with a flexible structure to hold dynamic properties
+            var testDocument = new
+            {
+                id = Guid.NewGuid().ToString(),
+                pk = "test-partition-key",
+                strings = new Dictionary<string, object>(),
+                description = "Test document for long numeric string paths"
+            };
+            
+            // Create the document in the container
+            await this.Container.CreateItemAsync(testDocument, new Cosmos.PartitionKey(testDocument.pk));
+            
+            // Test the exact scenario from the original issue
+            string longNumericString = "12345678901234567890"; // 20 characters - this was the problematic case
+            string testValue = "test_value_for_long_numeric_key";
+            
+            // This should work now with the fix
+            List<PatchOperation> patchOperations = new List<PatchOperation>
+            {
+                PatchOperation.Add($"/strings/{longNumericString}", testValue)
+            };
+            
+            // Execute the patch operation 
+            ContainerInternal containerInternal = (ContainerInternal)this.Container;
+            var response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+            
+            // Verify the patch operation succeeded
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            Assert.IsNotNull(response.Resource);
+            
+            // Read the document back to verify the patch was applied correctly
+            var readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+            
+            Assert.AreEqual(HttpStatusCode.OK, readResponse.StatusCode);
+            Assert.IsNotNull(readResponse.Resource);
+            
+            // Verify that the value was added to the strings object with the long numeric key
+            dynamic doc = readResponse.Resource;
+            Newtonsoft.Json.Linq.JObject stringsObj = doc.strings;
+            
+            // The key should exist and have the correct value
+            Assert.IsTrue(stringsObj.ContainsKey(longNumericString));
+            Assert.AreEqual(testValue, stringsObj[longNumericString].ToString());
+            
+            // Test with an even longer numeric string (30 characters)
+            string veryLongNumericString = "123456789012345678901234567890";
+            string testValue2 = "test_value_for_very_long_numeric_key";
+            
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add($"/strings/{veryLongNumericString}", testValue2));
+            
+            response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+            
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            
+            // Verify the second patch operation as well
+            readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+            
+            doc = readResponse.Resource;
+            stringsObj = doc.strings;
+            
+            Assert.IsTrue(stringsObj.ContainsKey(veryLongNumericString));
+            Assert.AreEqual(testValue2, stringsObj[veryLongNumericString].ToString());
+            
+            // Test that shorter numeric strings still work (should not be affected by the fix)
+            string shortNumericString = "123456789"; // 9 characters
+            string testValue3 = "test_value_for_short_numeric_key";
+            
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add($"/strings/{shortNumericString}", testValue3));
+            
+            response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+            
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            
+            // Verify that short numeric strings still work correctly
+            readResponse = await this.Container.ReadItemAsync<dynamic>(
+                testDocument.id,
+                new Cosmos.PartitionKey(testDocument.pk));
+            
+            doc = readResponse.Resource;
+            stringsObj = doc.strings;
+            
+            Assert.IsTrue(stringsObj.ContainsKey(shortNumericString));
+            Assert.AreEqual(testValue3, stringsObj[shortNumericString].ToString());
+            
+            // Test that mixed alphanumeric strings work (should not be affected)
+            string mixedString = "abc123456789012345678901234567890def";
+            string testValue4 = "test_value_for_mixed_key";
+            
+            patchOperations.Clear();
+            patchOperations.Add(PatchOperation.Add($"/strings/{mixedString}", testValue4));
+            
+            response = await containerInternal.PatchItemAsync<dynamic>(
+                id: testDocument.id,
+                partitionKey: new Cosmos.PartitionKey(testDocument.pk),
+                patchOperations: patchOperations);
+            
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
         [DataRow(false, DisplayName = "QueryItemAsyncTest - Binary encoding disabled.")]
         [DataRow(true, DisplayName = "QueryItemAsyncTest - Binary encoding enabled.")]
         public async Task QueryItemAsyncTest(bool binaryEncodingEnabled)
