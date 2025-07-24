@@ -591,9 +591,8 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
-        /// This extension method returns the Index Metrics for a given Response object. The index utilization metrics is to be used for debugging purposes. 
-        /// It's applicable to query response only.
-        /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.
+        /// This extension method returns the Index Metrics for a given Response object. The index utilization metrics is to be used for debugging purposes only. 
+        /// This result is only available if QueryRequestOptions.PopulateIndexMetrics is set to true.Returns null if the index metrics is not available in the response.
         /// </summary>
         /// <param name="response">The query Response.</param>
         /// <returns>A string represents the Index Metrics.</returns>
@@ -609,7 +608,7 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// </example>
         public static string GetIndexMetrics<T>(this Response<T> response)
         {
-            return ResponseMessage.DecodeIndexMetrics(response.Headers, isBase64Encoded: false).Value;
+            return ResponseMessage.DecodeIndexMetrics(response.Headers, isBase64Encoded: false)?.Value;
         }
 
         /// <summary>

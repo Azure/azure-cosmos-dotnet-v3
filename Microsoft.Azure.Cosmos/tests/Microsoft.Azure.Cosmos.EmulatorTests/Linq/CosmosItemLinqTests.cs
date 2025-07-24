@@ -396,6 +396,34 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(100, maxTaskNum);
         }
 
+
+        [TestMethod]
+        public async Task GetIndexMetricsTest()
+        {
+            //Creating items for query.
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
+
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
+            IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
+                requestOptions: queryRequestOptions);
+
+            // Response object with valid index metrics field
+            Response<int> response = await linqQueryable.Select(item => item.taskNum).SumAsync();
+            this.VerifyResponse(response, 420, queryRequestOptions);
+
+            string indexMetrics = response.GetIndexMetrics();
+            Assert.AreEqual(
+                @"{""UtilizedIndexes"":{""SingleIndexes"":[{""IndexSpec"":""/taskNum/?""}],""CompositeIndexes"":[]},""PotentialIndexes"":{""SingleIndexes"":[],""CompositeIndexes"":[]}}",
+                indexMetrics);
+
+            // Response object with null index metrics field]
+            response.Headers.IndexUtilizationText = null;
+            indexMetrics = response.GetIndexMetrics();
+            Assert.AreEqual(
+                null,
+                indexMetrics);
+        }
+
         [DataRow(false)]
         [DataRow(true)]
         [TestMethod]
