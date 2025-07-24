@@ -9,9 +9,11 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Net.Http;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using static Microsoft.Azure.Cosmos.SDK.EmulatorTests.MultiRegionSetupHelpers;
     using TestObject = MultiRegionSetupHelpers.CosmosIntegrationTestObject;
@@ -108,6 +110,44 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 }
             }
             return itemsCreated;
+        }
+
+        [TestMethod]
+        [TestCategory("ThinClient")]
+        public async Task HttpRequestVersionIsTwoPointZeroWhenUsingThinClientMode()
+        {
+            Version expectedGatewayVersion = new(1, 1);
+            Version expectedThinClientVersion = new(2, 0);
+
+            List<Version> postRequestVersions = new();
+
+            CosmosClientBuilder builder = new CosmosClientBuilder(this.connectionString)
+                .WithConnectionModeGateway()
+                .WithSendingRequestEventArgs((sender, e) =>
+                {
+                    if (e.HttpRequest.Method == HttpMethod.Post)
+                    {
+                        postRequestVersions.Add(e.HttpRequest.Version);
+                    }
+                });
+
+            using CosmosClient client = builder.Build();
+
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("HttpVersionTestDb");
+            Container container = await database.CreateContainerIfNotExistsAsync("HttpVersionTestContainer", "/pk");
+
+            ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+
+            ItemResponse<ToDoActivity> response = await container.CreateItemAsync(testItem, new Cosmos.PartitionKey(testItem.pk));
+            Assert.IsNotNull(response);
+
+            Assert.AreEqual(3, postRequestVersions.Count, "Expected exactly 3 POST requests (DB, Container, Item).");
+
+            Assert.AreEqual(expectedGatewayVersion, postRequestVersions[0], "Expected HTTP/1.1 for CreateDatabaseAsync.");
+            Assert.AreEqual(expectedGatewayVersion, postRequestVersions[1], "Expected HTTP/1.1 for CreateContainerAsync.");
+            Assert.AreEqual(expectedThinClientVersion, postRequestVersions[2], "Expected HTTP/2.0 for CreateItemAsync.");
+
+            await database.DeleteAsync();
         }
 
         [TestMethod]
