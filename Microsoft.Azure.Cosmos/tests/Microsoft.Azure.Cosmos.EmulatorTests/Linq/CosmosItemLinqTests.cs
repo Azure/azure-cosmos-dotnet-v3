@@ -1040,7 +1040,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         {
             Assert.AreEqual(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
-            Assert.IsTrue(response.Headers.IndexUtilizationText != null);
+            Assert.IsNotNull(response.Headers.IndexUtilizationText);
+            Assert.IsNotNull(response.Headers.ActivityId);
+            Assert.IsNotNull(response.ActivityId);
         }
     }
 }

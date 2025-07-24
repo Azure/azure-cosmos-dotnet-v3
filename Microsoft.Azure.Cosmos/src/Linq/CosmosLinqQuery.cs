@@ -221,6 +221,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                     {
                         headers.IndexUtilizationText = response.Headers.IndexUtilizationText;
                     }
+
+                    if (response.Headers.ActivityId != null)
+                    {
+                        headers.ActivityId = response.Headers.ActivityId;
+                    }
+
                     result.AddRange(response);
                 }
             }
