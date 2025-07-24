@@ -156,7 +156,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 else
                 {
                     // The query is going to become a full fan out, but we go one partition at a time.
-                    if (ServiceInteropAvailable())
+                    if (!QueryPlanRetriever.BypassQueryParsing())
                     {
                         // Get the routing map provider
                         CollectionCache collectionCache = await this.Client.GetCollectionCacheAsync();
@@ -246,11 +246,6 @@ namespace Microsoft.Azure.Cosmos.Query
         private static bool PhysicalPartitionKeyRangeIdProvided(DefaultDocumentQueryExecutionContext context)
         {
             return !string.IsNullOrEmpty(context.PartitionKeyRangeId);
-        }
-
-        private static bool ServiceInteropAvailable()
-        {
-            return !CustomTypeExtensions.ByPassQueryParsing();
         }
 
         private async Task<Tuple<PartitionRoutingHelper.ResolvedRangeInfo, IReadOnlyList<Range<string>>>> TryGetTargetPartitionKeyRangeAsync(
