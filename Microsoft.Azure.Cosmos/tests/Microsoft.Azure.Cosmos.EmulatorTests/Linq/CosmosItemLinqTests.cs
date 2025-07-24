@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            await base.TestInit();
+            await TestInit();
             string PartitionKey = "/pk";
             this.containerSettings = new ContainerProperties(id: Guid.NewGuid().ToString(), partitionKeyPath: PartitionKey);
             ContainerResponse response = await this.database.CreateContainerAsync(
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         [TestCleanup]
         public async Task Cleanup()
         {
-            await base.TestCleanup();
+            await TestCleanup();
         }
 
         [DataRow(false)]
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task ItemLinqReadFeedTest(bool useStatelessIterator)
         {
             IList<ToDoActivity> deleteList = await ToDoActivity.CreateRandomItems(this.Container, pkCount: 3, randomPartitionKey: true);
-            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            HashSet<string> itemIds = deleteList.Select(x => x.id).ToHashSet();
 
             QueryRequestOptions requestOptions = new QueryRequestOptions()
             {
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNull(lastContinuationToken);
             Assert.AreEqual(itemIds.Count, 0);
 
-            itemIds = deleteList.Select(x => x.id).ToHashSet<string>();
+            itemIds = deleteList.Select(x => x.id).ToHashSet();
             FeedIterator streamIterator = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 requestOptions: requestOptions).ToStreamIterator();
 
@@ -198,14 +198,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //LINQ query execution with wrong partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
-                requestOptions: new QueryRequestOptions() { PartitionKey = new Cosmos.PartitionKey("test") });
+                requestOptions: new QueryRequestOptions() { PartitionKey = new PartitionKey("test") });
             queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(0, queriable.Count());
 
             //LINQ query execution with correct partition key.
             linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 allowSynchronousQueryExecution: true,
-                requestOptions: new QueryRequestOptions { ConsistencyLevel = Cosmos.ConsistencyLevel.Eventual, PartitionKey = new Cosmos.PartitionKey(itemList[1].pk) });
+                requestOptions: new QueryRequestOptions { ConsistencyLevel = ConsistencyLevel.Eventual, PartitionKey = new PartitionKey(itemList[1].pk) });
             queriable = linqQueryable.Where(item => item.taskNum < 100);
             Assert.AreEqual(1, queriable.Count());
             Assert.AreEqual(itemList[1].id, queriable.ToList()[0].id);
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             //Creating items for query.
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: this.Container, pkCount: 10, perPKItemCount: 1, randomPartitionKey: true);
 
-            QueryRequestOptions queryRequestOptions = new QueryRequestOptions();
+            QueryRequestOptions queryRequestOptions = new QueryRequestOptions() { PopulateIndexMetrics = true };
             IOrderedQueryable<ToDoActivity> linqQueryable = this.Container.GetItemLinqQueryable<ToDoActivity>(
                 requestOptions: queryRequestOptions);
 
@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.IsNotNull(camelCaseCosmosClient.ClientOptions.Serializer);
             Assert.IsTrue(camelCaseCosmosClient.ClientOptions.Serializer is CosmosJsonSerializerWrapper);
 
-            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
             Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(container: containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
 
@@ -444,7 +444,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
             }
             CosmosClient camelCaseCosmosClient = TestCommon.CreateCosmosClient(builder, false);
-            Cosmos.Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
+            Database database = camelCaseCosmosClient.GetDatabase(this.database.Id);
             Container containerFromCamelCaseClient = database.GetContainer(this.Container.Id);
 
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromCamelCaseClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
@@ -513,7 +513,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 });
             }
             CosmosClient nullValuesClient = TestCommon.CreateCosmosClient(builder, false);
-            Cosmos.Database database = nullValuesClient.GetDatabase(this.database.Id);
+            Database database = nullValuesClient.GetDatabase(this.database.Id);
             Container containerFromNulValuesClient = database.GetContainer(this.Container.Id);
 
             IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(containerFromNulValuesClient, pkCount: 2, perPKItemCount: 1, randomPartitionKey: true);
@@ -1010,8 +1010,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             T expectedValue,
             QueryRequestOptions queryRequestOptions)
         {
-            Assert.AreEqual<T>(expectedValue, response.Resource);
+            Assert.AreEqual(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
+            Assert.IsTrue(response.Headers.IndexUtilizationText != null);
         }
     }
 }
