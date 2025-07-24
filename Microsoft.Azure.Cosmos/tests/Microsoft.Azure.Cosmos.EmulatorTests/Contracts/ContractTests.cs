@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Contracts
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
     [EmulatorTests.TestClass]
+    [TestCategory("Contracts")]
     public class ContractTests : BaseCosmosClientHelper
     {
         [TestInitialize]
