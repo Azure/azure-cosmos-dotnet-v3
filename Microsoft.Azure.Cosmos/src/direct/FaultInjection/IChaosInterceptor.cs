@@ -5,7 +5,9 @@ namespace Microsoft.Azure.Documents.FaultInjection
 {
     using Microsoft.Azure.Documents.Rntbd;
     using System;
+#pragma warning disable SA1210
     using System.Threading.Tasks;
+#pragma warning restore SA1210
     using System.Net.Http;
     using System.Threading;
 
@@ -21,12 +23,20 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// <returns></returns>
         public Task<(bool, StoreResponse)> OnRequestCallAsync(ChannelCallArguments args);
 
+#pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
+#pragma warning disable SA1612 // Element parameter documentation should match element parameters
+#pragma warning disable CS1573
+#pragma warning disable SA1616
         /// <summary>
         /// Used to inject faults on request call for GatewayCalls
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
         public Task<(bool, HttpResponseMessage)> OnHttpRequestCallAsync(DocumentServiceRequest request, CancellationToken token = default);
+#pragma warning restore SA1612 // Element parameter documentation should match element parameters
+#pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
+#pragma warning disable CS1573
+#pragma warning disable SA1616
 
         /// <summary>
         /// Used to inject faults on channel open
@@ -49,24 +59,42 @@ namespace Microsoft.Azure.Documents.FaultInjection
         /// </summary>
         /// <param name="args"></param>
         public Task OnBeforeConnectionWriteAsync(ChannelCallArguments args);
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
+
+#pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
+#pragma warning disable SA1612 // Element parameter documentation should match element parameters
+#pragma warning disable CS1573
         /// <summary>
         /// Used to inject faults before connection writes for gateway
         /// </summary>
         /// <param name="args"></param>
         public Task OnBeforeHttpSendAsync(DocumentServiceRequest request, CancellationToken token = default);
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
+#pragma warning restore SA1612 // Element parameter documentation should match element parameters
+#pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
+#pragma warning disable CS1573
 
         /// <summary>
         /// Used to inject faults after connection writes
         /// </summary>
         /// <param name="args"></param>
         public Task OnAfterConnectionWriteAsync(ChannelCallArguments args);
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
+
+#pragma warning disable CS1572 // XML comment has a param tag, but there is no parameter by that name
+#pragma warning disable SA1612 // Element parameter documentation should match element parameters
+#pragma warning disable CS1573
         /// <summary>
         /// Used to inject faults after connection writes for gateway
         /// </summary>
         /// <param name="args"></param>
         public Task OnAfterHttpSendAsync(DocumentServiceRequest request, CancellationToken token = default);
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
+#pragma warning restore SA1612 // Element parameter documentation should match element parameters
+#pragma warning restore CS1572 // XML comment has a param tag, but there is no parameter by that name
+#pragma warning disable CS1573
 
         /// <summary>
         /// Gets the fault injection rule id for the given activity id

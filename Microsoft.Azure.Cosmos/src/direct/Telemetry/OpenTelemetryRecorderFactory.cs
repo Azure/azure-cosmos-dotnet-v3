@@ -55,7 +55,11 @@ namespace Microsoft.Azure.Documents.Telemetry
                 }
                 catch(Exception ex)
                 {
+#pragma warning disable CDX1003
+#pragma warning disable CDX1006
                     DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.ToString());
+#pragma warning restore CDX1003
+#pragma warning restore CDX1006
                 }
             }
 

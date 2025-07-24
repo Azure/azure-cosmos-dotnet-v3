@@ -547,5 +547,8 @@ namespace Microsoft.Azure.Documents
             }
         }
     }
+#pragma warning disable SA1518 // Use line endings correctly at end of file
 }
 
+
+#pragma warning restore SA1518 // Use line endings correctly at end of file

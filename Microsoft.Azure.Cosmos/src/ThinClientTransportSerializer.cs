@@ -113,7 +113,7 @@ namespace Microsoft.Azure.Cosmos
                     activityId,
                     bufferProvider.Provider,
                     accountName,
-                    regionalDatabaseAccountName: null,
+                    accountName,
                     out _,
                     out _);
 

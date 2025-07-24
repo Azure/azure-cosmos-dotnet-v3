@@ -1318,7 +1318,10 @@ namespace Microsoft.Azure.Documents
 
             //Reject Invalid Consistency Level Request
             public static readonly string RejectInvalidConsistencyLevelRequests = "rejectInvalidConsistencyLevelRequests";
+
+#pragma warning disable SA1203
             public const string GeoStorageAccountNames = "GeoStorageAccountNames";
+#pragma warning restore SA1203
             public const string EnableGeoBackup = "enableGeoBackup";
             public const string GeoLocation = "geoLocation";
             public const string GeoBackupEnableTimestamp = "geoBackupEnableTimestamp";
@@ -2715,7 +2718,9 @@ namespace Microsoft.Azure.Documents
             public static string FederationBuildout_CanaryAccountMigration = "FederationBuildout_CanaryAccountMigration";
             public static string USER_InPlaceAZMigration = "USER_InPlaceAZMigration";
             public static string ACIS_MigrateMasterBetweenZonalAndRegional = "ACIS_MigrateMasterBetweenZonalAndRegional";
+#pragma warning disable SA1310 // Field names should not contain underscore
             public static string Automigrator_Decommissioning = "Automigrator_Decommissioning";
+#pragma warning restore SA1310 // Field names should not contain underscore
             public static string LBaaS = "LBaaS_{0}";
             public static string DefaultExemptedSources = "ACIS_Manual,PLB_StorageBased_localRegion,PLB_StorageBased_CrossRegion,USER_InPlaceAZMigration,ACIS_CrossSubregionAccountMigration";
         }

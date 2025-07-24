@@ -8,7 +8,6 @@
 namespace System.Diagnostics.CodeAnalysis
 #pragma warning restore NamespaceMatchesFolderStructure
 {
-    
 #pragma warning disable CS1584 // XML comment has syntactically incorrect cref attribute
 /// <summary>
     /// Partial copy of NET7's StringSyntaxAttribute.

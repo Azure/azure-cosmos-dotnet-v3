@@ -28,7 +28,9 @@ namespace Microsoft.Azure.Documents
 #endif
     class DocumentClientException : Exception
 #if COSMOSCLIENT
+#pragma warning disable SA1001 // Commas should be spaced correctly
                                         , ICloneable
+#pragma warning restore SA1001 // Commas should be spaced correctly
 #endif
     {
         private Error error;

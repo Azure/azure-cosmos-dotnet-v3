@@ -62,10 +62,12 @@ namespace Microsoft.Azure.Documents
 
         public ConnectionStateMuxListener(bool enableTcpConnectionEndpointRediscovery) 
         {
+#pragma warning disable CS1587 // XML comment has badly formed XML
             /// Default to the processor count 
             this.notificationConcurrency = Environment.ProcessorCount;
             this.notificationSemaphore = new SemaphoreSlim(this.notificationConcurrency);
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
+#pragma warning restore CS1587 // XML comment has badly formed XML
         }
 
         public void SetConnectionEventConcurrency(int notificationConcurrency)

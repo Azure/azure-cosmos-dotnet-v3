@@ -571,6 +571,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
             this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
+#pragma warning disable SA1137
             this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
@@ -579,6 +580,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                          this.ConnectionCorrelationId, this, failedTask.Exception?.InnerException?.Message);
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore SA1137
         }
 
         // this.connectionLock must be held.

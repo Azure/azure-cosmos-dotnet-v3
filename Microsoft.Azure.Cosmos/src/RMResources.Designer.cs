@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Documents
                 if (object.ReferenceEquals(resourceMan, null))
                 {
 #if COSMOSCLIENT
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Cosmos.RMResources", typeof(RMResources).Assembly);
 #else
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Azure.Documents.RMResources", typeof(RMResources).GetAssembly());
 #endif

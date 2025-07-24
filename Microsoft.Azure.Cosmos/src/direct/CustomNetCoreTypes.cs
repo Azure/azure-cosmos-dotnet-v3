@@ -134,11 +134,15 @@ namespace Microsoft.Azure.Documents
     /// <summary>
     /// Dummy QueryRequestPerformanceActivity class as we don't support PerfCounters yet.
     /// </summary>
+#pragma warning disable SA1649 // File name should match first type name
     internal class QueryRequestPerformanceActivity
+#pragma warning restore SA1649 // File name should match first type name
     {
         public void ActivityComplete(bool markComplete)
+#pragma warning disable SA1505
         {
 
         }
+#pragma warning restore SA1505
     }
 }

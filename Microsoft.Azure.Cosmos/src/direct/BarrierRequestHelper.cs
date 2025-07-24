@@ -62,7 +62,9 @@ namespace Microsoft.Azure.Documents
                         headers: null,
                         authorizationTokenType: originalRequestTokenType);
             }
+#pragma warning disable SA1108
             else if (request.IsNameBased) // Name based server request
+#pragma warning restore SA1108
             {
                 // get the collection full name
                 // dbs/{id}/colls/{collid}/
@@ -74,7 +76,9 @@ namespace Microsoft.Azure.Documents
                     originalRequestTokenType,
                     null);
             }
+#pragma warning disable SA1108
             else // RID based Server request
+#pragma warning restore SA1108
             {
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,

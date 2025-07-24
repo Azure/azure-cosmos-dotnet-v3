@@ -125,9 +125,12 @@ namespace Microsoft.Azure.Documents.Rntbd
             rntbdRequest.globalDatabaseAccountName.value.valueBytes = BytesSerializer.GetBytesForString(globalDatabaseAccountName, rntbdRequest);
             rntbdRequest.globalDatabaseAccountName.isPresent = true;
 
-            // Set RegionalDatabaseAccountName
-            rntbdRequest.regionalDatabaseAccountName.value.valueBytes = BytesSerializer.GetBytesForString(regionalDatabaseAccountName, rntbdRequest);
-            rntbdRequest.regionalDatabaseAccountName.isPresent = true;
+            if (!string.IsNullOrEmpty(regionalDatabaseAccountName))
+            {
+                // Set RegionalDatabaseAccountName
+                rntbdRequest.regionalDatabaseAccountName.value.valueBytes = BytesSerializer.GetBytesForString(regionalDatabaseAccountName, rntbdRequest);
+                rntbdRequest.regionalDatabaseAccountName.isPresent = true;
+            }
 
             return BuildRequestCore(
                 request,

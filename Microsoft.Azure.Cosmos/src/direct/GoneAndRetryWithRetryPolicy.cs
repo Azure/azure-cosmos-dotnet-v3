@@ -221,6 +221,7 @@ namespace Microsoft.Azure.Documents
                             else if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
                                 this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRetryPolicy.minFailedReplicaCountToConsiderConnectivityIssue)
+#pragma warning disable SA1505 // Opening braces should not be followed by blank line
                             {
 
                                 exceptionToThrow = new ServiceUnavailableException(
@@ -232,6 +233,7 @@ namespace Microsoft.Azure.Documents
                                     exception,
                                     exceptionSubStatus);
                             }
+#pragma warning restore SA1505 // Opening braces should not be followed by blank line
                             else
                             {
                                 exceptionToThrow = ServiceUnavailableException.Create(exceptionSubStatus, innerException: exception);

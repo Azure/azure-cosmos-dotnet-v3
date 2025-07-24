@@ -26,7 +26,9 @@ namespace Microsoft.Azure.Documents
     internal sealed class VectorSessionToken : ISessionToken
     {
         private static readonly IReadOnlyDictionary<uint, long> DefaultLocalLsnByRegion = new Dictionary<uint, long>(0);
+#pragma warning disable SA1203
         private const string SessionTokenFalseProgressMergeDisabled = "AZURE_COSMOS_SESSION_TOKEN_FALSE_PROGRESS_MERGE_DISABLED";
+#pragma warning restore SA1203
         private const char SegmentSeparator = '#';
         private const string SegmentSeparatorString = "#";
         private const char RegionProgressSeparator = '=';

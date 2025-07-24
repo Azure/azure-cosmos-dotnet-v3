@@ -1175,6 +1175,8 @@ namespace Microsoft.Azure.Documents
                 throw new InvalidOperationException();
             }
 
+#pragma warning disable SA1500 // Braces for multi-line statements should not share line
+#pragma warning disable IDE0031 // Use null propagation
             return new DocumentServiceRequest{
                OperationType = this.OperationType,
                ForceNameCacheRefresh = this.ForceNameCacheRefresh,
@@ -1192,7 +1194,7 @@ namespace Microsoft.Azure.Documents
                RequestContext = this.RequestContext.Clone(),
                PartitionKeyRangeIdentity = this.PartitionKeyRangeIdentity,
                UseGatewayMode = this.UseGatewayMode,
-               QueryString  = this.QueryString,
+               QueryString = this.QueryString,
                Continuation = this.Continuation,
                ForcePartitionKeyRangeRefresh = this.ForcePartitionKeyRangeRefresh,
                LastCollectionRoutingMapHashCode = this.LastCollectionRoutingMapHashCode,
@@ -1208,6 +1210,8 @@ namespace Microsoft.Azure.Documents
                UseStatusCodeFor403 = this.UseStatusCodeFor403,
                UseStatusCodeFor4041002 = this.UseStatusCodeFor4041002,
             };
+#pragma warning restore IDE0031 // Use null propagation
+#pragma warning restore SA1500 // Braces for multi-line statements should not share line
         }
 
         private void InitializeWithDataParsedFromUri(
