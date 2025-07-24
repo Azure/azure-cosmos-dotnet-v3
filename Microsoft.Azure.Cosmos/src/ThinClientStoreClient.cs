@@ -23,8 +23,8 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class ThinClientStoreClient : GatewayStoreClient
     {
-        private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly bool isPartitionLevelFailoverEnabled;
+        private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
         private readonly IChaosInterceptor chaosInterceptor;
 
         public ThinClientStoreClient(
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
                   serializerSettings,
                   isPartitionLevelFailoverEnabled)
         {
-            this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());        
+            this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.chaosInterceptor = chaosInterceptor;
         }
