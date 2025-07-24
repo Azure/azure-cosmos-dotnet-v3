@@ -44,7 +44,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         private static readonly string nonPartitionItemId = "fixed-Container-Item";
         private static readonly string undefinedPartitionItemId = "undefined-partition-Item";
 
-     //   [TestInitialize]
+        [TestInitialize]
         public async Task TestInitialize()
         {
             await base.TestInit(validateSinglePartitionKeyRangeCacheCall: true);
