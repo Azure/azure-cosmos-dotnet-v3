@@ -1090,7 +1090,8 @@ namespace Microsoft.Azure.Cosmos
                     this.serializerSettings,
                     this.httpClient,
                     this.PartitionKeyRangeLocation,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                    this.chaosInterceptor);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1116,7 +1117,8 @@ namespace Microsoft.Azure.Cosmos
                     this.eventSource,
                     this.serializerSettings,
                     this.httpClient,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                    chaosInterceptor: this.chaosInterceptor);
 
                 thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
 
