@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
+            UserAgentContainer userAgentContainer,
             bool isPartitionLevelFailoverEnabled = false)
             : base(endpointManager,
                   sessionContainer,
@@ -43,9 +44,10 @@ namespace Microsoft.Azure.Cosmos
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
+                userAgentContainer,
                 eventSource,
-                serializerSettings,
-                isPartitionLevelFailoverEnabled);
+                isPartitionLevelFailoverEnabled,
+                serializerSettings);
 
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
