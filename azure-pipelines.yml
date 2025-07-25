@@ -80,5 +80,6 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     ThinClientConnectionString: $(COSMOSDB_THINCLIENT)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
     IncludePerformance: true
     IncludeCoverage: true
