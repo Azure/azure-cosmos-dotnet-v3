@@ -55,7 +55,8 @@ namespace Microsoft.Azure.Cosmos
                 containerRid, 
                 this.Range,
                 trace,
-                forceRefresh: false);
+                forceRefresh: false,
+                partitionKeyDefinition);
             return partitionKeyRanges.Select(partitionKeyRange => partitionKeyRange.Id);
         }
 

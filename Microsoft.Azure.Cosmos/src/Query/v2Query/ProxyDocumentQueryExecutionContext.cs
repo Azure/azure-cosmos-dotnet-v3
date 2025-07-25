@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Query
             List<PartitionKeyRange> partitionKeyRanges =
                 await
                     queryExecutionContext.GetTargetPartitionKeyRangesAsync(collection.ResourceId,
-                        partitionedQueryExecutionInfo.QueryRanges);
+                        partitionedQueryExecutionInfo.QueryRanges, collection.PartitionKey);
 
             DocumentQueryExecutionContextBase.InitParams constructorParams = new DocumentQueryExecutionContextBase.InitParams(this.client, this.resourceTypeEnum, this.resourceType, this.expression, this.feedOptions, this.resourceLink, false, correlatedActivityId);
             // Devnote this will get replace by the new v3 to v2 logic

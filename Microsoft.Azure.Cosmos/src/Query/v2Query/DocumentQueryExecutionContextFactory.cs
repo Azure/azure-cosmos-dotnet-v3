@@ -156,19 +156,22 @@ namespace Microsoft.Azure.Cosmos.Query
             {
                 targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkStringAsync(
                     collection.ResourceId,
-                    feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey));
+                    feedOptions.PartitionKey.InternalKey.GetEffectivePartitionKeyString(collection.PartitionKey),
+                    collection.PartitionKey);
             }
             else if (TryGetEpkProperty(feedOptions, out string effectivePartitionKeyString))
             {
                 targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesByEpkStringAsync(
                     collection.ResourceId,
-                    effectivePartitionKeyString);
+                    effectivePartitionKeyString,
+                    collection.PartitionKey);
             }
             else
             {
                 targetRanges = await queryExecutionContext.GetTargetPartitionKeyRangesAsync(
                     collection.ResourceId,
-                    partitionedQueryExecutionInfo.QueryRanges);
+                    partitionedQueryExecutionInfo.QueryRanges,
+                    collection.PartitionKey);
             }
 
             return targetRanges;

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
+    using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Newtonsoft.Json;
 
@@ -223,7 +224,7 @@ namespace Microsoft.Azure.Cosmos
 
         private static StandByFeedContinuationToken.PartitionKeyRangeCacheDelegate CreateCacheFromRange(IReadOnlyList<Documents.PartitionKeyRange> keyRanges)
         {
-            return (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh) =>
+            return (string containerRid, Documents.Routing.Range<string> ranges, ITrace trace, bool forceRefresh, PartitionKeyDefinition partitionKeyDefinition) =>
             {
                 if (ranges.Max.Equals(Documents.Routing.PartitionKeyInternal.MaximumExclusiveEffectivePartitionKey))
                 {
