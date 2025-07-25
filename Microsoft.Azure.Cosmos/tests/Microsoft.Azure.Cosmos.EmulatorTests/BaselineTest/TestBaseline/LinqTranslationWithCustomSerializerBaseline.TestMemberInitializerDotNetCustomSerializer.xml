@@ -28,7 +28,7 @@ WHERE (root["NumberValueDotNet"] = 1)]]></SqlQuery>
       <SqlQuery><![CDATA[
 SELECT VALUE root 
 FROM root 
-WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null})]]></SqlQuery>
+WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "NestedObjects": null})]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
   "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
@@ -44,7 +44,7 @@ WHERE (root = {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null} 
+SELECT VALUE {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "NestedObjects": null} 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
@@ -65,7 +65,7 @@ FROM root]]></SqlQuery>
     </Input>
     <Output>
       <SqlQuery><![CDATA[
-SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null}) 
+SELECT VALUE ((root["NumberValueDotNet"] > 1) ? {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "NestedObjects": null} : {"NumberValueDotNet": 1, "StringValueDotNet": "1", "id": null, "Pk": null, "DateTimeFieldDotNet": null, "DataTypeField": null, "NestedObjects": null}) 
 FROM root]]></SqlQuery>
       <InputData><![CDATA[[
   "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
@@ -231,6 +231,34 @@ WHERE (root["StringValueDotNet"] != null)]]></SqlQuery>
   "{NumericField:0,StringField:0,id:0-False,Pk:Test}",
   "{NumericField:1,StringField:1,id:1-False,Pk:Test}",
   "{NumericField:2,StringField:2,id:2-False,Pk:Test}"
+]]]></Results>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Nested filter]]></Description>
+      <Expression><![CDATA[query.Select(doc => new DataObjectDotNet() {NestedObjects = doc.NestedObjects.Where(c => (c.id == DisplayClass.searchField)).ToList()})]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE {"NestedObjects": v0} 
+FROM root 
+JOIN (
+    SELECT VALUE ARRAY(
+        SELECT VALUE c0 
+        FROM root 
+        JOIN c0 IN root["NestedObjects"] 
+        WHERE (c0["id"] = "test"))) AS v0
+]]></SqlQuery>
+      <InputData><![CDATA[[
+  "{\"NumberValueDotNet\": 0, \"StringValueDotNet\": \"0\", \"id\": \"0-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 1, \"StringValueDotNet\": \"1\", \"id\": \"1-False\", \"Pk\": \"Test\"}",
+  "{\"NumberValueDotNet\": 2, \"StringValueDotNet\": \"2\", \"id\": \"2-False\", \"Pk\": \"Test\"}"
+]]]></InputData>
+      <Results><![CDATA[[
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}",
+  "{NumericField:0,StringField:,id:,Pk:}"
 ]]]></Results>
     </Output>
   </Result>

@@ -37,8 +37,6 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         private static Container TestSTJContainer;
 
         private const int RecordCount = 3;
-        private const int MaxValue = 500;
-        private const int MaxStringLength = 100;
         private const int PropertyCount = 4;
 
         [ClassInitialize]
@@ -113,6 +111,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             (_, getQuery) = this.InsertDataAndGetQueryables<DataObjectDotNet>(true, TestLinqContainer);
 
             string insertedData = this.GetInsertedData(TestLinqContainer).Result;
+            string searchField = "test";
 
             List<LinqTestInput> inputs = new List<LinqTestInput>
             {
@@ -128,6 +127,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
                 new LinqTestInput("Filter w/ non-null nullable property", b => getQuery(b).Where(doc => doc.DateTimeField == new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ non-null nullable enum", b => getQuery(b).Where(doc => doc.DataTypeField == DataType.Point), skipVerification : true, inputData: insertedData),
                 new LinqTestInput("Filter w/ string null comparison", b => getQuery(b).Where(doc => doc.StringField != null), skipVerification : true, inputData: insertedData),
+                new LinqTestInput("Nested filter", b => getQuery(b).Select(doc => new DataObjectDotNet { NestedObjects = doc.NestedObjects.Where(c => c.id == searchField).ToList()}), skipVerification : true, inputData: insertedData)
             };
 
             this.ExecuteTestSuite(inputs);
@@ -400,6 +400,8 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
 
             [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
             public DataType? DataTypeField { get; set; }
+
+            public List<DataObjectDotNet> NestedObjects { get; set; }
 
             public DataObjectDotNet() { }
 

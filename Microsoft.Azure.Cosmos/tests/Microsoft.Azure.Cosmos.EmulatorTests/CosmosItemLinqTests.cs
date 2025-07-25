@@ -4,10 +4,6 @@
 
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
-    using Microsoft.Azure.Cosmos.Fluent;
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
@@ -15,6 +11,10 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Linq.Dynamic;
     using System.Linq.Expressions;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Fluent;
+    using Microsoft.Azure.Cosmos.Linq;
+    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using Newtonsoft.Json;
 
     [TestClass]
     public class CosmosItemLinqTests : BaseCosmosClientHelper
@@ -321,64 +321,64 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(10, count);
 
             Response<int> intSum = await linqQueryable.Select(item => item.taskNum).SumAsync();
-            this.VerifyResponse(intSum, 420, queryRequestOptions);
+            this.VerifyResponse(intSum, 420);
 
             Response<int?> intNullableSum = await linqQueryable.Select(item => (int?)item.taskNum).SumAsync();
-            this.VerifyResponse(intNullableSum, 420, queryRequestOptions);
+            this.VerifyResponse(intNullableSum, 420);
 
             Response<float> floatSum = await linqQueryable.Select(item => (float)item.taskNum).SumAsync();
-            this.VerifyResponse(floatSum, 420, queryRequestOptions);
+            this.VerifyResponse(floatSum, 420);
 
             Response<float?> floatNullableSum = await linqQueryable.Select(item => (float?)item.taskNum).SumAsync();
-            this.VerifyResponse(floatNullableSum, 420, queryRequestOptions);
+            this.VerifyResponse(floatNullableSum, 420);
 
             Response<double> doubleSum = await linqQueryable.Select(item => (double)item.taskNum).SumAsync();
-            this.VerifyResponse(doubleSum, 420, queryRequestOptions);
+            this.VerifyResponse(doubleSum, 420);
 
             Response<double?> doubleNullableSum = await linqQueryable.Select(item => (double?)item.taskNum).SumAsync();
-            this.VerifyResponse(doubleNullableSum, 420, queryRequestOptions);
+            this.VerifyResponse(doubleNullableSum, 420);
 
             Response<long> longSum = await linqQueryable.Select(item => (long)item.taskNum).SumAsync();
-            this.VerifyResponse(longSum, 420, queryRequestOptions);
+            this.VerifyResponse(longSum, 420);
 
             Response<long?> longNullableSum = await linqQueryable.Select(item => (long?)item.taskNum).SumAsync();
-            this.VerifyResponse(longNullableSum, 420, queryRequestOptions);
+            this.VerifyResponse(longNullableSum, 420);
 
             Response<decimal> decimalSum = await linqQueryable.Select(item => (decimal)item.taskNum).SumAsync();
-            this.VerifyResponse(decimalSum, 420, queryRequestOptions);
+            this.VerifyResponse(decimalSum, 420);
 
             Response<decimal?> decimalNullableSum = await linqQueryable.Select(item => (decimal?)item.taskNum).SumAsync();
-            this.VerifyResponse(decimalNullableSum, 420, queryRequestOptions);
+            this.VerifyResponse(decimalNullableSum, 420);
 
             Response<double> intToDoubleAvg = await linqQueryable.Select(item => item.taskNum).AverageAsync();
-            this.VerifyResponse(intToDoubleAvg, 42, queryRequestOptions);
+            this.VerifyResponse(intToDoubleAvg, 42);
 
             Response<double?> intToDoubleNulableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
-            this.VerifyResponse(intToDoubleNulableAvg, 42, queryRequestOptions);
+            this.VerifyResponse(intToDoubleNulableAvg, 42);
 
             Response<float> floatAvg = await linqQueryable.Select(item => (float)item.taskNum).AverageAsync();
-            this.VerifyResponse(floatAvg, 42, queryRequestOptions);
+            this.VerifyResponse(floatAvg, 42);
 
             Response<float?> floatNullableAvg = await linqQueryable.Select(item => (float?)item.taskNum).AverageAsync();
-            this.VerifyResponse(floatNullableAvg, 42, queryRequestOptions);
+            this.VerifyResponse(floatNullableAvg, 42);
 
             Response<double> doubleAvg = await linqQueryable.Select(item => (double)item.taskNum).AverageAsync();
-            this.VerifyResponse(doubleAvg, 42, queryRequestOptions);
+            this.VerifyResponse(doubleAvg, 42);
 
             Response<double?> doubleNullableAvg = await linqQueryable.Select(item => (double?)item.taskNum).AverageAsync();
-            this.VerifyResponse(doubleNullableAvg, 42, queryRequestOptions);
+            this.VerifyResponse(doubleNullableAvg, 42);
 
             Response<double> longToDoubleAvg = await linqQueryable.Select(item => (long)item.taskNum).AverageAsync();
-            this.VerifyResponse(longToDoubleAvg, 42, queryRequestOptions);
+            this.VerifyResponse(longToDoubleAvg, 42);
 
             Response<double?> longToNullableDoubleAvg = await linqQueryable.Select(item => (long?)item.taskNum).AverageAsync();
-            this.VerifyResponse(longToNullableDoubleAvg, 42, queryRequestOptions);
+            this.VerifyResponse(longToNullableDoubleAvg, 42);
 
             Response<decimal> decimalAvg = await linqQueryable.Select(item => (decimal)item.taskNum).AverageAsync();
-            this.VerifyResponse(decimalAvg, 42, queryRequestOptions);
+            this.VerifyResponse(decimalAvg, 42);
 
             Response<decimal?> decimalNullableAvg = await linqQueryable.Select(item => (decimal?)item.taskNum).AverageAsync();
-            this.VerifyResponse(decimalNullableAvg, 42, queryRequestOptions);
+            this.VerifyResponse(decimalNullableAvg, 42);
 
             //Adding more items to test min and max function
             ToDoActivity toDoActivity = ToDoActivity.CreateRandomToDoActivity();
@@ -969,6 +969,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             Assert.AreEqual(2, count);
         }
 
+        [TestMethod]
+        public async Task LinqMemberIndexing()
+        {
+            string testString = "Test";
+
+            IList<ToDoActivity> itemList = await ToDoActivity.CreateRandomItems(this.Container, 3, randomPartitionKey: true);
+            IQueryable<ToDoActivity> queryable = this.Container.GetItemLinqQueryable<ToDoActivity>()
+                .Select(q => new ToDoActivity { id = q.childrenMap[testString].id });
+
+            FeedIterator<ToDoActivity> feedIterator = queryable.ToFeedIterator();
+
+            int count = 0;
+            while (feedIterator.HasMoreResults)
+            {
+                FeedResponse<ToDoActivity> feedResponse = feedIterator.ReadNextAsync().Result;
+                count += feedResponse.Count;
+            }
+
+            Assert.AreEqual(3, count);
+        }
+
         private class NumberLinqItem
         {
             public string id;
@@ -1005,10 +1026,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             return itemList;
         }
 
-        private void VerifyResponse<T>(
-            Response<T> response,
-            T expectedValue,
-            QueryRequestOptions queryRequestOptions)
+        private void VerifyResponse<T>(Response<T> response, T expectedValue)
         {
             Assert.AreEqual<T>(expectedValue, response.Resource);
             Assert.IsTrue(response.RequestCharge > 0);
