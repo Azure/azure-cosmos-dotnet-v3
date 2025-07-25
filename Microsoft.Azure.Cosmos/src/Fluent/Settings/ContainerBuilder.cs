@@ -138,12 +138,7 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// <param name="defaultLanguage">A string indicating the default language.</param>
         /// <param name="fullTextPaths">List of full text paths to include in the policy definition.</param>
         /// <returns>An instance of <see cref="FullTextPolicyDefinition"/>.</returns>
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        FullTextPolicyDefinition WithFullTextPolicy(
+        public FullTextPolicyDefinition WithFullTextPolicy(
             string defaultLanguage,
             Collection<FullTextPath> fullTextPaths)
         {

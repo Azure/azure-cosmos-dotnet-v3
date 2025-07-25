@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
@@ -19,6 +20,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -400,7 +402,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             string sdkSupportedCapability = sdkSupportedCapabilities.Single();
             ulong capability = ulong.Parse(sdkSupportedCapability);
 
-            Assert.AreEqual((ulong)SDKSupportedCapabilities.PartitionMerge, capability & (ulong)SDKSupportedCapabilities.PartitionMerge,$" received header value as {sdkSupportedCapability}");
+            Assert.AreEqual((ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens), capability & (ulong)(SDKSupportedCapabilities.PartitionMerge | SDKSupportedCapabilities.IgnoreUnknownRntbdTokens), $"received header value as {sdkSupportedCapability}");
         }
 
         [TestMethod]
@@ -936,7 +938,203 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             AccountProperties properties = await cosmosClient.ReadAccountAsync();
             Assert.IsNotNull(properties);
         }
-       
+
+        [DataTestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
+        [Owner("amudumba")]
+        public async Task ValidateAsyncExceptionNoSharing(bool asyncCacheExceptionNoSharing)
+        {
+            TimeoutException exception = new TimeoutException("HTTP Timeout exception", new TimeoutException("Inner exception message"));
+            TaskCompletionSource<object> blockSendingHandlers = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                SendingRequestEventArgs = (sender, e) =>
+                {
+                    if (e.IsHttpRequest())
+                    {
+                        string endWith = "partitionKeyRangeIds=0";
+                        if (e.HttpRequest.Method == HttpMethod.Get &&
+                            e.HttpRequest.RequestUri.OriginalString.EndsWith(endWith))
+                        {
+                            blockSendingHandlers.Task.Wait(); // block here until all enter
+                            throw exception;
+                        }
+                    }
+                },
+                EnableAsyncCacheExceptionNoSharing = asyncCacheExceptionNoSharing
+            };
+
+            Cosmos.Database db = null;
+            try
+            {
+                CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions);
+
+                db = await cosmosClient.CreateDatabaseIfNotExistsAsync("TimeoutFaultTest");
+                Container container = await db.CreateContainerIfNotExistsAsync("TimeoutFaultContainer", "/pk");
+
+                int iterations = 3;
+                List<Task> createTasks = new();
+
+                for (int i = 0; i < iterations; i++)
+                {
+                    ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                    createTasks.Add(container.CreateItemAsync(testItem)
+                        .ContinueWith(t => {
+                            Assert.IsTrue(t.IsFaulted);
+                            if (asyncCacheExceptionNoSharing)
+                            {
+                                //asyncCacheExceptionNoSharing feature is enabled. Shallow copies of the exception will be thrown.
+                                Assert.IsFalse(Object.ReferenceEquals(t.Exception, exception), "Exception should not be the same");
+                            }
+                            else
+                            {
+                                //asyncCacheExceptionNoSharing feature is disabled. Exceptions will be thrown as is.
+                                Assert.IsTrue(Object.ReferenceEquals(t.Exception.InnerException, exception), "Exception should be the same");
+                            }
+                        }));
+                }
+
+                blockSendingHandlers.SetResult(null);
+
+                // Wait for all tasks to complete (they should all fail)
+                await Task.WhenAll(createTasks);
+            }
+            finally
+            {
+                if (db != null) await db.DeleteAsync();
+            }
+        }
+
+        [TestMethod]
+        [Owner("amudumba")]
+        public async Task CreateItemDuringTimeoutTest()
+        {
+            //Prepare
+            //Enabling aggressive timeout detection that empowers connnection health checker whih marks a channel/connection as "unhealthy" if there are a set of consecutive timeouts.
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_AGGRESSIVE_TIMEOUT_DETECTION_ENABLED", "True");
+            Environment.SetEnvironmentVariable("AZURE_COSMOS_TIMEOUT_DETECTION_TIME_LIMIT_IN_SECONDS", "1");
+
+            // Enabling fault injection rule to simulate a timeout scenario.
+            string timeoutRuleId = "timeoutRule-" + Guid.NewGuid().ToString();
+            FaultInjectionRule timeoutRule = new FaultInjectionRuleBuilder(
+                id: timeoutRuleId,
+                condition:
+                    new FaultInjectionConditionBuilder()
+                        .WithOperationType(FaultInjectionOperationType.CreateItem)
+                        .Build(),
+                result:
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.SendDelay)
+                    .WithDelay(TimeSpan.FromSeconds(20))
+                        .Build())
+                .Build();
+
+            List<FaultInjectionRule> rules = new List<FaultInjectionRule> { timeoutRule };
+            FaultInjector faultInjector = new FaultInjector(rules);
+
+
+            CosmosClientOptions cosmosClientOptions = new CosmosClientOptions()
+            {
+                ConsistencyLevel = Cosmos.ConsistencyLevel.Session,
+                FaultInjector = faultInjector,
+                RequestTimeout = TimeSpan.FromSeconds(1)
+
+            };
+
+            Cosmos.Database db = null;
+            try
+            {
+                CosmosClient cosmosClient = TestCommon.CreateCosmosClient(clientOptions: cosmosClientOptions);
+
+                db = await cosmosClient.CreateDatabaseIfNotExistsAsync("TimeoutFaultTest");
+                Container container = await db.CreateContainerIfNotExistsAsync("TimeoutFaultContainer", "/pk");
+
+                bool isTimeoutExceptionThrown = false;
+
+                // Act.
+                // Simulate a aggressive timeout scenario by performing 3 writes which will all timeout due to fault injection rule.
+                for (int i = 0; i < 2; i++)
+                {
+                    try
+                    {
+                        ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                        await container.CreateItemAsync<ToDoActivity>(testItem);
+                    }
+                    catch (CosmosException exx)
+                    {
+                        Assert.AreEqual(HttpStatusCode.RequestTimeout, exx.StatusCode);
+                        isTimeoutExceptionThrown = true;
+                    }
+                }
+
+                Assert.IsTrue(isTimeoutExceptionThrown, "Timeout exception should be thrown for all the 3 writes due to fault injection rule.");
+
+                //Assert that the old channel that is now made unhealthy by the timeouts and a new healthy channel is available for next requests.
+
+                // Get all the channels that are under TransportClient -> ChannelDictionary -> Channels.
+                IStoreClientFactory storeClientFactAbstract = (IStoreClientFactory)cosmosClient.DocumentClient.GetType()
+                    .GetField("storeClientFactory", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(cosmosClient.DocumentClient);
+                StoreClientFactory storeClientFactory = (StoreClientFactory)storeClientFactAbstract;
+
+                TransportClient transportClient = (TransportClient)storeClientFactory.GetType()
+                                .GetField("transportClient", BindingFlags.NonPublic | BindingFlags.Instance)
+                                .GetValue(storeClientFactory);
+
+                Documents.Rntbd.TransportClient rntbdTransportClient = (Documents.Rntbd.TransportClient)transportClient;
+
+                Documents.Rntbd.ChannelDictionary channelDict = (Documents.Rntbd.ChannelDictionary)rntbdTransportClient.GetType()
+                                .GetField("channelDictionary", BindingFlags.NonPublic | BindingFlags.Instance)
+                                .GetValue(rntbdTransportClient);
+                ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel> allChannels = (ConcurrentDictionary<Documents.Rntbd.ServerKey, Documents.Rntbd.IChannel>)channelDict.GetType()
+                    .GetField("channels", BindingFlags.NonPublic | BindingFlags.Instance)
+                    .GetValue(channelDict);
+
+                Assert.IsTrue(allChannels.Count > 1, "There should be at least 2 channels, one healthy and one unhealthy channel.");
+
+                bool unHealthyChannelFound = false;
+                bool healthyChannelFound = false;
+                foreach (Documents.Rntbd.ServerKey ch in allChannels.Keys)
+                {
+                    Documents.Rntbd.LoadBalancingChannel lbChannel = (Documents.Rntbd.LoadBalancingChannel)allChannels[ch];
+
+                    Documents.Rntbd.LoadBalancingPartition lbPartition = (Documents.Rntbd.LoadBalancingPartition)lbChannel.GetType()
+                                            .GetField("singlePartition", BindingFlags.NonPublic | BindingFlags.Instance)
+                                            .GetValue(lbChannel);
+
+                    Assert.IsNotNull(lbPartition);
+                    List<Documents.Rntbd.LbChannelState> openChs = (List<Documents.Rntbd.LbChannelState>)lbPartition.GetType()
+                        .GetField("openChannels", BindingFlags.NonPublic | BindingFlags.Instance)
+                        .GetValue(lbPartition);
+
+                    foreach (Documents.Rntbd.LbChannelState channelState in openChs)
+                    {
+                        Documents.Rntbd.IChannel channel = (Documents.Rntbd.IChannel)channelState.GetType()
+                                            .GetField("channel", BindingFlags.NonPublic | BindingFlags.Instance)
+                                            .GetValue(channelState);
+                        if (!channelState.DeepHealthy)
+                        {
+                            unHealthyChannelFound = true;
+                        } else
+                        {
+                            healthyChannelFound = true;
+                        }
+                    }
+                }
+
+
+                Assert.IsTrue(unHealthyChannelFound, "An unhealthy Channel/Connection should have been found due to the repeated timeouts plus aggressive connection timeout policy");
+                Assert.IsTrue(healthyChannelFound, "A healthy Channel/Connection should have been found due to the timeouts causing the the old channel to be closed and new one created for future use");
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_AGGRESSIVE_TIMEOUT_DETECTION_ENABLED", null);
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_TIMEOUT_DETECTION_TIME_LIMIT_IN_SECONDS", null);
+                if (db != null) await db.DeleteAsync();
+            }
+        }
         public static IReadOnlyList<string> GetActiveConnections()
         {
             string testPid = Process.GetCurrentProcess().Id.ToString();

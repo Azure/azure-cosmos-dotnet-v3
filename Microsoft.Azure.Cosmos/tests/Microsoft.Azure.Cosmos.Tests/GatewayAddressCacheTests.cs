@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
                 }
             };
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
             this.partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -311,7 +311,7 @@ namespace Microsoft.Azure.Cosmos
                     IConnectionStateListener connectionStateListener = new ConnectionStateMuxListener(true);
                     GlobalAddressResolver globalAddressResolver = new GlobalAddressResolver(
                         endpointManager: globalEndpointManager,
-                        null,
+                        partitionKeyRangeLocationCache,
                         Protocol.Tcp,
                         this.mockTokenProvider.Object,
                         null,
@@ -636,7 +636,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -715,7 +715,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -794,7 +794,7 @@ namespace Microsoft.Azure.Cosmos
             containerProperties.Id = "TestId";
             containerProperties.PartitionKeyPath = "/pk";
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -806,7 +806,7 @@ namespace Microsoft.Azure.Cosmos
                 .Returns(Task.FromResult(containerProperties));
 
             string exceptionMessage = "Failed to lookup partition key ranges.";
-            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null);
+            Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new(null, null, null, null, false);
             partitionKeyRangeCache
                 .Setup(m => m.TryGetOverlappingRangesAsync(
                     It.IsAny<string>(),
@@ -882,7 +882,7 @@ namespace Microsoft.Azure.Cosmos
                 RequestTimeout = TimeSpan.FromSeconds(120)
             };
 
-            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict);
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
             mockCollectionCahce
                 .Setup(x => x.ResolveByNameAsync(
                     It.IsAny<string>(),
@@ -977,7 +977,8 @@ namespace Microsoft.Azure.Cosmos
                     It.IsAny<ResourceType>(),
                     It.IsAny<HttpTimeoutPolicy>(),
                     It.IsAny<IClientSideRequestStatistics>(),
-                    It.IsAny<CancellationToken>()))
+                    It.IsAny<CancellationToken>(),
+                    It.IsAny<DocumentServiceRequest>()))
                 .ThrowsAsync(new Exception("Some random error occurred."))
                 .ReturnsAsync(responseMessage);
 
@@ -1096,10 +1097,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
-                new TransportAddressUri(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
+                key: new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)),
+                value: true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1249,10 +1251,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's health status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
-                new TransportAddressUri(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
+                key: new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)),
+                value: true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1298,7 +1301,7 @@ namespace Microsoft.Azure.Cosmos
 
             // A delay of 2 minute was added to make the replica unhealthy for more than one minute. This
             // will make sure the unhealthy replica gets a chance to re-validate it's health status.
-            ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
+            TestUtils.AddMinuteToDateTimeFieldUsingReflection(
                             objectName: refreshedUri.GetCurrentHealthState(),
                             fieldName: "lastUnhealthyTimestamp",
                             delayInMinutes: -2);
@@ -1449,7 +1452,7 @@ namespace Microsoft.Azure.Cosmos
                     .ReplicaTransportAddressUris
                     .Single(x => x.ToString().Equals(addressTobeMarkedUnhealthy));
 
-                ReflectionUtils.AddMinuteToDateTimeFieldUsingReflection(
+                TestUtils.AddMinuteToDateTimeFieldUsingReflection(
                                             objectName: refreshedUri.GetCurrentHealthState(),
                                             fieldName: "lastUnhealthyTimestamp",
                                             delayInMinutes: -2 * iterationIndex);
@@ -1553,10 +1556,11 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(0, addressInfo.AllAddresses.Count(x => x.PhysicalUri == newAddress));
 
             // Because force refresh is requested, an unhealthy replica is added to the failed endpoint so that it's status could be validted.
-            request.RequestContext.FailedEndpoints.Value.Add(
-                new TransportAddressUri(
+            request.RequestContext.FailedEndpoints.Value.TryAdd(
+                key: new TransportAddressUri(
                     addressUri: new Uri(
-                        uriString: addressTobeMarkedUnhealthy)));
+                        uriString: addressTobeMarkedUnhealthy)),
+                value: true);
 
             addressInfo = await cache.TryGetAddressesAsync(
                 request: request,
@@ -1586,6 +1590,118 @@ namespace Microsoft.Azure.Cosmos
                 expectedTotalHandlerInvocationCount: 0,
                 expectedTotalReceivedAddressesCount: 0,
                 expectedTotalSuccessAddressesToOpenCount: 0);
+        }
+
+        /// <summary>
+        /// Test to validate that when <see cref="GlobalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync()"/> is called with a
+        /// valid open connection handler, the handler method is indeed invoked and an attempt is made to open the connections to the backend replicas.
+        /// </summary>
+        [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(true, DisplayName = "Scenario when pk range to address mapping is populated")]
+        [DataRow(false, DisplayName = "Scenario when pk range to address mapping is missing")]
+        public async Task GlobalAddressResolver_TryOpenConnectionToUnhealthyEndpointsAsync_WithValidHandler_ShouldOpenConnectionsAndMarkThemAsConnected(
+            bool shouldPopulatePkRangeToAddressMapping)
+        {
+            // Arrange.
+            FakeOpenConnectionHandler fakeOpenConnectionHandler = new(failingIndexes: new HashSet<int>());
+            UserAgentContainer container = new(clientId: 0);
+            FakeMessageHandler messageHandler = new();
+            AccountProperties databaseAccount = new AccountProperties()
+            {
+                EnableMultipleWriteLocations = false,
+                ReadLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = new Uri("https://location1.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = new Uri("https://location2.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = new Uri("https://location3.documents.azure.com").ToString() } },
+                },
+                WriteLocationsInternal = new Collection<AccountRegion>()
+                {
+                    { new AccountRegion() { Name = "location1", Endpoint = new Uri("https://location1.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location2", Endpoint = new Uri("https://location2.documents.azure.com").ToString() } },
+                    { new AccountRegion() { Name = "location3", Endpoint = new Uri("https://location3.documents.azure.com").ToString() } },
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new();
+            mockDocumentClient
+                .Setup(owner => owner.ServiceEndpoint)
+                .Returns(new Uri("https://location1.documents.azure.com"));
+
+            mockDocumentClient
+                .Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(databaseAccount);
+
+            GlobalEndpointManager globalEndpointManager = new(
+                mockDocumentClient.Object,
+                new ConnectionPolicy());
+            GlobalPartitionEndpointManager partitionKeyRangeLocationCache = new GlobalPartitionEndpointManagerCore(globalEndpointManager);
+
+            ConnectionPolicy connectionPolicy = new()
+            {
+                RequestTimeout = TimeSpan.FromSeconds(120)
+            };
+
+            ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("ccZ1ANCszwk=");
+            containerProperties.Id = "TestId";
+            containerProperties.PartitionKeyPath = "/pk";
+
+            Mock<CollectionCache> mockCollectionCahce = new(MockBehavior.Strict, false);
+            mockCollectionCahce
+                .Setup(x => x.ResolveByNameAsync(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    false,
+                    It.IsAny<ITrace>(),
+                    It.IsAny<IClientSideRequestStatistics>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.FromResult(containerProperties));
+
+            GlobalAddressResolver globalAddressResolver = new(
+                endpointManager: globalEndpointManager,
+                partitionKeyRangeLocationCache: partitionKeyRangeLocationCache,
+                protocol: Protocol.Tcp,
+                tokenProvider: this.mockTokenProvider.Object,
+                collectionCache: mockCollectionCahce.Object,
+                routingMapProvider: this.partitionKeyRangeCache.Object,
+                serviceConfigReader: this.mockServiceConfigReader.Object,
+                connectionPolicy: connectionPolicy,
+                connectionStateListener: Mock.Of<IConnectionStateListener>(),
+                httpClient: MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+
+            globalAddressResolver.SetOpenConnectionsHandler(
+                openConnectionsHandler: fakeOpenConnectionHandler);
+
+            // Act.
+            const string suffix = "-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF";
+            PartitionKeyRange pkRange = new () { Id = "YxM9ANCZIwABAAAAAAAAAA==", MinInclusive = "3F" + suffix, MaxExclusive = "5F" + suffix };
+
+            Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>> pkRangeToEndpointMappings = new();
+
+            if (shouldPopulatePkRangeToAddressMapping)
+            {
+                pkRangeToEndpointMappings.Add(
+                    key: pkRange,
+                    value: new Tuple<string, Uri, TransportAddressHealthState.HealthStatus>(
+                        containerProperties.ResourceId,
+                        new Uri("https://location1.documents.azure.com"),
+                        TransportAddressHealthState.HealthStatus.Unhealthy));
+            }
+
+            await globalAddressResolver.TryOpenConnectionToUnhealthyEndpointsAsync(pkRangeToEndpointMappings);
+
+            // Assert.
+            int totalHandlerInvocationCount = shouldPopulatePkRangeToAddressMapping ? 1 : 0;
+            int totalReceivedAddressesCount = shouldPopulatePkRangeToAddressMapping ? 3 : 0;
+            int totalSuccessAddressesToOpenCount = shouldPopulatePkRangeToAddressMapping ? 3 : 0;
+
+            GatewayAddressCacheTests.AssertOpenConnectionHandlerAttributes(
+                fakeOpenConnectionHandler: fakeOpenConnectionHandler,
+                expectedTotalFailedAddressesToOpenCount: 0,
+                expectedTotalHandlerInvocationCount: totalHandlerInvocationCount,
+                expectedTotalReceivedAddressesCount: totalReceivedAddressesCount,
+                expectedTotalSuccessAddressesToOpenCount: totalSuccessAddressesToOpenCount);
         }
 
         /// <summary>

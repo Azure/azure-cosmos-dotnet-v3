@@ -35,9 +35,12 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static SqlScalarExpression VisitBuiltinFunctionCall(MethodCallExpression methodCallExpression, TranslationContext context)
         {
             Type declaringType;
-
+            bool isExtensionMethod = methodCallExpression.Method.IsExtensionMethod();
             // Method could be an extension method
-            if (methodCallExpression.Method.IsStatic && methodCallExpression.Method.IsExtensionMethod())
+            // RRF doesn't have "this" qualifier, so it's not considered an extension method by the compiler, and so needed to be checked separately
+            if (methodCallExpression.Method.IsStatic && 
+                (methodCallExpression.Method.IsExtensionMethod() 
+                || methodCallExpression.Method.Name.Equals(nameof(CosmosLinqExtensions.RRF)))) 
             {
                 if (methodCallExpression.Arguments.Count < 1)
                 {
@@ -51,17 +54,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                 if (methodCallExpression.Method.DeclaringType.GeUnderlyingSystemType() == typeof(CosmosLinqExtensions))
                 {
                     // CosmosLinq Extensions can be RegexMatch, DocumentId or Type check functions (IsString, IsBool, etc.)
-                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.RegexMatch))
+                    switch (methodCallExpression.Method.Name)
                     {
-                        return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.RegexMatch):
+                        case nameof(CosmosLinqExtensions.FullTextContains):
+                        case nameof(CosmosLinqExtensions.FullTextContainsAll):
+                        case nameof(CosmosLinqExtensions.FullTextContainsAny):
+                            return StringBuiltinFunctions.Visit(methodCallExpression, context);
+                        case nameof(CosmosLinqExtensions.DocumentId):
+                        case nameof(CosmosLinqExtensions.RRF):
+                        case nameof(CosmosLinqExtensions.FullTextScore):
+                        case nameof(CosmosLinqExtensions.VectorDistance):
+                            return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
+                        default:
+                            return TypeCheckFunctions.Visit(methodCallExpression, context);
                     }
-
-                    if (methodCallExpression.Method.Name == nameof(CosmosLinqExtensions.DocumentId))
-                    {
-                        return OtherBuiltinSystemFunctions.Visit(methodCallExpression, context);
-                    }
-
-                    return TypeCheckFunctions.Visit(methodCallExpression, context);
                 }
             }
             else

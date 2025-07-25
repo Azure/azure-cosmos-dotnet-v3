@@ -330,12 +330,7 @@ namespace Microsoft.Azure.Cosmos
         /// The collection containing <see cref="ComputedProperty"/> objects associated with the container.
         /// </value>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        Collection<ComputedProperty> ComputedProperties
+        public Collection<ComputedProperty> ComputedProperties
         {
             get
             {
@@ -371,12 +366,7 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         [JsonIgnore]
-#if PREVIEW
-        public
-#else
-        internal
-#endif
-        FullTextPolicy FullTextPolicy
+        public FullTextPolicy FullTextPolicy
         {
             get => this.fullTextPolicyInternal;
             set => this.fullTextPolicyInternal = value;
@@ -431,7 +421,12 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// JSON path used for containers partitioning
+        /// 
+        /// For hierarchical partition keys, please use <see cref="ContainerProperties.PartitionKeyPaths"/>
         /// </summary>
+        /// <remarks>
+        /// Throws NotImplementedException for hierarchical partition keys
+        /// </remarks>
         [JsonIgnore]
         public string PartitionKeyPath
         {

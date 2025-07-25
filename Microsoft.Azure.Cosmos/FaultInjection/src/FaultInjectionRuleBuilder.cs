@@ -96,6 +96,16 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         /// <returns>the <see cref="FaultInjectionRule"/>.</returns>
         public FaultInjectionRule Build()
         {
+            if (this.condition.GetConnectionType() == FaultInjectionConnectionType.Gateway)
+            {
+                this.ValidateGatewayConnection();
+            }
+
+            if (this.condition.GetConnectionType() == FaultInjectionConnectionType.Direct)
+            {
+                this.ValidateDirectConnection();
+            }
+
             return new FaultInjectionRule(
                 this.result,
                 this.condition,
@@ -104,6 +114,50 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                 this.startDelay,
                 this.hitLimit,
                 this.enabled);
+        }
+
+        private void ValidateDirectConnection()
+        {
+            if (this.result == null)
+            {
+                throw new ArgumentNullException(nameof(this.result), "Argument 'result' cannot be null.");
+            }
+
+            FaultInjectionServerErrorResult? serverErrorResult = this.result as FaultInjectionServerErrorResult;
+
+            if (serverErrorResult?.GetServerErrorType() == FaultInjectionServerErrorType.DatabaseAccountNotFound)
+            {
+                throw new ArgumentException("DatabaseAccountNotFound error type is not supported for Direct connection type.");
+            }
+        }
+
+        private void ValidateGatewayConnection()
+        {
+            if (this.result == null)
+            {
+                throw new ArgumentNullException(nameof(this.result), "Argument 'result' cannot be null.");
+            }
+
+            FaultInjectionServerErrorResult? serverErrorResult = this.result as FaultInjectionServerErrorResult;
+
+            if (serverErrorResult?.GetServerErrorType() == FaultInjectionServerErrorType.Gone)
+            {
+                throw new ArgumentException("Gone error type is not supported for Gateway connection type.");
+            }
+
+            if (this.condition.IsMetadataOperationType())
+            {
+                if (serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.TooManyRequests
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ResponseDelay
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.SendDelay
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.DatabaseAccountNotFound
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.ServiceUnavailable
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.InternalServerError
+                    && serverErrorResult?.GetServerErrorType() != FaultInjectionServerErrorType.LeaseNotFound)
+                {
+                    throw new ArgumentException($"{serverErrorResult?.GetServerErrorType()} is not supported for metadata requests.");
+                }
+            }
         }
     }
 }

@@ -8,12 +8,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// Types of availability strategies supported
     /// </summary>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    abstract class AvailabilityStrategy
+    public abstract class AvailabilityStrategy
     {
         /// <summary>
         /// Default constructor
@@ -26,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         ///  Used on a per request level to disable a client level AvailabilityStrategy
         /// </summary>
         /// <returns>something</returns>
-        internal static AvailabilityStrategy DisabledStrategy()
+        public static AvailabilityStrategy DisabledStrategy()
         {
             return new DisabledAvailabilityStrategy();
         }
@@ -43,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         /// Note that this does come with the caveat that there will be more 409 / 412 errors thrown by the SDK.
         /// This is expected and applications that adopt this feature should be prepared to handle these exceptions.
         /// Application might not be able to be deterministic on Create vs Replace in the case of Upsert Operations</param>
-        /// <returns>something</returns>
+        /// <returns>the cross region hedging availability</returns>
         public static AvailabilityStrategy CrossRegionHedgingStrategy(
             TimeSpan threshold,
             TimeSpan? thresholdStep,

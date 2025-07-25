@@ -35,6 +35,8 @@ namespace CosmosBenchmark
             try
             {
                 BenchmarkConfig config = BenchmarkConfig.From(args);
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_THIN_CLIENT_ENABLED", config.IsThinClientEnabled.ToString());
+
                 await AddAzureInfoToRunSummary();
 
                 MeterProvider meterProvider = BuildMeterProvider(config);
@@ -71,6 +73,8 @@ namespace CosmosBenchmark
             }
             finally
             {
+                Environment.SetEnvironmentVariable("AZURE_COSMOS_THIN_CLIENT_ENABLED", "False");
+
                 Utility.TeeTraceInformation($"{nameof(CosmosBenchmark)} completed successfully.");
                 if (Debugger.IsAttached)
                 {
@@ -144,7 +148,8 @@ namespace CosmosBenchmark
         private async Task<RunSummary> ExecuteAsync(BenchmarkConfig config)
         {
             // V3 SDK client initialization
-            using (CosmosClient cosmosClient = config.CreateCosmosClient(config.Key))
+
+            using (CosmosClient cosmosClient = config.CreateCosmosClient())
             {
                 Microsoft.Azure.Cosmos.Database database = cosmosClient.GetDatabase(config.Database);
                 if (config.CleanupOnStart)
@@ -219,8 +224,8 @@ namespace CosmosBenchmark
                     Utility.TeeTraceInformation("Publishing results");
                     runSummary.Diagnostics = CosmosDiagnosticsLogger.GetDiagnostics();
                     await this.PublishResults(
-                        config, 
-                        runSummary, 
+                        config,
+                        runSummary,
                         cosmosClient);
                 }
 

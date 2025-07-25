@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception while serializing telemetry payload or sending data to service: {0}", ex);
+                DefaultTrace.TraceError("Exception while serializing telemetry payload or sending data to service: {0}", ex.Message);
             }
            
         }

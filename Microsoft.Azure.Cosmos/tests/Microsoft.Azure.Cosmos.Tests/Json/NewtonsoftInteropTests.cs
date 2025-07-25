@@ -155,6 +155,17 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
         }
 
         [TestMethod]
+        [Owner("dkunda")]
+        [DataRow(null, DisplayName = "Case when the byte array is null.")]
+        [DataRow(new byte[] { }, DisplayName = "Case when the byte array is empty.")]
+        [DataRow(new byte[] { 1, 2, 3, 4, 5 }, DisplayName = "Case when the byte array has valid elements.")]
+        public void ByteArrayTest(
+            byte[] byteArray)
+        {
+            NewtonsoftInteropTests.VerifyNewtonsoftInterop<byte[]>(byteArray);
+        }
+
+        [TestMethod]
         [Owner("brchon")]
         public void NestedArrayTest()
         {
@@ -191,12 +202,74 @@ namespace Microsoft.Azure.Cosmos.Tests.Json
                 new JProperty("string", "XCPCFXPHHF"),
                 new JProperty("boolean", true),
                 new JProperty("null", null),
-                new JProperty("datetime", "2526-07-11T18:18:16.4520716"),
+                new JProperty("datetime", DateTime.Parse("2526-07-11T18:18:16.4520716")),
                 new JProperty("spatialPoint", new JObject(
                     new JProperty("type", "Point"),
                     new JProperty("coordinate", new double[] { 118.9897, -46.6781 }))),
                 new JProperty("text", "tiger diamond newbrunswick snowleopard chocolate dog snowleopard turtle cat sapphire peach sapphire vancouver white chocolate horse diamond lion superlongcolourname ruby"));
             NewtonsoftInteropTests.VerifyNewtonsoftInterop<JObject>(value);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public void AllDatetimeVariationsTest()
+        {
+            // Arrange
+            JObject jsonObject = new JObject();
+
+            // 1. Current UTC DateTime using JProperty
+            DateTime utcNow = DateTime.UtcNow;
+            JProperty utcNowProperty = new JProperty("currentUtcDateTime", utcNow);
+            jsonObject.Add(utcNowProperty);
+
+            // 2. Current Local DateTime using JProperty
+            DateTime localNow = DateTime.Now;
+            JProperty localNowProperty = new JProperty("currentLocalDateTime", localNow);
+            jsonObject.Add(localNowProperty);
+
+            // 3. Date Only (formatted as string) using JProperty
+            DateTime dateOnly = new DateTime(2023, 10, 26, 0, 0, 0, DateTimeKind.Unspecified);
+            JProperty dateOnlyProperty = new JProperty("specificDateOnly", dateOnly.ToString("yyyy-MM-dd"));
+            jsonObject.Add(dateOnlyProperty);
+
+            // 4. Time Only (formatted as string) using JProperty
+            DateTime timeOnly = new DateTime(1, 1, 1, 14, 30, 0, DateTimeKind.Unspecified);
+            JProperty timeOnlyProperty = new JProperty("specificTimeOnly", timeOnly.ToString("HH:mm:ss"));
+            jsonObject.Add(timeOnlyProperty);
+
+            // 5. DateTime with milliseconds using JProperty
+            DateTime preciseDateTime = new DateTime(2024, 5, 29, 10, 15, 30, 123, DateTimeKind.Local);
+            JProperty preciseDateTimeProperty = new JProperty("preciseDateTime", preciseDateTime);
+            jsonObject.Add(preciseDateTimeProperty);
+
+            // 6. DateTime in ISO 8601 format (UTC) using JProperty
+            DateTime isoUtcDateTime = new DateTime(2025, 1, 15, 8, 0, 0, DateTimeKind.Utc);
+            JProperty isoUtcDateTimeProperty = new JProperty("isoUtcDateTime", isoUtcDateTime.ToString("o", CultureInfo.InvariantCulture));
+            jsonObject.Add(isoUtcDateTimeProperty);
+
+            // 7. DateTime in custom format using JProperty
+            DateTime customFormattedDateTime = new DateTime(2022, 7, 1, 9, 45, 10, DateTimeKind.Local);
+            JProperty customFormattedDateTimeProperty = new JProperty("customFormattedDateTime", customFormattedDateTime.ToString("MM/dd/yyyy HH:mm:ss"));
+            jsonObject.Add(customFormattedDateTimeProperty);
+
+            // 8. Nullable DateTime (representing a missing or optional date) using JProperty
+            DateTime? nullableDateTime = null;
+            JProperty nullableDateTimeProperty = new JProperty("nullableDateTime", nullableDateTime);
+            jsonObject.Add(nullableDateTimeProperty);
+
+            // 9. MinValue DateTime using JProperty
+            JProperty minDateTimeProperty = new JProperty("minDateTime", DateTime.MinValue);
+            jsonObject.Add(minDateTimeProperty);
+
+            // 10. MaxValue DateTime using JProperty
+            JProperty maxDateTimeProperty = new JProperty("maxDateTime", DateTime.MaxValue);
+            jsonObject.Add(maxDateTimeProperty);
+
+            // 11. MaxValue DateTime using JProperty
+            JProperty exactDateTimeProperty = new JProperty("exactDateTime", DateTime.Parse("2025-03-26T20:22:20Z"));
+            jsonObject.Add(exactDateTimeProperty);
+
+            NewtonsoftInteropTests.VerifyNewtonsoftInterop<JObject>(jsonObject);
         }
 
         public enum Day { Sun, Mon, Tue, Wed, Thu, Fri, Sat };

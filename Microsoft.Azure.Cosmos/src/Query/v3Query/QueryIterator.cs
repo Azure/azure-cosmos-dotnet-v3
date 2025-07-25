@@ -149,8 +149,8 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
-                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
+                enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode && (clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway),
                 testInjections: queryRequestOptions.TestSettings);
 
             return new QueryIterator(

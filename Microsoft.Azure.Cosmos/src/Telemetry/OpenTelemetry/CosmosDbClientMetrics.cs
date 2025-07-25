@@ -9,7 +9,12 @@ namespace Microsoft.Azure.Cosmos
     /// These metrics are useful for tracking various aspects of Cosmos DB client operations and compliant with Open Telemetry Semantic Conventions 
     /// It defines standardized names, units, descriptions, and histogram buckets for measuring and monitoring performance through OpenTelemetry.
     /// </summary>
-    public sealed class CosmosDbClientMetrics
+#if PREVIEW
+    public
+#else 
+    internal
+#endif
+    sealed class CosmosDbClientMetrics
     {
         /// <summary>
         /// Operation Metrics
@@ -34,7 +39,7 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// Total request units per operation (sum of RUs for all requested needed when processing an operation)
                 /// </summary>
-                public const string RequestCharge = "db.client.cosmosdb.operation.request_charge";
+                public const string RequestCharge = "azure.cosmosdb.client.operation.request_charge";
 
                 /// <summary>
                 /// Total end-to-end duration of the operation
@@ -44,12 +49,12 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// For feed operations (query, readAll, readMany, change feed) batch operations this meter capture the actual item count in responses from the service. 
                 /// </summary>
-                public const string RowCount = "db.client.response.row_count";
+                public const string RowCount = "db.client.response.returned_rows";
 
                 /// <summary>
                 /// Number of active SDK client instances. 
                 /// </summary>
-                public const string ActiveInstances = "db.client.cosmosdb.active_instance.count";
+                public const string ActiveInstances = "azure.cosmosdb.client.active_instance.count";
             }
 
             /// <summary>
@@ -58,9 +63,14 @@ namespace Microsoft.Azure.Cosmos
             public static class Unit
             {
                 /// <summary>
-                /// Unit representing a simple count
+                /// Unit representing active client instances
                 /// </summary>
-                public const string Count = "#";
+                public const string Instance = "{instance}";
+
+                /// <summary>
+                /// Unit representing count of items in response
+                /// </summary>
+                public const string Item = "{item}";
 
                 /// <summary>
                 /// Unit representing time in seconds
@@ -68,10 +78,9 @@ namespace Microsoft.Azure.Cosmos
                 public const string Sec = "s";
 
                 /// <summary>
-                /// Unit representing request units
+                /// Unit representing request units (RU)
                 /// </summary>
-                public const string RequestUnit = "# RU";
-
+                public const string RequestUnit = "{request_unit}";
             }
 
             /// <summary>
@@ -124,37 +133,37 @@ namespace Microsoft.Azure.Cosmos
                 /// <summary>
                 /// Network Call Latency
                 /// </summary>
-                public const string Latency = "db.client.cosmosdb.request.duration";
+                public const string Latency = "azure.cosmosdb.client.request.duration";
 
                 /// <summary>
                 /// Request Payload Size
                 /// </summary>
-                public const string RequestBodySize = "db.client.cosmosdb.request.body.size";
+                public const string RequestBodySize = "azure.cosmosdb.client.request.body.size";
 
                 /// <summary>
                 /// Request Payload Size
                 /// </summary>
-                public const string ResponseBodySize = "db.client.cosmosdb.response.body.size";
+                public const string ResponseBodySize = "azure.cosmosdb.client.response.body.size";
 
                 /// <summary>
                 /// Channel Aquisition Latency
                 /// </summary>
-                public const string ChannelAquisitionLatency = "db.client.cosmosdb.request.channel_aquisition.duration";
+                public const string ChannelAquisitionLatency = "azure.cosmosdb.client.request.channel_aquisition.duration";
 
                 /// <summary>
                 /// Backend Server Latency
                 /// </summary>
-                public const string BackendLatency = "db.client.cosmosdb.request.service_duration";
+                public const string BackendLatency = "azure.cosmosdb.client.request.service_duration";
 
                 /// <summary>
                 /// Transit Time Latency
                 /// </summary>
-                public const string TransitTimeLatency = "db.client.cosmosdb.request.transit.duration";
+                public const string TransitTimeLatency = "azure.cosmosdb.client.request.transit.duration";
 
                 /// <summary>
                 /// Received Time Latency
                 /// </summary>
-                public const string ReceivedTimeLatency = "db.client.cosmosdb.request.received.duration";
+                public const string ReceivedTimeLatency = "azure.cosmosdb.client.request.received.duration";
             }
 
             /// <summary>

@@ -25,27 +25,27 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
         private static readonly Dictionary<string, MetricType> expectedOperationMetrics = new()
         {
             { "db.client.operation.duration", MetricType.Histogram },
-            { "db.client.response.row_count", MetricType.Histogram},
-            { "db.client.cosmosdb.operation.request_charge", MetricType.Histogram },
-            { "db.client.cosmosdb.active_instance.count", MetricType.LongSumNonMonotonic }
+            { "db.client.response.returned_rows", MetricType.Histogram},
+            { "azure.cosmosdb.client.operation.request_charge", MetricType.Histogram },
+            { "azure.cosmosdb.client.active_instance.count", MetricType.LongSumNonMonotonic }
         };
 
         private static readonly Dictionary<string, MetricType> expectedNetworkMetrics = new()
         {
-            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
-            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
-            { "db.client.cosmosdb.request.service_duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.channel_aquisition.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.transit.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.received.duration", MetricType.Histogram}
+            { "azure.cosmosdb.client.request.duration", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.body.size", MetricType.Histogram},
+            { "azure.cosmosdb.client.response.body.size", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.service_duration", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.channel_aquisition.duration", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.transit.duration", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.received.duration", MetricType.Histogram}
         };
 
         private static readonly Dictionary<string, MetricType> expectedGatewayModeNetworkMetrics = new()
         {
-            { "db.client.cosmosdb.request.duration", MetricType.Histogram},
-            { "db.client.cosmosdb.request.body.size", MetricType.Histogram},
-            { "db.client.cosmosdb.response.body.size", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.duration", MetricType.Histogram},
+            { "azure.cosmosdb.client.request.body.size", MetricType.Histogram},
+            { "azure.cosmosdb.client.response.body.size", MetricType.Histogram},
         };
 
         private static readonly Dictionary<string, MetricType> expectedMetrics = expectedOperationMetrics
@@ -95,6 +95,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             {
                 await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
+                    DisableDistributedTracing = true,
                     IsClientMetricsEnabled = true
                 })
                 .WithConnectionModeDirect());
@@ -104,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
             {
                 await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
                 {
+                    DisableDistributedTracing = true,
                     IsClientMetricsEnabled = true
                 })
                 .WithConnectionModeGateway());
@@ -167,6 +169,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests.Metrics
 
             await base.TestInit((builder) => builder.WithClientTelemetryOptions(new CosmosClientTelemetryOptions()
             {
+                DisableDistributedTracing = true,
                 IsClientMetricsEnabled = true,
                 OperationMetricsOptions = new OperationMetricsOptions()
                 {

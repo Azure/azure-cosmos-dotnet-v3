@@ -85,6 +85,10 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Endswith, Identifiers.Endswith },
             { Names.Exp, Identifiers.Exp },
             { Names.Floor, Identifiers.Floor },
+            { Names.FullTextScore, Identifiers.FullTextScore },
+            { Names.FullTextContains, Identifiers.FullTextContains },
+            { Names.FullTextContainsAll, Identifiers.FullTextContainsAll },
+            { Names.FullTextContainsAny, Identifiers.FullTextContainsAny },
             { Names.GetCurrentDateTime, Identifiers.GetCurrentDateTime },
             { Names.GetCurrentTicks, Identifiers.GetCurrentTicks },
             { Names.GetCurrentTimestamp, Identifiers.GetCurrentTimestamp },
@@ -119,6 +123,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             { Names.Right, Identifiers.Right },
             { Names.Round, Identifiers.Round },
             { Names.Rtrim, Identifiers.Rtrim },
+            { Names.RRF, Identifiers.RRF },
             { Names.Sign, Identifiers.Sign },
             { Names.Sin, Identifiers.Sin },
             { Names.Sqrt, Identifiers.Sqrt },
@@ -245,15 +250,23 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string InternalStIntersects = "_ST_INTERSECTS";
             public const string InternalStWithin = "_ST_WITHIN";
             public const string InternalTryArrayContains = "_TRY_ARRAY_CONTAINS";
+
             public const string Abs = "ABS";
             public const string Acos = "ACOS";
             public const string All = "ALL";
             public const string Any = "ANY";
             public const string Array = "ARRAY";
+            public const string ArrayAvg = "ARRAY_AVG";
             public const string ArrayConcat = "ARRAY_CONCAT";
             public const string ArrayContains = "ARRAY_CONTAINS";
+            public const string ArrayContainsAll = "ARRAY_CONTAINS_ALL";
+            public const string ArrayContainsAny = "ARRAY_CONTAINS_ANY";
             public const string ArrayLength = "ARRAY_LENGTH";
+            public const string ArrayMax = "ARRAY_MAX";
+            public const string ArrayMedian = "ARRAY_MEDIAN";
+            public const string ArrayMin = "ARRAY_MIN";
             public const string ArraySlice = "ARRAY_SLICE";
+            public const string ArraySum = "ARRAY_SUM";
             public const string Asin = "ASIN";
             public const string Atan = "ATAN";
             public const string Atn2 = "ATN2";
@@ -278,25 +291,38 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Udt = "C_UDT";
             public const string UInt32 = "C_UINT32";
             public const string Ceiling = "CEILING";
+            public const string Choose = "CHOOSE";
             public const string Concat = "CONCAT";
             public const string Contains = "CONTAINS";
+            public const string ContainsAllCi = "ContainsAllCi";
+            public const string ContainsAllCs = "ContainsAllCs";
+            public const string ContainsAnyCi = "ContainsAnyCi";
+            public const string ContainsAnyCs = "ContainsAnyCs";
             public const string Cos = "COS";
             public const string Cot = "COT";
             public const string Count = "COUNT";
             public const string DateTimeAdd = "DateTimeAdd";
+            public const string DateTimeBin = "DateTimeBin";
             public const string DateTimeDiff = "DateTimeDiff";
+            public const string DateTimeFormat = "DateTimeFormat";
             public const string DateTimeFromParts = "DateTimeFromParts";
             public const string DateTimePart = "DateTimePart";
             public const string DateTimeToTicks = "DateTimeToTicks";
             public const string DateTimeToTimestamp = "DateTimeToTimestamp";
+            public const string Day = "DAY";
             public const string Degrees = "DEGREES";
             public const string Documentid = "DOCUMENTID";
             public const string Endswith = "ENDSWITH";
             public const string Exp = "EXP";
             public const string Floor = "FLOOR";
+            public const string FullTextContains = "FullTextContains";
+            public const string FullTextContainsAll = "FullTextContainsAll";
+            public const string FullTextContainsAny = "FullTextContainsAny";
+            public const string FullTextScore = "FullTextScore";
             public const string GetCurrentDateTime = "GetCurrentDateTime";
             public const string GetCurrentTicks = "GetCurrentTicks";
             public const string GetCurrentTimestamp = "GetCurrentTimestamp";
+            public const string Iif = "IIF";
             public const string IndexOf = "INDEX_OF";
             public const string IntAdd = "IntAdd";
             public const string IntBitwiseAnd = "IntBitwiseAnd";
@@ -311,6 +337,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string IntSub = "IntSub";
             public const string IsArray = "IS_ARRAY";
             public const string IsBool = "IS_BOOL";
+            public const string IsDateTime = "IS_DATETIME";
             public const string IsDefined = "IS_DEFINED";
             public const string IsFiniteNumber = "IS_FINITE_NUMBER";
             public const string IsInteger = "IS_INTEGER";
@@ -319,6 +346,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string IsObject = "IS_OBJECT";
             public const string IsPrimitive = "IS_PRIMITIVE";
             public const string IsString = "IS_STRING";
+            public const string LastIndexOf = "LastIndexOf";
             public const string Left = "LEFT";
             public const string Length = "LENGTH";
             public const string Like = "LIKE";
@@ -328,6 +356,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Ltrim = "LTRIM";
             public const string Max = "MAX";
             public const string Min = "MIN";
+            public const string Month = "MONTH";
             public const string ObjectToArray = "ObjectToArray";
             public const string Pi = "PI";
             public const string Power = "POWER";
@@ -339,7 +368,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Reverse = "REVERSE";
             public const string Right = "RIGHT";
             public const string Round = "ROUND";
+            public const string RRF = "RRF";
             public const string Rtrim = "RTRIM";
+            public const string SetDifference = "SetDifference";
+            public const string SetEqual = "SetEqual";
+            public const string SetIntersect = "SetIntersect";
+            public const string SetUnion = "SetUnion";
             public const string Sign = "SIGN";
             public const string Sin = "SIN";
             public const string Sqrt = "SQRT";
@@ -351,6 +385,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string StIsvaliddetailed = "ST_ISVALIDDETAILED";
             public const string StWithin = "ST_WITHIN";
             public const string StringEquals = "StringEquals";
+            public const string StringJoin = "StringJoin";
+            public const string StringSplit = "StringSplit";
             public const string StringToArray = "StringToArray";
             public const string StringToBoolean = "StringToBoolean";
             public const string StringToNull = "StringToNull";
@@ -367,6 +403,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public const string Trim = "TRIM";
             public const string Trunc = "TRUNC";
             public const string Upper = "UPPER";
+            public const string VectorDistance = "VectorDistance";
+            public const string Year = "YEAR";
         }
 
         public static class Identifiers
@@ -393,10 +431,17 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier All = SqlIdentifier.Create(Names.All);
             public static readonly SqlIdentifier Any = SqlIdentifier.Create(Names.Any);
             public static readonly SqlIdentifier Array = SqlIdentifier.Create(Names.Array);
+            public static readonly SqlIdentifier ArrayAvg = SqlIdentifier.Create(Names.ArrayAvg);
             public static readonly SqlIdentifier ArrayConcat = SqlIdentifier.Create(Names.ArrayConcat);
             public static readonly SqlIdentifier ArrayContains = SqlIdentifier.Create(Names.ArrayContains);
+            public static readonly SqlIdentifier ArrayContainsAll = SqlIdentifier.Create(Names.ArrayContainsAll);
+            public static readonly SqlIdentifier ArrayContainsAny = SqlIdentifier.Create(Names.ArrayContainsAny);
             public static readonly SqlIdentifier ArrayLength = SqlIdentifier.Create(Names.ArrayLength);
+            public static readonly SqlIdentifier ArrayMax = SqlIdentifier.Create(Names.ArrayMax);
+            public static readonly SqlIdentifier ArrayMedian = SqlIdentifier.Create(Names.ArrayMedian);
+            public static readonly SqlIdentifier ArrayMin = SqlIdentifier.Create(Names.ArrayMin);
             public static readonly SqlIdentifier ArraySlice = SqlIdentifier.Create(Names.ArraySlice);
+            public static readonly SqlIdentifier ArraySum = SqlIdentifier.Create(Names.ArraySum);
             public static readonly SqlIdentifier Asin = SqlIdentifier.Create(Names.Asin);
             public static readonly SqlIdentifier Atan = SqlIdentifier.Create(Names.Atan);
             public static readonly SqlIdentifier Atn2 = SqlIdentifier.Create(Names.Atn2);
@@ -421,25 +466,38 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Udt = SqlIdentifier.Create(Names.Udt);
             public static readonly SqlIdentifier UInt32 = SqlIdentifier.Create(Names.UInt32);
             public static readonly SqlIdentifier Ceiling = SqlIdentifier.Create(Names.Ceiling);
+            public static readonly SqlIdentifier Choose = SqlIdentifier.Create(Names.Choose);
             public static readonly SqlIdentifier Concat = SqlIdentifier.Create(Names.Concat);
             public static readonly SqlIdentifier Contains = SqlIdentifier.Create(Names.Contains);
+            public static readonly SqlIdentifier ContainsAllCi = SqlIdentifier.Create(Names.ContainsAllCi);
+            public static readonly SqlIdentifier ContainsAllCs = SqlIdentifier.Create(Names.ContainsAllCs);
+            public static readonly SqlIdentifier ContainsAnyCi = SqlIdentifier.Create(Names.ContainsAnyCi);
+            public static readonly SqlIdentifier ContainsAnyCs = SqlIdentifier.Create(Names.ContainsAnyCs);
             public static readonly SqlIdentifier Cos = SqlIdentifier.Create(Names.Cos);
             public static readonly SqlIdentifier Cot = SqlIdentifier.Create(Names.Cot);
             public static readonly SqlIdentifier Count = SqlIdentifier.Create(Names.Count);
             public static readonly SqlIdentifier DateTimeAdd = SqlIdentifier.Create(Names.DateTimeAdd);
+            public static readonly SqlIdentifier DateTimeBin = SqlIdentifier.Create(Names.DateTimeBin);
             public static readonly SqlIdentifier DateTimeDiff = SqlIdentifier.Create(Names.DateTimeDiff);
+            public static readonly SqlIdentifier DateTimeFormat = SqlIdentifier.Create(Names.DateTimeFormat);
             public static readonly SqlIdentifier DateTimeFromParts = SqlIdentifier.Create(Names.DateTimeFromParts);
             public static readonly SqlIdentifier DateTimePart = SqlIdentifier.Create(Names.DateTimePart);
             public static readonly SqlIdentifier DateTimeToTicks = SqlIdentifier.Create(Names.DateTimeToTicks);
             public static readonly SqlIdentifier DateTimeToTimestamp = SqlIdentifier.Create(Names.DateTimeToTimestamp);
+            public static readonly SqlIdentifier Day = SqlIdentifier.Create(Names.Day);
             public static readonly SqlIdentifier Degrees = SqlIdentifier.Create(Names.Degrees);
             public static readonly SqlIdentifier Documentid = SqlIdentifier.Create(Names.Documentid);
             public static readonly SqlIdentifier Endswith = SqlIdentifier.Create(Names.Endswith);
             public static readonly SqlIdentifier Exp = SqlIdentifier.Create(Names.Exp);
             public static readonly SqlIdentifier Floor = SqlIdentifier.Create(Names.Floor);
+            public static readonly SqlIdentifier FullTextContains = SqlIdentifier.Create(Names.FullTextContains);
+            public static readonly SqlIdentifier FullTextContainsAll = SqlIdentifier.Create(Names.FullTextContainsAll);
+            public static readonly SqlIdentifier FullTextContainsAny = SqlIdentifier.Create(Names.FullTextContainsAny);
+            public static readonly SqlIdentifier FullTextScore = SqlIdentifier.Create(Names.FullTextScore);
             public static readonly SqlIdentifier GetCurrentDateTime = SqlIdentifier.Create(Names.GetCurrentDateTime);
             public static readonly SqlIdentifier GetCurrentTicks = SqlIdentifier.Create(Names.GetCurrentTicks);
             public static readonly SqlIdentifier GetCurrentTimestamp = SqlIdentifier.Create(Names.GetCurrentTimestamp);
+            public static readonly SqlIdentifier Iif = SqlIdentifier.Create(Names.Iif);
             public static readonly SqlIdentifier IndexOf = SqlIdentifier.Create(Names.IndexOf);
             public static readonly SqlIdentifier IntAdd = SqlIdentifier.Create(Names.IntAdd);
             public static readonly SqlIdentifier IntBitwiseAnd = SqlIdentifier.Create(Names.IntBitwiseAnd);
@@ -454,6 +512,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier IntSub = SqlIdentifier.Create(Names.IntSub);
             public static readonly SqlIdentifier IsArray = SqlIdentifier.Create(Names.IsArray);
             public static readonly SqlIdentifier IsBool = SqlIdentifier.Create(Names.IsBool);
+            public static readonly SqlIdentifier IsDateTime = SqlIdentifier.Create(Names.IsDateTime);
             public static readonly SqlIdentifier IsDefined = SqlIdentifier.Create(Names.IsDefined);
             public static readonly SqlIdentifier IsFiniteNumber = SqlIdentifier.Create(Names.IsFiniteNumber);
             public static readonly SqlIdentifier IsInteger = SqlIdentifier.Create(Names.IsInteger);
@@ -462,6 +521,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier IsObject = SqlIdentifier.Create(Names.IsObject);
             public static readonly SqlIdentifier IsPrimitive = SqlIdentifier.Create(Names.IsPrimitive);
             public static readonly SqlIdentifier IsString = SqlIdentifier.Create(Names.IsString);
+            public static readonly SqlIdentifier LastIndexOf = SqlIdentifier.Create(Names.LastIndexOf);
             public static readonly SqlIdentifier Left = SqlIdentifier.Create(Names.Left);
             public static readonly SqlIdentifier Length = SqlIdentifier.Create(Names.Length);
             public static readonly SqlIdentifier Like = SqlIdentifier.Create(Names.Like);
@@ -471,6 +531,7 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Ltrim = SqlIdentifier.Create(Names.Ltrim);
             public static readonly SqlIdentifier Max = SqlIdentifier.Create(Names.Max);
             public static readonly SqlIdentifier Min = SqlIdentifier.Create(Names.Min);
+            public static readonly SqlIdentifier Month = SqlIdentifier.Create(Names.Month);
             public static readonly SqlIdentifier ObjectToArray = SqlIdentifier.Create(Names.ObjectToArray);
             public static readonly SqlIdentifier Pi = SqlIdentifier.Create(Names.Pi);
             public static readonly SqlIdentifier Power = SqlIdentifier.Create(Names.Power);
@@ -482,7 +543,12 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Reverse = SqlIdentifier.Create(Names.Reverse);
             public static readonly SqlIdentifier Right = SqlIdentifier.Create(Names.Right);
             public static readonly SqlIdentifier Round = SqlIdentifier.Create(Names.Round);
+            public static readonly SqlIdentifier RRF = SqlIdentifier.Create(Names.RRF);
             public static readonly SqlIdentifier Rtrim = SqlIdentifier.Create(Names.Rtrim);
+            public static readonly SqlIdentifier SetDifference = SqlIdentifier.Create(Names.SetDifference);
+            public static readonly SqlIdentifier SetEqual = SqlIdentifier.Create(Names.SetEqual);
+            public static readonly SqlIdentifier SetIntersect = SqlIdentifier.Create(Names.SetIntersect);
+            public static readonly SqlIdentifier SetUnion = SqlIdentifier.Create(Names.SetUnion);
             public static readonly SqlIdentifier Sign = SqlIdentifier.Create(Names.Sign);
             public static readonly SqlIdentifier Sin = SqlIdentifier.Create(Names.Sin);
             public static readonly SqlIdentifier Sqrt = SqlIdentifier.Create(Names.Sqrt);
@@ -494,6 +560,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier StIsvaliddetailed = SqlIdentifier.Create(Names.StIsvaliddetailed);
             public static readonly SqlIdentifier StWithin = SqlIdentifier.Create(Names.StWithin);
             public static readonly SqlIdentifier StringEquals = SqlIdentifier.Create(Names.StringEquals);
+            public static readonly SqlIdentifier StringJoin = SqlIdentifier.Create(Names.StringJoin);
+            public static readonly SqlIdentifier StringSplit = SqlIdentifier.Create(Names.StringSplit);
             public static readonly SqlIdentifier StringToArray = SqlIdentifier.Create(Names.StringToArray);
             public static readonly SqlIdentifier StringToBoolean = SqlIdentifier.Create(Names.StringToBoolean);
             public static readonly SqlIdentifier StringToNull = SqlIdentifier.Create(Names.StringToNull);
@@ -510,6 +578,8 @@ namespace Microsoft.Azure.Cosmos.SqlObjects
             public static readonly SqlIdentifier Trim = SqlIdentifier.Create(Names.Trim);
             public static readonly SqlIdentifier Trunc = SqlIdentifier.Create(Names.Trunc);
             public static readonly SqlIdentifier Upper = SqlIdentifier.Create(Names.Upper);
+            public static readonly SqlIdentifier VectorDistance = SqlIdentifier.Create(Names.VectorDistance);
+            public static readonly SqlIdentifier Year = SqlIdentifier.Create(Names.Year);
         }
     }
 }

@@ -6,20 +6,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     
     internal class FaultInjectionConditionInternal
     {
         private readonly List<IFaultInjectionConditionValidator> validators;
+        private readonly GlobalEndpointManager globalEndpointManager;
 
         private string containerResourceId = string.Empty;
         private OperationType? operationType = null;
         private List<Uri> regionEndpoints = new List<Uri>{ };
         private List<Uri> physicalAddresses = new List<Uri> { };
 
-        public FaultInjectionConditionInternal()
+        public FaultInjectionConditionInternal(GlobalEndpointManager globalEndpointManager)
         {
+            this.globalEndpointManager = globalEndpointManager;
             this.validators = new List<IFaultInjectionConditionValidator>();
         }
 
@@ -55,11 +58,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             }
         }
 
-        public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds)
+        public void SetPartitionKeyRangeIds(IEnumerable<string> partitionKeyRangeIds, FaultInjectionRule rule)
         {
             if (partitionKeyRangeIds != null && partitionKeyRangeIds.Any())
             {
-                this.validators.Add(new PartitionKeyRangeIdValidator(partitionKeyRangeIds));
+                this.validators.Add(new PartitionKeyRangeIdValidator(
+                    partitionKeyRangeIds,
+                    rule.GetCondition().GetEndpoint().IsIncludePrimary()));
             }
         }
 
@@ -199,8 +204,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
                 bool isApplicable = this.regionEndpoints.Any(uri => 
-                    request.RequestContext.LocationEndpointToRoute.AbsoluteUri
-                    .StartsWith(uri.AbsoluteUri));
+                    request.RequestContext.LocationEndpointToRoute.Host
+                    .StartsWith(uri.Host));
 
                 return isApplicable;
             }
@@ -302,10 +307,12 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
         private class PartitionKeyRangeIdValidator : IFaultInjectionConditionValidator
         {
             private readonly IEnumerable<string> pkRangeIds;
+            private readonly bool includePrimaryForMetaData;
 
-            public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds)
+            public PartitionKeyRangeIdValidator(IEnumerable<string> pkRangeIds, bool includePrimaryForMetaData)
             {
                 this.pkRangeIds = pkRangeIds ?? throw new ArgumentNullException(nameof(pkRangeIds));
+                this.includePrimaryForMetaData = includePrimaryForMetaData;
             }
 
             public bool IsApplicable(string ruleId, ChannelCallArguments args)
@@ -320,7 +327,13 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             {
                 PartitionKeyRange pkRange = request.RequestContext.ResolvedPartitionKeyRange;
 
-                return this.pkRangeIds.Contains(pkRange.Id);
+                if (pkRange is null && this.includePrimaryForMetaData)
+                {
+                    //For metadata operations, rule will apply to all partition key ranges
+                    return true;
+                }
+
+                return this.pkRangeIds.Contains(pkRange?.Id);
             }
         }
 
