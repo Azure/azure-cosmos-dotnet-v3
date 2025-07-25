@@ -37,7 +37,9 @@ namespace Microsoft.Azure.Cosmos.Query
 
         private readonly Guid correlatedActivityId;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private IDocumentQueryExecutionContext innerExecutionContext;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private ProxyDocumentQueryExecutionContext(
             IDocumentQueryExecutionContext innerExecutionContext,

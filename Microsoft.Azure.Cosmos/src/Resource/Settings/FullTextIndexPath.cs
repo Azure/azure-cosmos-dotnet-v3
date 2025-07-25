@@ -38,12 +38,7 @@ namespace Microsoft.Azure.Cosmos
     /// }
     /// ]]>
     /// </example>
-#if PREVIEW
-    public
-#else
-    internal
-#endif
-    sealed class FullTextIndexPath
+    public sealed class FullTextIndexPath
     {
         /// <summary>
         /// Gets or sets the full path in a document used for full text indexing.

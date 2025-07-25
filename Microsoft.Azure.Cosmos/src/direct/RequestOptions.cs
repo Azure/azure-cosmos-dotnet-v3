@@ -543,6 +543,17 @@ namespace Microsoft.Azure.Documents.Client
         /// </summary>
         internal bool AllowUpdatingIsPhysicalMigrationInProgress { get; set; }
 
+        /// <summary>
+        /// Gets or sets the <see cref="AllowTopologyUpsertWithoutIntent"/> flag for a topology resource upsert to bypass the use
+        /// of intent on an account with per-partition automatic failover (PPAF) enabled.
+        /// </summary>
+        internal bool AllowTopologyUpsertWithoutIntent { get; set; }
+
+        /// <summary>
+        /// Gets or sets the <see cref="IsSoftDeletionOperation"/>, Inidicates whether the operation is a soft deletion operation.
+        /// </summary>
+        internal bool IsSoftDeletionOperation { get; set; }
+
         
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
 /// <summary>

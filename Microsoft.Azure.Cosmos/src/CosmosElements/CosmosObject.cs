@@ -224,7 +224,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public struct KeyCollection : IEnumerable<string>
         {
+#pragma warning disable IDE0044 // Add readonly modifier
             private Dictionary<string, CosmosElement>.KeyCollection innerCollection;
+#pragma warning restore IDE0044 // Add readonly modifier
 
             internal KeyCollection(Dictionary<string, CosmosElement>.KeyCollection innerCollection)
             {
@@ -266,7 +268,9 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public struct ValueCollection : IEnumerable<CosmosElement>
         {
+#pragma warning disable IDE0044 // Add readonly modifier
             private Dictionary<string, CosmosElement>.ValueCollection innerCollection;
+#pragma warning restore IDE0044 // Add readonly modifier
 
             internal ValueCollection(Dictionary<string, CosmosElement>.ValueCollection innerCollection)
             {

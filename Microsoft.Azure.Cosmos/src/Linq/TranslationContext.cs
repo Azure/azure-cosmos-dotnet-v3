@@ -57,27 +57,37 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// If the FROM clause uses a parameter name, it will be substituted for the parameter used in 
         /// the lambda expressions for the WHERE and SELECT clauses.
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private ParameterSubstitution substitutions;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// We are currently visiting these methods.
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private List<MethodCallExpression> methodStack;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Stack of parameters from lambdas currently in scope.
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private List<ParameterExpression> lambdaParametersStack;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Stack of collection-valued inputs.
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private List<Collection> collectionStack;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// The stack of subquery binding information.
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private Stack<SubqueryBinding> subqueryBindingStack;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private static readonly ICosmosLinqSerializerInternal DefaultLinqSerializer = new DefaultCosmosLinqSerializer(new CosmosLinqSerializerOptions().PropertyNamingPolicy);
 
@@ -376,7 +386,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         // This class is used to rename parameters, so that the Linq program above generates 
         // the correct SQL program above (modulo alpha-renaming).
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private Dictionary<ParameterExpression, Expression> substitutionTable;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public ParameterSubstitution()
         {
@@ -485,7 +497,9 @@ namespace Microsoft.Azure.Cosmos.Linq
         /// The list of parameter definitions.  This will generate a FROM clause of the shape:
         /// FROM ParameterDefinitions[0] JOIN ParameterDefinitions[1] ... ParameterDefinitions[n]
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private List<Binding> ParameterDefinitions;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Create empty parameter bindings.

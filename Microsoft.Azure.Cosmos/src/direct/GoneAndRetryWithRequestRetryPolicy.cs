@@ -21,8 +21,12 @@ namespace Microsoft.Azure.Documents
     {
         struct ErrorOrResponse
         {
+#pragma warning disable IDE0044 // Add readonly modifier
             private Exception exception;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
             private int statusCode;
+#pragma warning restore IDE0044 // Add readonly modifier
 
             public ErrorOrResponse(Exception ex, TResponse response)
             {
@@ -67,7 +71,9 @@ namespace Microsoft.Azure.Documents
 
         private readonly int? randomSaltForRetryWithMilliseconds;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private Stopwatch durationTimer = new Stopwatch();
+#pragma warning restore IDE0044 // Add readonly modifier
         private TimeSpan minBackoffForRegionReroute;
         private int attemptCount = 1;
         private int attemptCountInvalidPartition = 1;

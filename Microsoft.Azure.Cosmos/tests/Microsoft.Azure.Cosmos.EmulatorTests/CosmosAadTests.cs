@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             try
             {
                 (string endpoint, string authKey) = TestCommon.GetAccountInfo();
-                LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(authKey);
+                LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(expectedScope: "https://127.0.0.1/.default", masterKey: authKey);
                 CosmosClientOptions clientOptions = new CosmosClientOptions()
                 {
                     ConnectionMode = connectionMode,
@@ -140,8 +140,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                authKey,
-                GetAadTokenCallBack);
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -191,8 +192,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                authKey,
-                GetAadTokenCallBack);
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {
@@ -232,8 +234,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             (string endpoint, string authKey) = TestCommon.GetAccountInfo();
             LocalEmulatorTokenCredential simpleEmulatorTokenCredential = new LocalEmulatorTokenCredential(
-                authKey,
-                GetAadTokenCallBack);
+                expectedScope: "https://127.0.0.1/.default",
+                masterKey: authKey,
+                getTokenCallback: GetAadTokenCallBack);
 
             CosmosClientOptions clientOptions = new CosmosClientOptions()
             {

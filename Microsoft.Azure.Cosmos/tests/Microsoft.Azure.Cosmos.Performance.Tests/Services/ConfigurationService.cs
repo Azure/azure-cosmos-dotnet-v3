@@ -18,7 +18,9 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests.Services
             }
         }
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private static Lazy<CosmosDBConfiguration> cosmosDBConfiguration = new Lazy<CosmosDBConfiguration>(CreateConfiguration);
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private static CosmosDBConfiguration CreateConfiguration()
         {

@@ -26,9 +26,15 @@ namespace Microsoft.Azure.Cosmos
     /// </remarks>
     internal class StoredProcedureResponse<TValue> : IStoredProcedureResponse<TValue>
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private DocumentServiceResponse response;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private TValue responseBody;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private JsonSerializerSettings serializerSettings;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Constructor exposed for mocking purposes in Azure Cosmos DB service.

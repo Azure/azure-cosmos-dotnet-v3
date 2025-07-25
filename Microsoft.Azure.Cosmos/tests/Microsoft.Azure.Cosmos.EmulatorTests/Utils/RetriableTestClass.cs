@@ -38,7 +38,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     public class RetriableTestMethod : VisualStudio.TestTools.UnitTesting.TestMethodAttribute
     {
         private readonly VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethod;
+#pragma warning disable IDE0044 // Add readonly modifier
         private int maxRetry;
+#pragma warning restore IDE0044 // Add readonly modifier
         public RetriableTestMethod(
             int maxRetry,
             VisualStudio.TestTools.UnitTesting.TestMethodAttribute testMethod)

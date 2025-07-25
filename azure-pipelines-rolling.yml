@@ -28,6 +28,18 @@ jobs:
     Arguments: $(ReleaseArguments)
     VmImage: $(VmImage)
     MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
+    IncludeEncryption: true
+    IncludePerformance: true
+    IncludeCoverage: true
+
+- template:  templates/build-test.yml
+  parameters:
+    BuildConfiguration: Release /p:IsPreview=true
+    Arguments: $(ReleaseArguments)
+    VmImage: $(VmImage)
+    MultiRegionConnectionString: $(COSMOSDB_MULTI_REGION)
+    MultiRegionMultiMasterConnectionString: $(COSMOSDB_MULTIMASTER)
     IncludeEncryption: true
     IncludePerformance: true
     IncludeCoverage: true

@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Linq
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Diagnostics;
@@ -20,6 +21,33 @@ namespace Microsoft.Azure.Cosmos.Linq
     /// </summary>
     public static class CosmosLinqExtensions
     {
+        /// <summary>
+        /// Object representing the options for vector distance calculation. All field are optional. if a field is not specified, the default value will be used. 
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// </summary>
+        public sealed class VectorDistanceOptions
+        {
+            /// <summary>
+            /// The metric used to compute distance/similarity. Valid values are "cosine", "dotproduct", "euclidean".
+            /// If not specified, the default value is what is defined in the container policy
+            /// </summary>
+            [JsonPropertyName("distanceFunction")]
+            public DistanceFunction? DistanceFunction { get; set; }
+
+            /// <summary>
+            /// The data type of the vectors. float32, int8, uint8 values. Default value is float32.
+            /// </summary>
+            [JsonPropertyName("dataType")]
+            public VectorDataType? DataType { get; set; }
+
+            /// <summary>
+            /// An integer specifying the size of the search list when conducting a vector search on the DiskANN index. 
+            /// Increasing this may improve accuracy at the expense of RU cost and latency. Min=1, Default=10, Max=100.
+            /// </summary>
+            [JsonPropertyName("searchListSizeMultiplier")]
+            public int? SearchListSizeMultiplier { get; set; }
+        }
+
         /// <summary>
         /// Returns the integer identifier corresponding to a specific item within a physical partition.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
@@ -238,6 +266,75 @@ namespace Microsoft.Azure.Cosmos.Linq
         }
 
         /// <summary>
+        /// Returns the similarity score between two specified vectors.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <param name="isBruteForce">A boolean specifying how the computed value is used in an ORDER BY expression. If true, then brute force is used. A value of false uses any index defined on the vector property, if it exists. </param>
+        /// <param name="options">An JSON formatted object literal used to specify options for the vector distance calculation. </param>
+        /// <returns>Returns the similarity score between two specified vectors.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Float32}));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double VectorDistance(this float[] vector1, float[] vector2, bool isBruteForce, VectorDistanceOptions options)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns the similarity score between two specified vectors.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <param name="isBruteForce">A boolean specifying how the computed value is used in an ORDER BY expression. If true, then brute force is used. A value of false uses any index defined on the vector property, if it exists. </param>
+        /// <param name="options">An JSON formatted object literal used to specify options for the vector distance calculation. </param>
+        /// <returns>Returns the similarity score between two specified vectors.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Int8}));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double VectorDistance(this byte[] vector1, byte[] vector2, bool isBruteForce, VectorDistanceOptions options)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns the similarity score between two specified vectors.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/vectordistance.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="vector1">The first vector.</param>
+        /// <param name="vector2">The second vector.</param>
+        /// <param name="isBruteForce">A boolean specifying how the computed value is used in an ORDER BY expression. If true, then brute force is used. A value of false uses any index defined on the vector property, if it exists. </param>
+        /// <param name="options">An JSON formatted object literal used to specify options for the vector distance calculation. </param>
+        /// <returns>Returns the similarity score between two specified vectors.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.Select(document => document.vector1.VectorDistance(<vector2>, true, new VectorDistanceOptions() { DistanceFunction = DistanceFunction.Cosine, DataType = VectorDataType.Uint8}));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double VectorDistance(this sbyte[] vector1, sbyte[] vector2, bool isBruteForce, VectorDistanceOptions options)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
         /// Returns a boolean indicating whether the keyword string expression is contained in a specified property path.
         /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextcontains.
         /// This method is to be used in LINQ expressions only and will be evaluated on server.
@@ -298,6 +395,79 @@ namespace Microsoft.Azure.Cosmos.Linq
         public static bool FullTextContainsAny(this object obj, params string[] searches)
         {
             throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented);
+        }
+
+        /// <summary>
+        /// Returns a BM25 score value that can only be used in an ORDER BY RANK function to sort results from highest relevancy to lowest relevancy.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/fulltextscore.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="obj"></param>
+        /// <param name="terms">A nonempty array of string literals.</param>
+        /// <returns>Returns a BM25 score value that can only be used in an ORDER BY RANK clause.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.Name.FullTextScore([<keyword1>], [keyword2]));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double FullTextScore<TSource>(this TSource obj, params string[] terms)
+        {
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
+        }
+
+        /// <summary>
+        /// This optional ORDER BY RANK clause sorts scoring functions by their rank. It's used specifically for scoring functions like VectorDistance, FullTextScore, and RRF.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/order-by-rank.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="source"> A sequence of values to order.</param>
+        /// <param name="scoreFunction">A scoring function.</param>
+        /// <returns>Returns the sequence with the elements ordered according to the rank of the scoring functions.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.Name.FullTextScore(<keyword>));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static IOrderedQueryable<TSource> OrderByRank<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> scoreFunction)
+        {
+            if (!(source is CosmosLinqQuery<TSource>))
+            {
+                throw new ArgumentException("OrderByRank is only supported on Cosmos LINQ query operations");
+            }
+
+            return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
+               Expression.Call(
+                null,
+                typeof(CosmosLinqExtensions).GetMethod("OrderByRank").MakeGenericMethod(typeof(TSource), typeof(TKey)),
+                source.Expression,
+                Expression.Quote(scoreFunction)));
+        }
+
+        /// <summary>
+        /// This system function is used to combine two or more scores provided by other scoring functions.
+        /// For more information, see https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/rrf.
+        /// This method is to be used in LINQ expressions only and will be evaluated on server.
+        /// There's no implementation provided in the client library.
+        /// </summary>
+        /// <param name="scoringFunctions">the scoring functions to combine. Valid functions are FullTextScore and VectorDistance</param>
+        /// <returns>Returns the the combined scores of the scoring functions.</returns>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// var matched = documents.OrderByRank(document => document.RRF(document.Name.FullTextScore(<keyword1>), document.Address.FullTextScore(<keyword2>)));
+        /// ]]>
+        /// </code>
+        /// </example>
+        public static double RRF(params double[] scoringFunctions)
+        {
+            // The reason for not defining "this" keyword is because this causes undesirable serialization when call Expression.ToString() on this method
+            throw new NotImplementedException(ClientResources.ExtensionMethodNotImplemented); 
         }
 
         /// <summary>

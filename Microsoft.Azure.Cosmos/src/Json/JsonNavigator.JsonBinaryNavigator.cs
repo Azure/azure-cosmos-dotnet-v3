@@ -26,13 +26,17 @@ namespace Microsoft.Azure.Cosmos.Json
         private sealed class JsonBinaryNavigator : JsonNavigator
         {
             private readonly ReadOnlyMemory<byte> rootBuffer;
+            private readonly IJsonStringDictionary jsonStringDictionary;
             private readonly IJsonNavigatorNode rootNode;
 
             /// <summary>
             /// Initializes a new instance of the JsonBinaryNavigator class
             /// </summary>
             /// <param name="buffer">The (UTF-8) buffer to navigate.</param>
-            public JsonBinaryNavigator(ReadOnlyMemory<byte> buffer)
+            /// <param name="jsonStringDictionary">The JSON string dictionary.</param>
+            public JsonBinaryNavigator(
+                ReadOnlyMemory<byte> buffer,
+                IJsonStringDictionary jsonStringDictionary)
             {
                 if (buffer.Length < 2)
                 {
@@ -56,6 +60,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new ArgumentException("Input buffer is shorter than the root node length.");
                 }
 
+                this.jsonStringDictionary = jsonStringDictionary;
                 JsonNodeType nodeType = JsonBinaryEncoding.NodeTypes.Lookup[buffer.Span[0]];
                 this.rootNode = new BinaryNavigatorNode(nodeType, 1);
             }
@@ -100,6 +105,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 return JsonBinaryEncoding.TryGetBufferedStringValue(
                     this.rootBuffer,
                     this.rootBuffer.Slice(binaryNavigatorNode.Offset),
+                    this.jsonStringDictionary,
                     out value);
             }
 
@@ -109,7 +115,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 BinaryNavigatorNode binaryNavigatorNode = this.GetNodeOfType(JsonNodeType.String, stringNode);
                 return JsonBinaryEncoding.GetUtf8StringValue(
                     this.rootBuffer,
-                    this.rootBuffer.Slice(binaryNavigatorNode.Offset));
+                    this.rootBuffer.Slice(binaryNavigatorNode.Offset),
+                    this.jsonStringDictionary);
             }
 
             /// <inheritdoc />
@@ -400,7 +407,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     throw new InvalidOperationException("Failed to get segment");
                 }
 
-                return JsonReader.CreateBinaryFromOffset(this.rootBuffer, segment.Offset);
+                return JsonReader.CreateBinaryFromOffset(this.rootBuffer, segment.Offset, this.jsonStringDictionary);
             }
 
             public override void WriteNode(IJsonNavigatorNode jsonNavigatorNode, IJsonWriter jsonWriter)
@@ -423,7 +430,8 @@ namespace Microsoft.Azure.Cosmos.Json
                         this.rootBuffer,
                         valueOffset: binaryNavigatorNode.Offset,
                         externalArrayInfo: binaryNavigatorNode.ExternalArrayInfo,
-                        isFieldName);
+                        isFieldName,
+                        this.jsonStringDictionary);
                 }
                 else
                 {
@@ -503,6 +511,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         if (JsonBinaryEncoding.TryGetBufferedStringValue(
                             this.rootBuffer,
                             buffer,
+                            this.jsonStringDictionary,
                             out Utf8Memory bufferedStringValue))
                         {
                             if (fieldName)
@@ -516,7 +525,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         }
                         else
                         {
-                            string value = JsonBinaryEncoding.GetStringValue(this.rootBuffer, buffer);
+                            string value = JsonBinaryEncoding.GetStringValue(this.rootBuffer, buffer, this.jsonStringDictionary);
                             if (fieldName)
                             {
                                 jsonWriter.WriteFieldName(value);

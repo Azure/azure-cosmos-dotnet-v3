@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Query.Core;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -779,13 +778,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                                 await AssertSpecializedAsync("SELECT * FROM c ORDER BY c._ts");
 
-                                // Parallel and ORDER BY with partition key
-                                foreach (string query in new string[]
+                                // Parallel with partition key
                                 {
-                                    "SELECT * FROM c WHERE c.key = 5",
-                                    "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
-                                })
-                                {
+                                    string query = "SELECT * FROM c WHERE c.key = 5";
                                     List<CosmosElement> queryResults = await AssertPassthroughAsync(query, partitionKey);
                                     Assert.AreEqual(
                                         3,

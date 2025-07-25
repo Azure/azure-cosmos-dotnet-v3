@@ -172,6 +172,18 @@ internal interface IsqlVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="sqlParser.score_expression_order_by_items"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitScore_expression_order_by_items([NotNull] sqlParser.Score_expression_order_by_itemsContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="sqlParser.score_expression_order_by_item"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitScore_expression_order_by_item([NotNull] sqlParser.Score_expression_order_by_itemContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="sqlParser.order_by_items"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

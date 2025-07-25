@@ -17,8 +17,12 @@ namespace Microsoft.Azure.Documents.Telemetry
     {
         private const string DateTimeFormat = "yyyy-MM-dd'T'HH:mm:ssZZ";
         private readonly DiagnosticScope scope;
+#pragma warning disable IDE0044 // Add readonly modifier
         private DistributedTracingOptions options;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private DocumentServiceRequest request;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public OpenTelemetryRecorder(DiagnosticScope scope, DocumentServiceRequest request, DistributedTracingOptions options)
         {
@@ -58,7 +62,11 @@ namespace Microsoft.Azure.Documents.Telemetry
             }
             catch (Exception ex)
             {
+#pragma warning disable CDX1003
+#pragma warning disable CDX1006
                 DefaultTrace.TraceWarning("Error with distributed tracing {0}", ex.ToString());
+#pragma warning restore CDX1003
+#pragma warning restore CDX1006
             }
         }
         public void Dispose()
@@ -69,7 +77,11 @@ namespace Microsoft.Azure.Documents.Telemetry
             }
             catch (Exception ex)
             {
+#pragma warning disable CDX1003
+#pragma warning disable CDX1006
                 DefaultTrace.TraceWarning("Error with diagnostic scope dispose {0}", ex.ToString());
+#pragma warning restore CDX1003
+#pragma warning restore CDX1006
             }
         }
     }

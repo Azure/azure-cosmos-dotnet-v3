@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     using Microsoft.Azure.Cosmos.Internal;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Cosmos.Utils;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -58,6 +59,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
+            await client.EnsureValidClientAsync(NoOpTrace.Singleton);
             await client.GetDatabaseAccountAsync();
 
             int expectedExecutionTimes = 11;
@@ -144,6 +146,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
+            await client.EnsureValidClientAsync(NoOpTrace.Singleton);
             await client.GetDatabaseAccountAsync();
             client.StoreModel = mockStoreModel.Object;
             client.GatewayStoreModel = mockStoreModel.Object;
@@ -200,6 +203,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 (HttpMessageHandler)null,
                 connectionPolicy);
 
+            client.EnsureValidClientAsync(NoOpTrace.Singleton).Wait();
             client.GetDatabaseAccountAsync().Wait();
 
             int expectedExecutionTimes = numberOfRetries + 1 ?? 10;

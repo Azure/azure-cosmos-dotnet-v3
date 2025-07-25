@@ -1984,6 +1984,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
             inputs.Add(new LinqTestInput("OrderBy -> Select", b => getQuery(b).OrderBy(f => f.FamilyId).Select(f => f.FamilyId)));
             inputs.Add(new LinqTestInput("OrderBy -> Select -> Take", b => getQuery(b).OrderBy(f => f.FamilyId).Select(f => f.FamilyId).Take(10)));
             inputs.Add(new LinqTestInput("OrderBy -> Select -> Select", b => getQuery(b).OrderBy(f => f.FamilyId).Select(f => f.FamilyId).Select(x => x)));
+            inputs.Add(new LinqTestInput("OrderBy -> Skip", b => getQuery(b).OrderBy(f => f.FamilyId).Skip(1)));
 
             // Descending
             inputs.Add(new LinqTestInput("Select -> order by", b => getQuery(b).Select(family => family.FamilyId).OrderByDescending(id => id)));

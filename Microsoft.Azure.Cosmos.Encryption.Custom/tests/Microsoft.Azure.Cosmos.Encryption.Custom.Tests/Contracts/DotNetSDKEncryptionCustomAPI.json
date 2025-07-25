@@ -1401,6 +1401,22 @@
         }
       },
       "NestedTypes": {}
+    },
+    "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor;System.Enum;IsAbstract:False;IsSealed:True;IsInterface:False;IsEnum:True;IsClass:False;IsValueType:True;IsNested:False;IsGenericType:False;IsSerializable:True": {
+      "Subclasses": {},
+      "Members": {
+        "Int32 value__": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Int32 value__;IsInitOnly:False;IsStatic:False;"
+        },
+        "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft": {
+          "Type": "Field",
+          "Attributes": [],
+          "MethodInfo": "Microsoft.Azure.Cosmos.Encryption.Custom.JsonProcessor Newtonsoft;IsInitOnly:False;IsStatic:True;"
+        }
+      },
+      "NestedTypes": {}
     }
   },
   "Members": {

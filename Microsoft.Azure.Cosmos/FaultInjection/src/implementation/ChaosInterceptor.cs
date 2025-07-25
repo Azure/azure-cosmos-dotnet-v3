@@ -240,7 +240,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return this.channelStore;
         }
 
-        public async Task<(bool, HttpResponseMessage?)> OnHttpRequestCallAsync(DocumentServiceRequest request)
+        public async Task<(bool, HttpResponseMessage?)> OnHttpRequestCallAsync(DocumentServiceRequest request, CancellationToken token)
         {
             HttpResponseMessage faultyResponse;
             FaultInjectionServerErrorRule? serverResponseErrorRule = this.ruleStore?.FindHttpServerResponseErrorRule(request);
@@ -259,7 +259,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                 if (serverResponseErrorRule.GetInjectedServerErrorType() == FaultInjectionServerErrorType.Timeout)
                 {
-                    await Task.Delay(this.requestTimeout);
+                    await Task.Delay(this.requestTimeout, token);
                 }
 
                 return (true, faultyResponse);
@@ -268,7 +268,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             return (false, null);
         }
 
-        public async Task OnBeforeHttpSendAsync(DocumentServiceRequest request)
+        public async Task OnBeforeHttpSendAsync(DocumentServiceRequest request, CancellationToken token)
         {
             FaultInjectionServerErrorRule? serverSendDelayRule = this.ruleStore?.FindHttpServerSendDelayRule(request);
 
@@ -285,11 +285,11 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     delay,
                     request.Headers.Get(ChaosInterceptor.FaultInjectionId));
 
-                await Task.Delay(delay);
+                await Task.Delay(delay, token);
             }
         }
 
-        public async Task OnAfterHttpSendAsync(DocumentServiceRequest request)
+        public async Task OnAfterHttpSendAsync(DocumentServiceRequest request, CancellationToken token)
         {
             FaultInjectionServerErrorRule? serverResponseDelayRule = this.ruleStore?.FindHttpServerResponseDelayRule(request);
 
@@ -306,7 +306,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     delay,
                     request.Headers.Get(ChaosInterceptor.FaultInjectionId));
 
-                await Task.Delay(delay);
+                await Task.Delay(delay, token);
             }
         }
     }

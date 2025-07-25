@@ -6,20 +6,23 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Rntbd;
     
     internal class FaultInjectionConditionInternal
     {
         private readonly List<IFaultInjectionConditionValidator> validators;
+        private readonly GlobalEndpointManager globalEndpointManager;
 
         private string containerResourceId = string.Empty;
         private OperationType? operationType = null;
         private List<Uri> regionEndpoints = new List<Uri>{ };
         private List<Uri> physicalAddresses = new List<Uri> { };
 
-        public FaultInjectionConditionInternal()
+        public FaultInjectionConditionInternal(GlobalEndpointManager globalEndpointManager)
         {
+            this.globalEndpointManager = globalEndpointManager;
             this.validators = new List<IFaultInjectionConditionValidator>();
         }
 
@@ -201,8 +204,8 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
             public bool IsApplicable(string ruleId, DocumentServiceRequest request)
             {
                 bool isApplicable = this.regionEndpoints.Any(uri => 
-                    request.RequestContext.LocationEndpointToRoute.AbsoluteUri
-                    .StartsWith(uri.AbsoluteUri));
+                    request.RequestContext.LocationEndpointToRoute.Host
+                    .StartsWith(uri.Host));
 
                 return isApplicable;
             }

@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Documents
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
+#pragma warning disable IDE0044 // Add readonly modifier
         private IConnectionStateListener connectionStateListener;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public StoreClientFactory(
             Protocol protocol,
@@ -314,7 +316,8 @@ namespace Microsoft.Azure.Documents
             bool useMultipleWriteLocations = false,
             bool detectClientConnectivityIssues = false,
             bool enableReplicaValidation = false,
-            AccountConfigurationProperties accountConfigurationProperties = null)
+            AccountConfigurationProperties accountConfigurationProperties = null,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.ThrowIfDisposed();
             if (useFallbackClient && this.fallbackTransportClient != null)
@@ -334,7 +337,8 @@ namespace Microsoft.Azure.Documents
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
                 enableReplicaValidation: enableReplicaValidation,
-                accountConfigurationProperties: accountConfigurationProperties);
+                accountConfigurationProperties: accountConfigurationProperties,
+                sessionRetryOptions: sessionRetryOptions);
             }
 
             return new StoreClient(
@@ -351,7 +355,8 @@ namespace Microsoft.Azure.Documents
                 detectClientConnectivityIssues: detectClientConnectivityIssues,
                 disableRetryWithRetryPolicy: this.disableRetryWithRetryPolicy,
                 retryWithConfiguration: this.retryWithConfiguration,
-                enableReplicaValidation: enableReplicaValidation);
+                enableReplicaValidation: enableReplicaValidation,
+                sessionRetryOptions: sessionRetryOptions);
         }
 
         #region IDisposable

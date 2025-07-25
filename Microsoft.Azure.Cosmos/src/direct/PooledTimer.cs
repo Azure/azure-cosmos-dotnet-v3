@@ -23,7 +23,9 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// PooledTimer subscribes to the TimerPool to get notified when the timeout has expired
         /// </summary>
+#pragma warning disable IDE0044 // Add readonly modifier
         private TimerPool timerPool;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// tcs is set to completed state if the timeout occurs else its set to cancelled state 

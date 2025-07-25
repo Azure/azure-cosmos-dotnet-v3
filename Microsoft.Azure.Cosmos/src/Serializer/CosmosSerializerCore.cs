@@ -17,9 +17,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal class CosmosSerializerCore
     {
+        private readonly bool isBinaryEncodingEnabled;
+        private static readonly CosmosSerializer binarySerializer = new CosmosJsonSerializerWrapper(
+            new CosmosJsonDotNetSerializer(binaryEncodingEnabled: true));
+
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(
-            new CosmosJsonDotNetSerializer(
-                ConfigurationManager.IsBinaryEncodingEnabled()));
+            new CosmosJsonDotNetSerializer());
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;
@@ -28,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
         {
+            this.isBinaryEncodingEnabled = ConfigurationManager.IsBinaryEncodingEnabled();
             if (customSerializer == null)
             {
                 this.customSerializer = null;
@@ -81,9 +85,9 @@ namespace Microsoft.Azure.Cosmos
             return serializer.FromStream<T[]>(stream);
         }
 
-        internal Stream ToStream<T>(T input)
+        internal Stream ToStream<T>(T input, bool canUseBinaryEncodingForPointOperations = false)
         {
-            CosmosSerializer serializer = this.GetSerializer<T>();
+            CosmosSerializer serializer = this.GetSerializer<T>(canUseBinaryEncodingForPointOperations);
             return serializer.ToStream<T>(input);
         }
 
@@ -116,31 +120,29 @@ namespace Microsoft.Azure.Cosmos
                 return this.customSerializer;
             }
 
-            return CosmosSerializerCore.propertiesSerializer;
+            return this.GetDefaultSerializer();
         }
 
-        private CosmosSerializer GetSerializer<T>()
+        private CosmosSerializer GetSerializer<T>(
+            bool canUseBinaryEncodingForPointOperations = false)
         {
             Type inputType = typeof(T);
             if (inputType == typeof(PatchSpec))
             {
-                if (this.patchOperationSerializer == null)
-                {
-                    this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
+                this.patchOperationSerializer ??= PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                         cosmosSerializer: this.customSerializer ?? new CosmosJsonDotNetSerializer(),
                         propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
-                }
                 return this.patchOperationSerializer;
-            }
-
-            if (this.customSerializer == null)
-            {
-                return CosmosSerializerCore.propertiesSerializer;
             }
 
             if (CosmosSerializerCore.IsInputTypeInternal(inputType))
             {
                 return CosmosSerializerCore.propertiesSerializer;
+            }
+
+            if (this.customSerializer == null)
+            {
+                return this.GetDefaultSerializer(canUseBinaryEncodingForPointOperations);
             }
 
             if (inputType == typeof(SqlQuerySpec))
@@ -154,7 +156,11 @@ namespace Microsoft.Azure.Cosmos
             string directAssemblyName = typeof(Documents.PartitionKeyRange).Assembly.GetName().Name;
             string inputAssemblyName = inputType.Assembly.GetName().Name;
             bool inputIsClientOrDirect = string.Equals(inputAssemblyName, clientAssemblyName) || string.Equals(inputAssemblyName, directAssemblyName);
-            bool typeIsWhiteListed = inputType == typeof(Document) || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItem<>));
+            bool typeIsWhiteListed = inputType == typeof(Document)
+                || (inputType.IsGenericType && inputType.GetGenericTypeDefinition() == typeof(ChangeFeedItem<>))
+                || inputType == typeof(StoredProcedureResponse)
+                || inputType == typeof(TriggerResponse)
+                || inputType == typeof(UserDefinedFunctionResponse);
 
             if (!typeIsWhiteListed && inputIsClientOrDirect)
             {
@@ -163,6 +169,14 @@ namespace Microsoft.Azure.Cosmos
 #endif
 
             return this.customSerializer;
+        }
+
+        private CosmosSerializer GetDefaultSerializer(
+            bool canUseBinaryEncodingForPointOperations = false)
+        {
+            return this.isBinaryEncodingEnabled && canUseBinaryEncodingForPointOperations
+                ? CosmosSerializerCore.binarySerializer
+                : CosmosSerializerCore.propertiesSerializer;
         }
 
         internal static bool IsInputTypeInternal(

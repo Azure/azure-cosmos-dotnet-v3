@@ -245,10 +245,16 @@ namespace System.Linq.Dynamic
 
         static ClassFactory() { }  // Trigger lazy initialization of static fields
 
+#pragma warning disable IDE0044 // Add readonly modifier
         ModuleBuilder module;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         Dictionary<Signature, Type> classes;
+#pragma warning restore IDE0044 // Add readonly modifier
         int classCount;
+#pragma warning disable IDE0044 // Add readonly modifier
         ReaderWriterLock rwLock;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private ClassFactory()
         {
@@ -613,13 +619,21 @@ namespace System.Linq.Dynamic
 
         static Dictionary<string, object> keywords;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         Dictionary<string, object> symbols;
+#pragma warning restore IDE0044 // Add readonly modifier
         IDictionary<string, object> externals;
+#pragma warning disable IDE0044 // Add readonly modifier
         Dictionary<Expression, string> literals;
+#pragma warning restore IDE0044 // Add readonly modifier
         ParameterExpression it;
+#pragma warning disable IDE0044 // Add readonly modifier
         string text;
+#pragma warning restore IDE0044 // Add readonly modifier
         int textPos;
+#pragma warning disable IDE0044 // Add readonly modifier
         int textLen;
+#pragma warning restore IDE0044 // Add readonly modifier
         char ch;
         Token token;
 

@@ -488,6 +488,115 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(clientHandler.ServerCertificateCustomValidationCallback.Invoke(new HttpRequestMessage(), x509Certificate2, x509Chain, sslPolicyErrors));
         }
 
+        [TestMethod]
+        public async Task HttpTimeoutPolicyForThinClientOn503TestAsync()
+        {
+
+            async Task TestScenarioAsync(HttpMethod method, ResourceType resourceType, HttpTimeoutPolicy timeoutPolicy, Type expectedException, int expectedNumberOfRetrys)
+            {
+                int count = 0;
+                Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
+                {
+                    count++;
+
+                    throw new OperationCanceledException("API with exception");
+
+                }
+
+                DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
+                HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
+                using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
+
+                try
+                {
+                    using (ITrace trace = Trace.GetRootTrace(nameof(NoRetryOnNoRetryPolicyTestAsync)))
+                    {
+                        HttpResponseMessage responseMessage1 = await cosmoshttpClient.SendHttpAsync(() =>
+                        new ValueTask<HttpRequestMessage>(
+                            result: new HttpRequestMessage(method, new Uri("http://localhost"))),
+                            resourceType: resourceType,
+                            timeoutPolicy: timeoutPolicy,
+                            clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
+                            cancellationToken: default);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Assert.AreEqual(expectedNumberOfRetrys, count, "Should retry 3 times for read methods, for writes should only be tried once");
+                    Assert.AreEqual(e.GetType(), expectedException);
+
+                    if (e.GetType() == typeof(CosmosException))
+                    {
+                        CosmosException cosmosException = (CosmosException)e;
+                        Assert.AreEqual(cosmosException.StatusCode, System.Net.HttpStatusCode.ServiceUnavailable);
+                        Assert.AreEqual((int)cosmosException.SubStatusCode, (int)SubStatusCodes.TransportGenerated503);
+
+                        Assert.IsNotNull(cosmosException.Trace);
+                        Assert.AreNotEqual(cosmosException.Trace, NoOpTrace.Singleton);
+                    }
+                }
+
+            }
+
+            //Data plane read
+            await TestScenarioAsync(
+                method: HttpMethod.Get,
+                resourceType: ResourceType.Document,
+                timeoutPolicy: HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Read),
+                    isPartitionLevelFailoverEnabled: false,
+                    isThinClientEnabled: true),
+                expectedException: typeof(CosmosException),
+                expectedNumberOfRetrys: 3);
+
+            //Data plane query
+            await TestScenarioAsync(
+                method: HttpMethod.Get,
+                resourceType: ResourceType.Document,
+                timeoutPolicy: HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Query),
+                    isPartitionLevelFailoverEnabled: false,
+                    isThinClientEnabled: true),
+                expectedException: typeof(CosmosException),
+                expectedNumberOfRetrys: 3);
+
+            ////Data plane write
+            await TestScenarioAsync(
+                method: HttpMethod.Post,
+                resourceType: ResourceType.Document,
+                timeoutPolicy: HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Document, OperationType.Create),
+                    isPartitionLevelFailoverEnabled: false,
+                    isThinClientEnabled: true),
+                expectedException: typeof(CosmosException),
+                expectedNumberOfRetrys: 1);
+
+            ////Meta data read
+            await TestScenarioAsync(
+                method: HttpMethod.Get,
+                resourceType: ResourceType.Database,
+                timeoutPolicy: HttpTimeoutPolicy.GetTimeoutPolicy(
+                    documentServiceRequest: CosmosHttpClientCoreTests.CreateDocumentServiceRequestByOperation(ResourceType.Database, OperationType.Read),
+                    isPartitionLevelFailoverEnabled: false,
+                    isThinClientEnabled: true),
+                expectedException: typeof(CosmosException),
+                expectedNumberOfRetrys: 3);
+        }
+
+        private static DocumentServiceRequest CreateDocumentServiceRequestByOperation(
+            ResourceType resourceType,
+            OperationType operationType)
+        {
+            string path = $"dbs/dummy_db_id/colls/dummy_ct_id";
+            return new DocumentServiceRequest(
+                operationType,
+                resourceType,
+                path,
+                body: null,
+                AuthorizationTokenType.PrimaryMasterKey,
+                headers: null);
+        }
+
         private class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> sendFunc;

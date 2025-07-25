@@ -33,7 +33,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             IStoreModel storeModel,
             ICosmosAuthorizationTokenProvider tokenProvider,
             IRetryPolicyFactory retryPolicy,
-            TelemetryToServiceHelper telemetryToServiceHelper)
+            TelemetryToServiceHelper telemetryToServiceHelper,
+            bool enableAsyncCacheExceptionNoSharing = true)
+            : base(enableAsyncCacheExceptionNoSharing)
         {
             this.storeModel = storeModel ?? throw new ArgumentNullException("storeModel");
             this.tokenProvider = tokenProvider;

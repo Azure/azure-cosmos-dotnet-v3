@@ -187,6 +187,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 allowNonValueAggregateQuery: allowNonValueAggregateQuery,
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
+                hybridSearchSkipOrderByRewrite: false,
                 geospatialType: geospatialType,
                 useSystemPrefix: false);
             if (!tryGetPartitionedQueryExecutionInfo.Succeeded)

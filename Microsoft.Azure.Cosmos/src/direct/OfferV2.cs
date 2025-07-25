@@ -235,7 +235,8 @@ namespace Microsoft.Azure.Documents
             double? bgTaskMaxAllowedThroughputPercent,
             ThroughputDistributionPolicyType? throughputDistributionPolicy,
             Collection<ThroughputBucket> throughputBuckets,
-            int? offerTargetThroughput = null)
+            int? offerTargetThroughput = null,
+            int? partitionCount = null)
             : base(offer)
         {
             this.OfferType = string.Empty;
@@ -250,7 +251,8 @@ namespace Microsoft.Azure.Documents
                 bgTaskMaxAllowedThroughputPercent,
                 throughputDistributionPolicy,
                 throughputBuckets,
-                offerTargetThroughput);
+                offerTargetThroughput,
+                partitionCount);
         }
 #endif
 

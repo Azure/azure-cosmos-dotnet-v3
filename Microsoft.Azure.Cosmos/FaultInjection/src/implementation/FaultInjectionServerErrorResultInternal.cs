@@ -461,7 +461,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
 
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
-                        ((int)SubStatusCodes.RUBudgetExceeded).ToString(CultureInfo.InvariantCulture));
+                        ((int)SubStatusCodes.Unknown).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;
@@ -470,7 +470,7 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     
                     httpResponse = new HttpResponseMessage
                     {
-                        StatusCode = HttpStatusCode.NotFound,
+                        StatusCode = HttpStatusCode.Forbidden,
                         Content = new FauntInjectionHttpContent(
                             new MemoryStream(
                                 FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: DatabaseAccountNotFound, rule: {ruleId}"))),
@@ -484,6 +484,28 @@ namespace Microsoft.Azure.Cosmos.FaultInjection
                     httpResponse.Headers.Add(
                         WFConstants.BackendHeaders.SubStatus,
                         ((int)SubStatusCodes.DatabaseAccountNotFound).ToString(CultureInfo.InvariantCulture));
+                    httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
+
+                    return httpResponse;
+
+                case FaultInjectionServerErrorType.LeaseNotFound:
+
+                    httpResponse = new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.Gone,
+                        Content = new FauntInjectionHttpContent(
+                            new MemoryStream(
+                                FaultInjectionResponseEncoding.GetBytes($"Fault Injection Server Error: LeaseNotFound, rule: {ruleId}"))),
+                    };
+
+                    foreach (string header in headers.AllKeys())
+                    {
+                        httpResponse.Headers.Add(header, headers.Get(header));
+                    }
+
+                    httpResponse.Headers.Add(
+                        WFConstants.BackendHeaders.SubStatus,
+                        ((int)SubStatusCodes.LeaseNotFound).ToString(CultureInfo.InvariantCulture));
                     httpResponse.Headers.Add(WFConstants.BackendHeaders.LocalLSN, lsn);
 
                     return httpResponse;

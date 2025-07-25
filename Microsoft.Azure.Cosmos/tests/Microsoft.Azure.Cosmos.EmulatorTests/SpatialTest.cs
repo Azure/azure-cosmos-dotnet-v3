@@ -17,7 +17,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class SpatialTest
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private PartitionKeyDefinition defaultPartitionKeyDefinition = new PartitionKeyDefinition { Paths = new System.Collections.ObjectModel.Collection<string>(new[] { "/pk" }), Kind = PartitionKind.Hash };
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private class SpatialSampleClass
         {

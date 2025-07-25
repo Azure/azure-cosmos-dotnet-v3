@@ -14,7 +14,9 @@ namespace Microsoft.Azure.Cosmos
 
     internal sealed class SerializableNameValueCollection : JsonSerializable
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private Lazy<NameValueCollection> lazyCollection;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public SerializableNameValueCollection()
         {

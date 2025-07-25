@@ -35,6 +35,14 @@ namespace Microsoft.Azure.Documents
                 return true;
             }
 
+            // 404/1002 - Only for non-master resources
+            // Limiting to non-master resources is a scoping decision to safe-fly
+            if (request.IsValidRequestFor4041002()
+                && (statusCode == (int)System.Net.HttpStatusCode.NotFound && subStatusCode == SubStatusCodes.ReadSessionNotAvailable))
+            {
+                return true;
+            }
+
             // Only for 429
             if (request.UseStatusCodeFor429
                 && statusCode == (int)StatusCodes.TooManyRequests)
@@ -50,6 +58,12 @@ namespace Microsoft.Azure.Documents
             }
 
             return false;
+        }
+
+        public static bool IsValidRequestFor4041002(this DocumentServiceRequest request)
+        {
+            return request.UseStatusCodeFor4041002
+                && !ReplicatedResourceClient.IsMasterResource(request.ResourceType);
         }
     }
 }

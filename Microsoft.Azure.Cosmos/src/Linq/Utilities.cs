@@ -66,7 +66,9 @@ namespace Microsoft.Azure.Cosmos.Linq
 
     internal abstract class ExpressionSimplifier
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static ConcurrentDictionary<Type, ExpressionSimplifier> cached = new ConcurrentDictionary<Type, ExpressionSimplifier>();
+#pragma warning restore IDE0044 // Add readonly modifier
         public abstract object EvalBoxed(Expression expr);
 
         public static object Evaluate(Expression expr)

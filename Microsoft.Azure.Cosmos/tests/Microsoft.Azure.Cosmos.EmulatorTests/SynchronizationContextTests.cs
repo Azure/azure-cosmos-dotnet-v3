@@ -177,7 +177,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
         public class TestSynchronizationContext : SynchronizationContext
         {
+#pragma warning disable IDE0044 // Add readonly modifier
             private object locker = new object();
+#pragma warning restore IDE0044 // Add readonly modifier
 
             public override void Post(SendOrPostCallback d, object state)
             {

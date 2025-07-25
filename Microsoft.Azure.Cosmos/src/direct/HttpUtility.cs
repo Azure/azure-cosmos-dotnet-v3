@@ -14,7 +14,9 @@ namespace Microsoft.Azure.Documents
     internal sealed class HttpUtility
     {
         // Fields
+#pragma warning disable IDE0044 // Add readonly modifier
         private static char[] s_entityEndingChars = new char[] { ';', '&' };
+#pragma warning restore IDE0044 // Add readonly modifier
 
         // Methods
         internal static string AspCompatUrlEncode(string s)
@@ -755,10 +757,16 @@ namespace Microsoft.Azure.Documents
         private class UrlDecoder
         {
             // Fields
+#pragma warning disable IDE0044 // Add readonly modifier
             private int _bufferSize;
+#pragma warning restore IDE0044 // Add readonly modifier
             private byte[] _byteBuffer;
+#pragma warning disable IDE0044 // Add readonly modifier
             private char[] _charBuffer;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
             private Encoding _encoding;
+#pragma warning restore IDE0044 // Add readonly modifier
             private int _numBytes;
             private int _numChars;
 

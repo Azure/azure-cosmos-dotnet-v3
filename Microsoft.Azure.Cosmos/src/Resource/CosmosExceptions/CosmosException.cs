@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// <summary>
     /// The Cosmos Client exception
     /// </summary>
-    public class CosmosException : Exception
+    public class CosmosException : Exception, ICloneable
     {
         private readonly string stackTrace;
         private readonly Lazy<string> lazyMessage;
@@ -142,7 +142,9 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
                     return base.StackTrace;
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
                 }
             }
         }
@@ -261,18 +263,22 @@ namespace Microsoft.Azure.Cosmos
             if (this.InnerException != null)
             {
                 stringBuilder.Append(" ---> ");
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
                 stringBuilder.Append(this.InnerException);
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
                 stringBuilder.AppendLine();
                 stringBuilder.Append("   ");
                 stringBuilder.Append("--- End of inner exception stack trace ---");
                 stringBuilder.AppendLine();
             }
 
+#pragma warning disable CDX1002 // DontUseExceptionStackTrace
             if (this.StackTrace != null)
             {
                 stringBuilder.Append(this.StackTrace);
                 stringBuilder.AppendLine();
             }
+#pragma warning restore CDX1002 // DontUseExceptionStackTrace
 
             if (this.Diagnostics != null)
             {
@@ -301,6 +307,17 @@ namespace Microsoft.Azure.Cosmos
             {
                 CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
             }
+        }
+
+        /// <summary>
+        /// Creates a shallow copy of the current exception instance.
+        /// This ensures that the cloned exception retains the same properties but does not
+        /// excessively proliferate stack traces or deep-copy unnecessary objects.
+        /// </summary>
+        /// <returns>A shallow copy of the current <see cref="CosmosException"/>.</returns>
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }

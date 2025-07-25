@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
@@ -21,19 +22,23 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
+        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ICommunicationEventSource eventSource;
-        private readonly CosmosHttpClient httpClient;
-        private readonly JsonSerializerSettings SerializerSettings;
+        protected readonly CosmosHttpClient httpClient;
+        protected readonly JsonSerializerSettings SerializerSettings;
+
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null)
+            JsonSerializerSettings serializerSettings = null,
+            bool isPartitionLevelFailoverEnabled = false)
         {
             this.httpClient = httpClient;
             this.SerializerSettings = serializerSettings;
             this.eventSource = eventSource;
+            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
         }
 
         public async Task<DocumentServiceResponse> InvokeAsync(
@@ -46,6 +51,18 @@ namespace Microsoft.Azure.Cosmos
             {
                 return await GatewayStoreClient.ParseResponseAsync(responseMessage, request.SerializerSettings ?? this.SerializerSettings, request);
             }
+        }
+
+        public virtual Task<DocumentServiceResponse> InvokeAsync(
+            DocumentServiceRequest request,
+            ResourceType resourceType,
+            Uri physicalAddress,
+            Uri endpoint,
+            string globalDatabaseAccountName,
+            ClientCollectionCache clientCollectionCache,
+            CancellationToken cancellationToken)
+        {
+            return this.InvokeAsync(request, resourceType, physicalAddress, cancellationToken);
         }
 
         public static bool IsFeedRequest(OperationType requestOperationType)
@@ -151,23 +168,28 @@ namespace Microsoft.Azure.Cosmos
             }
 
             // If service rejects the initial payload like header is to large it will return an HTML error instead of JSON.
+            string contentString = null;
             if (string.Equals(responseMessage.Content?.Headers?.ContentType?.MediaType, "application/json", StringComparison.OrdinalIgnoreCase) &&
                 responseMessage.Content?.Headers.ContentLength > 0)
             {
                 try
                 {
-                    Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
-                    Error error = JsonSerializable.LoadFrom<Error>(stream: contentAsStream);
-
-                    return new DocumentClientException(
-                        errorResource: error,
-                        responseHeaders: responseMessage.Headers,
-                        statusCode: responseMessage.StatusCode)
+                    // Buffer the content once to avoid "stream already consumed" issue
+                    contentString = await responseMessage.Content.ReadAsStringAsync();
+                    using (MemoryStream contentStream = new MemoryStream(Encoding.UTF8.GetBytes(contentString)))
                     {
-                        StatusDescription = responseMessage.ReasonPhrase,
-                        ResourceAddress = resourceIdOrFullName,
-                        RequestStatistics = requestStatistics
-                    };
+                        Error error = JsonSerializable.LoadFrom<Error>(stream: contentStream);
+
+                        return new DocumentClientException(
+                            errorResource: error,
+                            responseHeaders: responseMessage.Headers,
+                            statusCode: responseMessage.StatusCode)
+                        {
+                            StatusDescription = responseMessage.ReasonPhrase,
+                            ResourceAddress = resourceIdOrFullName,
+                            RequestStatistics = requestStatistics
+                        };
+                    }
                 }
                 catch
                 {
@@ -175,7 +197,8 @@ namespace Microsoft.Azure.Cosmos
             }
 
             StringBuilder contextBuilder = new StringBuilder();
-            contextBuilder.AppendLine(await responseMessage.Content.ReadAsStringAsync());
+            // Reuse the already buffered content if available, otherwise read it now
+            contextBuilder.AppendLine(contentString ?? await responseMessage.Content.ReadAsStringAsync());
 
             HttpRequestMessage requestMessage = responseMessage.RequestMessage;
 
@@ -249,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [SuppressMessage("Microsoft.Reliability", "CA2000:DisposeObjectsBeforeLosingScope", Justification = "Disposable object returned by method")]
-        private async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
+        internal async ValueTask<HttpRequestMessage> PrepareRequestMessageAsync(
             DocumentServiceRequest request,
             Uri physicalAddress)
         {
@@ -347,7 +370,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 requestMessage.Properties.Add(ClientSideRequestStatisticsTraceDatum.HttpRequestRegionNameProperty, regionName);
             }
-            
+
             return requestMessage;
         }
 
@@ -361,7 +384,9 @@ namespace Microsoft.Azure.Cosmos
             return this.httpClient.SendHttpAsync(
                 () => this.PrepareRequestMessageAsync(request, physicalAddress),
                 resourceType,
-                HttpTimeoutPolicy.GetTimeoutPolicy(request),
+                HttpTimeoutPolicy.GetTimeoutPolicy(
+                    request,
+                    this.isPartitionLevelFailoverEnabled),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);

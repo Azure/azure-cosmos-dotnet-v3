@@ -106,28 +106,84 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
-        [DataRow(TriggerOperation.Create)]
-        [DataRow(TriggerOperation.Upsert)]
-        public async Task ValidatePreTriggerTest(TriggerOperation triggerOperation)
+        public async Task CRUDStreamTest()
         {
-            string triggerId = "SetJobNumber";
+            TriggerProperties settings = new TriggerProperties
+            {
+                Id = Guid.NewGuid().ToString(),
+                Body = TriggersTests.GetTriggerFunction(".05"),
+                TriggerOperation = Cosmos.Scripts.TriggerOperation.Create,
+                TriggerType = Cosmos.Scripts.TriggerType.Pre
+            };
 
-            // Prevent failures if previous test did not clean up correctly 
+
+            ResponseMessage triggerResponseMessage =
+                await this.scripts.CreateTriggerStreamAsync(
+                    settings);
+            Assert.AreEqual(HttpStatusCode.Created, triggerResponseMessage.StatusCode);
+            Assert.IsNotNull(triggerResponseMessage.Diagnostics);
+            string diagnostics = triggerResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            triggerResponseMessage = await this.scripts.ReadTriggerStreamAsync(settings.Id);
+            Assert.AreEqual(HttpStatusCode.OK, triggerResponseMessage.StatusCode);
+            Assert.IsNotNull(triggerResponseMessage.Diagnostics);
+            diagnostics = triggerResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            TriggerProperties updatedSettings = settings;
+            updatedSettings.Body = TriggersTests.GetTriggerFunction(".42");
+
+            ResponseMessage replaceResponseMessage = await this.scripts.ReplaceTriggerStreamAsync(
+                updatedSettings);
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            replaceResponseMessage = await this.scripts.DeleteTriggerStreamAsync(updatedSettings.Id);
+            Assert.AreEqual(HttpStatusCode.NoContent, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+        }
+
+
+        [DataRow(TriggerOperation.Create, false, DisplayName = "TriggerOperation - Create with Binary encoding disabled.")]
+        [DataRow(TriggerOperation.Create, true, DisplayName = "TriggerOperation - Create with Binary encoding enabled.")]
+        [DataRow(TriggerOperation.Upsert, false, DisplayName = "TriggerOperation - Upsert with Binary encoding disabled.")]
+        [DataRow(TriggerOperation.Upsert, true, DisplayName = "TriggerOperation - Upsert with Binary encoding enabled.")]
+        public async Task ValidatePreTriggerTest(TriggerOperation triggerOperation, bool binaryEncodingEnabled)
+        {
+            if (binaryEncodingEnabled)
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, "True");
+            }
+
             try
             {
-                await this.scripts.DeleteTriggerAsync(triggerId);
-            }
-            catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
-            {
-                //swallow
-            }
+                string triggerId = "SetJobNumber";
 
-            TriggerProperties trigger = new TriggerProperties
-            {
-                Id = triggerId,
-                TriggerType = TriggerType.Pre,
-                TriggerOperation = triggerOperation,
-                Body = @"function setJobNumber() {
+                // Prevent failures if previous test did not clean up correctly 
+                try
+                {
+                    await this.scripts.DeleteTriggerAsync(triggerId);
+                }
+                catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+                {
+                    //swallow
+                }
+
+                TriggerProperties trigger = new TriggerProperties
+                {
+                    Id = triggerId,
+                    TriggerType = TriggerType.Pre,
+                    TriggerOperation = triggerOperation,
+                    Body = @"function setJobNumber() {
                     var context = getContext();
                     var request = context.getRequest();      
                     var containerManager = context.getCollection();
@@ -146,78 +202,83 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                     // update the document that will be created
                     request.setBody(documentToCreate);
                     }",
-            };
+                };
 
-            TriggerProperties cosmosTrigger = await this.scripts.CreateTriggerAsync(trigger);
+                TriggerProperties cosmosTrigger = await this.scripts.CreateTriggerAsync(trigger);
 
-            Job value = new Job() { Id = Guid.NewGuid(), InvestigationKey = "investigation~1" };
+                Job value = new Job() { Id = Guid.NewGuid(), InvestigationKey = "investigation~1" };
 
-            Job item = null;
-            if (triggerOperation == TriggerOperation.Create)
-            {
-                // this should create the document successfully with jobnumber of 1
-                item = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                Job item = null;
+                if (triggerOperation == TriggerOperation.Create)
                 {
-                    PreTriggers = new List<string> { triggerId }
-                });
-            }
-            else if(triggerOperation == TriggerOperation.Upsert)
-            {
-                // this should create the document successfully with jobnumber of 1
-                item = await this.container.UpsertItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                    // this should create the document successfully with jobnumber of 1
+                    item = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                    {
+                        PreTriggers = new List<string> { triggerId }
+                    });
+                }
+                else if (triggerOperation == TriggerOperation.Upsert)
                 {
-                    PreTriggers = new List<string> { triggerId }
-                });
-            }
-          
-            Assert.AreEqual(value.Id, item.Id);
-            Assert.AreEqual(value.InvestigationKey, item.InvestigationKey);
-            Assert.AreEqual(1, item.JobNumber);
+                    // this should create the document successfully with jobnumber of 1
+                    item = await this.container.UpsertItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                    {
+                        PreTriggers = new List<string> { triggerId }
+                    });
+                }
 
-            List<Job> result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
-            Assert.IsNotNull(result);
-            Assert.AreEqual(1, result.Count);
-            Job jobFromLinq = result.First();
+                Assert.AreEqual(value.Id, item.Id);
+                Assert.AreEqual(value.InvestigationKey, item.InvestigationKey);
+                Assert.AreEqual(1, item.JobNumber);
 
-            Assert.AreEqual(value.Id, jobFromLinq.Id);
-            Assert.AreEqual(value.InvestigationKey, jobFromLinq.InvestigationKey);
-            Assert.AreEqual(1, jobFromLinq.JobNumber);
+                List<Job> result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
+                Assert.IsNotNull(result);
+                Assert.AreEqual(1, result.Count);
+                Job jobFromLinq = result.First();
 
-            value.Id = Guid.NewGuid();
+                Assert.AreEqual(value.Id, jobFromLinq.Id);
+                Assert.AreEqual(value.InvestigationKey, jobFromLinq.InvestigationKey);
+                Assert.AreEqual(1, jobFromLinq.JobNumber);
 
-            Job item2 = null;
-            if (triggerOperation == TriggerOperation.Create)
-            {
-                // this should create the document successfully with jobnumber of 2
-                item2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                value.Id = Guid.NewGuid();
+
+                Job item2 = null;
+                if (triggerOperation == TriggerOperation.Create)
                 {
-                    PreTriggers = new List<string> { "SetJobNumber" }
-                });
-            }
-            else if (triggerOperation == TriggerOperation.Upsert)
-            {
-                // this should create the document successfully with jobnumber of 1
-                item2 = await this.container.UpsertItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                    // this should create the document successfully with jobnumber of 2
+                    item2 = await this.container.CreateItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                    {
+                        PreTriggers = new List<string> { "SetJobNumber" }
+                    });
+                }
+                else if (triggerOperation == TriggerOperation.Upsert)
                 {
-                    PreTriggers = new List<string> { "SetJobNumber" }
-                });
+                    // this should create the document successfully with jobnumber of 1
+                    item2 = await this.container.UpsertItemAsync<Job>(item: value, partitionKey: null, requestOptions: new ItemRequestOptions
+                    {
+                        PreTriggers = new List<string> { "SetJobNumber" }
+                    });
+                }
+
+                Assert.AreEqual(value.Id, item2.Id);
+                Assert.AreEqual(value.InvestigationKey, item2.InvestigationKey);
+                Assert.AreEqual(2, item2.JobNumber);
+
+                result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
+                Assert.IsNotNull(result);
+                Assert.AreEqual(2, result.Count);
+                jobFromLinq = result.First(x => x.JobNumber == 2);
+
+                Assert.AreEqual(value.Id, jobFromLinq.Id);
+                Assert.AreEqual(value.InvestigationKey, jobFromLinq.InvestigationKey);
+                Assert.AreEqual(2, jobFromLinq.JobNumber);
+
+                // Delete existing user defined functions.
+                await this.scripts.DeleteTriggerAsync(triggerId);
             }
-
-            Assert.AreEqual(value.Id, item2.Id);
-            Assert.AreEqual(value.InvestigationKey, item2.InvestigationKey);
-            Assert.AreEqual(2, item2.JobNumber);
-
-            result = this.container.GetItemLinqQueryable<Job>(allowSynchronousQueryExecution: true).Where(x => x.InvestigationKey == "investigation~1").ToList();
-            Assert.IsNotNull(result);
-            Assert.AreEqual(2, result.Count);
-            jobFromLinq = result.First(x => x.JobNumber == 2);
-
-            Assert.AreEqual(value.Id, jobFromLinq.Id);
-            Assert.AreEqual(value.InvestigationKey, jobFromLinq.InvestigationKey);
-            Assert.AreEqual(2, jobFromLinq.JobNumber);
-
-            // Delete existing user defined functions.
-            await this.scripts.DeleteTriggerAsync(triggerId);
+            finally
+            {
+                Environment.SetEnvironmentVariable(ConfigurationManager.BinaryEncodingEnabled, null);
+            }
         }
 
         [TestMethod]

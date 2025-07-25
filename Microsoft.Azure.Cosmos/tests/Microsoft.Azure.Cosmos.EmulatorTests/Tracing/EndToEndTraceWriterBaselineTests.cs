@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
+    using Microsoft.Azure.Cosmos.FaultInjection;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests;
     using Microsoft.Azure.Cosmos.Services.Management.Tests.BaselineTest;
     using Microsoft.Azure.Cosmos.Telemetry;
@@ -499,7 +500,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         public async Task QueryAsync()
         {
             List<Input> inputs = new List<Input>();
-            QueryRequestOptions requestOptions = new QueryRequestOptions() { IsNonStreamingOrderByQueryFeatureDisabled = true };
+            QueryRequestOptions requestOptions = new QueryRequestOptions() { IsHybridSearchQueryPlanOptimizationDisabled = true };
 
             int startLineNumber;
             int endLineNumber;
@@ -717,6 +718,59 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        public async Task ValidateCorrectSubStatusCodeTestAsync()
+        {
+            FaultInjectionCondition condition = new FaultInjectionConditionBuilder()
+                .WithConnectionType(FaultInjectionConnectionType.Direct)
+                .WithOperationType(FaultInjectionOperationType.ReadItem)
+                .Build();
+
+            FaultInjectionServerErrorResult result = new FaultInjectionServerErrorResultBuilder(FaultInjectionServerErrorType.ReadSessionNotAvailable)
+                .Build();
+
+            FaultInjectionRule rule = new FaultInjectionRuleBuilder("readSessionNotAvailable", condition, result)
+                .Build();
+
+            FaultInjector injector = new FaultInjector(new List<FaultInjectionRule> { rule });
+
+            rule.Disable();
+
+            CosmosClientOptions clientOptions = new CosmosClientOptions()
+            {
+                ConnectionMode = ConnectionMode.Direct,
+                ConsistencyLevel = ConsistencyLevel.Eventual,
+                FaultInjector = injector,
+            };
+            
+            (string endpoint, string authKey) = TestCommon.GetAccountInfo();
+
+            using (CosmosClient client = new CosmosClient(endpoint, authKey, clientOptions))
+            {
+
+                Database testDatabase = await client.CreateDatabaseAsync("testDatabase");
+                Container testContainer = await testDatabase.CreateContainerAsync(new ContainerProperties("testContainer", "/pk"));
+
+                ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
+                await testContainer.CreateItemAsync(testItem, new PartitionKey(testItem.pk));
+
+                rule.Enable();
+
+                try
+                {
+                    ItemResponse<ToDoActivity> _ = await testContainer.ReadItemAsync<ToDoActivity>(testItem.id, new PartitionKey(testItem.pk));
+                }
+                catch (CosmosException ex)
+                {
+                    Assert.IsTrue(ex.Diagnostics.ToString().Contains("ReadSessionNotAvailable"));
+                }
+                finally
+                {
+                    await testDatabase.DeleteAsync();
+                }
+            }
+        }
+
+        [TestMethod]
         public async Task ValidateInvalidCredentialsTraceAsync()
         {
             string authKey = Utils.ConfigurationManager.AppSettings["MasterKey"];
@@ -766,6 +820,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Tracing
         }
 
         [TestMethod]
+        [TestCategory("Flaky")]
         public async Task TypedPointOperationsAsync()
         {
             List<Input> inputs = new List<Input>();

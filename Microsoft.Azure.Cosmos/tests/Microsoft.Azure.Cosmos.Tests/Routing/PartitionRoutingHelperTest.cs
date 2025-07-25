@@ -719,6 +719,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                         allowNonValueAggregateQuery: false,
                         hasLogicalPartitionKey: false,
                         allowDCount: true,
+                        hybridSearchSkipOrderByRewrite: false,
                         useSystemPrefix: false,
                         geospatialType: Cosmos.GeospatialType.Geography);
 

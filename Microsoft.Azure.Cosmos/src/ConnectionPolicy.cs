@@ -28,8 +28,12 @@ namespace Microsoft.Azure.Cosmos
         private static ConnectionPolicy defaultPolicy;
 
         private Protocol connectionProtocol;
+#pragma warning disable IDE0044 // Add readonly modifier
         private ObservableCollection<string> preferredLocations;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private ObservableCollection<Uri> accountInitializationCustomEndpoints;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectionPolicy"/> class to connect to the Azure Cosmos DB service.
@@ -50,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             this.RetryOptions = new RetryOptions();
             this.EnableReadRequestsFallback = null;
             this.ServerCertificateCustomValidationCallback = null;
-
+            this.AvailabilityStrategy = null;
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
         }
 
@@ -332,6 +336,12 @@ namespace Microsoft.Azure.Cosmos
             set;
         }
 
+        public bool EnablePartitionLevelCircuitBreaker
+        {
+            get;
+            set;
+        }
+
         /// <summary>
         /// Gets or sets the certificate validation callback.
         /// </summary>
@@ -507,6 +517,34 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
+        /// Availability Strategy to be used for periods of high latency
+        /// </summary>
+        /// /// <example>
+        /// An example on how to set an availability strategy custom serializer.
+        /// <code language="c#">
+        /// <![CDATA[
+        /// CosmosClient client = new CosmosClientBuilder("connection string")
+        /// .WithApplicationPreferredRegions(
+        ///    new List<string> { "East US", "Central US", "West US" } )
+        /// .WithAvailabilityStrategy(
+        ///    AvailabilityStrategy.CrossRegionHedgingStrategy(
+        ///    threshold: TimeSpan.FromMilliseconds(500),
+        ///    thresholdStep: TimeSpan.FromMilliseconds(100)
+        /// ))
+        /// .Build();
+        /// ]]>
+        /// </code>
+        /// </example>
+        /// <remarks> 
+        /// The availability strategy in the example is a Cross Region Hedging Strategy.
+        /// These strategies take two values, a threshold and a threshold step.When a request that is sent 
+        /// out takes longer than the threshold time, the SDK will hedge to the second region in the application preferred regions list.
+        /// If a response from either the primary request or the first hedged request is not received 
+        /// after the threshold step time, the SDK will hedge to the third region and so on.
+        /// </remarks>
+        public AvailabilityStrategy AvailabilityStrategy { get; set; }
+
+        /// <summary>
         /// (Direct/TCP) This is an advanced setting that controls the number of TCP connections that will be opened eagerly to each Cosmos DB back-end.
         /// </summary>
         /// <value>
@@ -525,6 +563,24 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
         internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// provides SessionTokenMismatchRetryPolicy optimization through customer supplied region switch hints
+        /// </summary>
+        internal SessionRetryOptions SessionRetryOptions
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// A string containing the application name.
+        /// </summary>
+        internal string ApplicationName
         {
             get;
             set;

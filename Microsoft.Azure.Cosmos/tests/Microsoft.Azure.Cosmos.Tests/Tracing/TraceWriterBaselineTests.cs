@@ -781,6 +781,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Tracing
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: Cosmos.GeospatialType.Geography);
 

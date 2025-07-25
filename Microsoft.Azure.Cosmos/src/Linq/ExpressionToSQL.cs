@@ -1159,8 +1159,11 @@ namespace Microsoft.Azure.Cosmos.Linq
             context.PushMethod(inputExpression);
 
             Type declaringType = inputExpression.Method.DeclaringType;
-            if ((declaringType != typeof(Queryable) && declaringType != typeof(Enumerable))
-                || !inputExpression.Method.IsStatic)
+
+            if ((declaringType != typeof(Queryable) 
+                && declaringType != typeof(Enumerable) /*LINQ Methods*/
+                && declaringType != typeof(CosmosLinqExtensions) /*OrderByRank*/)
+                || !inputExpression.Method.IsStatic /*Other extansion method*/)
             {
                 throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.OnlyLINQMethodsAreSupported, inputExpression.Method.Name));
             }
@@ -1270,6 +1273,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.OrderByDescending:
                     {
                         SqlOrderByClause orderBy = ExpressionToSql.VisitOrderBy(inputExpression.Arguments, true, context);
+                        context.CurrentQuery = context.CurrentQuery.AddOrderByClause(orderBy, context);
+                        break;
+                    }
+                case nameof(CosmosLinqExtensions.OrderByRank):
+                    {
+                        SqlOrderByClause orderBy = ExpressionToSql.VisitOrderByRank(inputExpression.Arguments, context);
                         context.CurrentQuery = context.CurrentQuery.AddOrderByClause(orderBy, context);
                         break;
                     }
@@ -1477,6 +1486,7 @@ namespace Microsoft.Azure.Cosmos.Linq
                 case LinqMethods.Where:
                 case LinqMethods.OrderBy:
                 case LinqMethods.OrderByDescending:
+                case nameof(CosmosLinqExtensions.OrderByRank):
                 case LinqMethods.ThenBy:
                 case LinqMethods.ThenByDescending:
                 case LinqMethods.Skip:
@@ -2040,8 +2050,26 @@ namespace Microsoft.Azure.Cosmos.Linq
 
             LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
             SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
-            SqlOrderByItem orderByItem = SqlOrderByItem.Create(sqlfunc, isDescending);
+
+            // Order By VectorDistance is a special case, since there is no ordering required.
+            bool isVectorDistance = (sqlfunc is SqlFunctionCallScalarExpression functionCall) && (functionCall.Name.Value == SqlFunctionCallScalarExpression.Names.VectorDistance);
+            
+            SqlOrderByItem orderByItem = SqlOrderByItem.Create(sqlfunc, isVectorDistance ? null : isDescending);
             SqlOrderByClause orderby = SqlOrderByClause.Create(new SqlOrderByItem[] { orderByItem });
+            return orderby;
+        }
+
+        private static SqlOrderByClause VisitOrderByRank(ReadOnlyCollection<Expression> arguments, TranslationContext context)
+        {
+            if (arguments.Count != 2)
+            {
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, ClientResources.InvalidArgumentsCount, LinqMethods.OrderBy, 2, arguments.Count));
+            }
+            LambdaExpression lambda = Utilities.GetLambda(arguments[1]);
+            SqlScalarExpression sqlfunc = ExpressionToSql.VisitScalarExpression(lambda, context);
+            SqlOrderByItem scoreFuncOrderByItem = SqlOrderByItem.Create(sqlfunc, isDescending: null);
+            SqlOrderByClause orderby = SqlOrderByClause.Create(rank: true, new SqlOrderByItem[] { scoreFuncOrderByItem });
+            
             return orderby;
         }
 

@@ -101,6 +101,20 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        public string BackendActivityId
+        {
+            get
+            {
+                string value;
+                if (this.TryGetHeaderValue(WFConstants.BackendHeaders.ActivityId, out value))
+                {
+                    return value;
+                }
+
+                return null;
+            }
+        }
+
         private SubStatusCodes? subStatusCode;
 
         public SubStatusCodes SubStatusCode

@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
         private const string ScopeFormat = "https://{0}/.default";
+
         private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
         private readonly CancellationTokenSource cancellationTokenSource;
@@ -64,9 +65,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
+            string? scopeOverride = ConfigurationManager.AADScopeOverrideValue(defaultValue: null);
+
             this.tokenRequestContext = new TokenRequestContext(new string[]
             {
-                string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
+                !string.IsNullOrEmpty(scopeOverride)
+                    ? scopeOverride
+                    : string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
             });
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)
@@ -219,9 +224,9 @@ namespace Microsoft.Azure.Cosmos
                             lastException = requestFailedException;
                             getTokenTrace.AddDatum(
                                 $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                requestFailedException);
+                                requestFailedException.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             // Don't retry on auth failures
                             if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
@@ -236,10 +241,10 @@ namespace Microsoft.Azure.Cosmos
                             lastException = operationCancelled;
                             getTokenTrace.AddDatum(
                                 $"OperationCanceledException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                operationCancelled);
+                                operationCancelled.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
@@ -255,10 +260,10 @@ namespace Microsoft.Azure.Cosmos
                             lastException = exception;
                             getTokenTrace.AddDatum(
                                 $"Exception at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
-                                exception);
+                                exception.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
                         }
                     }
                 }
@@ -339,7 +344,7 @@ namespace Microsoft.Azure.Cosmos
 
                     DefaultTrace.TraceWarning(
                         "BackgroundTokenRefreshLoop() - Unable to refresh token credential cache. Exception: {0}",
-                        ex.ToString());
+                        ex.Message);
 
                     // Since it failed retry again in with half the token life span again.
                     if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue && this.cachedAccessToken.HasValue)

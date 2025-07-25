@@ -27,7 +27,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
     [TestClass]
     public class HeadersValidationTests
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static byte BinarySerializationByteMarkValue = 128;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         private string currentVersion;
         private byte[] currentVersionUTF8;
@@ -745,15 +747,14 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 HttpConstants.Versions.CurrentVersion = "2015-01-01";
                 client.Dispose();
                 client = TestCommon.CreateClient(true);
-                try
-                {
-                    doc = (await client.CreateDocumentAsync(coll.SelfLink, new Document())).Resource;
-                    Assert.Fail("Should have faild because of version error");
-                }
-                catch (CosmosException dce)
-                {
-                    Assert.AreEqual(dce.StatusCode, HttpStatusCode.BadRequest);
-                }
+                Assert.Fail("Should have faild because of version error");
+            }
+            catch (AggregateException ae)
+            {
+                Assert.IsTrue(ae.InnerException is CosmosException);
+
+                CosmosException ce = (CosmosException) ae.InnerException;
+                Assert.AreEqual(ce.StatusCode, HttpStatusCode.BadRequest);
             }
             finally
             {

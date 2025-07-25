@@ -98,7 +98,12 @@ namespace Microsoft.Azure.Cosmos.Fluent
         /// applies to index types DiskANN and quantizedFlat.
         /// </param>
         /// <returns>An instance of the current <see cref="VectorIndexDefinition{T}"/>.</returns>
-        internal VectorIndexDefinition<T> WithVectorIndexShardKey(
+#if PREVIEW
+        public
+#else
+        internal
+#endif        
+        VectorIndexDefinition<T> WithVectorIndexShardKey(
             string[] vectorIndexShardKey)
         {
             this.vectorIndexPath.VectorIndexShardKey = vectorIndexShardKey ?? throw new ArgumentNullException(nameof(vectorIndexShardKey));

@@ -17,6 +17,7 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     internal static class ExceptionExtensions
     {
+#if !COSMOSCLIENT
         // Iterates through the top level properties of the exception object and
         // converts them to a string so output to logging can be more meaningful.
         public static string ToLoggingString(this Exception exception)
@@ -36,13 +37,13 @@ namespace Microsoft.Azure.Documents
 
             return string.Concat(exception.GetType(), " : ", string.Join(",", fields));
         }
-
+#endif
         // System.Exception.ToString() does not inject information from Exception.Data to the exception string.
         // This extension method allows us to pump additional useful information into the exception data
         // and display it.
         public static string ToStringWithData(this Exception exception)
         {
-            StringBuilder sb = new StringBuilder(exception.ToString());
+            StringBuilder sb = new StringBuilder(exception?.Message);
 
             List<string> exceptionData = new List<string>();
             ExceptionExtensions.CaptureExceptionData(exception, exceptionData);
@@ -168,7 +169,7 @@ namespace Microsoft.Azure.Documents
             {
                 foreach (object key in exception.Data.Keys)
                 {
-                    exceptionData.Add(string.Format(CultureInfo.InvariantCulture, "{0}: {1}", key.ToString(), exception.Data[key].ToString()));
+                    exceptionData.Add(string.Format(CultureInfo.InvariantCulture, "{0}: {1}", key?.ToString(), exception.Data[key]?.ToString()));
                 }
             }
 

@@ -1,0 +1,53 @@
+# File: templates/build-thinclient.yml
+
+parameters:
+  BuildConfiguration: ''
+  Arguments: ''
+  VmImage: '' # https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/hosted?view=azure-devops
+  OS: 'Windows'
+  EmulatorPipeline5Arguments: ' --filter "TestCategory=ThinClient" --verbosity normal '
+  EmulatorPipeline5CategoryListName: ' ThinClient '
+  ThinClientConnectionString: ''
+  IncludeEncryption: true
+  IncludePerformance: true
+  IncludeCoverage: true
+
+jobs:
+- job:
+  displayName: EmulatorTests ${{ parameters.BuildConfiguration }} - ${{ parameters.EmulatorPipeline5CategoryListName }}
+  timeoutInMinutes: 120
+  condition: always()
+  continueOnError: true
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self
+    clean: true
+
+  - task: UseDotNet@2
+    displayName: Use .NET 6.0
+    inputs:
+      packageType: 'runtime'
+      version: '6.x'
+
+  - task: UseDotNet@2
+    displayName: Use .NET 8.0
+    inputs:
+      packageType: 'sdk'
+      version: '8.x'
+
+  - task: DotNetCoreCLI@2
+    displayName: Microsoft.Azure.Cosmos.EmulatorTests - ${{ parameters.EmulatorPipeline5CategoryListName }}
+    continueOnError: true
+    inputs:
+      command: test
+      projects: 'Microsoft.Azure.Cosmos/tests/Microsoft.Azure.Cosmos.EmulatorTests/*.csproj'
+      arguments: ${{ parameters.EmulatorPipeline5Arguments }} --configuration ${{ parameters.BuildConfiguration }} /p:OS=${{ parameters.OS }}
+      nugetConfigPath: NuGet.config
+      publishTestResults: true
+      testRunTitle: Microsoft.Azure.Cosmos.EmulatorTests - ${{ parameters.EmulatorPipeline5CategoryListName }}
+    env:
+      COSMOSDB_THINCLIENT: ${{ parameters.ThinClientConnectionString }}
+      AZURE_COSMOS_THIN_CLIENT_ENABLED: 'True'
+      AZURE_COSMOS_NON_STREAMING_ORDER_BY_FLAG_DISABLED: 'true'

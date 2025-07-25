@@ -1,12 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <!--Rule format:
 <Rule Id="QA100x" Name="PartialArrayContains">
-    <Description>[CDATA["Query uses ARRAY_CONTAINS with the the third argument set to true."]]</Description>
+    <Title>[CDATA["Query uses ARRAY_CONTAINS with the the third argument set to true."]]</Title>
     <params>
         <param name="@param1" description = "this param does something"/>
         <param name="@param2" description = "this param does something" //>
     </params>
-    <Message> This message with @param1 and then @param2 </Message>
+    <Description> This message with @param1 and then @param2 </Description>
     <Link>https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/QA100x</Link>
 </Rule>
 -->
@@ -14,44 +14,44 @@
     <UrlPrefix>https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/query/queryadvisor/</UrlPrefix>
     <Rules>
         <Rule Id="QA1000" Name="PartialArrayContains">
-            <Description>[CDATA["Query uses ARRAY_CONTAINS with the the third argument set to true."]]</Description>
-            <Message>[CDATA["Instead of ARRAY_CONTAINS, consider using EXISTS with a subquery, which may improve performance."]]</Message>
+            <Title>[CDATA["Query uses ARRAY_CONTAINS with partial matching."]]</Title>
+            <Description>[CDATA["Instead of using ARRAY_CONTAINS with partial matching, consider using EXISTS with a subquery. "]]</Description>
         </Rule>
-        <Rule Id="QA1001" Name="DistinctAndJoin">
-            <Description>[CDATA["Query uses Distinct and Join."]]</Description>
-            <Message>[CDATA["Instead of DISTINCT with a JOIN, consider using EXISTS with a subquery, which may improve performance."]]</Message>
-        </Rule>
+        <!--<Rule Id="QA1001" Name="DistinctAndJoin">
+            <Title>[CDATA["Query uses Distinct and Join."]]</Title>
+            <Description>[CDATA["Instead of DISTINCT with a JOIN, consider using EXISTS with a subquery, which may improve performance."]]</Description>
+        </Rule>-->
         <Rule Id="QA1002" Name="Contains">
-            <Description>[CDATA["Query uses CONTAINS."]]</Description>
-            <Message>[CDATA["Instead of CONTAINS, consider using STARTSWTIH or computed properties, which may improve performance."]]</Message>
+            <Title>[CDATA["Query uses CONTAINS."]]</Title>
+            <Description>[CDATA["If you are matching on a string prefix, consider using STARTSWITH."]]</Description>
         </Rule>
         <Rule Id="QA1003" Name="CaseInsensitiveStartsWithOrStringEquals">
-            <Description>[CDATA["Query uses case-insensitive string search functions STARTSWITH or StringEquals."]]</Description>
-            <Message>[CDATA["Instead of case-insensitive string search, consider creating a computed property with LOWER on the string field, which may improve performance."]]</Message>
+            <Title>[CDATA["Query uses case-insensitive string search functions STARTSWITH or StringEquals."]]</Title>
+            <Description>[CDATA["Instead of a case-insensitive string search, consider defining a computed property that converts the string to lowercase."]]</Description>
         </Rule>
         <Rule Id="QA1004" Name="CaseInsensitiveEndsWith">
-            <Description>[CDATA["Query uses case-insensitive ENDSWITH."]]</Description>
-            <Message>[CDATA["Instead of case-insensitive ENDSWITH, consider creating a computed property with REVERSE on the string field, and use STARTSWITH for comparison, which may improve performance."]]</Message>
+            <Title>[CDATA["Query uses ENDSWITH."]]</Title>
+            <Description>[CDATA["Instead of using ENDSWITH, consider defining a computed property that reverses the string and using STARTSWITH in the query for comparison."]]</Description>
         </Rule>
-        <Rule Id="QA1005" Name="GroupByComputedProperty">
-            <Description>[CDATA["Query uses deterministic scalar expressions in Group By clause."]]</Description>
-            <Message>[CDATA["Instead of using scalar expressions in GROUP BY clause, consider creating computed properties of these expressions, which may improve performance."]]</Message>
-        </Rule>
+        <!--<Rule Id="QA1005" Name="GroupByComputedProperty">
+            <Title>[CDATA["Query uses deterministic scalar expressions in Group By clause."]]</Title>
+            <Description>[CDATA["Instead of using scalar expressions in GROUP BY clause, consider creating computed properties of these expressions, which may improve performance."]]</Description>
+        </Rule>-->
         <Rule Id="QA1006" Name="UpperLowerComparison">
-            <Description>[CDATA["Query uses Upper or Lower string comparison."]]</Description>
-            <Message>[CDATA[""]]</Message>
+            <Title>[CDATA["Query uses UPPER or LOWER in the WHERE clause."]]</Title>
+            <Description>[CDATA["Consider defining a computed property on the UPPER/LOWER function expression."]]</Description>
         </Rule>
         <Rule Id="QA1007" Name="GetCurrentDateTime">
-            <Description>[CDATA["Query uses GetCurrentDateTime."]]</Description>
-            <Message>[CDATA["Instead of using GetCurrentDateTime, consider using GetCurrentDateTimeStatic, which may improve performance."]]</Message>
+            <Title>[CDATA["GetCurrentDateTime in the WHERE clause."]]</Title>
+            <Description>[CDATA["Consider using GetCurrentDateTimeStatic instead of GetCurrentDateTime in the WHERE clause."]]</Description>
         </Rule>
         <Rule Id="QA1008" Name="GetCurrentTicks">
-            <Description>[CDATA["Query uses GetCurrentTicks."]]</Description>
-            <Message>[CDATA["Instead of using GetCurrentTicks, consider using GetCurrentTicksStatic, which may improve performance."]]</Message>
+            <Title>[CDATA["GetCurrentTicks in the WHERE clause."]]</Title>
+            <Description>[CDATA["Consider using GetCurrentTicksStatic instead of GetCurrentTicks in the WHERE clause."]]</Description>
         </Rule>
         <Rule Id="QA1009" Name="GetCurrentTimestamp">
-            <Description>[CDATA["Query uses GetCurrentTimestamp."]]</Description>
-            <Message>[CDATA["Instead of using GetCurrentTimestamp, consider using GetCurrentTimestampStatic, which may improve performance."]]</Message>
+            <Title>[CDATA["GetCurrentTimestamp in the WHERE clause."]]</Title>
+            <Description>[CDATA["Consider using GetCurrentTimestampStatic instead of GetCurrentTimestamp in the WHERE clause ."]]</Description>
         </Rule>
     </Rules>
 </QueryAdvice>

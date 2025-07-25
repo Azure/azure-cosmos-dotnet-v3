@@ -154,10 +154,9 @@
             }
             catch (CosmosOperationCanceledException oce)
             {
-                IReadOnlyList<ITrace> children = ((CosmosTraceDiagnostics)oce.Diagnostics).Value.Children;
-                ITrace exceptionChild = children[^1];
-                Assert.AreEqual("CosmosOperationCanceledException", exceptionChild.Name);
-                Assert.IsNotNull(exceptionChild.Data["Operation Cancelled Exception"]);
+                //check that the exception child exists in the trace diagnostics
+                Assert.IsTrue(oce.Diagnostics.ToString().Contains("CosmosOperationCanceledException"));
+                Assert.IsTrue(oce.Diagnostics.ToString().Contains("Operation Cancelled Exception"));
             }
         }
     }

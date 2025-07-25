@@ -25,8 +25,12 @@ namespace Microsoft.Azure.Documents.Client
         // Ideally response was intended to be marked as protected(to be accessed by sub-classes) but since DocumentServiceResponse class is marked internal,
         // it gives Inconsistent accessibility error saying DocumentServiceResponse is less accessible than field ServiceResponse.response if I mark it as protected.
         internal DocumentServiceResponse response;
+#pragma warning disable IDE0044 // Add readonly modifier
         private Dictionary<string, long> usageHeaders;
+#pragma warning restore IDE0044 // Add readonly modifier
+#pragma warning disable IDE0044 // Add readonly modifier
         private Dictionary<string, long> quotaHeaders;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Constructor exposed for mocking purposes for the Azure Cosmos DB service.

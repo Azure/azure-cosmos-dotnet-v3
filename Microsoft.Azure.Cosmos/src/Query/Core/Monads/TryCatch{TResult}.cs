@@ -244,11 +244,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
         {
             // Skipping a stack frame, since we don't want this method showing up in the stack trace.
             StackTrace stackTrace = new StackTrace(skipFrames: 1);
+#pragma warning disable CDX1000 // DontConvertExceptionToObject
             return new TryCatch<TResult>(
                 new ExceptionWithStackTraceException(
                     message: $"{nameof(TryCatch<TResult>)} resulted in an exception.",
                     innerException: exception,
                     stackTrace: stackTrace));
+#pragma warning restore CDX1000 // DontConvertExceptionToObject
         }
 
         public static bool ConvertToTryGet<T>(TryCatch<T> tryCatch, out T result)

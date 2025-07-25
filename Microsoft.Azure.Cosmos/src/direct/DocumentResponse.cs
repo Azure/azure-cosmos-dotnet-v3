@@ -35,7 +35,9 @@ namespace Microsoft.Azure.Documents.Client
     sealed class DocumentResponse<TDocument> : ResourceResponseBase, IDocumentResponse<TDocument>
     {
         private TDocument document;
+#pragma warning disable IDE0044 // Add readonly modifier
         private JsonSerializerSettings settings;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Constructor exposed for mocking purposes for the Azure Cosmos DB service.

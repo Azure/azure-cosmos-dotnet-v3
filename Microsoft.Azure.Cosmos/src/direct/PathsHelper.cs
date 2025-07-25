@@ -1467,6 +1467,8 @@ namespace Microsoft.Azure.Documents
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetConfiguration;
                 case OperationType.GetFederationConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetFederationConfigurations;
+                case OperationType.GetRegionalConfigurations:
+                    return Paths.OperationsPathSegment + "/" + Paths.Operations_GetRegionalConfigurations;
                 case OperationType.GetDatabaseAccountConfigurations:
                     return Paths.OperationsPathSegment + "/" + Paths.Operations_GetDatabaseAccountConfigurations;
                 case OperationType.GetDatabaseAccountArtifactPermissions:
@@ -1582,6 +1584,7 @@ namespace Microsoft.Azure.Documents
                    operationTypeSegment.Equals(Paths.ControllerOperations_BatchReportChargesV2, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.ControllerOperations_HeartBeatPingWatchdog, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetFederationConfigurations, StringComparison.OrdinalIgnoreCase) ||
+                   operationTypeSegment.Equals(Paths.Operations_GetRegionalConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageServiceConfigurations, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetConfiguration, StringComparison.OrdinalIgnoreCase) ||
                    operationTypeSegment.Equals(Paths.Operations_GetStorageAccountKey, StringComparison.OrdinalIgnoreCase) ||

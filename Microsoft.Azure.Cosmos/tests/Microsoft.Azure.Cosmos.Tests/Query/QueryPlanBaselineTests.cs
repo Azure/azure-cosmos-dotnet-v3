@@ -1697,6 +1697,7 @@
                 allowNonValueAggregateQuery: true,
                 hasLogicalPartitionKey: false,
                 allowDCount: true,
+                hybridSearchSkipOrderByRewrite: false,
                 useSystemPrefix: false,
                 geospatialType: input.GeospatialType ?? Cosmos.GeospatialType.Geography);
 

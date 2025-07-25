@@ -320,7 +320,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
-                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
+                MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
+                GlobalPartitionEndpointManagerNoOp.Instance);
         }
 
         private static Mock<IAddressResolver> GetMockAddressCache(AddressInformation[] addressInformation)

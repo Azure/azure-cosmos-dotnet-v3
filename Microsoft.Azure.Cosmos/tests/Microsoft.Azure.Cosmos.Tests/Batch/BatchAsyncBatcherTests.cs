@@ -799,7 +799,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             public ClientWithSplitDetection()
             {
-                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null);
+                this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(MockBehavior.Strict, null, null, null, null, false);
                 this.partitionKeyRangeCache.Setup(
                         m => m.TryGetOverlappingRangesAsync(
                             It.IsAny<string>(),

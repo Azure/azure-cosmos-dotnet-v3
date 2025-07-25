@@ -5,14 +5,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
-    using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
     using Microsoft.Azure.Cosmos.SDK.EmulatorTests.QueryOracle;
 
     [TestClass]

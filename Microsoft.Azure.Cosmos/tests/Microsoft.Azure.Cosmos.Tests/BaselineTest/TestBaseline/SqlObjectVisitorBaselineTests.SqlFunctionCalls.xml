@@ -741,6 +741,50 @@ ARRAY(42)
   </Result>
   <Result>
     <Input>
+      <Description>ARRAY_AVG</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "ARRAY_AVG"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[ARRAY_AVG([1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+ARRAY_AVG([
+    1, 
+    2, 
+    3
+])
+]]></PrettyPrint>
+      <HashCode>323897902</HashCode>
+      <ObfusctedQuery><![CDATA[ARRAY_AVG([1, 2, 3])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>ARRAY_CONCAT</Description>
       <SqlObject><![CDATA[{
   "Name": {
@@ -1975,17 +2019,17 @@ COUNT(42)
   "Arguments": [
     {
       "Literal": {
-        "Value": "Year"
+        "Value": "yyyy"
       }
     },
     {
       "Literal": {
-        "Value": 2020
+        "Value": 1
       }
     },
     {
       "Literal": {
-        "Value": "YYYY"
+        "Value": "2020-08-06T20:45:22.1234567Z"
       }
     }
   ],
@@ -1993,16 +2037,84 @@ COUNT(42)
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[DateTimeAdd("Year", 2020, "YYYY")]]></TextOutput>
+      <TextOutput><![CDATA[DateTimeAdd("yyyy", 1, "2020-08-06T20:45:22.1234567Z")]]></TextOutput>
       <PrettyPrint><![CDATA[
 DateTimeAdd(
-    "Year", 
-    2020, 
-    "YYYY"
+    "yyyy", 
+    1, 
+    "2020-08-06T20:45:22.1234567Z"
 )
 ]]></PrettyPrint>
-      <HashCode>1570860718</HashCode>
-      <ObfusctedQuery><![CDATA[DateTimeAdd("str1", 2020.1, "str2")]]></ObfusctedQuery>
+      <HashCode>1610287731</HashCode>
+      <ObfusctedQuery><![CDATA[DateTimeAdd("str1", 1, "str2__28")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>DateTimeBin</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "DateTimeBin"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "2020-08-06T20:45:22.1234567Z"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "yyyy"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[DateTimeBin("2020-08-06T20:45:22.1234567Z", "yyyy")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DateTimeBin(
+    "2020-08-06T20:45:22.1234567Z", 
+    "yyyy"
+)
+]]></PrettyPrint>
+      <HashCode>-2042557462</HashCode>
+      <ObfusctedQuery><![CDATA[DateTimeBin("str1__28", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>DateTimeFormat</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "DateTimeFormat"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "2020-08-06T20:45:22.1234567Z"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "(h-hh-hhh)"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[DateTimeFormat("2020-08-06T20:45:22.1234567Z", "(h-hh-hhh)")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DateTimeFormat(
+    "2020-08-06T20:45:22.1234567Z", 
+    "(h-hh-hhh)"
+)
+]]></PrettyPrint>
+      <HashCode>-366443220</HashCode>
+      <ObfusctedQuery><![CDATA[DateTimeFormat("str1__28", "str2__10")]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -2010,7 +2122,7 @@ DateTimeAdd(
       <Description>DateTimeDiff</Description>
       <SqlObject><![CDATA[{
   "Name": {
-    "Value": "DateTimeAdd"
+    "Value": "DateTimeDiff"
   },
   "Arguments": [
     {
@@ -2033,16 +2145,16 @@ DateTimeAdd(
 }]]></SqlObject>
     </Input>
     <Output>
-      <TextOutput><![CDATA[DateTimeAdd("Year", "2020-08-06T20:45:22.1234567Z", "2020-08-06T20:45:22.1234567Z")]]></TextOutput>
+      <TextOutput><![CDATA[DateTimeDiff("Year", "2020-08-06T20:45:22.1234567Z", "2020-08-06T20:45:22.1234567Z")]]></TextOutput>
       <PrettyPrint><![CDATA[
-DateTimeAdd(
+DateTimeDiff(
     "Year", 
     "2020-08-06T20:45:22.1234567Z", 
     "2020-08-06T20:45:22.1234567Z"
 )
 ]]></PrettyPrint>
-      <HashCode>702180380</HashCode>
-      <ObfusctedQuery><![CDATA[DateTimeAdd("str1", "str2__28", "str2__28")]]></ObfusctedQuery>
+      <HashCode>-1313869462</HashCode>
+      <ObfusctedQuery><![CDATA[DateTimeDiff("str1", "str2__28", "str2__28")]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -2169,6 +2281,32 @@ DateTimeToTimestamp("2020-08-06T20:45:22.1234567Z")
 ]]></PrettyPrint>
       <HashCode>292597322</HashCode>
       <ObfusctedQuery><![CDATA[DateTimeToTimestamp("str1__28")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>DAY</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "DAY"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "2020-08-06T20:45:22.1234567Z"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[DAY("2020-08-06T20:45:22.1234567Z")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+DAY("2020-08-06T20:45:22.1234567Z")
+]]></PrettyPrint>
+      <HashCode>730252520</HashCode>
+      <ObfusctedQuery><![CDATA[DAY("str1__28")]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -2371,6 +2509,46 @@ GetCurrentTimestamp()
   </Result>
   <Result>
     <Input>
+      <Description>IIF</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IIF"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": true
+      }
+    },
+    {
+      "Literal": {
+        "Value": "YES"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "NO"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IIF(true, "YES", "NO")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IIF(
+    true, 
+    "YES", 
+    "NO"
+)
+]]></PrettyPrint>
+      <HashCode>1912853209</HashCode>
+      <ObfusctedQuery><![CDATA[IIF(true, "str1", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description>INDEX_OF</Description>
       <SqlObject><![CDATA[{
   "Name": {
@@ -2453,6 +2631,32 @@ IS_BOOL(true)
 ]]></PrettyPrint>
       <HashCode>-1031205701</HashCode>
       <ObfusctedQuery><![CDATA[IS_BOOL(true)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>IS_DATETIME</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "IS_DATETIME"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": 42
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[IS_DATETIME(42)]]></TextOutput>
+      <PrettyPrint><![CDATA[
+IS_DATETIME(42)
+]]></PrettyPrint>
+      <HashCode>-1529891165</HashCode>
+      <ObfusctedQuery><![CDATA[IS_DATETIME(42)]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -2633,6 +2837,40 @@ IS_STRING("hello")
 ]]></PrettyPrint>
       <HashCode>197369964</HashCode>
       <ObfusctedQuery><![CDATA[IS_STRING("str1")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>LastIndexOf</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "LastIndexOf"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "ABCDABCDABC"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "ABC"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[LastIndexOf("ABCDABCDABC", "ABC")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+LastIndexOf(
+    "ABCDABCDABC", 
+    "ABC"
+)
+]]></PrettyPrint>
+      <HashCode>-1618285648</HashCode>
+      <ObfusctedQuery><![CDATA[LastIndexOf("str1__11", "str2")]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -2889,6 +3127,32 @@ MIN(42)
 ]]></PrettyPrint>
       <HashCode>951572494</HashCode>
       <ObfusctedQuery><![CDATA[MIN(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>MONTH</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "MONTH"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "2020-08-06T20:45:22.1234567Z"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[MONTH("2020-08-06T20:45:22.1234567Z")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+MONTH("2020-08-06T20:45:22.1234567Z")
+]]></PrettyPrint>
+      <HashCode>-1384364250</HashCode>
+      <ObfusctedQuery><![CDATA[MONTH("str1__28")]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -3199,6 +3463,286 @@ RTRIM(42)
 ]]></PrettyPrint>
       <HashCode>-1534507744</HashCode>
       <ObfusctedQuery><![CDATA[RTRIM(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SetDifference</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SetDifference"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    },
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SetDifference([1, 2, 3], [1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SetDifference(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        1, 
+        2, 
+        3
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>1109260146</HashCode>
+      <ObfusctedQuery><![CDATA[SetDifference([1, 2, 3], [1, 2, 3])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SetEqual</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SetEqual"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    },
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SetEqual([1, 2, 3], [1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SetEqual(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        1, 
+        2, 
+        3
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>-2058439928</HashCode>
+      <ObfusctedQuery><![CDATA[SetEqual([1, 2, 3], [1, 2, 3])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SetIntersect</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SetIntersect"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    },
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SetIntersect([1, 2, 3], [1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SetIntersect(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        1, 
+        2, 
+        3
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>-644124670</HashCode>
+      <ObfusctedQuery><![CDATA[SetIntersect([1, 2, 3], [1, 2, 3])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>SetUnion</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "SetUnion"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    },
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[SetUnion([1, 2, 3], [1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+SetUnion(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        1, 
+        2, 
+        3
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>1177661016</HashCode>
+      <ObfusctedQuery><![CDATA[SetUnion([1, 2, 3], [1, 2, 3])]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -3525,6 +4069,92 @@ StringEquals(
 ]]></PrettyPrint>
       <HashCode>67992629</HashCode>
       <ObfusctedQuery><![CDATA[StringEquals("str1", "str2")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>StringJoin</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "StringJoin"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": "a"
+          }
+        },
+        {
+          "Literal": {
+            "Value": "b"
+          }
+        },
+        {
+          "Literal": {
+            "Value": "c"
+          }
+        }
+      ]
+    },
+    {
+      "Literal": {
+        "Value": "hello"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[StringJoin(["a", "b", "c"], "hello")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+StringJoin(
+    [
+        "a", 
+        "b", 
+        "c"
+    ], 
+    "hello"
+)
+]]></PrettyPrint>
+      <HashCode>379070440</HashCode>
+      <ObfusctedQuery><![CDATA[StringJoin(["a", "b", "c"], "str1")]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>StringSplit</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "StringSplit"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "hello"
+      }
+    },
+    {
+      "Literal": {
+        "Value": "e"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[StringSplit("hello", "e")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+StringSplit(
+    "hello", 
+    "e"
+)
+]]></PrettyPrint>
+      <HashCode>1939927191</HashCode>
+      <ObfusctedQuery><![CDATA[StringSplit("str1", "e")]]></ObfusctedQuery>
     </Output>
   </Result>
   <Result>
@@ -3903,6 +4533,102 @@ UPPER(42)
 ]]></PrettyPrint>
       <HashCode>2018810216</HashCode>
       <ObfusctedQuery><![CDATA[UPPER(42)]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>VectorDistance</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "VectorDistance"
+  },
+  "Arguments": [
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    },
+    {
+      "Items": [
+        {
+          "Literal": {
+            "Value": 1
+          }
+        },
+        {
+          "Literal": {
+            "Value": 2
+          }
+        },
+        {
+          "Literal": {
+            "Value": 3
+          }
+        }
+      ]
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[VectorDistance([1, 2, 3], [1, 2, 3])]]></TextOutput>
+      <PrettyPrint><![CDATA[
+VectorDistance(
+    [
+        1, 
+        2, 
+        3
+    ], 
+    [
+        1, 
+        2, 
+        3
+    ]
+)
+]]></PrettyPrint>
+      <HashCode>341383158</HashCode>
+      <ObfusctedQuery><![CDATA[VectorDistance([1, 2, 3], [1, 2, 3])]]></ObfusctedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description>YEAR</Description>
+      <SqlObject><![CDATA[{
+  "Name": {
+    "Value": "YEAR"
+  },
+  "Arguments": [
+    {
+      "Literal": {
+        "Value": "2020-08-06T20:45:22.1234567Z"
+      }
+    }
+  ],
+  "IsUdf": false
+}]]></SqlObject>
+    </Input>
+    <Output>
+      <TextOutput><![CDATA[YEAR("2020-08-06T20:45:22.1234567Z")]]></TextOutput>
+      <PrettyPrint><![CDATA[
+YEAR("2020-08-06T20:45:22.1234567Z")
+]]></PrettyPrint>
+      <HashCode>1895825496</HashCode>
+      <ObfusctedQuery><![CDATA[YEAR("str1__28")]]></ObfusctedQuery>
     </Output>
   </Result>
 </Results>

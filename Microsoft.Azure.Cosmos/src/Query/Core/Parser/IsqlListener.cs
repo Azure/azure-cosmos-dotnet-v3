@@ -268,6 +268,26 @@ internal interface IsqlListener : IParseTreeListener {
 	/// <param name="context">The parse tree.</param>
 	void ExitOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context);
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.score_expression_order_by_items"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterScore_expression_order_by_items([NotNull] sqlParser.Score_expression_order_by_itemsContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.score_expression_order_by_items"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitScore_expression_order_by_items([NotNull] sqlParser.Score_expression_order_by_itemsContext context);
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.score_expression_order_by_item"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void EnterScore_expression_order_by_item([NotNull] sqlParser.Score_expression_order_by_itemContext context);
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.score_expression_order_by_item"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	void ExitScore_expression_order_by_item([NotNull] sqlParser.Score_expression_order_by_itemContext context);
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.order_by_items"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>

@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex);
+                DefaultTrace.TraceError("Exception in EnrichAndSendAsync() : {0}", ex.Message);
             }
 
             DefaultTrace.TraceInformation("Telemetry Job Stopped.");
@@ -275,7 +275,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
             }
         }
 
@@ -316,7 +316,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
                 }
                 catch (Exception ex)
                 {
-                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex);
+                    DefaultTrace.TraceError("Latency Recording Failed by Telemetry. Exception : {0}", ex.Message);
                 }
 
             }
@@ -332,7 +332,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex);
+                DefaultTrace.TraceError("Request Charge Recording Failed by Telemetry. Request Charge Value : {0}  Exception : {1} ", requestChargeToRecord, ex.Message);
             }
         }
 
