@@ -34,7 +34,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosBinary cosmosBinary && this.Equals(cosmosBinary);
+        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosBinary cosmosBinary && this.Equals(cosmosBinary);
 
         public bool Equals(CosmosBinary? cosmosBinary) => cosmosBinary is not null && this.Value.Span.SequenceEqual(cosmosBinary.Value.Span);
 

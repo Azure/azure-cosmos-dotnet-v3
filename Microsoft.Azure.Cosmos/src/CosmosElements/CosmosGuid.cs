@@ -43,26 +43,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
-        {
-            return cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
-        }
+        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosGuid cosmosGuid && this.Equals(cosmosGuid);
 
-        public bool Equals(CosmosGuid cosmosGuid)
+        public bool Equals(CosmosGuid? cosmosGuid)
         {
-            return this.Value == cosmosGuid.Value;
+            return cosmosGuid is not null && this.Value == cosmosGuid.Value;
         }
 
         public override int GetHashCode()
         {
-            uint hash = HashSeed;
-            hash = MurmurHash3.Hash32(this.Value, hash);
-            return (int)hash;
+            return (int)(HashSeed ^ (uint)this.Value.GetHashCode());
         }
 
-        public int CompareTo(CosmosGuid cosmosGuid)
+        public int CompareTo(CosmosGuid? cosmosGuid)
         {
-            return this.Value.CompareTo(cosmosGuid.Value);
+            return cosmosGuid is null ? 1 : this.Value.CompareTo(cosmosGuid.Value);
         }
 
         public static CosmosGuid Create(

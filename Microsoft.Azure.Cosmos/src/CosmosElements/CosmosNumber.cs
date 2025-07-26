@@ -46,15 +46,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
-        {
-            return cosmosElement is CosmosNumber cosmosNumber && this.Equals(cosmosNumber);
-        }
+        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosNumber cosmosNumber && this.Equals(cosmosNumber);
 
-        public abstract bool Equals(CosmosNumber cosmosNumber);
+        public abstract bool Equals(CosmosNumber? cosmosNumber);
 
-        public int CompareTo(CosmosNumber other)
+        public int CompareTo(CosmosNumber? other)
         {
+            if (other is null)
+            {
+                return 1;
+            }
+
             int thisTypeOrder = this.Accept(CosmosNumberToTypeOrder.Singleton);
             int otherTypeOrder = other.Accept(CosmosNumberToTypeOrder.Singleton);
 

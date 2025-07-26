@@ -45,24 +45,21 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return cosmosNumberVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosNumber cosmosNumber)
-        {
-            return cosmosNumber is CosmosInt8 cosmosInt8 && this.Equals(cosmosInt8);
-        }
+        public override bool Equals(CosmosElement? cosmosNumber) => cosmosNumber is CosmosInt8 cosmosInt8 && this.Equals(cosmosInt8);
 
-        public bool Equals(CosmosInt8 cosmosInt8)
+        public bool Equals(CosmosInt8? cosmosInt8)
         {
-            return this.GetValue() == cosmosInt8.GetValue();
+            return cosmosInt8 is not null && this.Value == cosmosInt8.Value;
         }
 
         public override int GetHashCode()
         {
-            return (int)MurmurHash3.Hash32(this.GetValue(), 1301790982);
+            return (int)(HashSeed ^ (uint)this.Value.GetHashCode());
         }
 
-        public int CompareTo(CosmosInt8 cosmosInt8)
+        public int CompareTo(CosmosInt8? cosmosInt8)
         {
-            return this.GetValue().CompareTo(cosmosInt8.GetValue());
+            return cosmosInt8 is null ? 1 : this.Value.CompareTo(cosmosInt8.Value);
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)
