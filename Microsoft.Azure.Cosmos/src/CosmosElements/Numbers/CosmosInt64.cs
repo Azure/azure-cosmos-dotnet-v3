@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 
         public override int GetHashCode()
         {
-            return (int)(HashSeed ^ (uint)this.Value.GetHashCode());
+            return (int)MurmurHash3.Hash32(this.GetValue(), 2562566505);
         }
 
         public int CompareTo(CosmosInt64? cosmosInt64)

@@ -41,7 +41,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
         /// <param name="cosmosElement">The element to add.</param>
         /// <param name="hash">The hash of the cosmos element</param>
         /// <returns>Whether or not the token was successfully added.</returns>
-        public abstract bool Add(CosmosElement cosmosElement, out UInt128 hash);
+        public abstract bool Add(CosmosElement cosmosElement, out Microsoft.Azure.Cosmos.UInt128 hash);
 
         public abstract string GetContinuationToken();
 
