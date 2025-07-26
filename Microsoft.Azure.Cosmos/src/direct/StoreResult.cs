@@ -239,7 +239,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException);
+                    DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException?.Message);
                     return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
                         storeResponse: null,
                         exception: new InternalServerErrorException(RMResources.InternalServerError, responseException),

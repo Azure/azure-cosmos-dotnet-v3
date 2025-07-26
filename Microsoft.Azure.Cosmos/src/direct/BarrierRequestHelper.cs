@@ -28,7 +28,8 @@ namespace Microsoft.Azure.Documents
             DocumentServiceRequest request,
             IAuthorizationTokenProvider authorizationTokenProvider,
             long? targetLsn,
-            long? targetGlobalCommittedLsn)
+            long? targetGlobalCommittedLsn,
+            bool includeRegionContext = false)
         {
             bool isCollectionHeadRequest = BarrierRequestHelper.IsCollectionHeadBarrierRequest(request.ResourceType, request.OperationType);
 
@@ -152,6 +153,18 @@ namespace Microsoft.Azure.Documents
             if (request.Headers[WFConstants.BackendHeaders.CollectionRid] != null)
             {
                 barrierLsnRequest.Headers[WFConstants.BackendHeaders.CollectionRid] = request.Headers[WFConstants.BackendHeaders.CollectionRid];
+            }
+
+            if (includeRegionContext)
+            {
+                if (request.RequestContext.LocationEndpointToRoute != null)
+                {
+                    barrierLsnRequest.RequestContext.RouteToLocation(request.RequestContext.LocationEndpointToRoute);
+                }
+                else if (request.RequestContext.LocationIndexToRoute.HasValue)
+                {
+                    barrierLsnRequest.RequestContext.RouteToLocation(request.RequestContext.LocationIndexToRoute.Value, false);
+                }
             }
 
             if (request.Properties != null && request.Properties.ContainsKey(WFConstants.BackendHeaders.EffectivePartitionKeyString))

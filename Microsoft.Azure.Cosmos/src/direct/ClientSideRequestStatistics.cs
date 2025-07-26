@@ -281,7 +281,7 @@ namespace Microsoft.Azure.Documents
                 {
                     DefaultTrace.TraceCritical(
                         "System usage monitor failed with an unexpected exception: {0}",
-                        ex);
+                        ex.Message);
                 }
             }
         }

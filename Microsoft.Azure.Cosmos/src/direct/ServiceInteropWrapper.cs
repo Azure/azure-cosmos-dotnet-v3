@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Documents
             {
                 // There has been certain environments where attempting to find the ServiceInterop has resulted in an exception.
                 // Instead of failing the SDK trace the exception and fall back to gateway mode.
-                DefaultTrace.TraceWarning($"ServiceInteropWrapper: Falling back to gateway. Finding ServiceInterop dll threw an exception {e}");
+                DefaultTrace.TraceWarning($"ServiceInteropWrapper: Falling back to gateway. Finding ServiceInterop dll threw an exception {e.Message}");
             }
 
             if (string.IsNullOrEmpty(validationMessage))

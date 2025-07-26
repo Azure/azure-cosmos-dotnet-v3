@@ -216,7 +216,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             catch (Exception e)
             {
                 DefaultTrace.TraceError(
-                    "[RNTBD Channel {0}] Failed to serialize request. Assuming malformed request payload: {1}", this.ConnectionCorrelationId, e);
+                    "[RNTBD Channel {0}] Failed to serialize request. Assuming malformed request payload: {1}", this.ConnectionCorrelationId, e.Message);
                 DocumentClientException clientException = new BadRequestException(e);
                 clientException.Headers.Add(
                     HttpConstants.HttpHeaders.RequestValidationFailure, "1");
@@ -464,7 +464,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     this.openArguments.CommonArguments.ActivityId.ToString());
                 DefaultTrace.TraceWarning(
                     "[RNTBD Channel {0}] Channel.InitializeAsync failed. Channel: {1}. DocumentClientException: {2}",
-                    this.ConnectionCorrelationId, this, e);
+                    this.ConnectionCorrelationId, this, e.Message);
 
                 throw;
             }
@@ -474,7 +474,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 DefaultTrace.TraceWarning(
                     "[RNTBD Channel {0}] Channel.InitializeAsync failed. Channel: {1}. TransportException: {2}",
-                    this.ConnectionCorrelationId, this, e);
+                    this.ConnectionCorrelationId, this, e.Message);
 
                 throw;
             }
@@ -485,7 +485,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceWarning(
                     "[RNTBD Channel {0}] Channel.InitializeAsync failed. Wrapping exception in " +
                     "TransportException. Channel: {1}. Inner exception: {2}",
-                    this.ConnectionCorrelationId, this, e);
+                    this.ConnectionCorrelationId, this, e.Message);
 
                 Debug.Assert(!this.openArguments.CommonArguments.UserPayload);
                 throw new TransportException(
@@ -561,7 +561,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 Exception e = task.Exception.InnerException;
                 DefaultTrace.TraceInformation(
                     "[RNTBD Channel {0}] Timed out task completed. Activity ID = {1}. HRESULT = {2:X}. Exception: {3}",
-                    connectionCorrelationId, activityId, e.HResult, e);
+                    connectionCorrelationId, activityId, e?.HResult, e?.Message);
             },
             TaskContinuationOptions.OnlyOnFaulted);
         }

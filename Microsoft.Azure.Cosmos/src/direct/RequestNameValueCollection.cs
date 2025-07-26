@@ -170,6 +170,7 @@ namespace Microsoft.Azure.Documents.Collections
         public string ProfileRequest { get; set; }
         public string PruneCollectionSchemas { get; set; }
         public string QueryVersion { get; set; }
+        public string ReadGlobalCommittedData { get; set; }
         public string RbacAction { get; set; }
         public string RbacResource { get; set; }
         public string RbacUserId { get; set; }
@@ -477,6 +478,7 @@ namespace Microsoft.Azure.Documents.Collections
                 requestNameValueCollection.RetrieveUserStrings = nameValueCollection[WFConstants.BackendHeaders.RetrieveUserStrings];
                 requestNameValueCollection.PopulateVectorIndexAggregateProgress = nameValueCollection[HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress];
                 requestNameValueCollection.IfMatch = nameValueCollection[HttpConstants.HttpHeaders.IfMatch];
+                requestNameValueCollection.ReadGlobalCommittedData = nameValueCollection[HttpConstants.HttpHeaders.ReadGlobalCommittedData];
                 requestNameValueCollection.NoRetryOn449StatusCode = nameValueCollection[HttpConstants.HttpHeaders.NoRetryOn449StatusCode];
                 requestNameValueCollection.SkipAdjustThroughputFractionsForOfferReplace = nameValueCollection[HttpConstants.HttpHeaders.SkipAdjustThroughputFractionsForOfferReplace];
                 requestNameValueCollection.SqlQueryForPartitionKeyExtraction = nameValueCollection[HttpConstants.HttpHeaders.SqlQueryForPartitionKeyExtraction];
@@ -657,6 +659,7 @@ namespace Microsoft.Azure.Documents.Collections
             this.ProfileRequest = null;
             this.PruneCollectionSchemas = null;
             this.QueryVersion = null;
+            this.ReadGlobalCommittedData = null;
             this.RbacAction = null;
             this.RbacResource = null;
             this.RbacUserId = null;
@@ -861,6 +864,7 @@ namespace Microsoft.Azure.Documents.Collections
                 ProfileRequest = this.ProfileRequest,
                 PruneCollectionSchemas = this.PruneCollectionSchemas,
                 QueryVersion = this.QueryVersion,
+                ReadGlobalCommittedData = this.ReadGlobalCommittedData,
                 RbacAction = this.RbacAction,
                 RbacResource = this.RbacResource,
                 RbacUserId = this.RbacUserId,
@@ -1705,6 +1709,10 @@ namespace Microsoft.Azure.Documents.Collections
             {
                 yield return HttpConstants.HttpHeaders.IfMatch;
             }
+            if (this.ReadGlobalCommittedData != null)
+            {
+                yield return HttpConstants.HttpHeaders.ReadGlobalCommittedData;
+            }
             if (this.NoRetryOn449StatusCode != null)
             {
                 yield return HttpConstants.HttpHeaders.NoRetryOn449StatusCode;
@@ -2514,6 +2522,10 @@ namespace Microsoft.Azure.Documents.Collections
                         if (this.IfMatch != null)
                         {
                             this.nameValueCollection.Add(HttpConstants.HttpHeaders.IfMatch, this.IfMatch);
+                        }
+                        if (this.ReadGlobalCommittedData != null)
+                        {
+                            this.nameValueCollection.Add(HttpConstants.HttpHeaders.ReadGlobalCommittedData, this.ReadGlobalCommittedData);
                         }
                         if (this.NoRetryOn449StatusCode != null)
                         {
@@ -3756,6 +3768,10 @@ namespace Microsoft.Azure.Documents.Collections
                     {
                         return this.UseUserBackgroundBudget;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ReadGlobalCommittedData, key))
+                    {
+                        return this.ReadGlobalCommittedData;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.MigrateOfferToAutopilot, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.MigrateOfferToAutopilot;
@@ -3774,6 +3790,11 @@ namespace Microsoft.Azure.Documents.Collections
                     if (string.Equals(WFConstants.BackendHeaders.UseUserBackgroundBudget, key, StringComparison.OrdinalIgnoreCase))
                     {
                         return this.UseUserBackgroundBudget;
+                    }
+
+                    if (string.Equals(HttpConstants.HttpHeaders.ReadGlobalCommittedData, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return this.ReadGlobalCommittedData;
                     }
 
                     break;
@@ -6988,6 +7009,16 @@ namespace Microsoft.Azure.Documents.Collections
                         this.UseUserBackgroundBudget = value;
                         return;
                     }
+                    if (object.ReferenceEquals(HttpConstants.HttpHeaders.ReadGlobalCommittedData, key))
+                    {
+                        if (throwIfAlreadyExists && this.ReadGlobalCommittedData != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ReadGlobalCommittedData = value;
+                        return;
+                    }
                     if (string.Equals(HttpConstants.HttpHeaders.MigrateOfferToAutopilot, key, StringComparison.OrdinalIgnoreCase))
                     {
                         if (throwIfAlreadyExists && this.MigrateOfferToAutopilot != null)
@@ -7026,6 +7057,16 @@ namespace Microsoft.Azure.Documents.Collections
                         }
 
                         this.UseUserBackgroundBudget = value;
+                        return;
+                    }
+                    if (string.Equals(HttpConstants.HttpHeaders.ReadGlobalCommittedData, key, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (throwIfAlreadyExists && this.ReadGlobalCommittedData != null)
+                        {
+                            throw new ArgumentException($"The {key} already exists in the collection");
+                        }
+
+                        this.ReadGlobalCommittedData = value;
                         return;
                     }
                     break;
