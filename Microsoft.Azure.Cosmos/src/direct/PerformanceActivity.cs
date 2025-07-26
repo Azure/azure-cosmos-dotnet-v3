@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.InteropServices;
 
     internal class PerformanceActivity
     {
@@ -20,6 +21,8 @@ namespace Microsoft.Azure.Documents
         private readonly PerformanceCounter averageTimeBaseCounter;
 
         private string operationName;
+
+        private static readonly bool IsWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         public delegate void OperationDurationDelegate(Guid ActivityId, string operation, double milliseconds);
 
@@ -87,12 +90,12 @@ namespace Microsoft.Azure.Documents
         {
             stopWatch.Start();
 
-            if (this.requestsCounter != null)
+            if (IsWindowsPlatform && this.requestsCounter != null)
             {
                 this.requestsCounter.Increment();
             }
 
-            if (this.currentRequestsCounter != null)
+            if (IsWindowsPlatform && this.currentRequestsCounter != null)
             {
                 this.currentRequestsCounter.Increment();
             }
@@ -111,7 +114,7 @@ namespace Microsoft.Azure.Documents
 
             long ticks = stopWatch.ElapsedTicks;
 
-            if (this.averageTimeCounter != null && ticks < PerformanceActivity.MaxTicks)
+            if (IsWindowsPlatform && this.averageTimeCounter != null && ticks < PerformanceActivity.MaxTicks)
             {
                 this.averageTimeCounter.IncrementBy(ticks);
                 this.averageTimeBaseCounter.Increment();
@@ -122,12 +125,12 @@ namespace Microsoft.Azure.Documents
                 PerformanceActivity.OperationDuration(Trace.CorrelationManager.ActivityId, this.operationName, stopWatch.ElapsedMilliseconds);
             }
 
-            if (this.currentRequestsCounter != null)
+            if (IsWindowsPlatform && this.currentRequestsCounter != null)
             {
                 this.currentRequestsCounter.Decrement();
             }
 
-            if (success == false && this.failuresCounter != null)
+            if (IsWindowsPlatform && success == false && this.failuresCounter != null)
             {
                 this.failuresCounter.Increment();
             }

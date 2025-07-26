@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Diagnostics;
+    using System.Runtime.InteropServices;
     using Microsoft.Azure.Cosmos.ServiceFramework.Core;
 
     internal sealed class PerfCounters : IDisposable
@@ -48,6 +49,8 @@ namespace Microsoft.Azure.Documents
         private PerformanceCounter routingFailures;
 
         private PerformanceCounter backendConnectionOpenFailuresDueToSynRetransmitPerSecond;
+
+        private static readonly bool IsWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         private PerfCounters(string category, string categoryHelp)
         {
@@ -225,6 +228,11 @@ namespace Microsoft.Azure.Documents
             CounterCreationDataCollection counters,
             bool useSystemMutex = true)
         {
+            if (!IsWindowsPlatform)
+            {
+                return; // PerformanceCounter is only supported on Windows
+            }
+
             SystemSynchronizationScope syncScope = useSystemMutex ? SystemSynchronizationScope.CreateSynchronizationScope($"CDBPerfCategory-{category}") : default;
 
             try
@@ -277,6 +285,11 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         public void InstallCounters()
         {
+            if (!IsWindowsPlatform)
+            {
+                return; // PerformanceCounter is only supported on Windows
+            }
+
             CounterCreationDataCollection counters = new CounterCreationDataCollection();
 
             counters.Add(new CounterCreationData("Frontend Requests/sec", "Frontend Requests per second", PerformanceCounterType.RateOfCountsPerSecond32));
@@ -326,6 +339,11 @@ namespace Microsoft.Azure.Documents
 
         public void InitializePerfCounters()
         {
+            if (!IsWindowsPlatform)
+            {
+                return; // PerformanceCounter is only supported on Windows
+            }
+
             this.frontendRequestsPerSec = new PerformanceCounter(this.performanceCategory, "Frontend Requests/sec", false);
             this.frontendRequestsPerSec.RawValue = 0;
 

@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Net;
     using System.Net.Security;
     using System.Net.Sockets;
+    using System.Runtime.InteropServices;
     using System.Security.Authentication;
     using System.Threading;
     using System.Threading.Tasks;
@@ -60,6 +61,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
         private static readonly TimeSpan recentReceiveWindow = TimeSpan.FromSeconds(1.0);
+        private static readonly bool IsWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         private readonly Guid connectionCorrelationId;
         private readonly Uri serverUri;
@@ -592,16 +594,18 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // handle around until finalization.
                 tcpClient?.Close();
 
-#if NETFX
-                SocketException socketEx = ex as SocketException;
-                if (socketEx != null && socketEx.SocketErrorCode == SocketError.TimedOut)
+                // Use runtime platform check instead of compile-time check
+                if (IsWindowsPlatform)
                 {
-                    if (PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond != null)
+                    SocketException socketEx = ex as SocketException;
+                    if (socketEx != null && socketEx.SocketErrorCode == SocketError.TimedOut)
                     {
-                        PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond.Increment();
+                        if (PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond != null)
+                        {
+                            PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond.Increment();
+                        }
                     }
                 }
-#endif
 
                 DefaultTrace.TraceInformation(
                     "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to TransportException. " +

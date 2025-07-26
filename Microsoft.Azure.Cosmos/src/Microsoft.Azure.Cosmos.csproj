@@ -39,7 +39,6 @@
 		<IncludeSymbols>false</IncludeSymbols>
 		<IncludeSource>false</IncludeSource>
 		<RootNamespace>Microsoft.Azure.Cosmos</RootNamespace>
-		<NoWarn>NU5125</NoWarn>
 		<Optimize Condition="'$(Configuration)'=='Release'">true</Optimize>
 		<LangVersion>$(LangVersion)</LangVersion>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
@@ -193,7 +192,7 @@
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
 		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
 		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT</DefineConstants>
-		<NoWarn>CS0472</NoWarn>
+		<NoWarn>CS0472;CA1416;NU5125</NoWarn>
 	</PropertyGroup>
 
 </Project>
