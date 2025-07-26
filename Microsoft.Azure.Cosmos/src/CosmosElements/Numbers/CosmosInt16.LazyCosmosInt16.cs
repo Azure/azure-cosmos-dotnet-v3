@@ -51,6 +51,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             {
                 return this.lazyNumber.Value;
             }
+
+            public override bool Equals(CosmosNumber? cosmosNumber) => cosmosNumber is CosmosInt16 cosmosInt16 && this.Equals(cosmosInt16);
         }
     }
 }

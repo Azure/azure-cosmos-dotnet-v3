@@ -32,6 +32,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             {
                 return this.number;
             }
+
+            public override bool Equals(CosmosNumber? cosmosNumber) => cosmosNumber is CosmosNumber64 cosmosNumber64 && this.Equals(cosmosNumber64);
         }
     }
 }
