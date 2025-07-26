@@ -1,26 +1,39 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Microsoft.Azure.Cosmos;
 
-const string CosmosBaseUri = "https://{0}.documents.azure.com:443/";
-string accountName = "cosmosaot1";
-string primaryKey = Environment.GetEnvironmentVariable("KEY");
-Console.WriteLine($"COSMOS_PRIMARY_KEY: {primaryKey}");
+namespace Cosmos.Sample;
 
-CosmosClientOptions clientOptions = new CosmosClientOptions { AllowBulkExecution = true };
-clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing = false;
-
-CosmosClient client = new CosmosClient(
-    string.Format(CosmosBaseUri, accountName),
-    primaryKey,
-    clientOptions);
-
-
-FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>();
-while (iterator.HasMoreResults)
+internal class Program
 {
-    FeedResponse<DatabaseProperties> results = await iterator.ReadNextAsync();
-    foreach (DatabaseProperties r in results)
+    private static async Task Main(string[] args)
     {
-        Console.WriteLine(r.Id);
+        const string CosmosBaseUri = "https://{0}.documents.azure.com:443/";
+        string accountName = "cosmosaot1";
+        string? primaryKey = Environment.GetEnvironmentVariable("KEY");
+        Console.WriteLine($"COSMOS_PRIMARY_KEY: {primaryKey}");
+
+        if (string.IsNullOrEmpty(primaryKey))
+        {
+            Console.WriteLine("ERROR: KEY environment variable is not set");
+            return;
+        }
+
+        CosmosClientOptions clientOptions = new CosmosClientOptions { AllowBulkExecution = true };
+        clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing = false;
+
+        CosmosClient client = new CosmosClient(
+            string.Format(CosmosBaseUri, accountName),
+            primaryKey,
+            clientOptions);
+
+        FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>();
+        while (iterator.HasMoreResults)
+        {
+            FeedResponse<DatabaseProperties> results = await iterator.ReadNextAsync();
+            foreach (DatabaseProperties r in results)
+            {
+                Console.WriteLine(r.Id);
+            }
+        }
     }
 }
