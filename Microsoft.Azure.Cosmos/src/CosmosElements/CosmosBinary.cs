@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosBinary cosmosBinary && this.Equals(cosmosBinary);
 
-        public bool Equals(CosmosBinary cosmosBinary) => this.Value.Span.SequenceEqual(cosmosBinary.Value.Span);
+        public bool Equals(CosmosBinary? cosmosBinary) => cosmosBinary is not null && this.Value.Span.SequenceEqual(cosmosBinary.Value.Span);
 
         public override int GetHashCode()
         {
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosBinary cosmosBinary) => this.Value.Span.SequenceCompareTo(cosmosBinary.Value.Span);
+        public int CompareTo(CosmosBinary? cosmosBinary) => cosmosBinary is null ? 1 : this.Value.Span.SequenceCompareTo(cosmosBinary.Value.Span);
 
         public static CosmosBinary Create(
             IJsonNavigator jsonNavigator,

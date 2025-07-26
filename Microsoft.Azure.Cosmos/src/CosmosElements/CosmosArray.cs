@@ -44,8 +44,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosArray cosmosArray && this.Equals(cosmosArray);
 
-        public bool Equals(CosmosArray cosmosArray)
+        public bool Equals(CosmosArray? cosmosArray)
         {
+            if (cosmosArray is null)
+            {
+                return false;
+            }
+
             if (this.Count != cosmosArray.Count)
             {
                 return false;
@@ -77,8 +82,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosArray cosmosArray)
+        public int CompareTo(CosmosArray? cosmosArray)
         {
+            if (cosmosArray is null)
+            {
+                return 1; // Non-null is greater than null
+            }
+
             UInt128 hash1 = DistinctHash.GetHash(this);
             UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
             return UInt128BinaryComparer.Singleton.Compare(hash1, hash2);
