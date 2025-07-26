@@ -16,7 +16,7 @@
 		<Version Condition=" '$(VersionSuffix)' != '' ">$(ClientVersion)-$(VersionSuffix)</Version>
 		<FileVersion>$(ClientVersion)</FileVersion>
 		<Authors>Microsoft</Authors>
-		<TargetFramework>netstandard2.0</TargetFramework>
+		<TargetFramework>net9.0</TargetFramework>
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
@@ -158,12 +158,12 @@
 		<None Include="$(OutputPath)\vcruntime140_1.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\vcruntime140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\msvcp140.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
-		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\netstandard2.0" />
-		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\netstandard2.0">
+		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Core.dll" Pack="true" IsAssembly="true" PackagePath="lib\net9.0" />
+		<None Include="$(NugetPackageRoot)\Microsoft.HybridRow\$(HybridRowVersion)\lib\netstandard2.0\Microsoft.Azure.Cosmos.Serialization.HybridRow.dll" Pack="true" IsAssembly="true" PackagePath="lib\net9.0" />
+		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="build\net9.0">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="buildTransitive\netstandard2.0">
+		<None Include="$(MSBuildThisFileDirectory)\Microsoft.Azure.Cosmos.targets" Pack="true" PackagePath="buildTransitive\net9.0">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
@@ -192,7 +192,7 @@
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
 		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
-		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20</DefineConstants>
+		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT</DefineConstants>
 		<NoWarn>CS0472</NoWarn>
 	</PropertyGroup>
 

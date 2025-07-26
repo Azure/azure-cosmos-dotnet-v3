@@ -38,19 +38,21 @@ namespace Microsoft.Azure.Documents
 
         private static readonly Lazy<bool> enableGlobalStrong = new Lazy<bool>(() => {
             bool isGlobalStrongEnabled = true;
-#if !(NETSTANDARD15 || NETSTANDARD16)
-        if (AppConfig.IsEnabled)
-        {
-            string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];
-            if (!string.IsNullOrEmpty(isGlobalStrongEnabledConfig))
+            if (AppConfig.IsEnabled)
             {
-                if (!bool.TryParse(isGlobalStrongEnabledConfig, out isGlobalStrongEnabled))
+                string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];
+                if (!string.IsNullOrEmpty(isGlobalStrongEnabledConfig))
                 {
-                    return false;
+                    string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];
+                    if (!string.IsNullOrEmpty(isGlobalStrongEnabledConfig))
+                    {
+                        if (!bool.TryParse(isGlobalStrongEnabledConfig, out isGlobalStrongEnabled))
+                        {
+                            return false;
+                        }
+                    }
                 }
             }
-        }
-#endif
             return isGlobalStrongEnabled;
         });
 
@@ -351,9 +353,7 @@ namespace Microsoft.Azure.Documents
         {
             bool isGlobalStrongEnabled = true;
 #if DOCDBCLIENT
-#if !(NETSTANDARD15 || NETSTANDARD16)
             isGlobalStrongEnabled = ReplicatedResourceClient.enableGlobalStrong.Value;
-#endif
 #endif
             return isGlobalStrongEnabled;
         }

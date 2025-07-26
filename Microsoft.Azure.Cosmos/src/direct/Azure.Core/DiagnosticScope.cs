@@ -7,7 +7,6 @@
 // 2. Commented Line number 135, as it is using RequestFailedException in If-condition which belogs to Azure Core repo.
 
 #nullable enable
-#if NETSTANDARD2_0_OR_GREATER
 
 namespace Azure.Core
 {
@@ -466,4 +465,3 @@ namespace Azure.Core
         }
     }
 }
-#endif

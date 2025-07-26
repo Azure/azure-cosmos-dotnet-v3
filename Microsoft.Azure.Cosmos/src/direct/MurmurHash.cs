@@ -148,7 +148,7 @@ namespace Microsoft.Azure.Documents.Routing
             return h1;
         }
 
-        public static UInt128 Hash128(byte[] bytes, int length, UInt128 seed)
+        public static Microsoft.Azure.Documents.UInt128 Hash128(byte[] bytes, int length, Microsoft.Azure.Documents.UInt128 seed)
         {
             const ulong c1 = 0x87c37b91114253d5;
             const ulong c2 = 0x4cf5ad432745937f;
@@ -252,7 +252,7 @@ namespace Microsoft.Azure.Documents.Routing
                 h2 = MurmurHash3.Reverse(h2);
             }
 
-            return UInt128.Create(h1, h2);
+            return Microsoft.Azure.Documents.UInt128.Create(h1, h2);
         }
 
         public static ulong Reverse(ulong value)

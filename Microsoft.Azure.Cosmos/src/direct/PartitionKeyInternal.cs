@@ -17,6 +17,10 @@ namespace Microsoft.Azure.Documents.Routing
     using System.Text.Json;
     using System.Text.Json.Serialization;
 
+    // Use aliases to disambiguate between custom types and System types in .NET 9
+    using CustomInt128 = Microsoft.Azure.Documents.SharedFiles.Routing.Int128;
+    using CustomUInt128 = Microsoft.Azure.Documents.UInt128;
+
     /// <summary>
     /// Schema-less Partition Key value.
     /// </summary>
@@ -35,7 +39,7 @@ namespace Microsoft.Azure.Documents.Routing
             1 /*type marker */ + 9 /* hash value*/ +
             1 /* type marker*/ + StringPartitionKeyComponent.MaxStringBytesToAppend + 1 /*trailing zero*/) * 3;
 
-        private static readonly Int128 MaxHashV2Value = new Int128(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F });
+        private static readonly CustomInt128 MaxHashV2Value = new CustomInt128(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F });
 
         public static readonly string MinimumInclusiveEffectivePartitionKey = ToHexEncodedBinaryString(new IPartitionKeyComponent[0]);
 
@@ -231,7 +235,7 @@ namespace Microsoft.Azure.Documents.Routing
                     switch (partitionKeyDefinition.Version ?? defaultPartitionKeyDefinitionVersion)
                     {
                         case PartitionKeyDefinitionVersion.V2:
-                            Int128 val = MaxHashV2Value / partitionCount * partitionIndex;
+                            CustomInt128 val = MaxHashV2Value / partitionCount * partitionIndex;
                             byte[] bytes = val.Bytes;
                             Array.Reverse(bytes);
                             return HexConvert.ToHex(bytes, 0, bytes.Length);
@@ -245,7 +249,7 @@ namespace Microsoft.Azure.Documents.Routing
                     }
 
                 case PartitionKind.MultiHash:
-                    Int128 max_val = MaxHashV2Value / partitionCount * partitionIndex;
+                    CustomInt128 max_val = MaxHashV2Value / partitionCount * partitionIndex;
                     byte[] max_bytes = max_val.Bytes;
                     Array.Reverse(max_bytes);
                     return HexConvert.ToHex(max_bytes, 0, max_bytes.Length);

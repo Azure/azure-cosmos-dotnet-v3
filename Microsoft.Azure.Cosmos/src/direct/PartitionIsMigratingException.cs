@@ -60,14 +60,12 @@ namespace Microsoft.Azure.Documents.Routing
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private PartitionIsMigratingException(SerializationInfo info, StreamingContext context)
             : base(info, context, (HttpStatusCode)StatusCodes.Gone)
         {
             SetSubstatus();
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

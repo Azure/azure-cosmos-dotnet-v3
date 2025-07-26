@@ -5,7 +5,6 @@
 // This File is copied from Azure.Core repo i.e. https://github.com/Azure/azure-sdk-for-net/blob/main/sdk/core/Azure.Core/src/Shared/AppContextSwitchHelper.cs
 
 #nullable enable
-#if NETSTANDARD2_0_OR_GREATER
 namespace Azure.Core
 {
     using System;
@@ -44,4 +43,3 @@ namespace Azure.Core
         }
     }
 }
-#endif

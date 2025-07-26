@@ -54,12 +54,9 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
 
             DefaultTrace.IsListenerAdded = true;
 
-#if !NETSTANDARD16
             SourceSwitch sourceSwitch = new SourceSwitch("ClientSwitch", "Information");
             DefaultTrace.TraceSourceInternal.Switch = sourceSwitch;
 
-#if !COSMOSCLIENT
-#if NETSTANDARD2_0
             // ETW is a Windows-only feature.
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -67,13 +64,7 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             }
 
             TraceListener listener = new EtwTraceListener(DefaultTrace.ProviderId, "DocDBClientListener");
-#else
-            TraceListener listener = new System.Diagnostics.Eventing.EventProviderTraceListener(DefaultTrace.ProviderId.ToString(), "DocDBClientListener", "::");
-
             DefaultTrace.TraceSourceInternal.Listeners.Add(listener);
-#endif // NETSTANDARD2_0
-#endif // !COSMOSCLIENT
-#endif // NETSTANDARD16
         }
 
         public static void Flush()

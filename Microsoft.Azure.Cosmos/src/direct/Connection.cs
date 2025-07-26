@@ -1038,7 +1038,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
-#if !NETSTANDARD15 && !NETSTANDARD16
             // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
             // but the feature is unavailable on .NET Framework 4.5.1.
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
@@ -1060,9 +1059,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Connection.SetKeepAliveSocketOptions(clientSocket);
             }
-#else
-            Connection.SetKeepAliveSocketOptions(clientSocket);
-#endif
         }
 
         private static void SetKeepAliveSocketOptions(Socket clientSocket)
@@ -1132,7 +1128,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void SetReuseUnicastPort(Socket clientSocket, Guid connectionCorrelationId)
         {
-#if !NETSTANDARD15 && !NETSTANDARD16
             // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
             // but the feature is unavailable on .NET Framework 4.5.1.
             if (Environment.OSVersion.Platform == PlatformID.Win32NT)
@@ -1151,7 +1146,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     // Ignore the exception.
                 }
             }
-#endif  // !NETSTANDARD15 && !NETSTANDARD16
         }
     }
 }

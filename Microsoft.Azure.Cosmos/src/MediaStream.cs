@@ -124,18 +124,6 @@ namespace Microsoft.Azure.Cosmos
         {
             this.contentStream.EndWrite(asyncResult);
         }
-
-        public override object InitializeLifetimeService()
-        {
-            return this.contentStream.InitializeLifetimeService();
-        }
-#endif
-
-#if !(NETSTANDARD16 || NETSTANDARD20)
-        public override System.Runtime.Remoting.ObjRef CreateObjRef(Type requestedType)
-        {
-            return this.contentStream.CreateObjRef(requestedType);
-        }
 #endif
 
         public override int Read(byte[] buffer, int offset, int count)

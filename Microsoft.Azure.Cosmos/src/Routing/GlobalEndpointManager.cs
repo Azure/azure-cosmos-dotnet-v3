@@ -57,7 +57,6 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
             if (AppConfig.IsEnabled)
             {
                 string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-#endif
+
             string minimumIntervalForNonForceRefreshLocationInMSConfig = Environment.GetEnvironmentVariable(GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS);
             if (!string.IsNullOrEmpty(minimumIntervalForNonForceRefreshLocationInMSConfig))
             {
@@ -449,7 +448,10 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 34efd8332 (set1 - net9)
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
             return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);

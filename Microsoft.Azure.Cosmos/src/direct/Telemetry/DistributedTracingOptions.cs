@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Documents.Telemetry
 {
     /// <summary>
     /// This class has all the configuration related to distributed tracing.
-    /// Distributed Tracing flag will always false for, less than NETSTANDARD. Hnce not available to the client.
+    /// Distributed Tracing is now always available in .NET 9.
     /// </summary>
     internal class DistributedTracingOptions
     {
@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Documents.Telemetry
 
         public const string ResourceProviderNamespace = "Microsoft.DocumentDB";
 
-#if NETSTANDARD2_0_OR_GREATER
         /// <summary>
         /// It is a feature flag to enable/disable distributed tracing feature completely at network level. 
         /// Even this flag is switched on, exporter needs to be subscribed for "Azure.Cosmos.Request" Source
@@ -36,6 +35,5 @@ namespace Microsoft.Azure.Documents.Telemetry
         internal Func<DocumentServiceRequest, bool> RequestEnabledPredicate { get; set; } = (request) => true;
 
         internal CosmosDistributedContextPropagatorBase Propagator { get; set; } = new DefaultCosmosDistributedContextPropagator();
-#endif
     }
 }
