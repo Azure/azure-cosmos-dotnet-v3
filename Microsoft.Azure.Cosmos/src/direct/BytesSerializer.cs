@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Rntbd
             where T : struct
         {
             Span<byte> writeSpan = this.targetByteArray.Slice(this.position);
-            MemoryMarshal.Write(writeSpan, ref value);
+            MemoryMarshal.Write(writeSpan, value);
             this.position += sizeT;
         }
     }

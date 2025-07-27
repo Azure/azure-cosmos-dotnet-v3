@@ -1159,7 +1159,20 @@ namespace Microsoft.Azure.Documents
 
         public static bool TryDecodeFromBase64String(string s, out byte[] bytes)
         {
-            return Convert.TryFromBase64String(s.Replace('-', '/'), out bytes);
+            bytes = null;
+            try
+            {
+                bytes = Convert.FromBase64String(s.Replace('-', '/'));
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
 
         public static ulong ToUnsignedLong(byte[] buffer)

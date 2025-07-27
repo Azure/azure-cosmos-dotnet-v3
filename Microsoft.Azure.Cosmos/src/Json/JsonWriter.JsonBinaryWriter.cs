@@ -2060,14 +2060,14 @@ namespace Microsoft.Azure.Cosmos.Json
                 public void Write(float value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(float));
-                    MemoryMarshal.Write<float>(this.Cursor, ref value);
+                    MemoryMarshal.Write<float>(this.Cursor, value);
                     this.Position += sizeof(float);
                 }
 
                 public void Write(double value)
                 {
                     this.EnsureRemainingBufferSpace(sizeof(double));
-                    MemoryMarshal.Write<double>(this.Cursor, ref value);
+                    MemoryMarshal.Write<double>(this.Cursor, value);
                     this.Position += sizeof(double);
                 }
 
@@ -2075,7 +2075,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 {
                     int sizeOfGuid = Marshal.SizeOf(Guid.Empty);
                     this.EnsureRemainingBufferSpace(sizeOfGuid);
-                    MemoryMarshal.Write<Guid>(this.Cursor, ref value);
+                    MemoryMarshal.Write<Guid>(this.Cursor, value);
                     this.Position += sizeOfGuid;
                 }
             }
