@@ -60,14 +60,12 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         [JsonConstructor]
         private PreconditionFailedException(SerializationInfo info, StreamingContext context) 
             : base(info, context, HttpStatusCode.PreconditionFailed)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

@@ -54,13 +54,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private MethodNotAllowedException(SerializationInfo info, StreamingContext context) :
             base(info, context, HttpStatusCode.MethodNotAllowed)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

@@ -65,13 +65,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private NotFoundException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.NotFound)
         {
-
+            SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

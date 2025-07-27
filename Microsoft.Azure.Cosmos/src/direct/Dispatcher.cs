@@ -18,10 +18,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Microsoft.Azure.Cosmos.Rntbd;
 #endif
 
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
-
     // Dispatcher encapsulates the state and logic needed to dispatch multiple requests through
     // a single connection.
     internal sealed class Dispatcher : IDisposable

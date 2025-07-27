@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Documents
         static ClientSideRequestStatistics()
         {
             ClientSideRequestStatistics.enableCpuMonitorFlag = true;
-#if !(NETSTANDARD15 || NETSTANDARD16)
             string enableCpuMonitorString = System.Configuration.ConfigurationManager.AppSettings[ClientSideRequestStatistics.EnableCpuMonitorConfig];
             if (!string.IsNullOrEmpty(enableCpuMonitorString))
             {
@@ -46,7 +45,6 @@ namespace Microsoft.Azure.Documents
                     ClientSideRequestStatistics.enableCpuMonitorFlag = true;
                 }
             }
-#endif
 
             if (ClientSideRequestStatistics.enableCpuMonitorFlag)
             {

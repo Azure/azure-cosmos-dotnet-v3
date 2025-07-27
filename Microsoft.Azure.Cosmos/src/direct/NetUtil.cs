@@ -7,10 +7,8 @@ namespace Microsoft.Azure.Documents
     using System.Net;
     using System.Net.NetworkInformation;
     using System.Net.Sockets;
-    using Microsoft.Azure.Cosmos.Core.Trace;
-#if !(NETSTANDARD15 || NETSTANDARD16)
     using System.Configuration;
-#endif
+    using Microsoft.Azure.Cosmos.Core.Trace;
 
     internal static class NetUtil
     {

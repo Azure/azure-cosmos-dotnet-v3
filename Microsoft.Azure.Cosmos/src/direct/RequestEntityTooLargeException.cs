@@ -48,14 +48,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private RequestEntityTooLargeException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.RequestEntityTooLarge)
         {
             SetDescription();
         }
-
-#endif
 
         private void SetDescription()
         {

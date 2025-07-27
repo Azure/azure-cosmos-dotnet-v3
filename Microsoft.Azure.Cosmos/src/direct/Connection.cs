@@ -22,10 +22,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Microsoft.Azure.Cosmos.Rntbd;
 #endif
 
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
-
     // Connection encapsulates the TCP connection to one back-end, and all surrounding
     // mechanisms (SSL stream, connection state).
     internal sealed class Connection : IDisposable
@@ -1028,9 +1024,8 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
-            // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
-            // but the feature is unavailable on .NET Framework 4.5.1.
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            // Use RuntimeInformation.IsOSPlatform for modern cross-platform detection
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
@@ -1118,15 +1113,13 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void SetReuseUnicastPort(Socket clientSocket, Guid connectionCorrelationId)
         {
-            // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
-            // but the feature is unavailable on .NET Framework 4.5.1.
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            // Use RuntimeInformation.IsOSPlatform for modern cross-platform detection
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
                     Debug.Assert(!clientSocket.IsBound);
-                    // SocketOptionName.ReuseUnicastPort is only present in .NET Framework 4.6.1 and newer.
-                    // Use the numeric value for as long as this code needs to target earlier versions.
+                    // Use numeric value for ReuseUnicastPort for compatibility
                     const int SO_REUSE_UNICASTPORT = 0x3007;
                     clientSocket.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)SO_REUSE_UNICASTPORT, true);
                 }
