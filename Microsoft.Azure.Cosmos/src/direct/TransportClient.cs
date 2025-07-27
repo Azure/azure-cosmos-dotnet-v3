@@ -7,7 +7,6 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.IO;
     using System.Net.Http;
-    using System.Runtime.InteropServices;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
@@ -15,8 +14,6 @@ namespace Microsoft.Azure.Documents
 
     internal abstract class TransportClient : IDisposable
     {
-        private static readonly bool IsWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-
         protected TransportClient()
         {
 
@@ -913,12 +910,6 @@ namespace Microsoft.Azure.Documents
 
                 case StatusCodes.Gone:
                     {
-                        // Use runtime platform check instead of compile-time check
-                        if (IsWindowsPlatform && PerfCounters.Counters.RoutingFailures != null)
-                        {
-                            PerfCounters.Counters.RoutingFailures.Increment();
-                        }
-
                         TransportClient.LogGoneException(physicalAddress, activityId.ToString());
                         errorMessage = TransportClient.GetErrorResponse(storeResponse,
                             RMResources.Gone,

@@ -61,7 +61,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 LazyThreadSafetyMode.ExecutionAndPublication);
 
         private static readonly TimeSpan recentReceiveWindow = TimeSpan.FromSeconds(1.0);
-        private static readonly bool IsWindowsPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         private readonly Guid connectionCorrelationId;
         private readonly Uri serverUri;
@@ -593,19 +592,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // Dispose the socket eagerly to avoid keeping the underlying
                 // handle around until finalization.
                 tcpClient?.Close();
-
-                // Use runtime platform check instead of compile-time check
-                if (IsWindowsPlatform)
-                {
-                    SocketException socketEx = ex as SocketException;
-                    if (socketEx != null && socketEx.SocketErrorCode == SocketError.TimedOut)
-                    {
-                        if (PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond != null)
-                        {
-                            PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond.Increment();
-                        }
-                    }
-                }
 
                 DefaultTrace.TraceInformation(
                     "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to TransportException. " +

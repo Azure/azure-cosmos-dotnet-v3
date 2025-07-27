@@ -183,11 +183,6 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public static QueryRequestPerformanceActivity StartActivity(DocumentServiceRequest request)
-        {
-            return null;
-        }
-
         public static string GenerateBaseUserAgentString()
         {
             string version = PlatformApis.GetOSVersion();
