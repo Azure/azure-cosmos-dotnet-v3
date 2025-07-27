@@ -37,72 +37,137 @@ internal class Program
 
                 Database database = client.GetDatabase(db_properties.Id);
                 FeedIterator<ContainerProperties> container_feed_itr = database.GetContainerQueryIterator<ContainerProperties>();
-                
+
                 while (container_feed_itr.HasMoreResults)
                 {
-                    FeedResponse<ContainerProperties> container_respopnse = await container_feed_itr.ReadNextAsync();
-                    foreach (ContainerProperties container_properties in container_respopnse)
+                    FeedResponse<ContainerProperties> container_response = await container_feed_itr.ReadNextAsync();
+                    foreach (ContainerProperties container_properties in container_response)
                     {
                         Console.WriteLine($"Container: {container_properties.Id}");
 
-
-                    }
-
-                    Container container = client.GetContainer(db_properties.Id, db_properties.Id);
-
-                    String query = "SELECT * FROM c";
-                    QueryDefinition queryDef = new QueryDefinition(query);
-
-                    var items = new List<JsonElement>();
-                    var queryIterator = container.GetItemQueryStreamIterator(
-                        queryDef,
-                        requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
-                    );
-
-                    while (queryIterator.HasMoreResults)
-                    {
-                        ResponseMessage response = await queryIterator.ReadNextAsync();
-                        
-                        // Check if Content is set and not empty
-                        if (response.Content == null)
+                        Console.WriteLine($"Container PartitionKeyPath: {container_properties.PartitionKeyPath}");
+                        if (container_properties.PartitionKeyPaths != null && container_properties.PartitionKeyPaths.Count > 0)
                         {
-                            Console.WriteLine("Response Content is null");
-                            continue;
+                            Console.WriteLine($"Container PartitionKeyPaths: [{string.Join(", ", container_properties.PartitionKeyPaths)}]");
                         }
 
-                        // Check if stream is empty
-                        if (response.Content.CanSeek && response.Content.Length == 0)
-                        {
-                            Console.WriteLine("Response Content stream is empty (Length = 0)");
-                            continue;
-                        }
+                        Container container = client.GetContainer(db_properties.Id, container_properties.Id);
 
-                        // If Content has data, process it
-                        Console.WriteLine($"Query_Result: Response has content with length: {(response.Content.CanSeek ? response.Content.Length.ToString() : "unknown")}");
-                        
-                        // Reset stream position if it can seek (important for reading)
-                        if (response.Content.CanSeek)
-                        {
-                            response.Content.Position = 0;
-                        }
+                        String itemsQuery = "SELECT * FROM c";
+                        QueryDefinition itemsQueryDef = new QueryDefinition(itemsQuery);
 
-                        // Parse the JSON content
-                        try
+                        FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                            itemsQueryDef,
+                            requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
+                        );
+
+                        while (queryIterator.HasMoreResults)
                         {
-                            using var document = JsonDocument.Parse(response.Content);
-                            // Process your JSON document here
-                            Console.WriteLine($"JSON parsed successfully. Root element kind: {document.RootElement.ValueKind}");
-                            
-                            // Example: Print the raw JSON
-                            Console.WriteLine($"Raw JSON: {document.RootElement.GetRawText()}");
-                        }
-                        catch (JsonException ex)
-                        {
-                            Console.WriteLine($"Error parsing JSON: {ex.Message}");
+                            ResponseMessage response = await queryIterator.ReadNextAsync();
+
+                            if (response.Content == null)
+                            {
+                                Console.WriteLine("QueryResponse.Content is null");
+                                continue;
+                            }
+                            if (response.Content.CanSeek && response.Content.Length == 0)
+                            {
+                                Console.WriteLine("QueryResponse.Content stream is empty");
+                                continue;
+                            }
+
+                            try
+                            {
+                                using JsonDocument itemsQueryResultDoc = JsonDocument.Parse(response.Content);
+                                Console.WriteLine($"Raw JSON (Query result): {itemsQueryResultDoc.RootElement.GetRawText()}");
+
+                                if (itemsQueryResultDoc.RootElement.TryGetProperty("Documents", out JsonElement documentsElement))
+                                {
+                                    foreach (JsonElement item in documentsElement.EnumerateArray())
+                                    {
+                                        string itemId = ExtractItemId(item);
+                                        PartitionKey itemPartitionKey = CreatePartitionKey(item, container_properties.PartitionKeyPath);
+                                        Console.WriteLine($"Item PartitionKey: {itemPartitionKey}");
+
+                                        try
+                                        {
+                                            ItemResponse<JsonElement> itemResponse = await container.ReadItemAsync<JsonElement>(
+                                                id: itemId,
+                                                partitionKey: itemPartitionKey,
+                                                requestOptions: new ItemRequestOptions
+                                                {
+                                                    // EnableContentResponseOnWrite = false,
+                                                }
+                                            );
+
+                                            Console.WriteLine($"Raw JSON (Read item result): {itemResponse.Resource.GetRawText()}");
+                                        }
+                                        catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+                                        {
+                                            Console.WriteLine("ReadItemAsync: Item not found");
+                                        }
+                                        catch (CosmosException ex)
+                                        {
+                                            Console.WriteLine($"ReadItemAsync: Error reading. {ex.Message}");
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Raw JSON: {itemsQueryResultDoc.RootElement.GetRawText()}");
+                                }
+                            }
+                            catch (JsonException ex)
+                            {
+                                Console.WriteLine($"JsonException: {ex.Message}");
+                            }
                         }
                     }
                 }
             }
         }
+    }
+
+    private static string ExtractItemId(JsonElement item)
+    {
+        return item.TryGetProperty("id", out JsonElement idElement)
+            ? idElement.GetString() ?? "unknown"
+            : "unknown";
+    }
+
+    private static PartitionKey CreatePartitionKey(JsonElement jsonElement, string? partitionKeyPath)
+    {
+        if (string.IsNullOrEmpty(partitionKeyPath))
+        {
+            return PartitionKey.Null;
+        }
+
+        string[] pathParts = partitionKeyPath.TrimStart('/').Split('/');
+
+        JsonElement currentElement = jsonElement;
+        foreach (string part in pathParts)
+        {
+            if (currentElement.TryGetProperty(part, out JsonElement nextElement))
+            {
+                currentElement = nextElement;
+            }
+            else
+            {
+                // Property not found, return null partition key
+                return PartitionKey.Null;
+            }
+        }
+
+        return currentElement.ValueKind switch
+        {
+            JsonValueKind.String => new PartitionKey(currentElement.GetString() ?? string.Empty),
+            JsonValueKind.Number => currentElement.TryGetInt32(out int intValue) 
+                ? new PartitionKey((double)intValue) 
+                : new PartitionKey(currentElement.GetDouble()),
+            JsonValueKind.True => new PartitionKey(true),
+            JsonValueKind.False => new PartitionKey(false),
+            JsonValueKind.Null => PartitionKey.Null,
+            _ => new PartitionKey(currentElement.GetRawText())
+        };
     }
 }
