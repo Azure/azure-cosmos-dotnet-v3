@@ -231,11 +231,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
             }
         }
 
-        protected sealed class GroupingTable : IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>
+        protected sealed class GroupingTable : IEnumerable<KeyValuePair<Microsoft.Azure.Cosmos.UInt128, SingleGroupAggregator>>
         {
             private static readonly IReadOnlyList<AggregateOperator> EmptyAggregateOperators = new AggregateOperator[] { };
 
-            private readonly Dictionary<UInt128, SingleGroupAggregator> table;
+            private readonly Dictionary<Microsoft.Azure.Cosmos.UInt128, SingleGroupAggregator> table;
             private readonly IReadOnlyList<AggregateOperator> aggregates;
             private readonly IReadOnlyDictionary<string, AggregateOperator?> groupByAliasToAggregateType;
             private readonly IReadOnlyList<string> orderedAliases;
@@ -251,7 +251,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 this.groupByAliasToAggregateType = groupByAliasToAggregateType ?? throw new ArgumentNullException(nameof(groupByAliasToAggregateType));
                 this.orderedAliases = orderedAliases;
                 this.hasSelectValue = hasSelectValue;
-                this.table = new Dictionary<UInt128, SingleGroupAggregator>();
+                this.table = new Dictionary<Microsoft.Azure.Cosmos.UInt128, SingleGroupAggregator>();
             }
 
             public int Count => this.table.Count;
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 // For VALUE queries the payload will be undefined if the field was undefined.
                 if (rewrittenGroupByProjection.TryGetPayload(out CosmosElement payload))
                 {
-                    UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
+                    Microsoft.Azure.Cosmos.UInt128 groupByKeysHash = DistinctHash.GetHash(rewrittenGroupByProjection.GroupByItems);
 
                     if (!this.table.TryGetValue(groupByKeysHash, out SingleGroupAggregator singleGroupAggregator))
                     {
@@ -282,15 +282,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
 
             public IReadOnlyList<CosmosElement> Drain(int maxItemCount)
             {
-                List<UInt128> keys = this.table.Keys.Take(maxItemCount).ToList();
+                List<Microsoft.Azure.Cosmos.UInt128> keys = this.table.Keys.Take(maxItemCount).ToList();
                 List<SingleGroupAggregator> singleGroupAggregators = new List<SingleGroupAggregator>(keys.Count);
-                foreach (UInt128 key in keys)
+                foreach (Microsoft.Azure.Cosmos.UInt128 key in keys)
                 {
                     SingleGroupAggregator singleGroupAggregator = this.table[key];
                     singleGroupAggregators.Add(singleGroupAggregator);
                 }
 
-                foreach (UInt128 key in keys)
+                foreach (Microsoft.Azure.Cosmos.UInt128 key in keys)
                 {
                     this.table.Remove(key);
                 }
@@ -309,7 +309,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return results;
             }
 
-            public IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
+            public IEnumerator<KeyValuePair<Microsoft.Azure.Cosmos.UInt128, SingleGroupAggregator>> GetEnumerator => this.table.GetEnumerator();
 
             public static TryCatch<GroupingTable> TryCreateFromContinuationToken(
                 IReadOnlyList<AggregateOperator> aggregates,
@@ -338,7 +338,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                         string key = kvp.Key;
                         CosmosElement value = kvp.Value;
 
-                        if (!UInt128.TryParse(key, out UInt128 groupByKey))
+                        if (!Microsoft.Azure.Cosmos.UInt128.TryParse(key, out Microsoft.Azure.Cosmos.UInt128 groupByKey))
                         {
                             return TryCatch<GroupingTable>.FromException(
                                 new MalformedContinuationTokenException(
@@ -366,7 +366,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.GroupBy
                 return TryCatch<GroupingTable>.FromResult(groupingTable);
             }
 
-            IEnumerator<KeyValuePair<UInt128, SingleGroupAggregator>> IEnumerable<KeyValuePair<UInt128, SingleGroupAggregator>>.GetEnumerator()
+            IEnumerator<KeyValuePair<Microsoft.Azure.Cosmos.UInt128, SingleGroupAggregator>> IEnumerable<KeyValuePair<Microsoft.Azure.Cosmos.UInt128, SingleGroupAggregator>>.GetEnumerator()
             {
                 return this.table.GetEnumerator();
             }

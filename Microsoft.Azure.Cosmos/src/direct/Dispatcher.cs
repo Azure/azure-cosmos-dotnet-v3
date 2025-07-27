@@ -1141,7 +1141,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             private void RunAsynchronously(Action action)
             {
-                Task.Factory.StartNew(
+                Task ignored0 = Task.Factory.StartNew(
                     action,
                     CancellationToken.None,
                     TaskCreationOptions.DenyChildAttach,
@@ -1159,7 +1159,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             private void RunAsynchronously(Func<Task> action)
             {
-                Task.Factory.StartNew(
+                Task ignored0 = Task.Factory.StartNew(
                     action,
                     CancellationToken.None,
                     TaskCreationOptions.DenyChildAttach,

@@ -69,7 +69,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (this.distinctMap.Add(document, out UInt128 _))
+                if (this.distinctMap.Add(document, out Microsoft.Azure.Cosmos.UInt128 _))
                 {
                     distinctResults.Add(document);
                 }

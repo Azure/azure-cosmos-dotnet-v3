@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (this.PartitionKeyRangeToLocation.IsValueCreated
                 && this.PartitionKeyRangeToLocation.Value.TryGetValue(
                     partitionKeyRange,
-                    out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
+                    out PartitionKeyRangeFailoverInfo? partitionKeyRangeFailover))
             {
                 DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
                     partitionKeyRangeFailover.Current,

@@ -89,8 +89,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return 1; // Non-null is greater than null
             }
 
-            UInt128 hash1 = DistinctHash.GetHash(this);
-            UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
+            Microsoft.Azure.Cosmos.UInt128 hash1 = DistinctHash.GetHash(this);
+            Microsoft.Azure.Cosmos.UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
             return UInt128BinaryComparer.Singleton.Compare(hash1, hash2);
         }
 

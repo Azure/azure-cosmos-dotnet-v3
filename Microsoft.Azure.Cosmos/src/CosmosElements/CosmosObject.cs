@@ -152,8 +152,8 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
                 return 1;
             }
 
-            UInt128 hash1 = DistinctHash.GetHash(this);
-            UInt128 hash2 = DistinctHash.GetHash(cosmosObject);
+            Microsoft.Azure.Cosmos.UInt128 hash1 = DistinctHash.GetHash(this);
+            Microsoft.Azure.Cosmos.UInt128 hash2 = DistinctHash.GetHash(cosmosObject);
             return UInt128BinaryComparer.Singleton.Compare(hash1, hash2);
         }
 
