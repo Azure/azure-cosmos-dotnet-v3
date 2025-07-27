@@ -103,9 +103,7 @@ namespace Microsoft.Azure.Documents
             return false;
         }
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -126,10 +124,7 @@ namespace Microsoft.Azure.Documents
             [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
             [In] uint serializedQueryExecutionInfoBufferLength,
             [Out] out uint serializedQueryExecutionInfoResultLength);
-
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -179,9 +174,7 @@ namespace Microsoft.Azure.Documents
             public Int64 unusedReserved4;
         };
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -199,9 +192,7 @@ namespace Microsoft.Azure.Documents
             [In] uint serializedQueryExecutionInfoBufferLength,
             [Out] out uint serializedQueryExecutionInfoResultLength);
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -221,9 +212,7 @@ namespace Microsoft.Azure.Documents
             [In] uint serializedQueryExecutionInfoBufferLength,
             [Out] out uint serializedQueryExecutionInfoResultLength);
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -234,9 +223,7 @@ namespace Microsoft.Azure.Documents
                 [MarshalAs(UnmanagedType.LPStr)][In] string configJsonString,
                 [Out] out IntPtr serviceProvider);
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
