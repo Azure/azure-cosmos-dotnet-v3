@@ -8,7 +8,7 @@ internal class Program
     private static async Task Main(string[] args)
     {
         const string CosmosBaseUri = "https://{0}.documents.azure.com:443/";
-        string accountName = "cosmosaot1";
+        string accountName = "cosmosaot2";
         string? primaryKey = Environment.GetEnvironmentVariable("KEY");
         Console.WriteLine($"COSMOS_PRIMARY_KEY: {primaryKey}");
 
@@ -26,13 +26,26 @@ internal class Program
             primaryKey,
             clientOptions);
 
-        FeedIterator<DatabaseProperties> iterator = client.GetDatabaseQueryIterator<DatabaseProperties>();
-        while (iterator.HasMoreResults)
+        FeedIterator<DatabaseProperties> db_feed_itr = client.GetDatabaseQueryIterator<DatabaseProperties>();
+        while (db_feed_itr.HasMoreResults)
         {
-            FeedResponse<DatabaseProperties> results = await iterator.ReadNextAsync();
-            foreach (DatabaseProperties r in results)
+            FeedResponse<DatabaseProperties> db_response = await db_feed_itr.ReadNextAsync();
+            foreach (DatabaseProperties db_properties in db_response)
             {
-                Console.WriteLine(r.Id);
+                Console.WriteLine($"Database: {db_properties.Id}");
+
+                Database database = client.GetDatabase(db_properties.Id);
+                FeedIterator<ContainerProperties> container_feed_itr = database.GetContainerQueryIterator<ContainerProperties>();
+                
+                while (container_feed_itr.HasMoreResults)
+                {
+                    FeedResponse<ContainerProperties> container_respopnse = await container_feed_itr.ReadNextAsync();
+                    foreach (ContainerProperties container_properties in container_respopnse)
+                    {
+                        Console.WriteLine($"Container: {container_properties.PartitionKeyPath}");
+
+                    }
+                }
             }
         }
     }
