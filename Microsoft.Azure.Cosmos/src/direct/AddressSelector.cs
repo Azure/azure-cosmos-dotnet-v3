@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Documents
                 // DocumentServiceRequest is not thread safe and must be cloned to avoid
                 // concurrency issues since this a background task.
                 DocumentServiceRequest requestClone = request.Clone();
-                this.ResolveAllTransportAddressUriAsync(requestClone, true, true).ContinueWith((task) =>
+                Task ignored0 = this.ResolveAllTransportAddressUriAsync(requestClone, true, true).ContinueWith((task) =>
                 {
                     if (task.IsFaulted)
                     {

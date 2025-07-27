@@ -571,7 +571,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
             this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
-            this.idleTimerTask.ContinueWith(
+            Task ignored0 = this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
                     DefaultTrace.TraceWarning(
@@ -648,6 +648,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return receiveTaskCopy;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Disposal helper method cannot be async - will be fixed later")]
         private void WaitTask(Task t, string description)
         {
             if (t == null)
@@ -670,6 +671,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // do anything useful with it.
             }
         }
+
 
         private void ThrowIfDisposed()
         {
@@ -932,7 +934,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             // Its possible that some of the validation logic inside handler can run on caller thread that's fine
             Task t = connectionStateListener.OnConnectionEventAsync(connectionEvent, exceptionTime, serverKey);
 
-            t.ContinueWith(static (failedTask, connectionIdObject) =>
+            Task ignored0 = t.ContinueWith(static (failedTask, connectionIdObject) =>
             {
                 DefaultTrace.TraceError("[RNTBD Dispatcher {0}] OnConnectionEventAsync callback failed: {1}", connectionIdObject, failedTask.Exception?.InnerException);
             }, this.ConnectionCorrelationId, TaskContinuationOptions.OnlyOnFaulted);

@@ -238,7 +238,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                         
                         if (feedRange is FeedRangePartitionKey feedRangePartitionKey)
                         {
-                            if (cosmosContainerCore == null && object.ReferenceEquals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
+                            if (cosmosContainerCore == null && object.Equals(feedRangePartitionKey.PartitionKey, Cosmos.PartitionKey.None))
                             {
                                 throw new ArgumentException($"{nameof(cosmosContainerCore)} can not be null with partition key as PartitionKey.None");
                             }

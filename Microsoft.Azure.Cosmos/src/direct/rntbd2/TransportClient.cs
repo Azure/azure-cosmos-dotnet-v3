@@ -355,7 +355,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             // Compute gateway uses custom task scheduler to track tenant resource utilization.
             // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
             // Task.Factory.StartNew() allows specifying task scheduler to use.
-            Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
+            Task ignored0 = Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
             {
                 this.OnDisableRntbdChannel?.Invoke();
             })

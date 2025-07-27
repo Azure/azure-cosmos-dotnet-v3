@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     cancellationToken,
                     TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
                     TaskScheduler.Default).Unwrap();
-                this.periodicTask.ContinueWith(
+                Task ignored0 = this.periodicTask.ContinueWith(
                     t =>
                     {
                         DefaultTrace.TraceError(
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             t.Exception);
                     },
                     TaskContinuationOptions.OnlyOnFaulted);
-                this.periodicTask.ContinueWith(t =>
+                Task ignored1 = this.periodicTask.ContinueWith(t =>
                 {
                     DefaultTrace.TraceInformation(
                         "The CPU monitor refresh task stopped. Status: {0}",
@@ -96,6 +96,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.periodicTask = null;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Cannot make static helper method async - will be fixed later")]
         private static void StopCoreAfterReleasingWriteLock(CancellationTokenSource cancel, Task backgroundTask)
         {
             cancel.Cancel();

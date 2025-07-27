@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 () => this.RefreshLoopAsync(this.cancellation.Token),
                 this.cancellation.Token);
 
-            this.periodicTask.ContinueWith(
+            Task ignored0 = this.periodicTask.ContinueWith(
                 t =>
                 {
                     DefaultTrace.TraceError(
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
 
-            this.periodicTask.ContinueWith(
+            Task ignored1 = this.periodicTask.ContinueWith(
                 t =>
                 {
                     DefaultTrace.TraceWarning(
@@ -113,6 +113,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Stop the Monitoring
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Stop method cannot be async - will be fixed later")]
         public void Stop()
         {
             this.ThrowIfDisposed();
