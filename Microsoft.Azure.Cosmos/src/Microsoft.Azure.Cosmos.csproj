@@ -22,7 +22,7 @@
 		<AssemblyName>Microsoft.Azure.Cosmos.Client</AssemblyName>
 		<Title>Microsoft Azure Cosmos DB Client library</Title>
 		<PackageId>Microsoft.Azure.Cosmos</PackageId>
-		<PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;netstandard</PackageTags>
+		<PackageTags>microsoft;azure;cosmos;cosmosdb;documentdb;docdb;nosql;azureofficial;dotnetcore;netcore;net9</PackageTags>
 		<PackageReleaseNotes>The change log for this SDK is made available at https://github.com/Azure/azure-cosmos-dotnet-v3/blob/master/changelog.md at the time of release.</PackageReleaseNotes>
 		<PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
 		<PublishRepositoryUrl Condition=" '$(ProjectRef)' != 'True' ">true</PublishRepositoryUrl>
@@ -125,32 +125,20 @@
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
 
+	<!-- Modern .NET 9 Package References - Removed Legacy Compatibility Packages -->
 	<ItemGroup>
 		<PackageReference Include="Azure.Core" Version="1.44.1" />
-		<PackageReference Include="System.Collections.Immutable" Version="1.7.0" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="6.0.0" />
 		<PackageReference Include="System.Diagnostics.DiagnosticSource" Version="8.0.1" />
-		<PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
-		<PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="6.0.0" />
 		<PackageReference Include="Microsoft.VisualStudio.Threading.Analyzers" Version="16.0.102" PrivateAssets="All" />
 		<PackageReference Include="Newtonsoft.Json" Version="10.0.2" NoWarn="NU1903" PrivateAssets="All" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
 		<PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
 		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
-
-		<!--Direct Dependencies-->
 		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
-
-		<!--HybridRow Dependencies-->
-		<PackageReference Include="System.Memory" Version="4.5.5" />
-		<PackageReference Include="System.Buffers" Version="4.5.1" />
-		<PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.0.0" />
-		<PackageReference Include="System.Threading.Tasks.Extensions" Version="4.5.4" />
-		<PackageReference Include="System.ValueTuple" Version="4.5.0" />
-		<PackageReference Include="Microsoft.Bcl.HashCode" Version="1.1.0" />
 	</ItemGroup>
 	
-
+	<!-- Native Libraries -->
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
 		<None Include="$(OutputPath)\Cosmos.CRTCompat.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
 		<None Include="$(OutputPath)\Microsoft.Azure.Cosmos.ServiceInterop.dll" Pack="true" IsAssembly="true" PackagePath="runtimes\win-x64\native" />
@@ -191,7 +179,7 @@
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
 		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
-		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT</DefineConstants>
+		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NET9</DefineConstants>
 		<NoWarn>CS0472;CA1416;NU5125;SYSLIB0013;SYSLIB0014;SYSLIB0054;SYSLIB0051;CS0618;VSTHRD200;CS8073;CA2022;CS8604;CA2265;CA2013</NoWarn>
 	</PropertyGroup>
 
