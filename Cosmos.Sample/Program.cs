@@ -1,4 +1,5 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.Text.Json;
 using Microsoft.Azure.Cosmos;
 
 namespace Cosmos.Sample;
@@ -42,8 +43,63 @@ internal class Program
                     FeedResponse<ContainerProperties> container_respopnse = await container_feed_itr.ReadNextAsync();
                     foreach (ContainerProperties container_properties in container_respopnse)
                     {
-                        Console.WriteLine($"Container: {container_properties.PartitionKeyPath}");
+                        Console.WriteLine($"Container: {container_properties.Id}");
 
+
+                    }
+
+                    Container container = client.GetContainer(db_properties.Id, db_properties.Id);
+
+                    String query = "SELECT * FROM c";
+                    QueryDefinition queryDef = new QueryDefinition(query);
+
+                    var items = new List<JsonElement>();
+                    var queryIterator = container.GetItemQueryStreamIterator(
+                        queryDef,
+                        requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
+                    );
+
+                    while (queryIterator.HasMoreResults)
+                    {
+                        ResponseMessage response = await queryIterator.ReadNextAsync();
+                        
+                        // Check if Content is set and not empty
+                        if (response.Content == null)
+                        {
+                            Console.WriteLine("Response Content is null");
+                            continue;
+                        }
+
+                        // Check if stream is empty
+                        if (response.Content.CanSeek && response.Content.Length == 0)
+                        {
+                            Console.WriteLine("Response Content stream is empty (Length = 0)");
+                            continue;
+                        }
+
+                        // If Content has data, process it
+                        Console.WriteLine($"Query_Result: Response has content with length: {(response.Content.CanSeek ? response.Content.Length.ToString() : "unknown")}");
+                        
+                        // Reset stream position if it can seek (important for reading)
+                        if (response.Content.CanSeek)
+                        {
+                            response.Content.Position = 0;
+                        }
+
+                        // Parse the JSON content
+                        try
+                        {
+                            using var document = JsonDocument.Parse(response.Content);
+                            // Process your JSON document here
+                            Console.WriteLine($"JSON parsed successfully. Root element kind: {document.RootElement.ValueKind}");
+                            
+                            // Example: Print the raw JSON
+                            Console.WriteLine($"Raw JSON: {document.RootElement.GetRawText()}");
+                        }
+                        catch (JsonException ex)
+                        {
+                            Console.WriteLine($"Error parsing JSON: {ex.Message}");
+                        }
                     }
                 }
             }
