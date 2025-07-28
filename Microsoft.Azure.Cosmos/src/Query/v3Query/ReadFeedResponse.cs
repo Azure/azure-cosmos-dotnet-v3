@@ -5,6 +5,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Net;
+    using System.Text.Json.Serialization.Metadata;
 
     internal class ReadFeedResponse<T> : FeedResponse<T>
     {

@@ -43,13 +43,9 @@ namespace Microsoft.Azure.Documents
                 string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];
                 if (!string.IsNullOrEmpty(isGlobalStrongEnabledConfig))
                 {
-                    string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];
-                    if (!string.IsNullOrEmpty(isGlobalStrongEnabledConfig))
+                    if (!bool.TryParse(isGlobalStrongEnabledConfig, out isGlobalStrongEnabled))
                     {
-                        if (!bool.TryParse(isGlobalStrongEnabledConfig, out isGlobalStrongEnabled))
-                        {
-                            return false;
-                        }
+                        return false;
                     }
                 }
             }

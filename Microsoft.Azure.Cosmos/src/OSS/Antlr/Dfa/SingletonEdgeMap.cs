@@ -126,7 +126,7 @@ namespace Antlr4.Runtime.Dfa
             return this;
         }
 
-        public override IReadOnlyDictionary<int, T> ToMap()
+        public override IDictionary<int, T> ToMap()
         {
             if (IsEmpty)
             {

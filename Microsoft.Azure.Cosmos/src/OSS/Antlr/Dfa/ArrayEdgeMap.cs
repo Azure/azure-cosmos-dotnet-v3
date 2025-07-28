@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Threading;
 using Antlr4.Runtime.Dfa;
 using Antlr4.Runtime.Sharpen;
+using Interlocked = System.Threading.Interlocked;
 
 namespace Antlr4.Runtime.Dfa
 {
@@ -32,7 +33,7 @@ namespace Antlr4.Runtime.Dfa
         {
             get
             {
-                return Volatile.Read(ref size);
+                return Interlocked.CompareExchange(ref size, 0, 0);
             }
         }
 
@@ -58,7 +59,7 @@ namespace Antlr4.Runtime.Dfa
                     return null;
                 }
 
-                return Volatile.Read(ref arrayData[key - minIndex]);
+                return Interlocked.CompareExchange(ref arrayData[key - minIndex], null, null);
             }
         }
 
@@ -143,7 +144,7 @@ namespace Antlr4.Runtime.Dfa
             return new EmptyEdgeMap<T>(minIndex, maxIndex);
         }
 
-        public override IReadOnlyDictionary<int, T> ToMap()
+        public override IDictionary<int, T> ToMap()
         {
             if (IsEmpty)
             {
@@ -160,7 +161,7 @@ namespace Antlr4.Runtime.Dfa
                 }
                 result[i + minIndex] = element;
             }
-            return new ReadOnlyDictionary<int, T>(result);
+            return result;
         }
     }
 }

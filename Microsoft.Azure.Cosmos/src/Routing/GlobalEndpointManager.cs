@@ -448,10 +448,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
-<<<<<<< HEAD
-
-=======
->>>>>>> 34efd8332 (set1 - net9)
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
             return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);

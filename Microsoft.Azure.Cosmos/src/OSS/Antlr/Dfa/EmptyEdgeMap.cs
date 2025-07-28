@@ -74,10 +74,10 @@ namespace Antlr4.Runtime.Dfa
             }
         }
 
-        public override IReadOnlyDictionary<int, T> ToMap()
+        public override IDictionary<int, T> ToMap()
         {
             Dictionary<int, T> result = new Dictionary<int, T>();
-            return new ReadOnlyDictionary<int, T>(result);
+            return result;
         }
     }
 }

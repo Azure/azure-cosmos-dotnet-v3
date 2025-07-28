@@ -89,16 +89,14 @@ namespace Microsoft.Azure.Cosmos
                 using (cosmosResponseMessage.Trace.StartChild("Query Response Serialization"))
                 {
                     return QueryResponse<T>.CreateResponse<T>(
-                        typeInfo,
-                        cosmosQueryResponse: queryResponse,
-                        serializerCore: this.serializerCore);
+                           queryResponse,
+                           this.serializerCore);
                 }
             }
 
             using (cosmosResponseMessage.Trace.StartChild("Feed Response Serialization"))
             {
                 return ReadFeedResponse<T>.CreateResponse<T>(
-                    typeInfo,
                     cosmosResponseMessage,
                     this.serializerCore);
             }
