@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Scripts;
 
     internal sealed class CosmosResponseFactoryCore : CosmosResponseFactoryInternal
@@ -48,6 +49,16 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage);
         }
 
+        public override FeedResponse<T> CreateQueryFeedResponse<T>(
+            JsonTypeInfo<T[]> typeInfo,
+            ResponseMessage responseMessage,
+            Documents.ResourceType resourceType)
+        {
+            return this.CreateQueryFeedResponseHelper<T>(
+                typeInfo,
+                responseMessage);
+        }
+
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {            
@@ -67,7 +78,30 @@ namespace Microsoft.Azure.Cosmos
                        cosmosResponseMessage,
                        this.serializerCore);
             }
-                
+        }
+
+        private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
+            JsonTypeInfo<T[]> typeInfo,
+            ResponseMessage cosmosResponseMessage)
+        {            
+            if (cosmosResponseMessage is QueryResponse queryResponse)
+            {
+                using (cosmosResponseMessage.Trace.StartChild("Query Response Serialization"))
+                {
+                    return QueryResponse<T>.CreateResponse<T>(
+                        typeInfo,
+                        cosmosQueryResponse: queryResponse,
+                        serializerCore: this.serializerCore);
+                }
+            }
+
+            using (cosmosResponseMessage.Trace.StartChild("Feed Response Serialization"))
+            {
+                return ReadFeedResponse<T>.CreateResponse<T>(
+                    typeInfo,
+                    cosmosResponseMessage,
+                    this.serializerCore);
+            }
         }
 
         private FeedResponse<T> CreateChangeFeedResponseHelper<T>(

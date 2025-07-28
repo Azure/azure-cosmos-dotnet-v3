@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
 
 #nullable enable
-    internal static class CosmosFeedResponseSerializer
+    internal static partial class CosmosFeedResponseSerializer
     {
         private const byte ArrayStart = (byte)'[';
         private const byte ArrayEnd = (byte)']';

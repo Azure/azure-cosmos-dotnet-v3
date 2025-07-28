@@ -3,99 +3,29 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
-    internal sealed class Address : Resource
+    internal sealed class Address : PlainResource
     {
-        [JsonProperty(PropertyName = Constants.Properties.IsAuxiliary)]
-        public bool IsAuxiliary
-        {
-            get
-            {
-                return base.GetValue<bool>(Constants.Properties.IsAuxiliary);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.IsAuxiliary, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.IsAuxiliary)]
+        public bool IsAuxiliary { get; init; }
 
-        [JsonProperty(PropertyName = Constants.Properties.IsPrimary)]
-        public bool IsPrimary
-        {
-            get
-            {
-                return base.GetValue<bool>(Constants.Properties.IsPrimary);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.IsPrimary, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.IsPrimary)]
+        public bool IsPrimary { get; init; }
 
-        [JsonProperty(PropertyName = Constants.Properties.Protocol)]
-        public string Protocol
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.Protocol);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.Protocol, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.Protocol)]
+        public string Protocol { get; init; }
 
-        [JsonProperty(PropertyName = Constants.Properties.LogicalUri)]
-        public string LogicalUri
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.LogicalUri);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.LogicalUri, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.LogicalUri)]
+        public string LogicalUri { get; init; }
 
-        [JsonProperty(PropertyName = Constants.Properties.PhysicalUri)]
-        public string PhysicalUri
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.PhysicalUri);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.PhysicalUri, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.PhysicalUri)]
+        public string PhysicalUri { get; init; }
 
-        [JsonProperty(PropertyName = Constants.Properties.PartitionIndex)]
-        public string PartitionIndex
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.PartitionIndex);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.PartitionIndex, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.PartitionIndex)]
+        public string PartitionIndex { get; init; }
 
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKeyRangeId)]
-        public string PartitionKeyRangeId
-        {
-            get
-            {
-                return base.GetValue<string>(Constants.Properties.PartitionKeyRangeId);
-            }
-            internal set
-            {
-                base.SetValue(Constants.Properties.PartitionKeyRangeId, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.PartitionKeyRangeId)]
+        public string PartitionKeyRangeId { get; init; }
     }
 }
