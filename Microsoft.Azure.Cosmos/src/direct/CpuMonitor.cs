@@ -93,7 +93,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.periodicTask = null;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Cannot make static helper method async - will be fixed later")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "API invoked from synchronous Dispose and Stop")]
         private static void StopCoreAfterReleasingWriteLock(CancellationTokenSource cancel, Task backgroundTask)
         {
             cancel.Cancel();

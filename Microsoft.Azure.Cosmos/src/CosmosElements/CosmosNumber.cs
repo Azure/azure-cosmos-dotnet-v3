@@ -46,7 +46,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosNumber cosmosNumber && this.Equals(cosmosNumber);
+        public override bool Equals(CosmosElement? cosmosElement)
+        {
+            return cosmosElement is CosmosNumber cosmosNumber && this.Equals(cosmosNumber);
+        }
 
         public abstract bool Equals(CosmosNumber? cosmosNumber);
 

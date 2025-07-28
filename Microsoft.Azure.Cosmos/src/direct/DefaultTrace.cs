@@ -57,14 +57,14 @@ namespace Microsoft.Azure.Cosmos.Core.Trace
             SourceSwitch sourceSwitch = new SourceSwitch("ClientSwitch", "Information");
             DefaultTrace.TraceSourceInternal.Switch = sourceSwitch;
 
-            // ETW is a Windows-only feature.
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+#if !COSMOSCLIENT
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return;
+                // ETW is a Windows-only feature.
+                TraceListener listener = new EtwTraceListener(DefaultTrace.ProviderId, "DocDBClientListener");
+                DefaultTrace.TraceSourceInternal.Listeners.Add(listener);
             }
-
-            TraceListener listener = new EtwTraceListener(DefaultTrace.ProviderId, "DocDBClientListener");
-            DefaultTrace.TraceSourceInternal.Listeners.Add(listener);
+#endif
         }
 
         public static void Flush()

@@ -52,12 +52,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override int GetHashCode()
         {
-            return (int)(HashSeed ^ (uint)this.Value.GetHashCode());
+            uint hash = HashSeed;
+            hash = MurmurHash3.Hash32(this.Value, hash);
+            return (int)hash;
         }
 
         public int CompareTo(CosmosGuid? cosmosGuid)
         {
-            return cosmosGuid is null ? 1 : this.Value.CompareTo(cosmosGuid.Value);
+            if (cosmosGuid is null)
+            {
+                return 1;
+            }
+            return this.Value.CompareTo(cosmosGuid.Value);
         }
 
         public static CosmosGuid Create(

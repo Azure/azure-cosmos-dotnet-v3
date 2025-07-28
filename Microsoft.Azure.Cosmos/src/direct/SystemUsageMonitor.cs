@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Stop the Monitoring
         /// </summary>
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Stop method cannot be async - will be fixed later")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Stop method cannot be async")]
         public void Stop()
         {
             this.ThrowIfDisposed();

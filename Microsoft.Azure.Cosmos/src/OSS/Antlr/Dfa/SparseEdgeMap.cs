@@ -184,7 +184,7 @@ namespace Antlr4.Runtime.Dfa
             return new EmptyEdgeMap<T>(minIndex, maxIndex);
         }
 
-        public override IReadOnlyDictionary<int, T> ToMap()
+        public override IDictionary<int, T> ToMap()
         {
             if (IsEmpty)
             {
@@ -197,7 +197,7 @@ namespace Antlr4.Runtime.Dfa
                 {
                     result[keys[i]] = values[i];
                 }
-                return new ReadOnlyDictionary<int, T>(result);
+                return result;
             }
         }
     }

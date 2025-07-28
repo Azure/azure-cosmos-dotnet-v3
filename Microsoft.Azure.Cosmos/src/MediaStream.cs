@@ -99,7 +99,6 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-#if !NETSTANDARD16
         public override void Close()
         {
             this.contentStream.Close();
@@ -124,7 +123,12 @@ namespace Microsoft.Azure.Cosmos
         {
             this.contentStream.EndWrite(asyncResult);
         }
-#endif
+
+        [Obsolete]
+        public override object InitializeLifetimeService()
+        {
+            return this.contentStream.InitializeLifetimeService();
+        }
 
         public override int Read(byte[] buffer, int offset, int count)
         {

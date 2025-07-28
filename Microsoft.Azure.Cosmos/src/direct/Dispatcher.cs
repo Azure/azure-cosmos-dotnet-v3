@@ -644,7 +644,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             return receiveTaskCopy;
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Disposal helper method cannot be async - will be fixed later")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "API used for synchronous disposal")]
         private void WaitTask(Task t, string description)
         {
             if (t == null)
@@ -667,7 +667,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // do anything useful with it.
             }
         }
-
 
         private void ThrowIfDisposed()
         {

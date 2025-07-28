@@ -1024,7 +1024,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
-            // Use RuntimeInformation.IsOSPlatform for modern cross-platform detection
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
@@ -1113,13 +1112,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void SetReuseUnicastPort(Socket clientSocket, Guid connectionCorrelationId)
         {
-            // Use RuntimeInformation.IsOSPlatform for modern cross-platform detection
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
                     Debug.Assert(!clientSocket.IsBound);
-                    // Use numeric value for ReuseUnicastPort for compatibility
                     const int SO_REUSE_UNICASTPORT = 0x3007;
                     clientSocket.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)SO_REUSE_UNICASTPORT, true);
                 }

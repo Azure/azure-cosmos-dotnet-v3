@@ -43,6 +43,6 @@ namespace Antlr4.Runtime.Dfa
         IEdgeMap<T> Clear();
 
         [return: NotNull]
-        IReadOnlyDictionary<int, T> ToMap();
+        IDictionary<int, T> ToMap();
     }
 }

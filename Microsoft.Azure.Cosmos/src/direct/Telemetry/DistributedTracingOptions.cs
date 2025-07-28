@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Documents.Telemetry
 {
     /// <summary>
     /// This class has all the configuration related to distributed tracing.
-    /// Distributed Tracing is now always available in .NET 9.
     /// </summary>
     internal class DistributedTracingOptions
     {

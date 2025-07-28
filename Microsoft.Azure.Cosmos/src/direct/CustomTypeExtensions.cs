@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
-    /// Extension class for .NET 9 Azure Cosmos DB SDK.
     /// Provides utility methods for the Cosmos DB client library.
     /// </summary>
     internal static class CustomTypeExtensions
@@ -113,7 +112,7 @@ namespace Microsoft.Azure.Documents
             return false;
         }
 
-        #region Properties converted to Methods
+#region Properties converted to Methods
         public static bool IsGenericType(this Type type)
         {
             return type.GetTypeInfo().IsGenericType;
@@ -153,6 +152,6 @@ namespace Microsoft.Azure.Documents
         {
             return type.GetTypeInfo().CustomAttributes;
         }
-        #endregion
+#endregion
     }
 }

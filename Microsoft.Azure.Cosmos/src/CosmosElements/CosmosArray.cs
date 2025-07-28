@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             if (cosmosArray is null)
             {
-                return 1; // Non-null is greater than null
+                return 1;
             }
 
             Microsoft.Azure.Cosmos.UInt128 hash1 = DistinctHash.GetHash(this);

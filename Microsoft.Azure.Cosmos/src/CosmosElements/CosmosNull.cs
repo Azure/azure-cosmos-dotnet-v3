@@ -42,7 +42,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosNull;
+        public override bool Equals(CosmosElement? cosmosElement)
+        {
+            return cosmosElement is CosmosNull cosmosNull && this.Equals(cosmosNull);
+        }
 
         public bool Equals(CosmosNull? cosmosNull)
         {
@@ -90,7 +93,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public int CompareTo(CosmosNull? other)
         {
-            return 0;
+            return other is null ? 1 : 0;
         }
 
         public static new class Monadic

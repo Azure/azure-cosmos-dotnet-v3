@@ -90,7 +90,10 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         IEnumerator<KeyValuePair<string, CosmosElement>> IEnumerable<KeyValuePair<string, CosmosElement>>.GetEnumerator() => this.GetEnumerator();
 
-        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
+        public override bool Equals(CosmosElement? cosmosElement)
+        {
+            return cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
+        }
 
         public bool Equals(CosmosObject? cosmosObject)
         {

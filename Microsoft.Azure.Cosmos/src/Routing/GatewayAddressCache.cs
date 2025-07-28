@@ -651,7 +651,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     {
                         foreach (TransportAddressUri address in transportAddressUris)
                         {
-                            // The main purpose for this step is to move address health status from Unhealthy to UnHealthyPending.
+                            // The main purpose for this step is to move address health status from Unhealthy to UnhealthyPending.
                             address.SetRefreshedIfUnhealthy();
                         }
                     }

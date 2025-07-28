@@ -129,8 +129,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                                                                                     request: request);
             try
             {
-                TransportClient.IncrementCounters();
-
                 operation = "GetChannel";
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
@@ -238,7 +236,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             }
             finally
             {
-                TransportClient.DecrementCounters();
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdResponseCount(resourceOperation.resourceType,
                     resourceOperation.operationType, transportResponseStatusCode);
                 this.RaiseProtocolDowngradeRequest(storeResponse);
@@ -289,16 +286,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         private static void LogClientOptions(Options clientOptions)
         {
             DefaultTrace.TraceInformation("Creating RNTBD TransportClient with options {0}", clientOptions.ToString());
-        }
-
-        private static void IncrementCounters()
-        {
-            // Performance counters are no longer used in .NET 9
-        }
-
-        private static void DecrementCounters()
-        {
-            // Performance counters are no longer used in .NET 9
         }
 
         /// <inheritdoc/>

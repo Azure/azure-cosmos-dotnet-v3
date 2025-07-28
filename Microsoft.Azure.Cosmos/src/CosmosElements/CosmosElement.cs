@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             if (other is null)
             {
-                return 1; // Non-null is greater than null
+                return 1;
             }
 
             int thisTypeOrder = this.Accept(CosmosElementToTypeOrder.Singleton);

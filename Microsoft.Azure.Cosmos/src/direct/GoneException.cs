@@ -68,13 +68,13 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
+        internal string LocalIp { get; set; }
+
         protected GoneException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.Gone)
         {
             SetDescription();
         }
-
-        internal string LocalIp { get; set; }
 
         /// <summary>
         ///

@@ -41,11 +41,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public int CompareTo(CosmosUndefined? other)
         {
-            // All CosmosUndefined instances are equal
-            return 0;
+            return other is null ? 1 : 0;
         }
 
-        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosUndefined;
+        public override bool Equals(CosmosElement? cosmosElement)
+        {
+            return cosmosElement is CosmosUndefined;
+        }
 
         public bool Equals(CosmosUndefined? other)
         {

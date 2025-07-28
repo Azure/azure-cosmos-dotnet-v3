@@ -18,6 +18,8 @@ namespace Microsoft.Azure.Cosmos.Json
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
     /// </summary>
@@ -1472,7 +1474,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private bool TryRegisterStringValue(Utf8Span utf8Span)
             {
-                if (!this.sharedStringIndexes.TryGetValue(utf8Span.Span, out (Microsoft.Azure.Cosmos.UInt128 hash, ulong index) hashAndIndex))
+                if (!this.sharedStringIndexes.TryGetValue(utf8Span.Span, out (CosmosUInt128 hash, ulong index) hashAndIndex))
                 {
                     // Not found, add it to the lookup table
 
@@ -2082,25 +2084,25 @@ namespace Microsoft.Azure.Cosmos.Json
 
             private sealed class ReferenceStringDictionary
             {
-                private readonly Dictionary<Microsoft.Azure.Cosmos.UInt128, ulong> stringLiteralDictionary;
-                private readonly Dictionary<Microsoft.Azure.Cosmos.UInt128, ulong> stringHashDictionary;
+                private readonly Dictionary<CosmosUInt128, ulong> stringLiteralDictionary;
+                private readonly Dictionary<CosmosUInt128, ulong> stringHashDictionary;
 
                 public ReferenceStringDictionary()
                 {
-                    this.stringLiteralDictionary = new Dictionary<Microsoft.Azure.Cosmos.UInt128, ulong>();
-                    this.stringHashDictionary = new Dictionary<Microsoft.Azure.Cosmos.UInt128, ulong>();
+                    this.stringLiteralDictionary = new Dictionary<CosmosUInt128, ulong>();
+                    this.stringHashDictionary = new Dictionary<CosmosUInt128, ulong>();
                 }
 
-                public bool TryGetValue(ReadOnlySpan<byte> stringValue, out (Microsoft.Azure.Cosmos.UInt128 key, ulong value) keyValue)
+                public bool TryGetValue(ReadOnlySpan<byte> stringValue, out (CosmosUInt128 key, ulong value) keyValue)
                 {
-                    if (stringValue.Length < Microsoft.Azure.Cosmos.UInt128.Length)
+                    if (stringValue.Length < CosmosUInt128.Length)
                     {
                         // Literal strings
                         Span<byte> keyBuffer = stackalloc byte[16];
                         keyBuffer[0] = (byte)stringValue.Length;
                         stringValue.CopyTo(keyBuffer.Slice(start: 1));
 
-                        Microsoft.Azure.Cosmos.UInt128 key = MemoryMarshal.Cast<byte, Microsoft.Azure.Cosmos.UInt128>(keyBuffer)[0];
+                        CosmosUInt128 key = MemoryMarshal.Cast<byte, CosmosUInt128>(keyBuffer)[0];
 
                         if (!this.stringLiteralDictionary.TryGetValue(key, out ulong value))
                         {
@@ -2114,7 +2116,7 @@ namespace Microsoft.Azure.Cosmos.Json
 
                     // Hash strings
                     {
-                        Microsoft.Azure.Cosmos.UInt128 key = MurmurHash3.Hash128(stringValue, seed: Microsoft.Azure.Cosmos.UInt128.Create((ulong)stringValue.Length, (ulong)stringValue.Length));
+                        CosmosUInt128 key = MurmurHash3.Hash128(stringValue, seed: CosmosUInt128.Create((ulong)stringValue.Length, (ulong)stringValue.Length));
                         if (!this.stringHashDictionary.TryGetValue(key, out ulong value))
                         {
                             keyValue = (key, value);
@@ -2126,9 +2128,9 @@ namespace Microsoft.Azure.Cosmos.Json
                     }
                 }
 
-                public void Add(int stringLength, Microsoft.Azure.Cosmos.UInt128 key, ulong value)
+                public void Add(int stringLength, CosmosUInt128 key, ulong value)
                 {
-                    if (stringLength < Microsoft.Azure.Cosmos.UInt128.Length)
+                    if (stringLength < CosmosUInt128.Length)
                     {
                         this.stringLiteralDictionary.Add(key, value);
                     }

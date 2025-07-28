@@ -291,7 +291,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable) this).Dispose();
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Dispose method cannot be async - will be fixed later")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Dispose method cannot be async")]
         void IDisposable.Dispose()
         {
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
