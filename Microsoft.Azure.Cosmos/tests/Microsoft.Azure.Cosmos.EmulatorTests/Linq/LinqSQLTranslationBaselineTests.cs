@@ -70,30 +70,30 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             cosmosClient?.Dispose();
         }
 
-        struct simple
+        struct Simple
         {
             public int x;
             public int y;
             public string id;
             public string pk;
 
-            public simple(int x, int y)
+            public Simple(int x, int y)
             { this.x = x; this.y = y; this.id = Guid.NewGuid().ToString(); this.pk = "Test"; }
         }
 
-        struct nested
+        struct Nested
         {
             public int x;
-            public simple s;
+            public Simple s;
 
-            public nested(int x, simple s)
+            public Nested(int x, Simple s)
             {
                 this.x = x;
                 this.s = s;
             }
         }
 
-        struct complex
+        struct Complex
         {
             private string json;
 
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             public string str;
             public bool b;
             public double[] dblArray;
-            public simple inside;
+            public Simple inside;
             public string id;
             public string pk;
 
@@ -111,7 +111,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             [System.Text.Json.Serialization.JsonExtensionData()]
             public Dictionary<string, object> NetExtensionData { get; set; }
 
-            public complex(double d, string str, bool b, double[] da, simple s)
+            public Complex(double d, string str, bool b, double[] da, Simple s)
             {
                 this.dbl = d;
                 this.str = str;
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
 
             public override bool Equals(object obj)
             {
-                if (!(obj is complex)) return false;
+                if (!(obj is Complex)) return false;
 
                 return this.ToString().Equals(obj.ToString());
             }
@@ -207,16 +207,16 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             float floatValue = 5.23f;
 
             const int Records = 100;
-            Func<Random, simple> createDataObj = (random) =>
+            Func<Random, Simple> createDataObj = (random) =>
             {
-                simple obj = new simple();
+                Simple obj = new Simple();
                 obj.x = random.Next();
                 obj.y = random.Next();
                 obj.id = Guid.NewGuid().ToString();
                 obj.pk = "Test";
                 return obj;
             };
-            Func<bool, IQueryable<simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<simple>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<Simple>> dataQuery = LinqTestsCommon.GenerateTestCosmosData<Simple>(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select cast float", b => dataQuery(b).Select(x => (int)floatValue)));
@@ -236,9 +236,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("Select const array index", b => dataQuery(b)
                 .Where(x => x.x >= 0 && x.x < 3)
                 .Select(x => new int[] { 1, 2, 3 }[x.x])));
-            inputs.Add(new LinqTestInput("Select new simple", b => dataQuery(b).Select(x => new simple { x = x.x, y = x.x })));
-            inputs.Add(new LinqTestInput("Select new nested", b => dataQuery(b).Select(x => new nested { s = new simple { x = x.x, y = x.x }, x = 2 })));
-            inputs.Add(new LinqTestInput("Select new complex", b => dataQuery(b).Select(d => new complex { dbl = 1.0, str = "", b = false, dblArray = new double[] { 1.0, 2.0, }, inside = new simple { x = d.x, y = d.x } })));
+            inputs.Add(new LinqTestInput("Select new simple", b => dataQuery(b).Select(x => new Simple { x = x.x, y = x.x })));
+            inputs.Add(new LinqTestInput("Select new nested", b => dataQuery(b).Select(x => new Nested { s = new Simple { x = x.x, y = x.x }, x = 2 })));
+            inputs.Add(new LinqTestInput("Select new complex", b => dataQuery(b).Select(d => new Complex { dbl = 1.0, str = "", b = false, dblArray = new double[] { 1.0, 2.0, }, inside = new Simple { x = d.x, y = d.x } })));
             inputs.Add(new LinqTestInput("Select cast double x", b => dataQuery(b).Select(x => (double)x.x)));
             inputs.Add(new LinqTestInput("Select indexer x", b => dataQuery(b)
                 .Where(x => x.x >= 0 && x.x < array.Length)
@@ -247,7 +247,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             inputs.Add(new LinqTestInput("Select method id", b => dataQuery(b).Select(x => id(x))));
             inputs.Add(new LinqTestInput("Select identity", b => dataQuery(b).Select(x => x)));
             inputs.Add(new LinqTestInput("Select simple property", b => dataQuery(b).Select(x => x.x)));
-            inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new complex() {
+            inputs.Add(new LinqTestInput("Select extension data", b => dataQuery(b).Select(x => new Complex() {
                 NewtonsoftExtensionData = new() {
                     { "test", 1.5 }
                 },
@@ -268,9 +268,9 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
             const int Records = 100;
             const int MaxArraySize = 10;
             const int MaxStringLength = 50;
-            Func<Random, complex> createDataObj = (random) =>
+            Func<Random, Complex> createDataObj = (random) =>
             {
-                complex obj = new complex();
+                Complex obj = new Complex();
                 obj.b = random.NextDouble() < 0.5;
                 obj.dbl = random.NextDouble();
                 obj.dblArray = new double[random.Next(MaxArraySize)];
@@ -278,7 +278,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 {
                     obj.dblArray[i] = random.NextDouble() < 0.1 ? 3 : random.NextDouble();
                 }
-                obj.inside = new simple() { x = random.Next(), y = random.Next() };
+                obj.inside = new Simple() { x = random.Next(), y = random.Next() };
                 obj.str = random.NextDouble() < 0.1 ? "5" : LinqTestsCommon.RandomString(random, random.Next(MaxStringLength));
                 obj.id = Guid.NewGuid().ToString();
                 obj.pk = "Test";
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests
                 };
                 return obj;
             };
-            Func<bool, IQueryable<complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<complex>(createDataObj, Records, testContainer);
+            Func<bool, IQueryable<Complex>> getQuery = LinqTestsCommon.GenerateTestCosmosData<Complex>(createDataObj, Records, testContainer);
 
             List<LinqTestInput> inputs = new List<LinqTestInput>();
             inputs.Add(new LinqTestInput("Select equality", b => getQuery(b).Select(s => s.str == "5")));
