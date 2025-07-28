@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Dynamic;
     using System.Globalization;
     using System.Linq.Expressions;
@@ -28,6 +29,8 @@ namespace Microsoft.Azure.Documents
     /// You can reuse the mediaLink property to store an external location e.g., a file share or an Azure Blob Storage URI. 
     /// Azure Cosmos DB will not perform garbage collection on mediaLinks for external locations.
     /// </remarks>
+    [RequiresUnreferencedCode("Implementation of IDynamicMetaObjectProvider.GetMetaObject uses Newtonsoft.Json")]
+    [RequiresDynamicCode("Implementation of IDynamicMetaObjectProvider.GetMetaObject uses Newtonsoft.Json")]
 #if COSMOSCLIENT
     internal
 #else
@@ -171,6 +174,8 @@ namespace Microsoft.Azure.Documents
             return new AttachmentDynamicMetaObject(this, parameter);
         }
 
+        [RequiresUnreferencedCode("Binds to method which uses Newtonsoft.Json")]
+        [RequiresDynamicCode("Binds to method which uses Newtonsoft.Json")]
         private class AttachmentDynamicMetaObject : DynamicMetaObject
         {
             private readonly Attachment attachment;
