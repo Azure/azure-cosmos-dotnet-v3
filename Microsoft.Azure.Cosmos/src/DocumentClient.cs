@@ -710,11 +710,8 @@ namespace Microsoft.Azure.Cosmos
             }, CancellationToken.None);
 
 #if !(NETSTANDARD15 || NETSTANDARD16)
-#if NETSTANDARD20
-            // GetEntryAssembly returns null when loaded from native netstandard2.0
-            if (System.Reflection.Assembly.GetEntryAssembly() != null)
+            if (AppConfig.IsEnabled)
             {
-#endif
                 // For tests we want to allow stronger consistency during construction or per call
                 string allowOverrideStrongerConsistencyConfig = System.Configuration.ConfigurationManager.AppSettings[DocumentClient.AllowOverrideStrongerConsistency];
                 if (!string.IsNullOrEmpty(allowOverrideStrongerConsistencyConfig))
@@ -876,9 +873,7 @@ namespace Microsoft.Azure.Cosmos
                         }
                     }
                 }
-#if NETSTANDARD20
             }
-#endif
 #endif
 
             string rntbdMaxConcurrentOpeningConnectionCountOverrideString = Environment.GetEnvironmentVariable(RntbdMaxConcurrentOpeningConnectionCountConfig);

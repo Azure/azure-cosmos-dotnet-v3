@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Client;
 
@@ -38,11 +39,8 @@ namespace Microsoft.Azure.Documents
         private static readonly Lazy<bool> enableGlobalStrong = new Lazy<bool>(() => {
             bool isGlobalStrongEnabled = true;
 #if !(NETSTANDARD15 || NETSTANDARD16)
-#if NETSTANDARD20
-        // GetEntryAssembly returns null when loaded from native netstandard2.0
-        if (System.Reflection.Assembly.GetEntryAssembly() != null)
+        if (AppConfig.IsEnabled)
         {
-#endif
             string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];
             if (!string.IsNullOrEmpty(isGlobalStrongEnabledConfig))
             {
@@ -51,9 +49,7 @@ namespace Microsoft.Azure.Documents
                     return false;
                 }
             }
-#if NETSTANDARD20
         }
-#endif
 #endif
             return isGlobalStrongEnabled;
         });
