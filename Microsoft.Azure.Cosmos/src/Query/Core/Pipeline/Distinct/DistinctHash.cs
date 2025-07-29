@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     internal static class DistinctHash
     {

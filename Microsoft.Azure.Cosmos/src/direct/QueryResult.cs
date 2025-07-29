@@ -158,10 +158,12 @@ namespace Microsoft.Azure.Documents
             {
                 result = new Schema() { propertyBag = this.jObject as JObject };
             }
+#if !COSMOS_GW_AOT
             else if (type == typeof(Snapshot))
             {
                 result = new Snapshot() { propertyBag = this.jObject as JObject };
             }
+#endif
             else
             {
                 // result 

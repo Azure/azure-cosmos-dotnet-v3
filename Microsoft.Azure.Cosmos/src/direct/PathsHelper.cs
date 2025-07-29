@@ -766,10 +766,12 @@ namespace Microsoft.Azure.Documents
             {
                 return Paths.DatabasesPathSegment + "/" + resourceName;
             }
+#if !COSMOS_GW_AOT
             else if (resourceType == typeof(Snapshot))
             {
                 return Paths.SnapshotsPathSegment + "/" + resourceName;
             }
+#endif
             else if (resourceOwnerFullName == null)
             {
                 return null;
@@ -2040,8 +2042,11 @@ namespace Microsoft.Azure.Documents
                 typeof(Permission).IsAssignableFrom(resourceType) ||
                 typeof(Document).IsAssignableFrom(resourceType) ||
                 resourceType == typeof(Offer) ||
-                resourceType == typeof(Schema) ||
-                resourceType == typeof(Snapshot))
+                resourceType == typeof(Schema)
+#if !COSMOS_GW_AOT
+                ||resourceType == typeof(Snapshot)
+#endif
+                )
             {
                 return true;
             }
