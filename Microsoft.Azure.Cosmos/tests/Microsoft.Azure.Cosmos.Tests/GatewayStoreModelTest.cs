@@ -1306,7 +1306,6 @@ namespace Microsoft.Azure.Cosmos
         {
             // Arrange
             HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
-            HttpRequestMessage capturedRequest = null;
             Mock<CosmosHttpClient> mockCosmosHttpClient = new Mock<CosmosHttpClient>();
             mockCosmosHttpClient.Setup(client => client.SendHttpAsync(
                 It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
@@ -1315,9 +1314,6 @@ namespace Microsoft.Azure.Cosmos
                 It.IsAny<IClientSideRequestStatistics>(),
                 It.IsAny<CancellationToken>(),
                 It.IsAny<DocumentServiceRequest>()))
-                .Callback<Func<ValueTask<HttpRequestMessage>>, ResourceType, HttpTimeoutPolicy, IClientSideRequestStatistics, CancellationToken, DocumentServiceRequest>(
-                    async (requestFactory, _, _, _, _, _) =>
-                        capturedRequest = await requestFactory())
                 .ReturnsAsync(successResponse);
 
             DocumentServiceRequest request = DocumentServiceRequest.Create(
@@ -1329,12 +1325,9 @@ namespace Microsoft.Azure.Cosmos
 
             Mock<IDocumentClientInternal> docClientMulti = new Mock<IDocumentClientInternal>();
             docClientMulti.Setup(c => c.ServiceEndpoint).Returns(new Uri("http://localhost"));
-
-            AccountProperties validAccountProperties = new AccountProperties();
-
             docClientMulti
                 .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(validAccountProperties);
+                .ReturnsAsync(new AccountProperties());
 
             ConnectionPolicy policy = new ConnectionPolicy
             {
@@ -1342,22 +1335,23 @@ namespace Microsoft.Azure.Cosmos
             };
 
             GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
+            SessionContainer sessionContainer = new SessionContainer("testhost");
             UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             GatewayStoreModel storeModel = new GatewayStoreModel(
-                multiEndpointMgr,
-                new SessionContainer("testhost"),
-                ConsistencyLevel.Session,
-                new DocumentClientEventSource(),
-                null,
-                mockCosmosHttpClient.Object,
-                GlobalPartitionEndpointManagerNoOp.Instance,
-                isPartitionLevelFailoverEnabled: true,
+                endpointManager: multiEndpointMgr,
+                sessionContainer: sessionContainer,
+                defaultConsistencyLevel: ConsistencyLevel.Session,
+                eventSource: new DocumentClientEventSource(),
+                serializerSettings: null,
+                httpClient: mockCosmosHttpClient.Object,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                isPartitionLevelFailoverEnabled: false,
                 enableThinClientMode: true,
-                userAgentContainer);
+                userAgentContainer: userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
-                new SessionContainer("testhost"),
+                sessionContainer,
                 storeModel,
                 null,
                 null,
