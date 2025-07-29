@@ -54,23 +54,23 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
             this.regionNameMapper = new RegionNameMapper();
 
-            if (AppConfig.IsEnabled)
-            {
-                string unavailableLocationsExpirationTimeInSecondsConfig = System.Configuration.ConfigurationManager.AppSettings[LocationCache.UnavailableLocationsExpirationTimeInSeconds];
-                if (!string.IsNullOrEmpty(unavailableLocationsExpirationTimeInSecondsConfig))
-                {
-                    int unavailableLocationsExpirationTimeinSecondsConfigValue;
+            //if (AppConfig.IsEnabled)
+            //{
+            //    string unavailableLocationsExpirationTimeInSecondsConfig = System.Configuration.ConfigurationManager.AppSettings[LocationCache.UnavailableLocationsExpirationTimeInSeconds];
+            //    if (!string.IsNullOrEmpty(unavailableLocationsExpirationTimeInSecondsConfig))
+            //    {
+            //        int unavailableLocationsExpirationTimeinSecondsConfigValue;
 
-                    if (!int.TryParse(unavailableLocationsExpirationTimeInSecondsConfig, out unavailableLocationsExpirationTimeinSecondsConfigValue))
-                    {
-                        this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
-                    }
-                    else
-                    {
-                        this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(unavailableLocationsExpirationTimeinSecondsConfigValue);
-                    }
-                }
-            }
+            //        if (!int.TryParse(unavailableLocationsExpirationTimeInSecondsConfig, out unavailableLocationsExpirationTimeinSecondsConfigValue))
+            //        {
+            //            this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
+            //        }
+            //        else
+            //        {
+            //            this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(unavailableLocationsExpirationTimeinSecondsConfigValue);
+            //        }
+            //    }
+            //}
         }
 
         /// <summary>

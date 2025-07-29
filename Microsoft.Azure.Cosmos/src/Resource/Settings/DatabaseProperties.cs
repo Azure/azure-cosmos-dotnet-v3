@@ -44,6 +44,7 @@ namespace Microsoft.Azure.Cosmos
         /// Initializes a new instance of the <see cref="DatabaseProperties"/> class for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
+        [JsonConstructor]
         public DatabaseProperties(string id)
         {
             this.Id = id;

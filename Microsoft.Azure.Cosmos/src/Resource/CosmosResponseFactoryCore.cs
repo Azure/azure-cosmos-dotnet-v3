@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Scripts;
 
@@ -59,6 +60,8 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage);
         }
 
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Microsoft.Azure.Cosmos.DatabaseProperties))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Microsoft.Azure.Cosmos.ContainerProperties))]
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {            
