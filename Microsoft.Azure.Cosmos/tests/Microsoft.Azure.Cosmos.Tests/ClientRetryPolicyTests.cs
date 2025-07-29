@@ -50,7 +50,7 @@
                 multimasterMetadataWriteRetryTest: true);
 
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false, false);
 
             //Creates a metadata write request
             DocumentServiceRequest request = this.CreateRequest(false, true);
@@ -112,6 +112,7 @@
                 this.partitionKeyRangeLocationCache,
                 new RetryOptions(),
                 enableEndpointDiscovery,
+                false,
                 false);
 
             // Creates a sample write request.
@@ -184,7 +185,7 @@
                isPreferredLocationsListEmpty: true);
 
             //Create Retry Policy
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(endpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery, false, false);
 
             CancellationToken cancellationToken = new CancellationToken();
             Exception serviceUnavailableException = new Exception();
@@ -239,7 +240,8 @@
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
                 retryOptions: new RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPartitionLevelFailoverEnabled: enablePartitionLevelFailover);
+                isPartitionLevelFailoverEnabled: enablePartitionLevelFailover,
+                isThinClientEnabled: false);
 
             CancellationToken cancellationToken = new ();
             HttpRequestException httpRequestException = new (message: "Connecting to endpoint has failed.");
@@ -310,7 +312,8 @@
                 partitionKeyRangeLocationCache: this.partitionKeyRangeLocationCache,
                 retryOptions: new RetryOptions(),
                 enableEndpointDiscovery: enableEndpointDiscovery,
-                isPartitionLevelFailoverEnabled: enablePartitionLevelFailover);
+                isPartitionLevelFailoverEnabled: enablePartitionLevelFailover,
+                isThinClientEnabled: false);
 
             CancellationToken cancellationToken = new();
             OperationCanceledException operationCancelledException = new(message: "Operation was cancelled due to cancellation token expiry.");
@@ -447,7 +450,7 @@
 
             this.partitionKeyRangeLocationCache = GlobalPartitionEndpointManagerNoOp.Instance;
 
-            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, isPartitionLevelFailoverEnabled: false);
+            ClientRetryPolicy retryPolicy = new ClientRetryPolicy(mockDocumentClientContext.GlobalEndpointManager, this.partitionKeyRangeLocationCache, new RetryOptions(), enableEndpointDiscovery: true, isPartitionLevelFailoverEnabled: false, false);
 
             INameValueCollection headers = new DictionaryNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.BoundedStaleness.ToString());
