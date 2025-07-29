@@ -196,6 +196,7 @@ namespace Microsoft.Azure.Cosmos
             return new ResourceFeedReader<Offer>(client, ResourceType.Offer, options, null);
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Creates a Feed Reader for snapshots in the Azure Cosmos DB service.
         /// </summary>
@@ -206,5 +207,6 @@ namespace Microsoft.Azure.Cosmos
         {
             return new ResourceFeedReader<Snapshot>(client, ResourceType.Snapshot, options, null);
         }
+#endif
     }
 }
