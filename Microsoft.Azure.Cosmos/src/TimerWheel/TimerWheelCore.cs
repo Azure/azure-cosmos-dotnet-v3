@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Timers
             timerQueue.Enqueue(timer);
         }
 
-        public void OnTimer(object stateInfo)
+        public void OnTimer(object? stateInfo)
         {
             lock (this.timerConcurrencyLock)
             {

@@ -1004,6 +1004,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ReadUserDefinedTypeAsync(userDefinedTypeUri.OriginalString, options);
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Snapshot"/> as an asynchronous operation from the Azure Cosmos DB service.
         /// </summary>
@@ -1054,7 +1055,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ReadSnapshotAsync(snapshotUri.OriginalString, options);
         }
-
+#endif
         #endregion
 
         #region Feed read

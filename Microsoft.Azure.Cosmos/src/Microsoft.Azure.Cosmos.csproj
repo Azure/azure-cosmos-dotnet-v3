@@ -55,6 +55,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Remove="direct\Snapshot.cs" />
+		<Compile Remove="direct\SnapshotContent.cs" />
+		<Compile Remove="direct\SnapshotContent.SystemTextJson.cs" />
+		<Compile Remove="direct\SnapshotKind.cs" />
+		<Compile Remove="direct\SnapshotState.cs" />
 		<Compile Remove="RuntimePerfCounters.cs" />
 	</ItemGroup>
 
@@ -76,6 +81,11 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Include="direct\Snapshot.cs" />
+		<None Include="direct\SnapshotContent.cs" />
+		<None Include="direct\SnapshotContent.SystemTextJson.cs" />
+		<None Include="direct\SnapshotKind.cs" />
+		<None Include="direct\SnapshotState.cs" />
 		<None Include="Json\JsonBinaryEncoding.SystemStrings.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>
@@ -191,8 +201,8 @@
 	<PropertyGroup>
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
 		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
-		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20;NETSTANDARD2_0_OR_GREATER</DefineConstants>
-		<NoWarn>CS0472</NoWarn>
+		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20;NETSTANDARD2_0_OR_GREATER;COSMOS_GW_AOT</DefineConstants>
+		<NoWarn>$(NoWarn);CS0472;SYSLIB0013;CS8073;CS8600;CS0618</NoWarn>
 		<RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
 		<RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
 	</PropertyGroup>

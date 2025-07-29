@@ -611,7 +611,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.owner.GetDatabaseAccountInternalAsync(serviceEndpoint, this.cancellationTokenSource.Token);
         }
 
-        private void OnPreferenceChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void OnPreferenceChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             this.locationCache.OnLocationPreferenceChanged(new ReadOnlyCollection<string>(
                 this.connectionPolicy.PreferredLocations));

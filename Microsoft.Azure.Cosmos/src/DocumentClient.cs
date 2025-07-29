@@ -2595,6 +2595,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Creates a snapshot resource as an asychronous operation in the Azure Cosmos DB service.
         /// </summary>
@@ -2679,6 +2680,7 @@ namespace Microsoft.Azure.Cosmos
                 return new ResourceResponse<Snapshot>(await this.CreateAsync(request, retryPolicyInstance));
             }
         }
+#endif
 
         #endregion
 
@@ -3086,6 +3088,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Delete a <see cref="Microsoft.Azure.Documents.Snapshot"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
@@ -3142,8 +3145,8 @@ namespace Microsoft.Azure.Cosmos
                 return new ResourceResponse<Snapshot>(await this.DeleteAsync(request, retryPolicyInstance));
             }
         }
-
-        #endregion
+#endif
+#endregion
 
         #region Replace Impl
         /// <summary>
@@ -4609,6 +4612,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Reads a <see cref="Microsoft.Azure.Documents.Snapshot"/> from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
@@ -4684,7 +4688,7 @@ namespace Microsoft.Azure.Cosmos
                 return new ResourceResponse<Snapshot>(await this.ReadAsync(request, retryPolicyInstance));
             }
         }
-
+#endif
         #endregion
 
         #region ReadFeed Impl
@@ -5422,6 +5426,7 @@ namespace Microsoft.Azure.Cosmos
             return await this.CreateUserDefinedTypeFeedReader(userDefinedTypesLink, options).ExecuteNextAsync();
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Reads the feed (sequence) of <see cref="Microsoft.Azure.Documents.Snapshot"/> for a database account from the Azure Cosmos DB service as an asynchronous operation.
         /// </summary>
@@ -5479,7 +5484,7 @@ namespace Microsoft.Azure.Cosmos
 
             return await this.CreateSnapshotFeedReader(options).ExecuteNextAsync();
         }
-
+#endif
         #endregion
 
         #region Stored procs
