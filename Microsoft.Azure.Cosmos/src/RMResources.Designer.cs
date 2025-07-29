@@ -4445,6 +4445,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+        /// <summary>
         ///   Looks up a localized string similar to Could not resolve DataTransfer state store account for region [{0}]..
         /// </summary>
         internal static string DataTransferStateStoreNotResolved

@@ -62,7 +62,9 @@ namespace Microsoft.Azure.Documents
                         headers: null,
                         authorizationTokenType: originalRequestTokenType);
             }
+#pragma warning disable SA1108
             else if (request.IsNameBased) // Name based server request
+#pragma warning restore SA1108
             {
                 // get the collection full name
                 // dbs/{id}/colls/{collid}/
@@ -74,7 +76,9 @@ namespace Microsoft.Azure.Documents
                     originalRequestTokenType,
                     null);
             }
+#pragma warning disable SA1108
             else // RID based Server request
+#pragma warning restore SA1108
             {
                 barrierLsnRequest = DocumentServiceRequest.Create(
                     OperationType.Head,
@@ -222,8 +226,11 @@ namespace Microsoft.Azure.Documents
                     return false;
             }
         }
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
-        /// <summary>
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// <summary>
         /// Used to determine the appropriate back-off time between barrier requests based
         /// on the responses to previous barrier requests. The substatus code of HEAD requests
         /// indicate the gap - like how far the targeted LSN/GCLSN was missed.
@@ -249,6 +256,8 @@ namespace Microsoft.Azure.Documents
         /// A flag indicating whether a delay before the next barrier request should be injected.
         /// </returns>
         internal static bool ShouldDelayBetweenHeadRequests(
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
+#pragma warning restore CS1570 // XML comment has badly formed XML
             TimeSpan previousHeadRequestLatency,
             IList<ReferenceCountedDisposable<StoreResult>> responses,
             TimeSpan minDelay,

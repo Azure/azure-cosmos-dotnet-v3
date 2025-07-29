@@ -95,7 +95,9 @@ namespace Microsoft.Azure.Documents
 
     internal static class ResourceTypeExtensions
     {
+#pragma warning disable IDE0044 // Add readonly modifier
         private static Dictionary<int, string> resourceTypeNames = new Dictionary<int, string>();
+#pragma warning restore IDE0044 // Add readonly modifier
 
         static ResourceTypeExtensions()
         {

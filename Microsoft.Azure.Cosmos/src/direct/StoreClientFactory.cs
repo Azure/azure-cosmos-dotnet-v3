@@ -21,7 +21,9 @@ namespace Microsoft.Azure.Documents
         private readonly bool disableRetryWithRetryPolicy;
         private TransportClient transportClient;
         private TransportClient fallbackTransportClient;
+#pragma warning disable IDE0044 // Add readonly modifier
         private IConnectionStateListener connectionStateListener;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public StoreClientFactory(
             Protocol protocol,

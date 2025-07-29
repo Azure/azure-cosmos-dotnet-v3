@@ -349,7 +349,9 @@ namespace Microsoft.Azure.Documents
             string resourceUrl,
             out string resourcePath,
             out string resourceIdOrFullName,
+#pragma warning disable CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             out bool isNameBased,
+#pragma warning restore CS1573 // Parameter has no matching param tag in the XML comment (but other parameters do)
             out string databaseName,
             out string collectionName,
             out ResourceType resourceType,

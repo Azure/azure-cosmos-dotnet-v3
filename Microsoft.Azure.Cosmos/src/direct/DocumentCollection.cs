@@ -326,10 +326,12 @@ namespace Microsoft.Azure.Documents
             }
             set
             {
+#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 if(value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, "UniqueIndexNameEncodingMode"));
                 }
+#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 this.uniqueIndexNameEncodingMode = value;
                 this.SetValue(Constants.Properties.UniqueIndexNameEncodingMode, value);
             }
@@ -989,12 +991,15 @@ namespace Microsoft.Azure.Documents
         }
 
         // <summary>
-        /// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// Gets the <see cref="DataMaskingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
         /// The DataMaskingPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.DataMaskingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+#pragma warning restore CS1570 // XML comment has badly formed XML
         internal DataMaskingPolicy DataMaskingPolicy
         {
             get
@@ -1019,12 +1024,15 @@ namespace Microsoft.Azure.Documents
         }
 
         // <summary>
-        /// Gets the <see cref="VectorEmbeddingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// Gets the <see cref="VectorEmbeddingPolicy"/> associated with the collection from the Azure Cosmos DB service. 
         /// </summary>
         /// <value>
         /// The VectorEmbeddingPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.VectorEmbeddingPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+#pragma warning restore CS1570 // XML comment has badly formed XML
         internal VectorEmbeddingPolicy VectorEmbeddingPolicy
         {
             get
@@ -1049,12 +1057,15 @@ namespace Microsoft.Azure.Documents
         }
 
         // <summary>
-        /// Gets the <see cref="FullTextPolicy"/> associated with the collection from the Azure Cosmos DB service.
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// Gets the <see cref="FullTextPolicy"/> associated with the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The FullTextPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.Properties.FullTextPolicy, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+#pragma warning restore CS1570 // XML comment has badly formed XML
         internal FullTextPolicy FullTextPolicy
         {
             get
@@ -1079,12 +1090,15 @@ namespace Microsoft.Azure.Documents
         }
 
         // <summary>
-        /// Gets the <see cref="SoftDeletionMetadata"/> associated with the collection from the Azure Cosmos DB service.
+        
+#pragma warning disable CS1570 // XML comment has badly formed XML
+/// Gets the <see cref="SoftDeletionMetadata"/> associated with the collection from the Azure Cosmos DB service.
         /// </summary>
         /// <value>
         /// The FullTextPolicy associated with the collection.
         /// </value>
         [JsonProperty(PropertyName = Constants.SoftDeletionMetadataProperties.SoftDeletionMetadata, DefaultValueHandling = DefaultValueHandling.Ignore, NullValueHandling = NullValueHandling.Ignore)]
+#pragma warning restore CS1570 // XML comment has badly formed XML
         internal SoftDeletionMetadata SoftDeletionMetadata
         {
             get

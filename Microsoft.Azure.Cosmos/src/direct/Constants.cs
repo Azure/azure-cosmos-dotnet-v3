@@ -31,9 +31,11 @@ namespace Microsoft.Azure.Documents
         public const int Max16KBTokenBufferSize = 16 * 1024;
 
 		public const int Max64KBTokenBufferSize = 64 * 1024;
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
 		public const string FirewallAuthorization = "FirewallAuthorization";
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
 
         // As per https://docs.microsoft.com/en-us/azure/storage/common/storage-redundancy
         // table secondary endpoint is suffixed by -secondary.
@@ -1013,9 +1015,11 @@ namespace Microsoft.Azure.Documents
             public const string EnablePartitionMerge = "enablePartitionMerge";
             public const string EnableSystemSnapshotsForCompleteSplitOperationForSharedThroughput = "EnableSystemSnapshotsForCompleteSplitOperationForSharedThroughput";
             public const string EnableSystemSnapshotsForCompleteSplitOperation = "EnableSystemSnapshotsForCompleteSplitOperation";
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
             public const string EnableBurstCapacity = "enableBurstCapacity";
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
             public const string EnableUserRateLimitingWithBursting = "enableUserRateLimitingWithBursting";
             
             // Priority Based Execution can be enabled by setting the naming config enablePriorityBasedThrottling to true
@@ -1257,7 +1261,9 @@ namespace Microsoft.Azure.Documents
             public static readonly string RejectInvalidConsistencyLevelRequests = "rejectInvalidConsistencyLevelRequests";
 
             // Enable API type check
+#pragma warning disable SA1203 // Constants should appear before fields
             public const string EnableApiTypeCheck = "enableApiTypeCheck";
+#pragma warning restore SA1203 // Constants should appear before fields
             public const string EnabledApiTypesOverride = "enabledApiTypesOverride";
 
             public const string ForceDisableFailover = "forceDisableFailover";
@@ -2626,7 +2632,9 @@ namespace Microsoft.Azure.Documents
             public static string FederationBuildout_CanaryAccountMigration = "FederationBuildout_CanaryAccountMigration";
             public static string USER_InPlaceAZMigration = "USER_InPlaceAZMigration";
             public static string ACIS_MigrateMasterBetweenZonalAndRegional = "ACIS_MigrateMasterBetweenZonalAndRegional";
+#pragma warning disable SA1310 // Field names should not contain underscore
             public static string Automigrator_Decommissioning = "Automigrator_Decommissioning";
+#pragma warning restore SA1310 // Field names should not contain underscore
             public static string LBaaS = "LBaaS_{0}";
         }
 
@@ -2743,9 +2751,13 @@ namespace Microsoft.Azure.Documents
         {
             public const string AccountPlacementRanking = "AccountPlacementRanking";
         }
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
+#pragma warning disable SA1025 // Code should not contain multiple whitespace in a row
         public static class  RegionProximity
+#pragma warning restore SA1025 // Code should not contain multiple whitespace in a row
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
         {
             public const string ConfigurationIdPrefix = "regionproximity_";
             public const string SourceRegionQueryParam = "regionproximitysourceregion";

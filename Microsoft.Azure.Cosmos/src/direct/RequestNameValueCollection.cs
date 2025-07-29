@@ -42,7 +42,9 @@ namespace Microsoft.Azure.Documents.Collections
         public string AllowDocumentReadsInOfflineRegion { get; set; }
         public string AllowRestoreParamsUpdate { get; set; }
         public string AllowTentativeWrites { get; set; }
+#pragma warning disable SA1025 // Code should not contain multiple whitespace in a row
         public string AllowTopologyUpsertWithoutIntent {  get; set; }
+#pragma warning restore SA1025 // Code should not contain multiple whitespace in a row
         public string AllowUpdatingIsPhysicalMigrationInProgress { get; set; }
         public string Authorization { get; set; }
         public string BinaryId { get; set; }

@@ -30,10 +30,12 @@ namespace Microsoft.Azure.Documents
     {
         private Error error;
         private SubStatusCodes? substatus = null;
+#pragma warning disable IDE0044 // Add readonly modifier
         private INameValueCollection responseHeaders;
         private string rawErrorMessage;
         private Boolean rawErrorMessageOnly;
         private bool skippingStackTraceCapture = false;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         internal DocumentClientException(Error errorResource,
             HttpResponseHeaders responseHeaders,

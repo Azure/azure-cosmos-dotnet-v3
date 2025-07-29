@@ -19,6 +19,9 @@ namespace Microsoft.Azure.Documents
         public const string ReplicaOperations_ReportThroughputUtilization = "reportthroughpututilization";
         public const string ReplicaOperations_BatchReportThroughputUtilization = "batchreportthroughpututilization";
         public const string Operations_GetFederationConfigurations = "getfederationconfigurations";
+#pragma warning disable SA1310 // Field names should not contain underscore
+        public const string Operations_GetRegionalConfigurations = "getregionalconfigurations";
+#pragma warning restore SA1310 // Field names should not contain underscore
         public const string Operations_GetConfiguration = "getconfiguration";
         public const string Operations_GetDatabaseAccountConfigurations = "getdatabaseaccountconfigurations";
         public const string Operations_GetMicrosoftFabricDatabaseAccountArtifactPermissions = "getdatabaseaccountartifactpermissions";

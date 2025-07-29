@@ -106,6 +106,8 @@ namespace Microsoft.Azure.Documents
                     return;
                 }
             }
+#pragma warning disable CDX1002
+#pragma warning disable CDX1003
             try
             {
                 // get the current tick count which will be used to compare to 
@@ -168,6 +170,8 @@ namespace Microsoft.Azure.Documents
             {
                 DefaultTrace.TraceCritical("Hit exception ex: {0}\n, stack: {1}", ex.Message, ex.StackTrace);
             }
+#pragma warning restore CDX1003
+#pragma warning restore CDX1002
             finally
             {
                 lock(timerConcurrencyLock)

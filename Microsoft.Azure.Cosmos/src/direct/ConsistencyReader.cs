@@ -236,6 +236,7 @@ namespace Microsoft.Azure.Documents
                     {
                         // RequestRetryUtility vs BackoffRetryUtility: is purely for safe flighting purpose only
                         // Post flighting can be fully pivoted to RequestRetryUtility and remove BackoffRetryUtility below
+#pragma warning disable SA1008 // Opening parenthesis should be spaced correctly
                         if (entity.UseStatusCodeFor4041002
                             && entity.IsValidRequestFor4041002 ())
                         {
@@ -246,6 +247,7 @@ namespace Microsoft.Azure.Documents
                                     sessionRetryOptions: this.sessionRetryOptions),
                                 cancellationToken: cancellationToken);
                         }
+#pragma warning restore SA1008 // Opening parenthesis should be spaced correctly
 
                         return BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                             callbackMethod: () => this.ReadSessionAsync(entity, desiredReadMode),

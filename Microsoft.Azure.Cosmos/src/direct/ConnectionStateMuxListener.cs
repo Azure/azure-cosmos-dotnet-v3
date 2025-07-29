@@ -12,7 +12,11 @@ namespace Microsoft.Azure.Documents
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Rntbd;
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
+
+#pragma warning disable CS1570 // XML comment has badly formed XML
+#pragma warning disable CS1584 // XML comment has syntactically incorrect cref attribute
     /// <summary>
     /// ConnectionStateListener listens to the connection reset event notification fired by the transport client
     /// and refreshes the Document client's address cache
@@ -45,7 +49,10 @@ namespace Microsoft.Azure.Documents
     ///     - TCP direct connections in TIMED_WAIT state
     ///     - Task scheduler contention
     /// </remarks>
-    internal sealed class ConnectionStateMuxListener : IConnectionStateListener 
+    internal sealed class ConnectionStateMuxListener : IConnectionStateListener
+#pragma warning restore CS1584 // XML comment has syntactically incorrect cref attribute
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
+#pragma warning restore CS1570 // XML comment has badly formed XML
     {
         readonly internal bool enableTcpConnectionEndpointRediscovery;
         readonly internal ConcurrentDictionary<ServerKey, ConcurrentDictionary<Func<ServerKey, Task>, object>> serverKeyEventHandlers = new();
@@ -54,10 +61,12 @@ namespace Microsoft.Azure.Documents
 
         public ConnectionStateMuxListener(bool enableTcpConnectionEndpointRediscovery) 
         {
+#pragma warning disable CS1587 // XML comment has badly formed XML
             /// Default to the processor count 
             this.notificationConcurrency = Environment.ProcessorCount;
             this.notificationSemaphore = new SemaphoreSlim(this.notificationConcurrency);
             this.enableTcpConnectionEndpointRediscovery = enableTcpConnectionEndpointRediscovery;
+#pragma warning restore CS1587 // XML comment has badly formed XML
         }
 
         public void SetConnectionEventConcurrency(int notificationConcurrency)

@@ -3,7 +3,9 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Client
 {
-    /// <summary>
+    
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+/// <summary>
     /// Represents the template class used by methods returning single objects in the Azure Cosmos DB service.
     /// </summary> 
     /// <typeparam name="TResource">the resource type.</typeparam>
@@ -27,13 +29,16 @@ namespace Microsoft.Azure.Documents.Client
     /// <seealso cref="FeedResponse{T}"/>
 #if COSMOSCLIENT
     internal
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
 #else
     public
 #endif
     class ResourceResponse<TResource> : ResourceResponseBase, IResourceResponse<TResource> where TResource : Resource, new()
     {
         private TResource resource;
+#pragma warning disable IDE0044 // Add readonly modifier
         private ITypeResolver<TResource> typeResolver;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Constructor exposed for mocking purposes for the Azure Cosmos DB service.

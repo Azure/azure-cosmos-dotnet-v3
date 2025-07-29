@@ -287,6 +287,7 @@ For globally strong write:
                     //barrier only if necessary, i.e. when write region completes write, but read regions have not.
                     if (globalCommittedLsn < lsn)
                     {
+#pragma warning disable SA1001 // Commas should be spaced correctly
                         using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN , includeRegionContext: true))
                         {
                             if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
@@ -295,6 +296,7 @@ For globally strong write:
                                 throw new GoneException(RMResources.GlobalStrongWriteBarrierNotMet, SubStatusCodes.Server_GlobalStrongWriteBarrierNotMet);
                             }
                         }
+#pragma warning restore SA1001 // Commas should be spaced correctly
                     }
                 }
                 else
@@ -416,7 +418,9 @@ For globally strong write:
 
             int writeBarrierRetryCount = 0;
             long maxGlobalCommittedLsnReceived = 0;
+#pragma warning disable SA1108
             while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
+#pragma warning restore SA1108
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
 

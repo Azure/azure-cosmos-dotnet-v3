@@ -162,25 +162,31 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        /// <summary>
+        
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+/// <summary>
         /// Sets routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to endpoint based on location index
         /// </summary>
         /// <param name="locationIndex">Index of the location to which the request should be routed</param>
         /// <param name="usePreferredLocations">Use preferred locations to route request</param>
         public void RouteToLocation(int locationIndex, bool usePreferredLocations)
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
             this.LocationIndexToRoute = locationIndex;
             this.UsePreferredLocations = usePreferredLocations;
             this.LocationEndpointToRoute = null;
         }
 
-        /// <summary>
+        
+#pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
+/// <summary>
         /// Sets location-based routing directive for <see cref="GlobalEndpointManager"/> to resolve
         /// the request to given <paramref name="locationEndpoint"/>
         /// </summary>
         /// <param name="locationEndpoint">Location endpoint to which the request should be routed</param>
         public void RouteToLocation(Uri locationEndpoint)
+#pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         {
             this.LocationEndpointToRoute = locationEndpoint;
             this.LocationIndexToRoute = null;

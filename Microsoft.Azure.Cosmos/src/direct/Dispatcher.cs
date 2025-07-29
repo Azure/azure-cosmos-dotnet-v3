@@ -118,11 +118,13 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.enableChannelMultiplexing = enableChannelMultiplexing;
             this.chaosInterceptor = chaosInterceptor;
         }
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
 
 
         #region Test hook.
 
         internal event Action TestOnConnectionClosed;
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
         internal bool TestIsIdle
         {
             get
@@ -351,6 +353,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 try
                 {
                     try
+#pragma warning disable SA1507 // Code should not contain multiple blank lines in a row
                     {     
                         if (this.chaosInterceptor != null)
                         {
@@ -376,6 +379,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         
 
                     }
+#pragma warning restore SA1507 // Code should not contain multiple blank lines in a row
                     catch (Exception e)
                     {
                         callInfo.SendFailed();
@@ -573,6 +577,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             Debug.Assert(Monitor.IsEntered(this.connectionLock));
             this.idleTimer = this.idleTimerPool.GetPooledTimer((int)timeToIdle.TotalSeconds);
             this.idleTimerTask = this.idleTimer.StartTimerAsync().ContinueWith(this.OnIdleTimer, TaskContinuationOptions.OnlyOnRanToCompletion);
+#pragma warning disable SA1137
             this.idleTimerTask.ContinueWith(
                 failedTask =>
                 {
@@ -581,6 +586,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                          this.ConnectionCorrelationId, this, failedTask.Exception?.InnerException?.Message);
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
+#pragma warning restore SA1137
         }
 
         // this.connectionLock must be held.
