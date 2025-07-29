@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Runtime.InteropServices;
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// There are many kinds of documents partitioning schemes (Range, Hash, Range+Hash, Hash+Hash etc.)

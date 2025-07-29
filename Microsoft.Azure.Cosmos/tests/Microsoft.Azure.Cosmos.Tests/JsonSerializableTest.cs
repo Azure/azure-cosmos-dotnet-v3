@@ -7,10 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Runtime.Serialization;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Tests <see cref="JsonSerializable"/> class.
@@ -18,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     [TestClass]
     public class JsonSerializableTest
     {
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<SampleEnum>))]
         internal enum SampleEnum
         {
             Invalid,
@@ -33,7 +32,7 @@ namespace Microsoft.Azure.Cosmos
             Offline
         }
 
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<SampleEnum2>))]
         internal enum SampleEnum2
         {
             Invalid,
@@ -93,17 +92,22 @@ namespace Microsoft.Azure.Cosmos
                 string json = new StreamReader(ms).ReadToEnd();
 
                 Assert.AreEqual("{\"field1\":\"splitting\",\"field2\":\"Splitting\",\"field3\":2}", json);
-                serializable = new SampleSerializable();
-                serializable.LoadFrom(new JsonTextReader(new StringReader(json)));
-                Assert.AreEqual(SampleEnum.Splitting, serializable.Field1);
-                Assert.AreEqual(SampleEnum2.Splitting, serializable.Field2);
-                Assert.AreEqual(SampleEnum3.Splitting, serializable.Field3);
 
-                serializable = new SampleSerializable();
-                serializable.LoadFrom(new JsonTextReader(new StringReader("{\"field1\":\"splitting\",\"field2\":\"Splitting\",\"field3\":\"Splitting\"}")));
-                Assert.AreEqual(SampleEnum.Splitting, serializable.Field1);
-                Assert.AreEqual(SampleEnum2.Splitting, serializable.Field2);
-                Assert.AreEqual(SampleEnum3.Splitting, serializable.Field3);
+                // Deserialize using System.Text.Json
+                ms.Position = 0;
+                SampleSerializable deserialized = JsonSerializable.LoadFrom<SampleSerializable>(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)), null);
+
+                Assert.AreEqual(SampleEnum.Splitting, deserialized.Field1);
+                Assert.AreEqual(SampleEnum2.Splitting, deserialized.Field2);
+                Assert.AreEqual(SampleEnum3.Splitting, deserialized.Field3);
+
+                // Test with string value for field3
+                string jsonWithStringField3 = "{\"field1\":\"splitting\",\"field2\":\"Splitting\",\"field3\":\"Splitting\"}";
+                SampleSerializable deserialized2 = JsonSerializable.LoadFrom<SampleSerializable>(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonWithStringField3)), null);
+
+                Assert.AreEqual(SampleEnum.Splitting, deserialized2.Field1);
+                Assert.AreEqual(SampleEnum2.Splitting, deserialized2.Field2);
+                Assert.AreEqual(SampleEnum3.Splitting, deserialized2.Field3);
             }
         }
     }

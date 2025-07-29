@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Linq;
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// Represent a list of ranges with the following properties

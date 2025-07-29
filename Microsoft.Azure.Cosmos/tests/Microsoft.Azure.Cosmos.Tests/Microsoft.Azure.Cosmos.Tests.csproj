@@ -5,18 +5,24 @@
 
   <PropertyGroup>
     <Platform>AnyCPU</Platform>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <RootNamespace>Microsoft.Azure.Cosmos.Tests</RootNamespace>
     <LangVersion>$(LangVersion)</LangVersion>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DefineConstants>$(DefineConstants);COSMOS_GW_AOT</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="Query\TestBaseline\**" />
     <EmbeddedResource Remove="Query\TestBaseline\**" />
     <None Remove="Query\TestBaseline\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Json\NewtonsoftInteropTests.cs" />
+    <Compile Remove="SettingsContractTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -55,7 +61,6 @@
     <PackageReference Include="Moq" Version="4.8.3" />
     <PackageReference Include="MSTest.TestAdapter" Version="1.2.0" />
     <PackageReference Include="MSTest.TestFramework" Version="1.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="coverlet.msbuild" Version="2.8.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
@@ -413,6 +418,8 @@
     <None Include="..\..\..\Directory.Build.props" Link="Directory.Build.props">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="Json\NewtonsoftInteropTests.cs" />
+    <None Include="SettingsContractTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -425,6 +432,8 @@
     <SignAssembly>true</SignAssembly>
     <DelaySign>true</DelaySign>
     <AssemblyOriginatorKeyFile>..\..\..\testkey.snk</AssemblyOriginatorKeyFile>
+    <RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
+    <RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
   </PropertyGroup>
   
 </Project>

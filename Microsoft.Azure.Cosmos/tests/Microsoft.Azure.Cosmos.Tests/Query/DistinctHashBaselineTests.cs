@@ -9,6 +9,7 @@
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     [TestClass]
     public class DistinctHashBaselineTests : BaselineTests<DistinctHashBaselineTests.Input, DistinctHashBaselineTests.Output>

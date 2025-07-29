@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     [TestClass]
     public class PartitionKeyHashBaselineTest : BaselineTests<PartitionKeyHashBaselineTest.Input, PartitionKeyHashBaselineTest.Output>

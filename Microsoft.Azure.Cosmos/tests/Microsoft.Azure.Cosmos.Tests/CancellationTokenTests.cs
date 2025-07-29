@@ -17,7 +17,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Tests for <see cref="CancellationToken"/>  scenarios.
@@ -215,7 +214,7 @@ namespace Microsoft.Azure.Cosmos
                 sessionContainer,
                 Cosmos.ConsistencyLevel.Eventual,
                 new DocumentClientEventSource(),
-                new JsonSerializerSettings(),
+                new System.Text.Json.JsonSerializerOptions(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)));
         }
 

@@ -891,7 +891,7 @@ namespace Microsoft.Azure.Cosmos
             };
 
             StringBuilder feedResourceString = new();
-            addressFeedResource.SaveTo(feedResourceString);
+            addressFeedResource.SaveTo(feedResourceString, null);
 
             StringContent content = new(feedResourceString.ToString());
             HttpResponseMessage responseMessage = new()

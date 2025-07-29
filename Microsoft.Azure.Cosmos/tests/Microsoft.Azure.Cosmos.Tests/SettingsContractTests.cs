@@ -11,13 +11,13 @@ namespace Microsoft.Azure.Cosmos.Tests
     using System.Linq;
     using System.Reflection;
     using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class SettingsContractTests
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
             DatabaseProperties deserializedPayload =
-                JsonConvert.DeserializeObject<DatabaseProperties>(testPyaload);
+                JsonSerializer.Deserialize<DatabaseProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -119,7 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
             ContainerProperties deserializedPayload =
-                JsonConvert.DeserializeObject<ContainerProperties>(testPyaload);
+                JsonSerializer.Deserialize<ContainerProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -147,7 +147,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     + "\",\"_colls\":\"colls\\/\",\"_users\":\"users\\/\",\"_ts\":" + ts + "}";
 
             StoredProcedureProperties deserializedPayload =
-                JsonConvert.DeserializeObject<StoredProcedureProperties>(testPyaload);
+                JsonSerializer.Deserialize<StoredProcedureProperties>(testPyaload);
 
             Assert.IsTrue(deserializedPayload.LastModified.HasValue);
             Assert.AreEqual(expected, deserializedPayload.LastModified.Value);
@@ -306,34 +306,32 @@ namespace Microsoft.Azure.Cosmos.Tests
             this.DeserializeWithAdditionalDataTest<UserProperties>();
         }
 
-        [TestMethod]
         public void AccountPropertiesDeserializeWithAdditionalDataTest()
         {
             string cosmosSerialized = "{\"id\":\"2a9f501b-6948-4795-8fd1-797defb5c466\",\"writableLocations\":[],\"readableLocations\":[{\"name\":\"region1\",\"additionalRegion\":\"regionValue\",\"databaseAccountEndpoint\":null}],\"userConsistencyPolicy\":{\"defaultConsistencyLevel\":\"Strong\",\"maxStalenessPrefix\":0,\"additionalConsistency\":\"consistencyValue\",\"maxIntervalInSeconds\":1},\"addresses\":null,\"userReplicationPolicy\":null,\"systemReplicationPolicy\":null,\"readPolicy\":null,\"queryEngineConfiguration\":null,\"enableMultipleWriteLocations\":false}";
 
-            JObject complexObject = JObject.FromObject(new { id = 1, name = new { fname = "fname", lname = "lname" } });
+            JsonObject complexObject = CreateJsonObjectFromAnonymous(new { id = 1, name = new { fname = "fname", lname = "lname" } });
 
             // Adding additional information
-            JObject jobject = JObject.Parse(cosmosSerialized);
-            jobject.Add(new JProperty("simple string", "policy value"));
-            jobject.Add(new JProperty("complex object", complexObject));
+            JsonObject jobject = ParseJsonObject(cosmosSerialized);
+            AddProperty(jobject, "simple string", "policy value");
+            AddProperty(jobject, "complex object", complexObject);
 
             // Serialized string
-            cosmosSerialized = SettingsContractTests.CosmosSerialize(jobject);
+            cosmosSerialized = jobject.ToJsonString();
 
             AccountProperties containerDeserSettings = SettingsContractTests.CosmosDeserialize<AccountProperties>(cosmosSerialized);
 
             Assert.AreEqual("2a9f501b-6948-4795-8fd1-797defb5c466", containerDeserSettings.Id);
             Assert.AreEqual(2, containerDeserSettings.AdditionalProperties.Count);
-            Assert.AreEqual("policy value", (string)containerDeserSettings.AdditionalProperties["simple string"]);
-            Assert.AreEqual(complexObject.ToString(), JObject.FromObject(containerDeserSettings.AdditionalProperties["complex object"]).ToString());
+            Assert.AreEqual("policy value", GetStringFromAdditionalProperties(containerDeserSettings.AdditionalProperties, "simple string"));
+            Assert.IsTrue(JsonNodeEquals(complexObject, GetJsonNodeFromAdditionalProperties(containerDeserSettings.AdditionalProperties, "complex object")));
 
             Assert.AreEqual(1, containerDeserSettings.ReadableRegions.First().AdditionalProperties.Count);
-            Assert.AreEqual("regionValue", containerDeserSettings.ReadableRegions.First().AdditionalProperties["additionalRegion"]);
+            Assert.AreEqual("regionValue", GetStringFromAdditionalProperties(containerDeserSettings.ReadableRegions.First().AdditionalProperties, "additionalRegion"));
 
             Assert.AreEqual(1, containerDeserSettings.Consistency.AdditionalProperties.Count);
-            Assert.AreEqual("consistencyValue", containerDeserSettings.Consistency.AdditionalProperties["additionalConsistency"]);
-
+            Assert.AreEqual("consistencyValue", GetStringFromAdditionalProperties(containerDeserSettings.Consistency.AdditionalProperties, "additionalConsistency"));
         }
 
         [TestMethod]

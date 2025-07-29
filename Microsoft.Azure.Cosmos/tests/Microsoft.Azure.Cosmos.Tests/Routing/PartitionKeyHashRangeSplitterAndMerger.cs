@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// Splits or merges <see cref="PartitionKeyHashRange"/>

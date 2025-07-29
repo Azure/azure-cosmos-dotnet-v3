@@ -6,7 +6,7 @@ namespace AOTSample
 
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static async Task Main(string[] _)
         {
             const string CosmosBaseUri = "https://{0}.documents.azure.com:443/";
             string accountName = "cosmosaot2";
