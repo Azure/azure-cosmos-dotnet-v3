@@ -6,76 +6,42 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Globalization;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
-    internal sealed class CosmosIndexJsonConverter : JsonConverter
+    internal sealed class CosmosIndexJsonConverter : JsonConverter<Index>
     {
-        public override bool CanConvert(Type objectType)
+        public override Index Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return typeof(Index).IsAssignableFrom(objectType);
-        }
+            using var doc = JsonDocument.ParseValue(ref reader);
+            var root = doc.RootElement;
 
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            if (objectType != typeof(Index))
-            {
-                return null;
-            }
-
-            JToken indexToken = JToken.Load(reader);
-
-            if (indexToken.Type == JTokenType.Null)
-            {
-                return null;
-            }
-
-            if (indexToken.Type != JTokenType.Object)
-            {
-                throw new JsonSerializationException(
-                    string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
-            }
-
-            JToken indexKindToken = indexToken[Documents.Constants.Properties.IndexKind];
-            if (indexKindToken == null || indexKindToken.Type != JTokenType.String)
-            {
-                throw new JsonSerializationException(
-                    string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
-            }
+            if (!root.TryGetProperty(Documents.Constants.Properties.IndexKind, out var indexKindStr))
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexSpecFormat));
 
             IndexKind indexKind = IndexKind.Hash;
-            if (Enum.TryParse(indexKindToken.Value<string>(), out indexKind))
+            if (Enum.TryParse<IndexKind>(indexKindStr.GetString(), out indexKind))
             {
-                object index = null;
                 switch (indexKind)
                 {
                     case IndexKind.Hash:
-                        index = new HashIndex();
-                        break;
+                        return JsonSerializer.Deserialize<HashIndex>(root.GetRawText(), options);
                     case IndexKind.Range:
-                        index = new RangeIndex();
-                        break;
+                        return JsonSerializer.Deserialize<RangeIndex>(root.GetRawText(), options); ;
                     case IndexKind.Spatial:
-                        index = new SpatialIndex();
-                        break;
+                        return JsonSerializer.Deserialize<SpatialIndex>(root.GetRawText(), options); ;
                     default:
-                        throw new JsonSerializationException(
+                        throw new JsonException(
                             string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKind));
                 }
-
-                serializer.Populate(indexToken.CreateReader(), index);
-                return index;
             }
             else
             {
-                throw new JsonSerializationException(
-                    string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKindToken.Value<string>()));
+                throw new JsonException(string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKindStr.GetString()));
             }
         }
 
-        public override bool CanWrite => false;
-
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, Index value, JsonSerializerOptions options)
         {
             throw new NotImplementedException();
         }
