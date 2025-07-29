@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Get or set the default consistency level in the Azure Cosmos DB service.
         /// </summary>
-        [JsonConverter(typeof(JsonStringEnumConverter<ConsistencyLevel>))]
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         [JsonPropertyName(Constants.Properties.DefaultConsistencyLevel)]
         public ConsistencyLevel DefaultConsistencyLevel { get; internal set; }
 
