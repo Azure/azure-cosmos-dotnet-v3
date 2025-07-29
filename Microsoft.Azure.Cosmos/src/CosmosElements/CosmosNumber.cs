@@ -46,17 +46,22 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosNumber cosmosNumber && this.Equals(cosmosNumber);
         }
 
-        public abstract bool Equals(CosmosNumber cosmosNumber);
+        public abstract bool Equals(CosmosNumber? cosmosNumber);
 
-        public int CompareTo(CosmosNumber other)
+        public int CompareTo(CosmosNumber? other)
         {
+            if (other is null)
+            {
+                return 1; // This is greater than null
+            }
+
             int thisTypeOrder = this.Accept(CosmosNumberToTypeOrder.Singleton);
-            int otherTypeOrder = other.Accept(CosmosNumberToTypeOrder.Singleton);
+            int otherTypeOrder = other?.Accept(CosmosNumberToTypeOrder.Singleton) ?? -1;
 
             if (thisTypeOrder != otherTypeOrder)
             {
@@ -153,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             }
         }
 
-        private sealed class CosmosNumberWithinTypeComparer : ICosmosNumberVisitor<CosmosNumber, int>
+        private sealed class CosmosNumberWithinTypeComparer : ICosmosNumberVisitor<CosmosNumber?, int>
         {
             public static readonly CosmosNumberWithinTypeComparer Singleton = new CosmosNumberWithinTypeComparer();
 
@@ -161,44 +166,44 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
             }
 
-            public int Visit(CosmosNumber64 cosmosNumber64, CosmosNumber input)
+            public int Visit(CosmosNumber64 cosmosNumber64, CosmosNumber? input)
             {
-                return cosmosNumber64.CompareTo((CosmosNumber64)input);
+                return cosmosNumber64.CompareTo((CosmosNumber64?)input);
             }
 
-            public int Visit(CosmosInt8 cosmosInt8, CosmosNumber input)
+            public int Visit(CosmosInt8 cosmosInt8, CosmosNumber? input)
             {
-                return cosmosInt8.CompareTo((CosmosInt8)input);
+                return cosmosInt8.CompareTo((CosmosInt8?)input);
             }
 
-            public int Visit(CosmosInt16 cosmosInt16, CosmosNumber input)
+            public int Visit(CosmosInt16 cosmosInt16, CosmosNumber? input)
             {
-                return cosmosInt16.CompareTo((CosmosInt16)input);
+                return cosmosInt16.CompareTo((CosmosInt16?)input);
             }
 
-            public int Visit(CosmosInt32 cosmosInt32, CosmosNumber input)
+            public int Visit(CosmosInt32 cosmosInt32, CosmosNumber? input)
             {
-                return cosmosInt32.CompareTo((CosmosInt32)input);
+                return cosmosInt32.CompareTo((CosmosInt32?)input);
             }
 
-            public int Visit(CosmosInt64 cosmosInt64, CosmosNumber input)
+            public int Visit(CosmosInt64 cosmosInt64, CosmosNumber? input)
             {
-                return cosmosInt64.CompareTo((CosmosInt64)input);
+                return cosmosInt64.CompareTo((CosmosInt64?)input);
             }
 
-            public int Visit(CosmosUInt32 cosmosUInt32, CosmosNumber input)
+            public int Visit(CosmosUInt32 cosmosUInt32, CosmosNumber? input)
             {
-                return cosmosUInt32.CompareTo((CosmosUInt32)input);
+                return cosmosUInt32.CompareTo((CosmosUInt32?)input);
             }
 
-            public int Visit(CosmosFloat32 cosmosFloat32, CosmosNumber input)
+            public int Visit(CosmosFloat32 cosmosFloat32, CosmosNumber? input)
             {
-                return cosmosFloat32.CompareTo((CosmosFloat32)input);
+                return cosmosFloat32.CompareTo((CosmosFloat32?)input);
             }
 
-            public int Visit(CosmosFloat64 cosmosFloat64, CosmosNumber input)
+            public int Visit(CosmosFloat64 cosmosFloat64, CosmosNumber? input)
             {
-                return cosmosFloat64.CompareTo((CosmosFloat64)input);
+                return cosmosFloat64.CompareTo((CosmosFloat64?)input);
             }
         }
     }

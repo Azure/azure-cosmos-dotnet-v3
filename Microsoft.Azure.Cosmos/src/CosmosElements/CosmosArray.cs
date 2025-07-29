@@ -42,11 +42,11 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public override TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input) => cosmosElementVisitor.Visit(this, input);
 
-        public override bool Equals(CosmosElement cosmosElement) => cosmosElement is CosmosArray cosmosArray && this.Equals(cosmosArray);
+        public override bool Equals(CosmosElement? cosmosElement) => cosmosElement is CosmosArray cosmosArray && this.Equals(cosmosArray);
 
-        public bool Equals(CosmosArray cosmosArray)
+        public bool Equals(CosmosArray? cosmosArray)
         {
-            if (this.Count != cosmosArray.Count)
+            if (this.Count != cosmosArray?.Count)
             {
                 return false;
             }
@@ -77,7 +77,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosArray cosmosArray)
+        public int CompareTo(CosmosArray? cosmosArray)
         {
             UInt128 hash1 = DistinctHash.GetHash(this);
             UInt128 hash2 = DistinctHash.GetHash(cosmosArray);
