@@ -108,7 +108,7 @@ namespace Microsoft.Azure.Cosmos.Tests
         private static byte[] StreamToBytes(Stream stream)
         {
             byte[] bytes = new byte[stream.Length];
-            stream.Read(bytes, 0, bytes.Length);
+            stream.ReadExactly(bytes, 0, bytes.Length);
             return bytes;
         }
     }
