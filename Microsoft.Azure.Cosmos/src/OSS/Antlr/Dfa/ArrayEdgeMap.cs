@@ -40,7 +40,7 @@ namespace Antlr4.Runtime.Dfa
             {
 #if NET45PLUS
                 return Volatile.Read(ref size);
-#elif !PORTABLE && !COMPACT
+#elif !PORTABLE && !COMPACT && !COSMOS_GW_AOT
                 return Thread.VolatileRead(ref size);
 #else
                 return Interlocked.CompareExchange(ref size, 0, 0);
