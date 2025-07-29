@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
@@ -34,12 +36,13 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
     public
 #else
-    internal
+    public
 #endif
     sealed class ChangeFeedPolicy
     {
-        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration)]
-        private int retentionDurationInMinutes = 0;
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.LogRetentionDuration)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public int retentionDurationInMinutes = 0;
 
         /// <summary>
         /// Gets or sets a value that indicates for how long operation logs have to be retained.
@@ -50,7 +53,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// Value is in TimeSpan.
         /// </value>
-        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
         public TimeSpan FullFidelityRetention
         {
             get => TimeSpan.FromMinutes(this.retentionDurationInMinutes);
@@ -80,8 +83,8 @@ namespace Microsoft.Azure.Cosmos
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
     }
 }

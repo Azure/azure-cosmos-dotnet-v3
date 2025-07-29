@@ -26,7 +26,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="AccountProperties"/> class.
         /// </summary>
-        [JsonConstructor]
+        [System.Text.Json.Serialization.JsonConstructor]
         internal AccountProperties()
         {
             this.QueryEngineConfigurationInternal = new Lazy<IDictionary<string, object>>(() => this.QueryStringToDictConverter());
@@ -36,17 +36,17 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the list of locations representing the writable regions of
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
-        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
         public IEnumerable<AccountRegion> WritableRegions => this.WriteLocationsInternal;
 
         /// <summary>
         /// Gets the list of locations representing the readable regions of
         /// this database account from the Azure Cosmos DB service.
         /// </summary>
-        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
         public IEnumerable<AccountRegion> ReadableRegions => this.ReadLocationsInternal;
 
-        [JsonIgnore]
+        [System.Text.Json.Serialization.JsonIgnore]
         private string id;
 
         /// <summary>
@@ -63,8 +63,8 @@ namespace Microsoft.Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.Id)]
-        [JsonInclude]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.Id)]
+        [System.Text.Json.Serialization.JsonInclude]
         public string Id
         {
             get => this.id;
@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.ETag)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ETag)]
         public string ETag { get; internal set; }
 
         /// <summary>
@@ -98,12 +98,12 @@ namespace Microsoft.Azure.Cosmos
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonPropertyName(Constants.Properties.RId)]
-        [JsonInclude]
-        internal string ResourceId { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.RId)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public string ResourceId { get; set; }
 
-        [JsonPropertyName(Constants.Properties.WritableLocations)]
-        [JsonInclude]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.WritableLocations)]
+        [System.Text.Json.Serialization.JsonInclude]
         internal Collection<AccountRegion> WriteLocationsInternal
         {
             get
@@ -117,9 +117,9 @@ namespace Microsoft.Azure.Cosmos
             set => this.writeRegions = value;
         }
 
-        [JsonPropertyName(Constants.Properties.ReadableLocations)]
-        [JsonInclude]
-        internal Collection<AccountRegion> ReadLocationsInternal
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ReadableLocations)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public Collection<AccountRegion> ReadLocationsInternal
         {
             get
             {
@@ -202,50 +202,50 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The ConsistencySetting.
         /// </value>
-        [JsonPropertyName(Constants.Properties.UserConsistencyPolicy)]
-        [JsonInclude]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.UserConsistencyPolicy)]
+        [System.Text.Json.Serialization.JsonInclude]
         public AccountConsistency Consistency { get; internal set; }
 
         /// <summary>
         /// Gets the self-link for Address Routing Table in the databaseAccount
         /// </summary>
-        [JsonPropertyName(Constants.Properties.AddressesLink)]
-        [JsonInclude]
-        internal string AddressesLink { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.AddressesLink)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public string AddressesLink { get; set; }
 
         /// <summary>
         /// Gets the ReplicationPolicy properties
         /// </summary>
-        [JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
-        [JsonInclude]
-        internal ReplicationPolicy ReplicationPolicy { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy 
         /// </summary>
-        [JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
-        [JsonInclude]
-        internal ReplicationPolicy SystemReplicationPolicy { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public ReplicationPolicy SystemReplicationPolicy { get; set; }
 
-        [JsonPropertyName(Constants.Properties.ReadPolicy)]
-        [JsonInclude]
-        internal ReadPolicy ReadPolicy { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ReadPolicy)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public ReadPolicy ReadPolicy { get; set; }
 
         internal IDictionary<string, object> QueryEngineConfiguration => this.QueryEngineConfigurationInternal.Value;
 
-        [JsonPropertyName(Constants.Properties.QueryEngineConfiguration)]
-        [JsonInclude]
-        internal string QueryEngineConfigurationString { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.QueryEngineConfiguration)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public string QueryEngineConfigurationString { get; set; }
 
-        [JsonPropertyName(Constants.Properties.EnableMultipleWriteLocations)]
-        [JsonInclude]
-        internal bool EnableMultipleWriteLocations { get; set; }
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.EnableMultipleWriteLocations)]
+        [System.Text.Json.Serialization.JsonInclude]
+        public bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
             {
-                return JsonSerializer.Deserialize<Dictionary<string, object>>(this.QueryEngineConfigurationString);
+                return JsonSerializer.Deserialize<Dictionary<string, object>>(this.QueryEngineConfigurationString, CosmosJsonContext.Default.DictionaryStringObject);
             }
             else
             {
@@ -257,7 +257,7 @@ namespace Microsoft.Azure.Cosmos
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

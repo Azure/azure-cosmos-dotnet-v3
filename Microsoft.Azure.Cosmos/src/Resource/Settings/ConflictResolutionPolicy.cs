@@ -5,10 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Scripts;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
@@ -31,8 +30,9 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.Mode, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonPropertyName(Documents.Constants.Properties.Mode)]
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ConflictResolutionMode>))]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ConflictResolutionMode Mode { get; set; }
 
         /// <summary>
@@ -52,7 +52,8 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionPath, NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonPropertyName(Documents.Constants.Properties.ConflictResolutionPath)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string ResolutionPath { get; set; }
 
         /// <summary>
@@ -72,15 +73,16 @@ namespace Microsoft.Azure.Cosmos
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "dbs/databaseName/colls/containerName/sprocs/storedProcedureName";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictResolutionProcedure, NullValueHandling = NullValueHandling.Ignore)]
+        [System.Text.Json.Serialization.JsonPropertyName(Documents.Constants.Properties.ConflictResolutionProcedure)]
+        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string ResolutionProcedure { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
     }
 }

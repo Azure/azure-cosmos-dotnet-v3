@@ -8,8 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
 
     /// <summary>
     /// The <see cref="ClientEncryptionPolicy"/> should be initialized with
@@ -73,15 +72,15 @@ namespace Microsoft.Azure.Cosmos
             this.IncludedPaths = includedPaths;
         }
 
-        [JsonConstructor]
-        private ClientEncryptionPolicy()
+        [System.Text.Json.Serialization.JsonConstructor]
+        public ClientEncryptionPolicy()
         {
         }
 
         /// <summary>
         /// Paths of the item that need encryption along with path-specific settings. 
         /// </summary>
-        [JsonProperty(PropertyName = "includedPaths")]
+        [System.Text.Json.Serialization.JsonPropertyName("includedPaths")]
         public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths
         {
             get; private set;
@@ -90,15 +89,15 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Version of the client encryption policy definition.
         /// </summary>
-        [JsonProperty(PropertyName = "policyFormatVersion")]
+        [System.Text.Json.Serialization.JsonPropertyName("policyFormatVersion")]
         public int PolicyFormatVersion { get; private set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that partition key paths specified in the client encryption policy for encryption are encrypted using Deterministic encryption algorithm.

@@ -4,7 +4,7 @@
     /// The formatting policy associated with JSON serialization/de-serialization in the Azure Cosmos DB service.
     /// </summary>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif

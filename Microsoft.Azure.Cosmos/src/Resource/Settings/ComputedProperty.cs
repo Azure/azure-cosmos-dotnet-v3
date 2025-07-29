@@ -5,8 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
 
     /// <summary> 
     /// Represents a computed property definition in a Cosmos DB collection.
@@ -22,7 +21,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// Name of the computed property should be chosen such that it does not collide with any existing or future document properties.
         /// </remarks>
-        [JsonProperty(PropertyName = "name")]
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string Name { get; set; }
 
         /// <summary>
@@ -35,14 +34,14 @@ namespace Microsoft.Azure.Cosmos
         /// For example:
         /// SELECT VALUE LOWER(c.firstName) FROM c
         /// </remarks>
-        [JsonProperty(PropertyName = "query")]
+        [System.Text.Json.Serialization.JsonPropertyName("query")]
         public string Query { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

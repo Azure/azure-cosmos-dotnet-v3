@@ -6,9 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// DOM for a full text path. A full text path is defined at the collection level.
@@ -34,28 +33,28 @@ namespace Microsoft.Azure.Cosmos
 #if PREVIEW
     public
 #else
-    internal
+    public
 #endif
     sealed class FullTextPath : IEquatable<FullTextPath>
     {
         /// <summary>
         /// Gets or sets a string containing the path of the full text index.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Path)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
         /// Gets or sets a string containing the language of the full text path.
         /// </summary>
-        [JsonProperty(PropertyName = "language")]
+        [System.Text.Json.Serialization.JsonPropertyName("language")]
         public string Language { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields.
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that the paths specified in the full text policy are valid.

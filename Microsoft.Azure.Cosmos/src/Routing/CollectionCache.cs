@@ -274,6 +274,7 @@ namespace Microsoft.Azure.Cosmos.Common
             cancellationToken.ThrowIfCancellationRequested();
 
             string resourceFullName = PathsHelper.GetCollectionPath(resourceAddress);
+            Console.WriteLine($"Resolving collection by name: {resourceFullName} {resourceAddress} for API version: {apiVersion}");
             InternalCache cache = this.GetCache(apiVersion);
 
             if (forceRefesh)
@@ -288,6 +289,7 @@ namespace Microsoft.Azure.Cosmos.Common
                 {
                     DateTime currentTime = DateTime.UtcNow;
                     ContainerProperties collection = await this.GetByNameAsync(apiVersion, resourceFullName, trace, clientSideRequestStatistics, cancellationToken);
+                    Console.WriteLine($"Collection resolved by name: {resourceFullName} {resourceAddress} for API version: {apiVersion} with resourceId: {collection.ResourceId}");
                     cache.collectionInfoById.Set(collection.ResourceId, collection);
                     cache.collectionInfoByNameLastRefreshTime.AddOrUpdate(resourceFullName, currentTime,
                         (string currentKey, DateTime currentValue) => currentTime);

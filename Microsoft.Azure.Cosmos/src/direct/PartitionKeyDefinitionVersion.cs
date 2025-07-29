@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Documents
     /// Partitioning version.
     /// </summary> 
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif

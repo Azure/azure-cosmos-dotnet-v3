@@ -64,8 +64,7 @@ namespace AOTSample
                         FeedResponse<ContainerProperties> container_response = await container_feed_itr.ReadNextAsync();
                         foreach (ContainerProperties container_properties in container_response)
                         {
-                            Console.WriteLine($"Container: {container_properties.Id}");
-
+                            Console.WriteLine($"Container: ID -> {container_properties.Id} Rid -> {container_properties.ResourceId}");
                             Console.WriteLine($"Container PartitionKeyPath: {container_properties.PartitionKeyPath}");
                             if (container_properties.PartitionKeyPaths != null && container_properties.PartitionKeyPaths.Count > 0)
                             {

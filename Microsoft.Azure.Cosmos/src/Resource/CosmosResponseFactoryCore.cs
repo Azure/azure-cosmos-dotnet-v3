@@ -60,8 +60,6 @@ namespace Microsoft.Azure.Cosmos
                 responseMessage);
         }
 
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Microsoft.Azure.Cosmos.DatabaseProperties))]
-        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(Microsoft.Azure.Cosmos.ContainerProperties))]
         private FeedResponse<T> CreateQueryFeedResponseHelper<T>(
             ResponseMessage cosmosResponseMessage)
         {            

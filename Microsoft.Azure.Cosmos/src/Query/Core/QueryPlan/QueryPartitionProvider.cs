@@ -154,9 +154,11 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
         {
             if (queryengineConfiguration.TryGetValue(CosmosQueryExecutionContextFactory.ClientDisableOptimisticDirectExecution, out object queryConfigProperty))
             {
-                return (bool)queryConfigProperty;
+                if (JsonElementHelper.TryGetPrimitive<bool>(queryConfigProperty, out bool boolVal))
+                {
+                    return boolVal;
+                }
             }
-
             return false;
         }
 

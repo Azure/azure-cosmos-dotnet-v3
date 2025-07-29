@@ -4,9 +4,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
 
     /// <summary>
     /// Represents geospatial configuration for a collection in the Azure Cosmos DB service
@@ -51,8 +49,9 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="T:Microsoft.Azure.Documents.GeospatialType"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = "type")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonPropertyName("type")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<GeospatialType>))]
+
         public GeospatialType GeospatialType
         {
             get; set;
@@ -62,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
-        [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        [System.Text.Json.Serialization.JsonExtensionData]
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

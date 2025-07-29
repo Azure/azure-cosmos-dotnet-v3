@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Documents
     /// Replication policy.
     /// </summary>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif
@@ -27,6 +27,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Maximum number of replicas for the partition.
         /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.MaxReplicaSetSize)]
         public int MaxReplicaSetSize
         {
             get
@@ -43,6 +44,7 @@ namespace Microsoft.Azure.Documents
         /// Minimum number of replicas to ensure availability
         /// of the partition.
         /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.MinReplicaSetSize)]
         public int MinReplicaSetSize
         {
             get
@@ -58,6 +60,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Whether or not async replication is enabled.
         /// </summary>
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.AsyncReplication)]
         public bool AsyncReplication
         {
             get

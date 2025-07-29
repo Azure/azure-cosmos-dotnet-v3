@@ -95,7 +95,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return (T)(object)stream;
                 }
-
                 JsonSerializer jsonSerializer = this.GetSerializer();
 
                 if (stream is CloneableStream cloneableStream)

@@ -7,6 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Text;
+    using Microsoft.Azure.Cosmos.stj;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -169,7 +170,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         /// <remarks>ResourceToken generation and reading does not apply.</remarks>
-        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonConverter(typeof(Microsoft.Azure.Cosmos.stj.UnixDateTimeConverter))]
         [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
         public DateTime? LastModified { get; private set; }
 

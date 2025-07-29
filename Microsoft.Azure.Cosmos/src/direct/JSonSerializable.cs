@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Documents
     /// Represents the base class for Azure Cosmos DB database objects and provides methods for serializing and deserializing from JSON.
     /// </summary>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif

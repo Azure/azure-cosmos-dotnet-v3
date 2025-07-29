@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity;
     using Microsoft.Azure.Cosmos.Resource.FullFidelity.Converters;
+    using Microsoft.Azure.Cosmos.stj;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Converters;
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// The change's conflict resolution timestamp.
         /// </summary>
         [JsonProperty(PropertyName = ChangeFeedMetadataFields.ConflictResolutionTimestamp, NullValueHandling = NullValueHandling.Ignore)]
-        [JsonConverter(typeof(UnixDateTimeConverter))]
+        [JsonConverter(typeof(Microsoft.Azure.Cosmos.stj.UnixDateTimeConverter))]
         public DateTime ConflictResolutionTimestamp { get; internal set; }
 
         /// <summary>
