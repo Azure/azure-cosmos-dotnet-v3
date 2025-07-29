@@ -77,6 +77,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         public abstract TResult Accept<TArg, TResult>(ICosmosElementVisitor<TArg, TResult> cosmosElementVisitor, TArg input);
 
+#if !COSMOS_GW_AOT
         public virtual T Materialize<T>()
         {
             Cosmos.Json.IJsonReader cosmosJsonReader = this.CreateReader();
@@ -84,6 +85,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             return DefaultSerializer.Deserialize<T>(newtonsoftReader);
         }
+#endif
 
         public virtual IJsonReader CreateReader()
         {
