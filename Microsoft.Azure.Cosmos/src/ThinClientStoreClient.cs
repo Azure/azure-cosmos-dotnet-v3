@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Concurrent;
+    using System.Diagnostics;
     using System.IO;
     using System.Net.Http;
     using System.Threading;
@@ -145,7 +146,17 @@ namespace Microsoft.Azure.Cosmos
 
                 requestMessage.Content = new StreamContent(contentStream);
                 requestMessage.Content.Headers.ContentLength = contentStream.Length;
-               
+
+                requestMessage.Headers.Clear();
+                requestMessage.Headers.TryAddWithoutValidation(
+                    ThinClientConstants.UserAgent,
+                    this.userAgentContainer.UserAgent);
+
+                Guid activityId = Trace.CorrelationManager.ActivityId;
+                Debug.Assert(activityId != Guid.Empty);
+                requestMessage.Headers.TryAddWithoutValidation(
+                    HttpConstants.HttpHeaders.ActivityId, activityId.ToString());
+
                 requestMessage.RequestUri = thinClientEndpoint;
                 requestMessage.Method = HttpMethod.Post;
 

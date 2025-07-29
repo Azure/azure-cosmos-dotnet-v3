@@ -113,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.globalEndpointManager.Object,
             new ConnectionPolicy(), 
-            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
+            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object),
+            false);
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {

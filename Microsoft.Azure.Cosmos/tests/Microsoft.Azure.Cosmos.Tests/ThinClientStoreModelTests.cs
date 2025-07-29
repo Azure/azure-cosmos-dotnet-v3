@@ -49,6 +49,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                  owner: mockDocumentClient.Object,
                  connectionPolicy: connectionPolicy);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             this.thinClientStoreModel = new ThinClientStoreModel(
                 endpointManager: this.endpointManager,
                 globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
@@ -57,6 +58,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: null,
+                userAgentContainer: userAgentContainer,
                 chaosInterceptor: null);
 
             PartitionKeyRangeCache pkRangeCache =
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: multiEndpointMgr,
@@ -126,6 +129,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: null,
+                 userAgentContainer: userAgentContainer,
                 chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -200,6 +204,7 @@ namespace Microsoft.Azure.Cosmos.Tests
 
             GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
 
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: multiEndpointMgr,
                 globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
@@ -208,6 +213,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: mockCosmosHttpClient.Object,
+                 userAgentContainer: userAgentContainer,
                 chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -290,6 +296,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
 
             GlobalEndpointManager endpointManagerOk = new GlobalEndpointManager(docClientOkay.Object, policy);
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager: endpointManagerOk,
@@ -299,6 +306,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: null,
+                 userAgentContainer: userAgentContainer,
                 chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -348,6 +356,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
             Newtonsoft.Json.JsonSerializerSettings serializerSettings = new Newtonsoft.Json.JsonSerializerSettings();
             CosmosHttpClient httpClient = new Mock<CosmosHttpClient>().Object;
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager,
@@ -357,6 +366,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
+                userAgentContainer,
                 isPartitionLevelFailoverEnabled: true);
 
             Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
@@ -439,6 +449,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
             Newtonsoft.Json.JsonSerializerSettings serializerSettings = new Newtonsoft.Json.JsonSerializerSettings();
             CosmosHttpClient httpClient = new Mock<CosmosHttpClient>().Object;
+            Cosmos.UserAgentContainer userAgentContainer = new Microsoft.Azure.Cosmos.UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
 
             ThinClientStoreModel storeModel = new ThinClientStoreModel(
                 endpointManager,
@@ -448,6 +459,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer: userAgentContainer,
                 isPartitionLevelFailoverEnabled: true,
                 chaosInterceptor: null);
 
@@ -498,6 +511,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 : base(
                     httpClient: null,
                     eventSource: null,
+                    userAgentContainer: null,
                     serializerSettings: null)
             {
                 this.invokeAsyncFunc = invokeAsyncFunc;

@@ -48,7 +48,9 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 serializerSettings,
                 isPartitionLevelFailoverEnabled,
+                serializerSettings
                 chaosInterceptor);
+
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
