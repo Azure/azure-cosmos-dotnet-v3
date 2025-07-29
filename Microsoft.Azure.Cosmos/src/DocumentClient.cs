@@ -928,7 +928,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ConnectionPolicy = connectionPolicy ?? ConnectionPolicy.Default;
 
-#if !NETSTANDARD16
+#if !NETSTANDARD16 && !COSMOS_GW_AOT
             ServicePointAccessor servicePoint = ServicePointAccessor.FindServicePoint(this.ServiceEndpoint);
             servicePoint.ConnectionLimit = this.ConnectionPolicy.MaxConnectionLimit;
 #endif

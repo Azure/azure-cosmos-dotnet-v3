@@ -61,6 +61,7 @@
 		<Compile Remove="direct\SnapshotKind.cs" />
 		<Compile Remove="direct\SnapshotState.cs" />
 		<Compile Remove="RuntimePerfCounters.cs" />
+		<Compile Remove="Util\ServicePointAccessor.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -91,6 +92,7 @@
 			<AutoGen>True</AutoGen>
 			<DependentUpon>JsonBinaryEncoding.SystemStrings.tt</DependentUpon>
 		</None>
+		<None Include="Util\ServicePointAccessor.cs" />
 	</ItemGroup>
 
 	<ItemGroup>
