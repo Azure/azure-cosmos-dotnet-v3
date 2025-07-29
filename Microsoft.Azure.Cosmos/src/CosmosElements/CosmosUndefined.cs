@@ -39,17 +39,17 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public int CompareTo(CosmosUndefined other)
+        public int CompareTo(CosmosUndefined? other)
         {
             return 0;
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosUndefined;
         }
 
-        public bool Equals(CosmosUndefined other)
+        public bool Equals(CosmosUndefined? other)
         {
             return true;
         }
