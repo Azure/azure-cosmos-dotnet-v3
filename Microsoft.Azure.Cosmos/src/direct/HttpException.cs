@@ -89,7 +89,7 @@ namespace Microsoft.Azure.Documents
             HttpStatusCode? statusCode,
             Uri requestUri = null,
             SubStatusCodes? substatusCode = null,
-            bool traceCallStack = true,
+            bool traceCallStack = false,
             bool rawErrorMessageOnly = false)
             : base(DocumentClientException.MessageWithActivityId(message, responseHeaders), innerException)
         {
@@ -160,8 +160,7 @@ namespace Microsoft.Azure.Documents
                     "DocumentClientException with status code {0}, message: {1}, inner exception: {2}, and response headers: {3}",
                     this.StatusCode ?? 0,
                     message,
-                    innerException != null ? 
-                        (traceCallStack ? innerException.ToString() : innerException.ToStringWithMessageAndData()) : "null",
+                    innerException != null ? innerException.ToStringWithMessageAndData() : "null",
                     SerializeHTTPResponseHeaders(responseHeaders));
             }
         }
@@ -225,7 +224,7 @@ namespace Microsoft.Azure.Documents
                     "DocumentClientException with status code {0}, message: {1}, inner exception: {2}, and response headers: {3}",
                     this.StatusCode ?? 0,
                     message,
-                    innerException != null ? innerException.ToString() : "null",
+                    innerException != null ? innerException?.Message : "null",
                     SerializeHTTPResponseHeaders(responseHeaders));
             }
         }

@@ -228,6 +228,8 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationWaitForCatchupGotCancelledBeforeTimeout = 2072,
         PartitionMigrationWaitForLocalCatchupTimedOut = 2073,
         PartitionMigrationFailureMitigationInvalidResumeStep = 2074,
+        PartitionMigrationResetConfigsAfterWaitForFullSyncTookTooLong = 2075,
+        PartitionMigrationResetConfigsAfterWaitForFullSyncReceivedException = 2076,
 
         // 500: InternalServerError
         ConfigurationNameNotEmpty = 3001,
@@ -328,6 +330,7 @@ namespace Microsoft.Azure.Documents
         PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringCompleteMigrationFromBackend = 6001,
         PartitionMigrationWaitForFullSyncReceivedInternalServerErrorDuringAbortMigrationFromBackend = 6002,
         PartitionMigrationFinalizeMigrationsDidNotCompleteInTenRetries = 6003,
+        PartitionMigrationFinalizeMigrationsRetryTimeExceededLimit = 6004,
 
         // 412: PreConditionFailed AZ Migration substatus codes
         AZMigrationCancelledForPendingUserOperation = 7001,
@@ -336,6 +339,8 @@ namespace Microsoft.Azure.Documents
         RevokeGlobalWritesTopologyUpsertIntentNotApplied = 8001,
         GrantGlobalWritesTopologyUpsertIntentNotApplied = 8002,
         IncrementGlobalConfigurationNumberTopologyUpsertIntentNotApplied = 8003,
+        AddRegionUpsertIntentNotApplied = 8004,
+        RemoveReadRegionUpsertIntentNotApplied = 8005,
 
         // SDK Codes (Client)
         // IMPORTANT - keep these consistent with Java SDK as well

@@ -503,7 +503,7 @@ namespace Microsoft.Azure.Documents
 
             long maxGlobalCommittedLsn = 0;
 
-            while (readBarrierRetryCount-- > 0)
+            while (readBarrierRetryCount-- > 0) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 using StoreResultList disposableResponses = new(await this.storeReader.ReadMultipleReplicaAsync(
@@ -606,7 +606,7 @@ namespace Microsoft.Azure.Documents
             long maxGlobalCommittedLsn = 0;
             bool hasConvergedOnLSN = false;
             int readBarrierRetryCount = 0;
-            while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+            while(readBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowGoneIfElapsed();
                 ValueStopwatch barrierRequestStopWatch = ValueStopwatch.StartNew();

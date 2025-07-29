@@ -71,7 +71,8 @@ namespace Microsoft.Azure.Documents
             bool disableRetryWithRetryPolicy,
             bool enableReplicaValidation,
             AccountConfigurationProperties accountConfigurationProperties,
-            RetryWithConfiguration retryWithConfiguration = null)
+            RetryWithConfiguration retryWithConfiguration = null,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.addressResolver = addressResolver;
             this.addressSelector = new AddressSelector(addressResolver, protocol);
@@ -91,7 +92,8 @@ namespace Microsoft.Azure.Documents
                 transportClient,
                 serviceConfigReader,
                 authorizationTokenProvider,
-                enableReplicaValidation);
+                enableReplicaValidation,
+                sessionRetryOptions);
             this.consistencyWriter = new ConsistencyWriter(
                 this.addressSelector,
                 sessionContainer,
@@ -100,7 +102,8 @@ namespace Microsoft.Azure.Documents
                 authorizationTokenProvider,
                 useMultipleWriteLocations,
                 enableReplicaValidation,
-                accountConfigurationProperties);
+                accountConfigurationProperties,
+                sessionRetryOptions);
             this.enableReadRequestsFallback = enableReadRequestsFallback;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
             this.detectClientConnectivityIssues = detectClientConnectivityIssues;

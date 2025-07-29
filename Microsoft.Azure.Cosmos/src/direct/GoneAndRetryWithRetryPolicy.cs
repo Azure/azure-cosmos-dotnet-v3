@@ -190,6 +190,7 @@ namespace Microsoft.Azure.Documents
                             DefaultTrace.TraceError("{0}. Will fail the request. {1}", message, exception.ToStringWithData());
                             SubStatusCodes exceptionSubStatus = DocumentClientException.GetExceptionSubStatusForGoneRetryPolicy(exception);
 
+
                             if (this.detectConnectivityIssues &&
                                 this.request.RequestContext.ClientRequestStatistics != null &&
                                 this.request.RequestContext.ClientRequestStatistics.IsCpuHigh.GetValueOrDefault(false))
@@ -218,6 +219,7 @@ namespace Microsoft.Azure.Documents
                                 this.request.RequestContext.ClientRequestStatistics != null &&
                                 this.request.RequestContext.ClientRequestStatistics.FailedReplicas.Count >= GoneAndRetryWithRetryPolicy.minFailedReplicaCountToConsiderConnectivityIssue)
                             {
+
                                 exceptionToThrow = new ServiceUnavailableException(
                                     string.Format(
                                         RMResources.ClientUnavailable,

@@ -184,7 +184,7 @@ namespace Microsoft.Azure.Documents
                         DefaultTrace.TraceInformation("Received retriable exception {0} " +
                              "sending the request to {1}, will reresolve the address " +
                               "send time UTC: {2}",
-                            exception,
+                            exception?.Message,
                             physicalAddress,
                             sendTimeUtc);
 
@@ -204,7 +204,7 @@ namespace Microsoft.Azure.Documents
                         DefaultTrace.TraceInformation("Received exception {0} on readonly request" +
                             "sending the request to {1}, will reresolve the address " +
                              "send time UTC: {2}",
-                           exception,
+                           exception?.Message,
                            physicalAddress,
                            sendTimeUtc);
 
@@ -516,6 +516,8 @@ namespace Microsoft.Azure.Documents
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateThroughputPoolInfo, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, WFConstants.BackendHeaders.RetrieveUserStrings, request);
             HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.AllowTopologyUpsertWithoutIntent, request);
+            HttpTransportClient.AddHeader(httpRequestMessage.Headers, HttpConstants.HttpHeaders.ReadGlobalCommittedData, request);
 
             // Set the CollectionOperation TransactionId if present
             // Currently only being done for SharedThroughputTransactionHandler in the collection create path

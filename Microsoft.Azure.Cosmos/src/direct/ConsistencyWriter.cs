@@ -56,6 +56,7 @@ For globally strong write:
         private readonly IServiceConfigurationReader serviceConfigReader;
         private readonly IAuthorizationTokenProvider authorizationTokenProvider;
         private readonly bool useMultipleWriteLocations;
+        private readonly ISessionRetryOptions sessionRetryOptions;
 
         public ConsistencyWriter(
             AddressSelector addressSelector,
@@ -65,7 +66,8 @@ For globally strong write:
             IAuthorizationTokenProvider authorizationTokenProvider,
             bool useMultipleWriteLocations,
             bool enableReplicaValidation,
-            AccountConfigurationProperties accountConfigurationProperties)
+            AccountConfigurationProperties accountConfigurationProperties,
+            ISessionRetryOptions sessionRetryOptions = null)
         {
             this.transportClient = transportClient;
             this.addressSelector = addressSelector;
@@ -73,6 +75,7 @@ For globally strong write:
             this.serviceConfigReader = serviceConfigReader;
             this.authorizationTokenProvider = authorizationTokenProvider;
             this.useMultipleWriteLocations = useMultipleWriteLocations;
+            this.sessionRetryOptions = sessionRetryOptions;
             this.storeReader = new StoreReader(
                                     transportClient,
                                     addressSelector,
@@ -130,7 +133,8 @@ For globally strong write:
             {
                 return await BackoffRetryUtility<StoreResponse>.ExecuteAsync(
                     callbackMethod: () => this.WritePrivateAsync(entity, timeout, forceRefresh),
-                    retryPolicy: new SessionTokenMismatchRetryPolicy(),
+                    retryPolicy: new SessionTokenMismatchRetryPolicy(
+                        sessionRetryOptions: this.sessionRetryOptions),
                     cancellationToken: cancellationToken);
             }
             finally
@@ -283,7 +287,7 @@ For globally strong write:
                     //barrier only if necessary, i.e. when write region completes write, but read regions have not.
                     if (globalCommittedLsn < lsn)
                     {
-                        using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN))
+                        using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN , includeRegionContext: true))
                         {
                             if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
                             {
@@ -300,7 +304,7 @@ For globally strong write:
             }
             else
             {
-                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN))
+                using (DocumentServiceRequest barrierRequest = await BarrierRequestHelper.CreateAsync(request, this.authorizationTokenProvider, null, request.RequestContext.GlobalCommittedSelectedLSN, includeRegionContext: true))
                 {
                     if (!await this.WaitForWriteBarrierAsync(barrierRequest, request.RequestContext.GlobalCommittedSelectedLSN))
                     {
@@ -412,7 +416,7 @@ For globally strong write:
 
             int writeBarrierRetryCount = 0;
             long maxGlobalCommittedLsnReceived = 0;
-            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero)
+            while (writeBarrierRetryCount < defaultBarrierRequestDelays.Length && remainingDelay >= TimeSpan.Zero) // Retry loop
             {
                 barrierRequest.RequestContext.TimeoutHelper.ThrowTimeoutIfElapsed();
 

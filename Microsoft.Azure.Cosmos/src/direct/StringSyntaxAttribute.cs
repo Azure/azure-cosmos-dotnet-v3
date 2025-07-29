@@ -11,6 +11,7 @@ namespace System.Diagnostics.CodeAnalysis
     /// <summary>
     /// Partial copy of NET7's StringSyntaxAttribute.
     /// </summary>
+    /// <seealso cref="https://github.com/dotnet/runtime/blob/main/src/libraries/System.Private.CoreLib/src/System/Diagnostics/CodeAnalysis/StringSyntaxAttribute.cs"/>
     [AttributeUsage(AttributeTargets.Parameter | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
 #if DOCDBCLIENT // We don't want to update the public API in the client
     internal

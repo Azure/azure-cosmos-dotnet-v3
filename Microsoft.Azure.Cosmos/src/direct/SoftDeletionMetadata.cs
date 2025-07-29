@@ -33,6 +33,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+
         /// <summary>
         /// Property to indicate Database Account Soft Deletion Start Timestamp.
         /// </summary>

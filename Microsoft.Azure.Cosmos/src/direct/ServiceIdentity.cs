@@ -18,6 +18,9 @@ namespace Microsoft.Azure.Documents
     internal sealed class ServiceIdentity : IServiceIdentity 
     {
         [JsonConstructor]
+        /// <summary>
+        /// Needed for TestForWhiteListedPersistedTypes to succeed 
+        /// </summary>
         private ServiceIdentity()
         {
         }
