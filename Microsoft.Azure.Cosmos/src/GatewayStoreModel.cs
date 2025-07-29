@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -19,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
@@ -42,7 +42,7 @@ namespace Microsoft.Azure.Cosmos
             ISessionContainer sessionContainer,
             ConsistencyLevel defaultConsistencyLevel,
             DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
+            JsonSerializerOptions serializerSettings,
             CosmosHttpClient httpClient)
         {
             this.endpointManager = endpointManager;

@@ -10,10 +10,11 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Runtime.Serialization;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the response returned from a database stored procedure in the Azure Cosmos DB service. Wraps the response body and headers.
@@ -28,7 +29,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private DocumentServiceResponse response;
         private TValue responseBody;
-        private JsonSerializerSettings serializerSettings;
+        private JsonSerializerOptions serializerSettings;
 
         /// <summary>
         /// Constructor exposed for mocking purposes in Azure Cosmos DB service.
@@ -37,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
-        internal StoredProcedureResponse(DocumentServiceResponse response, JsonSerializerSettings serializerSettings = null)
+        internal StoredProcedureResponse(DocumentServiceResponse response, JsonSerializerOptions serializerSettings = null)
         {
             this.response = response;
             this.serializerSettings = serializerSettings;
@@ -69,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
                     string responseString = responseReader.ReadToEnd();
                     try
                     {
-                        this.responseBody = (TValue)JsonConvert.DeserializeObject(responseString, typeof(TValue), this.serializerSettings);
+                        this.responseBody = JsonSerializer.Deserialize<TValue>(responseString, this.serializerSettings);
                     }
                     catch (JsonException ex)
                     {

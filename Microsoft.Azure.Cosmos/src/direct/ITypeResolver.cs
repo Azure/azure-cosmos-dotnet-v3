@@ -3,7 +3,7 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json.Nodes;
 
     /// <summary>
     /// Type resolver based on an input
@@ -16,6 +16,6 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="propertyBag">Property bag used to deserialize T</param>
         /// <returns>Object of type T</returns>
-        T Resolve(JObject propertyBag);
+        T Resolve(JsonObject propertyBag);
     }
 }

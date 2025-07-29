@@ -12,26 +12,24 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
 
     //Each object record in Query response is materialized as QueryResult.
     //This allows us to convert them to any type via dynamic cast.
     internal sealed class QueryResult : IDynamicMetaObjectProvider
     {
-        private readonly JContainer jObject;
+        private readonly JsonNode jObject;
         private readonly string ownerFullName;
-        private JsonSerializer jsonSerializer;
 
-        public QueryResult(JContainer jObject, string ownerFullName, JsonSerializer jsonSerializer)
+        public QueryResult(JsonNode jObject, string ownerFullName)
         {
             this.jObject = jObject;
             this.ownerFullName = ownerFullName;
-            this.jsonSerializer = jsonSerializer;
         }
 
-        public QueryResult(JContainer jObject, string ownerFullName, JsonSerializerSettings serializerSettings = null)
-            : this(jObject, ownerFullName, serializerSettings != null ? JsonSerializer.Create(serializerSettings) : JsonSerializer.Create())
+        public QueryResult(JsonNode jObject, string ownerFullName, JsonSerializerOptions serializerSettings = null)
+            : this(jObject, ownerFullName)
         {
         }
 
@@ -39,7 +37,7 @@ namespace Microsoft.Azure.Documents
         /// Gets the raw payload of this object.
         /// To avoid double deserializations.
         /// </summary>
-        public JContainer Payload
+        public JsonNode Payload
         {
             get
             {
@@ -55,21 +53,9 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public JsonSerializer JsonSerializer
-        {
-            get
-            {
-                return this.jsonSerializer;
-            }
-        }
-
         public override string ToString()
         {
-            using (StringWriter writer = new StringWriter())
-            {
-                jsonSerializer.Serialize(writer, jObject);
-                return writer.ToString();
-            }
+            return JsonSerializer.Serialize(jObject);
         }
 
         // Summary:
@@ -81,19 +67,19 @@ namespace Microsoft.Azure.Documents
         {
             // Here we don't enumerate this.document.propertyBag, because in Document.FromObject,
             // we merge the static defined property into propertyBag
-            List<string> dynamicMembers = new List<string>();
-
-            JObject jObjectLocal = this.jObject as JObject;
-            if (jObjectLocal != null)
+            // Enumerate all property names if this.jObject is a JsonObject
+            if (this.jObject is JsonObject obj)
             {
-                foreach (KeyValuePair<string, JToken> pair in jObjectLocal)
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+                foreach (KeyValuePair<string, JsonNode?> pair in obj)
                 {
-                    dynamicMembers.Add(pair.Key);
+                    yield return pair.Key;
                 }
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
             }
-            return dynamicMembers.ToList();
         }
 
+#if !COSMOS_GW_AOT
         private object Convert(Type type)
         {
             object result;
@@ -212,6 +198,7 @@ namespace Microsoft.Azure.Documents
         {
             return (T)this.Convert(typeof(T));
         }
+#endif 
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
         {

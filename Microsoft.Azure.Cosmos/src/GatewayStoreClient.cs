@@ -12,24 +12,24 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Http;
     using System.Net.Http.Headers;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     internal class GatewayStoreClient : TransportClient
     {
         private readonly ICommunicationEventSource eventSource;
         private readonly CosmosHttpClient httpClient;
-        private readonly JsonSerializerSettings SerializerSettings;
+        private readonly JsonSerializerOptions SerializerSettings;
         private static readonly HttpMethod httpPatchMethod = new HttpMethod(HttpConstants.HttpMethods.Patch);
 
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null)
+            JsonSerializerOptions serializerSettings = null)
         {
             this.httpClient = httpClient;
             this.SerializerSettings = serializerSettings;
@@ -87,7 +87,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
-        internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
+        internal static async Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerOptions serializerSettings = null, DocumentServiceRequest request = null)
         {
             using (responseMessage)
             {
@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
-                    Error error = JsonSerializable.LoadFrom<Error>(stream: contentAsStream);
+                    Error error = JsonSerializer.Deserialize<Error>(contentAsStream);
 
                     return new DocumentClientException(
                         errorResource: error,

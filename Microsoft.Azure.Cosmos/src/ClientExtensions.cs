@@ -5,11 +5,11 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Net.Http;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     internal static class ClientExtensions
     {
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        public static Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerSettings serializerSettings = null, DocumentServiceRequest request = null)
+        public static Task<DocumentServiceResponse> ParseResponseAsync(HttpResponseMessage responseMessage, JsonSerializerOptions serializerSettings = null, DocumentServiceRequest request = null)
         {
             return GatewayStoreClient.ParseResponseAsync(responseMessage, serializerSettings, request);
         }

@@ -104,6 +104,8 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (bufferedStream.GetJsonSerializationFormat() == Json.JsonSerializationFormat.Binary)
                         {
+                            throw new NotImplementedException();
+#if !COSMOS_GW_AOT
                             byte[] content = bufferedStream.ReadAll();
 
                             using Json.Interop.CosmosDBToNewtonsoftReader reader = new (
@@ -112,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
                                     buffer: content));
 
                             return jsonSerializer.Deserialize<T>(reader);
+#endif
                         }
                     }
                 }

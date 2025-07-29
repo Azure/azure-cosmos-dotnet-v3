@@ -8,8 +8,9 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+    using System.Text.Json.Serialization;
 
     internal sealed class SerializableNameValueCollection : JsonSerializable
     {
@@ -65,7 +66,7 @@ namespace Microsoft.Azure.Documents
                         writer.Write(value);
                         writer.Flush();
                         ms.Position = 0;
-                        return JsonSerializable.LoadFrom<SerializableNameValueCollection>(ms);
+                        return JsonSerializer.Deserialize<SerializableNameValueCollection>(ms);
                     }
                 }
             }
@@ -86,9 +87,9 @@ namespace Microsoft.Azure.Documents
             NameValueCollection collection = new NameValueCollection();
             if (this.propertyBag != null)
             {
-                foreach (KeyValuePair<string, JToken> pair in this.propertyBag)
+                foreach (KeyValuePair<string, JsonNode> pair in this.propertyBag)
                 {
-                    JValue value = pair.Value as JValue;
+                    JsonValue value = pair.Value as JsonValue;
                     if (value != null)
                     {
                         collection.Add(pair.Key, value.ToString());

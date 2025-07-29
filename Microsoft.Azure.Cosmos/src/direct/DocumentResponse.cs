@@ -3,8 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents.Client
 {
+    using System.Text.Json;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Represents the template class used by methods returning single objects in the Azure Cosmos DB service.
@@ -35,7 +35,7 @@ namespace Microsoft.Azure.Documents.Client
     sealed class DocumentResponse<TDocument> : ResourceResponseBase, IDocumentResponse<TDocument>
     {
         private TDocument document;
-        private JsonSerializerSettings settings;
+        private JsonSerializerOptions settings;
 
         /// <summary>
         /// Constructor exposed for mocking purposes for the Azure Cosmos DB service.
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Documents.Client
             this.document = document;
         }
 
-        internal DocumentResponse(DocumentServiceResponse response, JsonSerializerSettings settings = null)
+        internal DocumentResponse(DocumentServiceResponse response, JsonSerializerOptions settings = null)
             :base(response)
         {
             this.settings = settings;

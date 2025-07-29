@@ -722,7 +722,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                         TransportErrorCode.TransportNegotiationTimeout,
                         args.CommonArguments.UserPayload)))
                 {
-                    Error error = Resource.LoadFrom<Error>(errorResponseStream);
+                    Error error = Resource.LoadFrom<Error>(errorResponseStream, null);
 
                     DocumentClientException exception = new DocumentClientException(
                         string.Format(CultureInfo.CurrentUICulture,

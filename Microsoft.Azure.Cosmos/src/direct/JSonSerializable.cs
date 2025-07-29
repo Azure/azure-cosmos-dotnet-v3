@@ -10,20 +10,23 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.IO;
     using System.Text;
-    using Newtonsoft.Json;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+    using Microsoft.Azure.Cosmos.Linq;
     using Newtonsoft.Json.Linq;
+    using static Microsoft.Azure.Documents.Rntbd.TransportClient;
 
     /// <summary>
     /// Represents the base class for Azure Cosmos DB database objects and provides methods for serializing and deserializing from JSON.
     /// </summary>
-#if COSMOSCLIENT
+#if COSMOSCLIENT && !COSMOS_GW_AOT
     internal
 #else
     public
 #endif
     abstract class JsonSerializable //We introduce this type so that we dont have to expose the Newtonsoft type publically.
     {
-        internal JObject propertyBag;
+        internal JsonObject propertyBag;
 
         private const string POCOSerializationOnly = "POCOSerializationOnly";
 
@@ -45,10 +48,10 @@ namespace Microsoft.Azure.Documents
 
         internal JsonSerializable() //Prevent external derivation.
         {
-            this.propertyBag = new JObject();
+            this.propertyBag = new JsonObject();
         }
 
-        internal JsonSerializerSettings SerializerSettings { get; set; }
+        internal JsonSerializerOptions SerializerSettings { get; set; }
 
         //Public Serialization Helpers.
         /// <summary>
@@ -66,39 +69,24 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="stream">Saves the object to this output stream.</param>
         /// <param name="formattingPolicy">Uses a custom serialization formatting policy when saving the object.</param>
-        /// <param name="settings">The serializer settings to use.</param>
-        public void SaveTo(Stream stream, SerializationFormattingPolicy formattingPolicy, JsonSerializerSettings settings)
+        /// <param name="options">The serializer settings to use.</param>
+        public void SaveTo(Stream stream, SerializationFormattingPolicy formattingPolicy, JsonSerializerOptions options)
         {
             if (stream == null)
             {
                 throw new ArgumentNullException("stream");
             }
 
-            this.SerializerSettings = settings;
-            JsonSerializer serializer = settings == null ? new JsonSerializer() : JsonSerializer.Create(settings);
-            JsonTextWriter jsonWriter = new JsonTextWriter(new StreamWriter(stream));
-            this.SaveTo(jsonWriter, serializer, formattingPolicy);
+            this.SerializerSettings = options;
+            using var writer = new Utf8JsonWriter(stream);
+            this.SaveTo(writer, formattingPolicy);
         }
 
-        internal void SaveTo(JsonWriter writer, JsonSerializer serializer, SerializationFormattingPolicy formattingPolicy = SerializationFormattingPolicy.None)
+        internal void SaveTo(Utf8JsonWriter writer, SerializationFormattingPolicy formattingPolicy = SerializationFormattingPolicy.None)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException("writer");
-            }
-
-            if (serializer == null)
-            {
-                throw new ArgumentNullException("serializer");
-            }
-
-            if (formattingPolicy == SerializationFormattingPolicy.Indented)
-            {
-                writer.Formatting = Newtonsoft.Json.Formatting.Indented;
-            }
-            else
-            {
-                writer.Formatting = Newtonsoft.Json.Formatting.None;
             }
 
             this.OnSave();
@@ -106,7 +94,7 @@ namespace Microsoft.Azure.Documents
             if ((typeof(Document).IsAssignableFrom(this.GetType()) && !this.GetType().Equals(typeof(Document)))
                 || (typeof(Attachment).IsAssignableFrom(this.GetType()) && !this.GetType().Equals(typeof(Attachment))))
             {
-                serializer.Serialize(writer, this);
+                JsonSerializer.Serialize(writer, this);
             }
             else
             {
@@ -116,12 +104,13 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    serializer.Serialize(writer, this.propertyBag);
+                    JsonSerializer.Serialize(writer, this.propertyBag);
                 }
             }
             writer.Flush();
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Saves the object to the specified string builder
         /// </summary>
@@ -183,6 +172,7 @@ namespace Microsoft.Azure.Documents
         {
             return LoadFrom<T>(stream, null);
         }
+#endif
 
         /// <summary>
         /// Loads the object from the specified stream.
@@ -190,18 +180,24 @@ namespace Microsoft.Azure.Documents
         /// <typeparam name="T">The type of the returning object.</typeparam>
         /// <param name="stream">The stream to load from.</param>
         /// <param name="typeResolver">Used to get a correct object from a stream.</param>
-        /// <param name="settings">The JsonSerializerSettings to be used</param>
+        /// <param name="options">The JsonSerializerSettings to be used</param>
         /// <returns>The object loaded from the specified stream.</returns>
-        internal static T LoadFrom<T>(Stream stream, ITypeResolver<T> typeResolver, JsonSerializerSettings settings = null) where T : JsonSerializable, new()
+        internal static T LoadFrom<T>(Stream stream, ITypeResolver<T> typeResolver, JsonSerializerOptions options = null) where T : JsonSerializable, new()
         {
             if (stream == null)
             {
                 throw new ArgumentNullException("stream");
             }
 
-            JsonTextReader jsonReader = new JsonTextReader(new StreamReader(stream));
-
-            return JsonSerializable.LoadFrom<T>(jsonReader, typeResolver, settings);
+            var root = JsonNode.Parse(stream) as JsonObject;
+            T resource = new T();
+            resource.propertyBag = root;
+            resource.SerializerSettings = options;
+            if (typeResolver != null)
+            {
+                resource = typeResolver.Resolve(resource.propertyBag);
+            }
+            return resource;
         }
 
         /// <summary>
@@ -212,9 +208,9 @@ namespace Microsoft.Azure.Documents
         /// <typeparam name="T">The type of the returning object.</typeparam>
         /// <param name="stream">The stream to load from.</param>
         /// <param name="typeResolver">Used to get a correct object from a stream.</param>
-        /// <param name="settings">The JsonSerializerSettings to be used</param>
+        /// <param name="options">The JsonSerializerSettings to be used</param>
         /// <returns>The object loaded from the specified stream.</returns>
-        internal static T LoadFromWithResolver<T>(Stream stream, ITypeResolver<T> typeResolver, JsonSerializerSettings settings = null) where T : JsonSerializable
+        internal static T LoadFromWithResolver<T>(Stream stream, ITypeResolver<T> typeResolver, JsonSerializerOptions options = null) where T : JsonSerializable
         {
             if (stream == null)
             {
@@ -226,8 +222,8 @@ namespace Microsoft.Azure.Documents
                 throw new ArgumentNullException(nameof(typeResolver));
             }
 
-            JsonTextReader jsonReader = new JsonTextReader(new StreamReader(stream));
-            return JsonSerializable.LoadFromWithResolver(typeResolver, settings, jsonReader);
+            var root = JsonNode.Parse(stream) as JsonObject;
+            return typeResolver.Resolve(root);
         }
 
         /// <summary>
@@ -238,9 +234,9 @@ namespace Microsoft.Azure.Documents
         /// <typeparam name="T">The type of the returning object.</typeparam>
         /// <param name="serialized">Serialized payload.</param>
         /// <param name="typeResolver">Used to get a correct object from a stream.</param>
-        /// <param name="settings">The JsonSerializerSettings to be used</param>
+        /// <param name="options">The JsonSerializerSettings to be used</param>
         /// <returns>The object loaded from the specified stream.</returns>
-        internal static T LoadFromWithResolver<T>(string serialized, ITypeResolver<T> typeResolver, JsonSerializerSettings settings = null) where T : JsonSerializable
+        internal static T LoadFromWithResolver<T>(string serialized, ITypeResolver<T> typeResolver, JsonSerializerOptions options = null) where T : JsonSerializable
         {
             if (serialized == null)
             {
@@ -252,8 +248,8 @@ namespace Microsoft.Azure.Documents
                 throw new ArgumentNullException(nameof(typeResolver));
             }
 
-            JsonTextReader jsonReader = new JsonTextReader(new StringReader(serialized));
-            return JsonSerializable.LoadFromWithResolver(typeResolver, settings, jsonReader);
+            var root = JsonNode.Parse(serialized) as JsonObject;
+            return typeResolver.Resolve(root);
         }
 
         /// <summary>
@@ -262,18 +258,24 @@ namespace Microsoft.Azure.Documents
         /// <typeparam name="T">The type of the returning object.</typeparam>
         /// <param name="serialized">Serialized payload.</param>
         /// <param name="typeResolver">Used to get a correct object from a stream.</param>
-        /// <param name="settings">The JsonSerializerSettings to be used</param>
+        /// <param name="options">The JsonSerializerSettings to be used</param>
         /// <returns>The object loaded from the specified stream.</returns>
-        internal static T LoadFrom<T>(string serialized, ITypeResolver<T> typeResolver, JsonSerializerSettings settings = null) where T : JsonSerializable, new()
+        internal static T LoadFrom<T>(string serialized, ITypeResolver<T> typeResolver, JsonSerializerOptions options = null) where T : JsonSerializable, new()
         {
             if (serialized == null)
             {
                 throw new ArgumentNullException("serialized");
             }
 
-            JsonTextReader jsonReader = new JsonTextReader(new StringReader(serialized));
-
-            return JsonSerializable.LoadFrom<T>(jsonReader, typeResolver, settings);
+            var root = JsonNode.Parse(serialized) as JsonObject;
+            T resource = new T();
+            resource.propertyBag = root;
+            resource.SerializerSettings = options;
+            if (typeResolver != null)
+            {
+                resource = typeResolver.Resolve(resource.propertyBag);
+            }
+            return resource;
         }
 
         /// <summary>
@@ -296,7 +298,7 @@ namespace Microsoft.Azure.Documents
         /// <param name="constructorFunction">The constructor used for the returning object.</param>
         /// <param name="settings">The JsonSerializerSettings to be used.</param>
         /// <returns>The object loaded from the specified stream.</returns>
-        public static T LoadFromWithConstructor<T>(Stream stream, Func<T> constructorFunction, JsonSerializerSettings settings)
+        public static T LoadFromWithConstructor<T>(Stream stream, Func<T> constructorFunction, JsonSerializerOptions settings)
         {
             if (stream == null)
             {
@@ -308,9 +310,16 @@ namespace Microsoft.Azure.Documents
             }
 
             T resource = constructorFunction();
+            JsonSerializable tOfSerializable = resource as JsonSerializable;
+            if (tOfSerializable == null)
+            {
+                throw new NotSupportedException();
+            }
 
-            JsonTextReader jsonReader = new JsonTextReader(new StreamReader(stream));
-            ((JsonSerializable)(object)resource).LoadFrom(jsonReader, settings);
+            using var doc = JsonDocument.Parse(stream);
+            var root = JsonNode.Parse(doc.RootElement.GetRawText()) as JsonObject;
+            tOfSerializable.propertyBag = root;
+
             return resource;
         }
 
@@ -337,26 +346,7 @@ namespace Microsoft.Azure.Documents
         /// <returns></returns>
         internal T GetValue<T>(string propertyName)
         {
-            if (this.propertyBag != null)
-            {
-                JToken token = this.propertyBag[propertyName];
-                if (token != null)
-                {
-                    // Enum Backward compatibility support. This code will not be
-                    // needed with newer Json.Net version which handles enums correctly.
-                    if (typeof(T).IsEnum())
-                    {
-                        if (token.Type == JTokenType.String)
-                        {
-                            return token.ToObject<T>(JsonSerializer.CreateDefault());
-                        }
-                    }
-                    return this.SerializerSettings == null ?
-                        token.ToObject<T>() :
-                        token.ToObject<T>(JsonSerializer.Create(this.SerializerSettings));
-                }
-            }
-            return default(T);
+            return this.GetValue(propertyName, default(T));
         }
 
         /// <summary>
@@ -370,26 +360,36 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-                if (token != null)
-                {
-                    // Enum Backward compatibility support. This code will not be
-                    // needed with newer Json.Net version which handles enums correctly.
-                    if (typeof(T).IsEnum())
-                    {
-                        if (token.Type == JTokenType.String)
-                        {
-                            return token.ToObject<T>(JsonSerializer.CreateDefault());
-                        }
-                    }
-                    return this.SerializerSettings == null ?
-                        token.ToObject<T>() :
-                        token.ToObject<T>(JsonSerializer.Create(this.SerializerSettings));
-                }
+                JsonNode token = this.propertyBag[propertyName];
+                return this.GetValue(token, defaultValue);
             }
+
             return defaultValue;
         }
 
+        internal T GetValue<T>(JsonNode token, T defaultValue)
+        {
+            if (token != null)
+            {
+                // Enum Backward compatibility support. This code will not be
+                // needed with newer Json.Net version which handles enums correctly.
+                if (typeof(T).IsEnum && token is JsonValue valueNode && valueNode.TryGetValue<string>(out var strValue))
+                {
+                    if (Enum.TryParse(typeof(T), strValue, true, out var enumValue))
+                    {
+                        return (T)enumValue;
+                    }
+                }
+                return this.SerializerSettings == null ?
+                    token.Deserialize<T>() :
+                        token.Deserialize<T>(this.SerializerSettings);
+            }
+
+            return default(T);
+        }
+
+
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Get the enum value associated with the specified property name.
         /// </summary>
@@ -418,7 +418,7 @@ namespace Microsoft.Azure.Documents
 
             return value;
         }
-
+#endif
         /// <summary>
         /// Get the value associated with the specified property name.
         /// </summary>
@@ -440,7 +440,7 @@ namespace Microsoft.Azure.Documents
 
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[fieldNames[0]];
+                JsonNode token = this.propertyBag[fieldNames[0]];
                 for (int i = 1; i < fieldNames.Length; ++i)
                 {
                     if (token == null)
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Documents
                         break;
                     }
 
-                    if (!(token is JObject))
+                    if (!(token is JsonObject))
                     {
                         token = null;
                     }
@@ -460,19 +460,7 @@ namespace Microsoft.Azure.Documents
 
                 if (token != null)
                 {
-                    // Enum Backward compatibility support. This code will not be
-                    // needed with newer Json.Net version which handles enums correctly.
-                    if (typeof(T).IsEnum())
-                    {
-                        if (token.Type == JTokenType.String)
-                        {
-                            return token.ToObject<T>(JsonSerializer.CreateDefault());
-                        }
-                    }
-
-                    return this.SerializerSettings == null ?
-                        token.ToObject<T>() :
-                        token.ToObject<T>(JsonSerializer.Create(this.SerializerSettings));
+                    return this.GetValue(token, defaultValue);
                 }
             }
 
@@ -488,12 +476,12 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag == null)
             {
-                this.propertyBag = new JObject();
+                this.propertyBag = new JsonObject();
             }
 
             if (value != null)
             {
-                this.propertyBag[name] = JToken.FromObject(value);
+                this.propertyBag[name] = JsonSerializer.SerializeToNode(value, value.GetType(), this.SerializerSettings);
             }
             else
             {
@@ -501,6 +489,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Set the value associated with the specified property name.
         /// </summary>
@@ -547,32 +536,31 @@ namespace Microsoft.Azure.Documents
                 token[fieldNames[fieldNames.Length - 1]] = value == null ? null : JToken.FromObject(value);
             }
         }
+#endif
 
         internal Collection<T> GetValueCollection<T>(string propertyName)
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-                if (token != null)
+                JsonNode token = this.propertyBag[propertyName];
+                if (token is JsonArray array)
                 {
-                    Collection<JToken> jTokenCollection = token.ToObject<Collection<JToken>>();
                     Collection<T> valueCollection = new Collection<T>();
-                    foreach (JToken childToken in jTokenCollection)
+                    foreach (JsonNode childToken in array)
                     {
                         if (childToken != null)
                         {
-                            if (typeof(T).IsEnum())
+                            if (typeof(T).IsEnum && childToken is JsonValue val && val.TryGetValue<string>(out var strValue))
                             {
-                                if (childToken.Type == JTokenType.String)
+                                if (Enum.TryParse(typeof(T), strValue, true, out var enumValue))
                                 {
-                                    valueCollection.Add(childToken.ToObject<T>(JsonSerializer.CreateDefault()));
+                                    valueCollection.Add((T)enumValue);
                                     continue;
                                 }
                             }
-                            valueCollection.Add(
-                                this.SerializerSettings == null ?
-                                    childToken.ToObject<T>() :
-                                    childToken.ToObject<T>(JsonSerializer.Create(this.SerializerSettings)));
+                            valueCollection.Add(this.SerializerSettings == null
+                                ? childToken.Deserialize<T>()
+                                : childToken.Deserialize<T>(this.SerializerSettings));
                         }
                         else
                         {
@@ -589,24 +577,19 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag == null)
             {
-                this.propertyBag = new JObject();
+                this.propertyBag = new JsonObject();
             }
 
             if (value != null)
             {
-                Collection<JToken> jTokenCollection = new Collection<JToken>();
+                var array = new JsonArray();
                 foreach (T childValue in value)
                 {
-                    if (childValue != null)
-                    {
-                        jTokenCollection.Add(JToken.FromObject(childValue));
-                    }
-                    else
-                    {
-                        jTokenCollection.Add(null);
-                    }
+                    array.Add(childValue != null
+                        ? JsonSerializer.SerializeToNode(childValue, typeof(T), this.SerializerSettings)
+                        : null);
                 }
-                this.propertyBag[propertyName] = JToken.FromObject(jTokenCollection);
+                this.propertyBag[propertyName] = array;
             }
             else
             {
@@ -628,19 +611,18 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-
-                if (token != null && (returnEmptyObject || token.HasValues))
+                JsonNode token = this.propertyBag[propertyName];
+                if (token is JsonObject obj && (returnEmptyObject || obj.Count > 0))
                 {
                     TSerializable result = new TSerializable();
-                    result.propertyBag = JObject.FromObject(token);
+                    result.propertyBag = obj;
                     return result;
                 }
             }
-
             return null;
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Gets a deserialized child object with the given property name.
         /// </summary>
@@ -659,29 +641,25 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-
-                if (token != null && (returnEmptyObject || token.HasValues))
+                JsonNode token = this.propertyBag[propertyName];
+                if (token is JsonObject obj && (returnEmptyObject || obj.Count > 0))
                 {
-                    if (token is JObject)
-                    {
-                        return typeResolver.Resolve(token as JObject);
-                    }
-                    else
-                    {
-                        throw new ArgumentException($"Cannot resolve property type. The property {propertyName} is not an object, it is a {token.Type}.");
-                    }
+                    return typeResolver.Resolve(obj);
+                }
+                else if (token != null)
+                {
+                    throw new ArgumentException($"Cannot resolve property type. The property {propertyName} is not an object.");
                 }
             }
-
             return null;
         }
+#endif
 
         internal void SetObject<TSerializable>(string propertyName, TSerializable value) where TSerializable : JsonSerializable
         {
             if (this.propertyBag == null)
             {
-                this.propertyBag = new JObject();
+                this.propertyBag = new JsonObject();
             }
             this.propertyBag[propertyName] = value != null ? value.propertyBag : null;
         }
@@ -690,27 +668,22 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-
+                JsonNode token = this.propertyBag[propertyName];
                 if (typeResolver == null)
                 {
                     typeResolver = GetTypeResolver<TSerializable>();
                 }
-
-                if (token != null)
+                if (token is JsonArray array)
                 {
-                    Collection<JObject> jobjectCollection = token.ToObject<Collection<JObject>>();
                     Collection<TSerializable> objectCollection = new Collection<TSerializable>();
-                    foreach (JObject childObject in jobjectCollection)
+                    foreach (JsonNode childNode in array)
                     {
-                        if (childObject == null)
+                        if (childNode is not JsonObject childObject)
                         {
                             continue;
                         }
                         TSerializable result = typeResolver != null ? typeResolver.Resolve(childObject) : new TSerializable();
                         result.propertyBag = childObject;
-
-                        // for public resource, let's add the Altlink
                         if (PathsHelper.IsPublicResource(typeof(TSerializable)))
                         {
                             Resource resource = result as Resource;
@@ -724,25 +697,23 @@ namespace Microsoft.Azure.Documents
             return null;
         }
 
+#if !COSMOS_GW_AOT
         internal Collection<TSerializable> GetObjectCollectionWithResolver<TSerializable>(string propertyName, ITypeResolver<TSerializable> typeResolver) where TSerializable : JsonSerializable
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-
-                if (token != null)
+                JsonNode token = this.propertyBag[propertyName];
+                if (token is JsonArray array)
                 {
-                    Collection<JObject> jobjectCollection = token.ToObject<Collection<JObject>>();
                     Collection<TSerializable> objectCollection = new Collection<TSerializable>();
-                    foreach (JObject childObject in jobjectCollection)
+                    foreach (JsonNode childNode in array)
                     {
-                        if (childObject == null)
+                        if (childNode is not JsonObject childObject)
                         {
                             continue;
                         }
                         TSerializable result = typeResolver.Resolve(childObject);
                         result.propertyBag = childObject;
-
                         objectCollection.Add(result);
                     }
                     return objectCollection;
@@ -750,26 +721,28 @@ namespace Microsoft.Azure.Documents
             }
             return null;
         }
+#endif
 
         internal void SetObjectCollection<TSerializable>(string propertyName, Collection<TSerializable> value) where TSerializable : JsonSerializable
         {
             if (this.propertyBag == null)
             {
-                this.propertyBag = new JObject();
+                this.propertyBag = new JsonObject();
             }
 
             if (value != null)
             {
-                Collection<JObject> jobjectCollection = new Collection<JObject>();
+                var array = new JsonArray();
                 foreach (TSerializable childValue in value)
                 {
                     childValue.OnSave();
-                    jobjectCollection.Add(childValue.propertyBag ?? new JObject());
+                    array.Add(childValue.propertyBag ?? new JsonObject());
                 }
-                this.propertyBag[propertyName] = JToken.FromObject(jobjectCollection);
+                this.propertyBag[propertyName] = array;
             }
         }
 
+#if !COSMOS_GW_AOT
         internal Dictionary<string, TSerializable> GetObjectDictionary<TSerializable>(
             string propertyName,
             ITypeResolver<TSerializable> typeResolver = null,
@@ -777,38 +750,29 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
-
+                JsonNode token = this.propertyBag[propertyName];
                 if (typeResolver == null)
                 {
                     typeResolver = GetTypeResolver<TSerializable>();
                 }
-
-                if (token != null)
+                if (token is JsonObject obj)
                 {
-                    Dictionary<string, TSerializable> objectDictionary;
-                    if(comparer != null)
+                    var objectDictionary = comparer != null
+                        ? new Dictionary<string, TSerializable>(comparer)
+                        : new Dictionary<string, TSerializable>();
+                    foreach (var kvp in obj)
                     {
-                        objectDictionary = new Dictionary<string, TSerializable>(comparer);
-                    }
-                    else
-                    {
-                        objectDictionary = new Dictionary<string, TSerializable>();
-                    }
-
-                    Dictionary<string, JObject> jobjectDictionary = token.ToObject<Dictionary<string, JObject>>();
-                    foreach (KeyValuePair<string, JObject> kvp in jobjectDictionary)
-                    {
-                        TSerializable result = typeResolver != null ? typeResolver.Resolve(kvp.Value) : new TSerializable();
-                        result.propertyBag = kvp.Value;
-
+                        if (kvp.Value is not JsonObject childObj)
+                        {
+                            continue;
+                        }
+                        TSerializable result = typeResolver != null ? typeResolver.Resolve(childObj) : new TSerializable();
+                        result.propertyBag = childObj;
                         objectDictionary.Add(kvp.Key, result);
                     }
-
                     return objectDictionary;
                 }
             }
-
             return null;
         }
 
@@ -816,18 +780,18 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
+                JsonNode token = this.propertyBag[propertyName];
 
                 if (token != null)
                 {
-                    Dictionary<string, JObject> jobjectDictionary = token.ToObject<Dictionary<string, JObject>>();
+                    Dictionary<string, JsonObject> jobjectDictionary = token.ToObject<Dictionary<string, JsonObject>>();
                     if (jobjectDictionary == null)
                     {
                         return null;
                     } 
 
                     Dictionary<string, TSerializable> objectDictionary = new Dictionary<string, TSerializable>();
-                    foreach (KeyValuePair<string, JObject> kvp in jobjectDictionary)
+                    foreach (KeyValuePair<string, JsonObject> kvp in jobjectDictionary)
                     {
                         TSerializable result;
                         if (kvp.Value == null)
@@ -853,18 +817,18 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag == null)
             {
-                this.propertyBag = new JObject();
+                this.propertyBag = new JsonObject();
             }
 
             if (value != null)
             {
-                Dictionary<string, JObject> jobjectDictionary = new Dictionary<string, JObject>();
+                Dictionary<string, JsonObject> jobjectDictionary = new Dictionary<string, JsonObject>();
                 foreach (KeyValuePair<string, TSerializable> kvp in value)
                 {
                     kvp.Value.OnSave();
-                    jobjectDictionary.Add(kvp.Key, kvp.Value.propertyBag ?? new JObject());
+                    jobjectDictionary.Add(kvp.Key, kvp.Value.propertyBag ?? new JsonObject());
                 }
-                this.propertyBag[propertyName] = JToken.FromObject(jobjectDictionary);
+                this.propertyBag[propertyName] = JsonNode.FromObject(jobjectDictionary);
             }
         }
 
@@ -872,27 +836,28 @@ namespace Microsoft.Azure.Documents
         {
             if (this.propertyBag == null)
             {
-                this.propertyBag = new JObject();
+                this.propertyBag = new JsonObject();
             }
 
             if (value != null)
             {
-                Dictionary<string, JObject> jobjectDictionary = new Dictionary<string, JObject>();
+                Dictionary<string, JsonObject> jobjectDictionary = new Dictionary<string, JsonObject>();
                 foreach (KeyValuePair<string, TSerializable> kvp in value)
                 {
                     if (kvp.Value != null)
                     {
                         kvp.Value.OnSave();
-                        jobjectDictionary.Add(kvp.Key, kvp.Value.propertyBag ?? new JObject());
+                        jobjectDictionary.Add(kvp.Key, kvp.Value.propertyBag ?? new JsonObject());
                     }
                     else
                     {
                         jobjectDictionary.Add(kvp.Key, null);
                     }
                 }
-                this.propertyBag[propertyName] = JToken.FromObject(jobjectDictionary);
+                this.propertyBag[propertyName] = JsonNode.FromObject(jobjectDictionary);
             }
         }
+#endif
 
         internal virtual void OnSave()
         {
@@ -909,22 +874,6 @@ namespace Microsoft.Azure.Documents
 
             return typeResolver;
         }
-        #endregion
-
-        private static T LoadFrom<T>(JsonTextReader jsonReader, ITypeResolver<T> typeResolver, JsonSerializerSettings settings = null) where T : JsonSerializable, new()
-        {
-            T resource = new T();
-
-            resource.LoadFrom(jsonReader, settings);
-            resource = (typeResolver != null) ? typeResolver.Resolve(resource.propertyBag) : resource;
-            return resource;
-        }
-
-        private static T LoadFromWithResolver<T>(ITypeResolver<T> typeResolver, JsonSerializerSettings settings, JsonTextReader jsonReader) where T : JsonSerializable
-        {
-            Helpers.SetupJsonReader(jsonReader, settings);
-            JObject jObject = JObject.Load(jsonReader);
-            return typeResolver.Resolve(jObject);
-        }
+#endregion
     }
 }

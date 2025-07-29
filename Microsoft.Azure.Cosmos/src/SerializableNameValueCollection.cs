@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.IO;
+    using System.Text.Json.Nodes;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class SerializableNameValueCollection : JsonSerializable
     {
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Cosmos
                         writer.Write(value);
                         writer.Flush();
                         ms.Position = 0;
-                        return JsonSerializable.LoadFrom<SerializableNameValueCollection>(ms);
+                        return System.Text.Json.JsonSerializer.Deserialize<SerializableNameValueCollection>(ms);
                     }
                 }
             }
@@ -87,14 +87,19 @@ namespace Microsoft.Azure.Cosmos
             NameValueCollection collection = new NameValueCollection();
             if (this.propertyBag != null)
             {
-                foreach (KeyValuePair<string, JToken> pair in this.propertyBag)
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+                foreach (KeyValuePair<string, JsonNode?> pair in this.propertyBag)
                 {
-                    JValue value = pair.Value as JValue;
-                    if (value != null)
+                    if (pair.Value is JsonValue value)
                     {
                         collection.Add(pair.Key, value.ToString());
                     }
+                    else if (pair.Value is not null)
+                    {
+                        collection.Add(pair.Key, pair.Value.ToJsonString());
+                    }
                 }
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
             }
 
             return collection;

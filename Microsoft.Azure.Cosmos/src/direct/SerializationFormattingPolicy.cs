@@ -3,7 +3,7 @@
     /// <summary>
     /// The formatting policy associated with JSON serialization/de-serialization in the Azure Cosmos DB service.
     /// </summary>
-#if COSMOSCLIENT
+#if COSMOSCLIENT && !COSMOS_GW_AOT
     internal
 #else
     public

@@ -6,12 +6,12 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Globalization;
     using System.Net;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Rntbd;
     using Microsoft.Azure.Documents.Client;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Instantiated to issue direct connectivity requests to the backend on:
@@ -75,7 +75,7 @@ namespace Microsoft.Azure.Documents
                 accountConfigurationProperties: accountConfigurationProperties);
         }
 
-        internal JsonSerializerSettings SerializerSettings { get; set; }
+        internal JsonSerializerOptions SerializerSettings { get; set; }
 
         #region Test hooks
         public string LastReadAddress

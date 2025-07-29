@@ -6,10 +6,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
     using JsonWriter = Json.JsonWriter;
 
     internal static class FeedResponseBinder
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         public static DocumentFeedResponse<T> ConvertCosmosElementFeed<T>(
             DocumentFeedResponse<CosmosElement> dynamicFeed,
             ResourceType resourceType,
-            JsonSerializerSettings settings)
+            JsonSerializerOptions settings)
         {
             if (dynamicFeed.Count == 0)
             {
@@ -84,11 +84,11 @@ namespace Microsoft.Azure.Cosmos
             if (resourceType == ResourceType.Offer &&
                 (typeof(T).IsSubclassOf(typeof(Documents.Resource)) || typeof(T) == typeof(object)))
             {
-                typedResults = JsonConvert.DeserializeObject<List<OfferV2>>(jsonText, settings).Cast<T>();
+                typedResults = System.Text.Json.JsonSerializer.Deserialize<List<OfferV2>>(jsonText, settings).Cast<T>();
             }
             else
             {
-                typedResults = JsonConvert.DeserializeObject<List<T>>(jsonText, settings);
+                typedResults = System.Text.Json.JsonSerializer.Deserialize<List<T>>(jsonText, settings);
             }
 
             return new DocumentFeedResponse<T>(

@@ -12,8 +12,9 @@ namespace Microsoft.Azure.Documents
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a document in the Azure Cosmos DB service.
@@ -202,7 +203,7 @@ namespace Microsoft.Azure.Documents
         /// </code>
         /// </example>
         /// <seealso cref="Microsoft.Azure.Documents.DocumentCollection"/>     
-        [JsonProperty(PropertyName = Constants.Properties.TimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.TimeToLive)]
         public int? TimeToLive
         {
             get
@@ -216,7 +217,7 @@ namespace Microsoft.Azure.Documents
         }
 
         //Helper to materialize Document from any .NET object.
-        internal static Document FromObject(object document, JsonSerializerSettings settings = null)
+        internal static Document FromObject(object document, JsonSerializerOptions settings = null)
         {
             if(document != null)
             {
@@ -228,11 +229,10 @@ namespace Microsoft.Azure.Documents
                 {
                     // FromObject: for dynamics, it only go through JsonProperty attribute decorated properties.
                     //             for poco, it will go through all public properties
-                    JObject serializedPropertyBag = (settings == null) ?
-                        JObject.FromObject(document) :
-                        JObject.FromObject(document, JsonSerializer.Create(settings));
+                    JsonObject serializedPropertyBag = settings == null
+                        ? JsonSerializer.SerializeToNode(document) as JsonObject
+                        : JsonSerializer.SerializeToNode(document, document.GetType(), settings) as JsonObject;
                     Document typeDocument = new Document() { SerializerSettings = settings };
-
                     typeDocument.propertyBag = serializedPropertyBag;
                     return typeDocument;
                 }
@@ -246,12 +246,12 @@ namespace Microsoft.Azure.Documents
         {
             if(this.propertyBag != null)
             {
-                JToken token = this.propertyBag[propertyName];
+                JsonNode token = this.propertyBag[propertyName];
                 if (token != null)
                 {
-                    return this.SerializerSettings == null ? 
-                        token.ToObject(returnType) :
-                        token.ToObject(returnType, JsonSerializer.Create(this.SerializerSettings));
+                    return this.SerializerSettings == null
+                        ? token.Deserialize(returnType)
+                        : token.Deserialize(returnType, this.SerializerSettings);
                 }
             }
 
@@ -268,9 +268,9 @@ namespace Microsoft.Azure.Documents
             {
                 if (this.propertyBag == null)
                 {
-                    this.propertyBag = new JObject();
+                    this.propertyBag = new JsonObject();
                 }
-                this.propertyBag[propertyName] = JToken.FromObject(value);
+                this.propertyBag[propertyName] = JsonSerializer.SerializeToNode(value, value.GetType(), this.SerializerSettings);
             }
             else
             {
@@ -295,11 +295,11 @@ namespace Microsoft.Azure.Documents
             }
 
             //Materialize the type.
-            return (this.SerializerSettings == null) ?
-                (T)this.propertyBag.ToObject<T>() :
-                (T)this.propertyBag.ToObject<T>(JsonSerializer.Create(this.SerializerSettings));
+            return this.SerializerSettings == null
+                ? this.propertyBag.Deserialize<T>()
+                : this.propertyBag.Deserialize<T>(this.SerializerSettings);
         }
-        
+
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
         {
             return new DocumentDynamicMetaObject(this, parameter);
@@ -407,14 +407,15 @@ namespace Microsoft.Azure.Documents
                 // we merge the static defined property into propertyBag
                 List<string> dynamicMembers = new List<string>();
 
-                foreach (KeyValuePair<string, JToken> pair in this.document.propertyBag)
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+                foreach (KeyValuePair<string, JsonNode?> pair in this.document.propertyBag)
                 {
-                    // exclude the resource property
                     if (!IsResourceSerializedProperty(pair.Key))
                     {
                         dynamicMembers.Add(pair.Key);
                     }
                 }
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
 
                 return dynamicMembers.ToList();
             }

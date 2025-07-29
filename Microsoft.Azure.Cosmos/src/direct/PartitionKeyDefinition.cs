@@ -7,13 +7,13 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.ObjectModel;
     using System.Linq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary> 
     /// Specifies a partition key definition for a particular path in the Azure Cosmos DB service.
     /// </summary>
-#if COSMOSCLIENT
+#if COSMOSCLIENT && !COSMOS_GW_AOT
     internal
 #else
     public
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Documents
         /// <value>
         /// The path to be partitioned.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Paths)]
+        [JsonPropertyName(Constants.Properties.Paths)]
         public Collection<string> Paths
         {
             get
@@ -56,8 +56,8 @@ namespace Microsoft.Azure.Documents
         /// <value>
         /// One of the values of the <see cref="T:Microsoft.Azure.Documents.PartitionKind"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKind)]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName(Constants.Properties.PartitionKind)]
+        [JsonConverter(typeof(JsonStringEnumConverter<PartitionKind>))]
         internal PartitionKind Kind
         {
             get
@@ -82,7 +82,7 @@ namespace Microsoft.Azure.Documents
         /// <value>
         /// One of the values of the <see cref="T:Microsoft.Azure.Documents.PartitionKeyDefinitionVersion"/> enumeration. 
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKeyDefinitionVersion, DefaultValueHandling = DefaultValueHandling.Ignore )]
+        [JsonPropertyName(Constants.Properties.PartitionKeyDefinitionVersion)]
         public PartitionKeyDefinitionVersion? Version
         {
             get
@@ -101,7 +101,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <value>
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.SystemKey, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.SystemKey)]
         internal bool? IsSystemKey
         {
             get

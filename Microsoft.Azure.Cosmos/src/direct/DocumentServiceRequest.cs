@@ -9,10 +9,10 @@ namespace Microsoft.Azure.Documents
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.Collections;
-    using Newtonsoft.Json;
 
     //This is core Transport/Connection agnostic request to DocumentService.
     //It is marked internal today. If needs arises for client to do no-serialized processing
@@ -654,7 +654,7 @@ namespace Microsoft.Azure.Documents
             }
         }
 
-        public JsonSerializerSettings SerializerSettings
+        public JsonSerializerOptions SerializerSettings
         {
             get;
             set;
@@ -1000,7 +1000,7 @@ namespace Microsoft.Azure.Documents
             AuthorizationTokenType authorizationTokenType,
             INameValueCollection headers = null,
             SerializationFormattingPolicy formattingPolicy = SerializationFormattingPolicy.None,
-            JsonSerializerSettings settings = null)
+            JsonSerializerOptions settings = null)
         {
             MemoryStream stream = new MemoryStream();
             resource.SaveTo(stream, formattingPolicy, settings);

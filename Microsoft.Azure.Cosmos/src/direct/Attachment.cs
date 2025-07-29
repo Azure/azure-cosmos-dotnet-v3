@@ -11,8 +11,9 @@ namespace Microsoft.Azure.Documents
     using System.Globalization;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a document attachment in the Azure Cosmos DB service.
@@ -53,7 +54,7 @@ namespace Microsoft.Azure.Documents
         /// The MIME content type of the attachment.
         /// </value>
         /// <remarks>For example, set to "text/plain" for text files, "image/jpeg" for images.</remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ContentType)]
+        [JsonPropertyName(Constants.Properties.ContentType)]
         public string ContentType
         {
             get
@@ -73,7 +74,7 @@ namespace Microsoft.Azure.Documents
         /// The media link associated with the attachment content.
         /// </value>
         /// <remarks>Azure Cosmos DB supports both managed and unmanaged attachments.</remarks>
-        [JsonProperty(PropertyName = Constants.Properties.MediaLink)]
+        [JsonPropertyName(Constants.Properties.MediaLink)]
         public string MediaLink
         {
             get
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Documents
         }
 
         //Helper to materialize Attachment from any .NET object.
-        internal static Attachment FromObject(object attachment, JsonSerializerSettings settings = null)
+        internal static Attachment FromObject(object attachment, JsonSerializerOptions settings = null)
         {
             if (attachment != null)
             {
@@ -97,7 +98,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    JObject serializedPropertyBag = JObject.FromObject(attachment);
+                    JsonObject serializedPropertyBag = JsonSerializer.SerializeToNode(attachment, attachment.GetType(), settings) as JsonObject;
                     Attachment typeAttachment = new Attachment();
                     typeAttachment.propertyBag = serializedPropertyBag;
                     typeAttachment.SerializerSettings = settings;
@@ -111,18 +112,13 @@ namespace Microsoft.Azure.Documents
         private object GetProperty(
             string propertyName, Type returnType)
         {
-            if (this.propertyBag != null)
+            if (this.propertyBag != null && this.propertyBag.TryGetPropertyValue(propertyName, out JsonNode token) && token != null)
             {
-                JToken token = this.propertyBag[propertyName];
-                if (token != null)
-                {
-                    return this.SerializerSettings == null ?
-                        token.ToObject(returnType) :
-                        token.ToObject(returnType, JsonSerializer.Create(this.SerializerSettings));
-                }
+                return this.SerializerSettings == null
+                    ? token.Deserialize(returnType)
+                    : token.Deserialize(returnType, this.SerializerSettings);
             }
 
-            //Any property not in JSON throw exception rather than returning null.
             throw new DocumentClientException(
                 string.Format(CultureInfo.CurrentUICulture,
                 RMResources.PropertyNotFound,
@@ -131,20 +127,17 @@ namespace Microsoft.Azure.Documents
 
         private object SetProperty(string propertyName, object value)
         {
+            if (this.propertyBag == null)
+            {
+                this.propertyBag = new JsonObject();
+            }
             if (value != null)
             {
-                if (this.propertyBag == null)
-                {
-                    this.propertyBag = new JObject();
-                }
-                this.propertyBag[propertyName] = JToken.FromObject(value);
+                this.propertyBag[propertyName] = JsonSerializer.SerializeToNode(value, value.GetType(), this.SerializerSettings);
             }
             else
             {
-                if (this.propertyBag != null)
-                {
-                    this.propertyBag.Remove(propertyName);
-                }
+                this.propertyBag.Remove(propertyName);
             }
             return value;
         }
@@ -161,12 +154,9 @@ namespace Microsoft.Azure.Documents
                 return default(T);
             }
 
-            //Materialize the type.
-            T result = this.SerializerSettings == null ?
-                (T)this.propertyBag.ToObject<T>() :
-                (T)this.propertyBag.ToObject<T>(JsonSerializer.Create(this.SerializerSettings));
-
-            return result;
+            return this.SerializerSettings == null
+                ? this.propertyBag.Deserialize<T>()
+                : this.propertyBag.Deserialize<T>(this.SerializerSettings);
         }
 
         DynamicMetaObject IDynamicMetaObjectProvider.GetMetaObject(Expression parameter)
@@ -274,14 +264,17 @@ namespace Microsoft.Azure.Documents
             public override IEnumerable<string> GetDynamicMemberNames()
             {
                 List<string> dynamicMembers = new List<string>();
-                foreach (KeyValuePair<string, JToken> pair in this.attachment.propertyBag)
+                if (this.attachment.propertyBag is JsonObject obj)
                 {
-                    // exclude the resource property and static properties
-                    if (!IsResourceSerializedProperty(pair.Key))
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
+                    foreach (KeyValuePair<string, JsonNode?> pair in obj)
                     {
-                        dynamicMembers.Add(pair.Key);
+                        if (!IsResourceSerializedProperty(pair.Key))
+                        {
+                            dynamicMembers.Add(pair.Key);
+                        }
                     }
-
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
                 }
                 return dynamicMembers;
             }

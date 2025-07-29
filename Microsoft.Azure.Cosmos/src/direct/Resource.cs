@@ -6,13 +6,13 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.IO;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary> 
     ///  Represents an abstract resource type in the Azure Cosmos DB service.
     ///  All Azure Cosmos DB resources, such as <see cref="Database"/>, <see cref="DocumentCollection"/>, and <see cref="Document"/> extend this abstract type.
     /// </summary>
-#if COSMOSCLIENT
+#if COSMOSCLIENT && !COSMOS_GW_AOT
     internal
 #else
     public
@@ -45,7 +45,7 @@ namespace Microsoft.Azure.Documents
 
         
 #pragma warning disable CS1574 // XML comment has cref attribute that could not be resolved
-/// <summary>
+        /// <summary>
         /// Gets or sets the Id of the resource in the Azure Cosmos DB service.
         /// </summary>
         /// <value>The Id associated with the resource.</value>
@@ -66,7 +66,7 @@ namespace Microsoft.Azure.Documents
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
+        [JsonPropertyName(Constants.Properties.Id)]
 #pragma warning restore CS1574 // XML comment has cref attribute that could not be resolved
         public virtual string Id
         {
@@ -91,7 +91,7 @@ namespace Microsoft.Azure.Documents
         /// resource whether that is a database, a collection or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId)]
+        [JsonPropertyName(Constants.Properties.RId)]
         public virtual string ResourceId
         {
             get
@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Documents
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.SelfLink)]
+        [JsonPropertyName(Constants.Properties.SelfLink)]
         public string SelfLink
         {
             get
@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Documents
         /// Gets the last modified timestamp associated with the resource from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified timestamp associated with the resource.</value>
-        [JsonProperty(PropertyName = Constants.Properties.LastModified)]
+        [JsonPropertyName(Constants.Properties.LastModified)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public virtual DateTime Timestamp
         {
@@ -164,7 +164,7 @@ namespace Microsoft.Azure.Documents
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag)]
+        [JsonPropertyName(Constants.Properties.ETag)]
         public string ETag
         {
             get

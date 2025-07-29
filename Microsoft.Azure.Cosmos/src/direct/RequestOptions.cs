@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Documents.Client
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.Json;
     using System.Threading;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Encapsulates options that can be specified for different requests issued to the Azure Cosmos DB service.
@@ -481,7 +481,7 @@ namespace Microsoft.Azure.Documents.Client
         /// Gets or sets the <see cref="JsonSerializerSettings"/> for the current request used to deserialize the document.
         /// If null, uses the default serializer settings set up in the DocumentClient.
         /// </summary>
-        public JsonSerializerSettings JsonSerializerSettings { get; set; }
+        public JsonSerializerOptions JsonSerializerSettings { get; set; }
 
         /// <summary>
         ///  Gets or sets the <see cref="PopulatePartitionKeyRangeStatistics"/> for document collection read requests in the Azure Cosmos DB service.

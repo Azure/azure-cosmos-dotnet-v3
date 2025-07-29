@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Globalization;
+    using System.Text.Json.Nodes;
     using Microsoft.Azure.Cosmos.Core.Trace;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Offer resolver based on input.
@@ -32,7 +32,7 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         /// <param name="propertyBag">Property bag used to deserialize Offer object</param>
         /// <returns>Object of type Offer or OfferV2</returns>
-        Offer ITypeResolver<Offer>.Resolve(JObject propertyBag)
+        Offer ITypeResolver<Offer>.Resolve(JsonObject propertyBag)
         {
             Offer resource;
             if (propertyBag != null)

@@ -4,11 +4,13 @@
 
 namespace Microsoft.Azure.Cosmos
 {
+    using System;
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Documents;
 
+    [JsonSourceGenerationOptions(WriteIndented = true)]
     [JsonSerializable(typeof(AccountProperties))]
     [JsonSerializable(typeof(FeedResource_Address))]
     [JsonSerializable(typeof(FeedResource_PartitionKeyRange))]

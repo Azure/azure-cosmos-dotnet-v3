@@ -76,15 +76,9 @@ namespace Microsoft.Azure.Documents
             string content = base.GetValue<string>(Constants.Properties.Content);
             if (!string.IsNullOrEmpty(content))
             {
-                using (MemoryStream stream = new MemoryStream())
+                using (MemoryStream stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content)))
                 {
-                    using (StreamWriter writer = new StreamWriter(stream))
-                    {
-                        writer.Write(content);
-                        writer.Flush();
-                        stream.Position = 0;
-                        return JsonSerializable.LoadFrom<T>(stream);
-                    }
+                    return JsonSerializable.LoadFrom<T>(stream, null);
                 }
             }
 
@@ -99,12 +93,15 @@ namespace Microsoft.Azure.Documents
                     string.Format(CultureInfo.CurrentUICulture, RMResources.InvalidResourceType, typeof(T).Name, this.ResourceType.Name));
             }
 
-            StringBuilder sb = new StringBuilder();
-            baseResource.SaveTo(sb);
-            string content = sb.ToString();
-            if (!string.IsNullOrEmpty(content))
+            // Serialize baseResource to a string using a MemoryStream
+            using (var ms = new MemoryStream())
             {
-                this.SetValue(Constants.Properties.Content, content);
+                baseResource.SaveTo(ms);
+                string content = System.Text.Encoding.UTF8.GetString(ms.ToArray());
+                if (!string.IsNullOrEmpty(content))
+                {
+                    this.SetValue(Constants.Properties.Content, content);
+                }
             }
 
             this.Id = baseResource.Id;

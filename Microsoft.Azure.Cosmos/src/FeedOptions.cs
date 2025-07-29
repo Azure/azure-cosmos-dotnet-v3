@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Specifies the options associated with feed methods (enumeration operations) in the Azure Cosmos DB service.
@@ -328,7 +328,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the <see cref="JsonSerializerSettings"/> for the current request used to deserialize the document.
         /// If null, uses the default serializer settings set up in the DocumentClient.
         /// </summary>
-        public JsonSerializerSettings JsonSerializerSettings { get; set; }
+        public JsonSerializerOptions JsonSerializerSettings { get; set; }
 
         /// <summary>
         /// Gets or sets the consistency level required for the feed (query/read feed) operation in the Azure Cosmos DB service.

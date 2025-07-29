@@ -6,7 +6,9 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Globalization;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+    using static Microsoft.Azure.Documents.Rntbd.TransportClient;
 
     /// <summary>
     /// Represents a schema in the Azure Cosmos DB service.
@@ -37,17 +39,15 @@ namespace Microsoft.Azure.Documents
         //Helper to materialize Document from any .NET object.
         internal static Schema FromObject(object schema)
         {
-            if(schema != null)
+            if (schema != null)
             {
-                if(typeof(Schema).IsAssignableFrom(schema.GetType()))
+                if (typeof(Schema).IsAssignableFrom(schema.GetType()))
                 {
                     return (Schema)schema;
                 }
                 else
                 {
-                    // FromObject: for dynamics, it only go through JsonProperty attribute decorated properties.
-                    //             for poco, it will go through all public properties
-                    JObject serializedPropertyBag = JObject.FromObject(schema);
+                    JsonObject serializedPropertyBag = JsonSerializer.SerializeToNode(schema, schema.GetType()) as JsonObject;
                     Schema typeSchema = new Schema();
                     typeSchema.propertyBag = serializedPropertyBag;
                     return typeSchema;
@@ -60,16 +60,13 @@ namespace Microsoft.Azure.Documents
         private object GetProperty(
             string propertyName, Type returnType)
         {
-            if(this.propertyBag != null)
+            if (this.propertyBag != null && this.propertyBag.TryGetPropertyValue(propertyName, out JsonNode token) && token != null)
             {
-                JToken token = this.propertyBag[propertyName];
-                if(token != null)
-                {
-                    return token.ToObject(returnType);
-                }
+                return this.SerializerSettings == null
+                    ? token.Deserialize(returnType)
+                    : token.Deserialize(returnType, this.SerializerSettings);
             }
 
-            //Any property not in JSON throw exception rather than returning null.
             throw new DocumentClientException(
                 string.Format(CultureInfo.CurrentUICulture,
                 RMResources.PropertyNotFound,
@@ -78,40 +75,36 @@ namespace Microsoft.Azure.Documents
 
         private object SetProperty(string propertyName, object value)
         {
-            if(value != null)
+            if (this.propertyBag == null)
             {
-                if(this.propertyBag == null)
-                {
-                    this.propertyBag = new JObject();
-                }
-                this.propertyBag[propertyName] = JToken.FromObject(value);
+                this.propertyBag = new JsonObject();
+            }
+            if (value != null)
+            {
+                this.propertyBag[propertyName] = JsonSerializer.SerializeToNode(value, value.GetType(), this.SerializerSettings);
             }
             else
             {
-                if(this.propertyBag != null)
-                {
-                    this.propertyBag.Remove(propertyName);
-                }
+                this.propertyBag.Remove(propertyName);
             }
             return value;
         }
 
         private T AsType<T>() //To convert Schema to any type.
         {
-            if(typeof(T) == typeof(Schema) || typeof(T) == typeof(object))
+            if (typeof(T) == typeof(Schema) || typeof(T) == typeof(object))
             {
                 return (T)(object)this;
             }
 
-            if(this.propertyBag == null)
+            if (this.propertyBag == null)
             {
                 return default(T);
             }
 
-            //Materialize the type.
-            T result = (T)this.propertyBag.ToObject<T>();
-
-            return result;
+            return this.SerializerSettings == null
+                ? this.propertyBag.Deserialize<T>()
+                : this.propertyBag.Deserialize<T>(this.SerializerSettings);
         }
     }
 }
