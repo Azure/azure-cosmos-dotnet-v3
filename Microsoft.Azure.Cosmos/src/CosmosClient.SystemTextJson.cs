@@ -35,7 +35,6 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
         /// </summary>
-        /// <param name="typeInfo">The type information for the database properties.</param>
         /// <param name="queryText">The cosmos SQL query text.</param>
         /// <param name="continuationToken">The continuation token in the Azure Cosmos DB service.</param>
         /// <param name="requestOptions">(Optional) The options for the item query request.</param>
@@ -66,47 +65,43 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
-            JsonTypeInfo<T[]> typeInfo,
-            string queryText = null,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            QueryDefinition queryDefinition = null;
-            if (queryText != null)
-            {
-                queryDefinition = new QueryDefinition(queryText);
-            }
+        ////public virtual FeedIterator<T> GetDatabaseQueryIterator<T>(
+        ////    string queryText = null,
+        ////    string continuationToken = null,
+        ////    QueryRequestOptions requestOptions = null)
+        ////{
+        ////    QueryDefinition queryDefinition = null;
+        ////    if (queryText != null)
+        ////    {
+        ////        queryDefinition = new QueryDefinition(queryText);
+        ////    }
 
-            return new FeedIteratorInlineCore<T>(
-                this.GetDatabaseQueryIteratorHelper<T>(
-                    typeInfo,
-                    queryDefinition,
-                    continuationToken,
-                    requestOptions),
-                this.ClientContext);
-        }
+        ////    return new FeedIteratorInlineCore<T>(
+        ////        this.GetDatabaseQueryIteratorHelper<T>(
+        ////            queryDefinition,
+        ////            continuationToken,
+        ////            requestOptions),
+        ////        this.ClientContext);
+        ////}
 
-        private FeedIteratorInternal<T> GetDatabaseQueryIteratorHelper<T>(
-            JsonTypeInfo<T[]> typeInfo,
-            QueryDefinition queryDefinition,
-            string continuationToken = null,
-            QueryRequestOptions requestOptions = null)
-        {
-            if (!(this.GetDatabaseQueryStreamIteratorHelper(
-                queryDefinition,
-                continuationToken,
-                requestOptions) is FeedIteratorInternal databaseStreamIterator))
-            {
-                throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
-            }
+        ////private FeedIteratorInternal<T> GetDatabaseQueryIteratorHelper<T>(
+        ////    QueryDefinition queryDefinition,
+        ////    string continuationToken = null,
+        ////    QueryRequestOptions requestOptions = null)
+        ////{
+        ////    if (!(this.GetDatabaseQueryStreamIteratorHelper(
+        ////        queryDefinition,
+        ////        continuationToken,
+        ////        requestOptions) is FeedIteratorInternal databaseStreamIterator))
+        ////    {
+        ////        throw new InvalidOperationException($"Expected a FeedIteratorInternal.");
+        ////    }
 
-            return new FeedIteratorCore<T>(
-                    databaseStreamIterator,
-                    (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
-                        typeInfo,
-                        responseMessage: response,
-                        resourceType: ResourceType.Database));
-        }
+        ////    return new FeedIteratorCore<T>(
+        ////            databaseStreamIterator,
+        ////            (response) => this.ClientContext.ResponseFactory.CreateQueryFeedResponse<T>(
+        ////                responseMessage: response,
+        ////                resourceType: ResourceType.Database));
+        ////}
     }
 }

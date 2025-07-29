@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Documents.Routing
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.SharedFiles.Routing;
     using Int128 = Microsoft.Azure.Documents.SharedFiles.Routing.Int128;
-    using UInt128 = Microsoft.Azure.Documents.UInt128;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     using System.Text.Json;
     using System.Text.Json.Serialization;

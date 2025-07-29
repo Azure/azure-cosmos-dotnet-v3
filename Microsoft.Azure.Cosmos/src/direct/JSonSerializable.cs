@@ -110,7 +110,6 @@ namespace Microsoft.Azure.Documents
             writer.Flush();
         }
 
-#if !COSMOS_GW_AOT
         /// <summary>
         /// Saves the object to the specified string builder
         /// </summary>
@@ -123,10 +122,17 @@ namespace Microsoft.Azure.Documents
                 throw new ArgumentNullException("stringBuilder");
             }
 
-            this.SaveTo(new JsonTextWriter(new StringWriter(stringBuilder, CultureInfo.CurrentCulture)), new JsonSerializer(), formattingPolicy);
+            byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
+            using MemoryStream stream = new MemoryStream(bytes);
+            {
+                using (var writer = new Utf8JsonWriter(stream))
+                {
+                    this.SaveTo(writer, formattingPolicy);
+                }
+            }
         }
 
-
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Loads the object from the specified JSON reader in the Azure Cosmos DB service.
         /// </summary>

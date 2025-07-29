@@ -5,7 +5,7 @@ namespace Microsoft.Azure.Documents
 {
     using System.Text.Json.Serialization;
 
-    internal sealed class Address : PlainResource
+    internal sealed class Address : JsonSerializable
     {
         [JsonPropertyName(Constants.Properties.IsAuxiliary)]
         public bool IsAuxiliary { get; set; }
