@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a throughput of the resources in the Azure Cosmos DB service.
@@ -55,7 +55,7 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.ETag)]
         public string ETag { get; private set; }
 
         /// <summary>
@@ -63,7 +63,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
         [JsonConverter(typeof(UnixDateTimeConverter))]
-        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.LastModified)]
         public DateTime? LastModified { get; private set; }
 
         /// <summary>
@@ -148,28 +148,28 @@ namespace Microsoft.Azure.Cosmos
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.SelfLink)]
         public string SelfLink { get; private set; }
 
         /// <summary>
         /// Gets the offer rid.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.RId)]
         internal string OfferRID { get; private set; }
 
         /// <summary>
         /// Gets the resource rid.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.OfferResourceId, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.OfferResourceId)]
         internal string ResourceRID { get; private set; }
 
-        [JsonProperty(PropertyName = "content", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonPropertyName("content")]
         internal OfferContentProperties Content { get; set; }
 
         /// <summary>
         /// Gets the version of this offer resource in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.OfferVersion, DefaultValueHandling = DefaultValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.OfferVersion)]
         internal string OfferVersion { get; private set; }
 
         /// <summary>
@@ -177,6 +177,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

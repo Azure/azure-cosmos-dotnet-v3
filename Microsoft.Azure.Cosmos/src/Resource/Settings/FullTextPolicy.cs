@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the full text policy configuration for specifying the full text paths on items in the container in the Azure Cosmos DB service.
@@ -19,13 +19,13 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class FullTextPolicy
     {
-        [JsonProperty(PropertyName = "fullTextPaths", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("fullTextPaths")]
         private Collection<FullTextPath> fullTextPathsInternal;
 
         /// <summary>
         /// Gets or sets a string containing the default language of the container.
         /// </summary>
-        [JsonProperty(PropertyName = "defaultLanguage", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("defaultLanguage")]
         public string DefaultLanguage { get; set; }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that the specified full text paths in the policy are valid.

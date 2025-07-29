@@ -7,9 +7,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Spatial index specification
@@ -73,6 +70,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

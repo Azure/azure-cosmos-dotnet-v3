@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents the change feed policy configuration for a container in the Azure Cosmos DB service.
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos
 #endif
     sealed class ChangeFeedPolicy
     {
-        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration)]
+        [JsonPropertyName(Constants.Properties.LogRetentionDuration)]
         private int retentionDurationInMinutes = 0;
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
     }
 }

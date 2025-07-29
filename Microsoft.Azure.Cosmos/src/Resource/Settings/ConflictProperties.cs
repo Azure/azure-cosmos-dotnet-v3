@@ -6,9 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a conflict in the Azure Cosmos DB service.
@@ -34,14 +33,14 @@ namespace Microsoft.Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.Id)]
+        [JsonPropertyName(Documents.Constants.Properties.Id)]
         public string Id { get; internal set; }
 
         /// <summary>
         /// Gets the operation that resulted in the conflict in the Azure Cosmos DB service.
         /// </summary>
-        [JsonConverter(typeof(StringEnumConverter))]
-        [JsonProperty(PropertyName = Documents.Constants.Properties.OperationType)]
+        [JsonConverter(typeof(JsonStringEnumConverter<OperationKind>))]
+        [JsonPropertyName(Documents.Constants.Properties.OperationType)]
         public OperationKind OperationKind { get; internal set; }
 
         /// <summary>
@@ -52,20 +51,20 @@ namespace Microsoft.Azure.Cosmos
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
-        [JsonProperty(PropertyName = Documents.Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Documents.Constants.Properties.SelfLink)]
         public string SelfLink { get; private set; }
 
         [JsonConverter(typeof(ConflictResourceTypeJsonConverter))]
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ResourceType)]
+        [JsonPropertyName(Documents.Constants.Properties.ResourceType)]
         internal Type ResourceType { get; set; }
 
-        [JsonProperty(PropertyName = Documents.Constants.Properties.SourceResourceId)]
+        [JsonPropertyName(Documents.Constants.Properties.SourceResourceId)]
         internal string SourceResourceId { get; set; }
 
-        [JsonProperty(PropertyName = Documents.Constants.Properties.Content)]
+        [JsonPropertyName(Documents.Constants.Properties.Content)]
         internal string Content { get; set; }
 
-        [JsonProperty(PropertyName = Documents.Constants.Properties.ConflictLSN)]
+        [JsonPropertyName(Documents.Constants.Properties.ConflictLSN)]
         internal long ConflictLSN { get; set; }
 
         /// <summary>
@@ -73,6 +72,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

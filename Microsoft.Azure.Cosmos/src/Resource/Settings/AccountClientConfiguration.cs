@@ -5,13 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal class AccountClientConfiguration
     {
-        [JsonProperty(PropertyName = Constants.Properties.ClientTelemetryConfiguration)]
+        [JsonPropertyName(Constants.Properties.ClientTelemetryConfiguration)]
         public ClientTelemetryConfiguration ClientTelemetryConfiguration { get; set; }
 
         /// <summary>
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         internal bool IsClientTelemetryEnabled()
         {

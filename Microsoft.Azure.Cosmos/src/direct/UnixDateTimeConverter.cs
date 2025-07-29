@@ -5,8 +5,8 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Globalization;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Converts a DateTime object to and from JSON.
@@ -14,63 +14,54 @@ namespace Microsoft.Azure.Documents
     /// that have elapsed since January 1, 1970 (midnight UTC/GMT), 
     /// not counting leap seconds (in ISO 8601: 1970-01-01T00:00:00Z).
     /// </summary>
-#if COSMOSCLIENT
+#if COSMOSCLIENT && !COSMOS_GW_AOT
     internal
 #else
     public
 #endif
-    sealed class UnixDateTimeConverter : DateTimeConverterBase
+    sealed class UnixDateTimeConverter : JsonConverter<DateTime?>
     {
         private static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
         /// <summary>
-        /// Writes the JSON representation of the DateTime object.
+        /// Reads the JSON representation of the DateTime object.
         /// </summary>
-        /// <param name="writer">The Newtonsoft.Json.JsonWriter to write to.</param>
-        /// <param name="value">The value.</param>
-        /// <param name="serializer">The calling serializer.</param>
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        /// <param name="reader"></param>
+        /// <param name="typeToConvert"></param>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        /// <exception cref="JsonException"></exception>
+        public override DateTime? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (value is DateTime)
+            if (reader.TokenType == JsonTokenType.Null)
             {
-                Int64 totalSeconds = (Int64) ((DateTime)value - UnixStartTime).TotalSeconds;
-                writer.WriteValue(totalSeconds);
+                return null;
             }
-            else
+
+            if (reader.TokenType != JsonTokenType.Number || !reader.TryGetInt64(out long seconds))
             {
-                throw new ArgumentException(RMResources.DateTimeConverterInvalidDateTime, "value");
+                throw new JsonException("Expected Unix timestamp in seconds.");
             }
+
+            return UnixStartTime.AddSeconds(seconds);
         }
 
         /// <summary>
-        /// Reads the JSON representation of the DateTime object.
+        /// Writes the JSON representation of the DateTime object.
         /// </summary>
-        /// <param name="reader">The Newtonsoft.Json.JsonReader to read from.</param>
-        /// <param name="objectType">Type of the object.</param>
-        /// <param name="existingValue">The existing value of object being read.</param>
-        /// <param name="serializer">The calling serializer.</param>
-        /// <returns>
-        /// The DateTime object value.
-        /// </returns>
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        /// <param name="writer"></param>
+        /// <param name="value"></param>
+        /// <param name="options"></param>
+        public override void Write(Utf8JsonWriter writer, DateTime? value, JsonSerializerOptions options)
         {
-            if (reader.TokenType != Newtonsoft.Json.JsonToken.Integer)
+            if (value == null)
             {
-                throw new Exception(RMResources.DateTimeConverterInvalidReaderValue);
+                writer.WriteNullValue();
+                return;
             }
 
-            double totalSeconds = 0;
-
-            try
-            {
-                totalSeconds = Convert.ToDouble(reader.Value, CultureInfo.InvariantCulture);
-            }
-            catch
-            {
-                throw new Exception(RMResources.DateTimeConveterInvalidReaderDoubleValue);
-            }
-
-            return UnixStartTime.AddSeconds(totalSeconds);
+            long seconds = (long)(value.Value.ToUniversalTime() - UnixStartTime).TotalSeconds;
+            writer.WriteNumberValue(seconds);
         }
     }
 }

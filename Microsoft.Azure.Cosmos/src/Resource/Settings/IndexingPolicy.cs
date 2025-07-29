@@ -7,10 +7,9 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents the indexing policy configuration for a collection in the Azure Cosmos DB service.
@@ -50,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// True, if automatic indexing is enabled; otherwise, false.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Automatic)]
+        [JsonPropertyName(Constants.Properties.Automatic)]
         public bool Automatic { get; set; }
 
         /// <summary>
@@ -59,8 +58,8 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// One of the values of the <see cref="T:Microsoft.Azure.Cosmos.IndexingMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.IndexingMode)]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName(Constants.Properties.IndexingMode)]
+        [JsonConverter(typeof(JsonStringEnumConverter<IndexingMode>))]
         public IndexingMode IndexingMode { get; set; }
 
         /// <summary>
@@ -69,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The collection containing <see cref="IncludedPath"/> objects.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.IncludedPaths)]
+        [JsonPropertyName(Constants.Properties.IncludedPaths)]
         public Collection<IncludedPath> IncludedPaths { get; internal set; } = new Collection<IncludedPath>();
 
         /// <summary>
@@ -78,7 +77,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// The collection containing <see cref="ExcludedPath"/> objects.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.ExcludedPaths)]
+        [JsonPropertyName(Constants.Properties.ExcludedPaths)]
         public Collection<ExcludedPath> ExcludedPaths { get; internal set; } = new Collection<ExcludedPath>();
 
         /// <summary>
@@ -108,13 +107,13 @@ namespace Microsoft.Azure.Cosmos
         ///   ]
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.CompositeIndexes)]
+        [JsonPropertyName(Constants.Properties.CompositeIndexes)]
         public Collection<Collection<CompositePath>> CompositeIndexes { get; internal set; } = new Collection<Collection<CompositePath>>();
 
         /// <summary>
         /// Collection of spatial index definitions to be used
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SpatialIndexes)]
+        [JsonPropertyName(Constants.Properties.SpatialIndexes)]
         public Collection<SpatialPath> SpatialIndexes { get; internal set; } = new Collection<SpatialPath>();
 
         /// <summary>
@@ -138,7 +137,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = "vectorIndexes", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("vectorIndexes")]
         public Collection<VectorIndexPath> VectorIndexes { get; set; } = new Collection<VectorIndexPath>();
 
         /// <summary>
@@ -159,7 +158,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = "fullTextIndexes", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("fullTextIndexes")]
 #if PREVIEW
 
         public
@@ -173,13 +172,13 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
 #if INTERNAL
         /// <summary>
         /// Indexing policy annotation.
         /// </summary>
-        [JsonProperty(PropertyName = "annotation", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("annotation", NullValueHandling = NullValueHandling.Ignore)]
         public string Annotation { get; set; }
 #endif
 

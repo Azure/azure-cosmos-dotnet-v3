@@ -4,8 +4,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents bounding box for geometry spatial path in the Azure Cosmos DB service
@@ -40,7 +40,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the x-coordinate of the lower-left corner of the bounding box.
         /// </summary>
-        [JsonProperty(PropertyName = "xmin")]
+        [JsonPropertyName("xmin")]
         public double Xmin
         {
             get; set;
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the y-coordinate of the lower-left corner of the bounding box.
         /// </summary>
-        [JsonProperty(PropertyName = "ymin")]
+        [JsonPropertyName("ymin")]
         public double Ymin
         {
             get; set;
@@ -58,7 +58,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the x-coordinate of the upper-right corner of the bounding box.
         /// </summary>
-        [JsonProperty(PropertyName = "xmax")]
+        [JsonPropertyName("xmax")]
         public double Xmax
         {
             get; set;
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the y-coordinate of the upper-right corner of the bounding box.
         /// </summary>
-        [JsonProperty(PropertyName = "ymax")]
+        [JsonPropertyName("ymax")]
         public double Ymax
         {
             get; set;
@@ -78,6 +78,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

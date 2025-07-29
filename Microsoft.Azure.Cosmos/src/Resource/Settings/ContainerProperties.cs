@@ -7,10 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents a document container in the Azure Cosmos DB service. A container is a named logical container for documents.
@@ -59,32 +59,32 @@ namespace Microsoft.Azure.Cosmos
     {
         private static readonly char[] partitionKeyTokenDelimeter = new char[] { '/' };
 
-        [JsonProperty(PropertyName = Constants.Properties.ChangeFeedPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.ChangeFeedPolicy)]
         private ChangeFeedPolicy changeFeedPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.IndexingPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.IndexingPolicy)]
         private IndexingPolicy indexingPolicyInternal;
 
         // TODO: update spatial properties to Constants.Properties.* after the new direct package is released
-        [JsonProperty(PropertyName = "geospatialConfig", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("geospatialConfig")]
         private GeospatialConfig geospatialConfigInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.UniqueKeyPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.UniqueKeyPolicy)]
         private UniqueKeyPolicy uniqueKeyPolicyInternal;
 
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.ConflictResolutionPolicy)]
         private ConflictResolutionPolicy conflictResolutionInternal;
 
-        [JsonProperty(PropertyName = "clientEncryptionPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("clientEncryptionPolicy")]
         private ClientEncryptionPolicy clientEncryptionPolicyInternal;
 
-        [JsonProperty(PropertyName = "vectorEmbeddingPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("vectorEmbeddingPolicy")]
         private VectorEmbeddingPolicy vectorEmbeddingPolicyInternal;
 
-        [JsonProperty(PropertyName = "computedProperties", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("computedProperties")]
         private Collection<ComputedProperty> computedProperties;
 
-        [JsonProperty(PropertyName = "fullTextPolicy", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("fullTextPolicy")]
         private FullTextPolicy fullTextPolicyInternal;
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         private IReadOnlyList<IReadOnlyList<string>> partitionKeyPathTokens;
         private string id;
@@ -191,7 +191,7 @@ namespace Microsoft.Azure.Cosmos
         ///  '/', '\\', '?', '#'
         /// </para>
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.Id)]
+        [JsonPropertyName(Constants.Properties.Id)]
         public string Id
         {
             get => this.id;
@@ -234,14 +234,14 @@ namespace Microsoft.Azure.Cosmos
         /// <remarks>
         /// ETags are used for concurrency checking when updating resources.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.ETag)]
         public string ETag { get; private set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
         /// </summary>
         /// <value>The last modified time stamp associated with the resource.</value>
-        [JsonProperty(PropertyName = Constants.Properties.LastModified, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.LastModified)]
         [JsonConverter(typeof(UnixDateTimeConverter))]
         public DateTime? LastModified { get; private set; }
 
@@ -502,7 +502,7 @@ namespace Microsoft.Azure.Cosmos
 #if !INTERNAL
         [Obsolete]
 #endif
-        [JsonProperty(PropertyName = Constants.Properties.TimeToLivePropertyPath, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.TimeToLivePropertyPath)]
         public string TimeToLivePropertyPath { get; set; }
 
         /// <summary>
@@ -562,7 +562,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.DefaultTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.DefaultTimeToLive)]
         public int? DefaultTimeToLive { get; set; }
 
         /// <summary>
@@ -621,7 +621,7 @@ namespace Microsoft.Azure.Cosmos
         /// ]]>
         /// </code>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.AnalyticalStorageTimeToLive, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.AnalyticalStorageTimeToLive)]
         public int? AnalyticalStoreTimeToLiveInSeconds { get; set; }
 
         /// <summary>
@@ -632,7 +632,7 @@ namespace Microsoft.Azure.Cosmos
         /// A self-link is a static addressable Uri for each resource within a database account and follows the Azure Cosmos DB resource model.
         /// E.g. a self-link for a document could be dbs/db_resourceid/colls/coll_resourceid/documents/doc_resourceid
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.SelfLink)]
         public string SelfLink { get; private set; }
 
         /// <summary>
@@ -692,7 +692,7 @@ namespace Microsoft.Azure.Cosmos
         /// <value>
         /// <see cref="PartitionKeyDefinition"/> object.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.PartitionKey, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.PartitionKey)]
         internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
@@ -706,7 +706,7 @@ namespace Microsoft.Azure.Cosmos
         /// resource whether that is a database, a container or a document.
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
-        [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.RId)]
 
         internal string ResourceId { get; private set; }
 

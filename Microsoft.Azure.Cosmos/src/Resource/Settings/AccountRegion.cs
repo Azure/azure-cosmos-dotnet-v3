@@ -4,9 +4,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// The AccountLocation class represents an Azure Cosmos DB database account in a specific region.
@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets the name of the database account location in the Azure Cosmos DB service. For example,
         /// "West US" as the name of the database account location in the West US region.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Name)]
+        [JsonPropertyName(Constants.Properties.Name)]
         public string Name { get; internal set; }
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos
         /// "https://contoso-WestUS.documents.azure.com:443/" as the URL of the 
         /// database account location in the West US region.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.DatabaseAccountEndpoint)]
+        [JsonPropertyName(Constants.Properties.DatabaseAccountEndpoint)]
         public string Endpoint { get; internal set; }
 
         /// <summary>
@@ -33,6 +33,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

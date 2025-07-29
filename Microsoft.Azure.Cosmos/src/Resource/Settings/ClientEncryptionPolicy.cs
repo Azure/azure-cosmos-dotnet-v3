@@ -8,8 +8,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// The <see cref="ClientEncryptionPolicy"/> should be initialized with
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Paths of the item that need encryption along with path-specific settings. 
         /// </summary>
-        [JsonProperty(PropertyName = "includedPaths")]
+        [JsonPropertyName("includedPaths")]
         public IEnumerable<ClientEncryptionIncludedPath> IncludedPaths
         {
             get; private set;
@@ -90,7 +90,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Version of the client encryption policy definition.
         /// </summary>
-        [JsonProperty(PropertyName = "policyFormatVersion")]
+        [JsonPropertyName("policyFormatVersion")]
         public int PolicyFormatVersion { get; private set; }
 
         /// <summary>
@@ -98,7 +98,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that partition key paths specified in the client encryption policy for encryption are encrypted using Deterministic encryption algorithm.

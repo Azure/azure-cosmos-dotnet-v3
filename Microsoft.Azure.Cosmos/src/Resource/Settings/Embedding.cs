@@ -6,10 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Represents the embedding settings for the vector index.
@@ -19,27 +18,27 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets a string containing the path of the vector index.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Path)]
+        [JsonPropertyName(Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.VectorDataType"/> representing the corresponding vector data type.
         /// </summary>
-        [JsonProperty(PropertyName = "dataType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("dataType")]
+        [JsonConverter(typeof(JsonStringEnumConverter<VectorDataType>))]
         public VectorDataType DataType { get; set; }
 
         /// <summary>
         /// Gets or sets an integer representing the dimensions of a vector.
         /// </summary>
-        [JsonProperty(PropertyName = "dimensions")]
+        [JsonPropertyName("dimensions")]
         public int Dimensions { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="Cosmos.DistanceFunction"/> which is used to calculate the respective distance between the vectors. 
         /// </summary>
-        [JsonProperty(PropertyName = "distanceFunction")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("distanceFunction")]
+        [JsonConverter(typeof(JsonStringEnumConverter<DistanceFunction>))]
         public DistanceFunction DistanceFunction { get; set; }
 
         /// <summary>
@@ -47,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that the paths specified in the vector embedding policy are valid.

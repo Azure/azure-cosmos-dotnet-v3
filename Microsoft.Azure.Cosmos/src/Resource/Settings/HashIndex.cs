@@ -5,9 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents details of the hash index setting in an Azure Cosmos DB service.
@@ -68,8 +67,8 @@ namespace Microsoft.Azure.Cosmos
         /// The data type for which this index should be applied.
         /// </value>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
-        [JsonProperty(PropertyName = Constants.Properties.DataType)]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName(Constants.Properties.DataType)]
+        [JsonConverter(typeof(JsonStringEnumConverter<DataType>))]
         public DataType DataType { get; set; }
 
         /// <summary>
@@ -79,8 +78,7 @@ namespace Microsoft.Azure.Cosmos
         /// The precision for this particular index. Returns null, if not set.
         /// </value>
         /// <seealso href="https://docs.microsoft.com/azure/cosmos-db/index-policy"/>
-        [JsonProperty(PropertyName = Constants.Properties.Precision,
-            NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.Precision)]
         public short? Precision { get; set; }
 
         /// <summary>

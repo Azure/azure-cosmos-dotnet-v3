@@ -4,10 +4,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// DOM for a vector index path. A vector index path is used in a vector index.
@@ -49,23 +48,23 @@ namespace Microsoft.Azure.Cosmos
     /// </example>
     public sealed class VectorIndexPath
     {
-        [JsonProperty(PropertyName = "indexingSearchListSize", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("indexingSearchListSize")]
         private int? indexingSearchListSizeInternal;
 
-        [JsonProperty(PropertyName = "quantizationByteSize", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("quantizationByteSize")]
         private int? quantizationByteSizeInternal;
 
         /// <summary>
         /// Gets or sets the full path in a document used for vector indexing.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Path)]
+        [JsonPropertyName(Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="VectorIndexType"/> for the vector index path.
         /// </summary>
-        [JsonProperty(PropertyName = "type")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [JsonPropertyName("type")]
+        [JsonConverter(typeof(JsonStringEnumConverter<VectorIndexType>))]
         public VectorIndexType Type { get; set; }
 
         /// <summary>
@@ -104,7 +103,7 @@ namespace Microsoft.Azure.Cosmos
         /// Gets or sets the vector index shard key for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
         /// The maximum length of the vector index shard key is 1.
         /// </summary>
-        [JsonProperty(PropertyName = "vectorIndexShardKey", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("vectorIndexShardKey")]
         internal string[] VectorIndexShardKey { get; set; }
 
         /// <summary>
@@ -112,6 +111,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
     }
 }

@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the vector embedding policy configuration for specifying the vector embeddings on documents in the collection in the Azure Cosmos DB service.
@@ -28,7 +28,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets a collection of <see cref="Embedding"/> that contains the vector embeddings of documents in collection in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = "vectorEmbeddings")]
+        [JsonPropertyName("vectorEmbeddings")]
         public readonly Collection<Embedding> Embeddings;
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <summary>
         /// Ensures that the specified vector embeddings in the policy are valid.
