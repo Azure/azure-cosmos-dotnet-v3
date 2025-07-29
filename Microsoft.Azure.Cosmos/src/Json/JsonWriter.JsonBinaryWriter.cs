@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Serialization.HybridRow;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
-    using UInt128 = Microsoft.Azure.Documents.UInt128;
+    using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     /// <summary>
     /// Partial class for the JsonWriter that has a private JsonTextWriter below.
