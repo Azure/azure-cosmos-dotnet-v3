@@ -15,6 +15,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Net.Security;
     using System.Security;
     using System.Text;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure.Core;
@@ -31,7 +32,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents.Collections;
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
     using ResourceType = Documents.ResourceType;
 
     /// <summary>
@@ -194,7 +194,7 @@ namespace Microsoft.Azure.Cosmos
         private Func<bool, Task<bool>> initializeTaskFactory;
         internal AsyncCacheNonBlocking<string, bool> initTaskCache;
 
-        private JsonSerializerSettings serializerSettings;
+        private JsonSerializerOptions serializerSettings;
         private event EventHandler<SendingRequestEventArgs> sendingRequest;
         private event EventHandler<ReceivedResponseEventArgs> receivedResponse;
         private Func<TransportClient, TransportClient> transportClientHandlerFactory;
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified Azure Cosmos DB service endpoint, key, connection policy and a custom JsonSerializerSettings
+        /// specified Azure Cosmos DB service endpoint, key, connection policy and a custom JsonSerializerOptions
         /// for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="serviceEndpoint">
@@ -279,13 +279,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="SecureString"/>
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
-        /// <seealso cref="JsonSerializerSettings"/>
-        [Obsolete("Please use the constructor that takes JsonSerializerSettings as the third parameter.")]
+        /// <seealso cref="JsonSerializerOptions"/>
+        [Obsolete("Please use the constructor that takes JsonSerializerOptions as the third parameter.")]
         public DocumentClient(Uri serviceEndpoint,
                               SecureString authKey,
                               ConnectionPolicy connectionPolicy,
                               Documents.ConsistencyLevel? desiredConsistencyLevel,
-                              JsonSerializerSettings serializerSettings)
+                              JsonSerializerOptions serializerSettings)
             : this(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
@@ -293,7 +293,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
-        /// specified Azure Cosmos DB service endpoint, key, connection policy and a custom JsonSerializerSettings
+        /// specified Azure Cosmos DB service endpoint, key, connection policy and a custom JsonSerializerOptions
         /// for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="serviceEndpoint">
@@ -321,12 +321,12 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="Uri"/>
         /// <seealso cref="SecureString"/>
-        /// <seealso cref="JsonSerializerSettings"/>
+        /// <seealso cref="JsonSerializerOptions"/>
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
         public DocumentClient(Uri serviceEndpoint,
                               SecureString authKey,
-                              JsonSerializerSettings serializerSettings,
+                              JsonSerializerOptions serializerSettings,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint, authKey, connectionPolicy, desiredConsistencyLevel)
@@ -397,7 +397,7 @@ namespace Microsoft.Azure.Cosmos
                       EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
                       ConnectionPolicy connectionPolicy = null,
                       Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-                      JsonSerializerSettings serializerSettings = null,
+                      JsonSerializerOptions serializerSettings = null,
                       ApiType apitype = ApiType.None,
                       EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
                       HttpMessageHandler handler = null,
@@ -460,7 +460,7 @@ namespace Microsoft.Azure.Cosmos
                               EventHandler<SendingRequestEventArgs> sendingRequestEventArgs,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null,
-                              JsonSerializerSettings serializerSettings = null,
+                              JsonSerializerOptions serializerSettings = null,
                               ApiType apitype = ApiType.None,
                               EventHandler<ReceivedResponseEventArgs> receivedResponseEventArgs = null,
                               HttpMessageHandler handler = null,
@@ -514,7 +514,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified service endpoint, an authorization key (or resource token), a connection policy
-        /// and a custom JsonSerializerSettings for the Azure Cosmos DB service.
+        /// and a custom JsonSerializerOptions for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
         /// <param name="authKeyOrResourceToken">The authorization key or resource token to use to create the client.</param>
@@ -532,13 +532,13 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso cref="Uri"/>
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
-        /// <seealso cref="JsonSerializerSettings"/>
-        [Obsolete("Please use the constructor that takes JsonSerializerSettings as the third parameter.")]
+        /// <seealso cref="JsonSerializerOptions"/>
+        [Obsolete("Please use the constructor that takes JsonSerializerOptions as the third parameter.")]
         public DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
                               ConnectionPolicy connectionPolicy,
                               Documents.ConsistencyLevel? desiredConsistencyLevel,
-                              JsonSerializerSettings serializerSettings)
+                              JsonSerializerOptions serializerSettings)
             : this(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
         {
             this.serializerSettings = serializerSettings;
@@ -547,7 +547,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Initializes a new instance of the <see cref="DocumentClient"/> class using the
         /// specified service endpoint, an authorization key (or resource token), a connection policy
-        /// and a custom JsonSerializerSettings for the Azure Cosmos DB service.
+        /// and a custom JsonSerializerOptions for the Azure Cosmos DB service.
         /// </summary>
         /// <param name="serviceEndpoint">The service endpoint to use to create the client.</param>
         /// <param name="authKeyOrResourceToken">The authorization key or resource token to use to create the client.</param>
@@ -563,12 +563,12 @@ namespace Microsoft.Azure.Cosmos
         /// </para>
         /// </remarks>
         /// <seealso cref="Uri"/>
-        /// <seealso cref="JsonSerializerSettings"/>
+        /// <seealso cref="JsonSerializerOptions"/>
         /// <seealso cref="ConnectionPolicy"/>
         /// <seealso cref="ConsistencyLevel"/>
         public DocumentClient(Uri serviceEndpoint,
                               string authKeyOrResourceToken,
-                              JsonSerializerSettings serializerSettings,
+                              JsonSerializerOptions serializerSettings,
                               ConnectionPolicy connectionPolicy = null,
                               Documents.ConsistencyLevel? desiredConsistencyLevel = null)
             : this(serviceEndpoint, authKeyOrResourceToken, (HttpMessageHandler)null, connectionPolicy, desiredConsistencyLevel)
@@ -5616,10 +5616,10 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException("storedProcedureLink");
             }
 
-            JsonSerializerSettings serializerSettings = this.GetSerializerSettingsForRequest(options);
+            JsonSerializerOptions serializerSettings = this.GetSerializerSettingsForRequest(options);
             string storedProcedureInput = serializerSettings == null ?
-                JsonConvert.SerializeObject(procedureParams) :
-                JsonConvert.SerializeObject(procedureParams, serializerSettings);
+                JsonSerializer.Serialize(procedureParams) :
+                JsonSerializer.Serialize(procedureParams, serializerSettings);
             using (MemoryStream storedProcedureInputStream = new MemoryStream())
             {
                 using (StreamWriter writer = new StreamWriter(storedProcedureInputStream))
@@ -6886,7 +6886,7 @@ namespace Microsoft.Azure.Cosmos
             request.Headers.Set(HttpConstants.HttpHeaders.PartitionKey, partitionKey.ToJsonString());
         }
 
-        private JsonSerializerSettings GetSerializerSettingsForRequest(Documents.Client.RequestOptions requestOptions)
+        private JsonSerializerOptions GetSerializerSettingsForRequest(Documents.Client.RequestOptions requestOptions)
         {
             return requestOptions?.JsonSerializerSettings ?? this.serializerSettings;
         }
