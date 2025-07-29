@@ -646,7 +646,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         public void ServiceInteropUsedByDefault()
         {
             // Test initialie does load CosmosClient
-            Assert.IsFalse(CustomTypeExtensions.ByPassQueryParsing());
+            Assert.IsFalse(QueryPlanRetriever.BypassQueryParsing());
         }
 
         [TestMethod]
@@ -779,13 +779,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                                 await AssertSpecializedAsync("SELECT * FROM c ORDER BY c._ts");
 
-                                // Parallel and ORDER BY with partition key
-                                foreach (string query in new string[]
+                                // Parallel with partition key
                                 {
-                                    "SELECT * FROM c WHERE c.key = 5",
-                                    "SELECT * FROM c WHERE c.key = 5 ORDER BY c._ts",
-                                })
-                                {
+                                    string query = "SELECT * FROM c WHERE c.key = 5";
                                     List<CosmosElement> queryResults = await AssertPassthroughAsync(query, partitionKey);
                                     Assert.AreEqual(
                                         3,

@@ -1,0 +1,83 @@
+# File: templates\static-tools-encryption.yml
+
+parameters:
+  BuildConfiguration: ''
+  VmImage: ''
+
+jobs:
+- job:
+  displayName: Static Analysis
+  pool:
+    name: 'OneES'
+
+  steps:
+  - checkout: self  # self represents the repo where the initial Pipelines YAML file was found
+    clean: true  # if true, execute `execute git clean -ffdx && git reset --hard HEAD` before fetching
+
+  - task: DotNetCoreCLI@2
+    displayName: Build Microsoft.Azure.Cosmos.Encryption
+    inputs: 
+      command: build
+      nugetConfigPath: NuGet.config
+      projects: Microsoft.Azure.Cosmos.Encryption/src/Microsoft.Azure.Cosmos.Encryption.csproj
+      arguments: '-p:Optimize=true --configuration Release'
+      versioningScheme: OFF
+
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-binskim.BinSkim@4
+    displayName: 'BinSkim'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+        AnalyzeTargetGlob:  $(Build.SourcesDirectory)\Microsoft.Azure.Cosmos.Encryption\src\bin\Release\netstandard2.0\Microsoft.Azure.Cosmos.Encryption.dll
+        AnalyzeRecurse:     true
+        AnalyzeVerbose:     true
+        AnalyzeHashes:      false
+        AnalyzeStatistics:  false
+        AnalyzeEnvironment: false
+
+  # Analyze source and build output text files for credentials
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
+    displayName: 'CredScan'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+      toolMajorVersion: V2
+      scanFolder: $(Build.SourcesDirectory)
+      suppressionsFile: CredScanSuppressions.json
+      debugMode: false
+      verboseOutput: false
+
+  # Scan text elements including code, code comments, and content/web pages, for sensitive terms based on legal, cultural, or geopolitical reasons
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-policheck.PoliCheck@2
+    displayName: 'PoliCheck'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+      targetType: F
+      optionsFC: 0
+
+  # AntiMalware scan
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@4
+    displayName: 'AntiMalware'
+    continueOnError: true # signature refresh failing resulting in tasks failures
+    inputs:
+      EnableServices: true
+
+  - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
+    displayName: 'Component Governance Detection' #https://docs.opensource.microsoft.com/tools/cg.html
+    inputs:
+      alertWarningLevel: Medium
+      failOnAlert: true
+
+  # Publish Analysis Results (position after all tools ran)
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
+    displayName: 'Publish Security Analysis Logs'
+
+  # The Post-Analysis build task will analyze the log files produced by the tools, and introduce a build break
+  - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
+    displayName: 'Post Analysis'
+    condition: eq(1,2) #disablng as nuget repo failing
+    inputs:
+      GdnBreakFast: true
+      GdnBreakAllTools: false
+      GdnBreakGdnToolCredScan: true
+      GdnBreakGdnToolBinSkim: true
+      GdnBreakGdnToolPoliCheck: true
+      GdnBreakGdnToolPoliCheckSeverity: Error

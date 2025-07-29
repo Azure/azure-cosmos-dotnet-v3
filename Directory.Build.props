@@ -1,14 +1,14 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 	<PropertyGroup>
-		<ClientOfficialVersion>3.47.1</ClientOfficialVersion>
-		<ClientPreviewVersion>3.48.0</ClientPreviewVersion>
+		<ClientOfficialVersion>3.52.1</ClientOfficialVersion>
+		<ClientPreviewVersion>3.53.0</ClientPreviewVersion>
 		<ClientPreviewSuffixVersion>preview.1</ClientPreviewSuffixVersion>
-		<DirectVersion>3.37.10</DirectVersion>
+		<DirectVersion>3.39.1</DirectVersion>
 		<FaultInjectionVersion>1.0.0</FaultInjectionVersion>
 		<FaultInjectionSuffixVersion>beta.0</FaultInjectionSuffixVersion>
-		<EncryptionOfficialVersion>2.0.4</EncryptionOfficialVersion>
+		<EncryptionOfficialVersion>2.0.5</EncryptionOfficialVersion>
 		<EncryptionPreviewVersion>2.1.0</EncryptionPreviewVersion>
-		<EncryptionPreviewSuffixVersion>preview4</EncryptionPreviewSuffixVersion>
+		<EncryptionPreviewSuffixVersion>preview5</EncryptionPreviewSuffixVersion>
 		<CustomEncryptionVersion>1.0.0-preview08</CustomEncryptionVersion>
 		<HybridRowVersion>1.1.0-preview3</HybridRowVersion>
 		<LangVersion>10.0</LangVersion>

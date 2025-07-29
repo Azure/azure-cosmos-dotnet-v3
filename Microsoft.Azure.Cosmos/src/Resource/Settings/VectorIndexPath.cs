@@ -70,7 +70,9 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the quantization byte size for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
-        /// The allowed range for this parameter is between 1 and the minimum of vector dimensions and 512.
+        /// The allowed range for this parameter is between 1 and min(dimensions, 512). 
+        /// e.g. if dimensions is 256, then allowed range for QuantizationByteSize is between 1 and 256 if dimensions is 1024, 
+        /// then allowed range for QuantizationByteSize is between 1 and 512
         /// </summary>
         [JsonIgnore]
 #if PREVIEW
@@ -102,10 +104,14 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Gets or sets the vector index shard key for the vector index path. This is only applicable for the quantizedFlat and diskann vector index types.
-        /// The maximum length of the vector index shard key is 1.
         /// </summary>
         [JsonProperty(PropertyName = "vectorIndexShardKey", NullValueHandling = NullValueHandling.Ignore)]
-        internal string[] VectorIndexShardKey { get; set; }
+#if PREVIEW
+        public
+#else
+        internal
+#endif
+        string[] VectorIndexShardKey { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
