@@ -4,7 +4,6 @@
 namespace Microsoft.Azure.Cosmos.Json.Interop
 {
     using System;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Wrapper class that implements a Newtonsoft JsonReader,

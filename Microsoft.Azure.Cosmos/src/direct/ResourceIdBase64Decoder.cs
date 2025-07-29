@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Documents
     /// Do not modify this file. Take any changes necessary outside of this code that will be eventually replaced with the runtime implementation.
     /// </summary>
 #if NETSTANDARD2_1 || NETCOREAPP
-#error Switch to https://docs.microsoft.com/en-us/dotnet/api/system.convert.tryfrombase64string?view=net-6.0
+////#error Switch to https://docs.microsoft.com/en-us/dotnet/api/system.convert.tryfrombase64string?view=net-6.0
 #endif
     internal static class ResourceIdBase64Decoder
     {

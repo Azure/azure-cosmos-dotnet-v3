@@ -12,6 +12,6 @@ namespace Microsoft.Azure.Documents
     internal sealed class FeedResource_PartitionKeyRange : PlainResource
     {
         [JsonInclude]
-        internal Collection<PartitionKeyRange> PartitionKeyRanges { get; set; }
+        public Collection<PartitionKeyRange> PartitionKeyRanges { get; set; }
     }
 }

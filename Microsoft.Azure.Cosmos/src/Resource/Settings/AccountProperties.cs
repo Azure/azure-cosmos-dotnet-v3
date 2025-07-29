@@ -100,11 +100,14 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [JsonPropertyName(Constants.Properties.RId)]
         [JsonInclude]
-        internal string ResourceId { get; set; }
+        public string ResourceId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the collection of writable account regions.
+        /// </summary>
         [JsonPropertyName(Constants.Properties.WritableLocations)]
         [JsonInclude]
-        internal Collection<AccountRegion> WriteLocationsInternal
+        public Collection<AccountRegion> WriteLocationsInternal
         {
             get
             {
@@ -117,9 +120,12 @@ namespace Microsoft.Azure.Cosmos
             set => this.writeRegions = value;
         }
 
+        /// <summary>
+        /// Gets or sets the collection of readable account regions.
+        /// </summary>
         [JsonPropertyName(Constants.Properties.ReadableLocations)]
         [JsonInclude]
-        internal Collection<AccountRegion> ReadLocationsInternal
+        public Collection<AccountRegion> ReadLocationsInternal
         {
             get
             {
@@ -211,35 +217,41 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         [JsonPropertyName(Constants.Properties.AddressesLink)]
         [JsonInclude]
-        internal string AddressesLink { get; set; }
+        public string AddressesLink { get; set; }
 
         /// <summary>
         /// Gets the ReplicationPolicy properties
         /// </summary>
-        [JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
-        [JsonInclude]
+        //[JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
+        //[JsonInclude]
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy 
         /// </summary>
-        [JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
-        [JsonInclude]
+        //[JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
+        //[JsonInclude]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }
 
-        [JsonPropertyName(Constants.Properties.ReadPolicy)]
-        [JsonInclude]
+        //[JsonPropertyName(Constants.Properties.ReadPolicy)]
+        //[JsonInclude]
         internal ReadPolicy ReadPolicy { get; set; }
 
         internal IDictionary<string, object> QueryEngineConfiguration => this.QueryEngineConfigurationInternal.Value;
 
+        /// <summary>
+        /// QueryEngineConfigurationString
+        /// </summary>
         [JsonPropertyName(Constants.Properties.QueryEngineConfiguration)]
         [JsonInclude]
-        internal string QueryEngineConfigurationString { get; set; }
+        public string QueryEngineConfigurationString { get; set; }
 
+        /// <summary>
+        /// EnableMultipleWriteLocations
+        /// </summary>
         [JsonPropertyName(Constants.Properties.EnableMultipleWriteLocations)]
         [JsonInclude]
-        internal bool EnableMultipleWriteLocations { get; set; }
+        public bool EnableMultipleWriteLocations { get; set; }
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {

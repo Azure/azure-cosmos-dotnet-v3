@@ -12,6 +12,6 @@ namespace Microsoft.Azure.Documents
     internal sealed class FeedResource_Address : PlainResource
     {
         [JsonInclude]
-        internal Collection<Address> Addresss { get; set; }
+        public Collection<Address> Addresss { get; set; }
     }
 }

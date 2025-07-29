@@ -125,10 +125,6 @@ namespace Microsoft.Azure.Cosmos
             this.contentStream.EndWrite(asyncResult);
         }
 
-        public override object InitializeLifetimeService()
-        {
-            return this.contentStream.InitializeLifetimeService();
-        }
 #endif
 
 #if !(NETSTANDARD16 || NETSTANDARD20)
