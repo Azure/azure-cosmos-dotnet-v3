@@ -19,6 +19,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Collections;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     // Marking it as non-sealed in order to unit test it using Moq framework
@@ -31,6 +32,8 @@ namespace Microsoft.Azure.Cosmos
         internal readonly GlobalEndpointManager endpointManager;
         private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
+
+        private readonly IChaosInterceptor chaosInterceptor;
 
         private GatewayStoreClient gatewayStoreClient;
 
@@ -47,7 +50,8 @@ namespace Microsoft.Azure.Cosmos
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
             GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            bool isPartitionLevelFailoverEnabled = false)
+            bool isPartitionLevelFailoverEnabled = false,
+            IChaosInterceptor chaosInterceptor = null)
         {
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
@@ -63,6 +67,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
+            this.chaosInterceptor = chaosInterceptor;
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)

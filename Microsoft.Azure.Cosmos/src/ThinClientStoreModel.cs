@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Documents;
+    using Microsoft.Azure.Documents.FaultInjection;
     using Newtonsoft.Json;
 
     /// <summary>
@@ -31,8 +32,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
-            UserAgentContainer userAgentContainer,
-            bool isPartitionLevelFailoverEnabled = false)
+            bool isPartitionLevelFailoverEnabled = false,
+            IChaosInterceptor chaosInterceptor = null)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
@@ -44,10 +45,11 @@ namespace Microsoft.Azure.Cosmos
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
-                userAgentContainer,
                 eventSource,
+                serializerSettings,
                 isPartitionLevelFailoverEnabled,
-                serializerSettings);
+                serializerSettings
+                chaosInterceptor);
 
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;

@@ -58,7 +58,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: null,
-                userAgentContainer: userAgentContainer);
+                userAgentContainer: userAgentContainer,
+                chaosInterceptor: null);
 
             PartitionKeyRangeCache pkRangeCache =
                 (PartitionKeyRangeCache)FormatterServices.GetUninitializedObject(typeof(PartitionKeyRangeCache));
@@ -128,7 +129,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: null,
-                userAgentContainer: userAgentContainer);
+                 userAgentContainer: userAgentContainer,
+                chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -211,7 +213,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: mockCosmosHttpClient.Object,
-                userAgentContainer: userAgentContainer);
+                 userAgentContainer: userAgentContainer,
+                chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -303,7 +306,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource: new DocumentClientEventSource(),
                 serializerSettings: null,
                 httpClient: null,
-                userAgentContainer: userAgentContainer);
+                 userAgentContainer: userAgentContainer,
+                chaosInterceptor: null);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
                 this.sessionContainer,
@@ -455,8 +459,10 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                userAgentContainer,
-                isPartitionLevelFailoverEnabled: true);
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer: userAgentContainer,
+                isPartitionLevelFailoverEnabled: true,
+                chaosInterceptor: null);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
