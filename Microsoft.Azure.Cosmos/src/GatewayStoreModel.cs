@@ -32,6 +32,10 @@ namespace Microsoft.Azure.Cosmos
         private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
+        private readonly bool enableThinClientMode;
+        private readonly UserAgentContainer userAgentContainer;
+        private readonly ThinClientStoreClient thinClientStoreClient;
+
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
@@ -40,14 +44,16 @@ namespace Microsoft.Azure.Cosmos
         protected ISessionContainer sessionContainer;
 
         public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            bool isPartitionLevelFailoverEnabled = false)
+             GlobalEndpointManager endpointManager,
+             ISessionContainer sessionContainer,
+             ConsistencyLevel defaultConsistencyLevel,
+             DocumentClientEventSource eventSource,
+             JsonSerializerSettings serializerSettings,
+             CosmosHttpClient httpClient,
+             GlobalPartitionEndpointManager globalPartitionEndpointManager,
+             bool isPartitionLevelFailoverEnabled = false,
+             bool enableThinClientMode = false,
+             UserAgentContainer userAgentContainer = null)
         {
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
@@ -60,6 +66,19 @@ namespace Microsoft.Azure.Cosmos
                 this.eventSource,
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
+
+            this.enableThinClientMode = enableThinClientMode;
+            this.userAgentContainer = userAgentContainer;
+
+            if (enableThinClientMode && userAgentContainer != null)
+            {
+                this.thinClientStoreClient = new ThinClientStoreClient(
+                    httpClient,
+                    userAgentContainer,
+                    this.eventSource,
+                    isPartitionLevelFailoverEnabled,
+                    serializerSettings);
+            }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
@@ -75,39 +94,73 @@ namespace Microsoft.Azure.Cosmos
                 this.clientCollectionCache,
                 this.endpointManager);
 
+            if (request.ResourceType.Equals(ResourceType.Document) &&
+                this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
+            {
+                request.RequestContext.RegionName = regionName;
+            }
+
+            // This is applicable for both per partition automatic failover and per partition circuit breaker.
+            if (this.isPartitionLevelFailoverEnabled
+                && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                && request.ResourceType.IsPartitioned())
+            {
+                (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                    request: request,
+                    sessionContainer: this.sessionContainer,
+                    partitionKeyRangeCache: this.partitionKeyRangeCache,
+                    clientCollectionCache: this.clientCollectionCache,
+                    refreshCache: false);
+
+                request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+            }
+
+            Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
+            bool canUseThinClient =
+                this.thinClientStoreClient != null &&
+                GatewayStoreModel.IsOperationSupportedByThinClient(request) &&
+                thinClientEndpoint != null;
+
             DocumentServiceResponse response;
+
             try
             {
-                // Collect region name only for document resources
-                if (request.ResourceType.Equals(ResourceType.Document) && this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
+                if (canUseThinClient)
                 {
-                    request.RequestContext.RegionName = regionName;
-                }
+                    Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                        ? this.GetFeedUri(request)
+                        : this.GetEntityUri(request);
 
-                // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.isPartitionLevelFailoverEnabled
-                    && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
-                    && request.ResourceType.IsPartitioned())
+                    AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
+
+                    response = await this.thinClientStoreClient.InvokeAsync(
+                        request,
+                        request.ResourceType,
+                        physicalAddress,
+                        thinClientEndpoint,
+                        account.Id,
+                        this.clientCollectionCache,
+                        cancellationToken);
+                }
+                else
                 {
-                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
-                        request: request,
-                        sessionContainer: this.sessionContainer,
-                        partitionKeyRangeCache: this.partitionKeyRangeCache,
-                        clientCollectionCache: this.clientCollectionCache,
-                        refreshCache: false);
+                    Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType)
+                        ? this.GetFeedUri(request)
+                        : this.GetEntityUri(request);
 
-                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                    response = await this.gatewayStoreClient.InvokeAsync(
+                        request,
+                        request.ResourceType,
+                        physicalAddress,
+                        cancellationToken);
                 }
-
-                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
-                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
             }
             catch (DocumentClientException exception)
             {
                 if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
-                    || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
                     await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
@@ -494,6 +547,29 @@ namespace Microsoft.Azure.Cosmos
                    operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
+        internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
+        {
+            return request.ResourceType == ResourceType.Document
+                   && (request.OperationType == OperationType.Batch
+                   || request.OperationType == OperationType.Patch
+                   || request.OperationType == OperationType.Create
+                   || request.OperationType == OperationType.Read
+                   || request.OperationType == OperationType.Upsert
+                   || request.OperationType == OperationType.Replace
+                   || request.OperationType == OperationType.Delete
+                   || request.OperationType == OperationType.Query);
+        }
+        private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
+        {
+            AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
+            if (accountProperties != null)
+            {
+                return accountProperties;
+            }
+
+            throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -511,6 +587,19 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     this.gatewayStoreClient = null;
+                }
+
+                if (this.thinClientStoreClient != null)
+                {
+                    try
+                    {
+                        this.thinClientStoreClient.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                            exception.Message);
+                    }
                 }
             }
         }
