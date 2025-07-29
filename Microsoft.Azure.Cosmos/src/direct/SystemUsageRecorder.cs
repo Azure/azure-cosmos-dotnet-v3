@@ -15,9 +15,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Documents.Rntbd.SystemUsageMonitor;
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
 
     internal sealed class SystemUsageRecorder
     {

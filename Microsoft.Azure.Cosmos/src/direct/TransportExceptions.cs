@@ -6,9 +6,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System;
     using System.Diagnostics;
     using System.Globalization;
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
 
     internal static class TransportExceptions
     {

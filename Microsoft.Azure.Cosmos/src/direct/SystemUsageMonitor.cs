@@ -14,9 +14,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using static Microsoft.Azure.Documents.Rntbd.SystemUsageMonitor;
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
     internal sealed class SystemUsageMonitor : IDisposable
     {
         private readonly SystemUtilizationReaderBase systemUtilizationReader = SystemUtilizationReaderBase.SingletonInstance;
@@ -89,7 +86,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 () => this.RefreshLoopAsync(this.cancellation.Token),
                 this.cancellation.Token);
 
-            this.periodicTask.ContinueWith(
+            Task ignored0 = this.periodicTask.ContinueWith(
                 t =>
                 {
                     DefaultTrace.TraceError(
@@ -98,7 +95,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 },
                 TaskContinuationOptions.OnlyOnFaulted);
 
-            this.periodicTask.ContinueWith(
+            Task ignored1 = this.periodicTask.ContinueWith(
                 t =>
                 {
                     DefaultTrace.TraceWarning(
@@ -113,6 +110,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// <summary>
         /// Stop the Monitoring
         /// </summary>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Stop method cannot be async")]
         public void Stop()
         {
             this.ThrowIfDisposed();
@@ -213,11 +211,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     }
                 }
 
-                #if NETSTANDARD15 || NETSTANDARD16
-                        Task.Delay(this.pollDelayInMilliSeconds).Wait();
-                #else
-                        Thread.Sleep(this.pollDelayInMilliSeconds);
-                #endif
+                Thread.Sleep(this.pollDelayInMilliSeconds);
 
             }
         }

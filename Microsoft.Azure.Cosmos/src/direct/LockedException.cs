@@ -63,13 +63,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private LockedException(SerializationInfo info, StreamingContext context)
             : base(info, context, (HttpStatusCode)StatusCodes.Locked)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

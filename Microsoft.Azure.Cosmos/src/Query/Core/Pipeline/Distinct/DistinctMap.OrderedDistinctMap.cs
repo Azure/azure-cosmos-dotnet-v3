@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// Partial wrapper
     /// </summary>
@@ -31,13 +33,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <summary>
             /// The hash of the last item that was added to this distinct map.
             /// </summary>
-            private UInt128 lastHash;
+            private CosmosUInt128 lastHash;
 
             /// <summary>
             /// Initializes a new instance of the OrderedDistinctMap class.
             /// </summary>
             /// <param name="lastHash">The previous hash from the previous continuation.</param>
-            private OrderedDistinctMap(UInt128 lastHash)
+            private OrderedDistinctMap(CosmosUInt128 lastHash)
             {
                 this.lastHash = lastHash;
             }
@@ -49,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <param name="hash">The hash of the token.</param>
             /// <returns>Whether or not the item was added to this Distinct Map.</returns>
             /// <remarks>This function assumes data is added in sorted order.</remarks>
-            public override bool Add(CosmosElement cosmosElement, out UInt128 hash)
+            public override bool Add(CosmosElement cosmosElement, out CosmosUInt128 hash)
             {
                 hash = DistinctHash.GetHash(cosmosElement);
 
@@ -74,18 +76,18 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 
             public override CosmosElement GetCosmosElementContinuationToken()
             {
-                return CosmosBinary.Create(UInt128.ToByteArray(this.lastHash));
+                return CosmosBinary.Create(CosmosUInt128.ToByteArray(this.lastHash));
             }
 
             public static TryCatch<DistinctMap> TryCreate(CosmosElement requestContinuationToken)
             {
-                UInt128 lastHash;
+                CosmosUInt128 lastHash;
                 if (requestContinuationToken != null)
                 {
                     switch (requestContinuationToken)
                     {
                         case CosmosString cosmosString:
-                            if (!UInt128.TryParse(cosmosString.Value, out lastHash))
+                            if (!CosmosUInt128.TryParse(cosmosString.Value, out lastHash))
                             {
                                 return TryCatch<DistinctMap>.FromException(
                                     new MalformedContinuationTokenException(
@@ -94,7 +96,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                             break;
 
                         case CosmosBinary cosmosBinary:
-                            if (!UInt128.TryCreateFromByteArray(cosmosBinary.Value.Span, out lastHash))
+                            if (!CosmosUInt128.TryCreateFromByteArray(cosmosBinary.Value.Span, out lastHash))
                             {
                                 return TryCatch<DistinctMap>.FromException(
                                     new MalformedContinuationTokenException(

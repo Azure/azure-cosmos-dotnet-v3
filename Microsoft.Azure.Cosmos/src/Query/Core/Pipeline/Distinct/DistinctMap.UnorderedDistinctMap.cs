@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// Partial wrapper
     /// </summary>
@@ -125,37 +127,37 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// HashSet for all strings of length less than or equal to 16 stored as a UInt128.
             /// This takes less space than a 24 byte hash and has full fidelity.
             /// </summary>
-            private readonly HashSet<UInt128> stringsLength16;
+            private readonly HashSet<CosmosUInt128> stringsLength16;
 
             /// <summary>
             /// HashSet for all strings seen of length greater than 24 stored as a UInt192.
             /// This set only stores the hash, since we don't want to spend the space for storing large strings.
             /// </summary>
-            private readonly HashSet<UInt128> stringsLength16Plus;
+            private readonly HashSet<CosmosUInt128> stringsLength16Plus;
 
             /// <summary>
             /// HashSet for all arrays seen.
             /// This set only stores the hash, since we don't want to spend the space for storing large arrays.
             /// </summary>
-            private readonly HashSet<UInt128> arrays;
+            private readonly HashSet<CosmosUInt128> arrays;
 
             /// <summary>
             /// HashSet for all object seen.
             /// This set only stores the hash, since we don't want to spend the space for storing large objects.
             /// </summary>
-            private readonly HashSet<UInt128> objects;
+            private readonly HashSet<CosmosUInt128> objects;
 
             /// <summary>
             /// HashSet for all CosmosGuids seen.
             /// This set only stores the hash, since we don't want to spend the space for storing large CosmosGuids.
             /// </summary>
-            private readonly HashSet<UInt128> guids;
+            private readonly HashSet<CosmosUInt128> guids;
 
             /// <summary>
             /// HashSet for all CosmosBinarys seen.
             /// This set only stores the hash, since we don't want to spend the space for storing large CosmosBinary objects.
             /// </summary>
-            private readonly HashSet<UInt128> blobs;
+            private readonly HashSet<CosmosUInt128> blobs;
 
             /// <summary>
             /// Used to dispatch Add calls.
@@ -171,12 +173,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 HashSet<Number64> numbers,
                 HashSet<uint> stringsLength4,
                 HashSet<ulong> stringsLength8,
-                HashSet<UInt128> stringsLength16,
-                HashSet<UInt128> stringsLength16Plus,
-                HashSet<UInt128> arrays,
-                HashSet<UInt128> objects,
-                HashSet<UInt128> guids,
-                HashSet<UInt128> blobs,
+                HashSet<CosmosUInt128> stringsLength16,
+                HashSet<CosmosUInt128> stringsLength16Plus,
+                HashSet<CosmosUInt128> arrays,
+                HashSet<CosmosUInt128> objects,
+                HashSet<CosmosUInt128> guids,
+                HashSet<CosmosUInt128> blobs,
                 SimpleValues simpleValues)
             {
                 this.numbers = numbers ?? throw new ArgumentNullException(nameof(numbers));
@@ -198,7 +200,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <param name="cosmosElement">The element to add.</param>
             /// <param name="hash">The hash of the token.</param>
             /// <returns>Whether or not the item was added to this Distinct Map.</returns>
-            public override bool Add(CosmosElement cosmosElement, out UInt128 hash)
+            public override bool Add(CosmosElement cosmosElement, out CosmosUInt128 hash)
             {
                 // Unordered distinct does not need to return a valid hash.
                 // Since it doesn't need the last hash for a continuation.
@@ -229,27 +231,27 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.StringsLength16,
-                        CosmosArray.Create(this.stringsLength16.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                        CosmosArray.Create(this.stringsLength16.Select(x => CosmosBinary.Create(CosmosUInt128.ToByteArray(x))))
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.StringsLength16Plus,
-                        CosmosArray.Create(this.stringsLength16Plus.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                        CosmosArray.Create(this.stringsLength16Plus.Select(x => CosmosBinary.Create(CosmosUInt128.ToByteArray(x))))
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.Arrays,
-                        CosmosArray.Create(this.arrays.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                        CosmosArray.Create(this.arrays.Select(x => CosmosBinary.Create(CosmosUInt128.ToByteArray(x))))
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.Object,
-                        CosmosArray.Create(this.objects.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                        CosmosArray.Create(this.objects.Select(x => CosmosBinary.Create(CosmosUInt128.ToByteArray(x))))
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.Guids,
-                        CosmosArray.Create(this.guids.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                        CosmosArray.Create(this.guids.Select(x => CosmosBinary.Create(CosmosUInt128.ToByteArray(x))))
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.Blobs,
-                        CosmosArray.Create(this.blobs.Select(x => CosmosBinary.Create(UInt128.ToByteArray(x))))
+                        CosmosArray.Create(this.blobs.Select(x => CosmosBinary.Create(CosmosUInt128.ToByteArray(x))))
                     },
                     {
                         UnorderedDistinctMap.PropertyNames.SimpleValues,
@@ -317,14 +319,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     }
                     else
                     {
-                        UInt128 uInt128Value = UInt128.FromByteArray(utf8Buffer);
+                        CosmosUInt128 uInt128Value = CosmosUInt128.FromByteArray(utf8Buffer);
                         added = this.stringsLength16.Add(uInt128Value);
                     }
                 }
                 else
                 {
                     // Else the string is too large and we will just store the hash.
-                    UInt128 uint128Value = DistinctHash.GetHash(CosmosString.Create(value));
+                    CosmosUInt128 uint128Value = DistinctHash.GetHash(CosmosString.Create(value));
                     added = this.stringsLength16Plus.Add(uint128Value);
                 }
 
@@ -338,7 +340,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddArrayValue(CosmosArray array)
             {
-                UInt128 hash = DistinctHash.GetHash(array);
+                CosmosUInt128 hash = DistinctHash.GetHash(array);
                 return this.arrays.Add(hash);
             }
 
@@ -349,7 +351,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddObjectValue(CosmosObject cosmosObject)
             {
-                UInt128 hash = DistinctHash.GetHash(cosmosObject);
+                CosmosUInt128 hash = DistinctHash.GetHash(cosmosObject);
                 return this.objects.Add(hash);
             }
 
@@ -360,7 +362,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddGuidValue(CosmosGuid guid)
             {
-                UInt128 hash = DistinctHash.GetHash(guid);
+                CosmosUInt128 hash = DistinctHash.GetHash(guid);
                 return this.guids.Add(hash);
             }
 
@@ -371,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <returns>Whether or not the value was successfully added.</returns>
             private bool AddBinaryValue(CosmosBinary binary)
             {
-                UInt128 hash = DistinctHash.GetHash(binary);
+                CosmosUInt128 hash = DistinctHash.GetHash(binary);
                 return this.blobs.Add(hash);
             }
 
@@ -380,12 +382,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                 HashSet<Number64> numbers = new HashSet<Number64>();
                 HashSet<uint> stringsLength4 = new HashSet<uint>();
                 HashSet<ulong> stringsLength8 = new HashSet<ulong>();
-                HashSet<UInt128> stringsLength16 = new HashSet<UInt128>();
-                HashSet<UInt128> stringsLength16Plus = new HashSet<UInt128>();
-                HashSet<UInt128> arrays = new HashSet<UInt128>();
-                HashSet<UInt128> objects = new HashSet<UInt128>();
-                HashSet<UInt128> guids = new HashSet<UInt128>();
-                HashSet<UInt128> blobs = new HashSet<UInt128>();
+                HashSet<CosmosUInt128> stringsLength16 = new HashSet<CosmosUInt128>();
+                HashSet<CosmosUInt128> stringsLength16Plus = new HashSet<CosmosUInt128>();
+                HashSet<CosmosUInt128> arrays = new HashSet<CosmosUInt128>();
+                HashSet<CosmosUInt128> objects = new HashSet<CosmosUInt128>();
+                HashSet<CosmosUInt128> guids = new HashSet<CosmosUInt128>();
+                HashSet<CosmosUInt128> blobs = new HashSet<CosmosUInt128>();
                 SimpleValues simpleValues = SimpleValues.None;
 
                 if (continuationToken != null)
@@ -499,9 +501,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                     simpleValues));
             }
 
-            private static HashSet<UInt128> Parse128BitHashes(CosmosObject hashDictionary, string propertyName)
+            private static HashSet<CosmosUInt128> Parse128BitHashes(CosmosObject hashDictionary, string propertyName)
             {
-                HashSet<UInt128> hashSet = new HashSet<UInt128>();
+                HashSet<CosmosUInt128> hashSet = new HashSet<CosmosUInt128>();
                 if (!hashDictionary.TryGetValue(propertyName, out CosmosArray array))
                 {
                     throw new MalformedContinuationTokenException(
@@ -516,7 +518,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
                             $"{nameof(UnorderedDistinctMap)} continuation token was malformed.");
                     }
 
-                    UInt128 uint128 = UInt128.FromByteArray(binary.Value.Span);
+                    CosmosUInt128 uint128 = CosmosUInt128.FromByteArray(binary.Value.Span);
                     hashSet.Add(uint128);
                 }
 

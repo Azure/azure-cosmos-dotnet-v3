@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Text;
     using Microsoft.Azure.Documents.Routing;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// There are many kinds of documents partitioning schemes (Range, Hash, Range+Hash, Hash+Hash etc.)
     /// All these partitioning schemes are abstracted by effective partition key.
@@ -35,17 +37,17 @@ namespace Microsoft.Azure.Cosmos.Routing
     /// </example>
     internal readonly struct PartitionKeyHash : IComparable<PartitionKeyHash>, IEquatable<PartitionKeyHash>
     {
-        private readonly IReadOnlyList<UInt128> values;
+        private readonly IReadOnlyList<CosmosUInt128> values;
 
-        public PartitionKeyHash(UInt128 value)
-            : this(new UInt128[] { value })
+        public PartitionKeyHash(CosmosUInt128 value)
+            : this(new CosmosUInt128[] { value })
         {
         }
 
-        public PartitionKeyHash(UInt128[] values)
+        public PartitionKeyHash(CosmosUInt128[] values)
         {
             StringBuilder stringBuilder = new StringBuilder();
-            foreach (UInt128 value in values)
+            foreach (CosmosUInt128 value in values)
             {
                 if (stringBuilder.Length > 0)
                 {
@@ -62,7 +64,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public string Value { get; }
 
-        internal readonly IReadOnlyList<UInt128> HashValues => this.values;
+        internal readonly IReadOnlyList<CosmosUInt128> HashValues => this.values;
 
         public int CompareTo(PartitionKeyHash other)
         {
@@ -103,7 +105,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         public static bool TryParse(string value, out PartitionKeyHash parsedValue)
         {
-            if (!UInt128.TryParse(value, out UInt128 uInt128))
+            if (!CosmosUInt128.TryParse(value, out CosmosUInt128 uInt128))
             {
                 parsedValue = default;
                 return false;
@@ -246,7 +248,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             private static PartitionKeyHash Hash(ReadOnlySpan<byte> bytesForHashing)
             {
-                UInt128 hash = Cosmos.MurmurHash3.Hash128(bytesForHashing, seed: 0);
+                CosmosUInt128 hash = Cosmos.MurmurHash3.Hash128(bytesForHashing, seed: 0);
                 return new PartitionKeyHash(hash);
             }
         }

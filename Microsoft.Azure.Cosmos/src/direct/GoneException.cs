@@ -70,12 +70,11 @@ namespace Microsoft.Azure.Documents
 
         internal string LocalIp { get; set; }
 
-#if !NETSTANDARD16
-        protected GoneException(SerializationInfo info, StreamingContext context) 
+        protected GoneException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.Gone)
         {
+            SetDescription();
         }
-#endif
 
         /// <summary>
         ///

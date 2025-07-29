@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Net;
     using System.Net.Security;
     using System.Net.Sockets;
+    using System.Runtime.InteropServices;
     using System.Security.Authentication;
     using System.Threading;
     using System.Threading.Tasks;
@@ -19,10 +20,6 @@ namespace Microsoft.Azure.Documents.Rntbd
 
 #if COSMOSCLIENT
     using Microsoft.Azure.Cosmos.Rntbd;
-#endif
-
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
 #endif
 
     // Connection encapsulates the TCP connection to one back-end, and all surrounding
@@ -592,17 +589,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // handle around until finalization.
                 tcpClient?.Close();
 
-#if NETFX
-                SocketException socketEx = ex as SocketException;
-                if (socketEx != null && socketEx.SocketErrorCode == SocketError.TimedOut)
-                {
-                    if (PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond != null)
-                    {
-                        PerfCounters.Counters.BackendConnectionOpenFailuresDueToSynRetransmitPerSecond.Increment();
-                    }
-                }
-#endif
-
                 DefaultTrace.TraceInformation(
                     "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to TransportException. " +
                     "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex);
@@ -1038,10 +1024,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         {
             clientSocket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
 
-#if !NETSTANDARD15 && !NETSTANDARD16
-            // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
-            // but the feature is unavailable on .NET Framework 4.5.1.
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
@@ -1060,9 +1043,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 Connection.SetKeepAliveSocketOptions(clientSocket);
             }
-#else
-            Connection.SetKeepAliveSocketOptions(clientSocket);
-#endif
         }
 
         private static void SetKeepAliveSocketOptions(Socket clientSocket)
@@ -1132,16 +1112,11 @@ namespace Microsoft.Azure.Documents.Rntbd
 
         private static void SetReuseUnicastPort(Socket clientSocket, Guid connectionCorrelationId)
         {
-#if !NETSTANDARD15 && !NETSTANDARD16
-            // This code should use RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
-            // but the feature is unavailable on .NET Framework 4.5.1.
-            if (Environment.OSVersion.Platform == PlatformID.Win32NT)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 try
                 {
                     Debug.Assert(!clientSocket.IsBound);
-                    // SocketOptionName.ReuseUnicastPort is only present in .NET Framework 4.6.1 and newer.
-                    // Use the numeric value for as long as this code needs to target earlier versions.
                     const int SO_REUSE_UNICASTPORT = 0x3007;
                     clientSocket.SetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)SO_REUSE_UNICASTPORT, true);
                 }
@@ -1151,7 +1126,6 @@ namespace Microsoft.Azure.Documents.Rntbd
                     // Ignore the exception.
                 }
             }
-#endif  // !NETSTANDARD15 && !NETSTANDARD16
         }
     }
 }

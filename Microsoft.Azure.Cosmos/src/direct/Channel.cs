@@ -291,6 +291,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             ((IDisposable) this).Dispose();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "Dispose method cannot be async")]
         void IDisposable.Dispose()
         {
             this.chaosInterceptor?.OnChannelDispose(this.ConnectionCorrelationId);
@@ -534,7 +535,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 // (and thus consume its exception, if one is thrown).
                 // This code defends against the rare case where a channel begins asynchronous
                 // initialization which ends in error, but nothing consumes the exception.
-                initTask.ContinueWith(completedTask =>
+                Task ignored0 = initTask.ContinueWith(completedTask =>
                 {
                     Debug.Assert(completedTask.IsFaulted);
                     Debug.Assert(this.serverUri != null);

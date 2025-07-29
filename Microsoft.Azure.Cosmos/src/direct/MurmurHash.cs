@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Documents.Routing
     using System.Diagnostics;
     using Documents;
 
+    using CosmosUInt128 = Microsoft.Azure.Documents.UInt128;
+
 #pragma warning disable SA1649 // File name should match first type name
     internal static class MurmurHash3
 #pragma warning restore SA1649 // File name should match first type name
@@ -148,7 +150,7 @@ namespace Microsoft.Azure.Documents.Routing
             return h1;
         }
 
-        public static UInt128 Hash128(byte[] bytes, int length, UInt128 seed)
+        public static CosmosUInt128 Hash128(byte[] bytes, int length, CosmosUInt128 seed)
         {
             const ulong c1 = 0x87c37b91114253d5;
             const ulong c2 = 0x4cf5ad432745937f;
@@ -252,7 +254,7 @@ namespace Microsoft.Azure.Documents.Routing
                 h2 = MurmurHash3.Reverse(h2);
             }
 
-            return UInt128.Create(h1, h2);
+            return CosmosUInt128.Create(h1, h2);
         }
 
         public static ulong Reverse(ulong value)

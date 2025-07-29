@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Timers
             timerQueue.Enqueue(timer);
         }
 
-        public void OnTimer(object stateInfo)
+        public void OnTimer(object? stateInfo)
         {
             lock (this.timerConcurrencyLock)
             {
@@ -132,9 +132,9 @@ namespace Microsoft.Azure.Cosmos.Timers
             try
             {
                 ConcurrentQueue<TimerWheelTimer> timerQueue = this.timers[this.expirationIndex];
-                while (timerQueue.TryDequeue(out TimerWheelTimer timer))
+                while (timerQueue.TryDequeue(out TimerWheelTimer? timer))
                 {
-                    timer.FireTimeout();
+                    timer?.FireTimeout();
                 }
 
                 if (++this.expirationIndex == this.buckets)
@@ -170,9 +170,9 @@ namespace Microsoft.Azure.Cosmos.Timers
         {
             foreach (ConcurrentQueue<TimerWheelTimer> queueTimer in this.timers)
             {
-                while (queueTimer.TryDequeue(out TimerWheelTimer timer))
+                while (queueTimer.TryDequeue(out TimerWheelTimer? timer))
                 {
-                    timer.CancelTimer();
+                    timer?.CancelTimer();
                 }
             }
 

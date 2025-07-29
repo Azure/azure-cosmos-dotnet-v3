@@ -61,7 +61,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override Enumerator GetEnumerator() => new Enumerator(this.lazyCache.Value.GetEnumerator());
 
-            public override bool TryGetValue(string key, out CosmosElement value) => this.lazyCache.Value.TryGetValue(key, out value);
+            public override bool TryGetValue(string key, out CosmosElement value)
+            {
+#pragma warning disable CS8601 // Possible null reference assignment - intentional out parameter assignment
+                return this.lazyCache.Value.TryGetValue(key, out value);
+#pragma warning restore CS8601 // Possible null reference assignment
+            }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

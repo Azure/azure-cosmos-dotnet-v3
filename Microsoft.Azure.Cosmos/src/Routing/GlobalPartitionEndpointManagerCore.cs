@@ -78,7 +78,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             if (this.PartitionKeyRangeToLocation.IsValueCreated
                 && this.PartitionKeyRangeToLocation.Value.TryGetValue(
                     partitionKeyRange,
-                    out PartitionKeyRangeFailoverInfo partitionKeyRangeFailover))
+                    out PartitionKeyRangeFailoverInfo? partitionKeyRangeFailover))
             {
                 DefaultTrace.TraceVerbose("Partition level override. URI: {0}, PartitionKeyRange: {1}",
                     partitionKeyRangeFailover.Current,
@@ -163,7 +163,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                    partitionKeyRange,
                    failedLocation);
 
+#pragma warning disable CS8601 // Possible null reference assignment - intentional discard pattern
             this.PartitionKeyRangeToLocation.Value.TryRemove(partitionKeyRange, out PartitionKeyRangeFailoverInfo _);
+#pragma warning restore CS8601 // Possible null reference assignment
             return false;
 
         }
@@ -213,7 +215,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                         }
 
                         this.FailedLocations.Add(failedLocation);
+#pragma warning disable CS8601 // Possible null reference assignment - intentional from foreach nullable collection
                         this.Current = location;
+#pragma warning restore CS8601 // Possible null reference assignment
                         return true;
                     }
                 }

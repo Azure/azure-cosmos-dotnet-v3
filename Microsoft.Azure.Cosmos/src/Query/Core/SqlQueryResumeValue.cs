@@ -14,6 +14,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     // Class that represents the resume value of a query. Primarily used to represent the resume value for order by query
     // The actual value is saved as a CosmosElement. Only native JSON types are supported. C* types are not supported.
     // Objects and Arrays are represented by their UInt128 hash value. All other types are represented by their actual value.
@@ -70,15 +72,15 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         {
             public bool IsArray { get; }
 
-            public UInt128 HashValue { get; }
+            public CosmosUInt128 HashValue { get; }
 
-            private ComplexResumeValue(bool isArray, UInt128 hashValue)
+            private ComplexResumeValue(bool isArray, CosmosUInt128 hashValue)
             {
                 this.IsArray = isArray;
                 this.HashValue = hashValue;
             }
 
-            public static ComplexResumeValue Create(bool isArray, UInt128 hashValue)
+            public static ComplexResumeValue Create(bool isArray, CosmosUInt128 hashValue)
             {
                 return new ComplexResumeValue(isArray, hashValue);
             }
@@ -322,7 +324,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     throw new ArgumentException($"Incorrect Array / Object Resume Value. One or more of the required properties are missing.");
                 }
 
-                UInt128 hashValue = UInt128.Create(
+                CosmosUInt128 hashValue = CosmosUInt128.Create(
                             (ulong)Number64.ToLong(lowValue.Value),
                             (ulong)Number64.ToLong(highValue.Value));
 

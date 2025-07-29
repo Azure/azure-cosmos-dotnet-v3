@@ -16,6 +16,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.Tracing;
     using Newtonsoft.Json;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     internal class DistinctQueryPipelineStage : QueryPipelineStageBase
     {
         private readonly DistinctQueryType distinctQueryType;
@@ -69,7 +71,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (this.distinctMap.Add(document, out UInt128 _))
+                if (this.distinctMap.Add(document, out CosmosUInt128 _))
                 {
                     distinctResults.Add(document);
                 }

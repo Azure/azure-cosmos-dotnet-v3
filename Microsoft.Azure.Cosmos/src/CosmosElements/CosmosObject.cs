@@ -90,19 +90,24 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
         IEnumerator<KeyValuePair<string, CosmosElement>> IEnumerable<KeyValuePair<string, CosmosElement>>.GetEnumerator() => this.GetEnumerator();
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosObject cosmosObject && this.Equals(cosmosObject);
         }
 
-        public bool Equals(CosmosObject cosmosObject)
+        public bool Equals(CosmosObject? cosmosObject)
         {
+            if (cosmosObject is null)
+            {
+                return false;
+            }
+
             if (this.Count != cosmosObject.Count)
             {
                 return false;
             }
 
-            // Order of properties does not mattter
+            // Order of properties does not matter
             foreach (KeyValuePair<string, CosmosElement> kvp in this)
             {
                 string propertyName = kvp.Key;
@@ -143,10 +148,15 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return (int)hash;
         }
 
-        public int CompareTo(CosmosObject cosmosObject)
+        public int CompareTo(CosmosObject? cosmosObject)
         {
-            UInt128 hash1 = DistinctHash.GetHash(this);
-            UInt128 hash2 = DistinctHash.GetHash(cosmosObject);
+            if (cosmosObject is null)
+            {
+                return 1;
+            }
+
+            Microsoft.Azure.Cosmos.UInt128 hash1 = DistinctHash.GetHash(this);
+            Microsoft.Azure.Cosmos.UInt128 hash2 = DistinctHash.GetHash(cosmosObject);
             return UInt128BinaryComparer.Singleton.Compare(hash1, hash2);
         }
 

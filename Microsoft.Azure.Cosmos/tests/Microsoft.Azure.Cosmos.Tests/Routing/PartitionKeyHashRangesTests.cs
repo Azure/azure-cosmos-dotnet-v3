@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     [TestClass]
     public class PartitionKeyHashRangesTests
     {
@@ -158,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
         }
 
-        private static PartitionKeyHashRange CreateRange(UInt128? start, UInt128? end)
+        private static PartitionKeyHashRange CreateRange(CosmosUInt128? start, CosmosUInt128? end)
         {
             return new PartitionKeyHashRange(
                 startInclusive: start.HasValue ? (PartitionKeyHash?)new PartitionKeyHash(start.Value) : null,

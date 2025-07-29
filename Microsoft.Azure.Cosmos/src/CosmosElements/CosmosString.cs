@@ -46,13 +46,18 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosString cosmosString && this.Equals(cosmosString);
         }
 
-        public bool Equals(CosmosString cosmosString)
+        public bool Equals(CosmosString? cosmosString)
         {
+            if (cosmosString is null)
+            {
+                return false;
+            }
+
             return this.Value == cosmosString.Value;
         }
 
@@ -60,12 +65,16 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         {
             uint hash = HashSeed;
             hash = MurmurHash3.Hash32(this.Value, hash);
-
             return (int)hash;
         }
 
-        public int CompareTo(CosmosString cosmosString)
+        public int CompareTo(CosmosString? cosmosString)
         {
+            if (cosmosString is null)
+            {
+                return 1;
+            }
+
             return string.CompareOrdinal(this.Value, cosmosString.Value);
         }
 

@@ -59,12 +59,6 @@ namespace Microsoft.Azure.Documents
                             publiclyVisible: true);
         }
 
-#if NETFX45 || NETSTANDARD15 || NETSTANDARD16
-        public static Task<CloneableStream> AsClonableStreamAsync(Stream mediaStream, bool allowUnsafeDataAccess = true)
-        {
-            return StreamExtension.CopyStreamAndReturnAsync(mediaStream);
-        }
-#else
         public static Task<CloneableStream> AsClonableStreamAsync(Stream mediaStream, bool allowUnsafeDataAccess = true)
         {
             MemoryStream memoryStream = mediaStream as MemoryStream;
@@ -82,7 +76,6 @@ namespace Microsoft.Azure.Documents
 
             return StreamExtension.CopyStreamAndReturnAsync(mediaStream);
         }
-#endif
 
         private static async Task<CloneableStream> CopyStreamAndReturnAsync(Stream mediaStream)
         {

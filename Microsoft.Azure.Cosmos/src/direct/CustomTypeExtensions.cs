@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Documents
     using System.Collections.Generic;
     using System.Diagnostics.Tracing;
     using System.Globalization;
-    using System.IO;
     using System.Net.Sockets;
     using System.Reflection;
     using System.Runtime.InteropServices;
@@ -17,17 +16,7 @@ namespace Microsoft.Azure.Documents
     using Microsoft.Azure.Cosmos.Core.Trace;
 
     /// <summary>
-    /// Extension class for defining methods/properties on Type class that are 
-    /// not available on .NET Standard 1.6. This allows us to keep the same code
-    /// we had earlier and when compiling for .NET Standard 1.6, we use these 
-    /// extension methods that call GetTypeInfo() on the Type instance and call
-    /// the corresponding method on it.
-    /// 
-    /// IsGenericType, IsEnum, IsValueType, IsInterface and BaseType are properties
-    /// on Type class but since we cannot define "extension properties", I've converted 
-    /// them to methods and return the underlying property value from the call to
-    /// GetTypeInfo(). For .NET Framework, these extension methods simply return 
-    /// the underlying property value.
+    /// Provides utility methods for the Cosmos DB client library.
     /// </summary>
     internal static class CustomTypeExtensions
     {
@@ -39,123 +28,6 @@ namespace Microsoft.Azure.Documents
 #else
         public const string SDKName = "documentdb-netcore-sdk";
         public const string SDKVersion = "2.14.0";
-#endif
-
-        #region Type Extension Methods
-#if (NETSTANDARD15 || NETSTANDARD16)
-        public static bool IsAssignableFrom(this Type type, Type c)
-        {
-            return type.GetTypeInfo().IsAssignableFrom(c);
-        }
-
-        public static bool IsSubclassOf(this Type type, Type c)
-        {
-            return type.GetTypeInfo().IsSubclassOf(c);
-        }
-
-        public static MethodInfo GetMethod(this Type type, string name, BindingFlags bindingAttr)
-        {
-            return type.GetTypeInfo().GetMethod(name, bindingAttr);
-        }
-
-        public static MethodInfo GetMethod(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetMethod(name);
-        }
-        public static MethodInfo GetMethod(this Type type, string name, Type[] types)
-        {
-            return type.GetTypeInfo().GetMethod(name, types);
-        }
-
-        public static Type[] GetGenericArguments(this Type type)
-        {
-            return type.GetTypeInfo().GetGenericArguments();
-        }
-
-        public static PropertyInfo GetProperty(this Type type, string name)
-        {
-            return type.GetTypeInfo().GetProperty(name);
-        }
-
-        public static PropertyInfo[] GetProperties(this Type type)
-        {
-            return type.GetTypeInfo().GetProperties();
-        }
-
-        public static PropertyInfo[] GetProperties(this Type type, BindingFlags bindingAttr)
-        {
-            return type.GetTypeInfo().GetProperties(bindingAttr);
-        }
-
-        public static Type[] GetInterfaces(this Type type)
-        {
-            return type.GetTypeInfo().GetInterfaces();
-        }
-
-        public static ConstructorInfo GetConstructor(this Type type, Type[] types)
-        {
-            return type.GetTypeInfo().GetConstructor(types);
-        }
-
-        public static T GetCustomAttribute<T>(this Type type, bool inherit) where T : Attribute
-        {
-            return type.GetTypeInfo().GetCustomAttribute<T>(inherit);
-        }
-#endif
-
-#if NETSTANDARD16
-        public static IEnumerable<Attribute> GetCustomAttributes(this Type type, Type attributeType, bool inherit)
-        {
-            return type.GetTypeInfo().GetCustomAttributes(attributeType, inherit);
-        }
-#endif
-
-#endregion
-
-        #region Misc Extension Methods
-#if (NETSTANDARD15 || NETSTANDARD16)
-        public static byte[] GetBuffer(this MemoryStream stream)
-        {
-            ArraySegment<byte> buffer;
-            stream.TryGetBuffer(out buffer);
-            return buffer.Array;
-        }
-
-        public static void Close(this Stream stream)
-        {
-            stream.Dispose();
-        }
-
-        public static void Close(this TcpClient tcpClient)
-        {
-            tcpClient.Dispose();
-        }
-#endif
-#endregion
-
-        #region Helper Methods
-#if (NETSTANDARD15 || NETSTANDARD16)
-        public static string GetLeftPart(this Uri uri, UriPartial part)
-        {
-            const UriComponents NonPathPart = (UriComponents.Scheme | UriComponents.UserInfo | UriComponents.Host | UriComponents.Port);
-
-            switch (part)
-            {
-                case UriPartial.Authority:
-                    return uri.GetComponents(NonPathPart, UriFormat.UriEscaped);
-
-                case UriPartial.Path:
-                    return uri.GetComponents(NonPathPart | UriComponents.Path, UriFormat.UriEscaped);
-
-                case UriPartial.Query:
-                    return uri.GetComponents(NonPathPart | UriComponents.Path | UriComponents.Query, UriFormat.UriEscaped);
-
-                case UriPartial.Scheme:
-                    return uri.GetComponents(UriComponents.Scheme | UriComponents.KeepDelimiter, UriFormat.UriEscaped);
-            }
-
-            throw new ArgumentException("Invalid part", nameof(part));
-        }
 #endif
 
         public static Delegate CreateDelegate(Type delegateType, object target, MethodInfo methodInfo)
@@ -181,11 +53,6 @@ namespace Microsoft.Azure.Documents
                 randomNumberGenerator.GetBytes(seedArray);
                 return new Random(BitConverter.ToInt32(seedArray, 0));
             }
-        }
-
-        public static QueryRequestPerformanceActivity StartActivity(DocumentServiceRequest request)
-        {
-            return null;
         }
 
         public static string GenerateBaseUserAgentString()
@@ -244,8 +111,6 @@ namespace Microsoft.Azure.Documents
 
             return false;
         }
-
-#endregion
 
 #region Properties converted to Methods
         public static bool IsGenericType(this Type type)

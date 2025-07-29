@@ -910,13 +910,6 @@ namespace Microsoft.Azure.Documents
 
                 case StatusCodes.Gone:
                     {
-#if NETFX
-                        if (PerfCounters.Counters.RoutingFailures != null)
-                        {
-                            PerfCounters.Counters.RoutingFailures.Increment();
-                        }
-#endif
-
                         TransportClient.LogGoneException(physicalAddress, activityId.ToString());
                         errorMessage = TransportClient.GetErrorResponse(storeResponse,
                             RMResources.Gone,

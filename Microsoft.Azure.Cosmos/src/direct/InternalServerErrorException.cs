@@ -70,13 +70,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
-        private InternalServerErrorException(SerializationInfo info, StreamingContext context) 
+        private InternalServerErrorException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.InternalServerError)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

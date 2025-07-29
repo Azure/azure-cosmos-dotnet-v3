@@ -70,13 +70,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private UnauthorizedException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.Unauthorized)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

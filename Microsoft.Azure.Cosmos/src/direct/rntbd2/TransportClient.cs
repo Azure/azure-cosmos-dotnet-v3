@@ -13,9 +13,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Documents.FaultInjection;
     using Microsoft.Azure.Documents.Telemetry;
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
 
     internal sealed class TransportClient :
         Microsoft.Azure.Documents.TransportClient, IDisposable
@@ -127,15 +124,11 @@ namespace Microsoft.Azure.Documents.Rntbd
             DateTime requestStartTime = DateTime.UtcNow;
             int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
 
-#if NETSTANDARD2_0_OR_GREATER
             using OpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(
                                                                                     options: this.DistributedTracingOptions,
                                                                                     request: request);
-#endif
             try
             {
-                TransportClient.IncrementCounters();
-
                 operation = "GetChannel";
                 // Treat all retries as out of region request for open timeout. This is to prevent too many retries because of the shorter time duration.
                 bool localRegionRequest = request.RequestContext.IsRetry ? false : request.RequestContext.LocalRegionRequest;
@@ -195,9 +188,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
                     GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER
                     recorder?.Record(physicalAddress.Uri, exception: goneExcepetion);
-#endif
                     throw goneExcepetion;
                 }
                 if (!ex.UserRequestSent)
@@ -205,9 +196,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
                     GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER
                     recorder?.Record(physicalAddress.Uri, exception: goneExcepetion);
-#endif
                     throw goneExcepetion;
                 }
                 if (TransportException.IsTimeout(ex.ErrorCode))
@@ -215,17 +204,13 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("Converting to RequestTimeout");
                     RequestTimeoutException requestTimeoutException = TransportExceptions.GetRequestTimeoutException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER
                     recorder?.Record(physicalAddress.Uri, exception: requestTimeoutException);
-#endif
                     throw requestTimeoutException;
                 }
                 DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
                 ServiceUnavailableException serviceUnavailableException = TransportExceptions.GetServiceUnavailableException(
                     physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: serviceUnavailableException);
-#endif
                 throw serviceUnavailableException;
 
             }
@@ -237,9 +222,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     physicalAddress, ex);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 ex.TransportRequestStats = transportRequestStats;
-#if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: ex);
-#endif
                 throw;
             }
             catch (Exception ex)
@@ -248,14 +231,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
                     physicalAddress, ex);
-#if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: ex);
-#endif
                 throw;
             }
             finally
             {
-                TransportClient.DecrementCounters();
                 TransportClient.GetTransportPerformanceCounters().IncrementRntbdResponseCount(resourceOperation.resourceType,
                     resourceOperation.operationType, transportResponseStatusCode);
                 this.RaiseProtocolDowngradeRequest(storeResponse);
@@ -265,7 +245,6 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
             }
-#if NETSTANDARD2_0_OR_GREATER
             catch (DocumentClientException exception) 
             {
                 recorder?.Record(physicalAddress.Uri, exception: exception);
@@ -274,12 +253,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             // Record the information of the sucessfull response in the end, it also make sure it is not getting called twice.
             recorder?.Record(physicalAddress.Uri, storeResponse: storeResponse);
-#else
-            catch (DocumentClientException)
-            {
-                throw;
-            }
-#endif
+
             return storeResponse;
         }
 
@@ -312,30 +286,6 @@ namespace Microsoft.Azure.Documents.Rntbd
         private static void LogClientOptions(Options clientOptions)
         {
             DefaultTrace.TraceInformation("Creating RNTBD TransportClient with options {0}", clientOptions.ToString());
-        }
-
-        private static void IncrementCounters()
-        {
-#if NETFX
-            if (PerfCounters.Counters.BackendActiveRequests != null)
-            {
-                PerfCounters.Counters.BackendActiveRequests.Increment();
-            }
-            if (PerfCounters.Counters.BackendRequestsPerSec != null)
-            {
-                PerfCounters.Counters.BackendRequestsPerSec.Increment();
-            }
-#endif
-        }
-
-        private static void DecrementCounters()
-        {
-#if NETFX
-            if (PerfCounters.Counters.BackendActiveRequests != null)
-            {
-                PerfCounters.Counters.BackendActiveRequests.Decrement();
-            }
-#endif
         }
 
         /// <inheritdoc/>
@@ -392,7 +342,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             // Compute gateway uses custom task scheduler to track tenant resource utilization.
             // Task.Run() switches to default task scheduler for entire sub-tree of tasks making compute gateway incapable of tracking resource usage accurately.
             // Task.Factory.StartNew() allows specifying task scheduler to use.
-            Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
+            Task ignored0 = Task.Factory.StartNewOnCurrentTaskSchedulerAsync(() =>
             {
                 this.OnDisableRntbdChannel?.Invoke();
             })
@@ -562,11 +512,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 s.Append("  Use_CustomDnsResolution: ");
                 s.AppendLine(this.DnsResolutionFunction != null ? bool.TrueString : bool.FalseString);
                 s.Append("  IsDistributedTracingEnabled: ");
-#if NETSTANDARD2_0_OR_GREATER
                 s.AppendLine(this.DistributedTracingOptions?.IsDistributedTracingEnabled.ToString());
-#else
-                s.AppendLine("false");
-#endif
                 return s.ToString();
             }
 

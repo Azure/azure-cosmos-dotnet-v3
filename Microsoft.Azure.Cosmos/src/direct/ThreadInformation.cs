@@ -34,15 +34,12 @@ namespace Microsoft.Azure.Documents.Rntbd
 
             lock (lockObject)
             {
-
-#if !(NETSTANDARD15 || NETSTANDARD16)
                 ThreadPool.GetAvailableThreads(out int tempAvlWorkerThreads, out _);
                 avlWorkerThreads = tempAvlWorkerThreads;
                 ThreadPool.GetMinThreads(out int tempMinWorkerThreads, out _);
                 minWorkerThreads = tempMinWorkerThreads;
                 ThreadPool.GetMaxThreads(out int tempMaxWorkerThreads, out _);
                 maxWorkerThreads = tempMaxWorkerThreads;
-#endif
 
                 bool? isThreadStarving = null;
                 double? threadWaitIntervalInMs = null;

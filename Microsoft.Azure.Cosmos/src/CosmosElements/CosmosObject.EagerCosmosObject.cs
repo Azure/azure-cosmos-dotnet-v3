@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             {
                 this.dictionary = new Dictionary<string, CosmosElement>(dictionary.ToDictionary(kvp => kvp.Key, kvp => kvp.Value));
             }
-
             public override CosmosElement this[string key] => this.dictionary[key];
 
             public override int Count => this.dictionary.Count;
@@ -41,7 +40,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 
             public override Enumerator GetEnumerator() => new Enumerator(this.dictionary.GetEnumerator());
 
-            public override bool TryGetValue(string key, out CosmosElement value) => this.dictionary.TryGetValue(key, out value);
+            public override bool TryGetValue(string key, out CosmosElement value)
+            {
+#pragma warning disable CS8601 // Possible null reference assignment - intentional out parameter assignment
+                return this.dictionary.TryGetValue(key, out value);
+#pragma warning restore CS8601 // Possible null reference assignment
+            }
 
             public override void WriteTo(IJsonWriter jsonWriter)
             {

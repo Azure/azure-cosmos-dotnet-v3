@@ -39,13 +39,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private RetryWithException(SerializationInfo info, StreamingContext context)
             : base(info, context, (HttpStatusCode)StatusCodes.RetryWith)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

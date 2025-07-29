@@ -47,14 +47,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return cosmosElementVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosElement cosmosElement)
+        public override bool Equals(CosmosElement? cosmosElement)
         {
             return cosmosElement is CosmosBoolean cosmosBoolean && this.Equals(cosmosBoolean);
-        }
+        } 
 
-        public bool Equals(CosmosBoolean cosmosBoolean)
+        public bool Equals(CosmosBoolean? cosmosBoolean)
         {
-            return this.Value == cosmosBoolean.Value;
+            return cosmosBoolean is not null && this.Value == cosmosBoolean.Value;
         }
 
         public override int GetHashCode()
@@ -62,8 +62,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
             return this.Value ? TrueHash : FalseHash;
         }
 
-        public int CompareTo(CosmosBoolean cosmosBoolean)
+        public int CompareTo(CosmosBoolean? cosmosBoolean)
         {
+            if (cosmosBoolean is null)
+            {
+                return 1;
+            }
             return this.Value.CompareTo(cosmosBoolean.Value);
         }
 

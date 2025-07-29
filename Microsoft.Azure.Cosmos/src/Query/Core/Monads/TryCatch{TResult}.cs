@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 
         public override bool Equals(object obj)
         {
-            if (object.ReferenceEquals(this, obj))
+            if (object.Equals(this, obj))
             {
                 return true;
             }

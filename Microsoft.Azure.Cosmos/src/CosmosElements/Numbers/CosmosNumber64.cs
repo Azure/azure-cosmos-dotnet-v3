@@ -45,14 +45,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return cosmosNumberVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosNumber cosmosNumber)
+        public override bool Equals(CosmosNumber? cosmosNumber)
         {
             return cosmosNumber is CosmosNumber64 cosmosNumber64 && this.Equals(cosmosNumber64);
         }
 
-        public bool Equals(CosmosNumber64 cosmosNumber64)
+        public bool Equals(CosmosNumber64? cosmosNumber64)
         {
-            return this.GetValue() == cosmosNumber64.GetValue();
+            return cosmosNumber64 is not null && this.GetValue() == cosmosNumber64.GetValue();
         }
 
         public override int GetHashCode()
@@ -60,8 +60,12 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return (int)MurmurHash3.Hash32(Number64.ToDoubleEx(this.GetValue()), 1943952435);
         }
 
-        public int CompareTo(CosmosNumber64 cosmosNumber64)
+        public int CompareTo(CosmosNumber64? cosmosNumber64)
         {
+            if (cosmosNumber64 is null)
+            {
+                return 1;
+            }
             return this.GetValue().CompareTo(cosmosNumber64.GetValue());
         }
 

@@ -45,14 +45,14 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return cosmosNumberVisitor.Visit(this, input);
         }
 
-        public override bool Equals(CosmosNumber cosmosNumber)
+        public override bool Equals(CosmosNumber? cosmosNumber)
         {
             return cosmosNumber is CosmosFloat32 cosmosFloat32 && this.Equals(cosmosFloat32);
         }
 
-        public bool Equals(CosmosFloat32 cosmosFloat32)
+        public bool Equals(CosmosFloat32? cosmosFloat32)
         {
-            return this.GetValue() == cosmosFloat32.GetValue();
+            return cosmosFloat32 is not null && this.GetValue() == cosmosFloat32.GetValue();
         }
 
         public override int GetHashCode()
@@ -60,9 +60,13 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
             return (int)MurmurHash3.Hash32(this.GetValue(), 495253708);
         }
 
-        public int CompareTo(CosmosFloat32 cosmosFloat32)
+        public int CompareTo(CosmosFloat32? cosmosFloat32)
         {
-            return this.GetValue().CompareTo(cosmosFloat32.GetValue());
+            if (cosmosFloat32 is null)
+            {
+                return 1;
+            }   
+            return this.Value.CompareTo(cosmosFloat32.Value);
         }
 
         public override void WriteTo(IJsonWriter jsonWriter)

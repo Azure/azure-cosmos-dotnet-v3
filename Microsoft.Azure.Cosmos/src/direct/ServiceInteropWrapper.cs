@@ -21,13 +21,7 @@ namespace Microsoft.Azure.Documents
         static ServiceInteropWrapper()
         {
             ServiceInteropWrapper.Is64BitProcess = IntPtr.Size == 8;
-
-#if NETFX
-            // Framework only works on Windows
-            ServiceInteropWrapper.IsWindowsOSPlatform = true;
-#else
             ServiceInteropWrapper.IsWindowsOSPlatform = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-#endif
         }
 
         internal static readonly bool Is64BitProcess;
@@ -67,7 +61,6 @@ namespace Microsoft.Azure.Documents
                     return true;
                 }
 
-#if !NETSTANDARD16
                 DefaultTrace.TraceInformation($"Assembly location: {Assembly.GetExecutingAssembly().Location}");
                 if (Assembly.GetExecutingAssembly().IsDynamic)
                 {
@@ -76,19 +69,6 @@ namespace Microsoft.Azure.Documents
                 }
 
                 string binDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-#else
-                DefaultTrace.TraceInformation($"Assembly location: {(typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.Location)}");
-                if (typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.IsDynamic)
-                {
-                    validationMessage = $"The service interop if exists validation skipped because typeof(ServiceInteropWrapper).GetTypeInfo().Assembly.IsDynamic is true";
-                    return true;
-                }
-            
-                // For NetCore check the entry assembly's path first (if available) since the interop DLL is copied to the application output directory
-                // (as specified in the Nuget package's target)
-                Assembly assembly = System.Reflection.Assembly.GetEntryAssembly() ?? typeof(ServiceInteropWrapper).GetTypeInfo().Assembly;
-                string binDir = Path.GetDirectoryName(assembly.Location);
-#endif
 
                 string dll = 
 #if COSMOSCLIENT
@@ -123,9 +103,7 @@ namespace Microsoft.Azure.Documents
             return false;
         }
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -146,10 +124,7 @@ namespace Microsoft.Azure.Documents
             [In, Out] IntPtr serializedQueryExecutionInfoBuffer,
             [In] uint serializedQueryExecutionInfoBufferLength,
             [Out] out uint serializedQueryExecutionInfoResultLength);
-
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -199,9 +174,7 @@ namespace Microsoft.Azure.Documents
             public Int64 unusedReserved4;
         };
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -219,9 +192,7 @@ namespace Microsoft.Azure.Documents
             [In] uint serializedQueryExecutionInfoBufferLength,
             [Out] out uint serializedQueryExecutionInfoResultLength);
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -241,9 +212,7 @@ namespace Microsoft.Azure.Documents
             [In] uint serializedQueryExecutionInfoBufferLength,
             [Out] out uint serializedQueryExecutionInfoResultLength);
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -254,9 +223,7 @@ namespace Microsoft.Azure.Documents
                 [MarshalAs(UnmanagedType.LPStr)][In] string configJsonString,
                 [Out] out IntPtr serviceProvider);
 
-#if !NETSTANDARD16
         [System.Security.SuppressUnmanagedCodeSecurity]
-#endif
 #if COSMOSCLIENT
         [DllImport("Microsoft.Azure.Cosmos.ServiceInterop.dll", SetLastError = true, CallingConvention = CallingConvention.Cdecl, BestFitMapping = false, ThrowOnUnmappableChar = true)]
 #else
@@ -331,12 +298,10 @@ namespace Microsoft.Azure.Documents
                 return value.Value;
             }
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
             string setting = System.Configuration.ConfigurationManager.AppSettings[key];
             DefaultTrace.TraceInformation($"ServiceInteropWrapper read {key} from AppConfig as {setting} ");
             value = ServiceInteropWrapper.BoolParse(setting);
             DefaultTrace.TraceInformation($"ServiceInteropWrapper read parsed {key} AppConfig as {value} ");
-#endif
 
             return value;
         }

@@ -94,13 +94,11 @@ namespace Microsoft.Azure.Documents
 
         public IPAddress ClientIpAddress { get; private set; }
 
-#if !NETSTANDARD16
         private ForbiddenException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.Forbidden)
         {
             this.SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

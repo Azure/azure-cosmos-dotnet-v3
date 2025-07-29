@@ -121,7 +121,7 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
 
         public override DateTime? GetStartTimeUtc()
         {
-            if (this.Value == null || this.Value.StartTime == null)
+            if (this.Value == null)
             {
                 return null;
             }

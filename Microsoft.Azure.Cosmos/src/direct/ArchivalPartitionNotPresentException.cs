@@ -71,14 +71,12 @@ namespace Microsoft.Azure.Documents.Routing
             this.SetDescription();
         }
 
-#if !NETSTANDARD16
         private ArchivalPartitionNotPresentException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             this.SetSubstatus();
             this.SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

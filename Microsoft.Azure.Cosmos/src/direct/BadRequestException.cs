@@ -61,13 +61,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private BadRequestException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.BadRequest)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

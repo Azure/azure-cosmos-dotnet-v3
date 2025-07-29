@@ -465,7 +465,7 @@ namespace Microsoft.Azure.Cosmos
                 return true;
             }
 
-            if (!(obj is UInt128 uint128))
+            if (!(obj is Microsoft.Azure.Documents.UInt128 uint128))
             {
                 return false;
             }

@@ -10,6 +10,8 @@ namespace Microsoft.Azure.Cosmos
     using System.Runtime.InteropServices;
     using System.Text;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// MurmurHash3 for x64 (Little Endian).
     /// <p>Reference: https://en.wikipedia.org/wiki/MurmurHash <br /></p>
@@ -150,7 +152,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">The data to hash.</param>
         /// <param name="seed">The seed to initialize with.</param>
         /// <returns>The 128-bit hash represented as two 64-bit words.</returns>
-        public static UInt128 Hash128(string value, UInt128 seed)
+        public static CosmosUInt128 Hash128(string value, CosmosUInt128 seed)
         {
             if (value == null)
             {
@@ -167,7 +169,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">The data to hash.</param>
         /// <param name="seed">The seed to initialize with.</param>
         /// <returns>The 128-bit hash represented as two 64-bit words.</returns>
-        public static UInt128 Hash128(bool value, UInt128 seed)
+        public static CosmosUInt128 Hash128(bool value, CosmosUInt128 seed)
         {
             // Ensure that a bool is ALWAYS a single byte encoding with 1 for true and 0 for false.
             return MurmurHash3.Hash128((byte)(value ? 1 : 0), seed);
@@ -177,7 +179,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="value">The data to hash.</param>
         /// <param name="seed">The seed to initialize with.</param>
         /// <returns>The 128-bit hash represented as two 64-bit words.</returns>
-        public static unsafe UInt128 Hash128<T>(T value, UInt128 seed)
+        public static unsafe CosmosUInt128 Hash128<T>(T value, CosmosUInt128 seed)
             where T : unmanaged
         {
             ReadOnlySpan<T> span = new ReadOnlySpan<T>(&value, 1);
@@ -188,7 +190,7 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="span">The data to hash.</param>
         /// <param name="seed">The seed to initialize with.</param>
         /// <returns>The 128-bit hash represented as two 64-bit words.</returns>
-        public static unsafe UInt128 Hash128(ReadOnlySpan<byte> span, UInt128 seed)
+        public static unsafe CosmosUInt128 Hash128(ReadOnlySpan<byte> span, CosmosUInt128 seed)
         {
             if (!BitConverter.IsLittleEndian)
             {
@@ -336,7 +338,7 @@ namespace Microsoft.Azure.Cosmos
                 h2 += h1;
             }
 
-            return UInt128.Create(h1, h2);
+            return CosmosUInt128.Create(h1, h2);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Net;
     using System.Text;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
@@ -235,5 +236,9 @@ namespace Microsoft.Azure.Cosmos
             }
             return queryResponse;
         }
+#if INTERNAL
+#pragma warning restore SA1601 // Partial elements should be documented
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
+#endif
     }
 }

@@ -11,6 +11,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Text;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// Represent a list of ranges with the following properties
     /// * no duplicates
@@ -117,9 +119,9 @@ namespace Microsoft.Azure.Cosmos.Routing
             // This can be done by checking the overall range that the ranges cover
             // and comparing it to the width of all the ranges.
             // https://stackoverflow.com/questions/3269434/whats-the-most-efficient-way-to-test-two-integer-ranges-for-overlap
-            UInt128 minStart = UInt128.MaxValue;
-            UInt128 maxEnd = UInt128.MinValue;
-            (UInt128 sumOfWidth, bool overflowed) = (0, false);
+            CosmosUInt128 minStart = CosmosUInt128.MaxValue;
+            CosmosUInt128 maxEnd = CosmosUInt128.MinValue;
+            (CosmosUInt128 sumOfWidth, bool overflowed) = (0, false);
 
             foreach (PartitionKeyHashRange partitionKeyHashRange in sortedSet)
             {
@@ -132,7 +134,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 else
                 {
-                    minStart = UInt128.MinValue;
+                    minStart = CosmosUInt128.MinValue;
                 }
 
                 if (partitionKeyHashRange.EndExclusive.HasValue)
@@ -144,11 +146,11 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
                 else
                 {
-                    maxEnd = UInt128.MaxValue;
+                    maxEnd = CosmosUInt128.MaxValue;
                 }
 
-                UInt128 width = partitionKeyHashRange.EndExclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MaxValue)).HashValues[0]
-                    - partitionKeyHashRange.StartInclusive.GetValueOrDefault(new PartitionKeyHash(UInt128.MinValue)).HashValues[0];
+                CosmosUInt128 width = partitionKeyHashRange.EndExclusive.GetValueOrDefault(new PartitionKeyHash(CosmosUInt128.MaxValue)).HashValues[0]
+                    - partitionKeyHashRange.StartInclusive.GetValueOrDefault(new PartitionKeyHash(CosmosUInt128.MinValue)).HashValues[0];
                 sumOfWidth += width;
                 if (sumOfWidth < width)
                 {
@@ -156,7 +158,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 }
             }
 
-            UInt128 rangeCoverage = maxEnd - minStart;
+            CosmosUInt128 rangeCoverage = maxEnd - minStart;
             CreateOutcome createOutcome;
             if ((rangeCoverage < sumOfWidth) || overflowed)
             {

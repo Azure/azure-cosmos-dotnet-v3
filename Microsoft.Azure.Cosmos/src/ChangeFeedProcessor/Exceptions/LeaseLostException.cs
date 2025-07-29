@@ -104,6 +104,7 @@ namespace Microsoft.Azure.Cosmos.ChangeFeed.Exceptions
         /// </summary>
         /// <param name="info">The SerializationInfo object that holds serialized object data for the exception being thrown.</param>
         /// <param name="context">The StreamingContext that contains contextual information about the source or destination.</param>
+        [Obsolete("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

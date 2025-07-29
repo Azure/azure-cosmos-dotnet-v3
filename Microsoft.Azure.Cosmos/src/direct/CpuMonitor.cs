@@ -10,9 +10,6 @@ namespace Microsoft.Azure.Documents.Rntbd
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
-#if NETSTANDARD15 || NETSTANDARD16
-    using Trace = Microsoft.Azure.Documents.Trace;
-#endif
 
     // This class is thread safe.
     internal sealed class CpuMonitor : IDisposable
@@ -58,7 +55,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     cancellationToken,
                     TaskCreationOptions.LongRunning | TaskCreationOptions.DenyChildAttach,
                     TaskScheduler.Default).Unwrap();
-                this.periodicTask.ContinueWith(
+                Task ignored0 = this.periodicTask.ContinueWith(
                     t =>
                     {
                         DefaultTrace.TraceError(
@@ -66,7 +63,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                             t.Exception);
                     },
                     TaskContinuationOptions.OnlyOnFaulted);
-                this.periodicTask.ContinueWith(t =>
+                Task ignored1 = this.periodicTask.ContinueWith(t =>
                 {
                     DefaultTrace.TraceInformation(
                         "The CPU monitor refresh task stopped. Status: {0}",
@@ -96,6 +93,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             this.periodicTask = null;
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD002:Synchronously waiting on tasks or awaiters may cause deadlocks. Use await or JoinableTaskFactory.Run instead.", Justification = "API invoked from synchronous Dispose and Stop")]
         private static void StopCoreAfterReleasingWriteLock(CancellationTokenSource cancel, Task backgroundTask)
         {
             cancel.Cancel();

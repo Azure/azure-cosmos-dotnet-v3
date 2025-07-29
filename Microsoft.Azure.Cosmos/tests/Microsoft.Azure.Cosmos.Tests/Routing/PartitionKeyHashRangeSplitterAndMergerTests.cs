@@ -9,6 +9,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     [TestClass]
     public sealed class PartitionKeyHashRangeSplitterAndMergerTests
     {
@@ -70,7 +72,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(0, null),
                     numRanges: 2,
-                    CreateRange(0, UInt128.MaxValue / 2), CreateRange(UInt128.MaxValue / 2, null));
+                    CreateRange(0, CosmosUInt128.MaxValue / 2), CreateRange(CosmosUInt128.MaxValue / 2, null));
 
                 VerifySplit(
                     splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
@@ -82,7 +84,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     splitOutcome: PartitionKeyHashRangeSplitterAndMerger.SplitOutcome.Success,
                     range: CreateRange(null, null),
                     numRanges: 2,
-                    CreateRange(null, UInt128.MaxValue / 2), CreateRange(UInt128.MaxValue / 2, null));
+                    CreateRange(null, CosmosUInt128.MaxValue / 2), CreateRange(CosmosUInt128.MaxValue / 2, null));
             }
 
             static void VerifySplit(
@@ -162,7 +164,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
             }
         }
 
-        private static PartitionKeyHashRange CreateRange(UInt128? start, UInt128? end)
+        private static PartitionKeyHashRange CreateRange(CosmosUInt128? start, CosmosUInt128? end)
         {
             return new PartitionKeyHashRange(
                 startInclusive: start.HasValue ? (PartitionKeyHash?)new PartitionKeyHash(start.Value) : null,

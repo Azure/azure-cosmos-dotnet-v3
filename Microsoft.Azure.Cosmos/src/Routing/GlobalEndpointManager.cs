@@ -57,10 +57,9 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
             if (AppConfig.IsEnabled)
             {
-                string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
+                string? backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];
                 if (!string.IsNullOrEmpty(backgroundRefreshLocationTimeIntervalInMSConfig))
                 {
                     if (!int.TryParse(backgroundRefreshLocationTimeIntervalInMSConfig, out this.backgroundRefreshLocationTimeIntervalInMS))
@@ -69,8 +68,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                     }
                 }
             }
-#endif
-            string minimumIntervalForNonForceRefreshLocationInMSConfig = Environment.GetEnvironmentVariable(GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS);
+
+            string? minimumIntervalForNonForceRefreshLocationInMSConfig = Environment.GetEnvironmentVariable(GlobalEndpointManager.MinimumIntervalForNonForceRefreshLocationInMS);
             if (!string.IsNullOrEmpty(minimumIntervalForNonForceRefreshLocationInMSConfig))
             {
                 if (int.TryParse(minimumIntervalForNonForceRefreshLocationInMSConfig, out int minimumIntervalForNonForceRefreshLocationInMS))
@@ -449,7 +448,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return this.locationCache.GetApplicableEndpoints(request, isReadRequest);
         }
-
         public ReadOnlyCollection<string> GetApplicableRegions(IEnumerable<string> excludeRegions, bool isReadRequest)
         {
             return this.locationCache.GetApplicableRegions(excludeRegions, isReadRequest);
@@ -611,7 +609,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.owner.GetDatabaseAccountInternalAsync(serviceEndpoint, this.cancellationTokenSource.Token);
         }
 
-        private void OnPreferenceChanged(object sender, NotifyCollectionChangedEventArgs e)
+        private void OnPreferenceChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
             this.locationCache.OnLocationPreferenceChanged(new ReadOnlyCollection<string>(
                 this.connectionPolicy.PreferredLocations));

@@ -88,13 +88,11 @@ namespace Microsoft.Azure.Documents
 
         internal string LocalIp { get; set; }
 
-#if !NETSTANDARD16
         private RequestTimeoutException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.RequestTimeout)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

@@ -15,6 +15,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     [TestClass]
     public class PartitionKeyHashBaselineTest : BaselineTests<PartitionKeyHashBaselineTest.Input, PartitionKeyHashBaselineTest.Output>
     {
@@ -192,8 +194,8 @@ namespace Microsoft.Azure.Cosmos.Tests.Routing
                     partitionKeyHashV2 = PartitionKeyHash.V2.Hash(Number64.ToDouble(cosmosNumber.Value));
                     break;
                 case CosmosArray cosmosArray:
-                    IList<UInt128> partitionKeyHashValuesV1 = new List<UInt128>();
-                    IList<UInt128> partitionKeyHashValuesV2 = new List<UInt128>();
+                    IList<CosmosUInt128> partitionKeyHashValuesV1 = new List<CosmosUInt128>();
+                    IList<CosmosUInt128> partitionKeyHashValuesV2 = new List<CosmosUInt128>();
 
                     foreach (CosmosElement element in cosmosArray)
                     {

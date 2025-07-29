@@ -1,7 +1,6 @@
 //------------------------------------------------------------
 // Copyright (c) Microsoft Corporation.  All rights reserved.
 //------------------------------------------------------------
-#if NETSTANDARD2_0_OR_GREATER
 namespace Microsoft.Azure.Documents.Telemetry
 {
     using System;
@@ -74,4 +73,3 @@ namespace Microsoft.Azure.Documents.Telemetry
         }
     }
 }
-#endif

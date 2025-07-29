@@ -65,13 +65,11 @@ namespace Microsoft.Azure.Documents
             SetDescription();
         }
 
-#if !NETSTANDARD16
         private ConflictException(SerializationInfo info, StreamingContext context)
             : base(info, context, HttpStatusCode.Conflict)
         {
             SetDescription();
         }
-#endif
 
         private void SetDescription()
         {

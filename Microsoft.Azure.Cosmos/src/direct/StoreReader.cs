@@ -516,11 +516,9 @@ namespace Microsoft.Azure.Documents
                 case OperationType.ReadFeed:
                 case OperationType.Query:
                     {
-                        QueryRequestPerformanceActivity activity = CustomTypeExtensions.StartActivity(request);
-                        StoreResponse result = await StoreReader.CompleteActivity(this.transportClient.InvokeResourceOperationAsync(
+                        StoreResponse result = await this.transportClient.InvokeResourceOperationAsync(
                             physicalAddress,
-                            request),
-                            activity);
+                            request);
                         return (result, DateTime.UtcNow);
                     }
                 default:
@@ -569,30 +567,6 @@ namespace Microsoft.Azure.Documents
                 }
 
                 request.Continuation = continuation.Substring(0, firstSemicolonPosition);
-            }
-        }
-
-        private static async Task<StoreResponse> CompleteActivity(Task<StoreResponse> task, QueryRequestPerformanceActivity activity)
-        {
-            if (activity == null)
-            {
-                return await task;
-            }
-            else
-            {
-                StoreResponse response;
-                try
-                {
-                    response = await task;
-                }
-                catch
-                {
-                    activity.ActivityComplete(false);
-                    throw;
-                }
-
-                activity.ActivityComplete(true);
-                return response;
             }
         }
 
