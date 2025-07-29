@@ -26,13 +26,15 @@ namespace Microsoft.Azure.Cosmos
     {
         private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ObjectPool<BufferProviderWrapper> bufferProviderWrapperPool;
+        private readonly UserAgentContainer userAgentContainer;
         private readonly IChaosInterceptor chaosInterceptor;
 
         public ThinClientStoreClient(
             CosmosHttpClient httpClient,
+            UserAgentContainer userAgentContainer,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null,
             bool isPartitionLevelFailoverEnabled = false,
+            JsonSerializerSettings serializerSettings = null,
             IChaosInterceptor chaosInterceptor = null)
             : base(httpClient,
                   eventSource,
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.userAgentContainer = userAgentContainer;
             this.chaosInterceptor = chaosInterceptor;
         }
 
@@ -74,6 +77,7 @@ namespace Microsoft.Azure.Cosmos
                         return await ThinClientStoreClient.ParseResponseAsync(fiResponseMessage, request.SerializerSettings ?? base.SerializerSettings, request);
                     }
                 }
+
                 HttpResponseMessage proxyResponse = await ThinClientTransportSerializer.ConvertProxyResponseAsync(responseMessage);
                 return await ThinClientStoreClient.ParseResponseAsync(proxyResponse, request.SerializerSettings ?? base.SerializerSettings, request);
             }
