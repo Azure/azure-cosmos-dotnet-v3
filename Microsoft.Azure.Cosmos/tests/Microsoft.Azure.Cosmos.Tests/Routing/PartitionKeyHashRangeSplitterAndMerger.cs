@@ -8,6 +8,8 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.Generic;
     using System.Linq;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     /// <summary>
     /// Splits or merges <see cref="PartitionKeyHashRange"/>
     /// </summary>
@@ -39,9 +41,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 return SplitOutcome.NumRangesNeedsToBeGreaterThanZero;
             }
 
-            UInt128 actualEnd = partitionKeyHashRange.EndExclusive.HasValue ? partitionKeyHashRange.EndExclusive.Value.HashValues[0] : UInt128.MaxValue;
-            UInt128 actualStart = partitionKeyHashRange.StartInclusive.HasValue ? partitionKeyHashRange.StartInclusive.Value.HashValues[0] : UInt128.MinValue;
-            UInt128 rangeLength = actualEnd - actualStart;
+            CosmosUInt128 actualEnd = partitionKeyHashRange.EndExclusive.HasValue ? partitionKeyHashRange.EndExclusive.Value.HashValues[0] : CosmosUInt128.MaxValue;
+            CosmosUInt128 actualStart = partitionKeyHashRange.StartInclusive.HasValue ? partitionKeyHashRange.StartInclusive.Value.HashValues[0] : CosmosUInt128.MinValue;
+            CosmosUInt128 rangeLength = actualEnd - actualStart;
             if (rangeLength < rangeCount)
             {
                 splitRanges = default;
@@ -56,7 +58,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             }
 
             List<PartitionKeyHashRange> childRanges = new List<PartitionKeyHashRange>();
-            UInt128 childRangeLength = rangeLength / rangeCount;
+            CosmosUInt128 childRangeLength = rangeLength / rangeCount;
             // First range should start at the user supplied range (since the input might have an open range and we don't want to return 0)
             {
                 PartitionKeyHash? start = partitionKeyHashRange.StartInclusive;
@@ -140,7 +142,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             private static readonly PartitionKeyHashRange fullRange = new PartitionKeyHashRange(
                 startInclusive: new PartitionKeyHash(0),
-                endExclusive: new PartitionKeyHash(UInt128.FromByteArray(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F })));
+                endExclusive: new PartitionKeyHash(CosmosUInt128.FromByteArray(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x3F })));
 
             public override PartitionKeyHashRange FullRange => PartitionKeyHashRangeSplitterAndMerger.V2.fullRange;
         }

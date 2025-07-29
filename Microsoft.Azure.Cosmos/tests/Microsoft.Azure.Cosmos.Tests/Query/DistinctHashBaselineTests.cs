@@ -10,6 +10,8 @@
     using Microsoft.Azure.Cosmos.Test.BaselineTest;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
+
     [TestClass]
     public class DistinctHashBaselineTests : BaselineTests<DistinctHashBaselineTests.Input, DistinctHashBaselineTests.Output>
     {
@@ -112,7 +114,7 @@
 
         public override Output ExecuteTest(Input input)
         {
-            UInt128 hash = DistinctHash.GetHash(input.CosmosElement);
+            CosmosUInt128 hash = DistinctHash.GetHash(input.CosmosElement);
             return new Output(hash);
         }
 
@@ -136,12 +138,12 @@
 
         public sealed class Output : BaselineTestOutput
         {
-            internal Output(UInt128 hash)
+            internal Output(CosmosUInt128 hash)
             {
                 this.Hash = hash;
             }
 
-            internal UInt128 Hash { get; }
+            internal CosmosUInt128 Hash { get; }
 
             public override void SerializeAsXml(XmlWriter xmlWriter)
             {

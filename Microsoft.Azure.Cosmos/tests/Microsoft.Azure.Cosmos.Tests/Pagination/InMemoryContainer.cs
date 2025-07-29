@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
     using static Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter;
     using Debug = System.Diagnostics.Debug;
     using ResourceIdentifier = Cosmos.Pagination.ResourceIdentifier;
-    using UInt128 = UInt128;
+    using CosmosUInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     // Collection useful for mocking requests and repartitioning (splits / merge).
     internal class InMemoryContainer : IMonadicDocumentContainer
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
             QueryRequestOptions queryRequestOptions = null)
         {
             this.partitionKeyDefinition = partitionKeyDefinition ?? throw new ArgumentNullException(nameof(partitionKeyDefinition));
-            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(Cosmos.UInt128.MaxValue));
+            PartitionKeyHashRange fullRange = new PartitionKeyHashRange(startInclusive: null, endExclusive: new PartitionKeyHash(CosmosUInt128.MaxValue));
             PartitionKeyHashRanges partitionKeyHashRanges = PartitionKeyHashRanges.Create(new PartitionKeyHashRange[] { fullRange });
             this.partitionedRecords = new PartitionKeyHashRangeDictionary<Records>(partitionKeyHashRanges);
             this.partitionedRecords[fullRange] = new Records();
@@ -1287,7 +1287,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                 throw new ArgumentOutOfRangeException("Can only support hash v2");
             }
 
-            IList<UInt128> partitionKeyHashValues = new List<UInt128>();
+            IList<CosmosUInt128> partitionKeyHashValues = new List<CosmosUInt128>();
 
             foreach (CosmosElement partitionKey in partitionKeys)
             {
@@ -1461,7 +1461,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
         /// </summary>
         private static PartitionKeyHash FromHashString(string rangeHash)
         {
-            List<UInt128> hashes = new();
+            List<CosmosUInt128> hashes = new();
             foreach (string hashComponent in GetHashComponents(rangeHash))
             {
                 // Hash FF has a special meaning in CosmosDB stack. It represents the max range which needs to be correctly represented for UInt128 parsing.
@@ -1469,7 +1469,7 @@ namespace Microsoft.Azure.Cosmos.Tests.Pagination
                     "FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF-FF" :
                     hashComponent;
 
-                bool success = UInt128.TryParse(value, out UInt128 uInt128);
+                bool success = CosmosUInt128.TryParse(value, out CosmosUInt128 uInt128);
                 Debug.Assert(success, "InMemoryContainer Assert!", "UInt128 parsing must succeed");
                 hashes.Add(uInt128);
             }
