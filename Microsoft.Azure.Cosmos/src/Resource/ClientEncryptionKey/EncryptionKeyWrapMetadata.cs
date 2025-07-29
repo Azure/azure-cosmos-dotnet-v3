@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Metadata that can be used to wrap/unwrap a Data Encryption Key using a Customer Managed Key.
@@ -49,7 +49,7 @@ namespace Microsoft.Azure.Cosmos
         /// Note: This value is saved in the Cosmos DB service.
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
-        [JsonProperty(PropertyName = "type", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("type")]
         public string Type { get; private set; }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos
         /// Note: This value is saved in the Cosmos DB service.
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
-        [JsonProperty(PropertyName = "name", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("name")]
         public string Name { get; private set; }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace Microsoft.Azure.Cosmos
         /// Note: This value is saved in the Cosmos DB service.
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
-        [JsonProperty(PropertyName = "value", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("value")]
         public string Value { get; private set; }
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Microsoft.Azure.Cosmos
         /// Note: This value is saved in the Cosmos DB service.
         /// Implementors of derived implementations should ensure that this does not have (private) key material or credential information.
         /// </summary>
-        [JsonProperty(PropertyName = "algorithm", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("algorithm")]
         public string Algorithm { get; private set; }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         /// <inheritdoc/>
         public override bool Equals(object obj)

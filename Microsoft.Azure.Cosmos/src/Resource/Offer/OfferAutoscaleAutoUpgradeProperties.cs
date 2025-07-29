@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal sealed class OfferAutoscaleAutoUpgradeProperties
     {
@@ -24,7 +24,7 @@ namespace Microsoft.Azure.Cosmos
             this.ThroughputProperties = new AutoscaleThroughputProperties(incrementPercent);
         }
 
-        [JsonProperty(PropertyName = Constants.Properties.AutopilotThroughputPolicy, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.AutopilotThroughputPolicy)]
         public AutoscaleThroughputProperties ThroughputProperties { get; private set; }
 
         /// <summary>
@@ -32,11 +32,11 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         internal string GetJsonString()
         {
-            return JsonConvert.SerializeObject(this, Formatting.None);
+            return JsonSerializer.Serialize(this);
         }
 
         public class AutoscaleThroughputProperties
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos
                 this.IncrementPercent = incrementPercent;
             }
 
-            [JsonProperty(PropertyName = Constants.Properties.AutopilotThroughputPolicyIncrementPercent, NullValueHandling = NullValueHandling.Ignore)]
+            [JsonPropertyName(Constants.Properties.AutopilotThroughputPolicyIncrementPercent)]
             public int IncrementPercent { get; private set; }
 
             /// <summary>
@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos
             /// This ensures that if resource is read and updated none of the fields will be lost in the process.
             /// </summary>
             [JsonExtensionData]
-            internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+            internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         }
     }

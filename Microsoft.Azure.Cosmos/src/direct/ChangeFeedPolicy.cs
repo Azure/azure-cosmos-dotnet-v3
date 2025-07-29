@@ -5,7 +5,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the change feed policy for a collection in the Azure Cosmos DB service.
@@ -19,7 +19,7 @@ namespace Microsoft.Azure.Documents
         /// <value>
         /// Value is in TimeSpan. Any seconds will be ceiled as 1 minute.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.LogRetentionDuration)]
+        [JsonPropertyName(Constants.Properties.LogRetentionDuration)]
         public TimeSpan RetentionDuration
         {
             get

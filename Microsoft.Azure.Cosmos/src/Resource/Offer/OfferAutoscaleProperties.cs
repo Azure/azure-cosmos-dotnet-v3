@@ -5,9 +5,9 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     internal class OfferAutoscaleProperties
     {
@@ -32,13 +32,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// The maximum throughput the autoscale will scale to.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.AutopilotMaxThroughput, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.AutopilotMaxThroughput)]
         public int? MaxThroughput { get; private set; }
 
         /// <summary>
         /// Scales the maximum through put automatically
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.AutopilotAutoUpgradePolicy, NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName(Constants.Properties.AutopilotAutoUpgradePolicy)]
         public OfferAutoscaleAutoUpgradeProperties AutoscaleAutoUpgradeProperties { get; private set; }
 
         /// <summary>
@@ -46,11 +46,11 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [JsonExtensionData]
-        internal IDictionary<string, JToken> AdditionalProperties { get; private set; }
+        internal IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
 
         internal string GetJsonString()
         {
-            return JsonConvert.SerializeObject(this, Formatting.None);
+            return JsonSerializer.Serialize(this);
         }
     }
 }

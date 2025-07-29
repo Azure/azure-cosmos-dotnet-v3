@@ -6,6 +6,8 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
 
     /// <summary>
@@ -36,13 +38,13 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Path in JSON document to index
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Path)]
+        [JsonPropertyName(Constants.Properties.Path)]
         public string Path { get; set; }
 
         /// <summary>
         /// Path's spatial type
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.Types, ItemConverterType = typeof(StringEnumConverter))]
+        [JsonPropertyName(Constants.Properties.Types)]
         public Collection<SpatialType> SpatialTypes
         {
             get
@@ -59,7 +61,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets the bounding box
         /// </summary>
-        [JsonProperty(PropertyName = "boundingBox", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonPropertyName("boundingBox")]
         public BoundingBoxProperties BoundingBox
         {
             get; set;
