@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Documents
     ///  Internal Azure Cosmos DB resources that don't use Newtonsoft.Json for serialization,
     ///  such as <see cref="Address"/>, extend this abstract type.
     /// </summary>
-    internal abstract class PlainResource : IResource
+    public abstract class PlainResource : IResource
     {
         internal static DateTime UnixStartTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 

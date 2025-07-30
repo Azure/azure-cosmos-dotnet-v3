@@ -200,7 +200,7 @@ namespace Microsoft.Azure.Documents
                     this.partitionKeyRangeList = new List<PartitionKeyRange>();
                     foreach (string partitionKeyRange in this.SerializedPartitionKeyRanges)
                     {
-                        this.partitionKeyRangeList.Add(this.GetResourceIfDeserialized<PartitionKeyRange>(partitionKeyRange, CosmosSerializerContext.Default.PartitionKeyRange));
+                        this.partitionKeyRangeList.Add(this.GetResourceIfDeserialized<PartitionKeyRange>(partitionKeyRange, CosmosJsonContext.Default.PartitionKeyRange));
                     }
                 }
 

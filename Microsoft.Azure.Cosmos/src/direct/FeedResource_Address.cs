@@ -9,9 +9,10 @@ namespace Microsoft.Azure.Documents
     using System.Collections.ObjectModel;
     using System.Text.Json.Serialization;
 
-    internal sealed class FeedResource_Address : PlainResource
+    public sealed class FeedResource_Address : PlainResource
     {
-        [JsonInclude]
+        // [JsonInclude]
+        [JsonPropertyName("Addresss")]
         internal Collection<Address> Addresss { get; set; }
     }
 }

@@ -9,9 +9,10 @@ namespace Microsoft.Azure.Documents
     using System.Collections.ObjectModel;
     using System.Text.Json.Serialization;
 
-    internal sealed class FeedResource_PartitionKeyRange : PlainResource
+    public sealed class FeedResource_PartitionKeyRange : PlainResource
     {
-        [JsonInclude]
-        internal Collection<PartitionKeyRange> PartitionKeyRanges { get; set; }
+        // [JsonInclude]
+        [System.Text.Json.Serialization.JsonPropertyName("PartitionKeyRanges")]
+        public Collection<PartitionKeyRange> PartitionKeyRanges { get; set; }
     }
 }

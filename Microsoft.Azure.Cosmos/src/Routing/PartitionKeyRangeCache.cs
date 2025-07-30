@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     lastStatusCode = response.StatusCode;
                     changeFeedNextIfNoneMatch = response.Headers[HttpConstants.HttpHeaders.ETag];
 
-                    FeedResource_PartitionKeyRange feedResource = response.GetResource<FeedResource_PartitionKeyRange>(CosmosSerializerContext.Default.FeedResource_PartitionKeyRange);
+                    FeedResource_PartitionKeyRange feedResource = response.GetResource<FeedResource_PartitionKeyRange>(Microsoft.Azure.Cosmos.CosmosJsonContext.Default.FeedResource_PartitionKeyRange);
                     if (feedResource != null)
                     {
                         ranges.AddRange(feedResource.PartitionKeyRanges);

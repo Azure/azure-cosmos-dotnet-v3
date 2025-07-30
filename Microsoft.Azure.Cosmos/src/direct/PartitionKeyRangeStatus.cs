@@ -6,11 +6,11 @@ namespace Microsoft.Azure.Documents
 {
     using System.Runtime.Serialization;
 
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
+    // using Newtonsoft.Json;
+    // using Newtonsoft.Json.Converters;
 
-    [JsonConverter(typeof(StringEnumConverter))]
-    internal enum PartitionKeyRangeStatus
+    // [JsonConverter(typeof(StringEnumConverter))]
+    public enum PartitionKeyRangeStatus
     {
         Invalid,
         

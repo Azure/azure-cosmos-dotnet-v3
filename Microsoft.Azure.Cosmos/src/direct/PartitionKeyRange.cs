@@ -6,14 +6,15 @@ namespace Microsoft.Azure.Documents
 {
     using System;
     using System.Collections.ObjectModel;
-    using Microsoft.Azure.Documents.Routing;
     using System.Text.Json.Serialization;
+    using Microsoft.Azure.Documents.Routing;
+    using Newtonsoft.Json.Converters;
 
     /// <summary>
     /// Represents a partition key range in the Azure Cosmos DB service.
     /// </summary>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif
@@ -27,20 +28,20 @@ namespace Microsoft.Azure.Documents
         /// Represents the minimum possible value of a PartitionKeyRange in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.MinInclusive)]
-        internal string MinInclusive { get; set; }
+        public string MinInclusive { get; set; }
 
         /// <summary>
         /// Represents maximum exclusive value of a PartitionKeyRange (the upper, but not including this value, boundary of PartitionKeyRange)
         /// in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.MaxExclusive)]
-        internal string MaxExclusive { get; set; }
+        public string MaxExclusive { get; set; }
 
         [JsonPropertyName(Constants.Properties.RidPrefix)]
-        internal int? RidPrefix { get; set; }
+        public int? RidPrefix { get; set; }
 
         [JsonPropertyName(Constants.Properties.ThroughputFraction)]
-        internal double ThroughputFraction { get; set; }
+        public double ThroughputFraction { get; set; }
 
 #if !DOCDBCLIENT
         [JsonPropertyName(Constants.Properties.TargetThroughput)]
@@ -48,7 +49,8 @@ namespace Microsoft.Azure.Documents
 #endif
 
         [JsonPropertyName(Constants.Properties.PartitionKeyRangeStatus)]
-        internal PartitionKeyRangeStatus Status { get; set; }
+        [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter<PartitionKeyRangeStatus>))]
+        public PartitionKeyRangeStatus Status { get; set; }
 
         [JsonPropertyName(Constants.Properties.Lsn)]
         public long LSN { get; set; }
