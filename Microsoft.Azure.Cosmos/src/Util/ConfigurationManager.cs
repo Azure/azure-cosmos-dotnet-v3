@@ -49,7 +49,6 @@ namespace Microsoft.Azure.Cosmos
         /// Environment variable to override AAD scope.
         /// </summary>
         internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
-
         /// <summary>
         /// A read-only string containing the environment variable name for capturing the consecutive failure count for reads, before triggering per partition
         /// circuit breaker flow. The default value for this interval is 10 consecutive requests within 1 min window.
