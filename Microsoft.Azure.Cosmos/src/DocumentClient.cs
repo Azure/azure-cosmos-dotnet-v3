@@ -1416,8 +1416,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.GlobalEndpointManager != null)
             {
-                // Unsubscribe from account properties refresh events
-                this.GlobalEndpointManager.OnAccountPropertiesRefreshed -= this.HandleAccountPropertiesRefreshed;
+                // Unsubscribe from PPAF config change events
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.HandleEnablePartitionLevelFailoverConfigChanged;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -6860,8 +6860,8 @@ namespace Microsoft.Azure.Cosmos
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
 
-            // Subscribe to GlobalEndpointManager account properties refresh events to update CosmosAccountServiceConfiguration
-            this.GlobalEndpointManager.OnAccountPropertiesRefreshed += this.HandleAccountPropertiesRefreshed;
+            // Subscribe to GlobalEndpointManager PPAF config change events to update CosmosAccountServiceConfiguration
+            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.HandleEnablePartitionLevelFailoverConfigChanged;
         }
 
         internal string GetUserAgentFeatures()
@@ -7016,32 +7016,26 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Handles account properties refresh events from GlobalEndpointManager
+        /// Handles PPAF config change events from GlobalEndpointManager
         /// Updates the CosmosAccountServiceConfiguration with new account properties and handles PPAF changes
         /// </summary>
         /// <param name="accountProperties">The refreshed account properties</param>
-        private void HandleAccountPropertiesRefreshed(AccountProperties accountProperties)
+        private void HandleEnablePartitionLevelFailoverConfigChanged(AccountProperties accountProperties)
         {
             try
             {
-                DefaultTrace.TraceInformation("DocumentClient: Received account properties refresh from GlobalEndpointManager");
-                
-                // Get previous PPAF value before updating account properties
-                bool? previousEnablePartitionLevelFailover = this.accountServiceConfiguration?.AccountProperties?.EnablePartitionLevelFailover;
+                DefaultTrace.TraceInformation("DocumentClient: Received PPAF config change from GlobalEndpointManager");
                 
                 // Update the CosmosAccountServiceConfiguration with the new account properties
                 this.accountServiceConfiguration?.UpdateAccountProperties(accountProperties);
                 
-                // Check if PPAF enablement status has changed and handle it directly
+                // Handle the PPAF enablement change (comparison already done in GlobalEndpointManager)
                 bool? newEnablePartitionLevelFailover = accountProperties?.EnablePartitionLevelFailover;
-                if (previousEnablePartitionLevelFailover != newEnablePartitionLevelFailover)
-                {
-                    this.HandleEnablePartitionLevelFailoverChanged(newEnablePartitionLevelFailover);
-                }
+                this.HandleEnablePartitionLevelFailoverChanged(newEnablePartitionLevelFailover);
             }
             catch (Exception ex)
             {
-                DefaultTrace.TraceError("DocumentClient: Error handling account properties refresh: {0}", ex.Message);
+                DefaultTrace.TraceError("DocumentClient: Error handling PPAF config change: {0}", ex.Message);
             }
         }
 
