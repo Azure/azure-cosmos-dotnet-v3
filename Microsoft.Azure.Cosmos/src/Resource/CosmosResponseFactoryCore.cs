@@ -114,6 +114,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+#if !COSMOS_GW_AOT
         public override UserResponse CreateUserResponse(
             User user,
             ResponseMessage responseMessage)
@@ -147,6 +148,7 @@ namespace Microsoft.Azure.Cosmos
                     responseMessage.RequestMessage);
             });
         }
+#endif
 
         public override ClientEncryptionKeyResponse CreateClientEncryptionKeyResponse(
             ClientEncryptionKey clientEncryptionKey,
@@ -198,6 +200,7 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+#if !COSMOS_GW_AOT
         public override StoredProcedureExecuteResponse<T> CreateStoredProcedureExecuteResponse<T>(ResponseMessage responseMessage)
         {
             return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
@@ -254,6 +257,7 @@ namespace Microsoft.Azure.Cosmos
                     cosmosResponseMessage.RequestMessage);
             });
         }
+#endif
 
         public T ProcessMessage<T>(ResponseMessage responseMessage, Func<ResponseMessage, T> createResponse)
         {

@@ -29,6 +29,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract Task<string> GetRIDAsync(CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         public abstract FeedIterator GetUserQueryStreamIterator(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -38,5 +39,6 @@ namespace Microsoft.Azure.Cosmos
             string queryText = null,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+#endif
     }
 }

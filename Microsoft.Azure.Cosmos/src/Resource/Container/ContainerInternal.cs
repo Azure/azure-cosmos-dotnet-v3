@@ -9,7 +9,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -65,10 +64,12 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract Task<CollectionRoutingMap> GetRoutingMapAsync(CancellationToken cancellationToken);
 
+#if !COSMOS_GW_AOT
         public abstract FeedIterator GetStandByFeedIterator(
             string continuationToken = default,
             int? maxItemCount = default,
             StandByFeedIteratorRequestOptions requestOptions = default);
+#endif
 
         public abstract FeedIteratorInternal GetItemQueryStreamIteratorInternal(
             SqlQuerySpec sqlQuerySpec,
@@ -90,11 +91,12 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellation);
 
+#if !COSMOS_GW_AOT
         public abstract IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedMode changeFeedMode,
             ChangeFeedRequestOptions changeFeedRequestOptions = null);
-
+#endif
         public abstract IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
             ReadFeedCrossFeedRangeState state,
             QueryRequestOptions requestOptions = null);
@@ -117,6 +119,7 @@ namespace Microsoft.Azure.Cosmos
             throw new ArgumentNullException(nameof(partitionKey));
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -137,16 +140,18 @@ namespace Microsoft.Azure.Cosmos
             Stream streamPayload,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
+#endif
 
 #if !PREVIEW
         public abstract Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
             CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithAllVersionsAndDeletes<T>(
             string processorName,
             ChangeFeedHandler<ChangeFeedItem<T>> onChangesDelegate);
-
+#endif
         public abstract Task<bool> IsFeedRangePartOfAsync(
             Cosmos.FeedRange x,
             Cosmos.FeedRange y,
@@ -187,6 +192,7 @@ namespace Microsoft.Azure.Cosmos
             public QueryIterator QueryIterator { get; }
         }
 
+#if !COSMOS_GW_AOT
         public abstract FeedIterator GetChangeFeedStreamIteratorWithQuery(
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
@@ -198,5 +204,6 @@ namespace Microsoft.Azure.Cosmos
            ChangeFeedMode changeFeedMode,
            ChangeFeedQuerySpec changeFeedQuerySpec,
            ChangeFeedRequestOptions changeFeedRequestOptions = null);
+#endif
     }
 }

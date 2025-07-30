@@ -103,6 +103,7 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
+#if !COSMOS_GW_AOT
         public override Task<UserResponse> CreateUserAsync(string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -116,6 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
+#endif
 
         public override ContainerBuilder DefineContainer(
             string name,
@@ -204,6 +206,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext);
         }
 
+#if !COSMOS_GW_AOT
         public override User GetUser(string id)
         {
             return base.GetUser(id);
@@ -232,6 +235,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions),
                 this.ClientContext);
         }
+#endif
 
         public override Task<DatabaseResponse> ReadAsync(RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -363,6 +367,7 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
+#if !COSMOS_GW_AOT
         public override Task<UserResponse> UpsertUserAsync(
             string id,
             RequestOptions requestOptions = null,
@@ -405,5 +410,6 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.CreateClientEncryptionKeyAsync(trace, clientEncryptionKeyProperties, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateClientEncryptionKey, (response) => new OpenTelemetryResponse<ClientEncryptionKeyProperties>(response)));
         }
+#endif
     }
 }

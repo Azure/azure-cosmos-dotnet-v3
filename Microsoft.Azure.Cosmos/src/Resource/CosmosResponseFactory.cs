@@ -31,6 +31,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ItemResponse<T> CreateItemResponse<T>(
             ResponseMessage responseMessage);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Creates a StoredProcedureExecuteResponse from a response message
         /// </summary>
@@ -39,5 +40,6 @@ namespace Microsoft.Azure.Cosmos
         /// <returns>An instance of FeedResponse<typeparamref name="T"/></returns>
         public abstract StoredProcedureExecuteResponse<T> CreateStoredProcedureExecuteResponse<T>(
             ResponseMessage responseMessage);
+#endif
     }
 }

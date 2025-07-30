@@ -54,6 +54,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             out Stream valueParam)
         {
+#if !COSMOS_GW_AOT
             // If value is of type Stream, do not serialize
             if (typeof(Stream).IsAssignableFrom(typeof(T)))
             {
@@ -66,6 +67,9 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return true;
+#endif
+
+            throw new NotImplementedException();
         }
     }
 }

@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
             currentProperty.Content = throughputProperties.Content;
 
             return await this.GetThroughputResponseAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty, CosmosSerializerContext.Default.ThroughputProperties),
                 operationType: OperationType.Replace,
                 linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
                 resourceType: ResourceType.Offer,
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos
                 currentProperty.Content = throughputProperties.Content;
 
                 return await this.GetThroughputResponseAsync(
-                    streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty),
+                    streamPayload: this.ClientContext.SerializerCore.ToStream(currentProperty, CosmosSerializerContext.Default.ThroughputProperties),
                     operationType: OperationType.Replace,
                     linkUri: new Uri(currentProperty.SelfLink, UriKind.Relative),
                     resourceType: ResourceType.Offer,

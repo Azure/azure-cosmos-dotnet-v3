@@ -222,19 +222,19 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets the ReplicationPolicy properties
         /// </summary>
-        //[JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
-        //[JsonInclude]
+        [JsonPropertyName(Constants.Properties.UserReplicationPolicy)]
+        [JsonInclude]
         internal ReplicationPolicy ReplicationPolicy { get; set; }
 
         /// <summary>
         /// Gets the SystemReplicationPolicy 
         /// </summary>
-        //[JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
-        //[JsonInclude]
+        [JsonPropertyName(Constants.Properties.SystemReplicationPolicy)]
+        [JsonInclude]
         internal ReplicationPolicy SystemReplicationPolicy { get; set; }
 
-        //[JsonPropertyName(Constants.Properties.ReadPolicy)]
-        //[JsonInclude]
+        [JsonPropertyName(Constants.Properties.ReadPolicy)]
+        [JsonInclude]
         internal ReadPolicy ReadPolicy { get; set; }
 
         internal IDictionary<string, object> QueryEngineConfiguration => this.QueryEngineConfigurationInternal.Value;

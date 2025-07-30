@@ -40,6 +40,7 @@ namespace Microsoft.Azure.Cosmos.Linq
 
         private string SerializeWithCustomSerializer(object value)
         {
+#if !COSMOS_GW_AOT
             StringWriter writer = new StringWriter(CultureInfo.InvariantCulture);
 
             using (Stream stream = this.CustomCosmosSerializer.ToStream(value))
@@ -51,6 +52,9 @@ namespace Microsoft.Azure.Cosmos.Linq
                     return writer.ToString();
                 }
             }
+#endif
+
+            throw new NotImplementedException();
         }
     }
 }

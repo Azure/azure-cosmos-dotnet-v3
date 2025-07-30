@@ -12,9 +12,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
     using System.Linq;
     using System.Net;
     using System.Text;
+    using System.Text.Json.Serialization.Metadata;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Json;
@@ -89,10 +89,12 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public async Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
+            JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken)
         {
             ItemResponse<CosmosObject> tryInsertDocument = await this.container.CreateItemAsync(
                 payload,
+                jsonTypeInfo,
                 cancellationToken: cancellationToken);
             if (tryInsertDocument.StatusCode != HttpStatusCode.Created)
             {
@@ -313,6 +315,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             return monadicQueryPage;
         }
 
+#if !COSMOS_GW_AOT
         public async Task<TryCatch<ChangeFeedPage>> MonadicChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState,
             ChangeFeedExecutionOptions changeFeedPaginationOptions,
@@ -406,6 +409,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
             return monadicChangeFeedPage;
         }
+#endif
 
         public async Task<TryCatch<string>> MonadicGetResourceIdentifierAsync(ITrace trace, CancellationToken cancellationToken)
         {
@@ -420,6 +424,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
             }
         }
 
+#if !COSMOS_GW_AOT
         private sealed class ChangeFeedStateRequestMessagePopulator : IChangeFeedStateVisitor<RequestMessage>
         {
             public static readonly ChangeFeedStateRequestMessagePopulator Singleton = new ChangeFeedStateRequestMessagePopulator();
@@ -463,6 +468,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 message.Headers.IfNoneMatch = ChangeFeedStateRequestMessagePopulator.IfNoneMatchAllHeaderValue;
             }
         }
+#endif
 
         private static Dictionary<string, string> GetAdditionalHeaders(CosmosMessageHeadersInternal headers, ImmutableHashSet<string> bannedHeaders)
         {

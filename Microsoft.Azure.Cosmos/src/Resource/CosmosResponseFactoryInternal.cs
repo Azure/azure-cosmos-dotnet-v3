@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
             Container container,
             ResponseMessage responseMessage);
 
+#if !COSMOS_GW_AOT
         public abstract UserResponse CreateUserResponse(
             User user,
             ResponseMessage responseMessage);
@@ -29,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract PermissionResponse CreatePermissionResponse(
             Permission permission,
             ResponseMessage responseMessage);
+#endif
 
         public abstract ClientEncryptionKeyResponse CreateClientEncryptionKeyResponse(
             ClientEncryptionKey clientEncryptionKey,
@@ -41,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ThroughputResponse CreateThroughputResponse(
             ResponseMessage responseMessage);
 
+#if !COSMOS_GW_AOT
         public abstract StoredProcedureResponse CreateStoredProcedureResponse(
             ResponseMessage responseMessage);
 
@@ -49,5 +52,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract UserDefinedFunctionResponse CreateUserDefinedFunctionResponse(
             ResponseMessage responseMessage);
+#endif
     }
 }

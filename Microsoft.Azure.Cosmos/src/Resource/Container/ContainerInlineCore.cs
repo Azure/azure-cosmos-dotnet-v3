@@ -8,9 +8,9 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text.Json.Serialization.Metadata;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.ReadFeed;
@@ -225,6 +225,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         public override Task<ItemResponse<T>> CreateItemAsync<T>(T item,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -235,7 +236,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Create,
                 requestOptions: requestOptions,
-                task: (trace) => base.CreateItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken),
+                task: (trace) => base.CreateItemAsync<T>(item, trace, jsonTypeInfo, partitionKey, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateItem, (response) => new OpenTelemetryResponse<T>(response)),
                 resourceType: Documents.ResourceType.Document);
         }
@@ -293,6 +294,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
+            JsonTypeInfo jsonTypeInfo,  
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -303,7 +305,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Upsert,
                 requestOptions: requestOptions,
-                task: (trace) => base.UpsertItemAsync<T>(item, trace, partitionKey, requestOptions, cancellationToken),
+                task: (trace) => base.UpsertItemAsync<T>(item, trace, jsonTypeInfo, partitionKey, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.UpsertItem, (response) => new OpenTelemetryResponse<T>(response)),
                 resourceType: Documents.ResourceType.Document);
         }
@@ -329,6 +331,7 @@ namespace Microsoft.Azure.Cosmos
         public override Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -339,7 +342,7 @@ namespace Microsoft.Azure.Cosmos
                 databaseName: this.Database.Id,
                 operationType: Documents.OperationType.Replace,
                 requestOptions: requestOptions,
-                task: (trace) => base.ReplaceItemAsync<T>(item, id, trace, partitionKey, requestOptions, cancellationToken),
+                task: (trace) => base.ReplaceItemAsync<T>(item, id, trace, jsonTypeInfo, partitionKey, requestOptions, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReplaceItem, (response) => new OpenTelemetryResponse<T>(response)),
                 resourceType: Documents.ResourceType.Document);
         }
@@ -378,6 +381,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: Documents.ResourceType.Document);
         }
 
+#if !COSMOS_GW_AOT
         public override Task<ResponseMessage> PatchItemStreamAsync(
                 string id,
                 PartitionKey partitionKey,
@@ -431,6 +435,7 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.PatchItem, (response) => new OpenTelemetryResponse<T>(response)),
                 resourceType: Documents.ResourceType.Document);
         }
+#endif
 
         public override Task<ResponseMessage> ReadManyItemsStreamAsync(
             IReadOnlyList<(string id, PartitionKey partitionKey)> items,
@@ -521,6 +526,7 @@ namespace Microsoft.Azure.Cosmos
                 linqSerializerOptions);
         }
 
+#if !COSMOS_GW_AOT
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
@@ -574,6 +580,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return base.CreateTransactionalBatch(partitionKey);
         }
+#endif
 
         public override Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default)
         {
@@ -589,6 +596,7 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.GetFeedRangesAsync(trace, cancellationToken));
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
@@ -607,6 +615,7 @@ namespace Microsoft.Azure.Cosmos
                                                  changeFeedRequestOptions),
                                                  this.ClientContext);
         }
+#endif
 
         public override Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
@@ -648,6 +657,7 @@ namespace Microsoft.Azure.Cosmos
             return base.GetReadFeedIterator(queryDefinition, queryRequestOptions, resourceLink, resourceType, continuationToken, pageSize);
         }
 
+#if !COSMOS_GW_AOT
         public override IAsyncEnumerable<TryCatch<ChangeFeedPage>> GetChangeFeedAsyncEnumerable(
             ChangeFeedCrossFeedRangeState state,
             ChangeFeedMode changeFeedMode,
@@ -655,6 +665,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return base.GetChangeFeedAsyncEnumerable(state, changeFeedMode, changeFeedRequestOptions);
         }
+#endif
 
         public override IAsyncEnumerable<TryCatch<ReadFeedPage>> GetReadFeedAsyncEnumerable(
             ReadFeedCrossFeedRangeState state,

@@ -337,11 +337,13 @@ namespace Microsoft.Azure.Cosmos
         /// <param name="cancellationToken"><see cref="CancellationToken"/> for cancellation.</param>
         internal override Task MaterializeResourceAsync(CosmosSerializerCore serializerCore, CancellationToken cancellationToken)
         {
+#if !COSMOS_GW_AOT
             if (this.body.IsEmpty && this.Resource != null)
             {
                 this.ResourceStream = serializerCore.ToStream(this.Resource);
                 return base.MaterializeResourceAsync(serializerCore, cancellationToken);
             }
+#endif
 
             return Task.CompletedTask;
         }
