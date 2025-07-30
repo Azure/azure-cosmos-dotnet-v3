@@ -1416,6 +1416,8 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.GlobalEndpointManager != null)
             {
+                // Unsubscribe from account properties refresh events
+                this.GlobalEndpointManager.OnAccountPropertiesRefreshed -= this.HandleAccountPropertiesRefreshed;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -1433,7 +1435,6 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.accountServiceConfiguration != null)
             {
-                this.accountServiceConfiguration.Dispose();
                 this.accountServiceConfiguration = null;
             }
 
@@ -6861,6 +6862,9 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+            // Subscribe to GlobalEndpointManager account properties refresh events to update CosmosAccountServiceConfiguration
+            this.GlobalEndpointManager.OnAccountPropertiesRefreshed += this.HandleAccountPropertiesRefreshed;
         }
 
         internal string GetUserAgentFeatures()
@@ -7012,6 +7016,27 @@ namespace Microsoft.Azure.Cosmos
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             DefaultTrace.TraceInformation("DocumentClient: Updated GlobalPartitionEndpointManager for dynamic PPAF change");
+        }
+
+        /// <summary>
+        /// Handles account properties refresh events from GlobalEndpointManager
+        /// Updates the CosmosAccountServiceConfiguration with new account properties
+        /// </summary>
+        /// <param name="accountProperties">The refreshed account properties</param>
+        private void HandleAccountPropertiesRefreshed(AccountProperties accountProperties)
+        {
+            try
+            {
+                DefaultTrace.TraceInformation("DocumentClient: Received account properties refresh from GlobalEndpointManager");
+                
+                // Update the CosmosAccountServiceConfiguration with the new account properties
+                // This will trigger the OnEnablePartitionLevelFailoverChanged event if PPAF value changed
+                this.accountServiceConfiguration?.UpdateAccountProperties(accountProperties);
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("DocumentClient: Error handling account properties refresh: {0}", ex.Message);
+            }
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)

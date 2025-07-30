@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        /// <summary>
+        /// Event that is raised when account properties are refreshed and PPAF enablement status changes
+        /// </summary>
+        internal event Action<AccountProperties>? OnAccountPropertiesRefreshed;
+
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
             ConnectionPolicy connectionPolicy,
@@ -767,6 +772,9 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
+
+                // Raise event to notify about account properties refresh
+                this.OnAccountPropertiesRefreshed?.Invoke(accountProperties);
 
             }
             catch (Exception ex)
