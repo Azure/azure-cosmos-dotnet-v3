@@ -3,6 +3,8 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
+    using System.Text.Json.Serialization;
+
     /// <summary>
     /// Replication policy.
     /// </summary>
@@ -11,7 +13,7 @@ namespace Microsoft.Azure.Documents
 #else
     public
 #endif
-    sealed class ReplicationPolicy : JsonSerializable
+    sealed class ReplicationPolicy
     {
         private const int DefaultMaxReplicaSetSize = 4;
         private const int DefaultMinReplicaSetSize = 3; 
@@ -27,52 +29,25 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Maximum number of replicas for the partition.
         /// </summary>
-        public int MaxReplicaSetSize
-        {
-            get
-            {
-                return base.GetValue<int>(Constants.Properties.MaxReplicaSetSize, DefaultMaxReplicaSetSize);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MaxReplicaSetSize, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.MaxReplicaSetSize)]
+        public int MaxReplicaSetSize { get; set; } = DefaultMaxReplicaSetSize;
 
         /// <summary>
         /// Minimum number of replicas to ensure availability
         /// of the partition.
         /// </summary>
-        public int MinReplicaSetSize
-        {
-            get
-            {
-                return base.GetValue<int>(Constants.Properties.MinReplicaSetSize, DefaultMinReplicaSetSize);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.MinReplicaSetSize, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.MinReplicaSetSize)]
+        public int MinReplicaSetSize { get; set; } = DefaultMinReplicaSetSize;
+
 
         /// <summary>
         /// Whether or not async replication is enabled.
         /// </summary>
-        public bool AsyncReplication
-        {
-            get
-            {
-                return base.GetValue<bool>(Constants.Properties.AsyncReplication, DefaultAsyncReplication);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.AsyncReplication, value);
-            }
-        }
+        [JsonPropertyName(Constants.Properties.AsyncReplication)]
+        public bool AsyncReplication { get; set; } = DefaultAsyncReplication;
 
-        internal override void Validate()
+        internal void Validate()
         {
-            base.Validate();
             Helpers.ValidateNonNegativeInteger(Constants.Properties.MinReplicaSetSize, this.MinReplicaSetSize);
             Helpers.ValidateNonNegativeInteger(Constants.Properties.MinReplicaSetSize, this.MaxReplicaSetSize);
         }

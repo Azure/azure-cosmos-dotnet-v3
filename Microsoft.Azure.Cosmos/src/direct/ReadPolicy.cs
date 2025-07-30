@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Documents
     /// <summary>
     /// ReadPolicy for the account
     /// </summary>
-    public sealed class ReadPolicy : JsonSerializable
+    public sealed class ReadPolicy
     {
         private const int DefaultPrimaryReadCoefficient = 0;
         private const int DefaultSecondaryReadCoefficient = 1;
@@ -24,33 +24,13 @@ namespace Microsoft.Azure.Documents
         /// Direct connectivity client can use this value to dynamically decide where to send reads to effectively use the service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.PrimaryReadCoefficient)]
-        public int PrimaryReadCoefficient
-        {
-            get
-            {
-                return base.GetValue<int>(Constants.Properties.PrimaryReadCoefficient, ReadPolicy.DefaultPrimaryReadCoefficient);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.PrimaryReadCoefficient, value);
-            }
-        }
+        public int PrimaryReadCoefficient { get; set; } = ReadPolicy.DefaultPrimaryReadCoefficient;
 
         /// <summary>
         /// Relative weight of secondary to serve read requests. Higher the value, it is preferred to issue reads to secondary.
         /// Direct connectivity client can use this value to dynamically decide where to send reads to effectively use the service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.SecondaryReadCoefficient)]
-        public int SecondaryReadCoefficient
-        {
-            get
-            {
-                return base.GetValue<int>(Constants.Properties.SecondaryReadCoefficient, ReadPolicy.DefaultSecondaryReadCoefficient);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.SecondaryReadCoefficient, value);
-            }
-        }
+        public int SecondaryReadCoefficient { get; set; } = ReadPolicy.DefaultSecondaryReadCoefficient;
     }
 }
