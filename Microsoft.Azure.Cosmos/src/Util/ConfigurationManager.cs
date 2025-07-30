@@ -46,12 +46,6 @@ namespace Microsoft.Azure.Cosmos
         internal static readonly string ThinClientModeEnabled = "AZURE_COSMOS_THIN_CLIENT_ENABLED";
 
         /// <summary>
-        /// A read-only string containing the environment variable name for capturing the account properties refresh interval
-        /// in seconds. The default value for this interval is 300 seconds (5 minutes).
-        /// </summary>
-        internal static readonly string AccountPropertiesRefreshIntervalInSeconds = "AZURE_COSMOS_ACCOUNT_PROPERTIES_REFRESH_INTERVAL_IN_SECONDS";
-
-        /// <summary>
         /// Environment variable to override AAD scope.
         /// </summary>
         internal static readonly string AADScopeOverride = "AZURE_COSMOS_AAD_SCOPE_OVERRIDE";
@@ -300,22 +294,6 @@ namespace Microsoft.Azure.Cosmos
             return ConfigurationManager
                     .GetEnvironmentVariable(
                         variable: ConfigurationManager.CircuitBreakerTimeoutCounterResetWindowInMinutes,
-                        defaultValue: defaultValue);
-        }
-
-        /// <summary>
-        /// Gets the account properties refresh interval in seconds.
-        /// The user can set the respective environment variable 'AZURE_COSMOS_ACCOUNT_PROPERTIES_REFRESH_INTERVAL_IN_SECONDS'
-        /// to override the value.
-        /// </summary>
-        /// <param name="defaultValue">An integer containing the default value for the refresh interval in seconds.</param>
-        /// <returns>An integer representing the refresh interval in seconds.</returns>
-        public static int GetAccountPropertiesRefreshIntervalInSeconds(
-            int defaultValue)
-        {
-            return ConfigurationManager
-                    .GetEnvironmentVariable(
-                        variable: ConfigurationManager.AccountPropertiesRefreshIntervalInSeconds,
                         defaultValue: defaultValue);
         }
 
