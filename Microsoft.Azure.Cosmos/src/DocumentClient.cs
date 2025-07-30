@@ -6948,6 +6948,9 @@ namespace Microsoft.Azure.Cosmos
                 // Update the GlobalPartitionEndpointManager
                 this.UpdateGlobalPartitionEndpointManager();
 
+                // Update user agent features to reflect the new PPAF configuration
+                this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
                 DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
             }
             catch (Exception ex)
