@@ -47,7 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <param name="id">The Id of the resource in the Azure Cosmos service.</param>
         // [JsonConstructor]
-        [System.Text.Json.Serialization.JsonConstructor]
+        // [System.Text.Json.Serialization.JsonConstructor]
         public DatabaseProperties(string id)
         {
             this.Id = id;
@@ -86,7 +86,7 @@ namespace Microsoft.Azure.Cosmos
         // [JsonProperty(PropertyName = Constants.Properties.ETag, NullValueHandling = NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ETag)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string ETag { get; private set; }
+        public string ETag { get; set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="DatabaseProperties" /> from the Azure Cosmos DB service.
@@ -97,7 +97,7 @@ namespace Microsoft.Azure.Cosmos
         [System.Text.Json.Serialization.JsonConverter(typeof(Microsoft.Azure.Cosmos.stj.UnixDateTimeConverter))]
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.LastModified)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; set; }
 
         /// <summary>
         /// Gets the self-link associated with the resource from the Azure Cosmos DB service.
@@ -110,7 +110,7 @@ namespace Microsoft.Azure.Cosmos
         // [JsonProperty(PropertyName = Constants.Properties.SelfLink, NullValueHandling = NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.SelfLink)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string SelfLink { get; private set; }
+        public string SelfLink { get; set; }
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -126,7 +126,7 @@ namespace Microsoft.Azure.Cosmos
         // [JsonProperty(PropertyName = Constants.Properties.RId, NullValueHandling = NullValueHandling.Ignore)]
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.RId)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string ResourceId { get; private set; }
+        public string ResourceId { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 
@@ -134,6 +134,6 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         // [JsonExtensionData]
         [System.Text.Json.Serialization.JsonExtensionData]
-        public Dictionary<string, JsonElement> AdditionalProperties { get; private set; } = new();
+        public Dictionary<string, JsonElement> AdditionalProperties { get; set; } = new();
     }
 }

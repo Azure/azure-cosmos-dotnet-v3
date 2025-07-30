@@ -246,7 +246,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ETag)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string ETag { get; private set; }
+        public string ETag { get; set; }
 
         /// <summary>
         /// Gets the last modified time stamp associated with <see cref="ContainerProperties" /> from the Azure Cosmos DB service.
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos
         [System.Text.Json.Serialization.JsonConverter(typeof(UnixDateTimeConverter))]
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.LastModified)]
         [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public DateTime? LastModified { get; private set; }
+        public DateTime? LastModified { get; set; }
 
         /// <summary>
         /// Gets or sets the client encryption policy information for storing items in a container from the Azure Cosmos service.

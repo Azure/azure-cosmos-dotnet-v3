@@ -85,7 +85,7 @@ namespace Microsoft.Azure.Cosmos
         /// ETags are used for concurrency checking when updating resources. 
         /// </remarks>
         [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ETag)]
-        public string ETag { get; internal set; }
+        public string ETag { get; set; }
 
         /// <summary>
         /// Gets or sets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -258,6 +258,6 @@ namespace Microsoft.Azure.Cosmos
         /// This ensures that if resource is read and updated none of the fields will be lost in the process.
         /// </summary>
         [System.Text.Json.Serialization.JsonExtensionData]
-        public IDictionary<string, JsonElement> AdditionalProperties { get; private set; }
+        public IDictionary<string, JsonElement> AdditionalProperties { get; set; }
     }
 }
