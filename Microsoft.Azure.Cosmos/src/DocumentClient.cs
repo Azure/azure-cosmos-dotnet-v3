@@ -1431,6 +1431,17 @@ namespace Microsoft.Azure.Cosmos
                 this.initTaskCache = null;
             }
 
+            if (this.accountServiceConfiguration != null)
+            {
+                this.accountServiceConfiguration.Dispose();
+                this.accountServiceConfiguration = null;
+            }
+
+            if (this.PartitionKeyRangeLocation is IDisposable disposablePartitionManager)
+            {
+                disposablePartitionManager.Dispose();
+            }
+
             DefaultTrace.TraceInformation("DocumentClient with id {0} disposed.", this.traceId);
             DefaultTrace.Flush();
 
@@ -6843,6 +6854,9 @@ namespace Microsoft.Azure.Cosmos
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
+            // Subscribe to account properties changes for dynamic PPAF updates
+            this.accountServiceConfiguration.OnEnablePartitionLevelFailoverChanged += this.HandleEnablePartitionLevelFailoverChanged;
+
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
@@ -6890,6 +6904,114 @@ namespace Microsoft.Azure.Cosmos
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
+        }
+
+        /// <summary>
+        /// Handles dynamic changes to the EnablePartitionLevelFailover flag from account properties refresh
+        /// </summary>
+        /// <param name="newEnablePartitionLevelFailover">The new value of the EnablePartitionLevelFailover flag</param>
+        private void HandleEnablePartitionLevelFailoverChanged(bool? newEnablePartitionLevelFailover)
+        {
+            try
+            {
+                // Only update if client-level override is not disabled
+                if (this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+                {
+                    DefaultTrace.TraceInformation("DocumentClient: PPAF change ignored due to client-level override disabled");
+                    return;
+                }
+
+                bool previousValue = this.ConnectionPolicy.EnablePartitionLevelFailover;
+                bool newValue = newEnablePartitionLevelFailover ?? false;
+
+                if (previousValue == newValue)
+                {
+                    // No actual change in effective value
+                    return;
+                }
+
+                DefaultTrace.TraceInformation(
+                    "DocumentClient: Updating EnablePartitionLevelFailover from {0} to {1}",
+                    previousValue,
+                    newValue);
+
+                // Update the connection policy
+                this.ConnectionPolicy.EnablePartitionLevelFailover = newValue;
+
+                // Update circuit breaker enablement
+                this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= newValue;
+
+                // Update availability strategy for read hedging
+                this.UpdateAvailabilityStrategyForPPAF(newValue);
+
+                // Update the GlobalPartitionEndpointManager
+                this.UpdateGlobalPartitionEndpointManager();
+
+                DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
+            }
+            catch (Exception ex)
+            {
+                DefaultTrace.TraceError("DocumentClient: Error handling PPAF change: {0}", ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Updates the availability strategy based on PPAF enablement
+        /// </summary>
+        /// <param name="enablePPAF">Whether PPAF is enabled</param>
+        private void UpdateAvailabilityStrategyForPPAF(bool enablePPAF)
+        {
+            if (enablePPAF && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                // Enable default hedging when PPAF is enabled and no explicit strategy is set
+                double defaultThresholdInMillis = Math.Min(
+                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.CrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+
+                DefaultTrace.TraceInformation("DocumentClient: Enabled default hedging strategy for PPAF");
+            }
+            // Note: We don't disable hedging when PPAF is disabled, as the user might have set it explicitly
+        }
+
+        /// <summary>
+        /// Updates the GlobalPartitionEndpointManager based on current PPAF and circuit breaker settings
+        /// </summary>
+        private void UpdateGlobalPartitionEndpointManager()
+        {
+            // Create new GlobalPartitionEndpointManager instance with updated settings
+            GlobalPartitionEndpointManager newPartitionKeyRangeLocation = 
+                this.ConnectionPolicy.EnablePartitionLevelFailover 
+                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
+                    ? new GlobalPartitionEndpointManagerCore(
+                        this.GlobalEndpointManager,
+                        this.ConnectionPolicy.EnablePartitionLevelFailover,
+                        this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                        this.isThinClientEnabled)
+                    : GlobalPartitionEndpointManagerNoOp.Instance;
+
+            // Dispose the old instance if it's disposable
+            if (this.PartitionKeyRangeLocation is IDisposable disposableOldManager)
+            {
+                disposableOldManager.Dispose();
+            }
+
+            // Update the partition key range location
+            this.PartitionKeyRangeLocation = newPartitionKeyRangeLocation;
+
+            // Update retry policy with new partition key range location
+            this.retryPolicy = new RetryPolicy(
+                globalEndpointManager: this.GlobalEndpointManager,
+                connectionPolicy: this.ConnectionPolicy,
+                partitionKeyRangeLocationCache: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled);
+
+            this.ResetSessionTokenRetryPolicy = this.retryPolicy;
+
+            DefaultTrace.TraceInformation("DocumentClient: Updated GlobalPartitionEndpointManager for dynamic PPAF change");
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
