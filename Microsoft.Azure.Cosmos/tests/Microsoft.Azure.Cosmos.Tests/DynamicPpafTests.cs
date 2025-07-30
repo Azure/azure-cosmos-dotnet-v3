@@ -15,12 +15,9 @@ namespace Microsoft.Azure.Cosmos.Tests
     {
         [TestMethod]
         [Timeout(10000)]
-        public async Task CosmosAccountServiceConfiguration_ShouldTriggerEventWhenPpafChanges()
+        public async Task CosmosAccountServiceConfiguration_ShouldUpdatePropertiesCorrectly()
         {
             // Arrange
-            bool? receivedPpafValue = null;
-            bool eventTriggered = false;
-
             AccountProperties initialProperties = new AccountProperties()
             {
                 Id = "testAccount",
@@ -36,33 +33,23 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<Task<AccountProperties>> mockAccountPropertiesFunc = () => Task.FromResult(initialProperties);
 
             CosmosAccountServiceConfiguration config = new CosmosAccountServiceConfiguration(mockAccountPropertiesFunc);
-            config.OnEnablePartitionLevelFailoverChanged += (newValue) =>
-            {
-                receivedPpafValue = newValue;
-                eventTriggered = true;
-            };
 
             // Act - Initialize with first properties
             await config.InitializeAsync();
             Assert.AreEqual(false, config.AccountProperties.EnablePartitionLevelFailover);
-            Assert.IsFalse(eventTriggered); // Should not trigger on initial load
 
-            // Simulate GlobalEndpointManager updating the account properties
+            // Update account properties
             config.UpdateAccountProperties(updatedProperties);
 
             // Assert
-            Assert.IsTrue(eventTriggered, "Event should have been triggered when PPAF value changed");
-            Assert.AreEqual(true, receivedPpafValue, "Event should have received the new PPAF value");
             Assert.AreEqual(true, config.AccountProperties.EnablePartitionLevelFailover, "Account properties should be updated");
         }
 
         [TestMethod]
         [Timeout(10000)]
-        public async Task CosmosAccountServiceConfiguration_ShouldNotTriggerEventWhenPpafDoesNotChange()
+        public async Task CosmosAccountServiceConfiguration_ShouldHandleRepeatedUpdates()
         {
             // Arrange
-            bool eventTriggered = false;
-
             AccountProperties sameProperties = new AccountProperties()
             {
                 Id = "testAccount",
@@ -72,10 +59,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<Task<AccountProperties>> mockAccountPropertiesFunc = () => Task.FromResult(sameProperties);
 
             CosmosAccountServiceConfiguration config = new CosmosAccountServiceConfiguration(mockAccountPropertiesFunc);
-            config.OnEnablePartitionLevelFailoverChanged += (newValue) =>
-            {
-                eventTriggered = true;
-            };
 
             // Act
             await config.InitializeAsync();
@@ -89,8 +72,8 @@ namespace Microsoft.Azure.Cosmos.Tests
             };
             config.UpdateAccountProperties(duplicateProperties);
 
-            // Assert
-            Assert.IsFalse(eventTriggered, "Event should not be triggered when PPAF value doesn't change");
+            // Assert - Properties should still be updated correctly
+            Assert.AreEqual(true, config.AccountProperties.EnablePartitionLevelFailover, "Account properties should remain updated");
         }
 
         [TestMethod]
@@ -98,9 +81,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CosmosAccountServiceConfiguration_ShouldHandleNullPpafValues()
         {
             // Arrange
-            bool? receivedPpafValue = null;
-            bool eventTriggered = false;
-
             AccountProperties initialProperties = new AccountProperties()
             {
                 Id = "testAccount",
@@ -116,11 +96,6 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<Task<AccountProperties>> mockAccountPropertiesFunc = () => Task.FromResult(initialProperties);
 
             CosmosAccountServiceConfiguration config = new CosmosAccountServiceConfiguration(mockAccountPropertiesFunc);
-            config.OnEnablePartitionLevelFailoverChanged += (newValue) =>
-            {
-                receivedPpafValue = newValue;
-                eventTriggered = true;
-            };
 
             // Act
             await config.InitializeAsync();
@@ -129,9 +104,7 @@ namespace Microsoft.Azure.Cosmos.Tests
             // Update with null PPAF value
             config.UpdateAccountProperties(updatedProperties);
 
-            // Assert - Event should trigger when changing from true to null
-            Assert.IsTrue(eventTriggered, "Event should be triggered when PPAF value changes from true to null");
-            Assert.IsNull(receivedPpafValue, "Event should receive null PPAF value");
+            // Assert - Properties should be updated with null value
             Assert.IsNull(config.AccountProperties.EnablePartitionLevelFailover, "Account properties should have null PPAF value");
         }
 
@@ -140,8 +113,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         public async Task CosmosAccountServiceConfiguration_ShouldHandleNullAccountProperties()
         {
             // Arrange
-            bool eventTriggered = false;
-
             AccountProperties initialProperties = new AccountProperties()
             {
                 Id = "testAccount",
@@ -151,20 +122,15 @@ namespace Microsoft.Azure.Cosmos.Tests
             Func<Task<AccountProperties>> mockAccountPropertiesFunc = () => Task.FromResult(initialProperties);
 
             CosmosAccountServiceConfiguration config = new CosmosAccountServiceConfiguration(mockAccountPropertiesFunc);
-            config.OnEnablePartitionLevelFailoverChanged += (newValue) =>
-            {
-                eventTriggered = true;
-            };
 
             // Act
             await config.InitializeAsync();
             Assert.AreEqual(false, config.AccountProperties.EnablePartitionLevelFailover);
 
-            // Update with null account properties - should not trigger event or throw exception
+            // Update with null account properties - should not throw exception
             config.UpdateAccountProperties(null);
 
-            // Assert
-            Assert.IsFalse(eventTriggered, "Event should not be triggered when account properties are null");
+            // Assert - Original account properties should remain unchanged
             Assert.AreEqual(false, config.AccountProperties.EnablePartitionLevelFailover, "Original account properties should remain unchanged");
         }
     }

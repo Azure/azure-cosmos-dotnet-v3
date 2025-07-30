@@ -6855,9 +6855,6 @@ namespace Microsoft.Azure.Cosmos
 
             this.accountServiceConfiguration = new CosmosAccountServiceConfiguration(accountReader.InitializeReaderAsync);
 
-            // Subscribe to account properties changes for dynamic PPAF updates
-            this.accountServiceConfiguration.OnEnablePartitionLevelFailoverChanged += this.HandleEnablePartitionLevelFailoverChanged;
-
             await this.accountServiceConfiguration.InitializeAsync();
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
@@ -7020,7 +7017,7 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Handles account properties refresh events from GlobalEndpointManager
-        /// Updates the CosmosAccountServiceConfiguration with new account properties
+        /// Updates the CosmosAccountServiceConfiguration with new account properties and handles PPAF changes
         /// </summary>
         /// <param name="accountProperties">The refreshed account properties</param>
         private void HandleAccountPropertiesRefreshed(AccountProperties accountProperties)
@@ -7029,9 +7026,18 @@ namespace Microsoft.Azure.Cosmos
             {
                 DefaultTrace.TraceInformation("DocumentClient: Received account properties refresh from GlobalEndpointManager");
                 
+                // Get previous PPAF value before updating account properties
+                bool? previousEnablePartitionLevelFailover = this.accountServiceConfiguration?.AccountProperties?.EnablePartitionLevelFailover;
+                
                 // Update the CosmosAccountServiceConfiguration with the new account properties
-                // This will trigger the OnEnablePartitionLevelFailoverChanged event if PPAF value changed
                 this.accountServiceConfiguration?.UpdateAccountProperties(accountProperties);
+                
+                // Check if PPAF enablement status has changed and handle it directly
+                bool? newEnablePartitionLevelFailover = accountProperties?.EnablePartitionLevelFailover;
+                if (previousEnablePartitionLevelFailover != newEnablePartitionLevelFailover)
+                {
+                    this.HandleEnablePartitionLevelFailoverChanged(newEnablePartitionLevelFailover);
+                }
             }
             catch (Exception ex)
             {

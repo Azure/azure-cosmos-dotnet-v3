@@ -15,11 +15,6 @@ namespace Microsoft.Azure.Cosmos
 
         internal AccountProperties AccountProperties { get; private set; }
 
-        /// <summary>
-        /// Event that is raised when account properties are refreshed and PPAF enablement status changes
-        /// </summary>
-        internal event Action<bool?> OnEnablePartitionLevelFailoverChanged;
-
         public CosmosAccountServiceConfiguration(Func<Task<AccountProperties>> accountPropertiesTaskFunc)
         {
             if (accountPropertiesTaskFunc == null)
@@ -67,7 +62,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Updates the account properties and notifies listeners if EnablePartitionLevelFailover changes
+        /// Updates the account properties
         /// This method is called by GlobalEndpointManager when account properties are refreshed
         /// </summary>
         internal void UpdateAccountProperties(AccountProperties newProperties)
@@ -77,17 +72,7 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            bool? previousEnablePartitionLevelFailover = this.AccountProperties?.EnablePartitionLevelFailover;
-            bool? newEnablePartitionLevelFailover = newProperties.EnablePartitionLevelFailover;
-
-            // Update the properties first
             this.AccountProperties = newProperties;
-
-            // Check if PPAF enablement status has changed and notify listeners
-            if (previousEnablePartitionLevelFailover != newEnablePartitionLevelFailover)
-            {
-                this.OnEnablePartitionLevelFailoverChanged?.Invoke(newEnablePartitionLevelFailover);
-            }
         }
     }
 }
