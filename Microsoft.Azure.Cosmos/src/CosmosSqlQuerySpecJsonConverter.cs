@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core;
     using Newtonsoft.Json;
 
+#if !COSMOS_GW_AOT
     /// <summary>
     /// A custom serializer converter for SQL query spec
     /// </summary>
@@ -76,18 +77,21 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             CosmosSerializer propertiesSerializer)
         {
-            if (propertiesSerializer is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
-            {
-                propertiesSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer;
-            }
+            ////if (propertiesSerializer is CosmosJsonSerializerWrapper cosmosJsonSerializerWrapper)
+            ////{
+            ////    propertiesSerializer = cosmosJsonSerializerWrapper.InternalJsonSerializer;
+            ////}
 
-            JsonSerializerSettings settings = new JsonSerializerSettings()
-            {
-                Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) },
-                MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-            };
+            ////JsonSerializerSettings settings = new JsonSerializerSettings()
+            ////{
+            ////    Converters = new List<JsonConverter>() { new CosmosSqlQuerySpecJsonConverter(cosmosSerializer ?? propertiesSerializer) },
+            ////    MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+            ////};
 
-            return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
+            ////return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
+
+            throw new NotImplementedException();
         }
     }
+#endif
 }

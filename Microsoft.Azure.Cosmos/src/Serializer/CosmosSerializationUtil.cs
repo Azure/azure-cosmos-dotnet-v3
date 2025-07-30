@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Text;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Json.Interop;

@@ -7,10 +7,10 @@ namespace Microsoft.Azure.Cosmos
     using System;
     using System.IO;
     using System.Text;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Serialization;
 
     /// <summary>
     /// The default Cosmos JSON.NET serializer.
@@ -18,7 +18,7 @@ namespace Microsoft.Azure.Cosmos
     internal sealed class CosmosJsonDotNetSerializer : CosmosSerializer
     {
         private static readonly Encoding DefaultEncoding = new UTF8Encoding(false, true);
-        private readonly JsonSerializerSettings SerializerSettings;
+        private readonly JsonSerializerOptions SerializerSettings;
         private readonly bool BinaryEncodingEnabled;
 
         /// <summary>
@@ -52,14 +52,16 @@ namespace Microsoft.Azure.Cosmos
                 return;
             }
 
-            JsonSerializerSettings jsonSerializerSettings = new JsonSerializerSettings()
+            JsonSerializerOptions jsonSerializerSettings = new JsonSerializerOptions()
             {
+#if !COSMOS_GW_AOT
                 NullValueHandling = cosmosSerializerOptions.IgnoreNullValues ? NullValueHandling.Ignore : NullValueHandling.Include,
                 Formatting = cosmosSerializerOptions.Indented ? Formatting.Indented : Formatting.None,
                 ContractResolver = cosmosSerializerOptions.PropertyNamingPolicy == CosmosPropertyNamingPolicy.CamelCase
                     ? new CamelCasePropertyNamesContractResolver()
                     : null,
                 MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
+#endif
             };
 
             this.SerializerSettings = jsonSerializerSettings;
@@ -74,7 +76,7 @@ namespace Microsoft.Azure.Cosmos
         /// it is easier to convert to System.Text.Json
         /// </remarks>
         internal CosmosJsonDotNetSerializer(
-            JsonSerializerSettings jsonSerializerSettings,
+            JsonSerializerOptions jsonSerializerSettings,
             bool binaryEncodingEnabled = false)
         {
             this.SerializerSettings = jsonSerializerSettings ?? throw new ArgumentNullException(nameof(jsonSerializerSettings));
@@ -95,8 +97,6 @@ namespace Microsoft.Azure.Cosmos
                 {
                     return (T)(object)stream;
                 }
-
-                JsonSerializer jsonSerializer = this.GetSerializer();
 
                 if (stream is CloneableStream cloneableStream)
                 {
@@ -119,13 +119,7 @@ namespace Microsoft.Azure.Cosmos
                     }
                 }
 
-                using (StreamReader sr = new (stream))
-                {
-                    using (JsonTextReader jsonTextReader = new (sr))
-                    {
-                        return jsonSerializer.Deserialize<T>(jsonTextReader);
-                    }
-                }
+                return JsonSerializer.Deserialize<T>(stream, this.SerializerSettings);
             }
         }
 
@@ -134,51 +128,40 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         /// <typeparam name="T">The type of object being serialized</typeparam>
         /// <param name="input">The object to be serialized</param>
+        /// <param name="jsonTypeInfo"></param>
         /// <returns>An open readable stream containing the JSON of the serialized object</returns>
-        public override Stream ToStream<T>(T input)
+        public override Stream ToStream<T>(T input, JsonTypeInfo jsonTypeInfo)
         {
             MemoryStream streamPayload;
-            JsonSerializer jsonSerializer = this.GetSerializer();
 
             // Binary encoding is currently not supported for internal types, for e.g.
             // container creation, database creation requests etc.
             if (this.BinaryEncodingEnabled
                 && !CosmosSerializerCore.IsInputTypeInternal(typeof(T)))
             {
+                throw new NotImplementedException();
+
+#if !COSMOS_GW_AOT
                 using (Json.Interop.CosmosDBToNewtonsoftWriter writer = new (
                     jsonSerializationFormat: Json.JsonSerializationFormat.Binary))
                 {
-                    writer.Formatting = Formatting.None;
-                    jsonSerializer.Serialize(writer, input);
+                    // writer.Formatting = Formatting.None;
+                    JsonSerializer.Serialize(writer, input, jsonTypeInfo);
                     streamPayload = new MemoryStream(writer.GetResult().ToArray());
                 }
+#endif
             }
             else
             {
                 streamPayload = new ();
-                using (StreamWriter streamWriter = new (streamPayload, encoding: CosmosJsonDotNetSerializer.DefaultEncoding, bufferSize: 1024, leaveOpen: true))
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(streamPayload, new JsonWriterOptions { Indented = this.SerializerSettings?.WriteIndented ?? false }))
                 {
-                    using (JsonWriter writer = new JsonTextWriter(streamWriter))
-                    {
-                        writer.Formatting = Formatting.None;
-                        jsonSerializer.Serialize(writer, input);
-                        writer.Flush();
-                        streamWriter.Flush();
-                    }
+                    JsonSerializer.Serialize(writer, input, jsonTypeInfo);
                 }
             }
 
             streamPayload.Position = 0;
             return streamPayload;
-        }
-
-        /// <summary>
-        /// JsonSerializer has hit a race conditions with custom settings that cause null reference exception.
-        /// To avoid the race condition a new JsonSerializer is created for each call
-        /// </summary>
-        private JsonSerializer GetSerializer()
-        {
-            return JsonSerializer.Create(this.SerializerSettings);
         }
     }
 }

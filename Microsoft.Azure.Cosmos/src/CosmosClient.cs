@@ -1324,7 +1324,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cosmosContainerCore: null,
                 feedRange: null,
-                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties, CosmosSerializerContext.Default.DatabaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 trace,
                 cancellationToken: cancellationToken);
@@ -1346,7 +1346,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 containerInternal: null,
                 feedRange: null,
-                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream<DatabaseProperties>(databaseProperties, CosmosSerializerContext.Default.DatabaseProperties),
                 requestEnricher: (httpRequestMessage) => httpRequestMessage.AddThroughputPropertiesHeader(throughputProperties),
                 responseCreator: (response) => response,
                 trace: trace,

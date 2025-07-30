@@ -46,6 +46,25 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <Compile Remove="ChangeFeedProcessor\**" />
+	  <Compile Remove="ChangeFeed\**" />
+	  <Compile Remove="Resource\Permission\**" />
+	  <Compile Remove="Resource\Scripts\**" />
+	  <Compile Remove="Resource\User\**" />
+	  <EmbeddedResource Remove="Batch\**" />
+	  <EmbeddedResource Remove="ChangeFeedProcessor\**" />
+	  <EmbeddedResource Remove="ChangeFeed\**" />
+	  <EmbeddedResource Remove="Resource\Permission\**" />
+	  <EmbeddedResource Remove="Resource\Scripts\**" />
+	  <EmbeddedResource Remove="Resource\User\**" />
+	  <None Remove="ChangeFeedProcessor\**" />
+	  <None Remove="ChangeFeed\**" />
+	  <None Remove="Resource\Permission\**" />
+	  <None Remove="Resource\Scripts\**" />
+	  <None Remove="Resource\User\**" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
 	</ItemGroup>
 	
@@ -61,6 +80,10 @@
 		<Compile Remove="direct\SnapshotKind.cs" />
 		<Compile Remove="direct\SnapshotState.cs" />
 		<Compile Remove="Json\Interop\CosmosDBToNewtonsoftReader.cs" />
+		<Compile Remove="Resource\ClientEncryptionKey\ClientEncryptionKeyCore.cs" />
+		<Compile Remove="Resource\ClientEncryptionKey\ClientEncryptionKeyInlineCore.cs" />
+		<Compile Remove="Resource\Settings\PermissionProperties.cs" />
+		<Compile Remove="Resource\Settings\UserProperties.cs" />
 		<Compile Remove="RuntimePerfCounters.cs" />
 		<Compile Remove="Util\ServicePointAccessor.cs" />
 	</ItemGroup>
@@ -74,9 +97,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="Batch\HybridRowBatchSchemas.json">
-			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 		<EmbeddedResource Include="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml">
 		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</EmbeddedResource>
@@ -207,7 +227,7 @@
 		<DefineConstants Condition=" '$(SignAssembly)' == 'true' ">$(DefineConstants);SignAssembly</DefineConstants>
 		<DefineConstants Condition=" '$(DelaySign)' == 'true' ">$(DefineConstants);DelaySignKeys</DefineConstants>
 		<DefineConstants>$(DefineConstants);DOCDBCLIENT;COSMOSCLIENT;NETSTANDARD20;NETSTANDARD2_0_OR_GREATER;COSMOS_GW_AOT</DefineConstants>
-		<NoWarn>$(NoWarn);CS0472;SYSLIB0013;SYSLIB0051;CS8073;CS8600;CS0618;CS8604;CS0672;CS1587</NoWarn>
+		<NoWarn>$(NoWarn);CS0472;SYSLIB0013;SYSLIB0051;CS8073;CS8600;CS0618;CS8604;CS0672;CS1587;CS1574</NoWarn>
 		<RunAnalyzersDuringLiveAnalysis>False</RunAnalyzersDuringLiveAnalysis>
 		<RunAnalyzersDuringBuild>False</RunAnalyzersDuringBuild>
 	</PropertyGroup>

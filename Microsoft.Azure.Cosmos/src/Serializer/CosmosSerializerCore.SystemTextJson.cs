@@ -8,7 +8,6 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Text.Json;
     using System.Text.Json.Serialization.Metadata;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;

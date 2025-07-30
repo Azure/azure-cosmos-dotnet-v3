@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
@@ -22,9 +22,10 @@ namespace Microsoft.Azure.Cosmos
                 ConfigurationManager.IsBinaryEncodingEnabled()));
 
         private readonly CosmosSerializer customSerializer;
-        private readonly CosmosSerializer sqlQuerySpecSerializer;
-        private CosmosSerializer patchOperationSerializer;
-
+#if !COSMOS_GW_AOT
+         private readonly CosmosSerializer sqlQuerySpecSerializer;
+         private CosmosSerializer patchOperationSerializer;
+#endif
         internal CosmosSerializerCore(
             CosmosSerializer customSerializer = null)
         {
@@ -32,20 +33,24 @@ namespace Microsoft.Azure.Cosmos
             {
                 this.customSerializer = null;
                 // this would allow us to set the JsonConverter and inturn handle Serialized/Stream Query Parameter Value.
+#if !COSMOS_GW_AOT
                 this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
                     cosmosSerializer: null,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = null;
+#endif
             }
             else
             {
                 this.customSerializer = new CosmosJsonSerializerWrapper(customSerializer);
+#if !COSMOS_GW_AOT
                 this.sqlQuerySpecSerializer = CosmosSqlQuerySpecJsonConverter.CreateSqlQuerySpecSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
                 this.patchOperationSerializer = PatchOperationsJsonConverter.CreatePatchOperationsSerializer(
                     cosmosSerializer: this.customSerializer,
                     propertiesSerializer: CosmosSerializerCore.propertiesSerializer);
+#endif
             }
         }
 
@@ -81,32 +86,34 @@ namespace Microsoft.Azure.Cosmos
             return serializer.FromStream<T[]>(stream);
         }
 
-        internal Stream ToStream<T>(T input)
+        internal Stream ToStream<T>(T input, JsonTypeInfo jsonTypeInfo)
         {
             CosmosSerializer serializer = this.GetSerializer<T>();
-            return serializer.ToStream<T>(input);
+            return serializer.ToStream<T>(input, jsonTypeInfo);
         }
 
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)
         {
-            CosmosSerializer serializer = CosmosSerializerCore.propertiesSerializer;
+            ////CosmosSerializer serializer = CosmosSerializerCore.propertiesSerializer;
 
-            // All the public types that support query use the custom serializer
-            // Internal types like offers will use the default serializer.
-            if (resourceType == ResourceType.Database ||
-                resourceType == ResourceType.Collection ||
-                resourceType == ResourceType.Document ||
-                resourceType == ResourceType.Trigger ||
-                resourceType == ResourceType.UserDefinedFunction ||
-                resourceType == ResourceType.StoredProcedure ||
-                resourceType == ResourceType.Permission ||
-                resourceType == ResourceType.User ||
-                resourceType == ResourceType.Conflict)
-            {
-                serializer = this.sqlQuerySpecSerializer;
-            }
+            ////// All the public types that support query use the custom serializer
+            ////// Internal types like offers will use the default serializer.
+            ////if (resourceType == ResourceType.Database ||
+            ////    resourceType == ResourceType.Collection ||
+            ////    resourceType == ResourceType.Document ||
+            ////    resourceType == ResourceType.Trigger ||
+            ////    resourceType == ResourceType.UserDefinedFunction ||
+            ////    resourceType == ResourceType.StoredProcedure ||
+            ////    resourceType == ResourceType.Permission ||
+            ////    resourceType == ResourceType.User ||
+            ////    resourceType == ResourceType.Conflict)
+            ////{
+            ////    serializer = this.sqlQuerySpecSerializer;
+            ////}
 
-            return serializer.ToStream<SqlQuerySpec>(input);
+            ////return serializer.ToStream<SqlQuerySpec>(input);
+
+            throw new NotImplementedException();
         }
 
         internal CosmosSerializer GetCustomOrDefaultSerializer()
@@ -122,6 +129,7 @@ namespace Microsoft.Azure.Cosmos
         private CosmosSerializer GetSerializer<T>()
         {
             Type inputType = typeof(T);
+#if !COSMOS_GW_AOT
             if (inputType == typeof(PatchSpec))
             {
                 if (this.patchOperationSerializer == null)
@@ -132,6 +140,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 return this.patchOperationSerializer;
             }
+#endif
 
             if (this.customSerializer == null)
             {
@@ -171,17 +180,20 @@ namespace Microsoft.Azure.Cosmos
             return inputType == typeof(AccountProperties)
                 || inputType == typeof(DatabaseProperties)
                 || inputType == typeof(ContainerProperties)
-                || inputType == typeof(PermissionProperties)
                 || inputType == typeof(StoredProcedureProperties)
                 || inputType == typeof(TriggerProperties)
                 || inputType == typeof(UserDefinedFunctionProperties)
-                || inputType == typeof(UserProperties)
                 || inputType == typeof(ConflictProperties)
                 || inputType == typeof(ThroughputProperties)
                 || inputType == typeof(OfferV2)
                 || inputType == typeof(ClientEncryptionKeyProperties)
                 || inputType == typeof(PartitionedQueryExecutionInfo)
-                || inputType == typeof(ChangeFeedQuerySpec);
+#if !COSMOS_GW_AOT
+                || inputType == typeof(PermissionProperties)
+                || inputType == typeof(UserProperties)
+                || inputType == typeof(ChangeFeedQuerySpec)
+#endif
+                ;
         }
     }
 }

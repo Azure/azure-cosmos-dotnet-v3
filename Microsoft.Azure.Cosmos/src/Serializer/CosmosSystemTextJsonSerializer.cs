@@ -9,6 +9,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Reflection;
     using System.Text.Json;
     using System.Text.Json.Serialization;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Serializer;
@@ -78,12 +79,12 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <inheritdoc/>
-        public override Stream ToStream<T>(T input)
+        public override Stream ToStream<T>(T input, JsonTypeInfo jsonTypeInfo)
         {
             MemoryStream streamPayload = new ();
             using Utf8JsonWriter writer = new (streamPayload);
 
-            System.Text.Json.JsonSerializer.Serialize(writer, input, this.jsonSerializerOptions);
+            System.Text.Json.JsonSerializer.Serialize(writer, input, jsonTypeInfo);
 
             streamPayload.Position = 0;
             return streamPayload;

@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 using (DocumentServiceResponse documentServiceResponse = await ClientExtensions.ParseResponseAsync(responseMessage))
                 {
-                    databaseAccount = CosmosResource.FromStream<AccountProperties>(documentServiceResponse);
+                    databaseAccount = CosmosResource.FromStream<AccountProperties>(documentServiceResponse, CosmosSerializerContext.Default.AccountProperties);
                 }
 
                 long longValue;

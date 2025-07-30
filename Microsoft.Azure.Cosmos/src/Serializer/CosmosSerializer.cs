@@ -5,6 +5,7 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System.IO;
+    using System.Text.Json.Serialization.Metadata;
 
     /// <summary>
     /// This abstract class can be implemented to allow a custom serializer to be used by the CosmosClient.
@@ -30,7 +31,8 @@ namespace Microsoft.Azure.Cosmos
         /// <see href="https://docs.microsoft.com/dotnet/api/system.io.stream.canread">Stream.CanRead</see> must be true.
         /// </summary>
         /// <param name="input">Any type passed to <see cref="Container"/>.</param>
+        /// <param name="jsonTypeInfo"></param>
         /// <returns>A readable Stream containing JSON of the serialized object.</returns>
-        public abstract Stream ToStream<T>(T input);
+        public abstract Stream ToStream<T>(T input, JsonTypeInfo jsonTypeInfo);
     }
 }
