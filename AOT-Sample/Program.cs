@@ -6,10 +6,9 @@ namespace AOTSample
 
     public class Program
     {
-        public static async Task Main(string[] args)
+        public static async Task Main(string[] _)
         {
-            const string CosmosBaseUri = "https://{0}.documents.azure.com:443/";
-            string accountName = "cosmosaot2";
+            const string CosmosBaseUri = "https://localhost:8081";
             string? primaryKey = Environment.GetEnvironmentVariable("KEY");
             Console.WriteLine($"COSMOS_PRIMARY_KEY: {primaryKey}");
 
@@ -19,113 +18,127 @@ namespace AOTSample
                 return;
             }
 
-            CosmosClientOptions clientOptions = new CosmosClientOptions { AllowBulkExecution = true };
+            CosmosClientOptions clientOptions = new CosmosClientOptions 
+            { 
+                AllowBulkExecution = true, 
+                ConnectionMode = ConnectionMode.Gateway,
+                UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    WriteIndented = true
+                }
+            };
             clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing = false;
 
             CosmosClient client = new CosmosClient(
-                string.Format(CosmosBaseUri, accountName),
+                CosmosBaseUri,
                 primaryKey,
                 clientOptions);
 
-            FeedIterator<DatabaseProperties> db_feed_itr = client.GetDatabaseQueryIterator<DatabaseProperties>();
-            while (db_feed_itr.HasMoreResults)
-            {
-                FeedResponse<DatabaseProperties> db_response = await db_feed_itr.ReadNextAsync();
-                foreach (DatabaseProperties db_properties in db_response)
-                {
-                    Console.WriteLine($"Database: {db_properties.Id}");
+            AccountProperties accountProperties = await client.ReadAccountAsync();
+            Console.WriteLine($"Account Name: {accountProperties.Id}");
+            Console.ReadLine();
 
-                    Database database = client.GetDatabase(db_properties.Id);
-                    FeedIterator<ContainerProperties> container_feed_itr = database.GetContainerQueryIterator<ContainerProperties>();
 
-                    while (container_feed_itr.HasMoreResults)
-                    {
-                        FeedResponse<ContainerProperties> container_response = await container_feed_itr.ReadNextAsync();
-                        foreach (ContainerProperties container_properties in container_response)
-                        {
-                            Console.WriteLine($"Container: {container_properties.Id}");
+            //FeedIterator<DatabaseProperties> db_feed_itr = client.GetDatabaseQueryIterator<DatabaseProperties>();
+            //while (db_feed_itr.HasMoreResults)
+            //{
+            //    FeedResponse<DatabaseProperties> db_response = await db_feed_itr.ReadNextAsync();
+            //    foreach (DatabaseProperties db_properties in db_response)
+            //    {
+            //        Console.WriteLine($"Database: {db_properties.Id}");
 
-                            Console.WriteLine($"Container PartitionKeyPath: {container_properties.PartitionKeyPath}");
-                            if (container_properties.PartitionKeyPaths != null && container_properties.PartitionKeyPaths.Count > 0)
-                            {
-                                Console.WriteLine($"Container PartitionKeyPaths: [{string.Join(", ", container_properties.PartitionKeyPaths)}]");
-                            }
+            //        Database database = client.GetDatabase(db_properties.Id);
+            //        FeedIterator<ContainerProperties> container_feed_itr = database.GetContainerQueryIterator<ContainerProperties>();
 
-                            Container container = client.GetContainer(db_properties.Id, container_properties.Id);
+            //        while (container_feed_itr.HasMoreResults)
+            //        {
+            //            FeedResponse<ContainerProperties> container_response = await container_feed_itr.ReadNextAsync();
+            //            foreach (ContainerProperties container_properties in container_response)
+            //            {
+            //                Console.WriteLine($"Container: {container_properties.Id}");
 
-                            String itemsQuery = "SELECT * FROM c";
-                            QueryDefinition itemsQueryDef = new QueryDefinition(itemsQuery);
+            //                Console.WriteLine($"Container PartitionKeyPath: {container_properties.PartitionKeyPath}");
+            //                if (container_properties.PartitionKeyPaths != null && container_properties.PartitionKeyPaths.Count > 0)
+            //                {
+            //                    Console.WriteLine($"Container PartitionKeyPaths: [{string.Join(", ", container_properties.PartitionKeyPaths)}]");
+            //                }
 
-                            FeedIterator queryIterator = container.GetItemQueryStreamIterator(
-                                itemsQueryDef,
-                                requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
-                            );
+            //                Container container = client.GetContainer(db_properties.Id, container_properties.Id);
 
-                            while (queryIterator.HasMoreResults)
-                            {
-                                ResponseMessage response = await queryIterator.ReadNextAsync();
+            //                String itemsQuery = "SELECT * FROM c";
+            //                QueryDefinition itemsQueryDef = new QueryDefinition(itemsQuery);
 
-                                if (response.Content == null)
-                                {
-                                    Console.WriteLine("QueryResponse.Content is null");
-                                    continue;
-                                }
-                                if (response.Content.CanSeek && response.Content.Length == 0)
-                                {
-                                    Console.WriteLine("QueryResponse.Content stream is empty");
-                                    continue;
-                                }
+            //                FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+            //                    itemsQueryDef,
+            //                    requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
+            //                );
 
-                                try
-                                {
-                                    using JsonDocument itemsQueryResultDoc = JsonDocument.Parse(response.Content);
-                                    Console.WriteLine($"Raw JSON (Query result): {itemsQueryResultDoc.RootElement.GetRawText()}");
+            //                while (queryIterator.HasMoreResults)
+            //                {
+            //                    ResponseMessage response = await queryIterator.ReadNextAsync();
 
-                                    if (itemsQueryResultDoc.RootElement.TryGetProperty("Documents", out JsonElement documentsElement))
-                                    {
-                                        foreach (JsonElement item in documentsElement.EnumerateArray())
-                                        {
-                                            string itemId = ExtractItemId(item);
-                                            PartitionKey itemPartitionKey = CreatePartitionKey(item, container_properties.PartitionKeyPath);
-                                            Console.WriteLine($"Item PartitionKey: {itemPartitionKey}");
+            //                    if (response.Content == null)
+            //                    {
+            //                        Console.WriteLine("QueryResponse.Content is null");
+            //                        continue;
+            //                    }
+            //                    if (response.Content.CanSeek && response.Content.Length == 0)
+            //                    {
+            //                        Console.WriteLine("QueryResponse.Content stream is empty");
+            //                        continue;
+            //                    }
 
-                                            try
-                                            {
-                                                ItemResponse<JsonElement> itemResponse = await container.ReadItemAsync<JsonElement>(
-                                                    id: itemId,
-                                                    partitionKey: itemPartitionKey,
-                                                    requestOptions: new ItemRequestOptions
-                                                    {
-                                                        // EnableContentResponseOnWrite = false,
-                                                    }
-                                                );
+            //                    try
+            //                    {
+            //                        using JsonDocument itemsQueryResultDoc = JsonDocument.Parse(response.Content);
+            //                        Console.WriteLine($"Raw JSON (Query result): {itemsQueryResultDoc.RootElement.GetRawText()}");
 
-                                                Console.WriteLine($"Raw JSON (Read item result): {itemResponse.Resource.GetRawText()}");
-                                            }
-                                            catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-                                            {
-                                                Console.WriteLine("ReadItemAsync: Item not found");
-                                            }
-                                            catch (CosmosException ex)
-                                            {
-                                                Console.WriteLine($"ReadItemAsync: Error reading. {ex.Message}");
-                                            }
-                                        }
-                                    }
-                                    else
-                                    {
-                                        Console.WriteLine($"Raw JSON: {itemsQueryResultDoc.RootElement.GetRawText()}");
-                                    }
-                                }
-                                catch (JsonException ex)
-                                {
-                                    Console.WriteLine($"JsonException: {ex.Message}");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            //                        if (itemsQueryResultDoc.RootElement.TryGetProperty("Documents", out JsonElement documentsElement))
+            //                        {
+            //                            foreach (JsonElement item in documentsElement.EnumerateArray())
+            //                            {
+            //                                string itemId = ExtractItemId(item);
+            //                                PartitionKey itemPartitionKey = CreatePartitionKey(item, container_properties.PartitionKeyPath);
+            //                                Console.WriteLine($"Item PartitionKey: {itemPartitionKey}");
+
+            //                                try
+            //                                {
+            //                                    ItemResponse<JsonElement> itemResponse = await container.ReadItemAsync<JsonElement>(
+            //                                        id: itemId,
+            //                                        partitionKey: itemPartitionKey,
+            //                                        requestOptions: new ItemRequestOptions
+            //                                        {
+            //                                            // EnableContentResponseOnWrite = false,
+            //                                        }
+            //                                    );
+
+            //                                    Console.WriteLine($"Raw JSON (Read item result): {itemResponse.Resource.GetRawText()}");
+            //                                }
+            //                                catch (CosmosException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+            //                                {
+            //                                    Console.WriteLine("ReadItemAsync: Item not found");
+            //                                }
+            //                                catch (CosmosException ex)
+            //                                {
+            //                                    Console.WriteLine($"ReadItemAsync: Error reading. {ex.Message}");
+            //                                }
+            //                            }
+            //                        }
+            //                        else
+            //                        {
+            //                            Console.WriteLine($"Raw JSON: {itemsQueryResultDoc.RootElement.GetRawText()}");
+            //                        }
+            //                    }
+            //                    catch (JsonException ex)
+            //                    {
+            //                        Console.WriteLine($"JsonException: {ex.Message}");
+            //                    }
+            //                }
+            //            }
+            //        }
+            //    }
+            //}
         }
 
         private static string ExtractItemId(JsonElement item)

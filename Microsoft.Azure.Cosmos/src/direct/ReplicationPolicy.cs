@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Documents
     /// <summary>
     /// Replication policy.
     /// </summary>
-#if COSMOSCLIENT
+#if COSMOSCLIENT && !COSMOS_GW_AOT
     internal
 #else
     public

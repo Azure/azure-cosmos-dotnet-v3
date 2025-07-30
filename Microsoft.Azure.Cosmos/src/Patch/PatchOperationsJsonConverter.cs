@@ -124,6 +124,7 @@ namespace Microsoft.Azure.Cosmos
             CosmosSerializer cosmosSerializer,
             CosmosSerializer propertiesSerializer)
         {
+#if !COSMOS_GW_AOT
             // If both serializers are the same no need for the custom converter
             if (object.ReferenceEquals(cosmosSerializer, propertiesSerializer))
             {
@@ -140,6 +141,9 @@ namespace Microsoft.Azure.Cosmos
             };
 
             return new CosmosJsonSerializerWrapper(new CosmosJsonDotNetSerializer(settings));
+#endif
+
+            throw new NotImplementedException();
         }
     }
 }

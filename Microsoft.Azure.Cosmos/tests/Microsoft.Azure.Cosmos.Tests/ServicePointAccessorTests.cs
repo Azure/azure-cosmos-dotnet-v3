@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Tests
     [TestClass]
     public class ServicePointAccessorTests
     {
+#if !COSMOS_GW_AOT
         private static readonly Uri uri = new Uri("https://localhost");
 
         [TestMethod]
@@ -36,5 +37,6 @@ namespace Microsoft.Azure.Cosmos.Tests
 #pragma warning restore SYSLIB0014 // Type or member is obsolete
             Assert.IsFalse(servicePoint.UseNagleAlgorithm);
         }
+#endif
     }
 }

@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
-    using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
@@ -36,11 +35,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                 return true;
             }
 
+#if !COSMOS_GW_AOT
             if (exception is ChangeFeedException changeFeedException)
             {
                 cosmosException = changeFeedException.Accept(ChangeFeedExceptionConverter.Singleton, trace);
                 return true;
             }
+#endif
 
             if (exception is ExceptionWithStackTraceException exceptionWithStackTrace)
             {
@@ -143,6 +144,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
             }
         }
 
+#if !COSMOS_GW_AOT
         private sealed class ChangeFeedExceptionConverter : ChangeFeedExceptionVisitor<CosmosException>
         {
             public static readonly ChangeFeedExceptionConverter Singleton = new ChangeFeedExceptionConverter();
@@ -166,5 +168,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core
                     trace: trace);
             }
         }
+#endif
     }
 }

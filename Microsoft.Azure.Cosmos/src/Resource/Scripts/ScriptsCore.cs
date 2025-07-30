@@ -140,7 +140,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessStoredProcedureOperationAsync(
                 id: storedProcedureProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.ClientContext.SerializerCore.ToStream(storedProcedureProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(storedProcedureProperties, CosmosSerializerContext.Default.StoredProcedureProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -264,7 +264,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.Trigger,
                 operationType: OperationType.Create,
-                streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties, CosmosSerializerContext.Default.TriggerProperties),
                 requestOptions: requestOptions,
                 responseFunc: this.ClientContext.ResponseFactory.CreateTriggerResponse,
                 trace: trace,
@@ -384,7 +384,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessTriggerOperationAsync(
                 id: triggerProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(triggerProperties, CosmosSerializerContext.Default.TriggerProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -435,7 +435,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
                 resourceUri: this.container.LinkUri,
                 resourceType: ResourceType.UserDefinedFunction,
                 operationType: OperationType.Create,
-                streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties, CosmosSerializerContext.Default.UserDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 responseFunc: this.ClientContext.ResponseFactory.CreateUserDefinedFunctionResponse,
                 trace: trace,
@@ -555,7 +555,7 @@ namespace Microsoft.Azure.Cosmos.Scripts
             return this.ProcessUserDefinedFunctionOperationAsync(
                 id: userDefinedFunctionProperties.Id,
                 operationType: OperationType.Replace,
-                streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userDefinedFunctionProperties, CosmosSerializerContext.Default.UserDefinedFunctionProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);

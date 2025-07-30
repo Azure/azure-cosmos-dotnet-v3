@@ -11,11 +11,14 @@ namespace Microsoft.Azure.Cosmos
     using System.IO;
     using System.Linq;
     using System.Text;
+    using System.Text.Json.Serialization.Metadata;
     using System.Threading;
     using System.Threading.Tasks;
+#if !COSMOS_GW_AOT
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.FeedProcessing;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
+#endif
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Json;
     using Microsoft.Azure.Cosmos.Linq;
@@ -67,6 +70,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
             ITrace trace,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -80,6 +84,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 itemId: null,
                 item: item,
+                jsonTypeInfo: jsonTypeInfo,
                 operationType: OperationType.Create,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -147,6 +152,7 @@ namespace Microsoft.Azure.Cosmos
         public async Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
             ITrace trace,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -160,6 +166,7 @@ namespace Microsoft.Azure.Cosmos
                 partitionKey: partitionKey,
                 itemId: null,
                 item: item,
+                jsonTypeInfo: jsonTypeInfo,
                 operationType: OperationType.Upsert,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -191,6 +198,7 @@ namespace Microsoft.Azure.Cosmos
             T item,
             string id,
             ITrace trace,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -209,6 +217,7 @@ namespace Microsoft.Azure.Cosmos
                partitionKey: partitionKey,
                itemId: id,
                item: item,
+               jsonTypeInfo: jsonTypeInfo,
                operationType: OperationType.Replace,
                requestOptions: requestOptions,
                trace: trace,
@@ -452,6 +461,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions);
         }
 
+#if !COSMOS_GW_AOT
         public override ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilder<T>(
             string processorName,
             ChangesHandler<T> onChangesDelegate)
@@ -671,6 +681,7 @@ namespace Microsoft.Azure.Cosmos
                 container: this,
                 options: cosmosQueryRequestOptions);
         }
+#endif
 
         /// <summary>
         /// Helper method to create a stream feed iterator.
@@ -835,6 +846,7 @@ namespace Microsoft.Azure.Cosmos
             PartitionKey? partitionKey,
             string itemId,
             T item,
+            JsonTypeInfo jsonTypeInfo,
             OperationType operationType,
             ItemRequestOptions requestOptions,
             ITrace trace,
@@ -848,7 +860,7 @@ namespace Microsoft.Azure.Cosmos
             Stream itemStream;
             using (trace.StartChild("ItemSerialize"))
             {
-                itemStream = this.ClientContext.SerializerCore.ToStream<T>(item);
+                itemStream = this.ClientContext.SerializerCore.ToStream<T>(item, jsonTypeInfo);
             }
 
             // User specified PK value, no need to extract it
@@ -1132,6 +1144,7 @@ namespace Microsoft.Azure.Cosmos
             return this.cachedUriSegmentWithoutId + Uri.EscapeUriString(resourceId);
         }
 
+#if !COSMOS_GW_AOT
         public async Task<ItemResponse<T>> PatchItemAsync<T>(
             string id,
             PartitionKey partitionKey,
@@ -1272,7 +1285,6 @@ namespace Microsoft.Azure.Cosmos
             return this.GetChangeFeedProcessorBuilderPrivate(processorName,
                 observerFactory, ChangeFeedMode.AllVersionsAndDeletes);
         }
-
         private ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderPrivate(
             string processorName,
             ChangeFeedObserverFactory observerFactory,
@@ -1285,6 +1297,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedProcessor: changeFeedProcessor,
                 applyBuilderConfiguration: changeFeedProcessor.ApplyBuildConfiguration).WithChangeFeedMode(mode);
         }
+#endif
 
         private static JsonSerializationFormat GetTargetRequestSerializationFormat()
         {

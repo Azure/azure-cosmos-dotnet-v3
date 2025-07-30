@@ -5,7 +5,6 @@
 namespace Microsoft.Azure.Cosmos
 {
     using Microsoft.Azure.Cosmos.Scripts;
-    using System.Text.Json.Serialization.Metadata;
 
     internal abstract class CosmosResponseFactoryInternal : CosmosResponseFactory
     {
@@ -19,15 +18,11 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage responseMessage,
             Documents.ResourceType resourceType);
 
-        public abstract FeedResponse<T> CreateQueryFeedResponse<T>(
-            JsonTypeInfo<T[]> typeInfo,
-            ResponseMessage responseMessage,
-            Documents.ResourceType resourceType);
-
         public abstract ContainerResponse CreateContainerResponse(
             Container container,
             ResponseMessage responseMessage);
 
+#if !COSMOS_GW_AOT
         public abstract UserResponse CreateUserResponse(
             User user,
             ResponseMessage responseMessage);
@@ -35,6 +30,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract PermissionResponse CreatePermissionResponse(
             Permission permission,
             ResponseMessage responseMessage);
+#endif
 
         public abstract ClientEncryptionKeyResponse CreateClientEncryptionKeyResponse(
             ClientEncryptionKey clientEncryptionKey,
@@ -47,6 +43,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ThroughputResponse CreateThroughputResponse(
             ResponseMessage responseMessage);
 
+#if !COSMOS_GW_AOT
         public abstract StoredProcedureResponse CreateStoredProcedureResponse(
             ResponseMessage responseMessage);
 
@@ -55,5 +52,6 @@ namespace Microsoft.Azure.Cosmos
 
         public abstract UserDefinedFunctionResponse CreateUserDefinedFunctionResponse(
             ResponseMessage responseMessage);
+#endif
     }
 }

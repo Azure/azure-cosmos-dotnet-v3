@@ -574,6 +574,7 @@ namespace Microsoft.Azure.Cosmos
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Returns a reference to a user object.
         /// </summary>
@@ -634,6 +635,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<UserResponse> UpsertUserAsync(string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
+#endif
 
         /// <summary>
         /// This method creates a query for containers under an database using a SQL statement with parameterized values. It returns a FeedIterator.
@@ -871,6 +873,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// This method creates a query for users under an database using a SQL statement. It returns a FeedIterator.
         /// </summary>
@@ -953,6 +956,7 @@ namespace Microsoft.Azure.Cosmos
             QueryDefinition queryDefinition,
             string continuationToken = null,
             QueryRequestOptions requestOptions = null);
+#endif
 
         /// <summary>
         /// Creates a containerBuilder.
@@ -997,6 +1001,7 @@ namespace Microsoft.Azure.Cosmos
             string name,
             string partitionKeyPath);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Returns a reference to a client encryption key object.
         /// This method is not meant to be invoked directly. Please see https://aka.ms/CosmosClientEncryption in order to use client-side encryption.
@@ -1038,5 +1043,6 @@ namespace Microsoft.Azure.Cosmos
             ClientEncryptionKeyProperties clientEncryptionKeyProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
+#endif
     }
 }

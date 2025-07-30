@@ -34,9 +34,9 @@ namespace Microsoft.Azure.Cosmos
             return default;
         }
 
-        internal static Stream ToStream<T>(T input)
+        internal static Stream ToStream<T>(T input, JsonTypeInfo jsonTypeInfo)
         {
-            return CosmosResource.cosmosDefaultJsonSerializer.ToStream(input);
+            return CosmosResource.cosmosDefaultJsonSerializer.ToStream(input, jsonTypeInfo);
         }
 
         internal static T FromStream<T>(Stream stream)

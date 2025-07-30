@@ -143,7 +143,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             return this.ProcessCollectionCreateAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties, CosmosSerializerContext.Default.ContainerProperties),
                 throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             ResponseMessage response = await this.ProcessCollectionCreateAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties, CosmosSerializerContext.Default.ContainerProperties),
                 throughputProperties: throughputProperties,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -342,7 +342,7 @@ namespace Microsoft.Azure.Cosmos
             this.ValidateContainerProperties(containerProperties);
 
             ResponseMessage response = await this.ProcessCollectionCreateAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties, CosmosSerializerContext.Default.ContainerProperties),
                 throughput: throughput,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -448,7 +448,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ValidateContainerProperties(containerProperties);
 
-            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(containerProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(containerProperties, CosmosSerializerContext.Default.ContainerProperties);
             return this.ProcessCollectionCreateAsync(
                 streamPayload,
                 throughput,
@@ -457,6 +457,7 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
+#if !COSMOS_GW_AOT
         public async Task<UserResponse> CreateUserAsync(
             string id,
             RequestOptions requestOptions,
@@ -534,6 +535,7 @@ namespace Microsoft.Azure.Cosmos
 
             return this.ClientContext.ResponseFactory.CreateUserResponse(this.GetUser(id), response);
         }
+#endif
 
         public override FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
@@ -606,6 +608,7 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Collection));
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator<T> GetUserQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -676,6 +679,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
         }
+#endif
 
         public override ContainerBuilder DefineContainer(
             string name,
@@ -684,6 +688,7 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, name, partitionKeyPath);
         }
 
+#if !COSMOS_GW_AOT
         public override ClientEncryptionKey GetClientEncryptionKey(string id)
         {
             if (string.IsNullOrEmpty(id))
@@ -756,6 +761,7 @@ namespace Microsoft.Azure.Cosmos
 
             return cekResponse;
         }
+#endif
 
         private void ValidateContainerProperties(ContainerProperties containerProperties)
         {

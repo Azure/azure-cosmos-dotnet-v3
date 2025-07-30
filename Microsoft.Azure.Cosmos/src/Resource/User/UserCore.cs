@@ -84,7 +84,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             ResponseMessage response = await this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties, CosmosSerializerContext.Default.UserProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -105,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(userProperties.Id);
             return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(userProperties, CosmosSerializerContext.Default.PermissionProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             ResponseMessage response = await this.CreatePermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties, CosmosSerializerContext.Default.PermissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 trace: trace,
@@ -188,7 +188,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
-            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(permissionProperties);
+            Stream streamPayload = this.ClientContext.SerializerCore.ToStream(permissionProperties, CosmosSerializerContext.Default.PermissionProperties);
             return this.CreatePermissionStreamInternalAsync(
                 streamPayload,
                 tokenExpiryInSeconds,
@@ -212,7 +212,7 @@ namespace Microsoft.Azure.Cosmos
             this.ClientContext.ValidateResource(permissionProperties.Id);
 
             ResponseMessage response = await this.UpsertPermissionStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(permissionProperties, CosmosSerializerContext.Default.PermissionProperties),
                 tokenExpiryInSeconds: tokenExpiryInSeconds,
                 requestOptions: requestOptions,
                 trace: trace,

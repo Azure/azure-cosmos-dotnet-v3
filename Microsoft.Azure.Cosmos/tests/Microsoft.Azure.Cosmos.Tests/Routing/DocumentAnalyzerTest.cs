@@ -9,12 +9,12 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Collections.ObjectModel;
     using System.Globalization;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Nodes;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
-    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Tests for <see cref="DocumentAnalyzer"/>.
@@ -33,13 +33,13 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, null);
             Assert.AreEqual(PartitionKeyInternal.Empty, partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), null);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), null);
             Assert.AreEqual(PartitionKeyInternal.Empty, partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, new PartitionKeyDefinition());
             Assert.AreEqual(PartitionKeyInternal.Empty, partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), new PartitionKeyDefinition());
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), new PartitionKeyDefinition());
             Assert.AreEqual(PartitionKeyInternal.Empty, partitionKeyValue);
         }
 
@@ -74,20 +74,20 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true),
                     partitionKeyValue);
 
-                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), definition);
+                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), definition);
                 Assert.AreEqual(
                     PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true),
                     partitionKeyValue);
 
                 document = new Document();
-                document.address = new JObject();
+                document.address = new JsonObject();
 
                 partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, definition);
                 Assert.AreEqual(
                     PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true),
                     partitionKeyValue);
 
-                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), definition);
+                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), definition);
                 Assert.AreEqual(
                     PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true),
                     partitionKeyValue);
@@ -95,17 +95,17 @@ namespace Microsoft.Azure.Cosmos.Routing
                 partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new Entity { Address = new Address { Country = new object() } }), definition);
                 Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true), partitionKeyValue);
 
-                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new Entity { Address = new Address { Country = new object() } })), definition);
+                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new Entity { Address = new Address { Country = new object() } })), definition);
                 Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true), partitionKeyValue);
 
                 partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new DocumentEntity { Address = new Address { Country = new object() } }), definition);
                 Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true), partitionKeyValue);
 
-                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new DocumentEntity { Address = new Address { Country = new object() } })), definition);
+                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new DocumentEntity { Address = new Address { Country = new object() } })), definition);
                 Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true), partitionKeyValue);
 
-                dynamic address = new JObject();
-                address.Country = new JObject();
+                dynamic address = new JsonObject();
+                address.Country = new JsonObject();
 
                 document = new Document();
                 document.address = address;
@@ -115,7 +115,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true),
                     partitionKeyValue);
 
-                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), definition);
+                partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), definition);
                 Assert.AreEqual(
                     PartitionKeyInternal.FromObjectArray(new object[] { Undefined.Value }, true),
                     partitionKeyValue);
@@ -128,7 +128,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [TestMethod]
         public void TestExtractValidStringPartitionKey()
         {
-            dynamic address = new JObject();
+            dynamic address = new JsonObject();
             address.Country = "USA";
 
             dynamic document = new Document();
@@ -139,25 +139,25 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "USA" }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "USA" }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new Entity { Address = new Address { Country = "USA" } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "USA" }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new Entity { Address = new Address { Country = "USA" } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new Entity { Address = new Address { Country = "USA" } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "USA" }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new DocumentEntity { Address = new Address { Country = "USA" } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "USA" }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new DocumentEntity { Address = new Address { Country = "USA" } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new DocumentEntity { Address = new Address { Country = "USA" } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "USA" }, true), partitionKeyValue);
 
-            dynamic country = new JObject();
+            dynamic country = new JsonObject();
             country.something = "foo";
 
-            address = new JObject();
+            address = new Object();
             address.Country = country;
 
             document = new Document();
@@ -168,7 +168,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "foo" }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { "foo" }, true), partitionKeyValue);
         }
 
@@ -178,7 +178,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [TestMethod]
         public void TestExtractValidNullPartitionKey()
         {
-            dynamic address = new JObject();
+            dynamic address = new JsonObject();
             address.Country = null;
 
             dynamic document = new Document();
@@ -189,19 +189,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new Entity { Address = new Address { Country = null } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new Entity { Address = new Address { Country = null } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new Entity { Address = new Address { Country = null } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new DocumentEntity { Address = new Address { Country = null } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new DocumentEntity { Address = new Address { Country = null } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new DocumentEntity { Address = new Address { Country = null } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { null }, true), partitionKeyValue);
         }
 
@@ -211,7 +211,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [TestMethod]
         public void TestExtractValidBoolPartitionKey()
         {
-            dynamic address = new JObject();
+            dynamic address = new JsonObject();
             address.Country = true;
 
             dynamic document = new Document();
@@ -222,19 +222,19 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new Entity { Address = new Address { Country = true } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new Entity { Address = new Address { Country = true } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new Entity { Address = new Address { Country = true } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new DocumentEntity { Address = new Address { Country = true } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new DocumentEntity { Address = new Address { Country = true } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new DocumentEntity { Address = new Address { Country = true } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { true }, true), partitionKeyValue);
         }
 
@@ -244,7 +244,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         [TestMethod]
         public void TestExtractValidNumberPartitionKey()
         {
-            dynamic address = new JObject();
+            dynamic address = new JsonObject();
             address.Country = 5.5;
 
             dynamic document = new Document();
@@ -255,22 +255,23 @@ namespace Microsoft.Azure.Cosmos.Routing
             PartitionKeyInternal partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(document, partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(document), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(document), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new Entity { Address = new Address { Country = 5.5 } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new Entity { Address = new Address { Country = 5.5 } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new Entity { Address = new Address { Country = 5.5 } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
 
-            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonConvert.SerializeObject(Document.FromObject(new DocumentEntity { Address = new Address { Country = 5.5 } })), partitionKeyDefinition);
+            partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(JsonSerializer.Serialize(Document.FromObject(new DocumentEntity { Address = new Address { Country = 5.5 } })), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
 
             partitionKeyValue = DocumentAnalyzer.ExtractPartitionKeyValue(Document.FromObject(new DocumentEntity { Address = new Address { Country = 5.5 } }), partitionKeyDefinition);
             Assert.AreEqual(PartitionKeyInternal.FromObjectArray(new object[] { 5.5 }, true), partitionKeyValue);
         }
 
+#if !COSMOS_GW_AOT
         [TestMethod]
         public void TestExtractSpecialTypePartitionKey()
         {
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 ("Guid", Guid.NewGuid(), val => val.ToString()),
                 ("DateTime", DateTime.Now, val =>
                     {
-                        string str = JsonConvert.SerializeObject(
+                        string str = JsonSerializer.Serialize(
                             val,
                             new JsonSerializerSettings()
                             {
@@ -312,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     .ExtractPartitionKeyValue(
                         Document.FromObject(
                             sd,
-                            new JsonSerializerSettings()
+                            new System.Text.Json.JsonSerializerOptions()
                             {
 
                             }),
@@ -324,22 +325,23 @@ namespace Microsoft.Azure.Cosmos.Routing
                     message: $"fieldName: {fieldName}, value: {value}, valueToJson: {toJsonValue(value)}.");
             }
         }
+#endif 
 
         private class Address
         {
-            [JsonProperty("Country")]
+            [JsonPropertyName("Country")]
             public object Country { get; set; }
         }
 
         private class Entity
         {
-            [JsonProperty("address")]
+            [JsonPropertyName("address")]
             public Address Address { get; set; }
         }
 
         private class DocumentEntity : Document
         {
-            [JsonProperty("address")]
+            [JsonPropertyName("address")]
             public Address Address { get; set; }
         }
 
@@ -371,7 +373,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 set;
             }
 
-            [JsonConverter(typeof(StringEnumConverter))]
+            [JsonConverter(typeof(JsonStringEnumConverter<HttpStatusCode>))]
             public HttpStatusCode CustomEnum
             {
                 get;

@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Text.Json.Serialization.Metadata;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -36,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
         /// </summary>
         public abstract Database Database { get; }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Returns the conflicts
         /// </summary>
@@ -45,6 +47,7 @@ namespace Microsoft.Azure.Cosmos
         /// Returns the scripts
         /// </summary>
         public abstract Scripts.Scripts Scripts { get; }
+#endif
 
         /// <summary>
         /// Reads a <see cref="ContainerProperties"/> from the Azure Cosmos service as an asynchronous operation.
@@ -346,6 +349,7 @@ namespace Microsoft.Azure.Cosmos
         /// Creates a item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer</param>
+        /// <param name="jsonTypeInfo"></param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -371,6 +375,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> CreateItemAsync<T>(
             T item,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -521,6 +526,7 @@ namespace Microsoft.Azure.Cosmos
         /// Upserts an item as an asynchronous operation in the Azure Cosmos service.
         /// </summary>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer</param>
+        /// <param name="jsonTypeInfo"></param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -553,6 +559,7 @@ namespace Microsoft.Azure.Cosmos
         /// </example>
         public abstract Task<ItemResponse<T>> UpsertItemAsync<T>(
             T item,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -615,6 +622,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <param name="item">A JSON serializable object that must contain an id property. <see cref="CosmosSerializer"/> to implement a custom serializer.</param>
         /// <param name="id">The Cosmos item id of the existing item.</param>
+        /// <param name="jsonTypeInfo"></param>
         /// <param name="partitionKey"><see cref="PartitionKey"/> for the item. If not specified will be populated by extracting from {T}</param>
         /// <param name="requestOptions">(Optional) The options for the item request.</param>
         /// <param name="cancellationToken">(Optional) <see cref="CancellationToken"/> representing request cancellation.</param>
@@ -643,6 +651,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract Task<ItemResponse<T>> ReplaceItemAsync<T>(
             T item,
             string id,
+            JsonTypeInfo jsonTypeInfo,
             PartitionKey? partitionKey = null,
             ItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
@@ -724,6 +733,7 @@ namespace Microsoft.Azure.Cosmos
             ReadManyRequestOptions readManyRequestOptions = null,
             CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Patches an item in the Azure Cosmos service as an asynchronous operation.
         /// </summary>
@@ -833,6 +843,7 @@ namespace Microsoft.Azure.Cosmos
             IReadOnlyList<PatchOperation> patchOperations,
             PatchItemRequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
+#endif
 
         /// <summary>
         /// Delete a item from the Azure Cosmos service as an asynchronous operation.
@@ -1311,7 +1322,7 @@ namespace Microsoft.Azure.Cosmos
             string continuationToken = null,
             QueryRequestOptions requestOptions = null,
             CosmosLinqSerializerOptions linqSerializerOptions = null);
-
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Delegate to receive the changes within a <see cref="ChangeFeedProcessor"/> execution.
         /// </summary>
@@ -1385,6 +1396,7 @@ namespace Microsoft.Azure.Cosmos
         /// <seealso href="https://learn.microsoft.com/azure/cosmos-db/concepts-limits#per-request-limits">Limits on TransactionalBatch requests</seealso>
         /// </remarks>
         public abstract TransactionalBatch CreateTransactionalBatch(PartitionKey partitionKey);
+#endif
 
         /// <summary>
         /// Obtains a list of <see cref="FeedRange"/> that can be used to parallelize Feed operations.
@@ -1394,6 +1406,7 @@ namespace Microsoft.Azure.Cosmos
         /// <exception>https://aka.ms/cosmosdb-dot-net-exceptions#typed-api</exception>
         public abstract Task<IReadOnlyList<FeedRange>> GetFeedRangesAsync(CancellationToken cancellationToken = default);
 
+#if !COSMOS_GW_AOT
         /// <summary>
         ///  This method creates an iterator to consume a Change Feed.
         /// </summary>
@@ -1678,6 +1691,7 @@ namespace Microsoft.Azure.Cosmos
         public abstract ChangeFeedProcessorBuilder GetChangeFeedProcessorBuilderWithManualCheckpoint(
             string processorName,
             ChangeFeedStreamHandlerWithManualCheckpoint onChangesDelegate);
+#endif
 
         /// <summary>
         /// Deletes all items in the Container with the specified <see cref="PartitionKey"/> value.

@@ -3,9 +3,12 @@
 //------------------------------------------------------------
 namespace Microsoft.Azure.Documents
 {
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
-    internal sealed class ReadPolicy : JsonSerializable
+    /// <summary>
+    /// ReadPolicy for the account
+    /// </summary>
+    public sealed class ReadPolicy : JsonSerializable
     {
         private const int DefaultPrimaryReadCoefficient = 0;
         private const int DefaultSecondaryReadCoefficient = 1;
@@ -20,7 +23,7 @@ namespace Microsoft.Azure.Documents
         /// Relative weight of primary to serve read requests. Higher the value, it is preferred to issue reads to primary.
         /// Direct connectivity client can use this value to dynamically decide where to send reads to effectively use the service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.PrimaryReadCoefficient)]
+        [JsonPropertyName(Constants.Properties.PrimaryReadCoefficient)]
         public int PrimaryReadCoefficient
         {
             get
@@ -37,7 +40,7 @@ namespace Microsoft.Azure.Documents
         /// Relative weight of secondary to serve read requests. Higher the value, it is preferred to issue reads to secondary.
         /// Direct connectivity client can use this value to dynamically decide where to send reads to effectively use the service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.SecondaryReadCoefficient)]
+        [JsonPropertyName(Constants.Properties.SecondaryReadCoefficient)]
         public int SecondaryReadCoefficient
         {
             get

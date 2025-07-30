@@ -6,9 +6,9 @@ namespace Microsoft.Azure.Cosmos.Pagination
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json.Serialization.Metadata;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
@@ -70,15 +70,19 @@ namespace Microsoft.Azure.Cosmos.Pagination
 
         public Task<TryCatch<Record>> MonadicCreateItemAsync(
             CosmosObject payload,
+            JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken) => this.monadicDocumentContainer.MonadicCreateItemAsync(
                 payload,
+                jsonTypeInfo,
                 cancellationToken);
 
         public Task<Record> CreateItemAsync(
             CosmosObject payload,
+            JsonTypeInfo jsonTypeInfo,
             CancellationToken cancellationToken) => TryCatch<Record>.UnsafeGetResultAsync(
                 this.MonadicCreateItemAsync(
                     payload,
+                    jsonTypeInfo,
                     cancellationToken),
                 cancellationToken);
 
@@ -180,6 +184,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                     cancellationToken),
                 cancellationToken);
 
+#if !COSMOS_GW_AOT
         public Task<ChangeFeedPage> ChangeFeedAsync(
             FeedRangeState<ChangeFeedState> feedRangeState,
             ChangeFeedExecutionOptions changeFeedPaginationOptions,
@@ -201,6 +206,7 @@ namespace Microsoft.Azure.Cosmos.Pagination
                 changeFeedPaginationOptions,
                 trace,
                 cancellationToken);
+#endif
 
         public Task<string> GetResourceIdentifierAsync(
             ITrace trace,

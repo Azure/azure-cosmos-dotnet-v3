@@ -10,9 +10,11 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
+#if !COSMOS_GW_AOT
     using Microsoft.Azure.Cosmos.ChangeFeed;
     using Microsoft.Azure.Cosmos.ChangeFeed.Pagination;
     using Microsoft.Azure.Cosmos.ChangeFeed.Utils;
+#endif
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Pagination;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -52,8 +54,10 @@ namespace Microsoft.Azure.Cosmos
                 id: containerId);
 
             this.Database = database;
+#if !COSMOS_GW_AOT
             this.Conflicts = new ConflictsInlineCore(this.ClientContext, this);
             this.Scripts = new ScriptsInlineCore(this, this.ClientContext);
+#endif
             this.cachedUriSegmentWithoutId = this.GetResourceSegmentUriWithoutId();
             this.queryClient = cosmosQueryClient ?? new CosmosQueryClientCore(this.ClientContext, this);
             this.lazyBatchExecutor = new Lazy<BatchAsyncContainerExecutor>(() => this.ClientContext.GetExecutorForContainer(this));
@@ -69,9 +73,11 @@ namespace Microsoft.Azure.Cosmos
 
         public override BatchAsyncContainerExecutor BatchExecutor => this.lazyBatchExecutor.Value;
 
+#if !COSMOS_GW_AOT
         public override Conflicts Conflicts { get; }
 
         public override Scripts.Scripts Scripts { get; }
+#endif
 
         public async Task<ContainerResponse> ReadContainerAsync(
             ITrace trace,
@@ -99,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(containerProperties.Id);
             ResponseMessage response = await this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties, CosmosSerializerContext.Default.ContainerProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -252,7 +258,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.ClientContext.ValidateResource(containerProperties.Id);
             return this.ReplaceStreamInternalAsync(
-                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties),
+                streamPayload: this.ClientContext.SerializerCore.ToStream(containerProperties, CosmosSerializerContext.Default.ContainerProperties),
                 requestOptions: requestOptions,
                 trace: trace,
                 cancellationToken: cancellationToken);
@@ -323,6 +329,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator GetChangeFeedStreamIterator(
             ChangeFeedStartFrom changeFeedStartFrom,
             ChangeFeedMode changeFeedMode,
@@ -388,6 +395,7 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
+#endif
 
         internal async Task<IEnumerable<string>> GetPartitionKeyRangesAsync(
             FeedRange feedRange,
@@ -638,6 +646,7 @@ namespace Microsoft.Azure.Cosmos
               cancellationToken: cancellationToken);
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator GetChangeFeedStreamIteratorWithQuery(
            ChangeFeedStartFrom changeFeedStartFrom,
            ChangeFeedMode changeFeedMode,
@@ -707,5 +716,6 @@ namespace Microsoft.Azure.Cosmos
                 changeFeedIteratorCore,
                 responseCreator: this.ClientContext.ResponseFactory.CreateChangeFeedUserTypeResponse<T>);
         }
+#endif
     }
 }

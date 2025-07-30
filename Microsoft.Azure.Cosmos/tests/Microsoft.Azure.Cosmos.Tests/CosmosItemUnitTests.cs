@@ -15,8 +15,6 @@ namespace Microsoft.Azure.Cosmos.Tests
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
     [TestClass]
     public class CosmosItemUnitTests
