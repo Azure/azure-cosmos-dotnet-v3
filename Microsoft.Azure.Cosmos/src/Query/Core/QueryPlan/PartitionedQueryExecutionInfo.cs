@@ -9,28 +9,28 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Newtonsoft.Json;
     using Constants = Documents.Constants;
 
-    internal sealed class PartitionedQueryExecutionInfo
+    public sealed class PartitionedQueryExecutionInfo
     {
         public PartitionedQueryExecutionInfo()
         {
             this.Version = Constants.PartitionedQueryExecutionInfo.CurrentVersion;
         }
 
-        [JsonProperty(Constants.Properties.PartitionedQueryExecutionInfoVersion)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.PartitionedQueryExecutionInfoVersion)]
         public int Version
         {
             get;
             private set;
         }
 
-        [JsonProperty(Constants.Properties.QueryInfo)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.QueryInfo)]
         public QueryInfo QueryInfo
         {
             get;
             set;
         }
 
-        [JsonProperty(Constants.Properties.QueryRanges)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.QueryRanges)]
         public List<Documents.Routing.Range<string>> QueryRanges
         {
             get;
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         // Change to the below after Direct package upgrade
         // [JsonProperty(Constants.Properties.HybridSearchQueryInfo)]
-        [JsonProperty("hybridSearchQueryInfo")]
+        [System.Text.Json.Serialization.JsonPropertyName("hybridSearchQueryInfo")]
         public HybridSearchQueryInfo HybridSearchQueryInfo
         {
             get;
@@ -48,7 +48,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            // PartitionedQueryExecutionInfo o = this;
+            // return JsonSerializer.Serialize(o, CosmosJsonContext.Default.PartitionedQueryExecutionInfo);
+            Console.WriteLine("PartitionedQueryExecutionInfo::ToString() called.");
+            return String.Empty;
         }
 
         public static bool TryParse(string serializedQueryPlan, out PartitionedQueryExecutionInfo partitionedQueryExecutionInfo)

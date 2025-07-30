@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy
 {
-    internal enum SortOrder
+    public enum SortOrder
     {
         Ascending,
         Descending,

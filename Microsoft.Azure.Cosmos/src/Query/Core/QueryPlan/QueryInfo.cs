@@ -6,108 +6,109 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
 
-    [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class QueryInfo
+    public sealed class QueryInfo
     {
-        [JsonProperty("distinctType")]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonPropertyName("distinctType")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter<DistinctQueryType>))]
         public DistinctQueryType DistinctType
         {
             get;
             set;
         }
 
-        [JsonProperty("top")]
+        [System.Text.Json.Serialization.JsonPropertyName("top")]
         public uint? Top
         {
             get;
             set;
         }
 
-        [JsonProperty("offset")]
+        [System.Text.Json.Serialization.JsonPropertyName("offset")]
         public uint? Offset
         {
             get;
             set;
         }
 
-        [JsonProperty("limit")]
+        [System.Text.Json.Serialization.JsonPropertyName("limit")]
         public uint? Limit
         {
             get;
             set;
         }
 
-        [JsonProperty("orderBy", ItemConverterType = typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonPropertyName("orderBy")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Microsoft.Azure.Cosmos.stj.JsonStringEnumListConverter<SortOrder>))]
         public IReadOnlyList<SortOrder> OrderBy
         {
             get;
             set;
         }
 
-        [JsonProperty("orderByExpressions")]
+        [System.Text.Json.Serialization.JsonPropertyName("orderByExpressions")]
         public IReadOnlyList<string> OrderByExpressions
         {
             get;
             set;
         }
 
-        [JsonProperty("groupByExpressions")]
+        [System.Text.Json.Serialization.JsonPropertyName("groupByExpressions")]
         public IReadOnlyList<string> GroupByExpressions
         {
             get;
             set;
         }
 
-        [JsonProperty("groupByAliases")]
+        [System.Text.Json.Serialization.JsonPropertyName("groupByAliases")]
         public IReadOnlyList<string> GroupByAliases
         {
             get;
             set;
         }
 
-        [JsonProperty("aggregates", ItemConverterType = typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonPropertyName("aggregates")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Microsoft.Azure.Cosmos.stj.JsonStringEnumListConverter<AggregateOperator>))]
         public IReadOnlyList<AggregateOperator> Aggregates
         {
             get;
             set;
         }
 
-        [JsonProperty("groupByAliasToAggregateType", ItemConverterType = typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonPropertyName("groupByAliasToAggregateType")]
+        [System.Text.Json.Serialization.JsonConverter(typeof(Microsoft.Azure.Cosmos.stj.JsonStringEnumNullableDictionaryConverter<AggregateOperator>))]
         public IReadOnlyDictionary<string, AggregateOperator?> GroupByAliasToAggregateType
         {
             get;
             set;
         }
 
-        [JsonProperty("rewrittenQuery")]
+        [System.Text.Json.Serialization.JsonPropertyName("rewrittenQuery")]
         public string RewrittenQuery
         {
             get;
             set;
         }
 
-        [JsonProperty("hasSelectValue")]
+        [System.Text.Json.Serialization.JsonPropertyName("hasSelectValue")]
         public bool HasSelectValue
         {
             get;
             set;
         }
 
-        [JsonProperty("dCountInfo")]
+        [System.Text.Json.Serialization.JsonPropertyName("dCountInfo")]
         public DCountInfo DCountInfo
         {
             get;
             set;
         }
 
-        [JsonProperty("hasNonStreamingOrderBy")]
+        [System.Text.Json.Serialization.JsonPropertyName("hasNonStreamingOrderBy")]
         public bool HasNonStreamingOrderBy
         {
             get;

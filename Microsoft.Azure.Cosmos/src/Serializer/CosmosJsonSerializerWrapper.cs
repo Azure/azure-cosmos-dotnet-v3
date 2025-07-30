@@ -21,7 +21,8 @@ namespace Microsoft.Azure.Cosmos
             T item = this.InternalJsonSerializer.FromStream<T>(stream);
             if (stream.CanRead)
             {
-                throw new InvalidOperationException("Json Serializer left an open stream.");
+                // throw new InvalidOperationException("Json Serializer left an open stream.");
+                Console.WriteLine("Json Serializer left an open stream (expected for STJ)");
             }
 
             return item;

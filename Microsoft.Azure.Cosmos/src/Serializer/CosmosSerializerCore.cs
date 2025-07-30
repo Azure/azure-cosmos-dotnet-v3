@@ -17,9 +17,12 @@ namespace Microsoft.Azure.Cosmos
     /// </summary>
     internal partial class CosmosSerializerCore
     {
+        //private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(
+        //    new CosmosJsonDotNetSerializer(
+        //        ConfigurationManager.IsBinaryEncodingEnabled()));
+
         private static readonly CosmosSerializer propertiesSerializer = new CosmosJsonSerializerWrapper(
-            new CosmosJsonDotNetSerializer(
-                ConfigurationManager.IsBinaryEncodingEnabled()));
+            new Microsoft.Azure.Cosmos.stj.CosmosSystemTextJsonSerializer());
 
         private readonly CosmosSerializer customSerializer;
         private readonly CosmosSerializer sqlQuerySpecSerializer;

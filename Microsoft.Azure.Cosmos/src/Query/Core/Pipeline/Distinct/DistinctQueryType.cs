@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     /// <summary>
     /// Enum of the type of distinct queries.
     /// </summary>
-    internal enum DistinctQueryType
+    public enum DistinctQueryType
     {
         /// <summary>
         /// This means that the query does not have DISTINCT.

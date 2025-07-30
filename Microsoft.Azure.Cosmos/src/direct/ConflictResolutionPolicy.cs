@@ -4,8 +4,7 @@
 namespace Microsoft.Azure.Documents
 {
     using System;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Converters;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the conflict resolution policy configuration for specifying how to resolve conflicts 
@@ -56,7 +55,7 @@ namespace Microsoft.Azure.Documents
     /// ]]>
     /// </example>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif
@@ -77,8 +76,8 @@ namespace Microsoft.Azure.Documents
         /// <value>
         /// One of the values of the <see cref="ConflictResolutionMode"/> enumeration.
         /// </value>
-        [JsonProperty(PropertyName = Constants.Properties.Mode)]
-        [JsonConverter(typeof(StringEnumConverter))]
+        [System.Text.Json.Serialization.JsonConverter(typeof(JsonStringEnumConverter<ConflictResolutionMode>))]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.Mode)]
         public ConflictResolutionMode Mode
         {
             get
@@ -114,7 +113,7 @@ namespace Microsoft.Azure.Documents
         /// conflictResolutionPolicy.ConflictResolutionPath = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionPath)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ConflictResolutionPath)]
         public string ConflictResolutionPath
         {
             get
@@ -144,7 +143,7 @@ namespace Microsoft.Azure.Documents
         /// conflictResolutionPolicy.ConflictResolutionProcedure = "/name/first";
         /// ]]>
         /// </example>
-        [JsonProperty(PropertyName = Constants.Properties.ConflictResolutionProcedure)]
+        [System.Text.Json.Serialization.JsonPropertyName(Constants.Properties.ConflictResolutionProcedure)]
         public string ConflictResolutionProcedure
         {
             get

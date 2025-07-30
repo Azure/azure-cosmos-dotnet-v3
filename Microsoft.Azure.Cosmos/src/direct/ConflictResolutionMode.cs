@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Documents
     /// Specifies the supported conflict resolution modes, as specified in <see cref="ConflictResolutionPolicy"/>
     /// </summary>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif

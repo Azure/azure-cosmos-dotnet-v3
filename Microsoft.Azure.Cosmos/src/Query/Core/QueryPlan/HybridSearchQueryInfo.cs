@@ -5,60 +5,59 @@
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System.Collections.Generic;
-    using Newtonsoft.Json;
 
-    internal sealed class HybridSearchQueryInfo
+    public sealed class HybridSearchQueryInfo
     {
-        [JsonProperty("globalStatisticsQuery")]
+        [System.Text.Json.Serialization.JsonPropertyName("globalStatisticsQuery")]
         public string GlobalStatisticsQuery
         {
             get;
             set;
         }
 
-        [JsonProperty("componentQueryInfos")]
+        [System.Text.Json.Serialization.JsonPropertyName("componentQueryInfos")]
         public List<QueryInfo> ComponentQueryInfos
         {
             get;
             set;
         }
 
-        [JsonProperty("componentWithoutPayloadQueryInfos")]
+        [System.Text.Json.Serialization.JsonPropertyName("componentWithoutPayloadQueryInfos")]
         public List<QueryInfo> ComponentWithoutPayloadQueryInfos
         {
             get;
             set;
         }
 
-        [JsonProperty("projectionQueryInfo")]
+        [System.Text.Json.Serialization.JsonPropertyName("projectionQueryInfo")]
         public QueryInfo ProjectionQueryInfo
         {
             get;
             set;
         }
 
-        [JsonProperty("componentWeights")]
+        [System.Text.Json.Serialization.JsonPropertyName("componentWeights")]
         public List<double> ComponentWeights
         {
             get;
             set;
         }
 
-        [JsonProperty("skip")]
+        [System.Text.Json.Serialization.JsonPropertyName("skip")]
         public uint? Skip
         {
             get;
             set;
         }
 
-        [JsonProperty("take")]
+        [System.Text.Json.Serialization.JsonPropertyName("take")]
         public uint? Take
         {
             get;
             set;
         }
 
-        [JsonProperty("requiresGlobalStatistics")]
+        [System.Text.Json.Serialization.JsonPropertyName("requiresGlobalStatistics")]
         public bool RequiresGlobalStatistics
         {
             get;

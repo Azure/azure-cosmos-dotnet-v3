@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 {
-    internal enum AggregateOperator
+    public enum AggregateOperator
     {
         Average,
         Count,

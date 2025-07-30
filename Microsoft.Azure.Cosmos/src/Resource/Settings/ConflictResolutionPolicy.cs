@@ -32,7 +32,6 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         [System.Text.Json.Serialization.JsonPropertyName(Documents.Constants.Properties.Mode)]
         [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter<ConflictResolutionMode>))]
-        [System.Text.Json.Serialization.JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public ConflictResolutionMode Mode { get; set; }
 
         /// <summary>
