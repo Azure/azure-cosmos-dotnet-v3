@@ -60,19 +60,5 @@ namespace Microsoft.Azure.Cosmos
                 this.AccountProperties = await this.accountPropertiesTaskFunc();
             }
         }
-
-        /// <summary>
-        /// Updates the account properties
-        /// This method is called by GlobalEndpointManager when account properties are refreshed
-        /// </summary>
-        internal void UpdateAccountProperties(AccountProperties newProperties)
-        {
-            if (newProperties == null)
-            {
-                return;
-            }
-
-            this.AccountProperties = newProperties;
-        }
     }
 }

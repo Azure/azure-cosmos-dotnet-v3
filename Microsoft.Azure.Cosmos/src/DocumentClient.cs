@@ -7017,7 +7017,6 @@ namespace Microsoft.Azure.Cosmos
 
         /// <summary>
         /// Handles PPAF config change events from GlobalEndpointManager
-        /// Updates the CosmosAccountServiceConfiguration with new account properties and handles PPAF changes
         /// </summary>
         /// <param name="accountProperties">The refreshed account properties</param>
         private void HandleEnablePartitionLevelFailoverConfigChanged(AccountProperties accountProperties)
@@ -7025,9 +7024,6 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 DefaultTrace.TraceInformation("DocumentClient: Received PPAF config change from GlobalEndpointManager");
-                
-                // Update the CosmosAccountServiceConfiguration with the new account properties
-                this.accountServiceConfiguration?.UpdateAccountProperties(accountProperties);
                 
                 // Handle the PPAF enablement change (comparison already done in GlobalEndpointManager)
                 bool? newEnablePartitionLevelFailover = accountProperties?.EnablePartitionLevelFailover;
