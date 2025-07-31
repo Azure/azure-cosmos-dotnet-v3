@@ -48,17 +48,23 @@
 	<ItemGroup>
 	  <Compile Remove="ChangeFeedProcessor\**" />
 	  <Compile Remove="ChangeFeed\**" />
+	  <Compile Remove="OSS\Antlr\**" />
+	  <Compile Remove="Query\Core\Parser\**" />
 	  <Compile Remove="Resource\Permission\**" />
 	  <Compile Remove="Resource\Scripts\**" />
 	  <Compile Remove="Resource\User\**" />
 	  <EmbeddedResource Remove="Batch\**" />
 	  <EmbeddedResource Remove="ChangeFeedProcessor\**" />
 	  <EmbeddedResource Remove="ChangeFeed\**" />
+	  <EmbeddedResource Remove="OSS\Antlr\**" />
+	  <EmbeddedResource Remove="Query\Core\Parser\**" />
 	  <EmbeddedResource Remove="Resource\Permission\**" />
 	  <EmbeddedResource Remove="Resource\Scripts\**" />
 	  <EmbeddedResource Remove="Resource\User\**" />
 	  <None Remove="ChangeFeedProcessor\**" />
 	  <None Remove="ChangeFeed\**" />
+	  <None Remove="OSS\Antlr\**" />
+	  <None Remove="Query\Core\Parser\**" />
 	  <None Remove="Resource\Permission\**" />
 	  <None Remove="Resource\Scripts\**" />
 	  <None Remove="Resource\User\**" />

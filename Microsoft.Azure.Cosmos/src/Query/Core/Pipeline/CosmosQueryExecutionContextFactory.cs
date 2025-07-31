@@ -16,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Exceptions;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
-    using Microsoft.Azure.Cosmos.Query.Core.Parser;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.Parallel;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.OptimisticDirectExecutionQuery;
@@ -187,6 +186,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                 }
                 else
                 {
+#if !COSMOS_GW_AOT
                     // If the query would go to gateway, but we have a partition key,
                     // then try seeing if we can execute as a passthrough using client side only logic.
                     // This is to short circuit the need to go to the gateway to get the query plan.
@@ -228,6 +228,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.ExecutionContext
                             }
                         }
                     }
+#endif
 
                     partitionedQueryExecutionInfo = await GetPartitionedQueryExecutionInfoAsync(
                         cosmosQueryContext,
