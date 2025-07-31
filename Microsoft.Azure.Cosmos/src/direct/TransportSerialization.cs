@@ -274,6 +274,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.AddEnableConflictResolutionPolicyUpdate(requestHeaders, rntbdRequest);
             TransportSerialization.AddAllowDocumentReadsInOfflineRegion(requestHeaders, rntbdRequest);
             TransportSerialization.AddCosmosGatewayTransactionId(requestHeaders, rntbdRequest);
+            TransportSerialization.AddPopulateThroughputPoolInfo(requestHeaders, rntbdRequest);
 
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.Authorization, requestHeaders.Authorization, rntbdRequest.authorizationToken, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.SessionToken, requestHeaders.SessionToken, rntbdRequest.sessionToken, rntbdRequest);
@@ -373,6 +374,8 @@ namespace Microsoft.Azure.Documents.Rntbd
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateThroughputPoolInfo, requestHeaders.PopulateThroughputPoolInfo, rntbdRequest.populateThroughputPoolInfo, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, WFConstants.BackendHeaders.RetrieveUserStrings, requestHeaders.RetrieveUserStrings, rntbdRequest.retrieveUserStrings, rntbdRequest);
             TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.PopulateVectorIndexAggregateProgress, requestHeaders.PopulateVectorIndexAggregateProgress, rntbdRequest.populateVectorIndexAggregateProgress, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.AllowTopologyUpsertWithoutIntent, requestHeaders.AllowTopologyUpsertWithoutIntent, rntbdRequest.allowTopologyUpsertWithoutIntent, rntbdRequest);
+            TransportSerialization.FillTokenFromHeader(request, HttpConstants.HttpHeaders.ReadGlobalCommittedData, requestHeaders.ReadGlobalCommittedData, rntbdRequest.readGlobalCommittedData, rntbdRequest);
             // will be null in case of direct, which is fine - BE will use the value from the connection context message.
             // When this is used in Gateway, the header value will be populated with the proxied HTTP request's header, and
             // BE will respect the per-request value.

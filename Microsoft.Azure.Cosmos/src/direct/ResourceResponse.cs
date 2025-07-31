@@ -36,7 +36,9 @@ namespace Microsoft.Azure.Documents.Client
     class ResourceResponse<TResource> : ResourceResponseBase, IResourceResponse<TResource> where TResource : Resource, new()
     {
         private TResource resource;
+#pragma warning disable IDE0044 // Add readonly modifier
         private ITypeResolver<TResource> typeResolver;
+#pragma warning restore IDE0044 // Add readonly modifier
 
         /// <summary>
         /// Constructor exposed for mocking purposes for the Azure Cosmos DB service.

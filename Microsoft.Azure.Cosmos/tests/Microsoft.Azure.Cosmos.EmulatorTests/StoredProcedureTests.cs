@@ -124,6 +124,52 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         }
 
         [TestMethod]
+        public async Task CRUDStreamTest()
+        {
+            string sprocId = Guid.NewGuid().ToString();
+            string sprocBody = "function() { { var x = 42; } }";
+
+            StoredProcedureProperties storedProcedureProperties = new StoredProcedureProperties(sprocId, sprocBody);
+            ResponseMessage responseMessage = await this.scripts.CreateStoredProcedureStreamAsync(
+                storedProcedureProperties);
+            Assert.AreEqual(HttpStatusCode.Created, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            string diagnostics = responseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            responseMessage = await this.scripts.ReadStoredProcedureStreamAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
+            Assert.IsNotNull(responseMessage.Diagnostics);
+            diagnostics = responseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+            string updatedBody = @"function(name) { var context = getContext();
+                    var response = context.getResponse();
+                    response.setBody(""hello there "" + name);
+                }";
+
+            storedProcedureProperties = new StoredProcedureProperties(sprocId, updatedBody);
+            ResponseMessage replaceResponseMessage = await this.scripts.ReplaceStoredProcedureStreamAsync(
+                storedProcedureProperties);
+
+            Assert.AreEqual(HttpStatusCode.OK, replaceResponseMessage.StatusCode);
+            Assert.IsNotNull(replaceResponseMessage.Diagnostics);
+            diagnostics = replaceResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+
+
+            ResponseMessage deleteResponseMessage = await this.scripts.DeleteStoredProcedureStreamAsync(sprocId);
+            Assert.AreEqual(HttpStatusCode.NoContent, deleteResponseMessage.StatusCode);
+            Assert.IsNotNull(deleteResponseMessage.Diagnostics);
+            diagnostics = deleteResponseMessage.Diagnostics.ToString();
+            Assert.IsFalse(string.IsNullOrEmpty(diagnostics));
+            Assert.IsTrue(diagnostics.Contains("StatusCode"));
+        }
+
+        [TestMethod]
         public async Task ExecutionLogsTests()
         {
             const string testLogsText = "this is a test";

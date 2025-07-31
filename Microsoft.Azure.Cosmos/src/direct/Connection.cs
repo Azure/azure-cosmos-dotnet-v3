@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
     // Connection encapsulates the TCP connection to one back-end, and all surrounding
     // mechanisms (SSL stream, connection state).
-    internal sealed class Connection : IDisposable
+    internal sealed class Connection : IConnection, IDisposable
     {
         private const int ResponseLengthByteLimit = int.MaxValue;
 
@@ -456,7 +456,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// </summary>
         /// <param name="isCompleted">A boolean flag indicating if the request is completed successfully.</param>
         /// <param name="isReadRequest">An optional boolean flag indicating if the current operation is read-only in nature.</param>
-        internal void NotifyConnectionStatus(
+        public void NotifyConnectionStatus(
             bool isCompleted,
             bool isReadRequest = false)
         {
@@ -605,7 +605,7 @@ namespace Microsoft.Azure.Documents.Rntbd
 
                 DefaultTrace.TraceInformation(
                     "[RNTBD Connection {0}] Connection.OpenSocketAsync failed. Converting to TransportException. " +
-                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex);
+                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex.Message);
                 Debug.Assert(errorCode != TransportErrorCode.Unknown);
                 Debug.Assert(!args.CommonArguments.UserPayload);
                 Debug.Assert(!args.CommonArguments.PayloadSent);
@@ -658,7 +658,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 DefaultTrace.TraceInformation(
                     "[RNTBD Connection {0}] Connection.NegotiateSslAsync failed. Converting to TransportException. " +
-                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex);
+                    "Connection: {1}. Inner exception: {2}", this.connectionCorrelationId, this, ex.Message);
                 Debug.Assert(!args.CommonArguments.UserPayload);
                 Debug.Assert(!args.CommonArguments.PayloadSent);
                 throw new TransportException(
@@ -993,6 +993,7 @@ namespace Microsoft.Azure.Documents.Rntbd
         /// Used unless internal clients provide a version that might override decision to use IPv6 addresses.
         /// </summary>
         /// <param name="hostName"></param>
+        /// <returns></returns>
         private static Task<IPAddress> ResolveHostIncludingIPv6AddressesAsync(string hostName) => Connection.ResolveHostAsync(hostName, includeIPv6Addresses: true);
 
         internal static async Task<IPAddress> ResolveHostAsync(string hostName, bool includeIPv6Addresses)
@@ -1052,7 +1053,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("[RNTBD Connection {0}] IOControl(KeepAliveValues) failed: {1}", connectionCorrelationId, e);
+                    DefaultTrace.TraceWarning("[RNTBD Connection {0}] IOControl(KeepAliveValues) failed: {1}", connectionCorrelationId, e.Message);
                     // Ignore the exception.
                 }
             }
@@ -1147,7 +1148,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceWarning("[RNTBD Connection {0}] SetSocketOption(Socket, ReuseUnicastPort) failed: {1}", connectionCorrelationId, e);
+                    DefaultTrace.TraceWarning("[RNTBD Connection {0}] SetSocketOption(Socket, ReuseUnicastPort) failed: {1}", connectionCorrelationId, e.Message);
                     // Ignore the exception.
                 }
             }

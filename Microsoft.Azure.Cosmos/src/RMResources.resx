@@ -1455,4 +1455,7 @@ If you would like to serve this query through continuation tokens, then please r
   <data name="DisableCmkNotSupported" xml:space="preserve">
     <value>Cannot provide an empty KeyVaultKeyUri to an account with CMK Enabled. More info: https://learn.microsoft.com/en-us/azure/cosmos-db/how-to-setup-customer-managed-keys?tabs=azure-portal</value>
   </data>
+  <data name="CapabilityNotSupportedOnSubscription" xml:space="preserve">
+    <value>{0} capability is not supported on subscription {1}</value>
+  </data>
 </root>

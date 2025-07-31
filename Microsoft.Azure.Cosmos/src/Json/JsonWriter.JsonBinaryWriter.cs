@@ -8,14 +8,9 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
-    using System.Text;
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Microsoft.Azure.Cosmos.Linq;
-    using Microsoft.Azure.Cosmos.Serialization.HybridRow;
-    using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Cosmos.Json.JsonBinaryEncoding;
 
     /// <summary>
@@ -280,6 +275,11 @@ namespace Microsoft.Azure.Cosmos.Json
             /// </summary>
             private readonly int reservationSize;
 
+            /// <summary>
+            /// The string dictionary used for user string encoding.
+            /// </summary>
+            private readonly IJsonStringDictionary jsonStringDictionary;
+
             private readonly List<SharedStringValue> sharedStrings;
 
             private readonly ReferenceStringDictionary sharedStringIndexes;
@@ -292,6 +292,7 @@ namespace Microsoft.Azure.Cosmos.Json
             /// <summary>
             /// Initializes a new instance of the JsonBinaryWriter class.
             /// </summary>
+            /// <param name="jsonStringDictionary">The JSON string dictionary used for user string encoding.</param>
             /// <param name="initialCapacity">The initial capacity to avoid intermediary allocations.</param>
             /// <param name="enableNumberArrays">Determines whether to enable writing of uniform number arrays.</param>
             /// <param name="enableUint64Values">Determines whether to enable writing of full-precision unsigned 64-bit integer values</param>
@@ -300,7 +301,8 @@ namespace Microsoft.Azure.Cosmos.Json
                 int initialCapacity,
                 bool enableNumberArrays,
                 bool enableUint64Values,
-                bool enableEncodedStrings = true)
+                bool enableEncodedStrings = true,
+                IJsonStringDictionary jsonStringDictionary = null)
             {
                 this.enableNumberArrays = enableNumberArrays;
                 this.enableUInt64Values = enableUint64Values;
@@ -311,6 +313,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.sharedStrings = new List<SharedStringValue>();
                 this.sharedStringIndexes = new ReferenceStringDictionary();
                 this.stringReferenceOffsets = new List<int>();
+                this.jsonStringDictionary = jsonStringDictionary;
 
                 // Write the serialization format as the very first byte
                 byte binaryTypeMarker = (byte)JsonSerializationFormat.Binary;
@@ -1377,6 +1380,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 this.JsonObjectState.RegisterToken(isFieldName ? JsonTokenType.FieldName : JsonTokenType.String);
                 if (JsonBinaryEncoding.TryGetEncodedStringTypeMarker(
                     utf8Span,
+                    this.JsonObjectState.CurrentTokenType == JsonTokenType.FieldName ? this.jsonStringDictionary : null,
                     out JsonBinaryEncoding.MultiByteTypeMarker multiByteTypeMarker))
                 {
                     switch (multiByteTypeMarker.Length)
@@ -1610,16 +1614,18 @@ namespace Microsoft.Azure.Cosmos.Json
                 ReadOnlyMemory<byte> rootBuffer,
                 int valueOffset,
                 UniformArrayInfo externalArrayInfo,
-                bool isFieldName)
+                bool isFieldName,
+                IJsonStringDictionary jsonStringDictionary)
             {
-                this.ForceRewriteRawJsonValue(rootBuffer, valueOffset, externalArrayInfo, isFieldName);
+                this.ForceRewriteRawJsonValue(rootBuffer, valueOffset, externalArrayInfo, isFieldName, jsonStringDictionary);
             }
 
             private void ForceRewriteRawJsonValue(
                 ReadOnlyMemory<byte> rootBuffer,
                 int valueOffset,
                 UniformArrayInfo externalArrayInfo,
-                bool isFieldName)
+                bool isFieldName,
+                IJsonStringDictionary jsonStringDictionary)
             {
                 ReadOnlyMemory<byte> rawJsonValue = rootBuffer.Slice(valueOffset);
                 byte typeMarker = rawJsonValue.Span[0];
@@ -1669,7 +1675,7 @@ namespace Microsoft.Azure.Cosmos.Json
                         case RawValueType.StrL1:
                         case RawValueType.StrL2:
                         case RawValueType.StrL4:
-                            this.WriteRawStringValue(rawType, rawJsonValue, isFieldName);
+                            this.WriteRawStringValue(rawType, rawJsonValue, isFieldName, this.jsonStringDictionary);
                             break;
 
                         case RawValueType.StrR1:
@@ -1677,28 +1683,32 @@ namespace Microsoft.Azure.Cosmos.Json
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<byte>(rawJsonValue.Slice(start: 1).Span),
                                 default,
-                                isFieldName);
+                                isFieldName,
+                                jsonStringDictionary);
                             break;
                         case RawValueType.StrR2:
                             this.ForceRewriteRawJsonValue(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<ushort>(rawJsonValue.Slice(start: 1).Span),
                                 default,
-                                isFieldName);
+                                isFieldName,
+                                jsonStringDictionary);
                             break;
                         case RawValueType.StrR3:
                             this.ForceRewriteRawJsonValue(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<JsonBinaryEncoding.UInt24>(rawJsonValue.Slice(start: 1).Span),
                                 default,
-                                isFieldName);
+                                isFieldName,
+                                jsonStringDictionary);
                             break;
                         case RawValueType.StrR4:
                             this.ForceRewriteRawJsonValue(
                                 rootBuffer,
                                 JsonBinaryEncoding.GetFixedSizedValue<int>(rawJsonValue.Slice(start: 1).Span),
                                 default,
-                                isFieldName);
+                                isFieldName,
+                                jsonStringDictionary);
                             break;
 
                         case RawValueType.Arr1:
@@ -1711,7 +1721,8 @@ namespace Microsoft.Azure.Cosmos.Json
                                     rootBuffer,
                                     valueOffset: valueOffset + 1,
                                     externalArrayInfo: default,
-                                    isFieldName: false);
+                                    isFieldName: false,
+                                    jsonStringDictionary: jsonStringDictionary);
 
                                 this.JsonObjectState.RegisterToken(JsonTokenType.EndArray);
                             }
@@ -1727,7 +1738,8 @@ namespace Microsoft.Azure.Cosmos.Json
                                     rootBuffer,
                                     valueOffset: valueOffset + 1,
                                     externalArrayInfo: default,
-                                    isFieldName: true);
+                                    isFieldName: true,
+                                    jsonStringDictionary: jsonStringDictionary);
 
                                 int nameLength = JsonBinaryEncoding.GetValueLength(rawJsonValue.Slice(start: 1).Span);
 
@@ -1735,7 +1747,8 @@ namespace Microsoft.Azure.Cosmos.Json
                                     rootBuffer,
                                     valueOffset: valueOffset + 1 + nameLength,
                                     externalArrayInfo: default,
-                                    isFieldName: false);
+                                    isFieldName: false,
+                                    jsonStringDictionary: jsonStringDictionary);
 
                                 this.JsonObjectState.RegisterToken(JsonTokenType.EndObject);
                             }
@@ -1751,7 +1764,8 @@ namespace Microsoft.Azure.Cosmos.Json
                                         rootBuffer,
                                         arrayItem.Offset,
                                         arrayItem.ExternalArrayInfo,
-                                        isFieldName);
+                                        isFieldName,
+                                        jsonStringDictionary);
                                 }
 
                                 this.WriteArrayEnd();
@@ -1764,8 +1778,8 @@ namespace Microsoft.Azure.Cosmos.Json
 
                                 foreach (JsonBinaryEncoding.Enumerator.ObjectProperty property in JsonBinaryEncoding.Enumerator.GetObjectProperties(rootBuffer, valueOffset))
                                 {
-                                    this.ForceRewriteRawJsonValue(rootBuffer, property.NameOffset, externalArrayInfo: default, isFieldName: true);
-                                    this.ForceRewriteRawJsonValue(rootBuffer, property.ValueOffset, externalArrayInfo: default, isFieldName: false);
+                                    this.ForceRewriteRawJsonValue(rootBuffer, property.NameOffset, externalArrayInfo: default, isFieldName: true, jsonStringDictionary: this.jsonStringDictionary);
+                                    this.ForceRewriteRawJsonValue(rootBuffer, property.ValueOffset, externalArrayInfo: default, isFieldName: false, jsonStringDictionary: this.jsonStringDictionary);
                                 }
 
                                 this.WriteObjectEnd();
@@ -1790,7 +1804,7 @@ namespace Microsoft.Azure.Cosmos.Json
                 }
             }
 
-            private void WriteRawStringValue(RawValueType rawValueType, ReadOnlyMemory<byte> buffer, bool isFieldName)
+            private void WriteRawStringValue(RawValueType rawValueType, ReadOnlyMemory<byte> buffer, bool isFieldName, IJsonStringDictionary jsonStringDictionary)
             {
                 Utf8Span rawStringValue;
                 switch (rawValueType)
@@ -1798,6 +1812,7 @@ namespace Microsoft.Azure.Cosmos.Json
                     case RawValueType.StrUsr:
                         if (!JsonBinaryEncoding.TryGetDictionaryEncodedStringValue(
                             buffer.Span,
+                            jsonStringDictionary,
                             out UtfAllString value))
                         {
                             throw new InvalidOperationException("Failed to get dictionary encoded string value");
@@ -1846,7 +1861,7 @@ namespace Microsoft.Azure.Cosmos.Json
             private void WriteRawUniformArrayItem(
                 ReadOnlySpan<byte> rawValue,
                 UniformArrayInfo arrayInfo)
-            {
+                {
                 if (arrayInfo == null) throw new ArgumentNullException(nameof(arrayInfo));
 
                 switch (arrayInfo.ItemTypeMarker)

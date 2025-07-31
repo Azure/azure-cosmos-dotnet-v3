@@ -316,6 +316,30 @@ internal partial class sqlBaseListener : IsqlListener {
 	/// <param name="context">The parse tree.</param>
 	public virtual void ExitOrder_by_clause([NotNull] sqlParser.Order_by_clauseContext context) { }
 	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.score_expression_order_by_items"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterScore_expression_order_by_items([NotNull] sqlParser.Score_expression_order_by_itemsContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.score_expression_order_by_items"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitScore_expression_order_by_items([NotNull] sqlParser.Score_expression_order_by_itemsContext context) { }
+	/// <summary>
+	/// Enter a parse tree produced by <see cref="sqlParser.score_expression_order_by_item"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void EnterScore_expression_order_by_item([NotNull] sqlParser.Score_expression_order_by_itemContext context) { }
+	/// <summary>
+	/// Exit a parse tree produced by <see cref="sqlParser.score_expression_order_by_item"/>.
+	/// <para>The default implementation does nothing.</para>
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	public virtual void ExitScore_expression_order_by_item([NotNull] sqlParser.Score_expression_order_by_itemContext context) { }
+	/// <summary>
 	/// Enter a parse tree produced by <see cref="sqlParser.order_by_items"/>.
 	/// <para>The default implementation does nothing.</para>
 	/// </summary>

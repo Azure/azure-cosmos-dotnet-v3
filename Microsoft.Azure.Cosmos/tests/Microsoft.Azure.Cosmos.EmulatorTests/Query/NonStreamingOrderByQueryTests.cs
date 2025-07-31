@@ -83,8 +83,8 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         [TestMethod]
         public async Task QueryFeatureFlagTests()
         {
-            using EnvironmentVariable nonStreamingOrderByDisabled = new EnvironmentVariable(
-                ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled);
+            using EnvironmentVariable hybridSearchQueryPlanOptimizationDisabled = new EnvironmentVariable(
+                ConfigurationManager.HybridSearchQueryPlanOptimizationDisabled);
 
             static async Task ImplementationAsync(Container container, IReadOnlyList<CosmosObject> _)
             {
@@ -92,7 +92,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                 SupportedQueryFeaturesValidator validator = new SupportedQueryFeaturesValidator
                 {
-                    ExpectNonStreamingOrderBy = true
+                    ExpectQueryPlanOptimizationDisabled = true
                 };
 
                 CosmosQueryClient cosmosQueryClient = new MockCosmosQueryClient(
@@ -111,23 +111,23 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     MakeQueryFeaturesTest(
                         environmentVariable: null,
                         requestOption: null,
-                        expectNonStreamingOrderBy: true),
+                        expectHybridSearchOptimizationDisabled: true),
                     MakeQueryFeaturesTest(
                         environmentVariable: true,
                         requestOption: null,
-                        expectNonStreamingOrderBy: false),
+                        expectHybridSearchOptimizationDisabled: true),
                     MakeQueryFeaturesTest(
                         environmentVariable: null,
                         requestOption: true,
-                        expectNonStreamingOrderBy: false),
+                        expectHybridSearchOptimizationDisabled: true),
                     MakeQueryFeaturesTest(
                         environmentVariable: false,
                         requestOption: null,
-                        expectNonStreamingOrderBy: true),
+                        expectHybridSearchOptimizationDisabled: false),
                     MakeQueryFeaturesTest(
                         environmentVariable: null,
                         requestOption: false,
-                        expectNonStreamingOrderBy: true),
+                        expectHybridSearchOptimizationDisabled: false),
                 };
 
                 int validationCount = validator.InvocationCount;
@@ -136,13 +136,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     if (testCase.EnvironmentVariable.HasValue)
                     {
                         Environment.SetEnvironmentVariable(
-                            ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled,
+                            ConfigurationManager.HybridSearchQueryPlanOptimizationDisabled,
                             testCase.EnvironmentVariable.Value.ToString());
                     }
                     else
                     {
                         Environment.SetEnvironmentVariable(
-                            ConfigurationManager.NonStreamingOrderByQueryFeatureDisabled,
+                            ConfigurationManager.HybridSearchQueryPlanOptimizationDisabled,
                             null);
                     }
 
@@ -153,10 +153,10 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
                     if (testCase.RequestOption.HasValue)
                     {
-                        requestOptions.IsNonStreamingOrderByQueryFeatureDisabled = testCase.RequestOption.Value;
+                        requestOptions.IsHybridSearchQueryPlanOptimizationDisabled = testCase.RequestOption.Value;
                     }
 
-                    validator.ExpectNonStreamingOrderBy = testCase.ExpectNonStreamingOrderBy;
+                    validator.ExpectQueryPlanOptimizationDisabled = testCase.ExpectHybridSearchOptimizationDisabled;
                     ++validationCount;
 
                     DebugTraceHelpers.TraceSupportedFeaturesTestCase(testCase);
@@ -181,7 +181,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     if (responseMessage.StatusCode != System.Net.HttpStatusCode.OK)
                     {
                         Trace.WriteLine("Failed test case:");
-                        Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectNonStreamingOrderBy: {testCase.ExpectNonStreamingOrderBy}");
+                        Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectHybridSearchOptimizationDisabled: {testCase.ExpectHybridSearchOptimizationDisabled}");
                         Trace.WriteLine($"Unexpected response: {responseMessage.StatusCode}");
                         Trace.WriteLine(responseMessage.Content.ReadAsString());
                         Trace.Flush();
@@ -199,9 +199,9 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 ImplementationAsync);
         }
 
-        private static QueryFeaturesTest MakeQueryFeaturesTest(bool? environmentVariable, bool? requestOption, bool expectNonStreamingOrderBy)
+        private static QueryFeaturesTest MakeQueryFeaturesTest(bool? environmentVariable, bool? requestOption, bool expectHybridSearchOptimizationDisabled)
         {
-            return new QueryFeaturesTest(environmentVariable, requestOption, expectNonStreamingOrderBy);
+            return new QueryFeaturesTest(environmentVariable, requestOption, expectHybridSearchOptimizationDisabled);
         }
 
         private sealed class QueryFeaturesTest
@@ -210,13 +210,13 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
 
             public bool? RequestOption { get; }
 
-            public bool ExpectNonStreamingOrderBy { get; }
+            public bool ExpectHybridSearchOptimizationDisabled { get; }
 
-            public QueryFeaturesTest(bool? environmentVariable, bool? requestOption, bool expectNonStreamingOrderBy)
+            public QueryFeaturesTest(bool? environmentVariable, bool? requestOption, bool expectHybridSearchOptimizationDisabled)
             {
                 this.EnvironmentVariable = environmentVariable;
                 this.RequestOption = requestOption;
-                this.ExpectNonStreamingOrderBy = expectNonStreamingOrderBy;
+                this.ExpectHybridSearchOptimizationDisabled = expectHybridSearchOptimizationDisabled;
             }
         }
 
@@ -339,7 +339,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             {
                 if (Enabled)
                 {
-                    Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectNonStreamingOrderBy: {testCase.ExpectNonStreamingOrderBy}");
+                    Trace.WriteLine($"EnvironmentVariable: {testCase.EnvironmentVariable}, RequestOption: {testCase.RequestOption}, ExpectHybridSearchOptimizationDisabled: {testCase.ExpectHybridSearchOptimizationDisabled}");
                 }
             }
 #pragma warning restore CS0162 // Unreachable code detected
@@ -366,14 +366,14 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
         {
             public int InvocationCount { get; private set; }
 
-            public bool ExpectNonStreamingOrderBy { get; set;}
+            public bool ExpectQueryPlanOptimizationDisabled { get; set;}
 
             public void Validate(string supportedQueryFeatures)
             {
                 DebugTraceHelpers.TraceSupportedFeaturesString(supportedQueryFeatures);
                 ++this.InvocationCount;
-                bool hasNonStreamingOrderBy = supportedQueryFeatures.Contains(QueryFeatures.NonStreamingOrderBy.ToString());
-                Assert.AreEqual(this.ExpectNonStreamingOrderBy, hasNonStreamingOrderBy);
+                bool hybridSearchOptimizationDisabled = !supportedQueryFeatures.Contains(QueryFeatures.HybridSearchSkipOrderByRewrite.ToString());
+                Assert.AreEqual(this.ExpectQueryPlanOptimizationDisabled, hybridSearchOptimizationDisabled);
             }
         }
 
@@ -426,7 +426,7 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             {
                 this.validator.Validate(supportedQueryFeatures);
 
-                if (this.validator.ExpectNonStreamingOrderBy)
+                if (this.validator.ExpectQueryPlanOptimizationDisabled)
                 {
                     // older emulator in the github repo does not support non-streaming order by, and will send back 400
                     supportedQueryFeatures = SupportedQueryFeaturesString;

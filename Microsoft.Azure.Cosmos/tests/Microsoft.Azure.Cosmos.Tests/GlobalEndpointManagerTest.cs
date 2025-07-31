@@ -16,6 +16,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     using Moq;
+    using Newtonsoft.Json.Linq;
 
     /// <summary>
     /// Tests for <see cref="GlobalEndpointManager"/>
@@ -682,6 +683,89 @@ namespace Microsoft.Azure.Cosmos
             Assert.AreEqual(globalEndpointManager.ReadEndpoints[0], new Uri(readLocation1.Endpoint));
 
             Environment.SetEnvironmentVariable("MinimumIntervalForNonForceRefreshLocationInMS", originalConfigValue);
+        }
+
+        [TestMethod]
+        public async Task ThinClientEndpoints_ParsesAndResolves()
+        {
+            // Arrange
+            Collection<AccountRegion> readableLocations = new Collection<AccountRegion>
+            {
+                new AccountRegion { Name = "ReadLocation", Endpoint = "https://readlocation.documents.azure.com" }
+            };
+                    Collection<AccountRegion> writeableLocations = new Collection<AccountRegion>
+            {
+                new AccountRegion { Name = "WriteLocation", Endpoint = "https://writelocation.documents.azure.com" }
+            };
+
+            AccountProperties accountProperties = new AccountProperties
+            {
+                ReadLocationsInternal = readableLocations,
+                WriteLocationsInternal = writeableLocations,
+                AdditionalProperties = new Dictionary<string, Newtonsoft.Json.Linq.JToken>
+                {
+                    {
+                        "thinClientWritableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'ThinClientRegionWrite', 'databaseAccountEndpoint': 'https://thinclientwrite.documents.azure.com:10650/' }
+                        ]")
+                    },
+                    {
+                        "thinClientReadableLocations",
+                        JArray.Parse(@"[
+                            { 'name': 'ThinClientRegionRead', 'databaseAccountEndpoint': 'https://thinclientread.documents.azure.com:10650/' }
+                        ]")
+                    }
+                }
+            };
+
+            Mock<IDocumentClientInternal> mockOwner = new Mock<IDocumentClientInternal>();
+            mockOwner.Setup(owner => owner.ServiceEndpoint).Returns(new Uri("https://defaultendpoint.net/"));
+
+            // Returning updated accountProperties
+            mockOwner.Setup(owner => owner.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(accountProperties);
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy
+            {
+                EnableEndpointDiscovery = true,
+                UseMultipleWriteLocations = false,
+            };
+
+            GlobalEndpointManager gem = new GlobalEndpointManager(mockOwner.Object, connectionPolicy);
+            try
+            {
+                // Act: Initialize once
+                gem.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+
+                // Forcibly refresh 
+                await gem.RefreshLocationAsync(forceRefresh: true);
+
+                // Create a test DocumentServiceRequest that is read
+                DocumentServiceRequest readRequest = DocumentServiceRequest.Create(
+                    OperationType.Read,
+                    ResourceType.Document,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Uri thinClientReadEndpoint = gem.ResolveThinClientEndpoint(readRequest);
+
+                // Create a test DocumentServiceRequest that is write
+                DocumentServiceRequest writeRequest = DocumentServiceRequest.Create(
+                    OperationType.Create,
+                    ResourceType.Document,
+                    AuthorizationTokenType.PrimaryMasterKey);
+
+                Uri thinClientWriteEndpoint = gem.ResolveThinClientEndpoint(writeRequest);
+
+                // Assert: 
+                Assert.AreEqual("https://thinclientread.documents.azure.com:10650/", thinClientReadEndpoint.AbsoluteUri);
+
+                Assert.AreEqual("https://thinclientwrite.documents.azure.com:10650/", thinClientWriteEndpoint.AbsoluteUri);
+            }
+            finally
+            {
+                gem.Dispose();
+            }
         }
 
         private class TestTraceListener : TraceListener

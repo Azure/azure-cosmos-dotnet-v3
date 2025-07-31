@@ -123,6 +123,19 @@ ORDER BY root["FamilyId"] ASC]]></SqlQuery>
   </Result>
   <Result>
     <Input>
+      <Description><![CDATA[OrderBy -> Skip]]></Description>
+      <Expression><![CDATA[query.OrderBy(f => f.FamilyId).Skip(1)]]></Expression>
+    </Input>
+    <Output>
+      <SqlQuery><![CDATA[
+SELECT VALUE root 
+FROM root 
+ORDER BY root["FamilyId"] ASC 
+OFFSET 1 LIMIT 2147483647]]></SqlQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
       <Description><![CDATA[Select -> order by]]></Description>
       <Expression><![CDATA[query.Select(family => family.FamilyId).OrderByDescending(id => id)]]></Expression>
     </Input>

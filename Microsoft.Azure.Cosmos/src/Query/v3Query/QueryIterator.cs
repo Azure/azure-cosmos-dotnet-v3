@@ -54,7 +54,6 @@ namespace Microsoft.Azure.Cosmos.Query
             this.hasMoreResults = true;
             this.correlatedActivityId = correlatedActivityId;
 
-            this.querySpec = sqlQuerySpec;
             this.container = container;
 
             this.SetupInfoForTelemetry(
@@ -150,7 +149,7 @@ namespace Microsoft.Azure.Cosmos.Query
                 partitionedQueryExecutionInfo: partitionedQueryExecutionInfo,
                 returnResultsInDeterministicOrder: queryRequestOptions.ReturnResultsInDeterministicOrder,
                 enableOptimisticDirectExecution: queryRequestOptions.EnableOptimisticDirectExecution,
-                isNonStreamingOrderByQueryFeatureDisabled: queryRequestOptions.IsNonStreamingOrderByQueryFeatureDisabled,
+                isHybridSearchQueryPlanOptimizationDisabled: queryRequestOptions.IsHybridSearchQueryPlanOptimizationDisabled,
                 enableDistributedQueryGatewayMode: queryRequestOptions.EnableDistributedQueryGatewayMode && (clientContext.ClientOptions.ConnectionMode == ConnectionMode.Gateway),
                 testInjections: queryRequestOptions.TestSettings);
 

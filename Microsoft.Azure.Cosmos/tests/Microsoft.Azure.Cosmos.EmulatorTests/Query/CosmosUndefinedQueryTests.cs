@@ -5,7 +5,6 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
     using System.Collections.ObjectModel;
     using System.Linq;
     using System.Threading.Tasks;
-    using Azure;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.CosmosElements.Numbers;
     using Microsoft.Azure.Cosmos.Json;
@@ -51,6 +50,18 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                 indexingPolicy: CompositeIndexPolicy);
         }
 
+        [TestMethod]
+        public async Task HybridSearchTests()
+        {
+            // Removing the await causes the test framework to not run this test
+            await this.CreateIngestQueryDeleteAsync(
+                connectionModes: ConnectionModes.Direct | ConnectionModes.Gateway,
+                collectionTypes: CollectionTypes.MultiPartition | CollectionTypes.SinglePartition,
+                documents: Documents,
+                query: HybridSearchTests,
+                indexingPolicy: CompositeIndexPolicy);
+        }
+
         private static async Task RunTests(Container container, IReadOnlyList<CosmosObject> _)
         {
             await OrderByTests(container);
@@ -58,7 +69,57 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
             await UntypedTests(container);
         }
 
-        private static async Task UntypedTests(Container container)
+        private static async Task HybridSearchTests(Container container, IReadOnlyList<CosmosObject> _)
+        {
+            UndefinedProjectionTestCase[] testCases = new[]
+            {
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT VALUE c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK FullTextScore(c.AlwaysUndefinedField, ['needle'])",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, ['needle']), FullTextScore(c.AnotherUndefinedField, ['needle']))",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  "SELECT VALUE c.AlwaysUndefinedField " +
+                            "FROM c " +
+                            "ORDER BY RANK RRF(FullTextScore(c.AlwaysUndefinedField, ['needle']), FullTextScore(c.AnotherUndefinedField, ['needle']))",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle'])",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT VALUE c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle'])",
+                    expectedCount: 0),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle']),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, ['needle']))",
+                    expectedCount: DocumentCount),
+                MakeUndefinedProjectionTest(
+                    query:  $"SELECT VALUE c.AlwaysUndefinedField " +
+                            $"FROM c " +
+                            $"ORDER BY RANK RRF(FullTextScore(c.{nameof(MixedTypeDocument.MixedTypeField)}, ['needle']),FullTextScore(c.{nameof(MixedTypeDocument.Index)}, ['needle']))",
+                    expectedCount: 0),
+            };
+
+            await RunUndefinedProjectionTests(container, testCases);
+            await RunUntypedTestsAsync(container, testCases);
+        }
+
+        private static Task UntypedTests(Container container)
         {
             UndefinedProjectionTestCase[] undefinedProjectionTestCases = new[]
             {
@@ -85,7 +146,12 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     expectedCount: 0)
             };
 
-            foreach (UndefinedProjectionTestCase testCase in undefinedProjectionTestCases)
+            return RunUntypedTestsAsync(container, undefinedProjectionTestCases);
+        }
+
+        private static async Task RunUntypedTestsAsync(Container container, IEnumerable<UndefinedProjectionTestCase> testCases)
+        {
+            foreach (UndefinedProjectionTestCase testCase in testCases)
             {
                 foreach (int pageSize in PageSizes)
                 {
@@ -120,6 +186,24 @@ namespace Microsoft.Azure.Cosmos.EmulatorTests.Query
                     }
 
                     Assert.AreEqual(testCase.ExpectedResultCount, actualCount);
+                }
+            }
+        }
+
+        private static async Task RunUndefinedProjectionTests(Container container, IEnumerable<UndefinedProjectionTestCase> testCases)
+        {
+            foreach (UndefinedProjectionTestCase testCase in testCases)
+            {
+                foreach (int pageSize in PageSizes)
+                {
+                    List<UndefinedProjection> results = await RunQueryCombinationsAsync<UndefinedProjection>(
+                        container,
+                        testCase.Query,
+                        new QueryRequestOptions { MaxItemCount = pageSize },
+                        QueryDrainingMode.HoldState);
+
+                    Assert.AreEqual(testCase.ExpectedResultCount, results.Count);
+                    Assert.IsTrue(results.All(x => x is UndefinedProjection));
                 }
             }
         }

@@ -23,9 +23,9 @@ namespace Microsoft.Azure.Cosmos
         private const int DefaultMaxWaitTimeInSeconds = 60;
 
         /// <summary>
-        /// A constant integer defining the default maximum retry count on service unavailable.
+        /// A constant integer defining the default maximum retry count on unavailable endpoint.
         /// </summary>
-        private const int DefaultMaxServiceUnavailableRetryCount = 1;
+        private const int DefaultMaxUnavailableEndpointRetryCount = 1;
 
         /// <summary>
         /// An instance of <see cref="IGlobalEndpointManager"/>.
@@ -38,9 +38,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly IDocumentClientRetryPolicy throttlingRetryPolicy;
 
         /// <summary>
-        /// An integer defining the maximum retry count on service unavailable.
+        /// An integer defining the maximum retry count on unavailable endpoint.
         /// </summary>
-        private readonly int maxServiceUnavailableRetryCount;
+        private readonly int maxUnavailableEndpointRetryCount;
 
         /// <summary>
         /// An instance of <see cref="Uri"/> containing the location endpoint where the partition key
@@ -49,9 +49,9 @@ namespace Microsoft.Azure.Cosmos
         private MetadataRetryContext retryContext;
 
         /// <summary>
-        /// An integer capturing the current retry count on service unavailable.
+        /// An integer capturing the current retry count on unavailable endpoint.
         /// </summary>
-        private int serviceUnavailableRetryCount;
+        private int unavailableEndpointRetryCount;
 
         /// <summary>
         /// The constructor to initialize an instance of <see cref="MetadataRequestThrottleRetryPolicy"/>.
@@ -66,8 +66,8 @@ namespace Microsoft.Azure.Cosmos
             int maxRetryWaitTimeInSeconds = DefaultMaxWaitTimeInSeconds)
         {
             this.globalEndpointManager = endpointManager;
-            this.maxServiceUnavailableRetryCount = Math.Max(
-                MetadataRequestThrottleRetryPolicy.DefaultMaxServiceUnavailableRetryCount,
+            this.maxUnavailableEndpointRetryCount = Math.Max(
+                MetadataRequestThrottleRetryPolicy.DefaultMaxUnavailableEndpointRetryCount,
                 this.globalEndpointManager.PreferredLocationCount);
 
             this.throttlingRetryPolicy = new ResourceThrottleRetryPolicy(
@@ -91,11 +91,43 @@ namespace Microsoft.Azure.Cosmos
             Exception exception,
             CancellationToken cancellationToken)
         {
-            if (exception is CosmosException cosmosException
-                && cosmosException.StatusCode == HttpStatusCode.ServiceUnavailable
-                && cosmosException.Headers.SubStatusCode == SubStatusCodes.TransportGenerated503)
+            if (exception is CosmosException cosmosException)
             {
-                if (this.IncrementRetryIndexOnServiceUnavailableForMetadataRead())
+                return this.ShouldRetryInternalAsync(
+                    cosmosException.StatusCode, 
+                    (SubStatusCodes)cosmosException.SubStatusCode,
+                    exception, 
+                    cancellationToken);
+            }
+
+            if (exception is DocumentClientException clientException)
+            {
+                return this.ShouldRetryInternalAsync(
+                    clientException.StatusCode,
+                    clientException.GetSubStatus(),
+                    exception, cancellationToken);
+            }
+
+            return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
+        }
+
+        private Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode, 
+            SubStatusCodes subStatus,
+            Exception exception, 
+            CancellationToken cancellationToken)
+        {
+            if (statusCode == null)
+            {
+                return this.throttlingRetryPolicy.ShouldRetryAsync(exception, cancellationToken);
+            }
+
+            if (statusCode == HttpStatusCode.ServiceUnavailable 
+                || statusCode == HttpStatusCode.InternalServerError
+                || (statusCode == HttpStatusCode.Gone && subStatus == SubStatusCodes.LeaseNotFound)
+                || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
+            {
+                if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
                 {
                     return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
                 }
@@ -114,16 +146,36 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             CancellationToken cancellationToken)
         {
-            if (cosmosResponseMessage?.StatusCode == HttpStatusCode.ServiceUnavailable
-                && cosmosResponseMessage?.Headers?.SubStatusCode == SubStatusCodes.TransportGenerated503)
+            return this.ShouldRetryInternalAsync(
+                cosmosResponseMessage.StatusCode,
+                (SubStatusCodes)Convert.ToInt32(cosmosResponseMessage.Headers[WFConstants.BackendHeaders.SubStatus]),
+                cosmosResponseMessage,
+                cancellationToken);
+        }
+
+        private Task<ShouldRetryResult> ShouldRetryInternalAsync(
+            HttpStatusCode? statusCode,
+            SubStatusCodes subStatus,
+            ResponseMessage responseMessage,
+            CancellationToken cancellationToken)
+        {
+            if (statusCode == null)
             {
-                if (this.IncrementRetryIndexOnServiceUnavailableForMetadataRead())
+                return this.throttlingRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
+            }
+
+            if (statusCode == HttpStatusCode.ServiceUnavailable 
+                || statusCode == HttpStatusCode.InternalServerError
+                || (statusCode == HttpStatusCode.Gone && subStatus == SubStatusCodes.LeaseNotFound)
+                || (statusCode == HttpStatusCode.Forbidden && subStatus == SubStatusCodes.DatabaseAccountNotFound))
+            {
+                if (this.IncrementRetryIndexOnUnavailableEndpointForMetadataRead())
                 {
                     return Task.FromResult(ShouldRetryResult.RetryAfter(TimeSpan.Zero));
                 }
             }
 
-            return this.throttlingRetryPolicy.ShouldRetryAsync(cosmosResponseMessage, cancellationToken);
+            return this.throttlingRetryPolicy.ShouldRetryAsync(responseMessage, cancellationToken);
         }
 
         /// <summary>
@@ -146,23 +198,23 @@ namespace Microsoft.Azure.Cosmos
         }
 
         /// <summary>
-        /// Increments the location index when a service unavailable exception ocurrs, for any future read requests.
+        /// Increments the location index when a unavailable endpoint exception ocurrs, for any future read requests.
         /// </summary>
         /// <returns>A boolean flag indicating if the operation was successful.</returns>
-        private bool IncrementRetryIndexOnServiceUnavailableForMetadataRead()
+        private bool IncrementRetryIndexOnUnavailableEndpointForMetadataRead()
         {
-            if (this.serviceUnavailableRetryCount++ >= this.maxServiceUnavailableRetryCount)
+            if (this.unavailableEndpointRetryCount++ >= this.maxUnavailableEndpointRetryCount)
             {
-                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retry count: {0} has exceeded the maximum permitted retry count on service unavailable: {1}.", this.serviceUnavailableRetryCount, this.maxServiceUnavailableRetryCount);
+                DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Retry count: {0} has exceeded the maximum permitted retry count on unavailable endpoint: {1}.", this.unavailableEndpointRetryCount, this.maxUnavailableEndpointRetryCount);
                 return false;
             }
 
             // Retrying on second PreferredLocations.
             // RetryCount is used as zero-based index.
-            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.serviceUnavailableRetryCount);
+            DefaultTrace.TraceWarning("MetadataRequestThrottleRetryPolicy: Incrementing the metadata retry location index to: {0}.", this.unavailableEndpointRetryCount);
             this.retryContext = new MetadataRetryContext()
             {
-                RetryLocationIndex = this.serviceUnavailableRetryCount,
+                RetryLocationIndex = this.unavailableEndpointRetryCount,
                 RetryRequestOnPreferredLocations = true,
             };
 

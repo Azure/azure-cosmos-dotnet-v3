@@ -478,5 +478,18 @@ namespace Microsoft.Azure.Documents
         /// Name of the Azure Southeast US 5 region in the Azure Cosmos DB service.
         /// </summary>
         public const string SoutheastUS5 = "Southeast US 5";
+
+        /// <summary>
+        /// Name of the Azure East US 3 region in the Azure Cosmos DB service.
+        /// </summary>
+        public const string EastUS3 = "East US 3";
     }
+#pragma warning disable SA1518 // Use line endings correctly at end of file
 }
+
+
+
+
+
+
+#pragma warning restore SA1518 // Use line endings correctly at end of file

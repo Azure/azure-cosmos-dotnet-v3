@@ -24,6 +24,11 @@
             return ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
         }
 
+        internal static string GetThinClientConnectionString()
+        {
+            return ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_THIN_CLIENT", string.Empty);
+        }
+
         internal static async Task<(Database, Container)> GetOrCreateMultiRegionFIDatabaseAndContainersAsync(CosmosClient client)
         {
             Database database;

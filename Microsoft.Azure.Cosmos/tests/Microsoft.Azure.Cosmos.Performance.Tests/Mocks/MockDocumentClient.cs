@@ -113,7 +113,8 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
         internal override IRetryPolicyFactory ResetSessionTokenRetryPolicy => new RetryPolicy(
             this.globalEndpointManager.Object,
             new ConnectionPolicy(), 
-            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object));
+            new GlobalPartitionEndpointManagerCore(this.globalEndpointManager.Object),
+            false);
 
         internal override Task<ClientCollectionCache> GetCollectionCacheAsync(ITrace trace)
         {
@@ -152,7 +153,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
 
         private void Init()
         {
-            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null, null);
+            this.collectionCache = new Mock<ClientCollectionCache>(null, new ServerStoreModel(null), null, null, null, false);
 
             ContainerProperties containerProperties = ContainerProperties.CreateWithResourceId("test");
             containerProperties.PartitionKey = partitionKeyDefinition;
@@ -181,7 +182,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     },
                 string.Empty);
 
-            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null);
+            this.partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, null, null, null, false);
             this.partitionKeyRangeCache.Setup(
                         m => m.TryLookupAsync(
                             It.IsAny<string>(),
@@ -209,7 +210,7 @@ namespace Microsoft.Azure.Cosmos.Performance.Tests
                     It.IsAny<bool>()))
                 .Returns(Task.FromResult((IReadOnlyList<PartitionKeyRange>)result));
 
-            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy());
+            this.globalEndpointManager = new Mock<GlobalEndpointManager>(this, new ConnectionPolicy(), false);
 
             this.telemetryToServiceHelper = TelemetryToServiceHelper.CreateAndInitializeClientConfigAndTelemetryJob("perf-test-client",
                                                                 this.ConnectionPolicy,

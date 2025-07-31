@@ -6,11 +6,9 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
 
@@ -101,6 +99,7 @@ namespace Microsoft.Azure.Cosmos
             bool hasLogicalPartitionKey,
             bool allowDCount,
             bool useSystemPrefix,
+            bool isHybridSearchQueryPlanOptimizationDisabled,
             Cosmos.GeospatialType geospatialType,
             CancellationToken cancellationToken)
         {
@@ -126,6 +125,7 @@ namespace Microsoft.Azure.Cosmos
                 hasLogicalPartitionKey: hasLogicalPartitionKey,
                 allowDCount: allowDCount,
                 useSystemPrefix: useSystemPrefix,
+                hybridSearchSkipOrderByRewrite: !isHybridSearchQueryPlanOptimizationDisabled,
                 geospatialType: geospatialType);
         }
 
@@ -288,7 +288,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override bool BypassQueryParsing()
         {
-            return CustomTypeExtensions.ByPassQueryParsing();
+            return QueryPlanRetriever.BypassQueryParsing();
         }
 
         public override void ClearSessionTokenCache(string collectionFullName)
@@ -302,7 +302,7 @@ namespace Microsoft.Azure.Cosmos
             ResponseMessage cosmosResponseMessage,
             ITrace trace)
         {
-            using (ITrace getCosmosElementResponse = trace.StartChild("Get Cosmos Element Response", TraceComponent.Json, Tracing.TraceLevel.Info))
+            using (ITrace getCosmosElementResponse = trace.StartChild(TraceDatumKeys.GetCosmosElementResponse, TraceComponent.Json, Tracing.TraceLevel.Info))
             {
                 using (cosmosResponseMessage)
                 {
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos
                                 cosmosResponseMessage.Headers.QueryMetricsText, 
                                 IndexUtilizationInfo.Empty, 
                                 ClientSideMetrics.Empty)));
-                        trace.AddDatum("Query Metrics", datum);
+                        trace.AddDatum(TraceDatumKeys.QueryMetrics, datum);
                     }
 
                     if (!cosmosResponseMessage.IsSuccessStatusCode)
@@ -369,16 +369,7 @@ namespace Microsoft.Azure.Cosmos
             //     }
             // }
 
-            QueryState queryState;
-            if (headers.ContinuationToken != null)
-            {
-                queryState = new QueryState(CosmosString.Create(headers.ContinuationToken));
-            }
-            else
-            {
-                queryState = default;
-            }
-
+            QueryState queryState = (headers.ContinuationToken != null) ? new QueryState(CosmosString.Create(headers.ContinuationToken)) : default;
             Dictionary<string, string> additionalHeaders = new Dictionary<string, string>();
             foreach (string key in headers)
             {

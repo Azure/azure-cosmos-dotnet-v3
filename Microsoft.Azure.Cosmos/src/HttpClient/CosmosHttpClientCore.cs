@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 catch (Exception e)
                 {
-                    DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e);
+                    DefaultTrace.TraceError("Failed to create SocketsHttpHandler: {0}", e.Message);
                 }
             }
             
@@ -359,6 +359,7 @@ namespace Microsoft.Azure.Cosmos
                     {
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
+                            this.SetFaultInjectionHeader(documentServiceRequest, requestMessage);
                             (bool hasFault, HttpResponseMessage fiResponseMessage) = await this.InjectFaultsAsync(cancellationTokenSource, documentServiceRequest, requestMessage);
                             if (hasFault)
                             {
@@ -373,9 +374,10 @@ namespace Microsoft.Azure.Cosmos
 
                         if (this.chaosInterceptor != null && documentServiceRequest != null)
                         {
+                            this.SetFaultInjectionHeader(documentServiceRequest, requestMessage);
                             CancellationToken fiToken = cancellationTokenSource.Token;
                             fiToken.ThrowIfCancellationRequested();
-                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest);
+                            await this.chaosInterceptor.OnAfterHttpSendAsync(documentServiceRequest, fiToken);
                         }
 
                         if (clientSideRequestStatistics is ClientSideRequestStatisticsTraceDatum datum)
@@ -467,6 +469,11 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+        private void SetFaultInjectionHeader(DocumentServiceRequest documentServiceRequest, HttpRequestMessage requestMessage)
+        {
+            documentServiceRequest.Headers.Set("FAULTINJECTION_GW_URI", requestMessage.RequestUri.ToString());
+        }
+
         private async Task<(bool, HttpResponseMessage)> InjectFaultsAsync(
             CancellationTokenSource cancellationTokenSource, 
             DocumentServiceRequest documentServiceRequest, 
@@ -480,10 +487,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 documentServiceRequest.Headers.Set(CosmosHttpClientCore.FautInjecitonId, Guid.NewGuid().ToString());
             }
-            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest);
+            await this.chaosInterceptor.OnBeforeHttpSendAsync(documentServiceRequest, fiToken);
 
             (bool hasFault,
-                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest);
+                HttpResponseMessage fiResponseMessage) = await this.chaosInterceptor.OnHttpRequestCallAsync(documentServiceRequest, fiToken);
 
             if (hasFault)
             {

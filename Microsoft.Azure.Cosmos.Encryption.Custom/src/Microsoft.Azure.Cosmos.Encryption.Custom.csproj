@@ -13,7 +13,7 @@
     <Title>Microsoft Azure Cosmos DB client-side encryption library for multi-tenant</Title>
     <PackageId>Microsoft.Azure.Cosmos.Encryption.Custom</PackageId>
     <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Azure/azure-cosmos-dotnet-v3</PackageProjectUrl>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -30,10 +30,6 @@
 
   <ItemGroup Condition=" '$(SdkProjectRef)' != 'True' AND '$(IsPreview)' == 'True' ">
     <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.41.0-preview.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="" Visible="false" />
   </ItemGroup>
 
   <ItemGroup>

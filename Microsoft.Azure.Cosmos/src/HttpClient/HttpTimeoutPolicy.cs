@@ -20,7 +20,9 @@ namespace Microsoft.Azure.Cosmos
         public virtual bool ShouldThrow503OnTimeout => false;
 
         public static HttpTimeoutPolicy GetTimeoutPolicy(
-           DocumentServiceRequest documentServiceRequest)
+           DocumentServiceRequest documentServiceRequest,
+           bool isPartitionLevelFailoverEnabled = false,
+           bool isThinClientEnabled = false)
         {
             //Query Plan Requests
             if (documentServiceRequest.ResourceType == ResourceType.Document
@@ -39,13 +41,25 @@ namespace Microsoft.Azure.Cosmos
             //Get Addresses Requests
             if (documentServiceRequest.ResourceType == ResourceType.Address)
             {
-                return HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance;
+                return HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout;
             }
 
-            //Data Plane Read
-            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest) && documentServiceRequest.IsReadOnlyRequest)
+            //Data Plane Operations
+            if (!HttpTimeoutPolicy.IsMetaData(documentServiceRequest))
             {
-                return HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                if (isThinClientEnabled)
+                {
+                    return documentServiceRequest.IsReadOnlyRequest
+                        ? HttpTimeoutPolicyForThinClient.InstanceShouldRetryAndThrow503OnTimeout
+                        : HttpTimeoutPolicyForThinClient.InstanceShouldNotRetryAndThrow503OnTimeout;
+                }
+                // Data Plane Reads.
+                else if (documentServiceRequest.IsReadOnlyRequest)
+                {
+                    return isPartitionLevelFailoverEnabled
+                        ? HttpTimeoutPolicyForPartitionFailover.InstanceShouldThrow503OnTimeout
+                        : HttpTimeoutPolicyDefault.InstanceShouldThrow503OnTimeout;
+                }
             }
 
             //Meta Data Read

@@ -21,6 +21,7 @@ namespace Microsoft.Azure.Documents
         private const int MaxSupplementalRequestsForToString = 10;
         private static bool enableCpuMonitorFlag;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private DateTime requestStartTime;
         private DateTime? requestEndTime;
 
@@ -31,6 +32,7 @@ namespace Microsoft.Azure.Documents
         private List<StoreResponseStatistics> supplementalResponseStatisticsList;
         private Dictionary<string, AddressResolutionStatistics> addressResolutionStatistics;
         private Lazy<List<HttpResponseStatistics>> httpResponseStatisticsList;
+#pragma warning restore IDE0044 // Add readonly modifier
         private SystemUsageHistory systemUsageHistory;
 
         static ClientSideRequestStatistics()
@@ -281,7 +283,7 @@ namespace Microsoft.Azure.Documents
                 {
                     DefaultTrace.TraceCritical(
                         "System usage monitor failed with an unexpected exception: {0}",
-                        ex);
+                        ex.Message);
                 }
             }
         }
@@ -533,4 +535,8 @@ namespace Microsoft.Azure.Documents
             }
         }
     }
+#pragma warning disable SA1518 // Use line endings correctly at end of file
 }
+
+
+#pragma warning restore SA1518 // Use line endings correctly at end of file

@@ -64,19 +64,25 @@ namespace Microsoft.Azure.Documents
         {
             get
             {
+#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
+#pragma warning disable IDE0074 // Use compound assignment
                 if (this.isPolicyEnabled == null)
                 {
                     this.isPolicyEnabled = base.GetValue<Boolean>(Constants.Properties.IsPolicyEnabled, true);
                 }
+#pragma warning restore IDE0074 // Use compound assignment
+#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
 
                 return this.isPolicyEnabled;
             }
             set
             {
+#pragma warning disable CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
                 if (value == null)
                 {
                     throw new ArgumentNullException(string.Format(CultureInfo.CurrentCulture, RMResources.PropertyCannotBeNull, nameof(IsPolicyEnabled)));
                 }
+#pragma warning restore CS0472 // The result of the expression is always the same since a value of this type is never equal to 'null'
 
                 this.isPolicyEnabled = value;
                 base.SetValue(Constants.Properties.IsPolicyEnabled, this.IsPolicyEnabled);

@@ -1,0 +1,56 @@
+﻿<Results>
+  <Result>
+    <Input>
+      <Description><![CDATA[Basic]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]), FullTextScore(c.text2, ["keyword"]), FullTextScore(c.text3, ["keyword"])]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]), FullTextScore(c.text2, ["keyword"]), FullTextScore(c.text3, ["keyword"])]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Only one sort order]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]) ASC, FullTextScore(c.text2, ["keyword"]) ASC, FullTextScore(c.text3, ["keyword"]) ASC]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]) ASC, FullTextScore(c.text2, ["keyword"]) ASC, FullTextScore(c.text3, ["keyword"]) ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[All sort order]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]) ASC, FullTextScore(c.text2, ["keyword"]) DESC, FullTextScore(c.text3, ["keyword"]) ASC]]></Query>
+    </Input>
+    <Output>
+      <ParsedQuery><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]) ASC, FullTextScore(c.text2, ["keyword"]) DESC, FullTextScore(c.text3, ["keyword"]) ASC]]></ParsedQuery>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Trailing comma]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY RANK FullTextScore(c.text, ["keyword"]) ASC,]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[All fields not function call]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY RANK 1, 2, 3]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+  <Result>
+    <Input>
+      <Description><![CDATA[Some fields not function call]]></Description>
+      <Query><![CDATA[SELECT * ORDER BY RANK RANK FullTextScore(c.text, ["keyword"]) ASC, 2, 3 ASC]]></Query>
+    </Input>
+    <Output>
+      <Exception><![CDATA[Exception of type 'Antlr4.Runtime.NoViableAltException' was thrown.]]></Exception>
+    </Output>
+  </Result>
+</Results>

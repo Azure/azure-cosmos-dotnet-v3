@@ -17,7 +17,7 @@ namespace Microsoft.Azure.Cosmos
     /// adds a way to access the CosmosDiagnostics and appends additional information
     /// to the message for easier troubleshooting.
     /// </summary>
-    internal class CosmosObjectDisposedException : ObjectDisposedException
+    internal class CosmosObjectDisposedException : ObjectDisposedException, ICloneable
     {
         private readonly ObjectDisposedException originalException;
         private readonly CosmosClient cosmosClient;
@@ -60,9 +60,6 @@ namespace Microsoft.Azure.Cosmos
         public override string Message { get; }
 
         /// <inheritdoc/>
-        public override string StackTrace => this.originalException.StackTrace;
-
-        /// <inheritdoc/>
         public override IDictionary Data => this.originalException.Data;
 
         /// <summary>
@@ -86,7 +83,7 @@ namespace Microsoft.Azure.Cosmos
         /// <inheritdoc/>
         public override string ToString()
         {
-            return $"{this.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics} StackTrace: {this.StackTrace}";
+            return $"{this.Message} {Environment.NewLine}CosmosDiagnostics: {this.Diagnostics}";
         }
 
         /// <summary>
@@ -101,6 +98,17 @@ namespace Microsoft.Azure.Cosmos
             scope.AddAttribute(OpenTelemetryAttributeKeys.ExceptionMessage, exception.Message);
 
             CosmosDbEventSource.RecordDiagnosticsForExceptions(exception.Diagnostics);
+        }
+
+        /// <summary>
+        /// Creates a shallow copy of the current exception instance.
+        /// This ensures that the cloned exception retains the same properties but does not
+        /// excessively proliferate stack traces or deep-copy unnecessary objects.
+        /// </summary>
+        /// <returns>A shallow copy of the current <see cref="CosmosOperationCanceledException"/>.</returns>
+        public object Clone()
+        {
+            return this.MemberwiseClone();
         }
     }
 }

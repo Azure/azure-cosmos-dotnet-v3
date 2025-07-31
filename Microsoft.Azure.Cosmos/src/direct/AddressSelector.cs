@@ -73,13 +73,13 @@ namespace Microsoft.Azure.Documents
                     if (task.IsFaulted)
                     {
                         DefaultTrace.TraceWarning(
-                            "Background refresh of the addresses failed with {0}", task.Exception.ToString());
+                            "Background refresh of the addresses failed with {0}", task.Exception?.Message);
                     }
                 });
             }
             catch (Exception exception)
             {
-                DefaultTrace.TraceWarning("Background refresh of the addresses failed with {0}", exception.ToString());
+                DefaultTrace.TraceWarning("Background refresh of the addresses failed with {0}", exception.Message);
             }
         }
     }

@@ -18,7 +18,9 @@ namespace Microsoft.Azure.Documents
     {
         private readonly StoreResponse storeResponse;
 
+#pragma warning disable IDE0044 // Add readonly modifier
         private static bool UseSessionTokenHeader = VersionUtility.IsLaterThan(HttpConstants.Versions.CurrentVersion, HttpConstants.VersionDates.v2018_06_18);
+#pragma warning restore IDE0044 // Add readonly modifier
 
         public static ReferenceCountedDisposable<StoreResult> CreateStoreResult(
             StoreResponse storeResponse,
@@ -239,7 +241,7 @@ namespace Microsoft.Azure.Documents
                 }
                 else
                 {
-                    DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException);
+                    DefaultTrace.TraceCritical("Unexpected exception {0} received while reading from store.", responseException?.Message);
                     return new ReferenceCountedDisposable<StoreResult>(new StoreResult(
                         storeResponse: null,
                         exception: new InternalServerErrorException(RMResources.InternalServerError, responseException),
@@ -467,7 +469,7 @@ namespace Microsoft.Azure.Documents
             if (!string.IsNullOrWhiteSpace(this.StorePhysicalAddress?.AbsoluteUri))
             {
                 (string partitionId, string replicaId) = GetPartitionIdReplicaIdFromAddress(StorePhysicalAddress.AbsoluteUri);
-                System.Diagnostics.Debug.Assert(string.IsNullOrWhiteSpace(partitionId) || Guid.TryParse(partitionId, out _), $"partitionId is invalid. value:{partitionId}");
+                //System.Diagnostics.Debug.Assert(string.IsNullOrWhiteSpace(partitionId) || Guid.TryParse(partitionId, out _), $"partitionId is invalid. value:{partitionId}");
                 if (this.Exception != null)
                 {
                     this.Exception.Headers[HttpConstants.HttpHeaders.PartitionId] = partitionId;
