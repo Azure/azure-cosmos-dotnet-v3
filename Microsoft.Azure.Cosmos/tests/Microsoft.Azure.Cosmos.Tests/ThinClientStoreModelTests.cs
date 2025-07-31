@@ -348,6 +348,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Returns(true)
                 .Verifiable();
 
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPerPartitionAutomaticFailoverEnabled())
+                .Returns(true)
+                .Verifiable();
+
             ISessionContainer sessionContainer = new Mock<ISessionContainer>().Object;
             DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
             Newtonsoft.Json.JsonSerializerSettings serializerSettings = new Newtonsoft.Json.JsonSerializerSettings();
@@ -362,8 +367,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                userAgentContainer,
-                isPartitionLevelFailoverEnabled: true);
+                userAgentContainer);
 
             Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
                 sessionContainer,
@@ -441,6 +445,11 @@ namespace Microsoft.Azure.Cosmos.Tests
                 .Setup(m => m.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(It.IsAny<DocumentServiceRequest>()))
                 .Returns(true);
 
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPerPartitionAutomaticFailoverEnabled())
+                .Returns(true)
+                .Verifiable();
+
             ISessionContainer sessionContainer = new Mock<ISessionContainer>().Object;
             DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
             Newtonsoft.Json.JsonSerializerSettings serializerSettings = new Newtonsoft.Json.JsonSerializerSettings();
@@ -455,8 +464,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                userAgentContainer,
-                isPartitionLevelFailoverEnabled: true);
+                userAgentContainer);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 

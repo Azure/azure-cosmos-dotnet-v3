@@ -42,6 +42,12 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isAccountRefreshInProgress = false;
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
+        private bool? previousEnablePartitionLevelFailover = null;
+
+        /// <summary>
+        /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
+        /// </summary>
+        internal event Action<AccountProperties>? OnEnablePartitionLevelFailoverConfigChanged;
 
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
@@ -767,6 +773,22 @@ namespace Microsoft.Azure.Cosmos.Routing
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
 
                 this.locationCache.OnDatabaseAccountRead(accountProperties);
+
+                // Check if PPAF enablement status has changed and raise event only when it changes
+                bool? currentEnablePartitionLevelFailover = accountProperties?.EnablePartitionLevelFailover;
+                if (this.previousEnablePartitionLevelFailover != currentEnablePartitionLevelFailover)
+                {
+                    DefaultTrace.TraceInformation("GlobalEndpointManager: PPAF enablement status changed from {0} to {1}", 
+                        this.previousEnablePartitionLevelFailover, currentEnablePartitionLevelFailover);
+                    
+                    this.previousEnablePartitionLevelFailover = currentEnablePartitionLevelFailover;
+                    
+                    // Only invoke the event if accountProperties is not null
+                    if (accountProperties != null)
+                    {
+                        this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(accountProperties);
+                    }
+                }
 
             }
             catch (Exception ex)

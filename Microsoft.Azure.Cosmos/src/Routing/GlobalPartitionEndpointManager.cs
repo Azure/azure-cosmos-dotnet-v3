@@ -49,6 +49,20 @@ namespace Microsoft.Azure.Cosmos.Routing
             DocumentServiceRequest request);
 
         /// <summary>
+        /// Determines if a request is eligible for partition-level circuit breaker.
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
+        /// </summary>
+        public abstract bool IsPartitionLevelCircuitBreakerEnabled();
+
+        /// <summary>
+        /// Determines if a request is eligible for partition-level circuit breaker.
+        /// This method checks if the request is a read-only request, if partition-level circuit breaker is enabled,
+        /// and if the partition key range location cache indicates that the partition can fail over based on the number of request failures.
+        /// </summary>
+        public abstract bool IsPerPartitionAutomaticFailoverEnabled();
+
+        /// <summary>
         /// Sets the background connection periodic refresh task.
         /// </summary>
         public abstract void SetBackgroundConnectionPeriodicRefreshTask(
