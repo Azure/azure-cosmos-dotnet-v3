@@ -668,6 +668,95 @@ namespace Microsoft.Azure.Cosmos.Services.Management.Tests.LinqProviderTests
         }
 
         [TestMethod]
+        public void TestWeightedRRF()
+        {
+            const int Records = 2;
+            const int MaxStringLength = 100;
+            static DataObject createDataObj(Random random)
+            {
+                DataObject obj = new DataObject
+                {
+                    StringField = LinqTestsCommon.RandomString(random, random.Next(MaxStringLength)),
+                    IntField = 1,
+                    Id = Guid.NewGuid().ToString(),
+                    Pk = "Test"
+                };
+                return obj;
+            }
+            Func<bool, IQueryable<DataObject>> getQuery = LinqTestsCommon.GenerateTestCosmosData(createDataObj, Records, testContainer);
+
+            List<LinqTestInput> inputs = new List<LinqTestInput>
+            {
+                // public static double RRF(double[][] scoringFunctions, double[] weights)
+                new LinqTestInput("Standard weighted RRF calls", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[]
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            },
+                                            new double[] { 1.0, 2.0 } ))
+                    .Select(doc => doc.Pk)),
+
+                new LinqTestInput("Standard weighted RRF calls using anonymous types", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new []
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            },
+                                            new [] { 1.0, 2.0 } ))
+                    .Select(doc => doc.Pk)),
+
+                // Negative case: weights are not in an array
+                new LinqTestInput("Weighted RRF with weights and functions not in a list", b => getQuery(b)
+                    .OrderByRank(doc => RRF(doc.StringField.FullTextScore(new string[] { "test1" }),
+                                            doc.StringField2.FullTextScore(new string[] { "test1", "test2", "test3" }),
+                                            1.0,
+                                            2.0))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Weighted RRF with weights array first", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 1.0, 2.0 },
+                                            new double[]
+                                            {
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Weighted RRF with mixed and matched values/functions in array", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 
+                                                1.0, 
+                                                doc.StringField.FullTextScore(new string[] { "test1" }) },
+                                            new double[]
+                                            {
+                                                2.0,
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
+                    .Select(doc => doc.Pk)),
+                new LinqTestInput("Weighted RRF with mixed and matched values/functions in array 2", b => getQuery(b)
+                    .OrderByRank(doc => RRF(new double[] { 
+                                                doc.StringField.FullTextScore(new string[] { "test1" }),
+                                                doc.StringField.FullTextScore(new string[] { "test1" }) },
+                                            new double[]
+                                            {
+                                                2.0,
+                                                doc.StringField.FullTextScore(new string[] { "test1", "text2" })
+                                            }))
+                    .Select(doc => doc.Pk)),
+
+
+            };
+
+            foreach (LinqTestInput input in inputs)
+            {
+                // OrderBy are not supported client side.
+                // Therefore this method is verified with baseline only.
+                input.skipVerification = true;
+                input.serializeOutput = true;
+            }
+
+            this.ExecuteTestSuite(inputs);
+        }
+
+        [TestMethod]
         public void TestOrderByRankFunctionComposeWithOtherFunctions()
         {
             const int Records = 2;
