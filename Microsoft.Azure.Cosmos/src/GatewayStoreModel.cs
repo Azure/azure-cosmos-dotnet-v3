@@ -24,7 +24,6 @@ namespace Microsoft.Azure.Cosmos
     // Marking it as non-sealed in order to unit test it using Moq framework
     internal class GatewayStoreModel : IStoreModelExtension, IDisposable
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
         private static readonly string sessionConsistencyAsString = ConsistencyLevel.Session.ToString();
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
 
@@ -46,10 +45,8 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            bool isPartitionLevelFailoverEnabled = false)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager)
         {
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
             this.sessionContainer = sessionContainer;
             this.defaultConsistencyLevel = defaultConsistencyLevel;
@@ -59,7 +56,7 @@ namespace Microsoft.Azure.Cosmos
                 httpClient,
                 this.eventSource,
                 serializerSettings,
-                isPartitionLevelFailoverEnabled);
+                this.globalPartitionEndpointManager);
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
@@ -85,7 +82,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.isPartitionLevelFailoverEnabled
+                if (this.globalPartitionEndpointManager.IsPPAFEnabled()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
