@@ -333,6 +333,11 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRange = default;
             failedLocation = default;
 
+            if (!this.IsPPAFEnabled())
+            {
+                return false;
+            }
+
             if (request == null)
             {
                 throw new ArgumentNullException(nameof(request));
