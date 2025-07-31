@@ -60,7 +60,7 @@ namespace Microsoft.Azure.Cosmos
         /// This is expected and applications that adopt this feature should be prepared to handle these exceptions.
         /// Application might not be able to be deterministic on Create vs Replace in the case of Upsert Operations</param>
         /// <returns>the cross region hedging availability</returns>
-        internal static AvailabilityStrategy SDKDefaultCrossRegionHedgingStrategy(
+        internal static AvailabilityStrategy SDKDefaultCrossRegionHedgingStrategyForPPAF(
             TimeSpan threshold,
             TimeSpan? thresholdStep,
             bool enableMultiWriteRegionHedge = false)

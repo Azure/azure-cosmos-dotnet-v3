@@ -65,5 +65,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         /// <param name="isEnabled"></param>
         public abstract void SetIsPPCBEnabled(bool isEnabled);
+
+        /// <summary>
+        /// Gets whether per-partition automatic failover is enabled.
+        /// </summary>
+        public abstract bool IsPPAFEnabled();
+
+        /// <summary>
+        /// Gets whether per-partition circuit breaker is enabled.
+        /// </summary>
+        public abstract bool IsPPCBEnabled();
     }
 }

@@ -28,7 +28,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly bool enableEndpointDiscovery;
-        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly bool isThinClientEnabled;
         private int failoverRetryCount;
 
@@ -46,7 +45,6 @@ namespace Microsoft.Azure.Cosmos
             GlobalPartitionEndpointManager partitionKeyRangeLocationCache,
             RetryOptions retryOptions,
             bool enableEndpointDiscovery,
-            bool isPartitionLevelFailoverEnabled,
             bool isThinClientEnabled)
         {
             this.throttlingRetry = new ResourceThrottleRetryPolicy(
@@ -61,7 +59,6 @@ namespace Microsoft.Azure.Cosmos
             this.serviceUnavailableRetryCount = 0;
             this.canUseMultipleWriteLocations = false;
             this.isMultiMasterWriteRequest = false;
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.isThinClientEnabled = isThinClientEnabled;
         }
 
@@ -500,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest
-                    && !this.isPartitionLevelFailoverEnabled)
+                    && !this.partitionKeyRangeLocationCache.IsPPAFEnabled())
             {
                 // Write requests on single master cannot be retried if partition level failover is disabled.
                 // This means there are no other regions available to serve the writes.

@@ -14,7 +14,6 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxClientId = 10;
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
-        private readonly string nonFeatureSuffix;
 
         public UserAgentContainer(
             int clientId,
@@ -28,7 +27,6 @@ namespace Microsoft.Azure.Cosmos
                 features: features,
                 regionConfiguration: regionConfiguration);
             this.Suffix = suffix ?? string.Empty;
-            this.nonFeatureSuffix = this.Suffix ?? string.Empty;
         }
 
         public void AppendFeatures(
@@ -36,9 +34,15 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(features))
             {
-                this.Suffix = string.IsNullOrEmpty(this.nonFeatureSuffix)
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to the features.
+                // 2. Suffix is not empty, we append the features to the existing suffix.
+                // 3. Suffix already contains features, we the new features in the existing suffix.
+                this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? features
-                    : $"{features}|{this.nonFeatureSuffix}";
+                    : this.Suffix.Contains("|")
+                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf('|'))}"
+                        : $"{features}|{this.Suffix}";
             }
         }
 

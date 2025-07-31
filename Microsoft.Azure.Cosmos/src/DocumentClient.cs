@@ -6885,7 +6885,7 @@ namespace Microsoft.Azure.Cosmos
                     DocumentClient.DefaultHedgingThresholdInMilliseconds,
                     this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
 
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategy(
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
@@ -6897,7 +6897,6 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
             this.PartitionKeyRangeLocation.SetIsPPAFEnabled(isEnabled);
             this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
-            this.retryPolicy.SetIsPartitionLevelFailoverEnabled(isEnabled);
 
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
 
@@ -6909,7 +6908,7 @@ namespace Microsoft.Azure.Cosmos
                     DocumentClient.DefaultHedgingThresholdInMilliseconds,
                     this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
 
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategy(
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
             }
