@@ -20,22 +20,9 @@ namespace AOTSample
                 return;
             }
 
-            CosmosClientOptions clientOptions = new CosmosClientOptions
-            {
-                AllowBulkExecution = true,
-                ConnectionMode = ConnectionMode.Gateway,
-                UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
-                {
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    WriteIndented = true
-                }
-            };
-            clientOptions.CosmosClientTelemetryOptions.DisableDistributedTracing = false;
-
             CosmosClient client = new CosmosClient(
                 CosmosBaseUri,
-                primaryKey,
-                clientOptions);
+                primaryKey);
 
             AccountProperties accountProperties = await client.ReadAccountAsync();
             Console.WriteLine($"Account Name: {accountProperties.Id}");

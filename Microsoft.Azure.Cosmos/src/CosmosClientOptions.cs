@@ -43,7 +43,12 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Default connection mode
         /// </summary>
-        private const ConnectionMode DefaultConnectionMode = ConnectionMode.Direct;
+        private const ConnectionMode DefaultConnectionMode =
+#if COSMOS_GW_AOT
+            ConnectionMode.Gateway;
+#else
+            ConnectionMode.Direct;
+#endif
 
         /// <summary>
         /// Default Protocol mode
@@ -89,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
             this.ApiType = CosmosClientOptions.DefaultApiType;
             this.CustomHandlers = new Collection<RequestHandler>();
             this.CosmosClientTelemetryOptions = new CosmosClientTelemetryOptions();
+            this.UseSystemTextJsonSerializerWithOptions = new System.Text.Json.JsonSerializerOptions();
         }
 
         /// <summary>
@@ -294,7 +300,7 @@ namespace Microsoft.Azure.Cosmos
         /// </remarks>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeDirect()"/>
         /// <seealso cref="CosmosClientBuilder.WithConnectionModeGateway(int?, IWebProxy)"/>
-        public ConnectionMode ConnectionMode
+        internal ConnectionMode ConnectionMode
         {
             get => this.connectionMode;
             set
@@ -649,7 +655,7 @@ namespace Microsoft.Azure.Cosmos
         /// The use of Resource Tokens scoped to a Partition Key as an authentication mechanism when Bulk is enabled is not recommended as it reduces the potential throughput benefit
         /// </remarks>
         /// </summary>
-        public bool AllowBulkExecution { get; set; }
+        internal bool AllowBulkExecution { get; set; }
 
         /// <summary>
         /// Gets or sets the flag to enable address cache refresh on TCP connection reset notification.
@@ -893,7 +899,7 @@ namespace Microsoft.Azure.Cosmos
         /// <summary>
         /// Gets or sets Client Telemetry Options like feature flags and corresponding options
         /// </summary>
-        public CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
+        internal CosmosClientTelemetryOptions CosmosClientTelemetryOptions { get; set; }
 
         /// <summary>
         /// Create a client with Fault Injection capabilities using the Cosmos DB Fault Injection Library.
