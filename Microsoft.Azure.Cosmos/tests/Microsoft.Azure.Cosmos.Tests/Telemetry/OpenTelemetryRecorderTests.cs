@@ -96,11 +96,13 @@ namespace Microsoft.Azure.Cosmos.Tests.Telemetry
             IEnumerable<Type> actualClasses = asm
                 .GetTypes()
                 .Where(type =>
-                                (type.Name.EndsWith("Response") || type.Name.EndsWith("Response`1")) && // Ending with Response and Response<T>
-                                !type.Name.Contains("OpenTelemetryResponse") && // Excluding OpenTelemetryResponse because we are testing this class
-                                !type.IsAbstract && // Excluding abstract classes
-                                !type.IsInterface && // Excluding interfaces
-                                !excludedResponses.Contains(type.Name)); // Excluding all the types defined in excludedResponses list
+                    (type.Name.EndsWith("Response") || type.Name.EndsWith("Response`1")) && // Ending with Response and Response<T>
+                    !type.Name.Contains("OpenTelemetryResponse") && // Excluding OpenTelemetryResponse because we are testing this class
+                    !type.IsAbstract && // Excluding abstract classes
+                    !type.IsInterface && // Excluding interfaces
+                    !excludedResponses.Contains(type.Name) && // Excluding all the types defined in excludedResponses list
+                    !(type.Namespace != null && type.Namespace.StartsWith("Microsoft.Azure.Documents")) // Exclude types from direct Microsoft.Azure.Documents
+                );
 
             foreach (Type className in actualClasses)
             {
