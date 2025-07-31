@@ -624,7 +624,9 @@ namespace Microsoft.Azure.Cosmos
 
         internal GlobalEndpointManager GlobalEndpointManager { get; private set; }
         
-        internal GlobalPartitionEndpointManager PartitionKeyRangeLocation { get; private set; }
+        private GlobalPartitionEndpointManager partitionKeyRangeLocation;
+        
+        internal GlobalPartitionEndpointManager PartitionKeyRangeLocation => this.partitionKeyRangeLocation;
 
         /// <summary>
         /// Open the connection to validate that the client initialization is successful in the Azure Cosmos DB service.
@@ -1064,7 +1066,7 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation = 
+            this.partitionKeyRangeLocation = 
                 this.ConnectionPolicy.EnablePartitionLevelFailover 
                 || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
                     ? new GlobalPartitionEndpointManagerCore(
@@ -6997,14 +6999,14 @@ namespace Microsoft.Azure.Cosmos
                         this.isThinClientEnabled)
                     : GlobalPartitionEndpointManagerNoOp.Instance;
 
+            // Atomically update the partition key range location to avoid thread contention
+            GlobalPartitionEndpointManager oldPartitionKeyRangeLocation = Interlocked.Exchange(ref this.partitionKeyRangeLocation, newPartitionKeyRangeLocation);
+
             // Dispose the old instance if it's disposable
-            if (this.PartitionKeyRangeLocation is IDisposable disposableOldManager)
+            if (oldPartitionKeyRangeLocation is IDisposable disposableOldManager)
             {
                 disposableOldManager.Dispose();
             }
-
-            // Update the partition key range location
-            this.PartitionKeyRangeLocation = newPartitionKeyRangeLocation;
 
             // Update retry policy with new partition key range location
             this.retryPolicy = new RetryPolicy(
