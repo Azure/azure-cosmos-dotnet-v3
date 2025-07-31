@@ -50,5 +50,15 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return false;
         }
+
+        public override void SetIsPPAFEnabled(bool isEnabled)
+        {
+            return;
+        }
+
+        public override void SetIsPPCBEnabled(bool isEnabled)
+        {
+            return;
+        }
     }
 }

@@ -1064,15 +1064,12 @@ namespace Microsoft.Azure.Cosmos
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation = 
-                this.ConnectionPolicy.EnablePartitionLevelFailover 
-                || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
-                    ? new GlobalPartitionEndpointManagerCore(
+            this.PartitionKeyRangeLocation =
+                new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
                         this.ConnectionPolicy.EnablePartitionLevelFailover,
                         this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
-                        this.isThinClientEnabled)
-                    : GlobalPartitionEndpointManagerNoOp.Instance;
+                        this.isThinClientEnabled);
 
             this.retryPolicy = new RetryPolicy(
                 globalEndpointManager: this.GlobalEndpointManager,
@@ -6847,6 +6844,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
+            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.SetPPAFOnRefresh;
         }
 
         internal string GetUserAgentFeatures()
@@ -6889,6 +6887,38 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategy(
                     threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
                     thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+            }
+        }
+
+        private void SetPPAFOnRefresh(bool isEnabled)
+        {
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
+            this.PartitionKeyRangeLocation.SetIsPPAFEnabled(isEnabled);
+            this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
+            this.retryPolicy.SetIsPartitionLevelFailoverEnabled(isEnabled);
+
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+            if (isEnabled && this.ConnectionPolicy.AvailabilityStrategy == null)
+            {
+                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
+                // the request timeout value provided by the end customer.
+                double defaultThresholdInMillis = Math.Min(
+                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
+                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
+
+                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategy(
+                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
+                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+            }
+            else
+            {
+                if (((CrossRegionHedgingAvailabilityStrategy)this.ConnectionPolicy.AvailabilityStrategy).IsSDKDefaultStrategy)
+                {
+                    // If the user has not set a custom availability strategy, then we will reset it to null.
+                    this.ConnectionPolicy.AvailabilityStrategy = null;
+                }
             }
         }
 

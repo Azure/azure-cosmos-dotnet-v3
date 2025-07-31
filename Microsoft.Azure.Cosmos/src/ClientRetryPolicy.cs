@@ -237,6 +237,11 @@ namespace Microsoft.Azure.Cosmos
             request.RequestContext.RouteToLocation(this.locationEndpoint);
         }
 
+        public void SetIsPartitionLevelFailoverEnabled(bool isEnabled)
+        {
+            this.isPartitionLevelFailoverEnabled = isEnabled;
+        }
+
         private async Task<ShouldRetryResult> ShouldRetryInternalAsync(
             HttpStatusCode? statusCode,
             SubStatusCodes? subStatusCode)

@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
         private const int MaxClientId = 10;
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
+        private readonly string nonFeatureSuffix;
 
         public UserAgentContainer(
             int clientId,
@@ -27,6 +28,7 @@ namespace Microsoft.Azure.Cosmos
                 features: features,
                 regionConfiguration: regionConfiguration);
             this.Suffix = suffix ?? string.Empty;
+            this.nonFeatureSuffix = this.Suffix ?? string.Empty;
         }
 
         public void AppendFeatures(
@@ -34,9 +36,9 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(features))
             {
-                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                this.Suffix = string.IsNullOrEmpty(this.nonFeatureSuffix)
                     ? features
-                    : $"{features}|{this.Suffix}";
+                    : $"{features}|{this.nonFeatureSuffix}";
             }
         }
 

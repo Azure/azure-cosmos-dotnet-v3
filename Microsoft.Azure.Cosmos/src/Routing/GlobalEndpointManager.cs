@@ -43,6 +43,11 @@ namespace Microsoft.Azure.Cosmos.Routing
         private bool isBackgroundAccountRefreshActive = false;
         private DateTime LastBackgroundRefreshUtc = DateTime.MinValue;
 
+        /// <summary>
+        /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
+        /// </summary>
+        internal event Action<bool> OnEnablePartitionLevelFailoverConfigChanged;
+
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
             ConnectionPolicy connectionPolicy,
@@ -768,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && accountProperties.EnablePartitionLevelFailover.HasValue
                     && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
                 {
-                    this.SetPPAFOnRefresh(accountProperties.EnablePartitionLevelFailover.Value);
+                    this.OnEnablePartitionLevelFailoverConfigChanged(accountProperties.EnablePartitionLevelFailover.Value);
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
@@ -806,39 +811,6 @@ namespace Microsoft.Azure.Cosmos.Routing
                               cancellationToken: this.cancellationTokenSource.Token,
                               forceRefresh: forceRefresh);
 #nullable enable
-        }
-
-        private void SetPPAFOnRefresh(bool enablePartitionLevelFailover)
-        {
-            if (enablePartitionLevelFailover)
-            {
-                this.connectionPolicy.EnablePartitionLevelFailover = true;
-                this.connectionPolicy.EnablePartitionLevelCircuitBreaker = true;
-
-                if (this.connectionPolicy.AvailabilityStrategy == null)
-                {
-                    // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
-                    // the request timeout value provided by the end customer.
-                    double defaultThresholdInMillis = Math.Min(
-                        DocumentClient.DefaultHedgingThresholdInMilliseconds,
-                        this.connectionPolicy.RequestTimeout.TotalMilliseconds / 2);
-
-                    this.connectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategy(
-                        threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
-                        thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
-                }
-            }
-            else
-            {
-                this.connectionPolicy.EnablePartitionLevelFailover = false;
-                this.connectionPolicy.EnablePartitionLevelCircuitBreaker = false;
-
-                if (((CrossRegionHedgingAvailabilityStrategy)this.connectionPolicy.AvailabilityStrategy).IsSDKDefaultStrategy)
-                {
-                    // If the user has not set a custom availability strategy, then we will reset it to null.
-                    this.connectionPolicy.AvailabilityStrategy = null;
-                }
-            }
         }
 
         /// <summary>

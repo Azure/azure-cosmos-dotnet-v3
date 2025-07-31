@@ -49,19 +49,9 @@ namespace Microsoft.Azure.Cosmos.Routing
         private readonly int backgroundConnectionInitTimeIntervalInSeconds = ConfigurationManager.GetStalePartitionUnavailabilityRefreshIntervalInSeconds(300);
 
         /// <summary>
-        /// A readonly boolean flag used to determine if partition level failover is enabled.
-        /// </summary>
-        private readonly bool isPartitionLevelFailoverEnabled;
-
-        /// <summary>
         /// A readonly boolean flag used to determine if thinclient is enabled.
         /// </summary>
         private readonly bool isThinClientEnabled;
-
-        /// <summary>
-        /// A readonly boolean flag used to determine if partition level circuit breaker is enabled.
-        /// </summary>
-        private readonly bool isPartitionLevelCircuitBreakerEnabled;
 
         /// <summary>
         /// A <see cref="Lazy{T}"/> instance of <see cref="ConcurrentDictionary{K,V}"/> containing the partition key range to failover info mapping.
@@ -86,6 +76,16 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// A boolean flag indicating if the background connection initialization recursive task is active.
         /// </summary>
         private bool isBackgroundConnectionInitActive = false;
+
+        /// <summary>
+        /// A readonly boolean flag used to determine if partition level failover is enabled.
+        /// </summary>
+        private bool isPartitionLevelFailoverEnabled;
+
+        /// <summary>
+        /// A readonly boolean flag used to determine if partition level circuit breaker is enabled.
+        /// </summary>
+        private bool isPartitionLevelCircuitBreakerEnabled;
 
         /// <summary>
         /// A callback func delegate used by the background connection refresh recursive task to establish rntbd connections to backend replicas.
@@ -280,6 +280,16 @@ namespace Microsoft.Azure.Cosmos.Routing
             return this.isPartitionLevelCircuitBreakerEnabled
                 && (request.IsReadOnlyRequest
                 || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
+        }
+
+        public override void SetIsPPAFEnabled(bool isPPAFEnabled)
+        {
+            this.isPartitionLevelFailoverEnabled = isPPAFEnabled;
+        }
+
+        public override void SetIsPPCBEnabled(bool isPLCBEnabled)
+        {
+            this.isPartitionLevelCircuitBreakerEnabled = isPLCBEnabled;
         }
 
         /// <summary>
