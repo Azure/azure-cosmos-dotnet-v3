@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Documents
     ///  All Azure Cosmos DB resources, such as <see cref="Database"/>, <see cref="DocumentCollection"/>, and <see cref="Document"/> extend this abstract type.
     /// </summary>
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif

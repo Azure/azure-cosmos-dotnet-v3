@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
 
-    internal abstract class JsonMemoryWriter
+    public abstract class JsonMemoryWriter
     {
         protected byte[] buffer;
 

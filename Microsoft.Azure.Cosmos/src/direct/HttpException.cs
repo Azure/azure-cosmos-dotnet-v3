@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Documents
     /// </summary>
     [Serializable]
 #if COSMOSCLIENT
-    internal
+    public
 #else
     public
 #endif

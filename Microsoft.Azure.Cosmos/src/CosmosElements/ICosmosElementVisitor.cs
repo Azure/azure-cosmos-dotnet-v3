@@ -11,7 +11,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 #pragma warning disable SA1600 // Elements should be documented
     public
 #else
-    internal
+    public
 #endif
     interface ICosmosElementVisitor
     {

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Tracing
 #if INTERNAL
     public
 #else
-    internal
+    public
 #endif 
         abstract class TraceDatum
     {

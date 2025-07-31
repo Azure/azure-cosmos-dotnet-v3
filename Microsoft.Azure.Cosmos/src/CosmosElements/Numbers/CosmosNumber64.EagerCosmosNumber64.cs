@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements.Numbers
 #pragma warning disable SA1601 // Partial elements should be documented
     public
 #else
-    internal
+    public
 #endif
     abstract partial class CosmosNumber64 : CosmosNumber, IEquatable<CosmosNumber64>, IComparable<CosmosNumber64>
     {

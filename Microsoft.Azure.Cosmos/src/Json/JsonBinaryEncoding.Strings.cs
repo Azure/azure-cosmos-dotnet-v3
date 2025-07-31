@@ -13,7 +13,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
 
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         public const int GuidLength = 36;
         public const int GuidWithQuotesLength = GuidLength + 2;

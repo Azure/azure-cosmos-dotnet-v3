@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Runtime.CompilerServices;
 
-    internal abstract class JsonMemoryReader
+    public abstract class JsonMemoryReader
     {
         protected readonly ReadOnlyMemory<byte> buffer;
         protected int position;

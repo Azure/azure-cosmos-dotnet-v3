@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Linq;
     using System.Runtime.InteropServices;
 
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         public static class Enumerator
         {

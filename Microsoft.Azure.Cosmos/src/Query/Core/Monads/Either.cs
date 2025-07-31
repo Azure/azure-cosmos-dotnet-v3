@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 {
     using System;
 
-    internal readonly struct Either<TLeft, TRight>
+    public readonly struct Either<TLeft, TRight>
     {
         private readonly TLeft left;
         private readonly TRight right;

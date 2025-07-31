@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
     using System.Diagnostics;
     using Microsoft.Azure.Cosmos.Tracing;
 
-    internal sealed class ExceptionWithStackTraceException : Exception
+    public sealed class ExceptionWithStackTraceException : Exception
     {
         private static readonly string EndOfInnerExceptionString = "--- End of inner exception stack trace ---";
         private readonly StackTrace stackTrace;

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// Common utility class for JsonTextReader and JsonTextNavigator.
     /// Please treat this class as private.
     /// </summary>
-    internal static class JsonTextParser
+    public static class JsonTextParser
     {
         private static readonly ReadOnlyMemory<byte> ReverseSolidusBytes = new byte[] { (byte)'\\' };
 

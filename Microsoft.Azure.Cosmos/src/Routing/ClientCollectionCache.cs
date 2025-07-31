@@ -88,6 +88,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             if (forceRefesh && this.sessionContainer != null)
             {
+                Console.WriteLine($"ResolveByNameAsync_1_0_a");
                 return TaskHelper.InlineIfPossible(
                     async () =>
                     {
@@ -119,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     cancellationToken);
             }
 
+            Console.WriteLine($"ResolveByNameAsync_1_0_b");
             return TaskHelper.InlineIfPossible(
                 () => base.ResolveByNameAsync(
                     apiVersion, resourceAddress, forceRefesh, trace, clientSideRequestStatistics, cancellationToken),
@@ -154,6 +156,8 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             string previouslyResolvedCollectionRid = request?.RequestContext?.ResolvedCollectionRid;
 
+            Console.WriteLine("--> ResolveCollectionWithSessionContainerCleanupAsync");
+
             ContainerProperties properties = await resolveContainerProvider();
 
             if (this.sessionContainer != null &&
@@ -162,6 +166,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             {
                 this.sessionContainer.ClearTokenByResourceId(previouslyResolvedCollectionRid);
             }
+
+            Console.WriteLine("<-- ResolveCollectionWithSessionContainerCleanupAsync");
 
             return properties;
         }

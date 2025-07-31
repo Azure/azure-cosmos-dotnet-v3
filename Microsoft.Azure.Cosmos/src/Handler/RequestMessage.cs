@@ -238,10 +238,12 @@ namespace Microsoft.Azure.Cosmos
         {
             if (this.IsMasterOperation())
             {
+                Console.WriteLine("--> AssertPartitioningDetailsAsync");
                 return;
             }
 
-#if DEBUG
+// #if DEBUG
+            Console.WriteLine("--> AssertPartitioningDetailsAsync");
             try
             {
                 CollectionCache collectionCache = await client.DocumentClient.GetCollectionCacheAsync(trace);
@@ -256,9 +258,10 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Ignore container non-existence
             }
-#else
+            Console.WriteLine("<-- AssertPartitioningDetailsAsync");
+//#else
             await Task.CompletedTask;
-#endif
+//#endif
         }
 
         internal DocumentServiceRequest ToDocumentServiceRequest()

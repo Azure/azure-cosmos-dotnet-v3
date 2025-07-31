@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System;
 
-    internal interface IJsonTextWriterExtensions : IJsonWriter
+    public interface IJsonTextWriterExtensions : IJsonWriter
     {
         void WriteRawJsonValue(
             ReadOnlyMemory<byte> buffer,

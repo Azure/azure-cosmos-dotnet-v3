@@ -114,5 +114,14 @@ namespace Microsoft.Azure.Documents
         /// </remarks>
         [JsonPropertyName(Constants.Properties.ETag)]
         public string ETag { get; internal set; }
+
+        /// <summary>
+        /// Returns a string representation of the resource with all property names and values.
+        /// </summary>
+        /// <returns>A string containing all property names and their values.</returns>
+        public string asString()
+        {
+            return $"Id={this.Id}, ResourceId={this.ResourceId}, SelfLink={this.SelfLink}, AltLink={this.AltLink}, Timestamp={this.Timestamp}, ETag={this.ETag}";
+        }
     }
 }

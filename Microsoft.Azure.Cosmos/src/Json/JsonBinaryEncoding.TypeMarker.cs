@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System.Runtime.CompilerServices;
 
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         /// <summary>
         /// Defines the set of type-marker values that are used to encode JSON value

@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     // Example for Object and Array:
     //       {"type":"array", "low": 1000000000, "high": 8888888888}
     //       {"type":"object", "low": 1000000000, "high": 8888888888}
-    internal class SqlQueryResumeValue : IComparable<CosmosElement>
+    public class SqlQueryResumeValue : IComparable<CosmosElement>
     {
         private static class PropertyNames
         {

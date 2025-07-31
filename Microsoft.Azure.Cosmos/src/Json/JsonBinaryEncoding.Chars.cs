@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Collections.Immutable;
     using Microsoft.Azure.Documents;
 
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         public readonly struct StringCompressionLookupTables
         {

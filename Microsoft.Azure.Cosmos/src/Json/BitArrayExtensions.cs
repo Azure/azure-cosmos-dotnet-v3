@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.Json
 {
     using System.Collections;
 
-    internal static class BitArrayExtensions
+    public static class BitArrayExtensions
     {
         public static bool SetEquals(this BitArray first, BitArray second)
         {

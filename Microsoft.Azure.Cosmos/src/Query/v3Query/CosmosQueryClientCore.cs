@@ -65,6 +65,8 @@ namespace Microsoft.Azure.Cosmos
                 trace,
                 cancellationToken);
 
+            Console.WriteLine(" --> Query::GetCachedContainerQueryPropertiesAsync");
+
             List<Range<string>> effectivePartitionKeyRange = null;
             if (partitionKey != null)
             {
@@ -81,6 +83,8 @@ namespace Microsoft.Azure.Cosmos
                             isMaxInclusive: true))
                 };
             }
+
+            Console.WriteLine(" <-- Query::GetCachedContainerQueryPropertiesAsync");
 
             return new ContainerQueryProperties(
                 containerProperties.ResourceId,
@@ -185,6 +189,10 @@ namespace Microsoft.Azure.Cosmos
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            Console.WriteLine("--> ExecuteQueryPlanRequestAsync");
+            Stream queryPayload = this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType);
+            string result = System.Text.Encoding.UTF8.GetString(((MemoryStream)queryPayload).ToArray());
+            Console.WriteLine($"  ExecuteQueryPlanRequestAsync.Query = {result}");
             PartitionedQueryExecutionInfo partitionedQueryExecutionInfo;
             using (ResponseMessage message = await this.clientContext.ProcessResourceOperationStreamAsync(
                 resourceUri: resourceUri,
@@ -193,7 +201,8 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: null,
                 feedRange: partitionKey.HasValue ? new FeedRangePartitionKey(partitionKey.Value) : null,
                 cosmosContainerCore: this.cosmosContainerCore,
-                streamPayload: this.clientContext.SerializerCore.ToStreamSqlQuerySpec(sqlQuerySpec, resourceType),
+                streamPayload: queryPayload,
+                // streamPayload: queryPayload,
                 requestEnricher: (requestMessage) =>
                 {
                     requestMessage.Headers.Add(HttpConstants.HttpHeaders.ContentType, RuntimeConstants.MediaTypes.QueryJson);
@@ -206,11 +215,13 @@ namespace Microsoft.Azure.Cosmos
                 trace: trace,
                 cancellationToken: cancellationToken))
             {
+                Console.WriteLine($"ExecuteQueryPlanRequestAsync - Response received {message.StatusCode}");
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
                 partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
             }
 
+            Console.WriteLine("<-- ExecuteQueryPlanRequestAsync");
             return partitionedQueryExecutionInfo;
         }
 
@@ -436,6 +447,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override async Task ForceRefreshCollectionCacheAsync(string collectionLink, CancellationToken cancellationToken)
         {
+            Console.WriteLine("--> Query::ForceRefreshCollectionCacheAsync");
             this.ClearSessionTokenCache(collectionLink);
 
             CollectionCache collectionCache = await this.documentClient.GetCollectionCacheAsync(NoOpTrace.Singleton);
@@ -448,6 +460,7 @@ namespace Microsoft.Azure.Cosmos
                 request.ForceNameCacheRefresh = true;
                 await collectionCache.ResolveCollectionAsync(request, cancellationToken, NoOpTrace.Singleton);
             }
+            Console.WriteLine("<-- Query::ForceRefreshCollectionCacheAsync");
         }
 
         public override async Task<IReadOnlyList<PartitionKeyRange>> TryGetOverlappingRangesAsync(
@@ -455,12 +468,15 @@ namespace Microsoft.Azure.Cosmos
             Range<string> range,
             bool forceRefresh = false)
         {
+            Console.WriteLine("--> Query::TryGetOverlappingRangesAsync");
             PartitionKeyRangeCache partitionKeyRangeCache = await this.GetRoutingMapProviderAsync();
-            return await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
+            IReadOnlyList<PartitionKeyRange> result = await partitionKeyRangeCache.TryGetOverlappingRangesAsync( 
                 collectionResourceId, 
                 range,
                 NoOpTrace.Singleton,
                 forceRefresh);
+            Console.WriteLine("<-- Query::TryGetOverlappingRangesAsync");
+            return result;
         }
 
         private Task<PartitionKeyRangeCache> GetRoutingMapProviderAsync()

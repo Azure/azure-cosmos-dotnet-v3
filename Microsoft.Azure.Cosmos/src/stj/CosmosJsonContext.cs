@@ -2,6 +2,7 @@
 {
     using System.Collections.Generic;
     using System.Text.Json.Serialization;
+    using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Documents;
 
@@ -19,6 +20,7 @@
     [JsonSerializable(typeof(FeedResource_Address))]
     [JsonSerializable(typeof(FeedResource_PartitionKeyRange))]
     [JsonSerializable(typeof(PartitionKeyRange))]
+    [JsonSerializable(typeof(SqlQuerySpec))]
     public partial class CosmosJsonContext : JsonSerializerContext
     {
     }

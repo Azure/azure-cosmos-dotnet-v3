@@ -15,7 +15,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Monads
 #pragma warning disable SA1600 // Elements should be documented
     public
 #else
-    internal
+    public
 #endif
     readonly struct TryCatch<TResult>
     {

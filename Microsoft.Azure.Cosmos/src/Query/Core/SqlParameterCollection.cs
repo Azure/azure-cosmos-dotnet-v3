@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
     /// <summary>
     /// Represents a collection of parameters associated with <see cref="T:Microsoft.Azure.Documents.SqlQuerySpec"/> for use in the Azure Cosmos DB service.
     /// </summary>
-    internal sealed class SqlParameterCollection : IList<SqlParameter>
+    public sealed class SqlParameterCollection : IList<SqlParameter>
     {
         private readonly List<SqlParameter> parameters;
 

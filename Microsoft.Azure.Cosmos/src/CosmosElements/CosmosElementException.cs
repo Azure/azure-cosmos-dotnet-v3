@@ -6,7 +6,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
 {
     using System;
 
-    internal abstract class CosmosElementException : Exception
+    public abstract class CosmosElementException : Exception
     {
         public CosmosElementException(string message = null, Exception innerException = null)
             : base(message, innerException)
@@ -14,7 +14,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
     }
 
-    internal sealed class CosmosElementWrongTypeException : CosmosElementException
+    public sealed class CosmosElementWrongTypeException : CosmosElementException
     {
         public CosmosElementWrongTypeException(string message = null, Exception innerException = null)
             : base(message, innerException)
@@ -22,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
     }
 
-    internal sealed class CosmosElementEmptyBufferException : CosmosElementException
+    public sealed class CosmosElementEmptyBufferException : CosmosElementException
     {
         public CosmosElementEmptyBufferException(string message = null, Exception innerException = null)
             : base(message, innerException)
@@ -30,7 +30,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
     }
 
-    internal sealed class CosmosElementNoPubliclyAccessibleConstructorException : CosmosElementException
+    public sealed class CosmosElementNoPubliclyAccessibleConstructorException : CosmosElementException
     {
         public CosmosElementNoPubliclyAccessibleConstructorException(string message = null, Exception innerException = null)
             : base(message, innerException)
@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
     }
 
-    internal sealed class CosmosElementCouldNotDetermineWhichConstructorToUseException : CosmosElementException
+    public sealed class CosmosElementCouldNotDetermineWhichConstructorToUseException : CosmosElementException
     {
         public CosmosElementCouldNotDetermineWhichConstructorToUseException(string message = "Could not determine which constructor to use", Exception innerException = null)
             : base(message, innerException)
@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.CosmosElements
         }
     }
 
-    internal sealed class CosmosElementFailedToFindPropertyException : CosmosElementException
+    public sealed class CosmosElementFailedToFindPropertyException : CosmosElementException
     {
         public CosmosElementFailedToFindPropertyException(string message = null, Exception innerException = null)
             : base(message, innerException)

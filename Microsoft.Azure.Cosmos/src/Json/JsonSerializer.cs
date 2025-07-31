@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
 
-    internal static class JsonSerializer
+    public static class JsonSerializer
     {
         public static ReadOnlyMemory<byte> Serialize(
             object value,

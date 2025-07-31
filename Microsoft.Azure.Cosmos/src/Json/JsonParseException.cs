@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Abstract class that all JsonParseExceptions will derive from.
     /// </summary>
-    internal abstract class JsonParseException : DocumentClientException
+    public abstract class JsonParseException : DocumentClientException
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonParseException"/> class.
@@ -25,7 +25,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for MissingClosingQuote 
     /// </summary>
-    internal sealed class JsonMissingClosingQuoteException : JsonParseException
+    public sealed class JsonMissingClosingQuoteException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="JsonMissingClosingQuoteException"/> class.
@@ -39,7 +39,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for NotFieldnameToken 
     /// </summary>
-    internal sealed class JsonNotFieldnameTokenException : JsonParseException
+    public sealed class JsonNotFieldnameTokenException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonNotFieldnameTokenException class.
@@ -53,7 +53,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for InvalidParameter 
     /// </summary>
-    internal sealed class JsonInvalidParameterException : JsonParseException
+    public sealed class JsonInvalidParameterException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonInvalidParameterException class.
@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for NumberTooLong 
     /// </summary>
-    internal sealed class JsonNumberTooLongException : JsonParseException
+    public sealed class JsonNumberTooLongException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonNumberTooLongException class.
@@ -81,7 +81,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for MissingNameSeparator 
     /// </summary>
-    internal sealed class JsonMissingNameSeparatorException : JsonParseException
+    public sealed class JsonMissingNameSeparatorException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonMissingNameSeparatorException class.
@@ -95,7 +95,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for UnexpectedToken 
     /// </summary>
-    internal sealed class JsonUnexpectedTokenException : JsonParseException
+    public sealed class JsonUnexpectedTokenException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonUnexpectedTokenException class.
@@ -109,7 +109,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for UnexpectedEndArray 
     /// </summary>
-    internal sealed class JsonUnexpectedEndArrayException : JsonParseException
+    public sealed class JsonUnexpectedEndArrayException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonUnexpectedEndArrayException class.
@@ -123,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for UnexpectedEndObject 
     /// </summary>
-    internal sealed class JsonUnexpectedEndObjectException : JsonParseException
+    public sealed class JsonUnexpectedEndObjectException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonUnexpectedEndObjectException class.
@@ -137,7 +137,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for InvalidToken 
     /// </summary>
-    internal sealed class JsonInvalidTokenException : JsonParseException
+    public sealed class JsonInvalidTokenException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonInvalidTokenException class.
@@ -151,7 +151,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for UnexpectedNameSeparator 
     /// </summary>
-    internal sealed class JsonUnexpectedNameSeparatorException : JsonParseException
+    public sealed class JsonUnexpectedNameSeparatorException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonUnexpectedNameSeparatorException class.
@@ -165,7 +165,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for UnexpectedValueSeparator 
     /// </summary>
-    internal sealed class JsonUnexpectedValueSeparatorException : JsonParseException
+    public sealed class JsonUnexpectedValueSeparatorException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonUnexpectedValueSeparatorException class.
@@ -179,7 +179,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for MissingEndObject 
     /// </summary>
-    internal sealed class JsonMissingEndObjectException : JsonParseException
+    public sealed class JsonMissingEndObjectException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonMissingEndObjectException class.
@@ -207,7 +207,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for NotStringToken 
     /// </summary>
-    internal sealed class JsonNotStringTokenException : JsonParseException
+    public sealed class JsonNotStringTokenException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonNotStringTokenException class.
@@ -221,7 +221,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for MaxNestingExceeded 
     /// </summary>
-    internal sealed class JsonMaxNestingExceededException : JsonParseException
+    public sealed class JsonMaxNestingExceededException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonMaxNestingExceededException class.
@@ -235,7 +235,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for InvalidEscapedCharacter 
     /// </summary>
-    internal sealed class JsonInvalidEscapedCharacterException : JsonParseException
+    public sealed class JsonInvalidEscapedCharacterException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonInvalidEscapedCharacterException class.
@@ -249,7 +249,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for InvalidUnicodeEscape 
     /// </summary>
-    internal sealed class JsonInvalidUnicodeEscapeException : JsonParseException
+    public sealed class JsonInvalidUnicodeEscapeException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonInvalidUnicodeEscapeException class.
@@ -263,7 +263,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for InvalidStringCharacter 
     /// </summary>
-    internal sealed class JsonInvalidStringCharacterException : JsonParseException
+    public sealed class JsonInvalidStringCharacterException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonInvalidStringCharacterException class.
@@ -277,7 +277,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for InvalidNumber 
     /// </summary>
-    internal sealed class JsonInvalidNumberException : JsonParseException
+    public sealed class JsonInvalidNumberException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonInvalidNumberException class.
@@ -305,7 +305,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for NumberOutOfRange 
     /// </summary>
-    internal sealed class JsonNumberOutOfRangeException : JsonParseException
+    public sealed class JsonNumberOutOfRangeException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonNumberOutOfRangeException class.
@@ -347,7 +347,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for ObjectNotStarted 
     /// </summary>
-    internal sealed class JsonObjectNotStartedException : JsonParseException
+    public sealed class JsonObjectNotStartedException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonObjectNotStartedException class.
@@ -375,7 +375,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for PropertyArrayOrObjectNotStarted 
     /// </summary>
-    internal sealed class JsonPropertyArrayOrObjectNotStartedException : JsonParseException
+    public sealed class JsonPropertyArrayOrObjectNotStartedException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonPropertyArrayOrObjectNotStartedException class.
@@ -389,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// JsonParseException for NotComplete 
     /// </summary>
-    internal sealed class JsonNotCompleteException : JsonParseException
+    public sealed class JsonNotCompleteException : JsonParseException
     {
         /// <summary>
         /// Initializes a new instance of the JsonNotCompleteException class.

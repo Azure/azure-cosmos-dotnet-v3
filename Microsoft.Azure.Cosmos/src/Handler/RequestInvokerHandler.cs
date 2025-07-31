@@ -87,6 +87,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                 return errorResponse;
             }
 
+            Console.WriteLine("--> RequestInvokeHandler::SendAsync_2_1");
+
             await request.AssertPartitioningDetailsAsync(this.client, cancellationToken, request.Trace);
             this.FillMultiMasterContext(request);
 
@@ -114,6 +116,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     mediaStream: response.Content,
                     allowUnsafeDataAccess: true);
             }
+
+            Console.WriteLine("<-- RequestInvokeHandler::SendAsync_2_1");
 
             return response;
         }
@@ -189,6 +193,8 @@ namespace Microsoft.Azure.Cosmos.Handlers
             ITrace trace,
             CancellationToken cancellationToken)
         {
+            Console.WriteLine("--> RequestInvokeHandler::SendAsync_2");
+
             if (resourceUriString == null)
             {
                 throw new ArgumentNullException(nameof(resourceUriString));
@@ -369,7 +375,11 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     }
                     requestEnricher?.Invoke(request);
 
-                    return await this.SendAsync(request, cancellationToken);
+                    ResponseMessage r = await this.SendAsync(request, cancellationToken);
+
+                    Console.WriteLine("<-- RequestInvokeHandler::SendAsync_2");
+
+                    return r;
                 }
                 finally
                 {

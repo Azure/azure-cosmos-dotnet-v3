@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System;
     using System.Runtime.CompilerServices;
 
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         /// <summary>
         /// Checks if the given <paramref name="typeMarker"/> represents a uniform array of numbers.

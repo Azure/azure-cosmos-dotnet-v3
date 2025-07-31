@@ -6,12 +6,13 @@ namespace Microsoft.Azure.Cosmos.Query.Core
 {
     using System;
     using System.Runtime.Serialization;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents a SQL query in the Azure Cosmos DB service.
     /// </summary>
     [DataContract]
-    internal sealed class SqlQuerySpec
+    public sealed class SqlQuerySpec
     {
         private SqlParameterCollection parameters;
 
@@ -62,6 +63,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <value>The text of the database query.</value>
         [DataMember(Name = "query")]
+        [JsonPropertyName("query")]
         public string QueryText { get; set; }
 
         /// <summary>
@@ -69,6 +71,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <value>The integer value representing the compatibility of the client.</value>
         [DataMember(Name = "clientQLCompatibilityLevel", EmitDefaultValue = false)]
+        [JsonPropertyName("clientQLCompatibilityLevel")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public int? ClientQLCompatibilityLevel { get; set; }
 
         /// <summary>
@@ -76,6 +80,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// </summary>
         /// <value>The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance.</value>
         [DataMember(Name = "parameters")]
+        [JsonPropertyName("parameters")]
         public SqlParameterCollection Parameters
         {
             get => this.parameters;
@@ -83,6 +88,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         }
 
         [DataMember(Name = "resumeFilter", EmitDefaultValue = false)]
+        [JsonPropertyName("resumeFilter")]
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public SqlQueryResumeFilter ResumeFilter { get; set; }
 
         /// <summary>

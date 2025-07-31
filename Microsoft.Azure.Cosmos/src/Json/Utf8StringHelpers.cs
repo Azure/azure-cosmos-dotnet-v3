@@ -8,7 +8,7 @@ namespace Microsoft.Azure.Cosmos.Json
     using System.Runtime.InteropServices;
     using System.Text;
 
-    internal static class Utf8StringHelpers
+    public static class Utf8StringHelpers
     {
         public static string ToString(ReadOnlyMemory<byte> buffer)
         {

@@ -426,13 +426,18 @@ namespace Microsoft.Azure.Cosmos
                 ClientCollectionCache collectionCache = await this.DocumentClient.GetCollectionCacheAsync(childTrace);
                 try
                 {
-                    return await collectionCache.ResolveByNameAsync(
+                    Task<ContainerProperties> t = collectionCache.ResolveByNameAsync(
                         HttpConstants.Versions.CurrentVersion,
                         containerUri,
                         forceRefesh: false,
                         trace: childTrace,
                         clientSideRequestStatistics: null,
                         cancellationToken: cancellationToken);
+
+                    // Console.WriteLine("ClientContextCore_1::collectionCache.ResolveByNameAsync returned");
+
+                    return await t;
+
                 }
                 catch (DocumentClientException ex)
                 {

@@ -81,6 +81,21 @@ namespace Microsoft.Azure.Documents
         }
 
         /// <summary>
+        /// Returns a string representation of the partition key range with all property names and values.
+        /// </summary>
+        /// <returns>A string containing all property names and their values.</returns>
+        public new string asString()
+        {
+            string parentsStr = this.Parents != null ? $"[{string.Join(", ", this.Parents)}]" : "null";
+            string ownedArchivalStr = this.OwnedArchivalPKRangeIds != null ? $"[{string.Join(", ", this.OwnedArchivalPKRangeIds)}]" : "null";
+#if !DOCDBCLIENT
+            return $"{base.asString()}, MinInclusive={this.MinInclusive}, MaxExclusive={this.MaxExclusive}, RidPrefix={this.RidPrefix}, ThroughputFraction={this.ThroughputFraction}, TargetThroughput={this.TargetThroughput}, Status={this.Status}, LSN={this.LSN}, Parents={parentsStr}, OwnedArchivalPKRangeIds={ownedArchivalStr}";
+#else
+            return $"{base.asString()}, MinInclusive={this.MinInclusive}, MaxExclusive={this.MaxExclusive}, RidPrefix={this.RidPrefix}, ThroughputFraction={this.ThroughputFraction}, Status={this.Status}, LSN={this.LSN}, Parents={parentsStr}, OwnedArchivalPKRangeIds={ownedArchivalStr}";
+#endif
+        }
+
+        /// <summary>
         /// Determines whether this instance in the Azure Cosmos DB service and a specified object have the same value.
         /// </summary>
         /// <param name="obj">The object to compare to this instance</param>

@@ -4,7 +4,7 @@
 
 namespace Microsoft.Azure.Cosmos.Json
 {
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         /// <summary>
         /// Struct to hold the a multibyte type marker.

@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos.Json
     /// <summary>
     /// Static class with utility functions and constants for JSON binary encoding.
     /// </summary>
-    internal static partial class JsonBinaryEncoding
+    public static partial class JsonBinaryEncoding
     {
         /// <summary>
         /// A type marker is a single byte.

@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Cosmos.Json
 #if INTERNAL
     public
 #else
-    internal
+    public
 #endif
     enum JsonNodeType
     {
