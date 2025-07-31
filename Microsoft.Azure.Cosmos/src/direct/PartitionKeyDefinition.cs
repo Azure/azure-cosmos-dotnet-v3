@@ -18,12 +18,8 @@ namespace Microsoft.Azure.Documents
 #else
     public
 #endif
-    sealed class PartitionKeyDefinition : JsonSerializable
+    sealed class PartitionKeyDefinition
     {
-        private Collection<string> paths;
-
-        private PartitionKind? kind;
-
         /// <summary>
         /// Gets or sets the paths to be partitioned in the Azure Cosmos DB service.
         /// </summary>
@@ -31,24 +27,7 @@ namespace Microsoft.Azure.Documents
         /// The path to be partitioned.
         /// </value>
         [JsonPropertyName(Constants.Properties.Paths)]
-        public Collection<string> Paths
-        {
-            get
-            {
-                // Thread safe initialization. Collection is cached and PartitionKey can be looked up from multiple threads.
-                if (this.paths == null)
-                {
-                    this.paths = base.GetValue<Collection<string>>(Constants.Properties.Paths) ?? new Collection<string>();
-                }
-
-                return this.paths;
-            }
-            set
-            {
-                this.paths = value;
-                base.SetValue(Constants.Properties.Paths, value);
-            }
-        }
+        public Collection<string> Paths { get; set; }
 
         /// <summary>
         /// Gets or sets the kind of partitioning to be applied in the Azure Cosmos DB service.
@@ -58,23 +37,7 @@ namespace Microsoft.Azure.Documents
         /// </value>
         [JsonPropertyName(Constants.Properties.PartitionKind)]
         [JsonConverter(typeof(JsonStringEnumConverter<PartitionKind>))]
-        internal PartitionKind Kind
-        {
-            get
-            {
-                if (!this.kind.HasValue)
-                {
-                    this.kind = base.GetValue<PartitionKind>(Constants.Properties.PartitionKind, PartitionKind.Hash);
-                }
-
-                return this.kind.Value;
-            }
-            set
-            {
-                this.kind = null;
-                base.SetValue(Constants.Properties.PartitionKind, value.ToString());
-            }
-        }
+        internal PartitionKind Kind { get; set; }
 
         /// <summary>
         /// Gets or sets version of the partitioning scheme to be applied on the partition key
@@ -83,17 +46,8 @@ namespace Microsoft.Azure.Documents
         /// One of the values of the <see cref="T:Microsoft.Azure.Documents.PartitionKeyDefinitionVersion"/> enumeration. 
         /// </value>
         [JsonPropertyName(Constants.Properties.PartitionKeyDefinitionVersion)]
-        public PartitionKeyDefinitionVersion? Version
-        {
-            get
-            {
-                return (PartitionKeyDefinitionVersion?)base.GetValue<int?>(Constants.Properties.PartitionKeyDefinitionVersion);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.PartitionKeyDefinitionVersion, (int?)value);
-            }
-        }
+        [JsonConverter(typeof(JsonStringEnumConverter<PartitionKeyDefinitionVersion>))]
+        public PartitionKeyDefinitionVersion? Version { get; set; }
 
         /// <summary>
         /// Gets whether the partition key definition in the collection is system inserted key
@@ -102,36 +56,15 @@ namespace Microsoft.Azure.Documents
         /// <value>
         /// </value>
         [JsonPropertyName(Constants.Properties.SystemKey)]
-        internal bool? IsSystemKey
-        {
-            get
-            {
-                return base.GetValue<bool?>(Constants.Properties.SystemKey);
-            }
-            set
-            {
-                base.SetValue(Constants.Properties.SystemKey, value);
-            }
-        }
+        public bool? IsSystemKey { get; set; }
 
-        internal override void OnSave()
+        internal void Validate()
         {
-            if (this.paths != null)
-            {
-                base.SetValue(Constants.Properties.Paths, this.paths);
-            }
-
-            if (this.kind != null)
-            {
-                base.SetValue(Constants.Properties.PartitionKind, this.kind.ToString());
-            }
-        }
-
-        internal override void Validate()
-        {
+#if !COSMOS_GW_AOT
             base.Validate();
             base.GetValue<int?>(Constants.Properties.PartitionKeyDefinitionVersion);
             base.GetValue<Collection<string>>(Constants.Properties.Paths);
+#endif
         }
 
         internal static bool AreEquivalent(

@@ -214,7 +214,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             using (DocumentServiceResponse response =
                                 await this.storeModel.ProcessMessageAsync(request))
                             {
-                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response);
+                                ContainerProperties containerProperties = CosmosResource.FromStream<ContainerProperties>(response, CosmosSerializerContext.Default.ContainerProperties);
                                 
                                 this.telemetryToServiceHelper.GetCollector().CollectCacheInfo(
                                      ClientCollectionCache.TelemetrySourceName,

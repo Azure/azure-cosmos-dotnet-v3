@@ -5,6 +5,8 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text.Json;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
 
@@ -103,7 +105,7 @@ namespace Microsoft.Azure.Cosmos
         {
             return this.ProcessMessage(responseMessage, (cosmosResponseMessage) =>
             {
-                ContainerProperties containerProperties = this.ToObjectpublic<ContainerProperties>(cosmosResponseMessage);
+                ContainerProperties containerProperties = this.ToObjectpublic<ContainerProperties>(cosmosResponseMessage, CosmosSerializerContext.Default.ContainerProperties);
                 return new ContainerResponse(
                     cosmosResponseMessage.StatusCode,
                     cosmosResponseMessage.Headers,
@@ -288,6 +290,22 @@ namespace Microsoft.Azure.Cosmos
             }
 
             return this.serializerCore.FromStream<T>(responseMessage.Content);
+        }
+
+        public T ToObjectpublic<T>(ResponseMessage responseMessage, JsonTypeInfo jsonTypeInfo)
+        {
+            if (responseMessage.Content == null)
+            {
+                return default;
+            }
+
+            if (responseMessage.Content.Length == 0)
+            {
+                responseMessage.Content.Dispose();
+                return default;
+            }
+
+            return (T)JsonSerializer.Deserialize(responseMessage.Content, jsonTypeInfo);
         }
     }
 }

@@ -693,7 +693,7 @@ namespace Microsoft.Azure.Cosmos
         /// <see cref="PartitionKeyDefinition"/> object.
         /// </value>
         [JsonPropertyName(Constants.Properties.PartitionKey)]
-        internal PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
+        public PartitionKeyDefinition PartitionKey { get; set; } = new PartitionKeyDefinition();
 
         /// <summary>
         /// Gets the Resource Id associated with the resource in the Azure Cosmos DB service.
@@ -707,8 +707,7 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonPropertyName(Constants.Properties.RId)]
-
-        internal string ResourceId { get; private set; }
+        public string ResourceId { get; set; }
 
         internal bool HasPartitionKey => this.PartitionKey != null;
 

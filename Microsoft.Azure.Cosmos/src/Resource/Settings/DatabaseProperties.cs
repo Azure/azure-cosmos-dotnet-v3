@@ -112,7 +112,7 @@ namespace Microsoft.Azure.Cosmos
         /// These resource ids are used when building up SelfLinks, a static addressable Uri for each resource within a database account.
         /// </remarks>
         [JsonPropertyName(Constants.Properties.RId)]
-        internal string ResourceId { get; private set; }
+        public string ResourceId { get; set; }
 
         /// <summary>
         /// This contains additional values for scenarios where the SDK is not aware of new fields. 

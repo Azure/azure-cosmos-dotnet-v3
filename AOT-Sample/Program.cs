@@ -2,6 +2,8 @@ namespace AOTSample
 {
     using System;
     using System.Text.Json;
+    using System.Text.Json.Serialization;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos;
 
     public class Program
@@ -18,9 +20,9 @@ namespace AOTSample
                 return;
             }
 
-            CosmosClientOptions clientOptions = new CosmosClientOptions 
-            { 
-                AllowBulkExecution = true, 
+            CosmosClientOptions clientOptions = new CosmosClientOptions
+            {
+                AllowBulkExecution = true,
                 ConnectionMode = ConnectionMode.Gateway,
                 UseSystemTextJsonSerializerWithOptions = new JsonSerializerOptions
                 {
@@ -37,16 +39,100 @@ namespace AOTSample
 
             AccountProperties accountProperties = await client.ReadAccountAsync();
             Console.WriteLine($"Account Name: {accountProperties.Id}");
+
+            FeedIterator db_feed_itr = client.GetDatabaseQueryStreamIterator();
+            while (db_feed_itr.HasMoreResults)
+            {
+                ResponseMessage db_response = await db_feed_itr.ReadNextAsync();
+                if (db_response.IsSuccessStatusCode)
+                {
+                    using JsonDocument dbsQueryResultDoc = JsonDocument.Parse(db_response.Content);
+                    // Console.WriteLine($"Raw JSON (Dbs result): {dbsQueryResultDoc.RootElement.GetRawText()}");
+
+                    if (dbsQueryResultDoc.RootElement.TryGetProperty("Databases", out JsonElement documentsElement))
+                    {
+                        foreach (JsonElement databaseElement in documentsElement.EnumerateArray())
+                        {
+                            string? databaseId = databaseElement.GetProperty("id").GetString();
+                            Console.WriteLine($"Database: {databaseId}");
+
+                            Database database = client.GetDatabase(databaseId);
+                            FeedIterator container_feed_itr = database.GetContainerQueryStreamIterator();
+
+                            while (container_feed_itr.HasMoreResults)
+                            {
+                                ResponseMessage cont_response = await container_feed_itr.ReadNextAsync();
+                                if (cont_response.IsSuccessStatusCode)
+                                {
+                                    using JsonDocument containersQueryResultDoc = JsonDocument.Parse(cont_response.Content);
+                                    Console.WriteLine($"Raw JSON (cont result): {containersQueryResultDoc.RootElement.GetRawText()}");
+
+                                    if (containersQueryResultDoc.RootElement.TryGetProperty("DocumentCollections", out JsonElement containersElement))
+                                    {
+                                        foreach (JsonElement containerElement in containersElement.EnumerateArray())
+                                        {
+                                            string? containerId = containerElement.GetProperty("id").GetString();
+                                            string? PartitionKeyPath = containerElement.TryGetProperty("partitionKey", out JsonElement partitionKeyElement)
+                                                ? partitionKeyElement.GetProperty("paths").EnumerateArray().FirstOrDefault().GetString()
+                                                : null;
+                                            Console.WriteLine($"Container: {containerId} PartitionKeyPath: {PartitionKeyPath}");
+
+                                            Container container = database.GetContainer(containerId);
+
+                                            ContainerProperties containerProperties = await container.ReadContainerAsync();
+                                            Console.WriteLine($"Container-Read: {containerProperties.Id} PartitionKeyPath: {containerProperties.PartitionKeyPath}");
+
+                                            String itemsQuery = "SELECT * FROM c";
+                                            QueryDefinition itemsQueryDef = new QueryDefinition(itemsQuery);
+
+                                            FeedIterator queryIterator = container.GetItemQueryStreamIterator(
+                                                itemsQueryDef,
+                                                requestOptions: new QueryRequestOptions { MaxItemCount = -1 }
+                                            );
+
+                                            while (queryIterator.HasMoreResults)
+                                            {
+                                                ResponseMessage response = await queryIterator.ReadNextAsync();
+
+                                                if (response.Content == null)
+                                                {
+                                                    Console.WriteLine("QueryResponse.Content is null");
+                                                    continue;
+                                                }
+                                                if (response.Content.CanSeek && response.Content.Length == 0)
+                                                {
+                                                    Console.WriteLine("QueryResponse.Content stream is empty");
+                                                    continue;
+                                                }
+
+                                                try
+                                                {
+                                                    using JsonDocument itemsQueryResultDoc = JsonDocument.Parse(response.Content);
+                                                    Console.WriteLine($"Raw JSON (Query result): {itemsQueryResultDoc.RootElement.GetRawText()}");
+
+                                                    if (itemsQueryResultDoc.RootElement.TryGetProperty("Documents", out JsonElement docsElement))
+                                                    {
+                                                        foreach (JsonElement item in docsElement.EnumerateArray())
+                                                        {
+                                                            Console.WriteLine($"Data JSON (Query result): {item.GetRawText()}");
+                                                        }
+                                                    }
+                                                }
+                                                catch (JsonException ex)
+                                                {
+                                                    Console.WriteLine($"JsonException: {ex.Message}");
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             Console.ReadLine();
-
-
-            //FeedIterator<DatabaseProperties> db_feed_itr = client.GetDatabaseQueryIterator<DatabaseProperties>();
-            //while (db_feed_itr.HasMoreResults)
-            //{
-            //    FeedResponse<DatabaseProperties> db_response = await db_feed_itr.ReadNextAsync();
-            //    foreach (DatabaseProperties db_properties in db_response)
-            //    {
-            //        Console.WriteLine($"Database: {db_properties.Id}");
 
             //        Database database = client.GetDatabase(db_properties.Id);
             //        FeedIterator<ContainerProperties> container_feed_itr = database.GetContainerQueryIterator<ContainerProperties>();
