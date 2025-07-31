@@ -67,12 +67,12 @@ namespace Microsoft.Azure.Cosmos.Linq
                         }
 
                         arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(argument, context));
+                    }
 
-                        // Append the weight if exists
-                        if (methodCallExpression.Arguments.Count == 2)
-                        {
-                            arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context));
-                        }
+                    // Append the weight if exists
+                    if (methodCallExpression.Arguments.Count == 2)
+                    {
+                        arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context));
                     }
 
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RRF, arguments.ToImmutableArray());
