@@ -1413,6 +1413,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.GlobalEndpointManager != null)
             {
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.SetPPAFOnRefresh;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }

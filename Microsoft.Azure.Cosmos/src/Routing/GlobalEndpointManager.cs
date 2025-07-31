@@ -46,7 +46,7 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// <summary>
         /// Event that is raised when PPAF (Per Partition Automatic Failover) enablement status changes
         /// </summary>
-        internal event Action<bool> OnEnablePartitionLevelFailoverConfigChanged;
+        internal event Action<bool>? OnEnablePartitionLevelFailoverConfigChanged;
 
         public GlobalEndpointManager(
             IDocumentClientInternal owner,
@@ -773,7 +773,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     && accountProperties.EnablePartitionLevelFailover.HasValue
                     && (this.connectionPolicy.EnablePartitionLevelFailover != accountProperties.EnablePartitionLevelFailover.Value))
                 {
-                    this.OnEnablePartitionLevelFailoverConfigChanged(accountProperties.EnablePartitionLevelFailover.Value);
+                    this.OnEnablePartitionLevelFailoverConfigChanged?.Invoke(accountProperties.EnablePartitionLevelFailover.Value);
                 }
 
                 GlobalEndpointManager.ParseThinClientLocationsFromAdditionalProperties(accountProperties);
