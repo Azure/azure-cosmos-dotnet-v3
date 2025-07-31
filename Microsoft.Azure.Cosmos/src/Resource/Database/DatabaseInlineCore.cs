@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Threading;
     using System.Threading.Tasks;
     using global::Azure;
-    using Microsoft.Azure.Cosmos.Fluent;
+    //using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Telemetry.OpenTelemetry;
 
     // This class acts as a wrapper for environments that use SynchronizationContext.
@@ -22,6 +22,7 @@ namespace Microsoft.Azure.Cosmos
         {
         }
 
+#if !COSMOS_GW_AOT
         public override Task<ContainerResponse> CreateContainerAsync(
             ContainerProperties containerProperties,
             int? throughput = null,
@@ -103,7 +104,6 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
-#if !COSMOS_GW_AOT
         public override Task<UserResponse> CreateUserAsync(string id,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default)
@@ -117,7 +117,6 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.CreateUserAsync(id, requestOptions, trace, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateUser, (response) => new OpenTelemetryResponse<UserProperties>(response)));
         }
-#endif
 
         public override ContainerBuilder DefineContainer(
             string name,
@@ -153,12 +152,14 @@ namespace Microsoft.Azure.Cosmos
                 task: (trace) => base.DeleteStreamAsync(requestOptions, trace, cancellationToken),
                 openTelemetry: new (OpenTelemetryConstants.Operations.DeleteDatabase, (response) => new OpenTelemetryResponse(response)));
         }
+#endif
 
         public override Container GetContainer(string id)
         {
             return base.GetContainer(id);
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator<T> GetContainerQueryIterator<T>(
                    QueryDefinition queryDefinition,
                    string continuationToken = null,
@@ -193,6 +194,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions),
                 this.ClientContext);
         }
+#endif
 
         public override FeedIterator GetContainerQueryStreamIterator(
             string queryText = null,
@@ -264,6 +266,7 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.ReadDatabase, (response) => new OpenTelemetryResponse(response)));
         }
 
+#if !COSMOS_GW_AOT
         public override Task<int?> ReadThroughputAsync(CancellationToken cancellationToken = default)
         {
             return this.ClientContext.OperationHelperAsync(
@@ -367,7 +370,6 @@ namespace Microsoft.Azure.Cosmos
                 openTelemetry: new (OpenTelemetryConstants.Operations.CreateContainer, (response) => new OpenTelemetryResponse(response)));
         }
 
-#if !COSMOS_GW_AOT
         public override Task<UserResponse> UpsertUserAsync(
             string id,
             RequestOptions requestOptions = null,

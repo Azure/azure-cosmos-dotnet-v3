@@ -12,7 +12,6 @@ namespace Microsoft.Azure.Cosmos
     using System.Net;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Cosmos.Fluent;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
 
@@ -56,6 +55,7 @@ namespace Microsoft.Azure.Cosmos
             return this.ClientContext.ResponseFactory.CreateDatabaseResponse(this, response);
         }
 
+#if !COSMOS_GW_AOT
         public async Task<DatabaseResponse> DeleteAsync(
             RequestOptions requestOptions,
             ITrace trace,
@@ -296,6 +296,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions: requestOptions,
                 cancellationToken: cancellationToken);
         }
+#endif
 
         public Task<ResponseMessage> ReadStreamAsync(
             RequestOptions requestOptions,
@@ -312,6 +313,8 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken: cancellationToken);
         }
 
+
+#if !COSMOS_GW_AOT
         public Task<ResponseMessage> DeleteStreamAsync(
             RequestOptions requestOptions,
             ITrace trace,
@@ -420,6 +423,7 @@ namespace Microsoft.Azure.Cosmos
             ContainerProperties containerProperties = new ContainerProperties(id, partitionKeyPath);
             return this.CreateContainerIfNotExistsAsync(containerProperties, throughput, requestOptions, trace, cancellationToken);
         }
+#endif
 
         public override Container GetContainer(string id)
         {
@@ -434,6 +438,7 @@ namespace Microsoft.Azure.Cosmos
                     id);
         }
 
+#if !COSMOS_GW_AOT
         public Task<ResponseMessage> CreateContainerStreamAsync(
             ContainerProperties containerProperties,
             int? throughput,
@@ -457,7 +462,6 @@ namespace Microsoft.Azure.Cosmos
                 cancellationToken);
         }
 
-#if !COSMOS_GW_AOT
         public async Task<UserResponse> CreateUserAsync(
             string id,
             RequestOptions requestOptions,
@@ -554,6 +558,7 @@ namespace Microsoft.Azure.Cosmos
                 requestOptions);
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator<T> GetContainerQueryIterator<T>(
             string queryText = null,
             string continuationToken = null,
@@ -570,6 +575,7 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
         }
+#endif
 
         public override FeedIterator GetContainerQueryStreamIterator(
             QueryDefinition queryDefinition,
@@ -587,6 +593,7 @@ namespace Microsoft.Azure.Cosmos
                databaseId: this.Id);
         }
 
+#if !COSMOS_GW_AOT
         public override FeedIterator<T> GetContainerQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -608,7 +615,6 @@ namespace Microsoft.Azure.Cosmos
                     resourceType: ResourceType.Collection));
         }
 
-#if !COSMOS_GW_AOT
         public override FeedIterator<T> GetUserQueryIterator<T>(
             QueryDefinition queryDefinition,
             string continuationToken = null,
@@ -679,7 +685,6 @@ namespace Microsoft.Azure.Cosmos
                 continuationToken,
                 requestOptions);
         }
-#endif
 
         public override ContainerBuilder DefineContainer(
             string name,
@@ -688,7 +693,6 @@ namespace Microsoft.Azure.Cosmos
             return new ContainerBuilder(this, name, partitionKeyPath);
         }
 
-#if !COSMOS_GW_AOT
         public override ClientEncryptionKey GetClientEncryptionKey(string id)
         {
             if (string.IsNullOrEmpty(id))

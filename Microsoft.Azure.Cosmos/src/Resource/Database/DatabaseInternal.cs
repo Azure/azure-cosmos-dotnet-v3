@@ -13,6 +13,7 @@ namespace Microsoft.Azure.Cosmos
 
         internal abstract CosmosClientContext ClientContext { get; }
 
+#if !COSMOS_GW_AOT
         internal abstract Task<ThroughputResponse> ReadThroughputIfExistsAsync(
             RequestOptions requestOptions,
             CancellationToken cancellationToken = default);
@@ -26,6 +27,7 @@ namespace Microsoft.Azure.Cosmos
             ThroughputProperties throughputProperties,
             RequestOptions requestOptions = null,
             CancellationToken cancellationToken = default);
+#endif
 
         internal abstract Task<string> GetRIDAsync(CancellationToken cancellationToken = default);
 

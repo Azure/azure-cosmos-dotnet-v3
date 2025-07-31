@@ -713,6 +713,7 @@ namespace Microsoft.Azure.Cosmos
             return this.GetDatabase(databaseId).GetContainer(containerId);
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Sends a request for creating a database.
         ///
@@ -1001,6 +1002,7 @@ namespace Microsoft.Azure.Cosmos
                    requestOptions),
                this.ClientContext);
         }
+#endif
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement with parameterized values. It returns a FeedIterator.
@@ -1055,6 +1057,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext);
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
         /// </summary>
@@ -1107,6 +1110,7 @@ namespace Microsoft.Azure.Cosmos
                     requestOptions),
                 this.ClientContext);
         }
+#endif
 
         /// <summary>
         /// This method creates a query for databases under an Cosmos DB Account using a SQL statement. It returns a FeedIterator.
@@ -1164,6 +1168,7 @@ namespace Microsoft.Azure.Cosmos
                 this.ClientContext);
         }
 
+#if !COSMOS_GW_AOT
         /// <summary>
         /// Send a request for creating a database.
         ///
@@ -1211,6 +1216,7 @@ namespace Microsoft.Azure.Cosmos
                  },
                  openTelemetry: new (OpenTelemetryConstants.Operations.CreateDatabase, (response) => new OpenTelemetryResponse(response)));
         }
+#endif
 
         /// <summary>
         /// Removes the DefaultTraceListener which causes locking issues which leads to avability problems. 

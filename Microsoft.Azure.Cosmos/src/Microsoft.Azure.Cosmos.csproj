@@ -48,6 +48,7 @@
 	<ItemGroup>
 	  <Compile Remove="ChangeFeedProcessor\**" />
 	  <Compile Remove="ChangeFeed\**" />
+	  <Compile Remove="Fluent\**" />
 	  <Compile Remove="OSS\Antlr\**" />
 	  <Compile Remove="Query\Core\Parser\**" />
 	  <Compile Remove="Resource\Permission\**" />
@@ -56,6 +57,7 @@
 	  <EmbeddedResource Remove="Batch\**" />
 	  <EmbeddedResource Remove="ChangeFeedProcessor\**" />
 	  <EmbeddedResource Remove="ChangeFeed\**" />
+	  <EmbeddedResource Remove="Fluent\**" />
 	  <EmbeddedResource Remove="OSS\Antlr\**" />
 	  <EmbeddedResource Remove="Query\Core\Parser\**" />
 	  <EmbeddedResource Remove="Resource\Permission\**" />
@@ -63,6 +65,7 @@
 	  <EmbeddedResource Remove="Resource\User\**" />
 	  <None Remove="ChangeFeedProcessor\**" />
 	  <None Remove="ChangeFeed\**" />
+	  <None Remove="Fluent\**" />
 	  <None Remove="OSS\Antlr\**" />
 	  <None Remove="Query\Core\Parser\**" />
 	  <None Remove="Resource\Permission\**" />
