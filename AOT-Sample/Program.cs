@@ -132,6 +132,7 @@ namespace AOTSample
                 }
             }
 
+            Console.WriteLine("!!SUCCESS");
             Console.ReadLine();
 
             //        Database database = client.GetDatabase(db_properties.Id);
