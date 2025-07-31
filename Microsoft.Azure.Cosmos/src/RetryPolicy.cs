@@ -13,7 +13,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly GlobalPartitionEndpointManager partitionKeyRangeLocationCache;
         private readonly GlobalEndpointManager globalEndpointManager;
         private readonly bool enableEndpointDiscovery;
-        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly bool isThinClientEnabled;
         private readonly RetryOptions retryOptions;
 
@@ -27,7 +26,6 @@ namespace Microsoft.Azure.Cosmos
             bool isThinClientEnabled)
         {
             this.enableEndpointDiscovery = connectionPolicy.EnableEndpointDiscovery;
-            this.isPartitionLevelFailoverEnabled = connectionPolicy.EnablePartitionLevelFailover;
             this.globalEndpointManager = globalEndpointManager;
             this.retryOptions = connectionPolicy.RetryOptions;
             this.partitionKeyRangeLocationCache = partitionKeyRangeLocationCache;
@@ -44,7 +42,6 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeLocationCache,
                 this.retryOptions,
                 this.enableEndpointDiscovery,
-                this.isPartitionLevelFailoverEnabled,
                 this.isThinClientEnabled);
 
             return clientRetryPolicy;

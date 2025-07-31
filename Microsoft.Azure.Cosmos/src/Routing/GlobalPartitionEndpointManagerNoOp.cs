@@ -50,5 +50,17 @@ namespace Microsoft.Azure.Cosmos.Routing
         {
             return false;
         }
+
+        /// <inheritdoc/>
+        public override bool IsPartitionLevelCircuitBreakerEnabled()
+        {
+            return false;
+        }
+
+        /// <inheritdoc/>
+        public override bool IsPerPartitionAutomaticFailoverEnabled()
+        {
+            return false;
+        }
     }
 }

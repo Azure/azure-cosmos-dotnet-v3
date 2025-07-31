@@ -282,6 +282,18 @@ namespace Microsoft.Azure.Cosmos.Routing
                 || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
         }
 
+        /// <inheritdoc/>
+        public override bool IsPartitionLevelCircuitBreakerEnabled()
+        {
+            return this.isPartitionLevelCircuitBreakerEnabled;
+        }
+
+        /// <inheritdoc/>
+        public override bool IsPerPartitionAutomaticFailoverEnabled()
+        {
+            return this.isPartitionLevelFailoverEnabled;
+        }
+
         /// <summary>
         /// Disposes the <see cref="GlobalPartitionEndpointManagerCore"/> class.
         /// Usage of the disposeCounter was used to make the operation atomic.

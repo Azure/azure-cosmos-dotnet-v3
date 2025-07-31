@@ -20,7 +20,6 @@ namespace Microsoft.Azure.Cosmos
     internal class ThinClientStoreModel : GatewayStoreModel
     {
         private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
-        private readonly bool isPartitionLevelFailoverEnabled;
         private ThinClientStoreClient thinClientStoreClient;
 
         public ThinClientStoreModel(
@@ -31,25 +30,22 @@ namespace Microsoft.Azure.Cosmos
             DocumentClientEventSource eventSource,
             JsonSerializerSettings serializerSettings,
             CosmosHttpClient httpClient,
-            UserAgentContainer userAgentContainer,
-            bool isPartitionLevelFailoverEnabled = false)
+            UserAgentContainer userAgentContainer)
             : base(endpointManager,
                   sessionContainer,
                   defaultConsistencyLevel,
                   eventSource,
                   serializerSettings,
                   httpClient,
-                  globalPartitionEndpointManager,
-                  isPartitionLevelFailoverEnabled)
+                  globalPartitionEndpointManager)
         {
             this.thinClientStoreClient = new ThinClientStoreClient(
                 httpClient,
                 userAgentContainer,
                 eventSource,
-                isPartitionLevelFailoverEnabled,
+                globalPartitionEndpointManager.IsPerPartitionAutomaticFailoverEnabled(),
                 serializerSettings);
 
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.globalPartitionEndpointManager = globalPartitionEndpointManager;
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                base.MarkEndpointsToHealthyAsync);
@@ -83,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.isPartitionLevelFailoverEnabled
+                if (this.globalPartitionEndpointManager.IsPerPartitionAutomaticFailoverEnabled()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
