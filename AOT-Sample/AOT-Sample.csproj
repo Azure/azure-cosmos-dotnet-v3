@@ -39,6 +39,12 @@
     <_SuppressIlcGeneratedFileMessage>false</_SuppressIlcGeneratedFileMessage>
   </PropertyGroup>
 
+	<!-- Generate mstat files to analyze it with sizoscope tool -->
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<IlcGenerateMstatFile>true</IlcGenerateMstatFile>
+		<IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
+	</PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.HybridRow" Version="1.1.0-preview3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
