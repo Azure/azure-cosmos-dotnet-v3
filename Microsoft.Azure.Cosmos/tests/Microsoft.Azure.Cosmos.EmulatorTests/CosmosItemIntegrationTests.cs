@@ -1601,7 +1601,7 @@
             List<FaultInjectionRule> rules = new List<FaultInjectionRule> { serviceUnavailableRule };
             FaultInjector faultInjector = new FaultInjector(rules);
 
-            bool enablePPAF = true;
+            bool enablePPAF = false;
 
             // Now that the ppaf enablement flag is returned from gateway, we need to intercept the response and remove the flag from the response, so that
             // the environment variable set above is honored.
@@ -1682,7 +1682,7 @@
                     id: itemsList[0].Id,
                     partitionKey: new PartitionKey(itemsList[0].Pk));
 
-                IReadOnlyList<(string regionName, Uri uri)> contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
+                IReadOnlyList<(string regionName, Uri uri)>  contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
                 HashSet<string> contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
 
                 Assert.AreEqual(
@@ -1690,6 +1690,29 @@
                     actual: readResponse.StatusCode);
 
                 CosmosTraceDiagnostics traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
+                Assert.IsNotNull(traceDiagnostic);
+
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContextNoPPAF);
+
+                Assert.IsNull(hedgeContextNoPPAF);
+                Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
+
+                enablePPAF = true;
+                //force database account refresh
+                await cosmosClient.DocumentClient.GlobalEndpointManager.RefreshLocationAsync(true);
+
+                readResponse = await container.ReadItemAsync<CosmosIntegrationTestObject>(
+                    id: itemsList[0].Id,
+                    partitionKey: new PartitionKey(itemsList[0].Pk));
+
+                contactedRegionMapping = readResponse.Diagnostics.GetContactedRegions();
+                contactedRegions = new(contactedRegionMapping.Select(r => r.regionName));
+
+                Assert.AreEqual(
+                    expected: HttpStatusCode.OK,
+                    actual: readResponse.StatusCode);
+
+                traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
 
                 traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContext);
@@ -1719,9 +1742,9 @@
                 traceDiagnostic = readResponse.Diagnostics as CosmosTraceDiagnostics;
                 Assert.IsNotNull(traceDiagnostic);
 
-                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContextNoPPAF);
+                traceDiagnostic.Value.Data.TryGetValue("Hedge Context", out object hedgeContextNoPPAF2);
 
-                Assert.IsNull(hedgeContextNoPPAF);
+                Assert.IsNull(hedgeContextNoPPAF2);
                 Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
             }
             finally
