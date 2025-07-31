@@ -255,11 +255,13 @@ namespace Microsoft.Azure.Cosmos
 
         private IDictionary<string, object> QueryStringToDictConverter()
         {
+#if !COSMOS_GW_AOT
             if (!string.IsNullOrEmpty(this.QueryEngineConfigurationString))
             {
                 return JsonSerializer.Deserialize<Dictionary<string, object>>(this.QueryEngineConfigurationString);
             }
             else
+#endif
             {
                 return new Dictionary<string, object>();
             }

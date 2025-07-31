@@ -27,20 +27,20 @@ namespace Microsoft.Azure.Documents
         /// Represents the minimum possible value of a PartitionKeyRange in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.MinInclusive)]
-        internal string MinInclusive { get; set; }
+        public string MinInclusive { get; set; }
 
         /// <summary>
         /// Represents maximum exclusive value of a PartitionKeyRange (the upper, but not including this value, boundary of PartitionKeyRange)
         /// in the Azure Cosmos DB service.
         /// </summary>
         [JsonPropertyName(Constants.Properties.MaxExclusive)]
-        internal string MaxExclusive { get; set; }
+        public string MaxExclusive { get; set; }
 
         [JsonPropertyName(Constants.Properties.RidPrefix)]
-        internal int? RidPrefix { get; set; }
+        public int? RidPrefix { get; set; }
 
         [JsonPropertyName(Constants.Properties.ThroughputFraction)]
-        internal double ThroughputFraction { get; set; }
+        public double ThroughputFraction { get; set; }
 
 #if !DOCDBCLIENT
         [JsonPropertyName(Constants.Properties.TargetThroughput)]
@@ -48,7 +48,7 @@ namespace Microsoft.Azure.Documents
 #endif
 
         [JsonPropertyName(Constants.Properties.PartitionKeyRangeStatus)]
-        internal PartitionKeyRangeStatus Status { get; set; }
+        public PartitionKeyRangeStatus Status { get; set; }
 
         [JsonPropertyName(Constants.Properties.Lsn)]
         public long LSN { get; set; }
@@ -71,7 +71,7 @@ namespace Microsoft.Azure.Documents
         /// '3' owns archival reference to ['1']
         /// </summary>
         [JsonPropertyName(Constants.Properties.OwnedArchivalPKRangeIds)]
-        internal Collection<string> OwnedArchivalPKRangeIds { get; set; }
+        public Collection<string> OwnedArchivalPKRangeIds { get; set; }
 
         internal Range<string> ToRange()
         {

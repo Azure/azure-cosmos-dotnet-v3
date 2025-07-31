@@ -29,8 +29,6 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
 
-    using Newtonsoft.Json;
-
     using static Microsoft.Azure.Documents.RuntimeConstants;
 
     internal class CosmosQueryClientCore : CosmosQueryClient
@@ -208,7 +206,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Syntax exception are argument exceptions and thrown to the user.
                 message.EnsureSuccessStatusCode();
-                partitionedQueryExecutionInfo = this.clientContext.SerializerCore.FromStream<PartitionedQueryExecutionInfo>(message.Content);
+                partitionedQueryExecutionInfo = (PartitionedQueryExecutionInfo)System.Text.Json.JsonSerializer.Deserialize(message.Content, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
             }
 
             return partitionedQueryExecutionInfo;
@@ -393,7 +391,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 cosmosQueryExecutionInfo = 
                     new Lazy<CosmosQueryExecutionInfo>(
-                        () => JsonConvert.DeserializeObject<CosmosQueryExecutionInfo>(queryExecutionInfoString));
+                        () => System.Text.Json.JsonSerializer.Deserialize(queryExecutionInfoString, CosmosSerializerContext.Default.CosmosQueryExecutionInfo));
             }
 
             QueryPage response = new QueryPage(

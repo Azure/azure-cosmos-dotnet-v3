@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos
 {
     using System;
     using System.IO;
+    using System.Text.Json;
     using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
@@ -94,26 +95,35 @@ namespace Microsoft.Azure.Cosmos
 
         internal Stream ToStreamSqlQuerySpec(SqlQuerySpec input, ResourceType resourceType)
         {
-            ////CosmosSerializer serializer = CosmosSerializerCore.propertiesSerializer;
+#if !COSMOS_GW_AOT
+            CosmosSerializer serializer = CosmosSerializerCore.propertiesSerializer;
 
-            ////// All the public types that support query use the custom serializer
-            ////// Internal types like offers will use the default serializer.
-            ////if (resourceType == ResourceType.Database ||
-            ////    resourceType == ResourceType.Collection ||
-            ////    resourceType == ResourceType.Document ||
-            ////    resourceType == ResourceType.Trigger ||
-            ////    resourceType == ResourceType.UserDefinedFunction ||
-            ////    resourceType == ResourceType.StoredProcedure ||
-            ////    resourceType == ResourceType.Permission ||
-            ////    resourceType == ResourceType.User ||
-            ////    resourceType == ResourceType.Conflict)
-            ////{
-            ////    serializer = this.sqlQuerySpecSerializer;
-            ////}
+            // All the public types that support query use the custom serializer
+            // Internal types like offers will use the default serializer.
+            if (resourceType == ResourceType.Database ||
+                resourceType == ResourceType.Collection ||
+                resourceType == ResourceType.Document ||
+                resourceType == ResourceType.Trigger ||
+                resourceType == ResourceType.UserDefinedFunction ||
+                resourceType == ResourceType.StoredProcedure ||
+                resourceType == ResourceType.Permission ||
+                resourceType == ResourceType.User ||
+                resourceType == ResourceType.Conflict)
+            {
+                serializer = this.sqlQuerySpecSerializer;
+            }
 
-            ////return serializer.ToStream<SqlQuerySpec>(input);
+            return serializer.ToStream<SqlQuerySpec>(input);
+#endif
 
-            throw new NotImplementedException();
+            // Use System.Text.Json to serialize the input to a MemoryStream
+            MemoryStream stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream))
+            {
+                JsonSerializer.Serialize(writer, input, CosmosSerializerContext.Default.SqlQuerySpec);
+            }
+            stream.Position = 0;
+            return stream;
         }
 
         internal CosmosSerializer GetCustomOrDefaultSerializer()

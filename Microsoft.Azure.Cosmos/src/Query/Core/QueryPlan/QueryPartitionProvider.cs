@@ -57,10 +57,12 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
                 throw new ArgumentNullException("queryengineConfiguration");
             }
 
+#if !COSMOS_GW_AOT
             if (queryengineConfiguration.Count == 0)
             {
                 throw new ArgumentException("queryengineConfiguration cannot be empty!");
             }
+#endif
 
             this.disposed = false;
             this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);

@@ -10,10 +10,16 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Text.Json.Serialization.Metadata;
+    using Microsoft.Azure.Cosmos.Query.Core;
+    using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
+    using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Documents;
 
     [JsonSourceGenerationOptions(WriteIndented = true)]
+    [JsonSerializable(typeof(SqlQuerySpec))]
+    [JsonSerializable(typeof(SqlParameterCollection))]
     [JsonSerializable(typeof(PartitionKeyDefinition))]
     [JsonSerializable(typeof(IndexingPolicy))]
     [JsonSerializable(typeof(GeospatialConfig))]
@@ -36,9 +42,16 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(ReplicationPolicy))]
     [JsonSerializable(typeof(ReadPolicy))]
     [JsonSerializable(typeof(FeedResource_Address))]
+    [JsonSerializable(typeof(PartitionKeyRange))]
     [JsonSerializable(typeof(FeedResource_PartitionKeyRange))]
     [JsonSerializable(typeof(Dictionary<string, object>))]
     [JsonSerializable(typeof(Collection<string>))]
+    [JsonSerializable(typeof(PartitionedQueryExecutionInfo))]
+    [JsonSerializable(typeof(HybridSearchQueryInfo))]
+    [JsonSerializable(typeof(Documents.Routing.Range<string>))]
+    [JsonSerializable(typeof(QueryInfo))]
+    [JsonSerializable(typeof(IReadOnlyList<SortOrder>))]
+    [JsonSerializable(typeof(CosmosQueryExecutionInfo))]
     internal partial class CosmosSerializerContext : JsonSerializerContext
     {
     }
