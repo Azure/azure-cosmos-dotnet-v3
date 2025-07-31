@@ -6,16 +6,22 @@
 namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 {
     using System;
+    using System.Buffers;
     using System.Collections.Generic;
     using System.IO;
     using System.Text;
     using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
+    using Microsoft.Azure.Cosmos.Encryption.Custom.RecyclableMemoryStreamMirror;
 
     internal partial class StreamProcessor
     {
         private readonly byte[] encryptionPropertiesNameBytes = Encoding.UTF8.GetBytes(Constants.EncryptedInfo);
+
+        private static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
+
+        private readonly RecyclableMemoryStreamManager streamManager = new ();
 
         internal async Task EncryptStreamAsync(
             Stream inputStream,
@@ -51,18 +57,32 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
 
             Utf8JsonWriter encryptionPayloadWriter = null;
             string encryptPropertyName = null;
-            RentArrayBufferWriter bufferWriter = null;
+
+            RecyclableMemoryStream bufferWriter = null;
+            bool firstRead = true;
 
             while (!isFinalBlock)
             {
+                int offset = 0;
                 int dataLength = await inputStream.ReadAsync(buffer.AsMemory(leftOver, buffer.Length - leftOver), cancellationToken);
+                if (firstRead && buffer.AsSpan(0, Utf8Bom.Length).StartsWith(Utf8Bom))
+                {
+                    offset = Utf8Bom.Length;
+                }
+
                 int dataSize = dataLength + leftOver;
                 isFinalBlock = dataSize == 0;
+
+                if (isFinalBlock)
+                {
+                    break;
+                }
+
                 long bytesConsumed = 0;
 
-                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0, dataSize));
+                bytesConsumed = TransformEncryptBuffer(buffer.AsSpan(0 + offset, dataSize - offset));
 
-                leftOver = dataSize - (int)bytesConsumed;
+                leftOver = dataSize - ((int)bytesConsumed + offset);
 
                 // we need to scale out buffer
                 if (leftOver == dataSize)
@@ -74,10 +94,9 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                 else if (leftOver != 0)
                 {
                     buffer.AsSpan(dataSize - leftOver, leftOver).CopyTo(buffer);
+                    firstRead = false;
                 }
             }
-
-            await inputStream.DisposeAsync();
 
             EncryptionProperties encryptionProperties = new (
                 encryptionFormatVersion: compressionEnabled ? 4 : 3,
@@ -93,6 +112,7 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
             writer.WriteEndObject();
 
             writer.Flush();
+            inputStream.Position = 0;
             outputStream.Position = 0;
 
             long TransformEncryptBuffer(ReadOnlySpan<byte> buffer)
@@ -112,8 +132,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.StartObject:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new RentArrayBufferWriter();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                bufferWriter = new RecyclableMemoryStream(this.streamManager);
+                                encryptionPayloadWriter = new Utf8JsonWriter((IBufferWriter<byte>)bufferWriter);
                                 encryptionPayloadWriter.WriteStartObject();
                             }
                             else
@@ -132,16 +152,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
+                                byte[] bytes = bufferWriter.GetBuffer();
+                                int length = (int)bufferWriter.Length;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Object);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
 #pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
                                 encryptionPayloadWriter.Dispose();
+                                bufferWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
                                 bufferWriter = null;
                             }
 
@@ -149,8 +170,8 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                         case JsonTokenType.StartArray:
                             if (encryptPropertyName != null && encryptionPayloadWriter == null)
                             {
-                                bufferWriter = new RentArrayBufferWriter();
-                                encryptionPayloadWriter = new Utf8JsonWriter(bufferWriter);
+                                bufferWriter = new RecyclableMemoryStream(this.streamManager);
+                                encryptionPayloadWriter = new Utf8JsonWriter((IBufferWriter<byte>)bufferWriter);
                                 encryptionPayloadWriter.WriteStartArray();
                             }
                             else
@@ -164,16 +185,17 @@ namespace Microsoft.Azure.Cosmos.Encryption.Custom.Transformation
                             if (reader.CurrentDepth == 1 && encryptionPayloadWriter != null)
                             {
                                 currentWriter.Flush();
-                                (byte[] bytes, int length) = bufferWriter.WrittenBuffer;
+                                byte[] bytes = bufferWriter.GetBuffer();
+                                int length = (int)bufferWriter.Length;
                                 ReadOnlySpan<byte> encryptedBytes = TransformEncryptPayload(bytes, length, TypeMarker.Array);
                                 writer.WriteBase64StringValue(encryptedBytes);
 
                                 encryptPropertyName = null;
 #pragma warning disable VSTHRD103 // Call async methods when in an async method - this method cannot be async, Utf8JsonReader is ref struct
                                 encryptionPayloadWriter.Dispose();
+                                bufferWriter.Dispose();
 #pragma warning restore VSTHRD103 // Call async methods when in an async method
                                 encryptionPayloadWriter = null;
-                                bufferWriter.Dispose();
                                 bufferWriter = null;
                             }
 
