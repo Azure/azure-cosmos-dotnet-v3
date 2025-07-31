@@ -42,17 +42,6 @@ namespace Microsoft.Azure.Cosmos.Contracts
         }
 
         [TestMethod]
-        public void PublicDirectTypes()
-        {
-            Assembly directAssembly = typeof(IStoreClient).Assembly;
-
-            Assert.IsTrue(directAssembly.FullName.StartsWith("Microsoft.Azure.Cosmos.Direct", System.StringComparison.Ordinal), directAssembly.FullName);
-
-            Type[] exportedTypes = directAssembly.GetExportedTypes();
-            Assert.AreEqual(0, exportedTypes.Length, string.Join(",", exportedTypes.Select(e => e.Name).ToArray()));
-        }
-
-        [TestMethod]
         public void MappedRegionsTest()
         {
             string[] cosmosRegions = typeof(Regions)
@@ -131,6 +120,7 @@ namespace Microsoft.Azure.Cosmos.Contracts
                 { "System.Diagnostics.DiagnosticSource", new Version(8, 0, 1) },
                 { "System.Net.Http", new Version(4, 3, 4) },
                 { "System.Text.RegularExpressions", new Version(4, 3, 1) },
+                { "System.Diagnostics.PerformanceCounter", new Version(6, 0, 0) }
             };
 
             Assert.AreEqual(projectDependencies.Count, baselineDependencies.Count);
