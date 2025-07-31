@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core
         /// <param name="queryText">The text of the database query.</param>
         /// <param name="parameters">The <see cref="T:Microsoft.Azure.Documents.SqlParameterCollection"/> instance, which represents the collection of query parameters.</param>
         /// <param name="resumeFilter">The <see cref="T:Microsoft.Azure.Cosmos.Query.Core.SqlQueryResumeFilter"/> instance, which represents the query resume filter.</param>
-        internal SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlQueryResumeFilter resumeFilter)
+        public SqlQuerySpec(string queryText, SqlParameterCollection parameters, SqlQueryResumeFilter resumeFilter)
         {
             this.QueryText = queryText;
             this.parameters = parameters ?? throw new ArgumentNullException("parameters");

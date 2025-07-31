@@ -9,7 +9,7 @@ namespace Microsoft.Azure.Documents.Routing
     using System.Globalization;
     using System.Text.Json.Serialization;
 
-    public sealed class Range<T> where T : IComparable<T>
+    internal sealed class Range<T> where T : IComparable<T>
     {
         public static readonly IComparer<T> TComparer = typeof(T) == typeof(string) ? (IComparer<T>)StringComparer.Ordinal : Comparer<T>.Default;
 
