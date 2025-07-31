@@ -32,8 +32,8 @@ namespace Microsoft.Azure.Cosmos
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            JsonSerializerSettings serializerSettings = null)
         {
             this.httpClient = httpClient;
             this.SerializerSettings = serializerSettings;

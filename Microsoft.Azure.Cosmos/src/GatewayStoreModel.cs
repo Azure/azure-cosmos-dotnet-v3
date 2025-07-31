@@ -55,8 +55,8 @@ namespace Microsoft.Azure.Cosmos
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
-                serializerSettings,
-                this.globalPartitionEndpointManager);
+                this.globalPartitionEndpointManager,
+                serializerSettings);
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
