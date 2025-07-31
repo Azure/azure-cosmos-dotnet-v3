@@ -132,6 +132,7 @@ namespace Microsoft.Azure.Cosmos
         private RetryPolicy retryPolicy;
         private bool allowOverrideStrongerConsistency = false;
         private int maxConcurrentConnectionOpenRequests = Environment.ProcessorCount * MaxConcurrentConnectionOpenRequestsPerProcessor;
+#if !COSMOS_GW_AOT
         private int openConnectionTimeoutInSeconds = 5;
         private int idleConnectionTimeoutInSeconds = -1;
         private int timerPoolGranularityInSeconds = 1;
@@ -144,8 +145,9 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdPortPoolBindAttempts = DefaultRntbdPortPoolBindAttempts;
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
-        // private bool enableCpuMonitor = DefaultEnableCpuMonitor;
+        private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
+#endif
         private string clientId;
 
         //Consistency
@@ -164,13 +166,15 @@ namespace Microsoft.Azure.Cosmos
         private bool isDisposed;
 
         // creator of TransportClient is responsible for disposing it.
-        private IStoreClientFactory storeClientFactory;
         internal CosmosHttpClient httpClient { get; private set; }
+#if !COSMOS_GW_AOT
+        private IStoreClientFactory storeClientFactory;
 
         // Flag that indicates whether store client factory must be disposed whenever client is disposed.
         // Setting this flag to false will result in store client factory not being disposed when client is disposed.
         // This flag is used to allow shared store client factory survive disposition of a document client while other clients continue using it.
         private bool isStoreClientFactoryCreatedInternally;
+#endif
 
         //Id counter.
         private static int idCounter;
@@ -876,6 +880,7 @@ namespace Microsoft.Azure.Cosmos
             }
 #endif
 
+#if !COSMOS_GW_AOT
             string rntbdMaxConcurrentOpeningConnectionCountOverrideString = Environment.GetEnvironmentVariable(RntbdMaxConcurrentOpeningConnectionCountConfig);
             if (!string.IsNullOrEmpty(rntbdMaxConcurrentOpeningConnectionCountOverrideString))
             {
@@ -923,6 +928,7 @@ namespace Microsoft.Azure.Cosmos
                     this.rntbdPortReuseMode = connectionPolicy.PortReuseMode.Value;
                 }
             }
+#endif 
 
             this.ServiceEndpoint = serviceEndpoint.OriginalString.EndsWith("/", StringComparison.Ordinal) ? serviceEndpoint : new Uri(serviceEndpoint.OriginalString + "/");
 
@@ -1063,7 +1069,10 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
+                throw new NotImplementedException();
+#if !COSMOS_GW_AOT
                 this.InitializeDirectConnectivity(storeClientFactory);
+#endif
             }
 
             return true;
@@ -1308,6 +1317,7 @@ namespace Microsoft.Azure.Cosmos
                 this.StoreModel = null;
             }
 
+#if !COSMOS_GW_AOT
             if (this.storeClientFactory != null)
             {
                 // Dispose only if this store client factory was created and is owned by this instance of document client, otherwise just release the reference
@@ -1318,6 +1328,7 @@ namespace Microsoft.Azure.Cosmos
 
                 this.storeClientFactory = null;
             }
+#endif
 
             if (this.AddressResolver != null)
             {
@@ -1562,6 +1573,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
+#if !COSMOS_GW_AOT
         internal RntbdConnectionConfig RecordTcpSettings(ClientConfigurationTraceDatum clientConfigurationTraceDatum)
         {
             return new RntbdConnectionConfig(this.openConnectionTimeoutInSeconds,
@@ -1571,6 +1583,7 @@ namespace Microsoft.Azure.Cosmos
                                 this.ConnectionPolicy.EnableTcpConnectionEndpointRediscovery,
                                 this.rntbdPortReuseMode);
         }
+#endif
 
         internal virtual async Task EnsureValidClientAsync(ITrace trace)
         {
@@ -4689,7 +4702,7 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 #endif
-        #endregion
+#endregion
 
         #region ReadFeed Impl
         /// <summary>
@@ -5485,7 +5498,7 @@ namespace Microsoft.Azure.Cosmos
             return await this.CreateSnapshotFeedReader(options).ExecuteNextAsync();
         }
 #endif
-        #endregion
+#endregion
 
         #region Stored procs
         /// <summary>
@@ -6651,6 +6664,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType: resourceType);
         }
 
+#if !COSMOS_GW_AOT
         private void InitializeDirectConnectivity(IStoreClientFactory storeClientFactory)
         {
             // Check if we have a store client factory in input and if we do, do not initialize another store client
@@ -6756,6 +6770,7 @@ namespace Microsoft.Azure.Cosmos
             this.enableRntbdChannel = false;
             this.CreateStoreModel(subscribeRntbdStatus: false);
         }
+#endif
 
         private async Task InitializeGatewayConfigurationReaderAsync()
         {

@@ -20,7 +20,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                                                        cosmosClientContext.ClientOptions.WebProxy,
                                                                        cosmosClientContext.ClientOptions.HttpClientFactory);
 
+#if !COSMOS_GW_AOT
             this.RntbdConnectionConfig = cosmosClientContext.DocumentClient.RecordTcpSettings(this);
+#endif
 
             this.OtherConnectionConfig = new OtherConnectionConfig(cosmosClientContext.ClientOptions.LimitToEndpoint,
                                                 cosmosClientContext.ClientOptions.AllowBulkExecution);
@@ -42,7 +44,9 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         public GatewayConnectionConfig GatewayConnectionConfig { get; }
 
+#if !COSMOS_GW_AOT
         public RntbdConnectionConfig RntbdConnectionConfig { get; }
+#endif
 
         public OtherConnectionConfig OtherConnectionConfig { get; }
 
@@ -118,8 +122,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
             jsonTextWriter.WriteFieldName("gw");
             jsonTextWriter.WriteStringValue(this.GatewayConnectionConfig.ToString());
+
+#if !COSMOS_GW_AOT
             jsonTextWriter.WriteFieldName("rntbd");
             jsonTextWriter.WriteStringValue(this.RntbdConnectionConfig.ToString());
+#endif
+
             jsonTextWriter.WriteFieldName("other");
             jsonTextWriter.WriteStringValue(this.OtherConnectionConfig.ToString());
 
