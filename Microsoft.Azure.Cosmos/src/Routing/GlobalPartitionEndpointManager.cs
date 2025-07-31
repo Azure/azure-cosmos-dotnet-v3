@@ -56,12 +56,14 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         /// <summary>
         /// Sets whether per-partition automatic failover is enabled.
+        /// When implemented this operation should be thread-safe using Interlocked. 
         /// </summary>
         /// <param name="isEnabled"></param>
         public abstract void SetIsPPAFEnabled(bool isEnabled);
 
         /// <summary>
         /// Sets whether per-partition circuit breaker is enabled.
+        /// When implemented this operation should be thread-safe using Interlocked. 
         /// </summary>
         /// <param name="isEnabled"></param>
         public abstract void SetIsPPCBEnabled(bool isEnabled);
