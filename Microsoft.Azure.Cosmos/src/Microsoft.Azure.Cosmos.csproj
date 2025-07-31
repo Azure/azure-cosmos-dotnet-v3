@@ -174,7 +174,6 @@
 		<PackageReference Include="StyleCop.Analyzers" Version="1.1.118" PrivateAssets="All" />
 
 		<!--Direct Dependencies-->
-		<PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
 
 		<!--HybridRow Dependencies-->
 		<PackageReference Include="System.Memory" Version="4.5.5" />
