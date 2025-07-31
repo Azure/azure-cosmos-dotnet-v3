@@ -7,10 +7,9 @@ namespace Microsoft.Azure.Documents.Routing
     using System;
     using System.Collections.Generic;
     using System.Globalization;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
-    [JsonObject(MemberSerialization.OptIn)]
-    internal sealed class Range<T> where T: IComparable<T>
+    public sealed class Range<T> where T : IComparable<T>
     {
         public static readonly IComparer<T> TComparer = typeof(T) == typeof(string) ? (IComparer<T>)StringComparer.Ordinal : Comparer<T>.Default;
 
@@ -38,16 +37,16 @@ namespace Microsoft.Azure.Documents.Routing
             return new Range<T>(value, value, true, true);
         }
 
-        [JsonProperty("min")]
+        [JsonPropertyName("min")]
         public T Min { get; private set; }
 
-        [JsonProperty("max")]
+        [JsonPropertyName("max")]
         public T Max { get; private set; }
 
-        [JsonProperty("isMinInclusive")]
+        [JsonPropertyName("isMinInclusive")]
         public bool IsMinInclusive { get; private set; }
 
-        [JsonProperty("isMaxInclusive")]
+        [JsonPropertyName("isMaxInclusive")]
         public bool IsMaxInclusive { get; private set; }
 
         public bool IsSingleValue

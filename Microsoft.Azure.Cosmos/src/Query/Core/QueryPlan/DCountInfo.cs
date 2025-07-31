@@ -4,12 +4,11 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
-    [JsonObject(MemberSerialization.OptIn)]
     internal sealed class DCountInfo
     {
-        [JsonProperty("dCountAlias")]
+        [JsonPropertyName("dCountAlias")]
         public string DCountAlias
         {
             get;

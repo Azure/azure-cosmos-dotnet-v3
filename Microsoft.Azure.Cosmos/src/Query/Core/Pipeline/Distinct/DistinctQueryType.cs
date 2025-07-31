@@ -4,9 +4,12 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
+    using System.Text.Json.Serialization;
+
     /// <summary>
     /// Enum of the type of distinct queries.
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<DistinctQueryType>))]
     internal enum DistinctQueryType
     {
         /// <summary>

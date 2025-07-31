@@ -4,6 +4,9 @@
 
 namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate
 {
+    using System.Text.Json.Serialization;
+
+    [JsonConverter(typeof(JsonStringEnumConverter<AggregateOperator>))]
     internal enum AggregateOperator
     {
         Average,
