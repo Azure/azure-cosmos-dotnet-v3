@@ -29,11 +29,7 @@ namespace Microsoft.Azure.Cosmos
             this.authKeyHashFunction = computeHash ?? throw new ArgumentNullException(nameof(computeHash));
             this.enableAuthFailureTraces = new Lazy<bool>(() =>
             {
-                if (!AppConfig.IsEnabled)
-                {
-                    return false;
-                }
-
+#if !COSMOS_GW_AOT
                 string enableAuthFailureTracesString = System.Configuration.ConfigurationManager.AppSettings[EnableAuthFailureTracesConfig];
                 if (string.IsNullOrEmpty(enableAuthFailureTracesString) || 
                     !bool.TryParse(enableAuthFailureTracesString, out bool enableAuthFailureTracesFlag))
@@ -42,6 +38,8 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 return enableAuthFailureTracesFlag;
+#endif
+                return false;
             });
         }
 

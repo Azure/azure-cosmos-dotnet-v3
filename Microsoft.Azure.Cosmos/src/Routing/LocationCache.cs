@@ -54,7 +54,7 @@ namespace Microsoft.Azure.Cosmos.Routing
             this.unavailableLocationsExpirationTime = TimeSpan.FromSeconds(LocationCache.DefaultUnavailableLocationsExpirationTimeInSeconds);
             this.regionNameMapper = new RegionNameMapper();
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
+#if !(NETSTANDARD15 || NETSTANDARD16) && !COSMOS_GW_AOT
             if (AppConfig.IsEnabled)
             {
                 string unavailableLocationsExpirationTimeInSecondsConfig = System.Configuration.ConfigurationManager.AppSettings[LocationCache.UnavailableLocationsExpirationTimeInSeconds];

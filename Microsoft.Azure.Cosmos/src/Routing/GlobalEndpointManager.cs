@@ -57,7 +57,7 @@ namespace Microsoft.Azure.Cosmos.Routing
 
             this.connectionPolicy.PreferenceChanged += this.OnPreferenceChanged;
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
+#if !(NETSTANDARD15 || NETSTANDARD16) && !COSMOS_GW_AOT
             if (AppConfig.IsEnabled)
             {
                 string backgroundRefreshLocationTimeIntervalInMSConfig = System.Configuration.ConfigurationManager.AppSettings[GlobalEndpointManager.BackgroundRefreshLocationTimeIntervalInMS];

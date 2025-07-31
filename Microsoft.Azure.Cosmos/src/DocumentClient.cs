@@ -144,7 +144,7 @@ namespace Microsoft.Azure.Cosmos
         private int rntbdPortPoolBindAttempts = DefaultRntbdPortPoolBindAttempts;
         private int rntbdReceiveHangDetectionTimeSeconds = DefaultRntbdReceiveHangDetectionTimeSeconds;
         private int rntbdSendHangDetectionTimeSeconds = DefaultRntbdSendHangDetectionTimeSeconds;
-        private bool enableCpuMonitor = DefaultEnableCpuMonitor;
+        // private bool enableCpuMonitor = DefaultEnableCpuMonitor;
         private int rntbdMaxConcurrentOpeningConnectionCount = 5;
         private string clientId;
 
@@ -709,7 +709,7 @@ namespace Microsoft.Azure.Cosmos
                 return new QueryPartitionProvider(this.accountServiceConfiguration.QueryEngineConfiguration);
             }, CancellationToken.None);
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
+#if !(NETSTANDARD15 || NETSTANDARD16) && !COSMOS_GW_AOT
             if (AppConfig.IsEnabled)
             {
                 // For tests we want to allow stronger consistency during construction or per call

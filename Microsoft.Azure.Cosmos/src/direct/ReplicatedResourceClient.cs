@@ -38,7 +38,7 @@ namespace Microsoft.Azure.Documents
 
         private static readonly Lazy<bool> enableGlobalStrong = new Lazy<bool>(() => {
             bool isGlobalStrongEnabled = true;
-#if !(NETSTANDARD15 || NETSTANDARD16)
+#if !(NETSTANDARD15 || NETSTANDARD16) && !COSMOS_GW_AOT
         if (AppConfig.IsEnabled)
         {
             string isGlobalStrongEnabledConfig = System.Configuration.ConfigurationManager.AppSettings[ReplicatedResourceClient.EnableGlobalStrongConfigurationName];

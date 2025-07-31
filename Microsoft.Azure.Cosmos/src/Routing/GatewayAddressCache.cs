@@ -136,7 +136,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 this.validateUnknownReplicas = true;
             }
 
-#if !(NETSTANDARD15 || NETSTANDARD16)
+#if !(NETSTANDARD15 || NETSTANDARD16) && !COSMOS_GW_AOT
             if (AppConfig.IsEnabled)
             {
                 if (int.TryParse(System.Configuration.ConfigurationManager.AppSettings[GatewayAddressCache.AddressResolutionBatchSize], out int userSpecifiedBatchSize))
