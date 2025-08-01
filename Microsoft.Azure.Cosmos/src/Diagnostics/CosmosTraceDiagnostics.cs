@@ -70,7 +70,19 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 return false;
             }
 
-            foreach (object datum in currentTrace.Data.Values)
+            // Use thread-safe enumeration to avoid concurrency issues  
+            object[] dataSnapshot = null;
+            if (currentTrace is Tracing.Trace concreteTrace)
+            {
+                var dataSnapshotPairs = concreteTrace.GetDataSnapshot();
+                dataSnapshot = dataSnapshotPairs.Select(kvp => kvp.Value).ToArray();
+            }
+            else
+            {
+                dataSnapshot = currentTrace.Data.Values.ToArray();
+            }
+
+            foreach (object datum in dataSnapshot)
             {
                 if (datum is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
@@ -84,7 +96,18 @@ namespace Microsoft.Azure.Cosmos.Diagnostics
                 }
             }
 
-            foreach (ITrace childTrace in currentTrace.Children)
+            // Use thread-safe enumeration to avoid concurrency issues
+            ITrace[] childrenSnapshot = null;
+            if (currentTrace is Tracing.Trace concreteTraceForChildren)
+            {
+                childrenSnapshot = concreteTraceForChildren.GetChildrenSnapshot();
+            }
+            else
+            {
+                childrenSnapshot = currentTrace.Children.ToArray();
+            }
+
+            foreach (ITrace childTrace in childrenSnapshot)
             {
                 if (this.WalkTraceTreeForGoneException(childTrace))
                 {
