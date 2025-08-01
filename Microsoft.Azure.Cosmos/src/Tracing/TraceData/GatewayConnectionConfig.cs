@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
     using System.Globalization;
     using System.Net;
     using System.Net.Http;
+    using System.Text.Json;
 
     internal class GatewayConnectionConfig
     {
@@ -27,7 +28,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                 (int)requestTimeout.TotalSeconds,
                                 webProxy != null,
                                 httpClientFactory != null));
-            this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
+            this.lazyJsonString = new Lazy<string>(() => JsonSerializer.Serialize(this, CosmosSerializerContext.Default.GatewayConnectionConfig));
         }
 
         public int MaxConnectionLimit { get; }

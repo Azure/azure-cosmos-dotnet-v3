@@ -6,9 +6,12 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 {
     using System;
     using System.Globalization;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
 
     internal class OtherConnectionConfig
     {
+        [JsonConstructor]
         public OtherConnectionConfig(
             bool limitToEndpoint,
             bool allowBulkExecution)
@@ -19,7 +22,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                                  "(ed:{0}, be:{1})",
                                  limitToEndpoint,
                                  allowBulkExecution));
-            this.lazyJsonString = new Lazy<string>(() => Newtonsoft.Json.JsonConvert.SerializeObject(this));
+            this.lazyJsonString = new Lazy<string>(() => JsonSerializer.Serialize(this, CosmosSerializerContext.Default.OtherConnectionConfig));
         }
 
         public bool LimitToEndpoint { get; }

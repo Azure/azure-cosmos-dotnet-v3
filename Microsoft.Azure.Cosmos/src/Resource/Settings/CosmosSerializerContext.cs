@@ -15,9 +15,15 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
     using Microsoft.Azure.Cosmos.Scripts;
+    using Microsoft.Azure.Cosmos.Telemetry.Models;
+    using Microsoft.Azure.Cosmos.Tracing.TraceData;
     using Microsoft.Azure.Documents;
 
     [JsonSourceGenerationOptions(WriteIndented = true)]
+    [JsonSerializable(typeof(AzureVMMetadata))]
+    [JsonSerializable(typeof(ConsistencyConfig))]
+    [JsonSerializable(typeof(GatewayConnectionConfig))]
+    [JsonSerializable(typeof(OtherConnectionConfig))]
     [JsonSerializable(typeof(SqlQuerySpec))]
     [JsonSerializable(typeof(SqlParameterCollection))]
     [JsonSerializable(typeof(PartitionKeyDefinition))]

@@ -10,7 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text;
     using Microsoft.Azure.Cosmos.CosmosElements;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
+    // using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
     using Microsoft.Azure.Cosmos.Serializer;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -173,6 +173,7 @@ namespace Microsoft.Azure.Cosmos
                 responseMessageHeaders, 
                 isBase64Encoded: false);
 
+#if !COSMOS_GW_AOT
             this.QueryAdviceText = (this.Headers?.QueryAdvice != null)
                 ? new Lazy<string>(() =>
                 {
@@ -180,6 +181,7 @@ namespace Microsoft.Azure.Cosmos
                     return queryAdvice?.ToString();
                 })
                 : null;
+#endif
 
             this.RequestMessage = requestMessage;
         }

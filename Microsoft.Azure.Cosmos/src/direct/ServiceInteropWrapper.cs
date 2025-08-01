@@ -57,6 +57,10 @@ namespace Microsoft.Azure.Documents
         /// </summary>
         internal static bool CheckIfAssembliesExist(out string validationMessage)
         {
+            validationMessage = "Disabled for AOT";
+            return false;
+
+#if !COSMOS_GW_AOT
             validationMessage = string.Empty;
             try
             {
@@ -121,6 +125,7 @@ namespace Microsoft.Azure.Documents
             }
             
             return false;
+#endif
         }
 
 #if !NETSTANDARD16

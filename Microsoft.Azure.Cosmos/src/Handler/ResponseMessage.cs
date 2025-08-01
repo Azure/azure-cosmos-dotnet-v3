@@ -12,7 +12,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Diagnostics;
     using Microsoft.Azure.Cosmos.Linq;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
-    using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
+    // using Microsoft.Azure.Cosmos.Query.Core.QueryAdvisor;
     using Microsoft.Azure.Cosmos.Resource.CosmosExceptions;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
@@ -86,6 +86,7 @@ namespace Microsoft.Azure.Cosmos
 
             this.IndexUtilizationText = ResponseMessage.DecodeIndexMetrics(this.Headers, isBase64Encoded: false);
 
+#if !COSMOS_GW_AOT
             this.QueryAdviceText = (this.Headers?.QueryAdvice != null)
                 ? new Lazy<string>(() =>
                 {
@@ -93,6 +94,7 @@ namespace Microsoft.Azure.Cosmos
                     return queryAdvice?.ToString();
                 })
                 : null;
+#endif
 
             if (requestMessage != null && requestMessage.Trace != null)
             {
@@ -152,6 +154,7 @@ namespace Microsoft.Azure.Cosmos
         /// </value>
         public string IndexMetrics => this.IndexUtilizationText?.Value;
 
+#if !COSMOS_GW_AOT
         private Lazy<string> QueryAdviceText { get; }
 
         /// <summary>
@@ -163,6 +166,7 @@ namespace Microsoft.Azure.Cosmos
         /// The query advice.
         /// </value>
         internal string QueryAdvice => this.QueryAdviceText?.Value;
+#endif
 
         /// <summary>
         /// Gets the original request message

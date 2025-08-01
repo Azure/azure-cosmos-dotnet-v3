@@ -51,6 +51,7 @@
 	  <Compile Remove="Fluent\**" />
 	  <Compile Remove="OSS\Antlr\**" />
 	  <Compile Remove="Query\Core\Parser\**" />
+	  <Compile Remove="Query\Core\QueryAdvisor\**" />
 	  <Compile Remove="Resource\Permission\**" />
 	  <Compile Remove="Resource\Scripts\**" />
 	  <Compile Remove="Resource\User\**" />
@@ -60,6 +61,7 @@
 	  <EmbeddedResource Remove="Fluent\**" />
 	  <EmbeddedResource Remove="OSS\Antlr\**" />
 	  <EmbeddedResource Remove="Query\Core\Parser\**" />
+	  <EmbeddedResource Remove="Query\Core\QueryAdvisor\**" />
 	  <EmbeddedResource Remove="Resource\Permission\**" />
 	  <EmbeddedResource Remove="Resource\Scripts\**" />
 	  <EmbeddedResource Remove="Resource\User\**" />
@@ -68,6 +70,7 @@
 	  <None Remove="Fluent\**" />
 	  <None Remove="OSS\Antlr\**" />
 	  <None Remove="Query\Core\Parser\**" />
+	  <None Remove="Query\Core\QueryAdvisor\**" />
 	  <None Remove="Resource\Permission\**" />
 	  <None Remove="Resource\Scripts\**" />
 	  <None Remove="Resource\User\**" />
@@ -98,17 +101,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Remove="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml" />
-	</ItemGroup>
-
-	<ItemGroup>
 		<None Include="..\..\ThirdPartyNotice.txt" Pack="true" PackagePath="" Visible="false" Link="ThirdPartyNotice.txt" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<EmbeddedResource Include="Query\Core\QueryAdvisor\QueryAdviceRuleDocumentation.xml">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</EmbeddedResource>
 	</ItemGroup>
 
 	<ItemGroup>
