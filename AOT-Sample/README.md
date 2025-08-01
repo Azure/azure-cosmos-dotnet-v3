@@ -43,6 +43,11 @@ dotnet publish AOT-Sample.csproj -c Release --verbosity normal
 ./bin/Release/net9.0/win-arm64/native/AOT-Sample.exe
 ```
 
+### AOT warnings
+```
+PS Q:\src\azure-cosmos-dotnet-v3\scripts> .\Analyze-AOT-Compact.ps1
+```
+
 ## Known Limitations
 
 The current Microsoft.Azure.Cosmos SDK (3.44.0) has some AOT/trim warnings that are suppressed:
