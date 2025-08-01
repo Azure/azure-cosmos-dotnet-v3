@@ -1726,7 +1726,10 @@ namespace Microsoft.Azure.Cosmos.Client.Tests
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(this.mockedClient.Object, connectionPolicy);
 
             this.partitionKeyRangeLocationCache = enablePartitionLevelFailover
-                ? new GlobalPartitionEndpointManagerCore(endpointManager)
+                ? new GlobalPartitionEndpointManagerCore(
+                    endpointManager,
+                    isPartitionLevelFailoverEnabled: true,
+                    isPartitionLevelCircuitBreakerEnabled: true)
                 : GlobalPartitionEndpointManagerNoOp.Instance;
 
             return endpointManager;

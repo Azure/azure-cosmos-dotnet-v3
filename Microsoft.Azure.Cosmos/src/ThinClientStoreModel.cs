@@ -79,7 +79,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.globalPartitionEndpointManager.IsPPAFEnabled()
+                if (this.globalPartitionEndpointManager.IsPartitionLevelFailoverEnabled()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {

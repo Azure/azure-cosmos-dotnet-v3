@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(
                     request,
-                    this.globalPartitionEndpointManager.IsPPAFEnabled()),
+                    this.globalPartitionEndpointManager.IsPartitionLevelFailoverEnabled()),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);

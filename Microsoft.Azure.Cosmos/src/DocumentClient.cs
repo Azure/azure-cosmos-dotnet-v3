@@ -1411,7 +1411,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.GlobalEndpointManager != null)
             {
-                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.SetPPAFOnRefresh;
+                this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged -= this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
                 this.GlobalEndpointManager.Dispose();
                 this.GlobalEndpointManager = null;
             }
@@ -6843,7 +6843,7 @@ namespace Microsoft.Azure.Cosmos
             AccountProperties accountProperties = this.accountServiceConfiguration.AccountProperties;
             this.UseMultipleWriteLocations = this.ConnectionPolicy.UseMultipleWriteLocations && accountProperties.EnableMultipleWriteLocations;
             this.GlobalEndpointManager.InitializeAccountPropertiesAndStartBackgroundRefresh(accountProperties);
-            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.SetPPAFOnRefresh;
+            this.GlobalEndpointManager.OnEnablePartitionLevelFailoverConfigChanged += this.UpdatePartitionLevelFailoverConfigWithAccountRefresh;
         }
 
         internal string GetUserAgentFeatures()
@@ -6889,26 +6889,32 @@ namespace Microsoft.Azure.Cosmos
             }
         }
 
-        private void SetPPAFOnRefresh(bool isEnabled)
+        private void UpdatePartitionLevelFailoverConfigWithAccountRefresh(
+            bool isEnabled)
         {
-            this.ConnectionPolicy.EnablePartitionLevelFailover = isEnabled;
-            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
+            // Only update if client-level override is not disabled
+            if (this.ConnectionPolicy.DisablePartitionLevelFailoverClientLevelOverride)
+            {
+                DefaultTrace.TraceInformation("DocumentClient: PPAF change ignored due to client-level override disabled");
+                return;
+            }
+
+            DefaultTrace.TraceInformation(
+                "DocumentClient: Updating EnablePartitionLevelFailover to {0}",
+                isEnabled);
+
+            // Step 1: Enable partition level failover.
             this.PartitionKeyRangeLocation.SetIsPPAFEnabled(isEnabled);
+            this.ConnectionPolicy.EnablePartitionLevelFailover = isEnabled;
+
+            // Step 2: Enable partition level circuit breaker.
             this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= isEnabled;
 
-            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
-
+            // Step 3: Enable default hedging strategy if partition level failover is enabled.
             if (isEnabled && this.ConnectionPolicy.AvailabilityStrategy == null)
             {
-                // The default threshold is the minimum value of 1 second and a fraction (currently it's half) of
-                // the request timeout value provided by the end customer.
-                double defaultThresholdInMillis = Math.Min(
-                    DocumentClient.DefaultHedgingThresholdInMilliseconds,
-                    this.ConnectionPolicy.RequestTimeout.TotalMilliseconds / 2);
-
-                this.ConnectionPolicy.AvailabilityStrategy = AvailabilityStrategy.SDKDefaultCrossRegionHedgingStrategyForPPAF(
-                    threshold: TimeSpan.FromMilliseconds(defaultThresholdInMillis),
-                    thresholdStep: TimeSpan.FromMilliseconds(DocumentClient.DefaultHedgingThresholdStepInMilliseconds));
+                this.InitializePartitionLevelFailoverWithDefaultHedging();
             }
             else
             {
@@ -6918,6 +6924,11 @@ namespace Microsoft.Azure.Cosmos
                     this.ConnectionPolicy.AvailabilityStrategy = null;
                 }
             }
+
+            // Step 4: Update the user agent features.
+            this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
+
+            DefaultTrace.TraceInformation("DocumentClient: Successfully updated PPAF configuration dynamically");
         }
 
         internal void CaptureSessionToken(DocumentServiceRequest request, DocumentServiceResponse response)
