@@ -1058,14 +1058,14 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) && 
+            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
                 (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
 
-            this.PartitionKeyRangeLocation =
-                this.ConnectionPolicy.EnablePartitionLevelFailover
+            this.PartitionKeyRangeLocation = 
+                this.ConnectionPolicy.EnablePartitionLevelFailover 
                 || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker
                     ? new GlobalPartitionEndpointManagerCore(
                         this.GlobalEndpointManager,
@@ -1090,19 +1090,19 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings: this.serializerSettings,
                 httpClient: this.httpClient,
                 globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
-                isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
                 enableThinClientMode: this.isThinClientEnabled,
+                isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
                 userAgentContainer: this.ConnectionPolicy.UserAgentContainer);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
             this.collectionCache = new ClientCollectionCache(
-                sessionContainer: this.sessionContainer,
-                storeModel: this.GatewayStoreModel,
-                tokenProvider: this,
-                retryPolicy: this.retryPolicy,
-                telemetryToServiceHelper: this.telemetryToServiceHelper,
-                enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
+                    sessionContainer: this.sessionContainer, 
+                    storeModel: this.GatewayStoreModel, 
+                    tokenProvider: this, 
+                    retryPolicy: this.retryPolicy,
+                    telemetryToServiceHelper: this.telemetryToServiceHelper,
+                    enableAsyncCacheExceptionNoSharing: this.enableAsyncCacheExceptionNoSharing);
             this.partitionKeyRangeCache = new PartitionKeyRangeCache(this, this.GatewayStoreModel, this.collectionCache, this.GlobalEndpointManager, this.enableAsyncCacheExceptionNoSharing);
             this.ResetSessionTokenRetryPolicy = new ResetSessionTokenRetryPolicyFactory(this.sessionContainer, this.collectionCache, this.retryPolicy);
 

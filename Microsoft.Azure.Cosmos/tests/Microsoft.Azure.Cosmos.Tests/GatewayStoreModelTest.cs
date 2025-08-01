@@ -149,7 +149,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -211,7 +212,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -562,7 +564,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -624,7 +627,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -688,7 +692,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -837,7 +842,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
             INameValueCollection headers = new RequestNameValueCollection();
@@ -946,7 +952,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
             INameValueCollection headers = new RequestNameValueCollection();
@@ -987,7 +994,9 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
+
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
             Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
 
@@ -1082,7 +1091,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
 
@@ -1264,8 +1274,8 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 null,
                 GlobalPartitionEndpointManagerNoOp.Instance,
-                isPartitionLevelFailoverEnabled: true,
                 enableThinClientMode: true,
+                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -1397,8 +1407,8 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 null,
                 GlobalPartitionEndpointManagerNoOp.Instance,
-                isPartitionLevelFailoverEnabled: true,
                 enableThinClientMode: true,
+                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
@@ -1439,8 +1449,8 @@ namespace Microsoft.Azure.Cosmos
                 null,
                 null,
                 GlobalPartitionEndpointManagerNoOp.Instance,
-                isPartitionLevelFailoverEnabled: true,
                 enableThinClientMode: true,
+                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
@@ -1508,8 +1518,8 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings,
                 httpClient,
                 globalPartitionEndpointManager.Object,
-                isPartitionLevelFailoverEnabled: true,
                 enableThinClientMode: true,
+                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
@@ -1603,8 +1613,8 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings,
                 httpClient,
                 globalPartitionEndpointManager.Object,
-                isPartitionLevelFailoverEnabled: true,
                 enableThinClientMode: true,
+                isPartitionLevelFailoverEnabled: true,
                 userAgentContainer);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
@@ -1704,7 +1714,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                enableThinClientMode: false);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false).Object;
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false).Object;

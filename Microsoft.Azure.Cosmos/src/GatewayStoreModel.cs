@@ -51,8 +51,8 @@ namespace Microsoft.Azure.Cosmos
              JsonSerializerSettings serializerSettings,
              CosmosHttpClient httpClient,
              GlobalPartitionEndpointManager globalPartitionEndpointManager,
+             bool enableThinClientMode,
              bool isPartitionLevelFailoverEnabled = false,
-             bool enableThinClientMode = false,
              UserAgentContainer userAgentContainer = null)
         {
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
@@ -70,7 +70,7 @@ namespace Microsoft.Azure.Cosmos
             this.enableThinClientMode = enableThinClientMode;
             this.userAgentContainer = userAgentContainer;
 
-            if (enableThinClientMode && userAgentContainer != null)
+            if (enableThinClientMode)
             {
                 this.thinClientStoreClient = new ThinClientStoreClient(
                     httpClient,
@@ -86,6 +86,8 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
+            DocumentServiceResponse response;
+
             await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
@@ -93,44 +95,41 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeCache,
                 this.clientCollectionCache,
                 this.endpointManager);
-
-            if (request.ResourceType.Equals(ResourceType.Document) &&
-                this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
-            {
-                request.RequestContext.RegionName = regionName;
-            }
-
-            // This is applicable for both per partition automatic failover and per partition circuit breaker.
-            if (this.isPartitionLevelFailoverEnabled
-                && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
-                && request.ResourceType.IsPartitioned())
-            {
-                (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
-                    request: request,
-                    sessionContainer: this.sessionContainer,
-                    partitionKeyRangeCache: this.partitionKeyRangeCache,
-                    clientCollectionCache: this.clientCollectionCache,
-                    refreshCache: false);
-
-                request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
-                this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
-            }
-
-            Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
-            bool canUseThinClient =
-                this.thinClientStoreClient != null &&
-                GatewayStoreModel.IsOperationSupportedByThinClient(request) &&
-                thinClientEndpoint != null;
-
-            DocumentServiceResponse response;
-
             try
             {
-                if (canUseThinClient)
+                if (request.ResourceType.Equals(ResourceType.Document) &&
+                this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
                 {
-                    Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                    request.RequestContext.RegionName = regionName;
+                }
+
+                // This is applicable for both per partition automatic failover and per partition circuit breaker.
+                if (this.isPartitionLevelFailoverEnabled
+                    && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
+                    && request.ResourceType.IsPartitioned())
+                {
+                    (bool isSuccess, PartitionKeyRange partitionKeyRange) = await TryResolvePartitionKeyRangeAsync(
+                        request: request,
+                        sessionContainer: this.sessionContainer,
+                        partitionKeyRangeCache: this.partitionKeyRangeCache,
+                        clientCollectionCache: this.clientCollectionCache,
+                        refreshCache: false);
+
+                    request.RequestContext.ResolvedPartitionKeyRange = partitionKeyRange;
+                    this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
+                }
+
+                bool canUseThinClient =
+                    this.thinClientStoreClient != null &&
+                    GatewayStoreModel.IsOperationSupportedByThinClient(request);
+
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
                         ? this.GetFeedUri(request)
                         : this.GetEntityUri(request);
+
+                if (canUseThinClient)
+                {
+                    Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
 
                     AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
 
@@ -145,10 +144,6 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else
                 {
-                    Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType)
-                        ? this.GetFeedUri(request)
-                        : this.GetEntityUri(request);
-
                     response = await this.gatewayStoreClient.InvokeAsync(
                         request,
                         request.ResourceType,
