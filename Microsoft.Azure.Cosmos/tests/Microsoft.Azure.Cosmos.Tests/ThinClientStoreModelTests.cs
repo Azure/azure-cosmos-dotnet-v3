@@ -343,6 +343,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPartitionLevelFailoverEnabled())
+                .Returns(true)
+                .Verifiable();
+
             globalPartitionEndpointManager
                 .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
                 .Returns(true)
