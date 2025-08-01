@@ -34,9 +34,13 @@ dotnet run
 
 ### AOT Release Build
 ```bash
-dotnet publish -c Release
+cd .\AOT-Sample\
+rm .\obj\ -Recurse -Force
+rm .\bin\ -Recurse -Force
+dotnet publish AOT-Sample.csproj -c Release --verbosity normal
+
 # Run the native executable
-./bin/Release/net9.0/win-arm64/publish/AOT-Sample.exe
+./bin/Release/net9.0/win-arm64/native/AOT-Sample.exe
 ```
 
 ## Known Limitations
