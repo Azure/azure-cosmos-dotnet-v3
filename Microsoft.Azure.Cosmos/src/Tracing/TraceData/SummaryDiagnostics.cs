@@ -38,9 +38,24 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
 
         private void CollectSummaryFromTraceTree(ITrace currentTrace)
         {
-            foreach (object datums in currentTrace.Data.Values)
+            // Create snapshots to avoid concurrency issues
+            KeyValuePair<string, object>[] dataSnapshot = null;
+            ITrace[] childrenSnapshot = null;
+
+            if (currentTrace is Trace concreteTrace)
             {
-                if (datums is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
+                dataSnapshot = concreteTrace.GetDataSnapshot();
+                childrenSnapshot = concreteTrace.GetChildrenSnapshot();
+            }
+            else
+            {
+                dataSnapshot = currentTrace.Data.ToArray();
+                childrenSnapshot = currentTrace.Children.ToArray();
+            }
+
+            foreach (KeyValuePair<string, object> datum in dataSnapshot)
+            {
+                if (datum.Value is ClientSideRequestStatisticsTraceDatum clientSideRequestStatisticsTraceDatum)
                 {
                     this.AggregateStatsFromStoreResults(clientSideRequestStatisticsTraceDatum.StoreResponseStatisticsList);
                     this.AggregateGatewayStatistics(clientSideRequestStatisticsTraceDatum.HttpResponseStatisticsList);
@@ -48,7 +63,7 @@ namespace Microsoft.Azure.Cosmos.Tracing.TraceData
                 }
             }
 
-            foreach (ITrace childTrace in currentTrace.Children)
+            foreach (ITrace childTrace in childrenSnapshot)
             {
                 this.CollectSummaryFromTraceTree(childTrace);
             }

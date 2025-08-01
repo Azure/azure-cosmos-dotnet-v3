@@ -124,18 +124,48 @@ namespace Microsoft.Azure.Cosmos.Tracing
 
         public void AddDatum(string key, TraceDatum traceDatum)
         {
-            this.data.Value.Add(key, traceDatum);
+            lock (this.children)
+            {
+                this.data.Value.Add(key, traceDatum);
+            }
             this.Summary.UpdateRegionContacted(traceDatum);
         }
 
         public void AddDatum(string key, object value)
         {
-            this.data.Value.Add(key, value);
+            lock (this.children)
+            {
+                this.data.Value.Add(key, value);
+            }
         }
 
         public void AddOrUpdateDatum(string key, object value)
         {
-            this.data.Value[key] = value;
+            lock (this.children)
+            {
+                this.data.Value[key] = value;
+            }
+        }
+
+        internal ITrace[] GetChildrenSnapshot()
+        {
+            lock (this.children)
+            {
+                return this.children.ToArray();
+            }
+        }
+
+        internal KeyValuePair<string, object>[] GetDataSnapshot()
+        {
+            if (!this.data.IsValueCreated)
+            {
+                return new KeyValuePair<string, object>[0];
+            }
+
+            lock (this.children)
+            {
+                return this.data.Value.ToArray();
+            }
         }
     }
 }
