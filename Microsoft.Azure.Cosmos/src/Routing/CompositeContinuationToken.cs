@@ -4,8 +4,8 @@
 
 namespace Microsoft.Azure.Cosmos.Routing
 {
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// A composite continuation token that has both backend continuation token and partition range information. 
@@ -21,15 +21,14 @@ namespace Microsoft.Azure.Cosmos.Routing
             public const string Max = "max";
         }
 
-        [JsonProperty(PropertyNames.Token)]
+        [JsonPropertyName(PropertyNames.Token)]
         public string Token
         {
             get;
             set;
         }
 
-        [JsonProperty(PropertyNames.Range)]
-        [JsonConverter(typeof(RangeJsonConverter))]
+        [JsonPropertyName(PropertyNames.Range)]
         public Documents.Routing.Range<string> Range
         {
             get;

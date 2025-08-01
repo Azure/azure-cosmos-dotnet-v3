@@ -11,7 +11,7 @@ namespace AOTSample
         public static async Task Main(string[] _)
         {
             const string CosmosBaseUri = "https://localhost:8081";
-            string? primaryKey = Environment.GetEnvironmentVariable("KEY");
+            string? primaryKey = "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw=="; // Environment.GetEnvironmentVariable("KEY");
             Console.WriteLine($"COSMOS_PRIMARY_KEY: {primaryKey}");
 
             if (string.IsNullOrEmpty(primaryKey))

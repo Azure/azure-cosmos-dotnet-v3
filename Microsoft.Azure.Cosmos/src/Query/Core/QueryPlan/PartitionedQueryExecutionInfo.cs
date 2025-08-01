@@ -6,8 +6,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using System.Text.Json.Serialization;
-    using Newtonsoft.Json;
     using Constants = Documents.Constants;
 
     internal sealed class PartitionedQueryExecutionInfo
@@ -61,7 +61,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             try
             {
-                partitionedQueryExecutionInfo = JsonConvert.DeserializeObject<PartitionedQueryExecutionInfo>(serializedQueryPlan);
+                partitionedQueryExecutionInfo = JsonSerializer.Deserialize<PartitionedQueryExecutionInfo>(serializedQueryPlan);
                 return true;
             }
             catch (JsonException)

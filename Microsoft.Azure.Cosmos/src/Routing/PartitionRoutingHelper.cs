@@ -11,6 +11,7 @@ namespace Microsoft.Azure.Cosmos.Routing
     using System.Globalization;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Core.Trace;
     using Microsoft.Azure.Cosmos.Query.Core;
@@ -87,7 +88,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 if (!enableCrossPartitionQuery)
                 {
                     BadRequestException exception = new BadRequestException(RMResources.CrossPartitionQueryDisabled);
-                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                    exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                     throw exception;
                 }
                 else
@@ -106,13 +107,13 @@ namespace Microsoft.Azure.Cosmos.Routing
                         if (!IsSupportedPartitionedQueryExecutionInfo(queryExecutionInfo, clientApiVersion))
                         {
                             BadRequestException exception = new BadRequestException(RMResources.UnsupportedCrossPartitionQuery);
-                            exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                            exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                             throw exception;
                         }
                         else if (queryExecutionInfo.QueryInfo.HasAggregates && !IsAggregateSupportedApiVersion(clientApiVersion))
                         {
                             BadRequestException exception = new BadRequestException(RMResources.UnsupportedCrossPartitionQueryWithAggregate);
-                            exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                            exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                             throw exception;
                         }
                         else
@@ -122,7 +123,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                                 HttpStatusCode.BadRequest,
                                 SubStatusCodes.CrossPartitionQueryNotServable);
 
-                            exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                            exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                             throw exception;
                         }
                     }
@@ -142,7 +143,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                             HttpStatusCode.BadRequest,
                             SubStatusCodes.CrossPartitionQueryNotServable);
 
-                        exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                        exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                         throw exception;
                     }
                     else
@@ -159,7 +160,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                         HttpStatusCode.BadRequest,
                         SubStatusCodes.CrossPartitionQueryNotServable);
 
-                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                    exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                     throw exception;
                 }
                 else if (queryExecutionInfo.QueryInfo.HasGroupBy)
@@ -171,7 +172,8 @@ namespace Microsoft.Azure.Cosmos.Routing
                         HttpStatusCode.BadRequest,
                         SubStatusCodes.CrossPartitionQueryNotServable);
 
-                    exception.Error.AdditionalErrorInfo = JsonConvert.SerializeObject(queryExecutionInfo);
+                    // Replace the problematic line with the following:
+                    exception.Error.AdditionalErrorInfo = JsonSerializer.Serialize(queryExecutionInfo, CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                     throw exception;
                 }
             }
@@ -334,7 +336,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     resolvedRangeInfo.ContinuationTokens.RemoveAt(0);
                 }
 
-                backendResponseHeaders[HttpConstants.HttpHeaders.Continuation] = JsonConvert.SerializeObject(resolvedRangeInfo.ContinuationTokens);
+                backendResponseHeaders[HttpConstants.HttpHeaders.Continuation] = JsonSerializer.Serialize(resolvedRangeInfo.ContinuationTokens, CosmosSerializerContext.Default.ListCompositeContinuationToken);
             }
             else
             {
@@ -421,7 +423,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                 {
                     if (providedContinuation.Trim().StartsWith("[", StringComparison.Ordinal))
                     {
-                        compositeContinuationTokens = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(providedContinuation);
+                        compositeContinuationTokens = JsonSerializer.Deserialize<List<CompositeContinuationToken>>(providedContinuation, CosmosSerializerContext.Default.ListCompositeContinuationToken);
 
                         if (compositeContinuationTokens != null && compositeContinuationTokens.Count > 0)
                         {
@@ -436,7 +438,7 @@ namespace Microsoft.Azure.Cosmos.Routing
                     else
                     {
                         // TODO: Remove the else logic after the gateway deployment is complete
-                        initialContinuationToken = JsonConvert.DeserializeObject<CompositeContinuationToken>(providedContinuation);
+                        initialContinuationToken = JsonSerializer.Deserialize<CompositeContinuationToken>(providedContinuation, CosmosSerializerContext.Default.CompositeContinuationToken);
                         if (initialContinuationToken != null)
                         {
                             compositeContinuationTokens = new List<CompositeContinuationToken> { initialContinuationToken };
@@ -482,11 +484,12 @@ namespace Microsoft.Azure.Cosmos.Routing
 
         private static string AddPartitionKeyRangeToContinuationToken(string continuationToken, PartitionKeyRange partitionKeyRange)
         {
-            return JsonConvert.SerializeObject(new CompositeContinuationToken
+            return JsonSerializer.Serialize(new CompositeContinuationToken
             {
                 Token = continuationToken,
                 Range = partitionKeyRange.ToRange(),
-            });
+            },
+            CosmosSerializerContext.Default.CompositeContinuationToken);
         }
 
         private static bool IsSupportedPartitionedQueryExecutionInfo(

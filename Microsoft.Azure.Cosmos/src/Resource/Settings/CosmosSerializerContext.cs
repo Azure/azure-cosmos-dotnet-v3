@@ -14,6 +14,7 @@ namespace Microsoft.Azure.Cosmos
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
     using Microsoft.Azure.Cosmos.Query.Core.QueryClient;
     using Microsoft.Azure.Cosmos.Query.Core.QueryPlan;
+    using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Scripts;
     using Microsoft.Azure.Cosmos.Telemetry.Models;
     using Microsoft.Azure.Cosmos.Tracing.TraceData;
@@ -31,9 +32,11 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(GeospatialConfig))]
     [JsonSerializable(typeof(UniqueKeyPolicy))]
     [JsonSerializable(typeof(ConflictResolutionPolicy))]
-    //[JsonSerializable(typeof(ClientEncryptionPolicy))]
+    [JsonSerializable(typeof(ClientEncryptionPolicy))]
     [JsonSerializable(typeof(VectorEmbeddingPolicy))]
     [JsonSerializable(typeof(Collection<ComputedProperty>))]
+    [JsonSerializable(typeof(List<CompositeContinuationToken>))]
+    [JsonSerializable(typeof(CompositeContinuationToken))]
     [JsonSerializable(typeof(FullTextPolicy))]
     [JsonSerializable(typeof(ContainerProperties))]
     [JsonSerializable(typeof(PatchSpec))]

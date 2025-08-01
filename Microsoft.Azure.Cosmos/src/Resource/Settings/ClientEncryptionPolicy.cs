@@ -74,7 +74,7 @@ namespace Microsoft.Azure.Cosmos
         }
 
         [JsonConstructor]
-        private ClientEncryptionPolicy()
+        internal ClientEncryptionPolicy()
         {
         }
 
