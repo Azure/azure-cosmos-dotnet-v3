@@ -34,9 +34,15 @@ namespace Microsoft.Azure.Cosmos
         {
             if (!string.IsNullOrEmpty(features))
             {
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to the features.
+                // 2. Suffix is not empty, we append the features to the existing suffix.
+                // 3. Suffix already contains features, we the new features in the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? features
-                    : $"{features}|{this.Suffix}";
+                    : this.Suffix.Contains("|")
+                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf('|'))}"
+                        : $"{features}|{this.Suffix}";
             }
         }
 

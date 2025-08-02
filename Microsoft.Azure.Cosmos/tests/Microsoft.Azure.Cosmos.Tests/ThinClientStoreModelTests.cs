@@ -343,6 +343,12 @@ namespace Microsoft.Azure.Cosmos.Tests
             GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
 
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+
+            globalPartitionEndpointManager
+                .Setup(m => m.IsPartitionLevelFailoverEnabled())
+                .Returns(true)
+                .Verifiable();
+
             globalPartitionEndpointManager
                 .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
                 .Returns(true)
@@ -362,8 +368,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                userAgentContainer,
-                isPartitionLevelFailoverEnabled: true);
+                userAgentContainer);
 
             Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
                 sessionContainer,
@@ -455,8 +460,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                 eventSource,
                 serializerSettings,
                 httpClient,
-                userAgentContainer,
-                isPartitionLevelFailoverEnabled: true);
+                userAgentContainer);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -506,7 +510,8 @@ namespace Microsoft.Azure.Cosmos.Tests
                     httpClient: null,
                     eventSource: null,
                     userAgentContainer: null,
-                    serializerSettings: null)
+                    serializerSettings: null,
+                    globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance)
             {
                 this.invokeAsyncFunc = invokeAsyncFunc;
                 this.onDispose = onDispose;

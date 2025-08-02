@@ -53,5 +53,24 @@ namespace Microsoft.Azure.Cosmos.Routing
         /// </summary>
         public abstract void SetBackgroundConnectionPeriodicRefreshTask(
             Func<Dictionary<PartitionKeyRange, Tuple<string, Uri, TransportAddressHealthState.HealthStatus>>, Task> backgroundConnectionInitTask);
+
+        /// <summary>
+        /// Sets whether per-partition automatic failover is enabled.
+        /// When implemented this operation should be thread-safe using Interlocked. 
+        /// </summary>
+        /// <param name="isEnabled"></param>
+        public abstract void SetIsPPAFEnabled(bool isEnabled);
+
+        /// <summary>
+        /// Sets whether per-partition circuit breaker is enabled.
+        /// When implemented this operation should be thread-safe using Interlocked. 
+        /// </summary>
+        /// <param name="isEnabled"></param>
+        public abstract void SetIsPPCBEnabled(bool isEnabled);
+
+        /// <summary>
+        /// Gets whether per-partition automatic failover is enabled.
+        /// </summary>
+        public abstract bool IsPartitionLevelFailoverEnabled();
     }
 }

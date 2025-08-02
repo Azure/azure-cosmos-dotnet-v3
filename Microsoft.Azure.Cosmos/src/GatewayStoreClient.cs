@@ -22,8 +22,8 @@ namespace Microsoft.Azure.Cosmos
 
     internal class GatewayStoreClient : TransportClient
     {
-        private readonly bool isPartitionLevelFailoverEnabled;
         private readonly ICommunicationEventSource eventSource;
+        private readonly GlobalPartitionEndpointManager globalPartitionEndpointManager;
         protected readonly CosmosHttpClient httpClient;
         protected readonly JsonSerializerSettings SerializerSettings;
 
@@ -32,13 +32,13 @@ namespace Microsoft.Azure.Cosmos
         public GatewayStoreClient(
             CosmosHttpClient httpClient,
             ICommunicationEventSource eventSource,
-            JsonSerializerSettings serializerSettings = null,
-            bool isPartitionLevelFailoverEnabled = false)
+            GlobalPartitionEndpointManager globalPartitionEndpointManager,
+            JsonSerializerSettings serializerSettings = null)
         {
             this.httpClient = httpClient;
             this.SerializerSettings = serializerSettings;
             this.eventSource = eventSource;
-            this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
+            this.globalPartitionEndpointManager = globalPartitionEndpointManager;
         }
 
         public async Task<DocumentServiceResponse> InvokeAsync(
@@ -386,7 +386,7 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(
                     request,
-                    this.isPartitionLevelFailoverEnabled),
+                    this.globalPartitionEndpointManager.IsPartitionLevelFailoverEnabled()),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);
