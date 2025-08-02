@@ -37,6 +37,7 @@ namespace Microsoft.Azure.Cosmos
         public static readonly TimeSpan MinimumTimeBetweenBackgroundRefreshInterval = TimeSpan.FromMinutes(1);
 
         private const string ScopeFormat = "https://{0}/.default";
+
         private readonly TokenRequestContext tokenRequestContext;
         private readonly TokenCredential tokenCredential;
         private readonly CancellationTokenSource cancellationTokenSource;
@@ -64,9 +65,13 @@ namespace Microsoft.Azure.Cosmos
                 throw new ArgumentNullException(nameof(accountEndpoint));
             }
 
+            string? scopeOverride = ConfigurationManager.AADScopeOverrideValue(defaultValue: null);
+
             this.tokenRequestContext = new TokenRequestContext(new string[]
             {
-                string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
+                !string.IsNullOrEmpty(scopeOverride)
+                    ? scopeOverride
+                    : string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
             });
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)
