@@ -6900,7 +6900,7 @@ namespace Microsoft.Azure.Cosmos
             }
 
             DefaultTrace.TraceInformation(
-                "DocumentClient: Updating EnablePartitionLevelFailover to {0}",
+                "DocumentClient: PPAF Account Level Config Updated. Updating EnablePartitionLevelFailover to {0}",
                 isEnabled);
 
             // Step 1: Enable partition level failover.
@@ -6909,7 +6909,7 @@ namespace Microsoft.Azure.Cosmos
 
             // Step 2: Enable partition level circuit breaker.
             this.PartitionKeyRangeLocation.SetIsPPCBEnabled(isEnabled);
-            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= isEnabled;
+            this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker = isEnabled;
 
             // Step 3: Enable default hedging strategy if partition level failover is enabled.
             if (isEnabled && this.ConnectionPolicy.AvailabilityStrategy == null)

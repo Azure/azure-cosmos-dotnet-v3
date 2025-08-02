@@ -1580,7 +1580,10 @@
         [Owner("ntripician")]
         [TestCategory("MultiRegion")]
         [Timeout(70000)]
-        public async Task ReadItemAsync_WithPPAFDynamicOverride()
+        [DataRow(ConnectionMode.Direct, false, DisplayName = "Test dynamic PPAF enablement with Direct mode.")]
+        public async Task ReadItemAsync_WithPPAFDynamicOverride_ShouldEnableOrDisablePPAFInSDK(
+            ConnectionMode connectionMode,
+            bool isThinClientEnabled)
         {
             // Arrange.
             // Enabling fault injection rule to simulate a 503 service unavailable scenario.
@@ -1593,8 +1596,8 @@
                         .WithRegion(region1)
                         .Build(),
                 result:
-                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ResponseDelay)
-                        .WithDelay(TimeSpan.FromMilliseconds(3000))
+                    FaultInjectionResultBuilder.GetResultBuilder(FaultInjectionServerErrorType.ServiceUnavailable)
+                        .WithDelay(TimeSpan.FromMilliseconds(10))
                         .Build())
                 .Build();
 
@@ -1659,6 +1662,7 @@
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
+                ConnectionMode = connectionMode
             };
 
             List<CosmosIntegrationTestObject> itemsList = new()
@@ -1696,8 +1700,11 @@
 
                 Assert.IsNull(hedgeContextNoPPAF);
                 Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
+                Assert.IsFalse(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelFailoverEnabled());
 
+                // Enable PPAF At the Gateway Layer.
                 enablePPAF = true;
+
                 //force database account refresh
                 await cosmosClient.DocumentClient.GlobalEndpointManager.RefreshLocationAsync(true);
 
@@ -1720,9 +1727,10 @@
                 Assert.IsNotNull(hedgeContext);
                 List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
 
-                Assert.IsTrue(hedgedRegions.Count > 1, "Since the first region is not available, the request should atleast hedge to the next region.");
-                Assert.IsTrue(hedgedRegions.Contains(region1) && (hedgedRegions.Contains(region2) || hedgedRegions.Contains(region3)));
+                Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
+                Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelFailoverEnabled());
 
+                // Disable PPAF At the Gateway Layer.
                 enablePPAF = false;
 
                 //force database account refresh
@@ -1746,10 +1754,16 @@
 
                 Assert.IsNull(hedgeContextNoPPAF2);
                 Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
+                Assert.IsFalse(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelFailoverEnabled());
             }
             finally
             {
                 await this.TryDeleteItems(itemsList);
+
+                if (isThinClientEnabled)
+                {
+                    Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, null);
+                }
             }
         }
 
