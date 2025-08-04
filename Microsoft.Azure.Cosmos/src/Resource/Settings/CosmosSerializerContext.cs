@@ -61,6 +61,10 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(QueryInfo))]
     [JsonSerializable(typeof(IReadOnlyList<SortOrder>))]
     [JsonSerializable(typeof(CosmosQueryExecutionInfo))]
+    [JsonSerializable(typeof(HashIndex))]
+    [JsonSerializable(typeof(RangeIndex))]
+    [JsonSerializable(typeof(SpatialIndex))]
+    [JsonSerializable(typeof(Error))]
     internal partial class CosmosSerializerContext : JsonSerializerContext
     {
     }

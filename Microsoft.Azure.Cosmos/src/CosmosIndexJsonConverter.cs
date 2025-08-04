@@ -25,11 +25,11 @@ namespace Microsoft.Azure.Cosmos
                 switch (indexKind)
                 {
                     case IndexKind.Hash:
-                        return JsonSerializer.Deserialize<HashIndex>(root.GetRawText(), options);
+                        return JsonSerializer.Deserialize<HashIndex>(root.GetRawText(), CosmosSerializerContext.Default.HashIndex);
                     case IndexKind.Range:
-                        return JsonSerializer.Deserialize<RangeIndex>(root.GetRawText(), options); ;
+                        return JsonSerializer.Deserialize<RangeIndex>(root.GetRawText(), CosmosSerializerContext.Default.RangeIndex); ;
                     case IndexKind.Spatial:
-                        return JsonSerializer.Deserialize<SpatialIndex>(root.GetRawText(), options); ;
+                        return JsonSerializer.Deserialize<SpatialIndex>(root.GetRawText(), CosmosSerializerContext.Default.SpatialIndex); ;
                     default:
                         throw new JsonException(
                             string.Format(CultureInfo.CurrentCulture, Documents.RMResources.InvalidIndexKindValue, indexKind));

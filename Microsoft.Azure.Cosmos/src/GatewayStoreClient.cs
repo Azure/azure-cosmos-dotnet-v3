@@ -157,7 +157,7 @@ namespace Microsoft.Azure.Cosmos
                 try
                 {
                     Stream contentAsStream = await responseMessage.Content.ReadAsStreamAsync();
-                    Error error = JsonSerializer.Deserialize<Error>(contentAsStream);
+                    Error error = JsonSerializer.Deserialize<Error>(contentAsStream, CosmosSerializerContext.Default.Error);
 
                     return new DocumentClientException(
                         errorResource: error,
