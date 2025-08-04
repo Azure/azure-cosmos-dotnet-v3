@@ -7,9 +7,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
+    using System.Text.Json;
     using Microsoft.Azure.Cosmos.Core;
     using Microsoft.Azure.Cosmos.Core.Utf8;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// Query index utilization metrics in the Azure Cosmos database service.
@@ -36,7 +36,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
         /// <param name="potentialSingleIndexes">The potential single indexes list</param>
         /// <param name="utilizedCompositeIndexes">The potential composite indexes list</param>
         /// <param name="potentialCompositeIndexes">The utilized composite indexes list</param>
-        [JsonConstructor]
         public IndexUtilizationInfo(
              IReadOnlyList<SingleIndexUtilizationEntity> utilizedSingleIndexes,
              IReadOnlyList<SingleIndexUtilizationEntity> potentialSingleIndexes,
@@ -76,14 +75,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Metrics
             {
                 string decodedString = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(delimitedString));
 
-                result = JsonConvert.DeserializeObject<IndexUtilizationInfo>(decodedString, new JsonSerializerSettings()
-                {
-                    // Allowing null values to be resilient to Json structure change
-                    MissingMemberHandling = MissingMemberHandling.Ignore,
-                    NullValueHandling = NullValueHandling.Ignore,
-                    // Ignore parsing error encountered in desrialization
-                    Error = (sender, parsingErrorEvent) => parsingErrorEvent.ErrorContext.Handled = true
-                }) ?? IndexUtilizationInfo.Empty;
+                // TODO - Allowing null values to be resilient to Json structure change
+                // TODO - Ignore parsing error encountered in desrialization
+                result = JsonSerializer.Deserialize(decodedString, CosmosSerializerContext.Default.IndexUtilizationInfo) ?? 
+                    IndexUtilizationInfo.Empty;
 
                 return true;
             }
