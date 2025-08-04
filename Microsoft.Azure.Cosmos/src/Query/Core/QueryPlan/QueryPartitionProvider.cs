@@ -16,7 +16,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
+    using System.Text.Json;
     using PartitionKeyDefinition = Documents.PartitionKeyDefinition;
     using PartitionKeyInternal = Documents.Routing.PartitionKeyInternal;
     using PartitionKind = Documents.PartitionKind;
@@ -65,7 +65,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 #endif
 
             this.disposed = false;
-            this.queryengineConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+            this.queryengineConfiguration = JsonSerializer.Serialize(
+                queryengineConfiguration,
+                CosmosSerializerContext.Default.DictionaryStringObject);
             this.ClientDisableOptimisticDirectExecution = GetClientDisableOptimisticDirectExecution((IReadOnlyDictionary<string, object>)queryengineConfiguration);
             this.serviceProvider = IntPtr.Zero;
 
@@ -94,7 +96,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             {
                 lock (this.serviceProviderStateLock)
                 {
-                    string newConfiguration = JsonConvert.SerializeObject(queryengineConfiguration);
+                    string newConfiguration = JsonSerializer.Serialize(
+                        queryengineConfiguration,
+                        CosmosSerializerContext.Default.DictionaryStringObject);
 
                     if (!string.Equals(this.queryengineConfiguration, newConfiguration))
                     {
@@ -231,7 +235,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             uint serializedQueryExecutionInfoResultLength;
 
             string vectorEmbeddingPolicyString = vectorEmbeddingPolicy != null ?
-                JsonConvert.SerializeObject(vectorEmbeddingPolicy) :
+                JsonSerializer.Serialize(
+                    vectorEmbeddingPolicy,
+                    CosmosSerializerContext.Default.VectorEmbeddingPolicy) :
                 null;
 
             unsafe
@@ -314,13 +320,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
             }
 
             PartitionedQueryExecutionInfoInternal queryInfoInternal =
-               JsonConvert.DeserializeObject<PartitionedQueryExecutionInfoInternal>(
-                   serializedQueryExecutionInfo,
-                   new JsonSerializerSettings
-                   {
-                       DateParseHandling = DateParseHandling.None,
-                       MaxDepth = 64, // https://github.com/advisories/GHSA-5crp-9r3c-p9vr
-                   });
+                JsonSerializer.Deserialize(
+                    serializedQueryExecutionInfo,
+                    CosmosSerializerContext.Default.PartitionedQueryExecutionInfoInternal);
 
             if (!this.ValidateQueryExecutionInfo(queryInfoInternal, out ArgumentException innerException))
             {
