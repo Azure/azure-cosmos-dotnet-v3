@@ -64,6 +64,10 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(UniqueKeyPolicy))]
     [JsonSerializable(typeof(UserDefinedFunctionProperties))]
     [JsonSerializable(typeof(VectorEmbeddingPolicy))]
+    [JsonSerializable(typeof(HashIndex))]
+    [JsonSerializable(typeof(RangeIndex))]
+    [JsonSerializable(typeof(SpatialIndex))]
+    [JsonSerializable(typeof(Error))]
     internal partial class CosmosSerializerContext : JsonSerializerContext
     {
     }

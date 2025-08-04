@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Common;
@@ -15,7 +16,6 @@ namespace Microsoft.Azure.Cosmos.Handlers
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Microsoft.Azure.Documents.Routing;
-    using Newtonsoft.Json;
     using static Microsoft.Azure.Cosmos.Routing.PartitionRoutingHelper;
     using static Microsoft.Azure.Documents.RntbdConstants;
 
@@ -117,7 +117,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                     if (resolvedRangeInfo.ResolvedRange == null && resolvedRangeInfo.ContinuationTokens == null)
                     {
                         return ((DocumentClientException)new NotFoundException(
-                                $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
+                                $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Was not able to get queryRoutingInfo even after resolve collection async with force name cache refresh to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonSerializer.Serialize(suppliedTokens, CosmosSerializerContext.Default.ListCompositeContinuationToken)}")
                                 ).ToCosmosResponseMessage(request);
                     }
 
@@ -141,7 +141,7 @@ namespace Microsoft.Azure.Cosmos.Handlers
                             direction: rntdbEnumerationDirection))
                         {
                             return ((DocumentClientException)new NotFoundException(
-                                    $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonConvert.SerializeObject(suppliedTokens)}")
+                                    $"{DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture)}: Call to TryAddPartitionKeyRangeToContinuationTokenAsync failed to the following collectionRid: {collectionFromCache.ResourceId} with the supplied tokens: {JsonSerializer.Serialize(suppliedTokens, CosmosSerializerContext.Default.ListCompositeContinuationToken)}")
                                 ).ToCosmosResponseMessage(request);
                         }
                     }
