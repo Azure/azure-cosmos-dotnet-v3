@@ -564,21 +564,6 @@ namespace Microsoft.Azure.Cosmos
         {
             if (disposing)
             {
-                if (this.gatewayStoreClient != null)
-                {
-                    try
-                    {
-                        this.gatewayStoreClient.Dispose();
-                    }
-                    catch (Exception exception)
-                    {
-                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
-                            exception.Message);
-                    }
-
-                    this.gatewayStoreClient = null;
-                }
-
                 if (this.thinClientStoreClient != null)
                 {
                     try
@@ -592,6 +577,20 @@ namespace Microsoft.Azure.Cosmos
                     }
 
                     this.thinClientStoreClient = null;
+                }
+                if (this.gatewayStoreClient != null)
+                {
+                    try
+                    {
+                        this.gatewayStoreClient.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                            exception.Message);
+                    }
+
+                    this.gatewayStoreClient = null;
                 }
             }
         }
