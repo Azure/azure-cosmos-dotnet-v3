@@ -44,6 +44,18 @@ namespace Microsoft.Azure.Cosmos
                         ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf('|'))}"
                         : $"{features}|{this.Suffix}";
             }
+            else
+            {
+                // Here we have 3 scenarios: 
+                // 1. Suffix is empty, we just set it to empty.
+                // 2. Suffix is not empty, we remove the features from the existing suffix.
+                // 3. Suffix already contains features, we remove the features from the existing suffix.
+                this.Suffix = string.IsNullOrEmpty(this.Suffix)
+                    ? string.Empty
+                    : this.Suffix.Contains("|")
+                        ? this.Suffix.Substring(this.Suffix.IndexOf('|') + 1)
+                        : this.Suffix;
+            }
         }
 
         internal override string BaseUserAgent => this.cosmosBaseUserAgent ?? string.Empty;

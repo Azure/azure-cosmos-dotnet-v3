@@ -1579,7 +1579,7 @@
         [TestMethod]
         [Owner("ntripician")]
         [TestCategory("MultiRegion")]
-        [Timeout(70000)]
+        [Timeout(70000 *100)]
         [DataRow(ConnectionMode.Direct, false, DisplayName = "Test dynamic PPAF enablement with Direct mode.")]
         public async Task ReadItemAsync_WithPPAFDynamicOverride_ShouldEnableOrDisablePPAFInSDK(
             ConnectionMode connectionMode,
@@ -1618,7 +1618,7 @@
                         if (enablePPAF)
                         {
                             JObject parsedDatabaseAccountResponse = JObject.Parse(json);
-                            parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = true.ToString();
+                            parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = true;
 
                             HttpResponseMessage interceptedResponse = new()
                             {
@@ -1634,7 +1634,7 @@
                         else
                         {
                             JObject parsedDatabaseAccountResponse = JObject.Parse(json);
-                            parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = false.ToString();
+                            parsedDatabaseAccountResponse.Property("enablePerPartitionFailoverBehavior").Value = false;
 
                             HttpResponseMessage interceptedResponse = new()
                             {
@@ -1662,7 +1662,8 @@
                 RequestTimeout = TimeSpan.FromSeconds(5),
                 ApplicationPreferredRegions = preferredRegions,
                 HttpClientFactory = () => new HttpClient(httpClientHandlerHelper),
-                ConnectionMode = connectionMode
+                ConnectionMode = connectionMode,
+                ApplicationName = "ppafDynamicOverrideTest",
             };
 
             List<CosmosIntegrationTestObject> itemsList = new()

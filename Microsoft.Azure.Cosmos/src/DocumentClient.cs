@@ -6918,7 +6918,7 @@ namespace Microsoft.Azure.Cosmos
             }
             else
             {
-                if (((CrossRegionHedgingAvailabilityStrategy)this.ConnectionPolicy.AvailabilityStrategy).IsSDKDefaultStrategy)
+                if (this.ConnectionPolicy.AvailabilityStrategy is CrossRegionHedgingAvailabilityStrategy strategy && strategy.IsSDKDefaultStrategyForPPAF)
                 {
                     // If the user has not set a custom availability strategy, then we will reset it to null.
                     this.ConnectionPolicy.AvailabilityStrategy = null;
