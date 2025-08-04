@@ -32,9 +32,9 @@ namespace Microsoft.Azure.Cosmos
         private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
-        private readonly bool enableThinClientMode;
+        private readonly bool isThinClientEnabled;
         private readonly UserAgentContainer userAgentContainer;
-        private readonly ThinClientStoreClient thinClientStoreClient;
+        private ThinClientStoreClient thinClientStoreClient;
 
         private GatewayStoreClient gatewayStoreClient;
 
@@ -51,7 +51,7 @@ namespace Microsoft.Azure.Cosmos
              JsonSerializerSettings serializerSettings,
              CosmosHttpClient httpClient,
              GlobalPartitionEndpointManager globalPartitionEndpointManager,
-             bool enableThinClientMode,
+             bool isThinClientEnabled,
              bool isPartitionLevelFailoverEnabled = false,
              UserAgentContainer userAgentContainer = null)
         {
@@ -67,11 +67,11 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
 
-            this.enableThinClientMode = enableThinClientMode;
-            this.userAgentContainer = userAgentContainer;
+            this.isThinClientEnabled = isThinClientEnabled;
 
-            if (enableThinClientMode)
+            if (isThinClientEnabled)
             {
+                this.userAgentContainer = userAgentContainer ?? throw new ArgumentNullException(nameof(userAgentContainer));
                 this.thinClientStoreClient = new ThinClientStoreClient(
                     httpClient,
                     userAgentContainer,
@@ -595,6 +595,8 @@ namespace Microsoft.Azure.Cosmos
                         DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
                             exception.Message);
                     }
+
+                    this.thinClientStoreClient = null;
                 }
             }
         }

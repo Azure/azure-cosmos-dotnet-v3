@@ -133,7 +133,8 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
 
             using CosmosClient client = builder.Build();
 
-            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync("HttpVersionTestDb");
+            string dbId = "HttpVersionTestDb_" + Guid.NewGuid();
+            Cosmos.Database database = await client.CreateDatabaseIfNotExistsAsync(dbId);
             Container container = await database.CreateContainerIfNotExistsAsync("HttpVersionTestContainer", "/pk");
 
             ToDoActivity testItem = ToDoActivity.CreateRandomToDoActivity();
@@ -171,9 +172,9 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagEnabledAndAccountDisabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "True");
-            this.connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
+            string connectionString = ConfigurationManager.GetEnvironmentVariable<string>("COSMOSDB_MULTI_REGION", string.Empty);
 
-            if (string.IsNullOrEmpty(this.connectionString))
+            if (string.IsNullOrEmpty(connectionString))
             {
                 Assert.Fail("Set environment variable COSMOSDB_MULTI_REGION to run the tests");
             }
@@ -187,7 +188,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
             this.cosmosSystemTextJsonSerializer = new MultiRegionSetupHelpers.CosmosSystemTextJsonSerializer(jsonSerializerOptions);
 
             this.client = new CosmosClient(
-                  this.connectionString,
+                  connectionString,
                   new CosmosClientOptions()
                   {
                       ConnectionMode = ConnectionMode.Gateway,
@@ -259,7 +260,6 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
         public async Task CreateItemsTestWithThinClientFlagDisabledAccountEnabled()
         {
             Environment.SetEnvironmentVariable(ConfigurationManager.ThinClientModeEnabled, "False");
-            this.connectionString = Environment.GetEnvironmentVariable("COSMOSDB_THINCLIENT");
 
             if (string.IsNullOrEmpty(this.connectionString))
             {

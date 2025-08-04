@@ -1090,7 +1090,7 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings: this.serializerSettings,
                 httpClient: this.httpClient,
                 globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
-                enableThinClientMode: this.isThinClientEnabled,
+                isThinClientEnabled: this.isThinClientEnabled,
                 isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
                 userAgentContainer: this.ConnectionPolicy.UserAgentContainer);
 
