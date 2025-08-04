@@ -32,8 +32,6 @@ namespace Microsoft.Azure.Cosmos
         private readonly DocumentClientEventSource eventSource;
         internal readonly ConsistencyLevel defaultConsistencyLevel;
 
-        private readonly bool isThinClientEnabled;
-        private readonly UserAgentContainer userAgentContainer;
         private ThinClientStoreClient thinClientStoreClient;
 
         private GatewayStoreClient gatewayStoreClient;
@@ -67,11 +65,8 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
 
-            this.isThinClientEnabled = isThinClientEnabled;
-
             if (isThinClientEnabled)
             {
-                this.userAgentContainer = userAgentContainer ?? throw new ArgumentNullException(nameof(userAgentContainer));
                 this.thinClientStoreClient = new ThinClientStoreClient(
                     httpClient,
                     userAgentContainer,

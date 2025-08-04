@@ -1748,7 +1748,7 @@ namespace Microsoft.Azure.Cosmos
                 : base(
                     httpClient: null,
                     eventSource: null,
-                    userAgentContainer: null,
+                    userAgentContainer: new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix"),
                     serializerSettings: null)
             {
                 this.invokeAsyncFunc = invokeAsyncFunc;
