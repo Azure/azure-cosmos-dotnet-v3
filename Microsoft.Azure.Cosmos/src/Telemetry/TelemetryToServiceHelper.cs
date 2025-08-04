@@ -67,7 +67,7 @@ namespace Microsoft.Azure.Cosmos.Telemetry
            CancellationTokenSource cancellationTokenSource,
            bool faultInjectionClient = false)
         {
-#if INTERNAL
+#if INTERNAL || COSMOS_GW_AOT
             return new TelemetryToServiceHelper();
 #else
             if (connectionPolicy.CosmosClientTelemetryOptions.DisableSendingMetricsToService)
