@@ -7,7 +7,7 @@ namespace Microsoft.Azure.Documents
     using System;
     using System.Collections.ObjectModel;
     using System.Globalization;
-    using Newtonsoft.Json;
+    using System.Text.Json.Serialization;
 
     /// <summary>
     /// Represents the vector embedding policy configuration for specifying the vector embeddings on documents in the collection in the Azure Cosmos DB service.
@@ -27,7 +27,7 @@ namespace Microsoft.Azure.Documents
         /// <summary>
         /// Gets a collection of <see cref="Embedding"/> that contains the vector embeddings of documents in collection in the Azure Cosmos DB service.
         /// </summary>
-        [JsonProperty(PropertyName = Constants.Properties.VectorEmbeddings)]
+        [JsonPropertyName(Constants.Properties.VectorEmbeddings)]
         public Collection<Embedding> Embeddings
         {
             get
