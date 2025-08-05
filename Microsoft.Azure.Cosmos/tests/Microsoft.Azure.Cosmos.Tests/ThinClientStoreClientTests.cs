@@ -370,6 +370,26 @@ namespace Microsoft.Azure.Cosmos.Tests
             Assert.IsFalse(headers.ContainsKey(ThinClientConstants.ProxyEndEpk), "ProxyEndEpk should not be added when PKRange is null");
         }
 
+        [TestMethod]
+        public void Constructor_ShouldThrowArgumentNullException_WhenUserAgentContainerIsNull()
+        {
+            // Arrange
+            Mock<CosmosHttpClient> mockHttpClient = new Mock<CosmosHttpClient>();
+            ICommunicationEventSource mockEventSource = Mock.Of<ICommunicationEventSource>();
+
+            // Act & Assert
+            ArgumentNullException ex = Assert.ThrowsException<ArgumentNullException>(() =>
+                new ThinClientStoreClient(
+                    httpClient: mockHttpClient.Object,
+                    userAgentContainer: null,
+                    eventSource: mockEventSource,
+                    serializerSettings: null)
+            );
+
+            Assert.AreEqual("userAgentContainer", ex.ParamName);
+            StringAssert.Contains(ex.Message, "UserAgentContainer cannot be null");
+        }
+
         private ContainerProperties GetMockContainerProperties()
         {
             ContainerProperties containerProperties = new ContainerProperties
