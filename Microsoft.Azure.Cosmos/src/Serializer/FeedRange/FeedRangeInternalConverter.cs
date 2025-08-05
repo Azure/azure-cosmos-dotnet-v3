@@ -5,11 +5,11 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Routing;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
-    internal sealed class FeedRangeInternalConverter : JsonConverter
+    internal sealed class FeedRangeInternalConverter : JsonConverter<FeedRangeInternal>
     {
         private const string PartitionKeyNoneValue = "None";
         private const string RangePropertyName = "Range";
@@ -24,113 +24,161 @@ namespace Microsoft.Azure.Cosmos
                 || objectType == typeof(FeedRangePartitionKeyRange);
         }
 
-        public override object ReadJson(
-           JsonReader reader,
-           Type objectType,
-           object existingValue,
-           JsonSerializer serializer)
+        public override FeedRangeInternal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonToken.Null)
+            if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
             }
 
-            if (reader.TokenType != JsonToken.StartObject)
+            if (reader.TokenType != JsonTokenType.StartObject)
             {
-                throw new JsonReaderException();
+                throw new JsonException();
             }
 
-            JObject jObject = JObject.Load(reader);
+            string pkValue = null;
+            string pkRangeId = null;
+            Documents.Routing.Range<string> range = null;
 
-            return FeedRangeInternalConverter.ReadJObject(jObject, serializer);
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject)
+                    break;
+
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                    throw new JsonException();
+
+                string propertyName = reader.GetString();
+                reader.Read();
+
+                if (propertyName == RangePropertyName)
+                {
+                    // Assumes you have a System.Text.Json converter for Range<string>
+                    range = JsonSerializer.Deserialize<Documents.Routing.Range<string>>(ref reader, options);
+                }
+                else if (propertyName == PartitionKeyPropertyName)
+                {
+                    pkValue = reader.GetString();
+                }
+                else if (propertyName == PartitionKeyRangeIdPropertyName)
+                {
+                    pkRangeId = reader.GetString();
+                }
+                else
+                {
+                    // Unknown property, skip
+                    reader.Skip();
+                }
+            }
+
+            if (range != null)
+            {
+                return new FeedRangeEpk(range);
+            }
+            if (pkValue != null)
+            {
+                if (PartitionKeyNoneValue.Equals(pkValue, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new FeedRangePartitionKey(PartitionKey.None);
+                }
+                if (!PartitionKey.TryParseJsonString(pkValue, out PartitionKey partitionKey))
+                {
+                    throw new JsonException();
+                }
+                return new FeedRangePartitionKey(partitionKey);
+            }
+            if (pkRangeId != null)
+            {
+                return new FeedRangePartitionKeyRange(pkRangeId);
+            }
+
+            throw new JsonException();
         }
 
-        public override void WriteJson(
-            JsonWriter writer,
-            object value,
-            JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, FeedRangeInternal value, JsonSerializerOptions options)
         {
-            writer.WriteStartObject();
-            FeedRangeInternalConverter.WriteJObject(writer, value, serializer);
-            writer.WriteEndObject();
+            FeedRangeInternalConverter.WriteJsonElement(writer, value, options);
         }
 
-        public static FeedRangeInternal ReadJObject(
-            JObject jObject,
-            JsonSerializer serializer)
+        internal static FeedRangeInternal ReadJsonElement(JsonElement element, JsonSerializerOptions options)
         {
-            if (jObject.TryGetValue(FeedRangeInternalConverter.RangePropertyName, out JToken rangeJToken))
+            if (element.ValueKind != JsonValueKind.Object)
+            {
+                throw new JsonException();
+            }
+
+            // Check for "Range"
+            if (element.TryGetProperty(RangePropertyName, out JsonElement rangeElement))
             {
                 try
                 {
-                    Documents.Routing.Range<string> completeRange = (Documents.Routing.Range<string>)rangeJsonConverter.ReadJson(rangeJToken.CreateReader(), typeof(Documents.Routing.Range<string>), null, serializer);
-                    return new FeedRangeEpk(completeRange);
+                    Documents.Routing.Range<string> range = JsonSerializer.Deserialize<Documents.Routing.Range<string>>(rangeElement.GetRawText(), CosmosSerializerContext.Default.RangeString);
+                    return new FeedRangeEpk(range);
                 }
-                catch (JsonSerializationException)
+                catch (JsonException)
                 {
-                    throw new JsonReaderException();
+                    throw;
                 }
             }
 
-            if (jObject.TryGetValue(FeedRangeInternalConverter.PartitionKeyPropertyName, out JToken pkJToken))
+            // Check for "PK"
+            if (element.TryGetProperty(PartitionKeyPropertyName, out JsonElement pkElement))
             {
-                string value = pkJToken.Value<string>();
-                if (FeedRangeInternalConverter.PartitionKeyNoneValue.Equals(value, StringComparison.OrdinalIgnoreCase))
+                string value = pkElement.GetString();
+                if (PartitionKeyNoneValue.Equals(value, StringComparison.OrdinalIgnoreCase))
                 {
                     return new FeedRangePartitionKey(PartitionKey.None);
                 }
 
                 if (!PartitionKey.TryParseJsonString(value, out PartitionKey partitionKey))
                 {
-                    throw new JsonReaderException();
+                    throw new JsonException();
                 }
 
                 return new FeedRangePartitionKey(partitionKey);
             }
 
-            if (jObject.TryGetValue(FeedRangeInternalConverter.PartitionKeyRangeIdPropertyName, out JToken pkRangeJToken))
+            // Check for "PKRangeId"
+            if (element.TryGetProperty(PartitionKeyRangeIdPropertyName, out JsonElement pkRangeIdElement))
             {
-                return new FeedRangePartitionKeyRange(pkRangeJToken.Value<string>());
+                return new FeedRangePartitionKeyRange(pkRangeIdElement.GetString());
             }
 
-            throw new JsonReaderException();
+            throw new JsonException();
         }
 
-        public static void WriteJObject(
-            JsonWriter writer,
-            object value,
-            JsonSerializer serializer)
+        internal static void WriteJsonElement(Utf8JsonWriter writer, FeedRangeInternal value, JsonSerializerOptions options)
         {
+            writer.WriteStartObject();
+
             if (value is FeedRangeEpk feedRangeEpk)
             {
-                writer.WritePropertyName(FeedRangeInternalConverter.RangePropertyName);
-                rangeJsonConverter.WriteJson(writer, feedRangeEpk.Range, serializer);
-                return;
+                writer.WritePropertyName(RangePropertyName);
+                JsonSerializer.Serialize(writer, feedRangeEpk.Range, CosmosSerializerContext.Default.RangeString);
             }
-
-            if (value is FeedRangePartitionKey feedRangePartitionKey)
+            else if (value is FeedRangePartitionKey feedRangePartitionKey)
             {
-                writer.WritePropertyName(FeedRangeInternalConverter.PartitionKeyPropertyName);
+                writer.WritePropertyName(PartitionKeyPropertyName);
                 if (feedRangePartitionKey.PartitionKey.IsNone)
                 {
-                    writer.WriteValue(FeedRangeInternalConverter.PartitionKeyNoneValue);
+                    writer.WriteStringValue(PartitionKeyNoneValue);
                 }
                 else
                 {
-                    writer.WriteValue(feedRangePartitionKey.PartitionKey.ToJsonString());
+                    writer.WriteStringValue(feedRangePartitionKey.PartitionKey.ToJsonString());
                 }
-
-                return;
             }
-
-            if (value is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
+            else if (value is FeedRangePartitionKeyRange feedRangePartitionKeyRange)
             {
-                writer.WritePropertyName(FeedRangeInternalConverter.PartitionKeyRangeIdPropertyName);
-                writer.WriteValue(feedRangePartitionKeyRange.PartitionKeyRangeId);
-                return;
+                writer.WritePropertyName(PartitionKeyRangeIdPropertyName);
+                writer.WriteStringValue(feedRangePartitionKeyRange.PartitionKeyRangeId);
+            }
+            else
+            {
+                throw new JsonException(ClientResources.FeedToken_UnrecognizedFeedToken);
             }
 
-            throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
+            writer.WriteEndObject();
         }
     }
 }

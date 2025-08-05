@@ -52,10 +52,9 @@ namespace Microsoft.Azure.Cosmos
                     throw new JsonException();
                 }
 
-                ranges = JsonSerializer.Deserialize<List<CompositeContinuationToken>>(continuationElement.GetRawText(), options);
+                ranges = JsonSerializer.Deserialize<List<CompositeContinuationToken>>(continuationElement.GetRawText(), CosmosSerializerContext.Default.ListCompositeContinuationToken);
 
-                // FeedRangeInternalConverter should be migrated to System.Text.Json as well.
-                //feedRangeInternal = FeedRangeInternalConverter.ReadJsonElement(root, options);
+                feedRangeInternal = FeedRangeInternalConverter.ReadJsonElement(root, options);
             }
 
             return new FeedRangeCompositeContinuation(
@@ -78,10 +77,9 @@ namespace Microsoft.Azure.Cosmos
             writer.WritePropertyName(RidPropertyName);
             writer.WriteStringValue(value.ContainerRid);
             writer.WritePropertyName(ContinuationPropertyName);
-            JsonSerializer.Serialize(writer, value.CompositeContinuationTokens, options);
+            JsonSerializer.Serialize(writer, value.CompositeContinuationTokens, CosmosSerializerContext.Default.ListCompositeContinuationToken);
 
-            // FeedRangeInternalConverter should be migrated to System.Text.Json as well.
-            //FeedRangeInternalConverter.WriteJsonElement(writer, value.FeedRange, options);
+            FeedRangeInternalConverter.WriteJsonElement(writer, value.FeedRange, options);
 
             writer.WriteEndObject();
         }
