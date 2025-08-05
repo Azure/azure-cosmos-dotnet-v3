@@ -416,7 +416,7 @@ namespace Microsoft.Azure.Cosmos.SDK.EmulatorTests
                 @"{""UtilizedIndexes"":{""SingleIndexes"":[{""IndexSpec"":""/taskNum/?""}],""CompositeIndexes"":[]},""PotentialIndexes"":{""SingleIndexes"":[],""CompositeIndexes"":[]}}",
                 indexMetrics);
 
-            // Response object with null index metrics field]
+            // Response object with null index metrics field
             response.Headers.IndexUtilizationText = null;
             indexMetrics = response.GetIndexMetrics();
             Assert.AreEqual(
