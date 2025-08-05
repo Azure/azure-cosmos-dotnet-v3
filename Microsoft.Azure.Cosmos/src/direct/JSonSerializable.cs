@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Documents
     using System.Text;
     using System.Text.Json;
     using System.Text.Json.Nodes;
+    using System.Text.Json.Serialization.Metadata;
     using Microsoft.Azure.Cosmos.Linq;
     using Newtonsoft.Json.Linq;
     using static Microsoft.Azure.Documents.Rntbd.TransportClient;
@@ -386,9 +387,15 @@ namespace Microsoft.Azure.Documents
                         return (T)enumValue;
                     }
                 }
-                return this.SerializerSettings == null ?
-                    token.Deserialize<T>() :
-                        token.Deserialize<T>(this.SerializerSettings);
+
+                if (this.SerializerSettings != null)
+                {
+                    JsonTypeInfo<T> typeInfo = this.SerializerSettings.GetTypeInfo(typeof(T)) as JsonTypeInfo<T>;
+                    if (typeInfo != null)
+                    {
+                        return token.Deserialize(typeInfo);
+                    }
+                }
             }
 
             return default(T);
@@ -487,7 +494,7 @@ namespace Microsoft.Azure.Documents
 
             if (value != null)
             {
-                this.propertyBag[name] = JsonSerializer.SerializeToNode(value, value.GetType(), this.SerializerSettings);
+                this.propertyBag[name] = JsonSerializer.SerializeToNode(value, this.SerializerSettings.GetTypeInfo(value.GetType()));
             }
             else
             {

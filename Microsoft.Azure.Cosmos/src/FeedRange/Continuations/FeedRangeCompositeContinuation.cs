@@ -8,12 +8,13 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.Generic;
     using System.Linq;
     using System.Net;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Routing;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
 
     /// <summary>
     /// FeedRangeContinuation using Composite Continuation Tokens and split proof.
@@ -113,7 +114,7 @@ namespace Microsoft.Azure.Cosmos
 
         public override string ToString()
         {
-            return JsonConvert.SerializeObject(this);
+            return JsonSerializer.Serialize(this, CosmosSerializerContext.Default.FeedRangeCompositeContinuation);
         }
 
         public override void ReplaceContinuation(string continuationToken)
@@ -199,7 +200,7 @@ namespace Microsoft.Azure.Cosmos
         {
             try
             {
-                feedToken = JsonConvert.DeserializeObject<FeedRangeCompositeContinuation>(toStringValue);
+                feedToken = JsonSerializer.Deserialize<FeedRangeCompositeContinuation>(toStringValue, CosmosSerializerContext.Default.FeedRangeCompositeContinuation);
                 return true;
             }
             catch (JsonException)
@@ -218,7 +219,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 if (providedContinuation.Trim().StartsWith("[", StringComparison.Ordinal))
                 {
-                    List<CompositeContinuationToken> compositeContinuationTokens = JsonConvert.DeserializeObject<List<CompositeContinuationToken>>(providedContinuation);
+                    List<CompositeContinuationToken> compositeContinuationTokens = JsonSerializer.Deserialize<List<CompositeContinuationToken>>(providedContinuation, CosmosSerializerContext.Default.ListCompositeContinuationToken);
 
                     if (compositeContinuationTokens != null && compositeContinuationTokens.Count > 0)
                     {
@@ -229,7 +230,7 @@ namespace Microsoft.Azure.Cosmos
                 }
                 else if (providedContinuation.Trim().StartsWith("{", StringComparison.Ordinal))
                 {
-                    compositeContinuationToken = JsonConvert.DeserializeObject<CompositeContinuationToken>(providedContinuation);
+                    compositeContinuationToken = JsonSerializer.Deserialize<CompositeContinuationToken>(providedContinuation, CosmosSerializerContext.Default.CompositeContinuationToken);
                     return compositeContinuationToken != null;
                 }
 
@@ -279,7 +280,7 @@ namespace Microsoft.Azure.Cosmos
             {
                 // Update the internal composite continuation
                 continuationAsComposite.Range = this.CurrentToken.Range;
-                this.CurrentToken.Token = JsonConvert.SerializeObject(continuationAsComposite);
+                this.CurrentToken.Token = JsonSerializer.Serialize(continuationAsComposite, CosmosSerializerContext.Default.CompositeContinuationToken);
                 // Add children
                 foreach (Documents.PartitionKeyRange keyRange in keyRanges.Skip(1))
                 {
@@ -288,7 +289,7 @@ namespace Microsoft.Azure.Cosmos
                         FeedRangeCompositeContinuation.CreateCompositeContinuationTokenForRange(
                             keyRange.MinInclusive,
                             keyRange.MaxExclusive,
-                            JsonConvert.SerializeObject(continuationAsComposite)));
+                            JsonSerializer.Serialize(continuationAsComposite, CosmosSerializerContext.Default.CompositeContinuationToken)));
                 }
             }
             else
