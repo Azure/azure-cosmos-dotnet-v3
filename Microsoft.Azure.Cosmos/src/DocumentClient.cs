@@ -1058,8 +1058,8 @@ namespace Microsoft.Azure.Cosmos
                 this.ConnectionPolicy.EnablePartitionLevelFailover = this.accountServiceConfiguration.AccountProperties.EnablePartitionLevelFailover.Value;
             }
 
-            this.isThinClientEnabled = (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
-
+            this.isThinClientEnabled = (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway) &&
+                (this.accountServiceConfiguration.AccountProperties?.ThinClientWritableLocationsInternal?.Count ?? 0) > 0;
             this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker |= this.ConnectionPolicy.EnablePartitionLevelFailover;
             this.ConnectionPolicy.UserAgentContainer.AppendFeatures(this.GetUserAgentFeatures());
             this.InitializePartitionLevelFailoverWithDefaultHedging();
@@ -1083,14 +1083,16 @@ namespace Microsoft.Azure.Cosmos
             this.ResetSessionTokenRetryPolicy = this.retryPolicy;
 
             GatewayStoreModel gatewayStoreModel = new GatewayStoreModel(
-                    this.GlobalEndpointManager,
-                    this.sessionContainer,
-                    (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                    this.eventSource,
-                    this.serializerSettings,
-                    this.httpClient,
-                    this.PartitionKeyRangeLocation,
-                    isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
+                endpointManager: this.GlobalEndpointManager,
+                sessionContainer: this.sessionContainer,
+                defaultConsistencyLevel: (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
+                eventSource: this.eventSource,
+                serializerSettings: this.serializerSettings,
+                httpClient: this.httpClient,
+                globalPartitionEndpointManager: this.PartitionKeyRangeLocation,
+                isThinClientEnabled: this.isThinClientEnabled,
+                isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker,
+                userAgentContainer: this.ConnectionPolicy.UserAgentContainer);
 
             this.GatewayStoreModel = gatewayStoreModel;
 
@@ -1108,27 +1110,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (this.ConnectionPolicy.ConnectionMode == ConnectionMode.Gateway)
             {
-                if (this.isThinClientEnabled)
-                {
-                    ThinClientStoreModel thinClientStoreModel = new (
-                        endpointManager: this.GlobalEndpointManager,
-                        this.PartitionKeyRangeLocation,
-                        this.sessionContainer,
-                        (Cosmos.ConsistencyLevel)this.accountServiceConfiguration.DefaultConsistencyLevel,
-                        this.eventSource,
-                        this.serializerSettings,
-                        this.httpClient,
-                        this.ConnectionPolicy.UserAgentContainer,
-                        isPartitionLevelFailoverEnabled: this.ConnectionPolicy.EnablePartitionLevelFailover || this.ConnectionPolicy.EnablePartitionLevelCircuitBreaker);
-
-                    thinClientStoreModel.SetCaches(this.partitionKeyRangeCache, this.collectionCache);
-
-                    this.StoreModel = thinClientStoreModel;
-                }
-                else
-                {
-                    this.StoreModel = this.GatewayStoreModel;
-                }
+                this.StoreModel = this.GatewayStoreModel;
             }
             else
             {
