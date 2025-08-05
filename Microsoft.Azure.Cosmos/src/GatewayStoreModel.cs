@@ -59,8 +59,8 @@ namespace Microsoft.Azure.Cosmos
             this.gatewayStoreClient = new GatewayStoreClient(
                 httpClient,
                 this.eventSource,
-                serializerSettings,
-                isPartitionLevelFailoverEnabled);
+                globalPartitionEndpointManager,
+                serializerSettings);
 
             if (isThinClientEnabled)
             {
@@ -68,7 +68,7 @@ namespace Microsoft.Azure.Cosmos
                     httpClient,
                     userAgentContainer,
                     this.eventSource,
-                    isPartitionLevelFailoverEnabled,
+                    globalPartitionEndpointManager,
                     serializerSettings);
             }
 
@@ -122,7 +122,6 @@ namespace Microsoft.Azure.Cosmos
                 if (canUseThinClient)
                 {
                     Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
-
                     AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
 
                     response = await this.thinClientStoreClient.InvokeAsync(

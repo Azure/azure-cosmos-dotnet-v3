@@ -383,6 +383,7 @@ namespace Microsoft.Azure.Cosmos.Tests
                     httpClient: mockHttpClient.Object,
                     userAgentContainer: null,
                     eventSource: mockEventSource,
+                    globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
                     serializerSettings: null)
             );
 
