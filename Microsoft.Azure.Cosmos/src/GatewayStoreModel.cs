@@ -35,6 +35,8 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly IChaosInterceptor chaosInterceptor;
 
+        private ThinClientStoreClient thinClientStoreClient;
+
         private GatewayStoreClient gatewayStoreClient;
 
         // Caches to resolve the PartitionKeyRange from request. For Session Token Optimization.
@@ -43,15 +45,17 @@ namespace Microsoft.Azure.Cosmos
         protected ISessionContainer sessionContainer;
 
         public GatewayStoreModel(
-            GlobalEndpointManager endpointManager,
-            ISessionContainer sessionContainer,
-            ConsistencyLevel defaultConsistencyLevel,
-            DocumentClientEventSource eventSource,
-            JsonSerializerSettings serializerSettings,
-            CosmosHttpClient httpClient,
-            GlobalPartitionEndpointManager globalPartitionEndpointManager,
-            bool isPartitionLevelFailoverEnabled = false,
-            IChaosInterceptor chaosInterceptor = null)
+             GlobalEndpointManager endpointManager,
+             ISessionContainer sessionContainer,
+             ConsistencyLevel defaultConsistencyLevel,
+             DocumentClientEventSource eventSource,
+             JsonSerializerSettings serializerSettings,
+             CosmosHttpClient httpClient,
+             GlobalPartitionEndpointManager globalPartitionEndpointManager,
+             bool isThinClientEnabled,
+             bool isPartitionLevelFailoverEnabled = false,
+             UserAgentContainer userAgentContainer = null,
+             IChaosInterceptor chaosInterceptor = null)
         {
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
             this.endpointManager = endpointManager;
@@ -65,6 +69,16 @@ namespace Microsoft.Azure.Cosmos
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
 
+            if (isThinClientEnabled)
+            {
+                this.thinClientStoreClient = new ThinClientStoreClient(
+                    httpClient,
+                    userAgentContainer,
+                    this.eventSource,
+                    isPartitionLevelFailoverEnabled,
+                    serializerSettings);
+            }
+
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
             this.chaosInterceptor = chaosInterceptor;
@@ -72,6 +86,8 @@ namespace Microsoft.Azure.Cosmos
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
         {
+            DocumentServiceResponse response;
+
             await GatewayStoreModel.ApplySessionTokenAsync(
                 request,
                 this.defaultConsistencyLevel,
@@ -79,12 +95,10 @@ namespace Microsoft.Azure.Cosmos
                 this.partitionKeyRangeCache,
                 this.clientCollectionCache,
                 this.endpointManager);
-
-            DocumentServiceResponse response;
             try
             {
-                // Collect region name only for document resources
-                if (request.ResourceType.Equals(ResourceType.Document) && this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
+                if (request.ResourceType.Equals(ResourceType.Document) &&
+                this.endpointManager.TryGetLocationForGatewayDiagnostics(request.RequestContext.LocationEndpointToRoute, out string regionName))
                 {
                     request.RequestContext.RegionName = regionName;
                 }
@@ -105,14 +119,43 @@ namespace Microsoft.Azure.Cosmos
                     this.globalPartitionEndpointManager.TryAddPartitionLevelLocationOverride(request);
                 }
 
-                Uri physicalAddress = GatewayStoreClient.IsFeedRequest(request.OperationType) ? this.GetFeedUri(request) : this.GetEntityUri(request);
-                response = await this.gatewayStoreClient.InvokeAsync(request, request.ResourceType, physicalAddress, cancellationToken);
+                bool canUseThinClient =
+                    this.thinClientStoreClient != null &&
+                    GatewayStoreModel.IsOperationSupportedByThinClient(request);
+
+                Uri physicalAddress = ThinClientStoreClient.IsFeedRequest(request.OperationType)
+                        ? this.GetFeedUri(request)
+                        : this.GetEntityUri(request);
+
+                if (canUseThinClient)
+                {
+                    Uri thinClientEndpoint = this.endpointManager.ResolveThinClientEndpoint(request);
+
+                    AccountProperties account = await this.GetDatabaseAccountPropertiesAsync();
+
+                    response = await this.thinClientStoreClient.InvokeAsync(
+                        request,
+                        request.ResourceType,
+                        physicalAddress,
+                        thinClientEndpoint,
+                        account.Id,
+                        this.clientCollectionCache,
+                        cancellationToken);
+                }
+                else
+                {
+                    response = await this.gatewayStoreClient.InvokeAsync(
+                        request,
+                        request.ResourceType,
+                        physicalAddress,
+                        cancellationToken);
+                }
             }
             catch (DocumentClientException exception)
             {
                 if ((!ReplicatedResourceClient.IsMasterResource(request.ResourceType)) &&
                     (exception.StatusCode == HttpStatusCode.PreconditionFailed || exception.StatusCode == HttpStatusCode.Conflict
-                    || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
+                     || (exception.StatusCode == HttpStatusCode.NotFound && exception.GetSubStatus() != SubStatusCodes.ReadSessionNotAvailable)))
                 {
                     await this.CaptureSessionTokenAndHandleSplitAsync(exception.StatusCode, exception.GetSubStatus(), request, exception.Headers);
                 }
@@ -499,10 +542,47 @@ namespace Microsoft.Azure.Cosmos
                    operationType != Documents.OperationType.ExecuteJavaScript;
         }
 
+        internal static bool IsOperationSupportedByThinClient(DocumentServiceRequest request)
+        {
+            return request.ResourceType == ResourceType.Document
+                   && (request.OperationType == OperationType.Batch
+                   || request.OperationType == OperationType.Patch
+                   || request.OperationType == OperationType.Create
+                   || request.OperationType == OperationType.Read
+                   || request.OperationType == OperationType.Upsert
+                   || request.OperationType == OperationType.Replace
+                   || request.OperationType == OperationType.Delete
+                   || request.OperationType == OperationType.Query);
+        }
+        private async Task<AccountProperties> GetDatabaseAccountPropertiesAsync()
+        {
+            AccountProperties accountProperties = await this.endpointManager.GetDatabaseAccountAsync();
+            if (accountProperties != null)
+            {
+                return accountProperties;
+            }
+
+            throw new InvalidOperationException("Failed to retrieve AccountProperties. The response was null.");
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
+                if (this.thinClientStoreClient != null)
+                {
+                    try
+                    {
+                        this.thinClientStoreClient.Dispose();
+                    }
+                    catch (Exception exception)
+                    {
+                        DefaultTrace.TraceWarning("Exception {0} thrown during dispose of HttpClient, this could happen if there are inflight request during the dispose of client",
+                            exception.Message);
+                    }
+
+                    this.thinClientStoreClient = null;
+                }
                 if (this.gatewayStoreClient != null)
                 {
                     try

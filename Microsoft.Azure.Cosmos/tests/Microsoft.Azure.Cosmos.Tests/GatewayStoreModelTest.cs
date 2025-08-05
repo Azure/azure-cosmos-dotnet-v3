@@ -9,8 +9,10 @@ namespace Microsoft.Azure.Cosmos
     using System.Collections.ObjectModel;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Net;
     using System.Net.Http;
+    using System.Reflection;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
@@ -147,7 +149,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -209,7 +212,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -560,7 +564,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -622,7 +627,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -686,7 +692,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             INameValueCollection headers = new RequestNameValueCollection();
             headers.Set(HttpConstants.HttpHeaders.ConsistencyLevel, ConsistencyLevel.Session.ToString());
@@ -835,7 +842,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
             INameValueCollection headers = new RequestNameValueCollection();
@@ -944,7 +952,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
             INameValueCollection headers = new RequestNameValueCollection();
@@ -985,7 +994,9 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient()),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
+
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
             Mock<PartitionKeyRangeCache> partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache.Object, endpointManager, false);
 
@@ -1080,7 +1091,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             Mock<ClientCollectionCache> clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false);
 
@@ -1226,6 +1238,421 @@ namespace Microsoft.Azure.Cosmos
             });
         }
 
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ThinClient_ProcessMessageAsync_Success_ShouldReturnDocumentServiceResponse()
+        {
+            string mockBase64 = "9AEAAMkAAAAIvhHfD23jSaynaR+gyTZ3AAAAAQIAByFUaHUsIDEzIEZlYiAyMDI1IDE0OjI1OjI4LjAyNCBHTVQEAAgmACIwMDAwYWQzZS0wMDAwLTAyMDAtMDAwMC02N2FlNjRjMDAwMDAiDgAIVABkb2N1bWVudFNpemU9NTEyMDA7ZG9jdW1lbnRzU2l6ZT01MjQyODgwMDtkb2N1bWVudHNDb3VudD0tMTtjb2xsZWN0aW9uU2l6ZT01MjQyODgwMDsPAAhBAGRvY3VtZW50U2l6ZT0wO2RvY3VtZW50c1NpemU9MTtkb2N1bWVudHNDb3VudD04O2NvbGxlY3Rpb25TaXplPTM7EAAHBDEuMTkTAAUKAAAAAAAAABUADgzDMAzDMBxAFwAIOgBkYnMvdGhpbi1jbGllbnQtdGVzdC1kYi9jb2xscy90aGluLWNsaWVudC10ZXN0LWNvbnRhaW5lci0xGAAIDABOSDF1QUo2QU5tMD0aAAUJAAAAAAAAAB4AAgMAAAAfAAIEAAAAIQAIAQAwJgACAQAAACkABQkAAAAAAAAAMAACAAAAADUAAgEAAAA6AAUKAAAAAAAAADsABQkAAAAAAAAAPgAIBQAtMSMxMFEADkjhehSuRxBAYwAIAQAweAAF//////////89AQAAeyJpZCI6IjNiMTFiNDM2LTViMTUtNGQwZS1iZWYwLWY1MzVmNjA0MTQxYyIsInBrIjoicGsiLCJuYW1lIjoiODM2MzI0NTA2IiwiZW1haWwiOiJhYmNAZGVmLmNvbSIsImJvZHkiOiJibGFibGEiLCJfcmlkIjoiTkgxdUFKNkFObTBKQUFBQUFBQUFBQT09IiwiX3NlbGYiOiJkYnMvTkgxdUFBPT0vY29sbHMvTkgxdUFKNkFObTA9L2RvY3MvTkgxdUFKNkFObTBKQUFBQUFBQUFBQT09LyIsIl9ldGFnIjoiXCIwMDAwYWQzZS0wMDAwLTAyMDAtMDAwMC02N2FlNjRjMDAwMDBcIiIsIl9hdHRhY2htZW50cyI6ImF0dGFjaG1lbnRzLyIsIl90cyI6MTczOTQ4MjMwNH0=";
+
+            HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.Created)
+            {
+                Content = new ByteArrayContent(Convert.FromBase64String(mockBase64))
+            };
+
+            MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                {
+                    Stream responseBody = successResponse.Content.ReadAsStream();
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(responseBody, headers, successResponse.StatusCode));
+                });
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                new DocumentClientEventSource(),
+                null,
+                null,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: true,
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer);
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                endpointManager,
+                false).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+               operationType: OperationType.Create,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.Created, response.StatusCode);
+        }
+
+        [TestMethod]
+        [Owner("dkunda")]
+        public async Task ThinClient_ProcessMessageAsync_WithUnsupportedOperations_ShouldFallbackToGatewayModeAndReturnDocumentServiceResponse()
+        {
+            // Arrange
+            HttpResponseMessage successResponse = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent("Response") };
+            Mock<CosmosHttpClient> mockCosmosHttpClient = new Mock<CosmosHttpClient>();
+            mockCosmosHttpClient.Setup(client => client.SendHttpAsync(
+                It.IsAny<Func<ValueTask<HttpRequestMessage>>>(),
+                It.IsAny<ResourceType>(),
+                It.IsAny<HttpTimeoutPolicy>(),
+                It.IsAny<IClientSideRequestStatistics>(),
+                It.IsAny<CancellationToken>(),
+                It.IsAny<DocumentServiceRequest>()))
+                .ReturnsAsync(successResponse);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                operationType: OperationType.QueryPlan,
+                resourceType: ResourceType.Document,
+                resourceId: "NH1uAJ6ANm0=",
+                body: null,
+                authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            Mock<IDocumentClientInternal> docClientMulti = new Mock<IDocumentClientInternal>();
+            docClientMulti.Setup(c => c.ServiceEndpoint).Returns(new Uri("http://localhost"));
+            docClientMulti
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            ConnectionPolicy policy = new ConnectionPolicy
+            {
+                UseMultipleWriteLocations = true
+            };
+
+            GlobalEndpointManager multiEndpointMgr = new GlobalEndpointManager(docClientMulti.Object, policy);
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager: multiEndpointMgr,
+                sessionContainer: sessionContainer,
+                defaultConsistencyLevel: ConsistencyLevel.Session,
+                eventSource: new DocumentClientEventSource(),
+                serializerSettings: null,
+                httpClient: mockCosmosHttpClient.Object,
+                globalPartitionEndpointManager: GlobalPartitionEndpointManagerNoOp.Instance,
+                isPartitionLevelFailoverEnabled: false,
+                isThinClientEnabled: true,
+                userAgentContainer: userAgentContainer);
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                multiEndpointMgr,
+                false).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+
+            // Act
+            DocumentServiceResponse response = await storeModel.ProcessMessageAsync(request);
+
+            // Assert
+            Assert.IsNotNull(response);
+            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void ThinClient_Dispose_ShouldDisposeThinClientStoreClient()
+        {
+            bool disposeCalled = false;
+
+            MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                    throw new NotImplementedException(),
+                () => disposeCalled = true);
+
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(Mock.Of<IDocumentClientInternal>(), new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                new DocumentClientEventSource(),
+                null,
+                null,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: true,
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer);
+
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            storeModel.Dispose();
+            Assert.IsTrue(disposeCalled, "Expected Dispose to be called on ThinClientStoreClient.");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ThinClient_ProcessMessageAsync_404_ShouldThrowDocumentClientException()
+        {
+            // Arrange
+            MockThinClientStoreClient thinClientStoreClient = new MockThinClientStoreClient(
+                (request, resourceType, uri, endpoint, globalDatabaseAccountName, clientCollectionCache, cancellationToken) =>
+                    throw new DocumentClientException(
+                        message: "Not Found",
+                        innerException: null,
+                        responseHeaders: new StoreResponseNameValueCollection(),
+                        statusCode: HttpStatusCode.NotFound,
+                        requestUri: uri));
+
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, new ConnectionPolicy());
+            SessionContainer sessionContainer = new SessionContainer("testhost");
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                new DocumentClientEventSource(),
+                null,
+                null,
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: true,
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer);
+
+            ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false).Object;
+
+            PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                clientCollectionCache,
+                endpointManager,
+                false).Object;
+
+            storeModel.SetCaches(partitionKeyRangeCache, clientCollectionCache);
+
+            ReplaceThinClientStoreClientField(storeModel, thinClientStoreClient);
+
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+               operationType: OperationType.Read,
+               resourceType: ResourceType.Document,
+               resourceId: "NH1uAJ6ANm0=",
+               body: null,
+               authorizationTokenType: AuthorizationTokenType.PrimaryMasterKey);
+
+            // Act & Assert
+            await Assert.ThrowsExceptionAsync<DocumentClientException>(
+                async () => await storeModel.ProcessMessageAsync(request),
+                "Expected 404 DocumentClientException from the final thinClientStore call");
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public async Task ThinClient_PartitionLevelFailoverEnabled_ResolvesPartitionKeyRangeAndCallsLocationOverride()
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            mockDocumentClient
+                .Setup(c => c.GetDatabaseAccountInternalAsync(It.IsAny<Uri>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new AccountProperties());
+
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
+
+            Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+            globalPartitionEndpointManager
+                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true)
+                .Verifiable();
+
+            ISessionContainer sessionContainer = new Mock<ISessionContainer>().Object;
+            DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
+            JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
+            CosmosHttpClient httpClient = new Mock<CosmosHttpClient>().Object;
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                eventSource,
+                serializerSettings,
+                httpClient,
+                globalPartitionEndpointManager.Object,
+                isThinClientEnabled: true,
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer);
+
+            Mock<ClientCollectionCache> mockCollectionCache = new Mock<ClientCollectionCache>(
+                sessionContainer,
+                storeModel,
+                null,
+                null,
+                null,
+                false);
+
+            ContainerProperties containerProperties = new ContainerProperties("test", "/pk");
+            typeof(ContainerProperties)
+                .GetProperty("ResourceId", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                ?.SetValue(containerProperties, "testCollectionRid");
+            containerProperties.PartitionKeyPath = "/pk";
+
+            mockCollectionCache
+                .Setup(c => c.ResolveCollectionAsync(It.IsAny<DocumentServiceRequest>(), It.IsAny<CancellationToken>(), It.IsAny<ITrace>()))
+                .ReturnsAsync(containerProperties);
+
+            Mock<PartitionKeyRangeCache> mockPartitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(
+                null,
+                storeModel,
+                mockCollectionCache.Object,
+                endpointManager,
+                false);
+
+            PartitionKeyRange pkRange = new PartitionKeyRange { Id = "0", MinInclusive = "", MaxExclusive = "FF" };
+            List<PartitionKeyRange> pkRanges = new List<PartitionKeyRange> { pkRange };
+            IEnumerable<Tuple<PartitionKeyRange, ServiceIdentity>> rangeTuples = pkRanges.Select(r => Tuple.Create(r, (ServiceIdentity)null));
+            CollectionRoutingMap routingMap = CollectionRoutingMap.TryCreateCompleteRoutingMap(rangeTuples, "testCollectionRid");
+
+            mockPartitionKeyRangeCache
+                .Setup(c => c.TryLookupAsync(It.IsAny<string>(), It.IsAny<CollectionRoutingMap>(), It.IsAny<DocumentServiceRequest>(), It.IsAny<ITrace>()))
+                .ReturnsAsync(routingMap);
+
+            storeModel.SetCaches(mockPartitionKeyRangeCache.Object, mockCollectionCache.Object);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+
+            MockThinClientStoreClient mockThinClientStoreClient = new MockThinClientStoreClient(
+                (DocumentServiceRequest req, ResourceType resourceType, Uri uri, Uri endpoint, string globalDatabaseAccountName, ClientCollectionCache clientCollectionCache, CancellationToken cancellationToken) =>
+                {
+                    MemoryStream stream = new MemoryStream(new byte[] { 1, 2, 3 });
+                    INameValueCollection headers = new StoreResponseNameValueCollection();
+                    return Task.FromResult(new DocumentServiceResponse(stream, headers, HttpStatusCode.OK));
+                });
+
+            ReplaceThinClientStoreClientField(storeModel, mockThinClientStoreClient);
+
+            // Act
+            await storeModel.ProcessMessageAsync(request);
+
+            // Assert
+            globalPartitionEndpointManager.Verify(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()), Times.Once());
+        }
+
+        [TestMethod]
+        [Owner("aavasthy")]
+        public void ThinClient_CircuitBreaker_MarksPartitionUnavailableOnRepeatedFailures()
+        {
+            Mock<IDocumentClientInternal> mockDocumentClient = new Mock<IDocumentClientInternal>();
+            mockDocumentClient.Setup(c => c.ServiceEndpoint).Returns(new Uri("https://mock.proxy.com"));
+            ConnectionPolicy connectionPolicy = new ConnectionPolicy();
+            GlobalEndpointManager endpointManager = new GlobalEndpointManager(mockDocumentClient.Object, connectionPolicy);
+            Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
+            globalPartitionEndpointManager
+                .Setup(m => m.TryAddPartitionLevelLocationOverride(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true);
+
+            globalPartitionEndpointManager
+                .Setup(m => m.TryMarkEndpointUnavailableForPartitionKeyRange(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true)
+                .Verifiable();
+
+            globalPartitionEndpointManager
+                .Setup(m => m.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(It.IsAny<DocumentServiceRequest>()))
+                .Returns(true);
+
+            ISessionContainer sessionContainer = new Mock<ISessionContainer>().Object;
+            DocumentClientEventSource eventSource = new Mock<DocumentClientEventSource>().Object;
+            JsonSerializerSettings serializerSettings = new JsonSerializerSettings();
+            CosmosHttpClient httpClient = new Mock<CosmosHttpClient>().Object;
+            UserAgentContainer userAgentContainer = new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix");
+
+            GatewayStoreModel storeModel = new GatewayStoreModel(
+                endpointManager,
+                sessionContainer,
+                ConsistencyLevel.Session,
+                eventSource,
+                serializerSettings,
+                httpClient,
+                globalPartitionEndpointManager.Object,
+                isThinClientEnabled: true,
+                isPartitionLevelFailoverEnabled: true,
+                userAgentContainer);
+
+            TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
+
+            DocumentServiceRequest request = CreatePartitionedDocumentRequest();
+
+            for (int i = 0; i < 3; i++)
+            {
+                globalPartitionEndpointManager.Object.IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(request);
+            }
+
+            globalPartitionEndpointManager.Object.TryMarkEndpointUnavailableForPartitionKeyRange(request);
+
+            globalPartitionEndpointManager.Verify(m => m.TryMarkEndpointUnavailableForPartitionKeyRange(It.IsAny<DocumentServiceRequest>()), Times.Once());
+        }
+
+        private static void ReplaceThinClientStoreClientField(GatewayStoreModel model, ThinClientStoreClient newClient)
+        {
+            FieldInfo field = typeof(GatewayStoreModel).GetField(
+                "thinClientStoreClient",
+                BindingFlags.NonPublic | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("Could not find 'thinClientStoreClient' field on GatewayStoreModel");
+
+            field.SetValue(model, newClient);
+        }
+
+        private static DocumentServiceRequest CreatePartitionedDocumentRequest()
+        {
+            DocumentServiceRequest request = DocumentServiceRequest.Create(
+                OperationType.Read,
+                ResourceType.Document,
+                "/dbs/test/colls/test/docs/test",
+                AuthorizationTokenType.PrimaryMasterKey);
+            request.Headers[HttpConstants.HttpHeaders.PartitionKey] = "[\"test\"]";
+            request.RequestContext = new DocumentServiceRequestContext();
+            return request;
+        }
+
         private class MockMessageHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, Task<HttpResponseMessage>> sendFunc;
@@ -1287,7 +1714,8 @@ namespace Microsoft.Azure.Cosmos
                 eventSource,
                 null,
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(httpMessageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             ClientCollectionCache clientCollectionCache = new Mock<ClientCollectionCache>(new SessionContainer("testhost"), storeModel, null, null, null, false).Object;
             PartitionKeyRangeCache partitionKeyRangeCache = new Mock<PartitionKeyRangeCache>(null, storeModel, clientCollectionCache, endpointManager, false).Object;
@@ -1306,6 +1734,50 @@ namespace Microsoft.Azure.Cosmos
                 request.Headers["x-ms-consistency-level"] = "Session";
                 request.RequestContext.ResolvedPartitionKeyRange = new PartitionKeyRange { Id = "range_0" };
                 await storeModel.ProcessMessageAsync(request);
+            }
+        }
+
+        internal class MockThinClientStoreClient : ThinClientStoreClient
+        {
+            private readonly Func<DocumentServiceRequest, ResourceType, Uri, Uri, string, ClientCollectionCache, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc;
+            private readonly Action onDispose;
+
+            public MockThinClientStoreClient(
+                Func<DocumentServiceRequest, ResourceType, Uri, Uri, string, ClientCollectionCache, CancellationToken, Task<DocumentServiceResponse>> invokeAsyncFunc,
+                Action onDispose = null)
+                : base(
+                    httpClient: null,
+                    eventSource: null,
+                    userAgentContainer: new UserAgentContainer(0, "TestFeature", "TestRegion", "TestSuffix"),
+                    serializerSettings: null)
+            {
+                this.invokeAsyncFunc = invokeAsyncFunc;
+                this.onDispose = onDispose;
+            }
+
+            public override async Task<DocumentServiceResponse> InvokeAsync(
+                DocumentServiceRequest request,
+                ResourceType resourceType,
+                Uri physicalAddress,
+                Uri thinClientEndpoint,
+                string globalDatabaseAccountName,
+                ClientCollectionCache clientCollectionCache,
+                CancellationToken cancellationToken)
+            {
+                return await this.invokeAsyncFunc(
+                    request,
+                    resourceType,
+                    physicalAddress,
+                    thinClientEndpoint,
+                    globalDatabaseAccountName,
+                    clientCollectionCache,
+                    cancellationToken);
+            }
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                this.onDispose?.Invoke();
             }
         }
     }

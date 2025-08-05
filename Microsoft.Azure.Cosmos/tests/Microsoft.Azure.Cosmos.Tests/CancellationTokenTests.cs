@@ -65,7 +65,8 @@ namespace Microsoft.Azure.Cosmos
                     MockCosmosUtil.CreateCosmosHttpClient(
                         () => new HttpClient(messageHandler),
                         eventSource),
-                    GlobalPartitionEndpointManagerNoOp.Instance);
+                    GlobalPartitionEndpointManagerNoOp.Instance,
+                    isThinClientEnabled: false);
 
                 TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager);
 
@@ -221,7 +222,8 @@ namespace Microsoft.Azure.Cosmos
                 new DocumentClientEventSource(),
                 new JsonSerializerSettings(),
                 MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler)),
-                GlobalPartitionEndpointManagerNoOp.Instance);
+                GlobalPartitionEndpointManagerNoOp.Instance,
+                isThinClientEnabled: false);
 
             TestUtils.SetupCachesInGatewayStoreModel(storeModel, endpointManager.Object);
 
