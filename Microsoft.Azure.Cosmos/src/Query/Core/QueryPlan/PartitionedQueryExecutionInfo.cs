@@ -61,7 +61,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.QueryPlan
 
             try
             {
-                partitionedQueryExecutionInfo = JsonSerializer.Deserialize<PartitionedQueryExecutionInfo>(serializedQueryPlan);
+                partitionedQueryExecutionInfo = JsonSerializer.Deserialize(
+                    serializedQueryPlan,
+                    CosmosSerializerContext.Default.PartitionedQueryExecutionInfo);
                 return true;
             }
             catch (JsonException)

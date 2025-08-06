@@ -6,6 +6,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
 {
     using System;
     using System.Collections.Generic;
+    using System.Text.Json;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -14,7 +15,6 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
     using UInt128 = Microsoft.Azure.Cosmos.UInt128;
 
     internal class DistinctQueryPipelineStage : QueryPipelineStageBase
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
         /// <summary>
         /// Continuation token for distinct queries.
         /// </summary>
-        private sealed class DistinctContinuationToken
+        internal sealed class DistinctContinuationToken
         {
             private static class PropertyNames
             {
@@ -255,7 +255,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct
             /// <returns>The serialized form of DistinctContinuationToken</returns>
             public override string ToString()
             {
-                return JsonConvert.SerializeObject(this);
+                return JsonSerializer.Serialize(this, CosmosSerializerContext.Default.DistinctContinuationToken);
             }
         }
     }

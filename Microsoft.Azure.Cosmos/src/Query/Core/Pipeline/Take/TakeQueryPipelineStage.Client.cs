@@ -7,6 +7,8 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Azure.Cosmos.CosmosElements;
@@ -14,11 +16,10 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
     using Microsoft.Azure.Cosmos.Query.Core.Monads;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.Pagination;
     using Microsoft.Azure.Cosmos.Tracing;
-    using Newtonsoft.Json;
 
     internal abstract partial class TakeQueryPipelineStage : QueryPipelineStageBase
     {
-        private sealed class ClientTakeQueryPipelineStage : TakeQueryPipelineStage
+        internal sealed class ClientTakeQueryPipelineStage : TakeQueryPipelineStage
         {
             private readonly TakeEnum takeEnum;
 
@@ -235,20 +236,20 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 return true;
             }
 
-            private enum TakeEnum
+            internal enum TakeEnum
             {
                 Limit,
                 Top
             }
 
-            private abstract class TakeContinuationToken
+            internal abstract class TakeContinuationToken
             {
             }
 
             /// <summary>
             /// A LimitContinuationToken is a composition of a source continuation token and how many items we have left to drain from that source.
             /// </summary>
-            private sealed class LimitContinuationToken : TakeContinuationToken
+            internal sealed class LimitContinuationToken : TakeContinuationToken
             {
                 /// <summary>
                 /// Initializes a new instance of the LimitContinuationToken struct.
@@ -269,7 +270,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
-                [JsonProperty("limit")]
+                [JsonPropertyName("limit")]
                 public int Limit
                 {
                     get;
@@ -278,7 +279,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.
                 /// </summary>
-                [JsonProperty("sourceToken")]
+                [JsonPropertyName("sourceToken")]
                 public string SourceToken
                 {
                     get;
@@ -300,7 +301,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                     try
                     {
-                        limitContinuationToken = JsonConvert.DeserializeObject<LimitContinuationToken>(value);
+                        limitContinuationToken = JsonSerializer.Deserialize(
+                            value,
+                            CosmosSerializerContext.Default.LimitContinuationToken);
                         return true;
                     }
                     catch (JsonException)
@@ -315,14 +318,14 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <returns>The string version of the continuation token that can be passed in a response header.</returns>
                 public override string ToString()
                 {
-                    return JsonConvert.SerializeObject(this);
+                    return JsonSerializer.Serialize(this, CosmosSerializerContext.Default.LimitContinuationToken);
                 }
             }
 
             /// <summary>
             /// A TopContinuationToken is a composition of a source continuation token and how many items we have left to drain from that source.
             /// </summary>
-            private sealed class TopContinuationToken : TakeContinuationToken
+            internal sealed class TopContinuationToken : TakeContinuationToken
             {
                 /// <summary>
                 /// Initializes a new instance of the TopContinuationToken struct.
@@ -338,7 +341,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the limit to the number of document drained for the remainder of the query.
                 /// </summary>
-                [JsonProperty("top")]
+                [JsonPropertyName("top")]
                 public int Top
                 {
                     get;
@@ -347,7 +350,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <summary>
                 /// Gets the continuation token for the source component of the query.
                 /// </summary>
-                [JsonProperty("sourceToken")]
+                [JsonPropertyName("sourceToken")]
                 public string SourceToken
                 {
                     get;
@@ -369,7 +372,9 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
 
                     try
                     {
-                        topContinuationToken = JsonConvert.DeserializeObject<TopContinuationToken>(value);
+                        topContinuationToken = JsonSerializer.Deserialize(
+                            value,
+                            CosmosSerializerContext.Default.TopContinuationToken);
                         return true;
                     }
                     catch (JsonException)
@@ -384,7 +389,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take
                 /// <returns>The string version of the continuation token that can be passed in a response header.</returns>
                 public override string ToString()
                 {
-                    return JsonConvert.SerializeObject(this);
+                    return JsonSerializer.Serialize(this, CosmosSerializerContext.Default.TopContinuationToken);
                 }
             }
         }

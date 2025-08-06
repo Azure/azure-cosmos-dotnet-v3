@@ -10,6 +10,7 @@ namespace Microsoft.Azure.Cosmos
     using System.Text.Json;
     using System.Text.Json.Serialization;
     using System.Text.Json.Serialization.Metadata;
+    using Microsoft.Azure.Cosmos.Core.Utf8;
     using Microsoft.Azure.Cosmos.Query.Core;
     using Microsoft.Azure.Cosmos.Query.Core.Metrics;
     using Microsoft.Azure.Cosmos.Query.Core.Pipeline.CrossPartition.OrderBy;
@@ -45,8 +46,13 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(HybridSearchQueryInfo))]
     [JsonSerializable(typeof(IndexingPolicy))]
     [JsonSerializable(typeof(IndexUtilizationInfo))]
+    [JsonSerializable(typeof(IReadOnlyDictionary<string, Query.Core.Pipeline.Aggregate.Aggregators.SingleGroupAggregator.AggregateValue>))]
     [JsonSerializable(typeof(IReadOnlyList<SortOrder>))]
     [JsonSerializable(typeof(List<CompositeContinuationToken>))]
+    [JsonSerializable(typeof(Microsoft.Azure.Cosmos.Query.Core.Pipeline.Distinct.DistinctQueryPipelineStage.DistinctContinuationToken))]
+    [JsonSerializable(typeof(Microsoft.Azure.Cosmos.Query.Core.Pipeline.Skip.SkipQueryPipelineStage.ClientSkipQueryPipelineStage.OffsetContinuationToken))]
+    [JsonSerializable(typeof(Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take.TakeQueryPipelineStage.ClientTakeQueryPipelineStage.LimitContinuationToken))]
+    [JsonSerializable(typeof(Microsoft.Azure.Cosmos.Query.Core.Pipeline.Take.TakeQueryPipelineStage.ClientTakeQueryPipelineStage.TopContinuationToken))]
     [JsonSerializable(typeof(OtherConnectionConfig))]
     [JsonSerializable(typeof(PartitionKeyDefinition))]
     [JsonSerializable(typeof(PartitionKeyRange))]
@@ -63,6 +69,7 @@ namespace Microsoft.Azure.Cosmos
     [JsonSerializable(typeof(TriggerProperties))]
     [JsonSerializable(typeof(UniqueKeyPolicy))]
     [JsonSerializable(typeof(UserDefinedFunctionProperties))]
+    [JsonSerializable(typeof(UtfAnyString))]
     [JsonSerializable(typeof(VectorEmbeddingPolicy))]
     [JsonSerializable(typeof(HashIndex))]
     [JsonSerializable(typeof(RangeIndex))]
