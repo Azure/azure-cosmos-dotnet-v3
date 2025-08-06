@@ -386,10 +386,16 @@ namespace Microsoft.Azure.Cosmos
                 resourceType,
                 HttpTimeoutPolicy.GetTimeoutPolicy(
                     request,
-                    this.globalPartitionEndpointManager.IsPartitionLevelFailoverEnabled()),
+                    this.IsPartitionLevelFailoverEnabled()),
                 request.RequestContext.ClientRequestStatistics,
                 cancellationToken,
                 request);
+        }
+
+        private bool IsPartitionLevelFailoverEnabled()
+        {
+            return this.globalPartitionEndpointManager.IsPartitionLevelCircuitBreakerEnabled()
+                || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
         }
     }
 }

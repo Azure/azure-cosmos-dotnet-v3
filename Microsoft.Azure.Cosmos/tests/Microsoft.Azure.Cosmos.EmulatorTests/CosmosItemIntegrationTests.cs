@@ -1701,7 +1701,7 @@
 
                 Assert.IsNull(hedgeContextNoPPAF);
                 Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
-                Assert.IsFalse(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelFailoverEnabled());
+                Assert.IsFalse(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Enable PPAF At the Gateway Layer.
                 enablePPAF = true;
@@ -1729,7 +1729,7 @@
                 List<string> hedgedRegions = ((IEnumerable<string>)hedgeContext).ToList();
 
                 Assert.IsTrue(hedgedRegions.Count >= 1, "Since the first region is not available, the request should atleast hedge to the next region.");
-                Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelFailoverEnabled());
+                Assert.IsTrue(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
 
                 // Disable PPAF At the Gateway Layer.
                 enablePPAF = false;
@@ -1755,7 +1755,7 @@
 
                 Assert.IsNull(hedgeContextNoPPAF2);
                 Assert.IsNull(cosmosClient.DocumentClient.ConnectionPolicy.AvailabilityStrategy);
-                Assert.IsFalse(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelFailoverEnabled());
+                Assert.IsFalse(cosmosClient.DocumentClient.PartitionKeyRangeLocation.IsPartitionLevelAutomaticFailoverEnabled());
             }
             finally
             {

@@ -96,7 +96,7 @@ namespace Microsoft.Azure.Cosmos
                 }
 
                 // This is applicable for both per partition automatic failover and per partition circuit breaker.
-                if (this.globalPartitionEndpointManager.IsPartitionLevelFailoverEnabled()
+                if (this.IsPartitionLevelFailoverEnabled()
                     && !ReplicatedResourceClient.IsMasterResource(request.ResourceType)
                     && request.ResourceType.IsPartitioned())
                 {
@@ -407,7 +407,13 @@ namespace Microsoft.Azure.Cosmos
             return new Tuple<bool, string>(false, null);
         }
 
-        protected static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
+        private bool IsPartitionLevelFailoverEnabled()
+        {
+            return this.globalPartitionEndpointManager.IsPartitionLevelCircuitBreakerEnabled()
+                || this.globalPartitionEndpointManager.IsPartitionLevelAutomaticFailoverEnabled();
+        }
+
+        private static async Task<Tuple<bool, PartitionKeyRange>> TryResolvePartitionKeyRangeAsync(
             DocumentServiceRequest request,
             ISessionContainer sessionContainer,
             PartitionKeyRangeCache partitionKeyRangeCache,

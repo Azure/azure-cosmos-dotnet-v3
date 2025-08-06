@@ -497,7 +497,7 @@ namespace Microsoft.Azure.Cosmos
 
             if (!this.canUseMultipleWriteLocations
                     && !this.isReadRequest
-                    && !this.partitionKeyRangeLocationCache.IsPartitionLevelFailoverEnabled())
+                    && !this.partitionKeyRangeLocationCache.IsPartitionLevelAutomaticFailoverEnabled())
             {
                 // Write requests on single master cannot be retried if partition level failover is disabled.
                 // This means there are no other regions available to serve the writes.

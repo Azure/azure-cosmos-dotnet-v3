@@ -123,11 +123,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryAddPartitionLevelLocationOverride(
             DocumentServiceRequest request)
         {
-            if (!this.IsPartitionLevelFailoverEnabled())
-            {
-                return false;
-            }
-
             if (!this.IsRequestEligibleForPartitionFailover(
                 request,
                 shouldValidateFailedLocation: false,
@@ -164,11 +159,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool TryMarkEndpointUnavailableForPartitionKeyRange(
             DocumentServiceRequest request)
         {
-            if (!this.IsPartitionLevelFailoverEnabled())
-            {
-                return false;
-            }
-
             if (!this.IsRequestEligibleForPartitionFailover(
                 request,
                 shouldValidateFailedLocation: true,
@@ -221,11 +211,6 @@ namespace Microsoft.Azure.Cosmos.Routing
         public override bool IncrementRequestFailureCounterAndCheckIfPartitionCanFailover(
             DocumentServiceRequest request)
         {
-            if (!this.IsPartitionLevelFailoverEnabled())
-            {
-                return false;
-            }
-
             if (!this.IsRequestEligibleForPartitionFailover(
                 request,
                 shouldValidateFailedLocation: true,
@@ -297,21 +282,30 @@ namespace Microsoft.Azure.Cosmos.Routing
                 || (!request.IsReadOnlyRequest && this.globalEndpointManager.CanSupportMultipleWriteLocations(request.ResourceType, request.OperationType)));
         }
 
+        /// <inheritdoc/>
         public override void SetIsPPAFEnabled(
             bool isPPAFEnabled)
         {
             Interlocked.Exchange(ref this.isPartitionLevelAutomaticFailoverEnabled, isPPAFEnabled ? 1 : 0);
         }
 
+        /// <inheritdoc/>
         public override void SetIsPPCBEnabled(
             bool isPPCBEnabled)
         {
             Interlocked.Exchange(ref this.isPartitionLevelCircuitBreakerEnabled, isPPCBEnabled ? 1 : 0);
         }
 
-        public override bool IsPartitionLevelFailoverEnabled()
+        /// <inheritdoc/>
+        public override bool IsPartitionLevelAutomaticFailoverEnabled()
         {
-            return this.isPartitionLevelAutomaticFailoverEnabled == 1 || this.isPartitionLevelCircuitBreakerEnabled == 1;
+            return this.isPartitionLevelAutomaticFailoverEnabled == 1;
+        }
+
+        /// <inheritdoc/>
+        public override bool IsPartitionLevelCircuitBreakerEnabled()
+        {
+            return this.isPartitionLevelCircuitBreakerEnabled == 1;
         }
 
         /// <summary>
@@ -345,7 +339,8 @@ namespace Microsoft.Azure.Cosmos.Routing
             partitionKeyRange = default;
             failedLocation = default;
 
-            if (!this.IsPartitionLevelFailoverEnabled())
+            if (!this.IsPartitionLevelAutomaticFailoverEnabled()
+                && !this.IsPartitionLevelCircuitBreakerEnabled())
             {
                 return false;
             }

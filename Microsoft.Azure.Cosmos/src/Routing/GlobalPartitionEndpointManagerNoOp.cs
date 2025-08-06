@@ -61,7 +61,12 @@ namespace Microsoft.Azure.Cosmos.Routing
             return;
         }
 
-        public override bool IsPartitionLevelFailoverEnabled()
+        public override bool IsPartitionLevelAutomaticFailoverEnabled()
+        {
+            return false;
+        }
+
+        public override bool IsPartitionLevelCircuitBreakerEnabled()
         {
             return false;
         }

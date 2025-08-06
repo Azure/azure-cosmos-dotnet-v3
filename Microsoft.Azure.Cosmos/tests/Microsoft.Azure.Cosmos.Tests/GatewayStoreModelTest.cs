@@ -1497,7 +1497,7 @@ namespace Microsoft.Azure.Cosmos
             Mock<GlobalPartitionEndpointManager> globalPartitionEndpointManager = new Mock<GlobalPartitionEndpointManager>();
 
             globalPartitionEndpointManager
-                .Setup(m => m.IsPartitionLevelFailoverEnabled())
+                .Setup(m => m.IsPartitionLevelAutomaticFailoverEnabled())
                 .Returns(true)
                 .Verifiable();
 
