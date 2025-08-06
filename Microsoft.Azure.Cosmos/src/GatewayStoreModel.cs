@@ -68,6 +68,7 @@ namespace Microsoft.Azure.Cosmos
                 this.eventSource,
                 serializerSettings,
                 isPartitionLevelFailoverEnabled);
+            this.chaosInterceptor = chaosInterceptor;
 
             if (isThinClientEnabled)
             {
@@ -76,12 +77,12 @@ namespace Microsoft.Azure.Cosmos
                     userAgentContainer,
                     this.eventSource,
                     isPartitionLevelFailoverEnabled,
-                    serializerSettings);
+                    serializerSettings,
+                    this.chaosInterceptor);
             }
 
             this.globalPartitionEndpointManager.SetBackgroundConnectionPeriodicRefreshTask(
                 this.MarkEndpointsToHealthyAsync);
-            this.chaosInterceptor = chaosInterceptor;
         }
 
         public virtual async Task<DocumentServiceResponse> ProcessMessageAsync(DocumentServiceRequest request, CancellationToken cancellationToken = default)
