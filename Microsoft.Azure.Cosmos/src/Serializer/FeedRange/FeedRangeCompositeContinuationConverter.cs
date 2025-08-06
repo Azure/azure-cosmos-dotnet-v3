@@ -5,12 +5,13 @@
 namespace Microsoft.Azure.Cosmos
 {
     using System;
+    using System.ClientModel;
     using System.Collections.Generic;
+    using System.Text.Json;
+    using System.Text.Json.Serialization;
     using Microsoft.Azure.Cosmos.Routing;
-    using Newtonsoft.Json;
-    using Newtonsoft.Json.Linq;
 
-    internal sealed class FeedRangeCompositeContinuationConverter : JsonConverter
+    internal sealed class FeedRangeCompositeContinuationConverter : JsonConverter<FeedRangeCompositeContinuation>
     {
         private const string VersionPropertyName = "V";
         private const string RidPropertyName = "Rid";
@@ -21,37 +22,40 @@ namespace Microsoft.Azure.Cosmos
             return objectType == typeof(FeedRangeCompositeContinuation);
         }
 
-        public override object ReadJson(
-           JsonReader reader,
-           Type objectType,
-           object existingValue,
-           JsonSerializer serializer)
+        public override FeedRangeCompositeContinuation Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType == JsonToken.Null)
+            if (reader.TokenType == JsonTokenType.Null)
             {
                 return null;
             }
 
-            if (reader.TokenType != JsonToken.StartObject)
+            if (reader.TokenType != JsonTokenType.StartObject)
             {
-                throw new JsonReaderException();
-            }
-
-            JObject jObject = JObject.Load(reader);
-
-            if (!jObject.TryGetValue(FeedRangeCompositeContinuationConverter.ContinuationPropertyName, out JToken continuationJToken))
-            {
-                throw new JsonReaderException();
+                throw new JsonException();
             }
 
             string containerRid = null;
-            if (jObject.TryGetValue(FeedRangeCompositeContinuationConverter.RidPropertyName, out JToken ridJToken))
-            {
-                containerRid = ridJToken.Value<string>();
-            }
+            List<CompositeContinuationToken> ranges = null;
+            FeedRangeInternal feedRangeInternal = null;
 
-            List<CompositeContinuationToken> ranges = serializer.Deserialize<List<CompositeContinuationToken>>(continuationJToken.CreateReader());
-            FeedRangeInternal feedRangeInternal = FeedRangeInternalConverter.ReadJObject(jObject, serializer);
+            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
+            {
+                JsonElement root = document.RootElement;
+
+                if (root.TryGetProperty(RidPropertyName, out JsonElement ridElement))
+                {
+                    containerRid = ridElement.GetString();
+                }
+
+                if (!root.TryGetProperty(ContinuationPropertyName, out JsonElement continuationElement))
+                {
+                    throw new JsonException();
+                }
+
+                ranges = JsonSerializer.Deserialize<List<CompositeContinuationToken>>(continuationElement.GetRawText(), CosmosSerializerContext.Default.ListCompositeContinuationToken);
+
+                feedRangeInternal = FeedRangeInternalConverter.ReadJsonElement(root, options);
+            }
 
             return new FeedRangeCompositeContinuation(
                 containerRid: containerRid,
@@ -59,23 +63,25 @@ namespace Microsoft.Azure.Cosmos
                 deserializedTokens: ranges);
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, FeedRangeCompositeContinuation value, JsonSerializerOptions options)
         {
-            if (value is FeedRangeCompositeContinuation feedRangeCompositeContinuation)
+            if (value == null)
             {
-                writer.WriteStartObject();
-                writer.WritePropertyName(FeedRangeCompositeContinuationConverter.VersionPropertyName);
-                writer.WriteValue(FeedRangeContinuationVersion.V1);
-                writer.WritePropertyName(FeedRangeCompositeContinuationConverter.RidPropertyName);
-                writer.WriteValue(feedRangeCompositeContinuation.ContainerRid);
-                writer.WritePropertyName(FeedRangeCompositeContinuationConverter.ContinuationPropertyName);
-                serializer.Serialize(writer, feedRangeCompositeContinuation.CompositeContinuationTokens.ToArray());
-                FeedRangeInternalConverter.WriteJObject(writer, feedRangeCompositeContinuation.FeedRange, serializer);
-                writer.WriteEndObject();
+                writer.WriteNullValue();
                 return;
             }
 
-            throw new JsonSerializationException(ClientResources.FeedToken_UnrecognizedFeedToken);
+            writer.WriteStartObject();
+            writer.WritePropertyName(VersionPropertyName);
+            writer.WriteNumberValue((int)FeedRangeContinuationVersion.V1);
+            writer.WritePropertyName(RidPropertyName);
+            writer.WriteStringValue(value.ContainerRid);
+            writer.WritePropertyName(ContinuationPropertyName);
+            JsonSerializer.Serialize(writer, value.CompositeContinuationTokens, CosmosSerializerContext.Default.ListCompositeContinuationToken);
+
+            FeedRangeInternalConverter.WriteJsonElement(writer, value.FeedRange, options);
+
+            writer.WriteEndObject();
         }
     }
 }

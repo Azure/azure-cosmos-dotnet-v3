@@ -134,9 +134,51 @@ namespace Microsoft.Azure.Cosmos
             return CosmosHttpClientCore.CreateHttpClientHandlerHelper(gatewayModeMaxConnectionLimit, webProxy, serverCertificateCustomValidationCallback);
         }
 
+#if COSMOS_GW_AOT
         public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
-            int gatewayModeMaxConnectionLimit, 
-            IWebProxy webProxy, 
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
+            Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
+        {
+            var socketsHandler = new SocketsHttpHandler();
+
+            // Set pooled connection lifetime to a random value between 5 and 5.5 minutes
+            TimeSpan connectionTimeSpan = TimeSpan.FromMinutes(5) + TimeSpan.FromSeconds(30 * CustomTypeExtensions.GetRandomNumber().NextDouble());
+            socketsHandler.PooledConnectionLifetime = connectionTimeSpan;
+
+            // Set proxy if provided
+            if (webProxy != null)
+            {
+                socketsHandler.Proxy = webProxy;
+            }
+
+            // Set max connections per server
+            try
+            {
+                socketsHandler.MaxConnectionsPerServer = gatewayModeMaxConnectionLimit;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                // Ignore if not supported
+            }
+
+            // Set custom server certificate validation callback if provided
+            if (serverCertificateCustomValidationCallback != null)
+            {
+                socketsHandler.SslOptions.RemoteCertificateValidationCallback =
+                    (object _, X509Certificate certificate, X509Chain x509Chain, SslPolicyErrors sslPolicyErrors) =>
+                        serverCertificateCustomValidationCallback(
+                            certificate is { } ? new X509Certificate2(certificate) : null,
+                            x509Chain,
+                            sslPolicyErrors);
+            }
+
+            return socketsHandler;
+        }
+#else
+        public static HttpMessageHandler CreateSocketsHttpHandlerHelper(
+            int gatewayModeMaxConnectionLimit,
+            IWebProxy webProxy,
             Func<X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback)
         {
             // TODO: Remove Reflection when multitargetting is possible
@@ -162,7 +204,7 @@ namespace Microsoft.Azure.Cosmos
             try
             {
                 PropertyInfo maxConnectionsPerServerInfo = socketHandlerType.GetProperty("MaxConnectionsPerServer");
-                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);              
+                maxConnectionsPerServerInfo.SetValue(socketHttpHandler, gatewayModeMaxConnectionLimit);
             }
             // MaxConnectionsPerServer is not supported on some platforms.
             catch (PlatformNotSupportedException)
@@ -187,6 +229,7 @@ namespace Microsoft.Azure.Cosmos
 
             return (HttpMessageHandler)socketHttpHandler;
         }
+#endif
 
         public static HttpMessageHandler CreateHttpClientHandlerHelper(
             int gatewayModeMaxConnectionLimit, 

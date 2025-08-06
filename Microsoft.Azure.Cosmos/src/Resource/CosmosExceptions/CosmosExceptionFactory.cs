@@ -8,6 +8,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System.IO;
     using System.Net;
     using System.Text;
+    using System.Text.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
     using Newtonsoft.Json.Linq;
@@ -166,7 +167,7 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
                         try
                         {
                             JObject errorObj = JObject.Parse(errorContent);
-                            Error error = errorObj.ToObject<Error>();
+                            Error error = JsonSerializer.Deserialize<Error>(errorContent, CosmosSerializerContext.Default.Error);
                             if (error != null)
                             {
                                 StringBuilder message = new StringBuilder();
