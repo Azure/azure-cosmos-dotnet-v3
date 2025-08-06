@@ -40,7 +40,9 @@ namespace Microsoft.Azure.Cosmos
         {
             this.bufferProviderWrapperPool = new ObjectPool<BufferProviderWrapper>(() => new BufferProviderWrapper());
             this.isPartitionLevelFailoverEnabled = isPartitionLevelFailoverEnabled;
-            this.userAgentContainer = userAgentContainer;
+            this.userAgentContainer = userAgentContainer
+                ?? throw new ArgumentNullException(nameof(userAgentContainer),
+                "UserAgentContainer cannot be null when initializing ThinClientStoreClient.");
         }
 
         public override async Task<DocumentServiceResponse> InvokeAsync(
