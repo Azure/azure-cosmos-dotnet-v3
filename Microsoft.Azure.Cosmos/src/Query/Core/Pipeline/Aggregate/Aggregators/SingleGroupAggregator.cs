@@ -230,7 +230,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
 
             public override string ToString()
             {
-                return Newtonsoft.Json.JsonConvert.SerializeObject(this.aliasToValue);
+                return System.Text.Json.JsonSerializer.Serialize(this.aliasToValue, CosmosSerializerContext.Default.IReadOnlyDictionaryStringNullableAggregateOperator);
             }
 
             private sealed class OrderedCosmosObject : CosmosObject
@@ -287,7 +287,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
         /// 1) aggregate group by values
         /// 2) scalar group by values.
         /// </summary>
-        private abstract class AggregateValue
+        internal abstract class AggregateValue
         {
             public abstract void AddValue(CosmosElement aggregateValue);
 
@@ -313,7 +313,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 return value;
             }
 
-            private sealed class AggregateAggregateValue : AggregateValue
+            internal sealed class AggregateAggregateValue : AggregateValue
             {
                 private readonly IAggregator aggregator;
 
@@ -374,7 +374,7 @@ namespace Microsoft.Azure.Cosmos.Query.Core.Pipeline.Aggregate.Aggregators
                 }
             }
 
-            private sealed class ScalarAggregateValue : AggregateValue
+            internal sealed class ScalarAggregateValue : AggregateValue
             {
                 private CosmosElement value;
                 private bool initialized;
