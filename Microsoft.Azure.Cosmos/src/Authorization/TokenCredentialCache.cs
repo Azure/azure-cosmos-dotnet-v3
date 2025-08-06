@@ -46,6 +46,8 @@ namespace Microsoft.Azure.Cosmos
 
         private readonly SemaphoreSlim isTokenRefreshingLock = new SemaphoreSlim(1);
         private readonly object backgroundRefreshLock = new object();
+        private readonly string defaultScope;
+        private readonly string? overrideScope;
 
         private TimeSpan? systemBackgroundTokenCredentialRefreshInterval;
         private Task<AccessToken>? currentRefreshOperation = null;
@@ -66,12 +68,12 @@ namespace Microsoft.Azure.Cosmos
             }
 
             string? scopeOverride = ConfigurationManager.AADScopeOverrideValue(defaultValue: null);
+            this.defaultScope = string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host);
+            this.overrideScope = !string.IsNullOrEmpty(scopeOverride) ? scopeOverride : null;
 
             this.tokenRequestContext = new TokenRequestContext(new string[]
             {
-                !string.IsNullOrEmpty(scopeOverride)
-                    ? scopeOverride
-                    : string.Format(TokenCredentialCache.ScopeFormat, accountEndpoint.Host)
+                this.overrideScope ?? this.defaultScope
             });
 
             if (backgroundTokenCredentialRefreshInterval.HasValue)
@@ -193,18 +195,25 @@ namespace Microsoft.Azure.Cosmos
                     {
                         try
                         {
-                            this.cachedAccessToken = await this.tokenCredential.GetTokenAsync(
-                                requestContext: this.tokenRequestContext,
-                                cancellationToken: this.cancellationToken);
-
-                            if (!this.cachedAccessToken.HasValue)
+                            if (this.overrideScope != null)
                             {
-                                throw new ArgumentNullException("TokenCredential.GetTokenAsync returned a null token.");
+                                try
+                                {
+                                    TokenRequestContext overrideContext = new TokenRequestContext(new string[] { this.overrideScope });
+                                    this.cachedAccessToken = await this.GetAndValidateTokenAsync(overrideContext);
+                                }
+                                catch (Exception ex)
+                                {
+                                    DefaultTrace.TraceError($"TokenCredential.GetTokenAsync failed with override scope '{this.overrideScope}': {ex.Message}. Retrying with default scope '{this.defaultScope}'.");
+
+                                    TokenRequestContext defaultContext = new TokenRequestContext(new string[] { this.defaultScope });
+                                    this.cachedAccessToken = await this.GetAndValidateTokenAsync(defaultContext);
+                                }
                             }
-
-                            if (this.cachedAccessToken.Value.ExpiresOn < DateTimeOffset.UtcNow)
+                            else
                             {
-                                throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{this.cachedAccessToken.Value.ExpiresOn:O}");
+                                TokenRequestContext defaultContext = new TokenRequestContext(new string[] { this.defaultScope });
+                                this.cachedAccessToken = await this.GetAndValidateTokenAsync(defaultContext);
                             }
 
                             if (!this.userDefinedBackgroundTokenCredentialRefreshInterval.HasValue)
@@ -226,7 +235,7 @@ namespace Microsoft.Azure.Cosmos
                                 $"RequestFailedException at {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}",
                                 requestFailedException.Message);
 
-                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                            DefaultTrace.TraceError($"TokenCredential.GetToken() failed with RequestFailedException. scope = {string.Join(";", this.overrideScope ?? this.defaultScope)}, retry = {retry}, Exception = {lastException.Message}");
 
                             // Don't retry on auth failures
                             if (requestFailedException.Status == (int)HttpStatusCode.Unauthorized ||
@@ -244,7 +253,7 @@ namespace Microsoft.Azure.Cosmos
                                 operationCancelled.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.overrideScope ?? this.defaultScope)}, retry = {retry}, Exception = {lastException.Message}");
 
                             throw CosmosExceptionFactory.CreateRequestTimeoutException(
                                 message: ClientResources.FailedToGetAadToken,
@@ -263,7 +272,7 @@ namespace Microsoft.Azure.Cosmos
                                 exception.Message);
 
                             DefaultTrace.TraceError(
-                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.tokenRequestContext.Scopes)}, retry = {retry}, Exception = {lastException.Message}");
+                                $"TokenCredential.GetTokenAsync() failed. scope = {string.Join(";", this.overrideScope ?? this.defaultScope)}, retry = {retry}, Exception = {lastException.Message}");
                         }
                     }
                 }
@@ -288,6 +297,25 @@ namespace Microsoft.Azure.Cosmos
                     this.isTokenRefreshingLock.Release();
                 }
             }
+        }
+
+        private async Task<AccessToken> GetAndValidateTokenAsync(TokenRequestContext requestContext)
+        {
+            AccessToken? cachedAccessToken = await this.tokenCredential.GetTokenAsync(
+                requestContext: requestContext,
+                cancellationToken: this.cancellationToken);
+
+            if (!cachedAccessToken.HasValue)
+            {
+                throw new ArgumentNullException("TokenCredential.GetTokenAsync returned a null token.");
+            }
+
+            if (cachedAccessToken.Value.ExpiresOn < DateTimeOffset.UtcNow)
+            {
+                throw new ArgumentOutOfRangeException($"TokenCredential.GetTokenAsync returned a token that is already expired. Current Time:{DateTime.UtcNow:O}; Token expire time:{cachedAccessToken.Value.ExpiresOn:O}");
+            }
+
+            return cachedAccessToken.Value;
         }
 
 #pragma warning disable VSTHRD100 // Avoid async void methods
