@@ -269,5 +269,7 @@ namespace Microsoft.Azure.Cosmos
         [JsonExtensionData]
         internal IDictionary<string, JToken> AdditionalProperties { get; set; }
 
+        [JsonProperty(PropertyName = Constants.Properties.EnableNRegionSynchronousCommit, NullValueHandling = NullValueHandling.Ignore)]
+        internal bool EnableNRegionSynchronousCommit { get; set; }
     }
 }
