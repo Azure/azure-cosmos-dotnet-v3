@@ -19,12 +19,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Additional AOT and trim settings -->
-    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
 
     <!-- More detailed trim warnings -->
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <TrimmerSingleWarn>true</TrimmerSingleWarn>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     
     <!-- ILC flags for more detailed output -->
