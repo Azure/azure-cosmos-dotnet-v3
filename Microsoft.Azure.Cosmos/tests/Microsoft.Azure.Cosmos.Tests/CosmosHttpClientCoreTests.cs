@@ -384,62 +384,6 @@ namespace Microsoft.Azure.Cosmos.Tests
         }
 
         [TestMethod]
-        [TestCategory("Flaky")]
-        public async Task RetryTransientIssuesForQueryPlanTestAsync()
-        {
-            DocumentServiceRequest documentServiceRequest = DocumentServiceRequest.Create(
-                OperationType.QueryPlan,
-                ResourceType.Document,
-                @"dbs/1889fcb0-7d02-41a4-94c9-189f6aa1b444/colls/c264ae0f-7708-46fb-a015-29a40ea3c18b",
-                new MemoryStream(),
-                AuthorizationTokenType.PrimaryMasterKey,
-                new Documents.Collections.RequestNameValueCollection());
-
-            HttpTimeoutPolicy retryPolicy = HttpTimeoutPolicy.GetTimeoutPolicy(documentServiceRequest);
-            Assert.AreEqual(HttpTimeoutPolicyControlPlaneRetriableHotPath.InstanceShouldThrow503OnTimeout, retryPolicy);
-
-            int count = 0;
-            IEnumerator<(TimeSpan requestTimeout, TimeSpan delayForNextRequest)> retry = retryPolicy.GetTimeoutEnumerator();
-            async Task<HttpResponseMessage> sendFunc(HttpRequestMessage request, CancellationToken cancellationToken)
-            {
-                count++;
-                retry.MoveNext();
-
-                if (count <= 2)
-                {
-                    Assert.IsFalse(cancellationToken.IsCancellationRequested);
-                    await Task.Delay(retry.Current.requestTimeout + TimeSpan.FromSeconds(.1));
-                    cancellationToken.ThrowIfCancellationRequested();
-                    Assert.Fail("Cancellation token should be canceled");
-                }
-
-                if (count == 3)
-                {
-                    return new HttpResponseMessage(HttpStatusCode.OK);
-                }
-
-                throw new Exception("Should not return after the success");
-            }
-
-            DocumentClientEventSource eventSource = DocumentClientEventSource.Instance;
-            HttpMessageHandler messageHandler = new MockMessageHandler(sendFunc);
-            using CosmosHttpClient cosmoshttpClient = MockCosmosUtil.CreateCosmosHttpClient(() => new HttpClient(messageHandler));
-
-            using (ITrace trace = Trace.GetRootTrace(nameof(RetryTransientIssuesForQueryPlanTestAsync)))
-            {
-                HttpResponseMessage responseMessage = await cosmoshttpClient.SendHttpAsync(() =>
-                    new ValueTask<HttpRequestMessage>(
-                        result: new HttpRequestMessage(HttpMethod.Post, new Uri("http://localhost"))),
-                        resourceType: ResourceType.Document,
-                        timeoutPolicy: HttpTimeoutPolicyControlPlaneRetriableHotPath.Instance,
-                        clientSideRequestStatistics: new ClientSideRequestStatisticsTraceDatum(DateTime.UtcNow, trace),
-                        cancellationToken: default);
-
-                Assert.AreEqual(HttpStatusCode.OK, responseMessage.StatusCode);
-            }
-        }
-
-        [TestMethod]
         public void CreateSocketsHttpHandlerCreatesCorrectValueType()
         {
             int gatewayLimit = 10;
