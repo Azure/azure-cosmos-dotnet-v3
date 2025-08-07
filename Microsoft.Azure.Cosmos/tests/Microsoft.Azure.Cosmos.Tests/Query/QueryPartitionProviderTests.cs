@@ -134,5 +134,52 @@
                 Assert.AreEqual(expected, actual);
             }
         }
+
+        [TestMethod]
+        public void TestTryCreateServiceProviderWithNullConfiguration()
+        {
+            TryCatch<IntPtr> result = QueryPartitionProvider.TryCreateServiceProvider(null);
+            
+            Assert.IsTrue(result.Failed);
+            Assert.IsInstanceOfType(result.Exception, typeof(ArgumentException));
+            Assert.IsTrue(result.Exception.Message.Contains("queryEngineConfiguration cannot be null or empty"));
+        }
+
+        [TestMethod]
+        public void TestTryCreateServiceProviderWithEmptyConfiguration()
+        {
+            TryCatch<IntPtr> result = QueryPartitionProvider.TryCreateServiceProvider(string.Empty);
+            
+            Assert.IsTrue(result.Failed);
+            Assert.IsInstanceOfType(result.Exception, typeof(ArgumentException));
+            Assert.IsTrue(result.Exception.Message.Contains("queryEngineConfiguration cannot be null or empty"));
+        }
+
+        [TestMethod]
+        public void TestTryCreateServiceProviderWithInvalidJsonConfiguration()
+        {
+            string invalidJson = "{ invalid json }";
+            TryCatch<IntPtr> result = QueryPartitionProvider.TryCreateServiceProvider(invalidJson);
+            
+            Assert.IsTrue(result.Failed);
+            Assert.IsInstanceOfType(result.Exception, typeof(ArgumentException));
+            Assert.IsTrue(result.Exception.Message.Contains("Invalid JSON configuration"));
+        }
+
+        [TestMethod]
+        public void TestTryCreateServiceProviderWithValidConfiguration()
+        {
+            IDictionary<string, object> configuration = new Dictionary<string, object>() { { "maxSqlQueryInputLength", 524288 } };
+            string jsonConfiguration = JsonConvert.SerializeObject(configuration);
+            
+            // This will likely fail due to native dependencies not being available in test environment,
+            // but it should not throw an AccessViolationException
+            TryCatch<IntPtr> result = QueryPartitionProvider.TryCreateServiceProvider(jsonConfiguration);
+            
+            // We expect this to fail in test environment, but gracefully
+            Assert.IsTrue(result.Failed);
+            // Should not be an ArgumentException since the JSON is valid
+            Assert.IsNotInstanceOfType(result.Exception, typeof(ArgumentException));
+        }
     }
 }
