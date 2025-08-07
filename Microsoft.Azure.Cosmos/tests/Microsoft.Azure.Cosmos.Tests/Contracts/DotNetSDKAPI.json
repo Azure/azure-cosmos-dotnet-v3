@@ -6366,6 +6366,11 @@
           ],
           "MethodInfo": "Double FullTextScore[TSource](TSource, System.String[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:True;IsConstructor:False;IsFinal:False;"
         },
+        "Double RRF(Double[], Double[])": {
+          "Type": "Method",
+          "Attributes": [],
+          "MethodInfo": "Double RRF(Double[], Double[]);IsAbstract:False;IsStatic:True;IsVirtual:False;IsGenericMethod:False;IsConstructor:False;IsFinal:False;"
+        },
         "Double RRF(Double[])": {
           "Type": "Method",
           "Attributes": [],
