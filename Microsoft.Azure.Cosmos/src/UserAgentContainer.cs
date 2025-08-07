@@ -40,9 +40,9 @@ namespace Microsoft.Azure.Cosmos
                 // 3. Suffix already contains features, we the new features in the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? features
-                    : this.Suffix.Contains("|")
-                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf('|'))}"
-                        : $"{features}|{this.Suffix}";
+                    : this.Suffix.Contains(PipeDelimiter)
+                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(PipeDelimiter))}"
+                        : $"{features}{PipeDelimiter}{this.Suffix}";
             }
             else
             {
