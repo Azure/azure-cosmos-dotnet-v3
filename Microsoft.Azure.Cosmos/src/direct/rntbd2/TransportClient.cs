@@ -127,7 +127,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             DateTime requestStartTime = DateTime.UtcNow;
             int transportResponseStatusCode = (int)TransportResponseStatusCode.Success;
 
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
             using OpenTelemetryRecorder recorder = OpenTelemetryRecorderFactory.CreateRecorder(
                                                                                     options: this.DistributedTracingOptions,
                                                                                     request: request);
@@ -195,7 +195,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("Converting to Gone (read-only request)");
                     GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
                     recorder?.Record(physicalAddress.Uri, exception: goneExcepetion);
 #endif
                     throw goneExcepetion;
@@ -205,7 +205,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("Converting to Gone (write request, not sent)");
                     GoneException goneExcepetion = TransportExceptions.GetGoneException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
                     recorder?.Record(physicalAddress.Uri, exception: goneExcepetion);
 #endif
                     throw goneExcepetion;
@@ -215,7 +215,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     DefaultTrace.TraceInformation("Converting to RequestTimeout");
                     RequestTimeoutException requestTimeoutException = TransportExceptions.GetRequestTimeoutException(
                         physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
                     recorder?.Record(physicalAddress.Uri, exception: requestTimeoutException);
 #endif
                     throw requestTimeoutException;
@@ -223,7 +223,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceInformation("Converting to ServiceUnavailable");
                 ServiceUnavailableException serviceUnavailableException = TransportExceptions.GetServiceUnavailableException(
                     physicalAddress.Uri, activityId, ex, transportRequestStats);
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: serviceUnavailableException);
 #endif
                 throw serviceUnavailableException;
@@ -237,7 +237,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                     physicalAddress, ex);
                 transportRequestStats.RecordState(TransportRequestStats.RequestStage.Failed);
                 ex.TransportRequestStats = transportRequestStats;
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: ex);
 #endif
                 throw;
@@ -248,7 +248,7 @@ namespace Microsoft.Azure.Documents.Rntbd
                 DefaultTrace.TraceInformation("{0} failed: RID: {1}, Resource Type: {2}, Op: {3}, Address: {4}, " +
                     "Exception: {5}", operation, request.ResourceAddress, request.ResourceType, resourceOperation,
                     physicalAddress, ex);
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
                 recorder?.Record(physicalAddress.Uri, exception: ex);
 #endif
                 throw;
@@ -265,7 +265,7 @@ namespace Microsoft.Azure.Documents.Rntbd
             {
                 TransportClient.ThrowServerException(request.ResourceAddress, storeResponse, physicalAddress.Uri, activityId, request);
             }
-#if NETSTANDARD2_0_OR_GREATER && !COSMOS_GW_AOT
+#if NETSTANDARD2_0_OR_GREATER
             catch (DocumentClientException exception) 
             {
                 recorder?.Record(physicalAddress.Uri, exception: exception);
