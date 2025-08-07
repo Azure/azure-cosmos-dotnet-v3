@@ -158,7 +158,6 @@
 	</ItemGroup>
 
 	<ItemGroup Condition=" '$(ProjectRef)' != 'True' ">
-		<PackageReference Include="Microsoft.HybridRow" Version="[$(HybridRowVersion)]" PrivateAssets="All" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
 	</ItemGroup>
 
