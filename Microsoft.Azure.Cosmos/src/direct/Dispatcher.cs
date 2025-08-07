@@ -722,7 +722,11 @@ namespace Microsoft.Azure.Documents.Rntbd
                         TransportErrorCode.TransportNegotiationTimeout,
                         args.CommonArguments.UserPayload)))
                 {
+#if COSMOS_GW_AOT
+                    Error error = new();
+#else
                     Error error = Resource.LoadFrom<Error>(errorResponseStream, null);
+#endif
 
                     DocumentClientException exception = new DocumentClientException(
                         string.Format(CultureInfo.CurrentUICulture,

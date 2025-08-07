@@ -19,12 +19,12 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 
     <!-- Additional AOT and trim settings -->
-    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
     <IsAotCompatible>true</IsAotCompatible>
 
     <!-- More detailed trim warnings -->
-    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <TrimmerSingleWarn>true</TrimmerSingleWarn>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     
     <!-- ILC flags for more detailed output -->
@@ -45,9 +45,8 @@
 		<IlcGenerateDgmlFile>true</IlcGenerateDgmlFile>
 	</PropertyGroup>
 
-	<ItemGroup>
+  <ItemGroup>
     <PackageReference Include="Microsoft.HybridRow" Version="1.1.0-preview3" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4-beta1" />
   </ItemGroup>
 
   <ItemGroup>

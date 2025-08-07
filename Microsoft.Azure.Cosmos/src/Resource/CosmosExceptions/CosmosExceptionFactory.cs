@@ -11,7 +11,6 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
     using System.Text.Json;
     using Microsoft.Azure.Cosmos.Tracing;
     using Microsoft.Azure.Documents;
-    using Newtonsoft.Json.Linq;
 
     internal static class CosmosExceptionFactory
     {
@@ -166,18 +165,20 @@ namespace Microsoft.Azure.Cosmos.Resource.CosmosExceptions
 
                         try
                         {
-                            JObject errorObj = JObject.Parse(errorContent);
                             Error error = JsonSerializer.Deserialize<Error>(errorContent, CosmosSerializerContext.Default.Error);
                             if (error != null)
                             {
                                 StringBuilder message = new StringBuilder();
-                                foreach (var err in errorObj)
+                                using (JsonDocument errorDoc = JsonDocument.Parse(errorContent))
                                 {
-                                    message
-                                        .Append(Environment.NewLine)
-                                        .Append(err.Key)
-                                        .Append(" : ")
-                                        .Append(err.Value);
+                                    foreach (JsonProperty err in errorDoc.RootElement.EnumerateObject())
+                                    {
+                                        message
+                                            .Append(Environment.NewLine)
+                                            .Append(err.Name)
+                                            .Append(" : ")
+                                            .Append(err.Value.ToString());
+                                    }
                                 }
                                 message.Append(Environment.NewLine);
                                 // Error format is not consistent across modes
