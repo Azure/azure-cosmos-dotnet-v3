@@ -12,6 +12,7 @@ namespace Microsoft.Azure.Cosmos
     {
         private const int MaxOperatingSystemString = 30;
         private const int MaxClientId = 10;
+        private const string PipeDelimiter = "|";
         private readonly string cosmosBaseUserAgent;
         private readonly string clientId;
 
@@ -40,9 +41,9 @@ namespace Microsoft.Azure.Cosmos
                 // 3. Suffix already contains features, we the new features in the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? features
-                    : this.Suffix.Contains(PipeDelimiter)
-                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(PipeDelimiter))}"
-                        : $"{features}{PipeDelimiter}{this.Suffix}";
+                    : this.Suffix.Contains(UserAgentContainer.PipeDelimiter)
+                        ? $"{features}{this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter))}"
+                        : $"{features}{UserAgentContainer.PipeDelimiter}{this.Suffix}";
             }
             else
             {
@@ -52,8 +53,8 @@ namespace Microsoft.Azure.Cosmos
                 // 3. Suffix already contains features, we remove the features from the existing suffix.
                 this.Suffix = string.IsNullOrEmpty(this.Suffix)
                     ? string.Empty
-                    : this.Suffix.Contains("|")
-                        ? this.Suffix.Substring(this.Suffix.IndexOf('|') + 1)
+                    : this.Suffix.Contains(UserAgentContainer.PipeDelimiter)
+                        ? this.Suffix.Substring(this.Suffix.IndexOf(UserAgentContainer.PipeDelimiter) + 1)
                         : this.Suffix;
             }
         }
