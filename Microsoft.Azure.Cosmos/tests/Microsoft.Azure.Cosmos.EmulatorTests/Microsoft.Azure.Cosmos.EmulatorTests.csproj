@@ -250,6 +250,9 @@
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestRRFOrderByRankFunction.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestWeightedRRF.xml">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="BaselineTest\TestBaseline\LinqTranslationBaselineTests.TestOrderByRankFunctionComposeWithOtherFunctions.xml">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

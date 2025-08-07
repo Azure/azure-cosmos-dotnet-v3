@@ -24,17 +24,21 @@ namespace Microsoft.Azure.Cosmos.Linq
                     true,
                     new List<Type[]>()
                     {
-                        new Type[]{typeof(double[])}
+                        new Type[]{typeof(double[])},
+                        new Type[]{typeof(double[]), typeof(double[])}
                     })
             {
             }
 
             protected override SqlScalarExpression VisitImplicit(MethodCallExpression methodCallExpression, TranslationContext context)
             {
-                if (methodCallExpression.Arguments.Count == 1
-                    && methodCallExpression.Arguments[0] is NewArrayExpression argumentsExpressions)
+                if (methodCallExpression.Arguments.Count != 1 && methodCallExpression.Arguments.Count != 2)
                 {
-                    // For RRF, We don't need to care about the first argument, it is the object itself and have no relevance to the computation
+                    throw new DocumentQueryException("Invalid Argument Count.");
+                }
+
+                if (methodCallExpression.Arguments[0] is NewArrayExpression argumentsExpressions)
+                {
                     ReadOnlyCollection<Expression> functionListExpression = argumentsExpressions.Expressions;
                     List<SqlScalarExpression> arguments = new List<SqlScalarExpression>();
                     foreach (Expression argument in functionListExpression)
@@ -65,10 +69,16 @@ namespace Microsoft.Azure.Cosmos.Linq
                         arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(argument, context));
                     }
 
+                    // Append the weight if exists
+                    if (methodCallExpression.Arguments.Count == 2)
+                    {
+                        arguments.Add(ExpressionToSql.VisitNonSubqueryScalarExpression(methodCallExpression.Arguments[1], context));
+                    }
+
                     return SqlFunctionCallScalarExpression.CreateBuiltin(SqlFunctionCallScalarExpression.Names.RRF, arguments.ToImmutableArray());
                 }
 
-                return null;
+                throw new DocumentQueryException(string.Format(CultureInfo.CurrentCulture, "Method {0} is not supported with the given argument list.", methodCallExpression.Method.Name));
             }
 
             protected override SqlScalarExpression VisitExplicit(MethodCallExpression methodCallExpression, TranslationContext context)
